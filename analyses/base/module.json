@@ -1,0 +1,35 @@
+{
+    "name" : "Silky",
+    "version" : "0.1.0",
+    "channel" : "release",
+    "release-date" : "2016-01-01",
+    
+    "ribbon" : [
+        {
+            "name" : "Descriptives",
+            "version" : "1.0.0",
+            "type" : "analysis",
+            "icon" : "resources/descriptives.svg",
+            "engine" : "R"
+        },
+        {
+            "type" : "separator"
+        },
+        {
+            "title" : "T-Tests",
+            "name" : "ttests",
+            "type" : "menu",
+            "icon" : "resources/t-tests.svg",
+            "entries" : [
+                {
+                    "title" : "One Sample T-Test",
+                    "version" : "1.0.0",
+                    "name" : "OneSampleTTest",
+                    "namespace" : "silky",
+                    "type" : "analysis",
+                    "engine" : "R"
+                }
+            ]
+        }
+    ]
+}

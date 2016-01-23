@@ -1,0 +1,27 @@
+{
+  "name": "Silky",
+  "version": "0.1.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "install:deps": "npm install && pip install --upgrade tornado ordered_set fasteners protobuf3 cython",
+    "build:libsilky": "python ./libsilky/setup.py build_ext --build-lib ../server --build-temp ./build",
+    "build:watch": "npm run build:client && onchange \"client/css/!(bundle.css|bundle.min.css)\" \"client/js/!(bundle.js|bundle.min.js)\" -- npm run build:client",
+    "build:client": "echo BUILDING CLIENT && npm run build:js && npm run build:css && echo DONE",
+    "build:js": "browserify client/js/main.js --outfile client/js/bundle.js",
+    "build:css": "node -e \"require('concat-files')(require('glob').glob.sync('{client/lib/*.css,client/css/!(bundle.css|bundle.min.css)}'),'client/css/bundle.css')\"",
+    "run:electron": "python server/main.py 8888 --shutdown_on_idle --launch_client --debug",
+    "run:server": "python server/main.py 8888 --debug"
+  },
+  "dependencies": {
+    "electron-prebuilt": "^0.36.5"
+  },
+  "devDependencies": {
+    "browserify": "^13.0.0",
+    "jquery": "^2.2.0",
+    "underscore": "^1.8.3",
+    "backbone": "^1.2.3",
+    "concat-files": "^0.1.0",
+    "protobufjs": "^5.0.1",
+    "onchange": "^2.0.0"
+  }
+}

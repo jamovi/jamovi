@@ -1,0 +1,17 @@
+
+*.so
+*.pyd
+*.swp
+
+node_modules/
+
+libsilky/silky.cpp
+libsilky/build/
+
+**/__pycache__/
+
+client/js/bundle.js
+client/js/bundle.min.js
+client/css/bundle.css
+client/css/bundle.min.css
+

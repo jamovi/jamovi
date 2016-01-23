@@ -1,0 +1,29 @@
+
+.silky-progressbar {
+    z-index: 20 ;
+}
+
+.silky-progressbar-content {
+    border: 1px solid lightgray ;
+    background-color: white ;
+    padding: 12px ;
+    min-width: 400px ;
+    box-shadow: 0 0 10px 5px lightgray ;
+}
+
+.silky-progressbar-task {
+    margin-bottom: 6px ;
+}
+
+.silky-progressbar-bar-back {
+    background-color: #EEEEEE ;
+    width: 100% ;
+    height: 16px ;
+}
+
+.silky-progressbar-bar-bar {
+    background-color: rgb(206, 53, 44) ;
+    width: 50% ;
+    height: 100% ;
+}
+ 
