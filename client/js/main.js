@@ -31,11 +31,12 @@ var RibbonModel = require('./ribbon').Model
 var Instance = require('./instance')
 var instance = new Instance()
 var results = instance.resultsModel()
+var analyses = instance.analyses()
 
 var ribbonModel = new RibbonModel()
 
-ribbonModel.on('analysisSelected', function(name) {
-    results.createAnalysis(name)
+ribbonModel.on('analysisSelected', function(info) {
+    analyses.createAnalysis(info.name, info.ns)
 })
 
 $(document).ready(function() {

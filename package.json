@@ -9,6 +9,8 @@
     "build:client": "echo BUILDING CLIENT && npm run build:js && npm run build:css && echo DONE",
     "build:js": "browserify client/js/main.js --outfile client/js/bundle.js",
     "build:css": "node -e \"require('concat-files')(require('glob').glob.sync('{client/lib/*.css,client/css/!(bundle.css|bundle.min.css)}'),'client/css/bundle.css')\"",
+    "build:analyses": "node analyses/build.js",
+    "build:proto": "protoc --python3_out=. server/coms.proto",
     "run:electron": "python server/main.py 8888 --shutdown_on_idle --launch_client --debug",
     "run:server": "python server/main.py 8888 --debug"
   },
@@ -22,6 +24,7 @@
     "backbone": "^1.2.3",
     "concat-files": "^0.1.0",
     "protobufjs": "^5.0.1",
-    "onchange": "^2.0.0"
+    "onchange": "^2.0.0",
+    "es6-promise": "^3.0.2"
   }
 }

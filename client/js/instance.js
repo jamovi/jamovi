@@ -4,8 +4,10 @@ var $ = require('jquery')
 var Backbone = require('backbone')
 Backbone.$ = $
 
-var BackstageModel = require('./backstage').Model
 var ProtoBuf = require('protobufjs')
+
+var BackstageModel = require('./backstage').Model
+var Analyses = require('./analyses')
 
 var ProgressModel = Backbone.Model.extend({
     defaults : {
@@ -71,6 +73,9 @@ var Instance = Backbone.Model.extend({
         this._backstageModel = new BackstageModel()
         this._backstageModel.on('dataSetOpenRequested', this._openDataSetRequest, this)
         
+        this._analyses = new Analyses()
+        this._analyses.on('analysisCreated', this._analysisCreated, this)
+        
         this._resultsModel = new ResultsModel()
         
     },
@@ -92,6 +97,10 @@ var Instance = Backbone.Model.extend({
     resultsModel : function() {
         
         return this._resultsModel
+    },
+    analyses : function() {
+        
+        return this._analyses
     },
     _openDataSetRequest : function(params) {
     
@@ -144,7 +153,7 @@ var Instance = Backbone.Model.extend({
         Promise.all([
             new Promise(function(resolve, reject) {
 
-                ProtoBuf.loadProtoFile('http://' + host + '/proto', function(err, builder) {
+                ProtoBuf.loadProtoFile('s/proto', function(err, builder) {
                     if (err) {
                         reject(err)
                     }
@@ -191,6 +200,20 @@ var Instance = Backbone.Model.extend({
         request.open = params
 
         return this._send(request)
+    },
+    _analysisCreated : function(analysis) {
+    
+        return analysis.ready.then(function() {
+
+            var params = new this._coms.AnalysisReqParams()
+            params.name = analysis.name
+            params.ns = analysis.ns
+        
+            var request = new this._coms.Request()
+            request.analysis = params
+        
+            return this._send(request)
+        })
     },
     retrieveInfo : function() {
     

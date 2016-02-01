@@ -6,6 +6,7 @@ message Request {
         OpenReqParams  open = 3;
         InfoReqParams  info = 4;
         CellsReqParams cells = 5;
+        AnalysisReqParams analysis = 6;
     }
 }
 
@@ -119,6 +120,11 @@ message CellsResParams {
     }
     
     repeated Column columns = 2;
+}
+
+message AnalysisReqParams {
+    optional string name = 1;
+    optional string ns = 2;
 }
 
 

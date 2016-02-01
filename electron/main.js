@@ -13,14 +13,37 @@ let mainWindow;
 
 app.on('ready', function() {
 
-    // Create the browser window.
     mainWindow = new BrowserWindow({ width: 800, height: 1200 });
 
-    // and load the index.html of the app.
-    mainWindow.loadURL('file://' + path.join(__dirname, '..', 'client/index.html'));
+    var rootPath = path.join(__dirname, '..', 'client') + '/'
+    var rootUrl = 'file://' + rootPath
+    var serverPath = rootPath + 's/'
+    var serverUrl = rootUrl + 's/'
+    
+    mainWindow.loadURL(rootUrl + 'index.html');
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
+    
+    var session = mainWindow.webContents.session
+    session.webRequest.onBeforeRequest(function(details, callback) {
+
+        // redirect requests to the local tornado server when appropriate
+
+        var url = details.url
+        
+        if (url.startsWith(serverUrl)) {
+        
+            var relative = url.slice(serverUrl.length)
+            var newUrl = 'http://localhost:' + global.port + '/' + relative
+            
+            callback({ redirectURL : newUrl })
+        }
+        else {
+        
+            callback({})
+        }
+    })
 
     // Emitted when the window is closed.
     mainWindow.on('closed', function() {

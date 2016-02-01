@@ -15,3 +15,8 @@ client/js/bundle.min.js
 client/css/bundle.css
 client/css/bundle.min.css
 
+analyses/*/*.js
+analyses/*/*.proto
+analyses/*/*.json
+!analyses/common/*.js
+

@@ -1,4 +1,9 @@
 
+var _ = require('underscore')
+var $ = require('jquery')
+var Backbone = require('backbone')
+Backbone.$ = $
+
 var Bool = require('bool')
 var Variables = require('variables')
 

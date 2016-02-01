@@ -15,6 +15,9 @@ from settings import Settings
 
 import coms
 
+from enginemanager import EngineManager
+from analyses import Analyses
+
 class Instance:
     
     def __init__(self):
@@ -23,6 +26,10 @@ class Instance:
         self._awaitingFirstHandler = True
         self._timeSinceLastHandler = time.time()
         self._dataset = None
+        self._analyses = Analyses()
+        self._em = EngineManager()
+        
+        #self._em.start()
         
         settings = Settings.retrieve()
         settings.sync()
@@ -38,6 +45,8 @@ class Instance:
             self.cells(request.cells)
         elif 'settings' in request:
             self.settings(request.settings)
+        elif 'analysis' in request:
+            self.analysis(request.analysis)
         else:
             print('unrecognised request')
             print(request)
@@ -91,6 +100,10 @@ class Instance:
     
     def timeWithoutHandlers(self):
         return time.time() - self._timeSinceLastHandler
+    
+    def analysis(self, analysis):
+        self._analyses.create(analysis.name, analysis.ns)
+        
     
     def info(self, id):
         response = coms.Response()

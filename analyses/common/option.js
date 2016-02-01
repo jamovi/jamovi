@@ -1,6 +1,6 @@
 
-var Option = Backbone.Model.extend({
+function Option() {
 
-})
+}
 
 module.exports = Option

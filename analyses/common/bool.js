@@ -1,8 +1,11 @@
 
 var Option = require('./option')
 
-var Bool = Option.extend({
+function Bool() {
+    this.type = 'Bool'
+}
 
-})
+Bool.prototype = new Option()
+Bool.prototype.constructor = Bool
 
 module.exports = Bool

@@ -1,5 +1,5 @@
+from protobuf3.fields import StringField, MessageField, EnumField, BoolField, DoubleField, UInt32Field, Int32Field
 from protobuf3.message import Message
-from protobuf3.fields import StringField, Int32Field, UInt32Field, EnumField, MessageField, BoolField, DoubleField
 from enum import Enum
 
 
@@ -75,6 +75,10 @@ class CellsResParams(Message):
             pass
 
 
+class AnalysisReqParams(Message):
+    pass
+
+
 class Status(Enum):
     COMPLETE = 1
     IN_PROGRESS = 2
@@ -85,6 +89,7 @@ Request.add_field('settings', MessageField(field_number=2, optional=True, messag
 Request.add_field('open', MessageField(field_number=3, optional=True, message_cls=OpenReqParams))
 Request.add_field('info', MessageField(field_number=4, optional=True, message_cls=InfoReqParams))
 Request.add_field('cells', MessageField(field_number=5, optional=True, message_cls=CellsReqParams))
+Request.add_field('analysis', MessageField(field_number=6, optional=True, message_cls=AnalysisReqParams))
 Response.add_field('id', Int32Field(field_number=1, required=True))
 Response.add_field('settings', MessageField(field_number=2, optional=True, message_cls=SettingsResParams))
 Response.add_field('open', MessageField(field_number=3, optional=True, message_cls=OpenResParams))
@@ -122,3 +127,5 @@ CellsResParams.Column.add_field('doubles', MessageField(field_number=2, optional
 CellsResParams.Column.add_field('strings', MessageField(field_number=3, optional=True, message_cls=CellsResParams.Column.Strings))
 CellsResParams.add_field('reqParams', MessageField(field_number=1, optional=True, message_cls=CellsReqParams))
 CellsResParams.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResParams.Column))
+AnalysisReqParams.add_field('name', StringField(field_number=1, optional=True))
+AnalysisReqParams.add_field('ns', StringField(field_number=2, optional=True))
