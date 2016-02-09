@@ -1,0 +1,99 @@
+
+* {
+    user-select: none ;
+    -webkit-user-select: none;
+}
+
+html, body {
+    box-sizing: border-box ;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+
+body {
+    font-family: "Segoe UI", "Open Sans", sans-serif, serif;
+    font-size: 0.875rem;
+    line-height: 1.1;
+    font-weight: 400;
+    font-style: normal;
+}
+
+h1 {
+    font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
+}
+
+body {
+     
+    background-color: #B7121F ;
+}
+
+hr {
+    height: 1px ;
+    border: 0 ;
+    background-color: #CCC ;
+}
+
+body {
+    cursor: default ;
+    display: flex ;
+    flex-flow: column ;
+}
+
+#main-view {
+    padding-top: 6px ;
+    border-top: 1px solid #D0D0D0 ;
+    background-color: #dedede ;
+    flex-grow: 1;
+}
+
+#main-table {
+
+}
+
+#results {
+
+    font-style: sans-serif ;
+    background-color: white ;
+    
+}
+
+#results h1 {
+    margin-left: .4em ;
+}
+
+#splitter {
+    width: 8px ;
+}
+
+#header {
+    color: #ffffff ;
+    margin: 6px ;
+    text-align: center ;
+}
+
+#progress-bar-helper {
+    position: absolute ;
+    left: 0 ;
+    top: 0 ;
+    display: table ;
+    width: 100% ;
+    height: 100% ;
+    pointer-events:none;
+}
+
+#progress-bar-align-center {
+    display: table-cell ;
+    vertical-align: middle ;
+    text-align: center ;
+    pointer-events:none;
+}
+
+#progress-bar {
+    display: inline-block ;
+    margin: 0 auto ;
+    width: 400px ;
+    background-color: #B7121F ;
+}
+
+

@@ -1,0 +1,38 @@
+
+message Request {
+    oneof payload {
+        AnalysisRequest analysisRequest = 2;
+    }
+}
+
+message AnalysisRequest {
+    optional int32 id = 1;
+    optional int32 revision = 2;
+    optional string name = 3;
+    optional string ns = 4;
+    
+    enum Perform {
+        INIT = 1;
+        RUN = 2;
+    }
+    
+    optional Perform perform = 5;
+    optional bytes options = 6;
+}
+
+message AnalysisResults {
+    optional int32 id = 1;
+    optional int32 revision = 2;
+    
+    enum Status {
+        INITED = 1;
+        RUNNING = 2;
+        COMPLETE = 3;
+        ERROR = 4;
+        ABORTED = 5;
+    }
+    
+    optional Status status = 3;
+    optional bytes results = 4;
+    optional bytes error = 5;
+}
