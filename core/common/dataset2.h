@@ -21,31 +21,28 @@ typedef struct
 
 class DataSet2
 {
-    friend class Column2;
-    
 public:
 
-    static DataSet2 *create(MemoryMap *mm);
     static DataSet2 *retrieve(MemoryMap *mm);
 
-	int rowCount() const;
-	int columnCount() const;
-	
-	void appendColumn(std::string name);
-	void appendRow();
+    int rowCount() const;
+    int columnCount() const;
 
-	Column2 operator[](int index);
-	Column2 operator[](std::string name);
+    Column2 operator[](int index);
+    Column2 operator[](std::string name);
+
+protected:
+
+    DataSet2(MemoryMap *memoryMap);
+    DataSetStruct *struc() const;
+    ColumnStruct *strucC(int index) const;
+    
+    DataSetStruct *_rel;
 
 private:
 
-	DataSet2(MemoryMap *memoryMap);
-    inline DataSetStruct *struc() const;
-    ColumnStruct *strucC(int index) const;
-
     MemoryMap *_mm;
-    DataSetStruct *_rel;
-    Column2 _column;
+
 };
 
 #endif // DATASET2_H

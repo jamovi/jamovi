@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2016 Jonathon Love
+#
 
 import os, sys
 
@@ -17,7 +20,7 @@ source_files = glob.glob('./silky/*.cpp', recursive=True)
 source_files.extend(glob.glob('../common/**/*.cpp', recursive=True))
 source_files.append('silky.pyx')
 
-include_dirs = [ here, here + '/../common/', tld + '/include' ]
+include_dirs = [ here + '/silky', here + '/../common/', tld + '/include' ]
 
 if os.name == 'nt':  # windows
     libraries = [ "libboost_filesystem-vc140-mt-1_60", "libboost_system-vc140-mt-1_60" ]

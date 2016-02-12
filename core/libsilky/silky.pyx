@@ -1,4 +1,6 @@
-
+#
+# Copyright (C) 2016 Jonathon Love
+#
 
 from libcpp cimport bool
 from libcpp.string cimport string
@@ -9,8 +11,8 @@ import json
 import os
 import subprocess
 
-cdef extern from "dataset2.h":
-    cdef cppclass CDataSet "DataSet2":
+cdef extern from "dataset2w.h":
+    cdef cppclass CDataSet "DataSet2W":
         @staticmethod
         CDataSet *create(CMemoryMap *mm) except +
         @staticmethod
@@ -68,8 +70,8 @@ cdef class DataSet:
     def columnCount(self):
         return self._this.columnCount()
         
-cdef extern from "column2.h":
-    cdef cppclass CColumn "Column2":
+cdef extern from "column2w.h":
+    cdef cppclass CColumn "Column2W":
         string name() const
         void setColumnType(CColumnType columnType)
         CColumnType columnType() const
@@ -173,8 +175,8 @@ cdef class Dirs:
     def desktopDir():
         return decode(CDirs.desktopDir())
 
-cdef extern from "memorymap.h":
-    cdef cppclass CMemoryMap "MemoryMap":
+cdef extern from "memorymapw.h":
+    cdef cppclass CMemoryMap "MemoryMapW":
         @staticmethod
         CMemoryMap *create(string path, unsigned long long size) except +
 
