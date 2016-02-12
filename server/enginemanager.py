@@ -42,11 +42,9 @@ class EngineManager:
             ]
             all_paths = ';'.join(paths)
         else:
-            r_home = path.join(root, 'Frameworks/R.framework/Versions/3.2/Resources')
             all_paths = ''
         
         env = os.environ
-        env['R_HOME'] = r_home
         env['PATH'] = all_paths;
             
         args = '--con={}'.format(self._address)

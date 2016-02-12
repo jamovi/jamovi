@@ -28,6 +28,7 @@ using namespace boost;
 
 string Dirs2::_appDataDir = "";
 string Dirs2::_tempDir = "";
+string Dirs2::_exePath = "";
 string Dirs2::_exeDir = "";
 string Dirs2::_rHomeDir = "";
 string Dirs2::_libraryDir = "";
@@ -129,6 +130,42 @@ string Dirs2::tempDir()
 	return Dirs2::_tempDir;
 }
 
+string Dirs2::exePath()
+{
+    if (Dirs2::_exePath == "")
+    {
+#ifdef _WIN32
+
+        HMODULE hModule = GetModuleHandleW(NULL);
+        WCHAR path[MAX_PATH];
+
+        int ret = GetModuleFileNameW(hModule, path, MAX_PATH);
+
+        if (ret == 0)
+            throw runtime_error("could not retrieve exe dir");
+
+        _exePath = nowide::narrow(path);
+
+#elif defined(__APPLE__)
+
+        unsigned long pid = Utils2::currentPID();
+
+        char buf[PROC_PIDPATHINFO_MAXSIZE];
+        int ret = proc_pidpath (pid, buf, sizeof(buf));
+
+        if (ret <= 0)
+            throw runtime_error("could not retrieve exe path");
+        
+        _exePath = string(buf);
+
+#else
+        throw runtime_exception("not implemented")
+#endif  
+    }
+    
+    return _exePath;
+}
+
 string Dirs2::exeDir()
 {
     if (Dirs2::_exeDir == "")
@@ -168,7 +205,7 @@ string Dirs2::exeDir()
         int ret = proc_pidpath (pid, buf, sizeof(buf));
 
         if (ret <= 0)
-            throw runtime_error("could not retrieve exe dir");
+            throw runtime_error("could not retrieve exe path");
 
         int last = strlen(buf);
 

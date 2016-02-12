@@ -36,7 +36,9 @@ else
 	LIBS =	-L../../../lib \
 			-L../../../lib/libgcc \
 			-L$(R_HOME)/bin/x64 \
-			-L$(R_HOME)/library/RInside/lib/x64
+			-L$(R_HOME)/library/RInside/lib/x64 \
+			-lboost_filesystem-mgw49-mt-1_60 \
+			-lboost_system-mgw49-mt-1_60
 endif
 
 INCLUDES += -I../libsilky/silky \
@@ -50,6 +52,8 @@ LIBS += -lR -lnanomsg -lprotobuf -lRInside
 
 SRCS  = $(wildcard *.cpp)
 SRCS += $(wildcard **/*.cpp)
+SRCS += $(wildcard ../common/*.cpp)
+SRCS += $(wildcard ../common/**/*.cpp)
 
 OBJS += $(BUILD_DIR)/enginecoms.pb.cc.o
 OBJS += $(addprefix $(BUILD_DIR)/,$(SRCS:.cpp=.cpp.o))
