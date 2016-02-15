@@ -1,4 +1,4 @@
- 
+
 import tornado.ioloop
 import tornado.web
 import tornado.netutil
@@ -34,7 +34,7 @@ class SingleFileHandler(RequestHandler):
             content = file.read()
             self.write(content)
 
-        
+
 class UploadHandler(RequestHandler):
     def post(self):
         file_info = self.request.files['file'][0]
@@ -63,7 +63,7 @@ class ModuleDescriptor(RequestHandler):
             self.set_status(404)
             self.write('<h1>404</h1>')
             self.write(str(e))
-            
+
 class AnalysisDescriptor(RequestHandler):
     def initialize(self, path):
         self._path = path
@@ -86,7 +86,7 @@ class DataHandler(WebSocketHandler):
 
     def initialize(self, instance):
         self._instance = instance
-    
+
     def check_origin(self, origin):
         return True
 
@@ -94,35 +94,36 @@ class DataHandler(WebSocketHandler):
         print('websocket opened')
         self.set_nodelay(True)
         self._instance.addHandler(self._send)
-    
+
     def on_close(self):
         print('websocket closed')
         self._instance.removeHandler(self._send)
-    
-    def on_message(self, message):    
+
+    def on_message(self, message):
         request = clientcoms.Request.create_from_bytes(message)
+
         self._instance.on_request(request)
-    
+
     def _send(self, response):
         self.write_message(response.encode_to_bytes(), binary=True)
-        
+
 
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
-        
+
         self.port = port
         self._ioloop = tornado.ioloop.IOLoop.instance()
         self._shutdown_on_idle = shutdown_on_idle
         self._debug = debug
         self._instance = Instance()
         self._port_opened_listener = [ ]
-    
+
     def add_port_opened_listener(self, listener):
         self._port_opened_listener.append(listener)
-    
+
     def check_for_shutdown(self):
-        
+
         parent = main_thread()
 
         while True:
@@ -134,11 +135,11 @@ class Server:
                 ioloop = tornado.ioloop.IOLoop.instance()
                 ioloop.stop()
                 break
-        
+
     def start(self):
-    
+
         here = os.path.dirname(os.path.realpath(__file__))
-        
+
         client_path = os.path.join(here, '..', 'client')
         analyses_path = os.path.join(here, '..', 'analyses')
         enginecoms_path  = os.path.join(here, 'enginecoms.proto')
@@ -153,19 +154,17 @@ class Server:
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path' : analyses_path }),
             (r'/(.*)',   StaticFileHandler, { 'path' : client_path, 'default_filename' : 'index.html' })
         ], debug=self._debug)
-        
+
         sockets = tornado.netutil.bind_sockets(self.port, 'localhost')
         server = tornado.httpserver.HTTPServer(self._app);
         server.add_sockets(sockets)
-        
+
         self.port = sockets[0].getsockname()[1]
         for listener in self._port_opened_listener:
             listener(self.port)
-        
+
         if self._shutdown_on_idle:
             thread = Thread(target=self.check_for_shutdown)
             thread.start()
-        
+
         self._ioloop.start()
-        
-        

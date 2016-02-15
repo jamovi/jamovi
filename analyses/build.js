@@ -22,7 +22,7 @@ function simplify(obj) {
         else
             o[key] = value
     })
-    
+
     return o
 }
 
@@ -30,10 +30,13 @@ function protofy(obj, name) {
 
     var content = 'message ' + name + ' {\n'
     var i = 1
-    
+
     _.each(obj.attributes, function(value, key) {
 
         switch (value.type) {
+            case 'Int':
+                content += '  optional int ' + key + ' = ' + i++ + ';\n'
+                break
             case 'Bool':
                 content += '  optional bool ' + key + ' = ' + i++ + ';\n'
                 break
@@ -44,7 +47,7 @@ function protofy(obj, name) {
                 break
         }
     })
-    
+
     content += '}\n'
 
     return content
@@ -62,22 +65,23 @@ new Promise(function(resolve, reject) {
             resolve('' + data)
         }
     })
-    
+
 }).then(function(data) {
 
     return new Promise(function(resolve, reject) {
-    
+
         try {
 
             var Model = require('./base/descriptives').Model
             var model = new Model()
             var json = JSON.stringify(simplify(model), null, 4)
             var proto = protofy(model, 'descriptives')
-            
+
             fs.writeFileSync('./base/descriptives.json', json)
             fs.writeFileSync('./base/descriptives.proto', proto)
+
             resolve()
-        
+
         }
         catch (e) {
             console.log(e.message)

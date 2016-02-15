@@ -1,4 +1,4 @@
-
+var SilkyView = require('./view')
 var _ = require('underscore')
 var $ = require('jquery')
 var Backbone = require('backbone')
@@ -13,12 +13,12 @@ var FSEntryListModel = Backbone.Model.extend({
     }
 })
 
-var FSEntryListView = Backbone.View.extend({
+var FSEntryListView = SilkyView.extend({
 
     initialize : function() {
         if ( ! this.model)
             this.model = new FSEntryListModel()
-            
+
         this.model.on('change:items', this._render, this)
         this._render()
     },
@@ -26,23 +26,23 @@ var FSEntryListView = Backbone.View.extend({
         'click .silky-bs-fslist-entry' : '_itemClicked'
     },
     _render : function() {
-    
+
         this.$el.addClass('silky-bs-fslist')
 
         var items = this.model.get('items')
-        
+
         var html = ''
-    
+
         for (var i = 0; i < items.length; i++) {
             var item = items[i]
-            
+
             var name = item.name
             var path = item.path
             var location = item.location
-            
+
             if (location.startsWith('{{Documents}}'))
                 location = location.replace('{{Documents}}', 'Documents')
-            
+
             html += '<div class="silky-bs-fslist-entry">'
             html += '   <div class="silky-bs-fslist-entry-icon"><span class="mif-file-text"></span></div>'
             html += '   <div class="silky-bs-fslist-entry-group">'
@@ -52,7 +52,7 @@ var FSEntryListView = Backbone.View.extend({
             html += '   </div>'
             html += '</div>'
         }
-        
+
         this.$el.html(html)
         this.$items = this.$el.find('.silky-bs-fslist-entry')
     },
@@ -74,19 +74,19 @@ var BackstageModel = Backbone.Model.extend({
     },
     initialize : function() {
         this.on('change:settings', this._settingsChanged, this)
-        
+
         this._recentsListModel = new FSEntryListModel()
         this._recentsListModel.on('dataSetOpenRequested', this.requestOpen, this)
     },
     uploadFile: function(file) {
-        
+
         var data = new FormData()
         data.append('file', file)
-        
+
         var url = this.get("hostBaseUrl") + "/upload"
-        
+
         var self = this
-        
+
         $.ajax({
             url : url,
             type: 'POST',
@@ -122,7 +122,7 @@ var BackstageModel = Backbone.Model.extend({
     }
 })
 
-var BackstageView = Backbone.View.extend({
+var BackstageView = SilkyView.extend({
 	className: "backstage",
 	initialize: function() {
 		this.render()
@@ -136,7 +136,7 @@ var BackstageView = Backbone.View.extend({
         'click .silky-bs-save-as-button' : '_saveAsClicked'
 	},
 	render: function() {
-		
+
 		this.$el.hide()
 		this.$el.addClass("silky-bs")
 
@@ -148,7 +148,7 @@ var BackstageView = Backbone.View.extend({
 		+ '	<div class="silky-bs-op-button silky-bs-save-as-button">Save As</div>'
 		+ '</div>'
 		+ '<div class="silky-bs-main"></div>'
-		
+
 		this.$el.html(html)
 		this.$op = this.$el.find(".silky-bs-op-panel")
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker')
@@ -157,29 +157,29 @@ var BackstageView = Backbone.View.extend({
         this.$openButton    = this.$el.find('.silky-bs-open-button')
         this.$saveButton    = this.$el.find('.silky-bs-save-button')
         this.$saveAsButton  = this.$el.find('.silky-bs-save-as-button')
-		
+
 		this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model })
 	},
 	activate : function() {
-	
+
 		this.$el.fadeIn(100)
-		
+
 		var width = this.$op.outerWidth()
 		this.$op.css("left", -width)
 		this.$op.show()
 		this.$op.animate({left:0}, 200)
-		
+
 		this.main.$el.css("margin-left", width + 32)
-		
+
 		this.model.set('activated', true)
 	},
 	deactivate : function() {
-	
+
 		this.$el.fadeOut(200)
-		
+
 		var width = this.$op.outerWidth()
 		this.$op.animate({left:-width}, 200)
-		
+
 		this.model.set('activated', false)
 	},
 	_openClicked : function() {
@@ -196,7 +196,7 @@ var BackstageView = Backbone.View.extend({
 	    this.$operationButtons.removeClass('selected')
 
 	    var operation = this.model.get('operation')
-	    
+
 	    switch (operation) {
 	        case 'open':
 	            this.$openButton.addClass('selected')
@@ -211,7 +211,7 @@ var BackstageView = Backbone.View.extend({
 	}
 })
 
-var BackstagePlaces = Backbone.View.extend({
+var BackstagePlaces = SilkyView.extend({
 	className: "silky-bs-places",
 	events: {
         'click  .silky-bs-browse'  : '_browseClicked',
@@ -222,7 +222,7 @@ var BackstagePlaces = Backbone.View.extend({
 	},
 	initialize: function() {
 	    _.bindAll(this, '_operationChanged')
-	    
+
 	    this.model.on('change:operation', this._operationChanged, this)
 	    this.model.on('change:place',     this._placeChanged, this)
 
@@ -251,10 +251,10 @@ var BackstagePlaces = Backbone.View.extend({
         + '    </div>'
         + '</div>'
         + '<div class="silky-bs-choices"></div>'
-		
+
 		this.$el.html(html)
 		this.$title = this.$el.find('.silky-bs-title')
-		
+
 		this.$open = this.$el.find('.silky-bs-places-panel-open')
 		this.$save = this.$el.find('.silky-bs-places-panel-save')
 
@@ -262,7 +262,7 @@ var BackstagePlaces = Backbone.View.extend({
 		this.$recent = this.$el.find('.silky-bs-recent')
 		this.$osf    = this.$el.find('.silky-bs-osf')
 		this.$thisPC = this.$el.find('.silky-bs-this-pc')
-		
+
 		this.$choices = this.$el.find('.silky-bs-choices')
 		this._choices = new BackstageChoices({ el: this.$choices, model : this.model })
 	},
@@ -298,27 +298,27 @@ var BackstagePlaces = Backbone.View.extend({
         }
     },
     _browseClicked : function() {
-    
+
         if (window.inElectron) {
-        
+
             var remote = window.require('remote')  // window.require prevents browserfy replacement
             var dialog = remote.require('dialog')
-        
+
             var self = this
-        
+
             dialog.showOpenDialog({ properties: [ 'openFile' ]}, function(fileNames) {
                 if (fileNames)
                     self._fileSelected(fileNames[0])
-            })        
+            })
         }
         else {
-        
-            this.$browseInvoker.click()        
+
+            this.$browseInvoker.click()
         }
     },
     _fileUpload : function(evt) {
         var file = evt.target.files[0]
-        this.model.uploadFile(file)    
+        this.model.uploadFile(file)
     },
     _fileSelected : function(path) {
 		path = path.replace(/\\/g, '/')
@@ -335,29 +335,29 @@ var BackstagePlaces = Backbone.View.extend({
     }
 })
 
-var BackstageChoices = Backbone.View.extend({
+var BackstageChoices = SilkyView.extend({
 	className: "silky-bs-choices",
 	initialize : function() {
-	
+
 	    this.model.on('change:place', this._placeChanged, this)
-	    
+
 	    var html = ''
-	    
+
 	    html += '<div class="silky-bs-choices-choice silky-bs-choices-recentlist"></div>'
 	    html += '<div class="silky-bs-choices-choice silky-bs-choices-thispc" style="display: none ;"></div>'
-	    
+
 	    this.$el.html(html)
-	    
+
         this.$choices    = this.$el.find('.silky-bs-choices-choice')
 	    this.$recentList = this.$el.find('.silky-bs-choices-recentlist')
 	    this.$thisPC     = this.$el.find('.silky-bs-choices-thispc')
-	    
+
 		this._recentList = new FSEntryListView({ el : this.$recentList, model : this.model.recentsModel() })
 	},
 	_placeChanged : function() {
-	
+
 	    var place = this.model.get('place')
-	    
+
 	    switch (place) {
 	        case 'recent':
                 this.$choices.fadeOut(200)
@@ -372,4 +372,3 @@ var BackstageChoices = Backbone.View.extend({
 
 module.exports.View = BackstageView
 module.exports.Model = BackstageModel
-

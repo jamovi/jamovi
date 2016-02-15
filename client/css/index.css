@@ -1,0 +1,41 @@
+
+#help {
+    overflow: auto;
+    border: 1px solid #999999 ;
+    border-radius: 5px ;
+    padding: 5px ;
+    background-color: white;
+}
+
+#main-options {
+    background-color: inherit;
+    border: 1px solid #999999 ;
+    border-radius: 5px ;
+}
+
+#results {
+    border: 1px solid #999999 ;
+    border-radius: 5px ;
+    padding: 5px ;
+}
+
+.silky-splitpanel-splitter {
+    background-color: inherit;
+}
+
+.silky-options-control {
+    height: 100%;
+    float: right;
+    box-sizing: border-box;
+    width: 400px;
+    padding-top: 5px ;
+    padding-left: 15px ;
+    padding-right: 15px ;
+}
+
+#options-layout-control-control {
+    height: 100% ;
+    width: 100% ;
+    background-color: yellow;
+    overflow: auto;
+}

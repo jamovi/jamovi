@@ -13,26 +13,26 @@ var Analysis = function(id, name, ns, dataSetModel) {
     this._dataSetModel = dataSetModel
 
     var self = this
-    
+
     this.ready = new Promise(function(resolve, reject) {
         self._notifyReady = resolve
         self._notifyFail  = reject
-    })  
+    })
 
     var url = 's/analyses/' + this.ns + '/' + this.name
-    
+
     $.getScript(url, function(script) {
-            
+
         var module = { exports : { } }
         eval(script)
         var Model = module.exports.Model
         self.model = new Model({ dataSetModel : self._dataSetModel })
         self.View = module.exports.View
-        
+
         self._notifyReady()
-        
-    }).fail(function() {
-    
+
+    }).fail(function(err) {
+
         self._notifyFail(err)
     })
 }
@@ -52,7 +52,7 @@ var Analyses = Backbone.Model.extend({
         var analysis = new Analysis(id, name, ns, dataSetModel)
         this._analyses[id] = analysis
         this._nextId++
-        
+
         this.trigger('analysisCreated', analysis)
     }
 })
