@@ -37,7 +37,7 @@ class Settings:
 
         else:
             raise ValueError
-    
+
     def set(self, name, value):
         self._root[name] = value
         if self._parent is not None:
