@@ -1,0 +1,25 @@
+
+*.so
+*.pyd
+*.swp
+
+node_modules/
+
+core/libsilky/silky.cpp
+
+**/__pycache__/
+
+client/js/bundle.js
+client/js/bundle.min.js
+client/css/bundle.css
+client/css/bundle.min.css
+
+analyses/*/*.js
+analyses/*/*.proto
+analyses/*/*.json
+!analyses/base/*.js
+!analyses/common/*.js
+
+# protocol buffers
+*.pb.cc
+*.pb.h

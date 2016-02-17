@@ -1,0 +1,130 @@
+
+message Request {
+    required int32 id = 1;
+    oneof params {
+        SettingsReqParams settings = 2;
+        OpenReqParams  open = 3;
+        InfoReqParams  info = 4;
+        CellsReqParams cells = 5;
+        AnalysisReqParams analysis = 6;
+    }
+}
+
+message Response {
+    required int32 id = 1;
+    oneof params {
+        SettingsResParams settings = 2;
+        OpenResParams open = 3;
+        InfoResParams info = 4;
+        CellsResParams cells = 5;
+    }
+}
+
+message OpenReqParams {
+    optional string filename = 1;
+}
+
+enum Status {
+    COMPLETE = 1;
+    IN_PROGRESS = 2;
+    FAILED = 3;
+}
+
+message OpenResParams {
+
+    optional Status status = 1;
+    optional string errorMessage = 2;
+    optional int32 progress = 3;
+    optional string progress_task = 4;
+}
+
+message DataSetEntry {
+    optional string name = 1;
+    optional string path = 2;
+    optional string location = 3;
+}
+
+message SettingsReqParams {
+}
+
+message SettingsResParams {
+    repeated DataSetEntry recents = 1;
+    repeated DataSetEntry localFSRecents = 2;
+}
+
+message SetSettingsReqParams {
+    repeated DataSetEntry recents = 1;
+    repeated DataSetEntry localFSRecents = 2;
+}
+
+message SetSettingsResParams {
+}
+
+message InfoReqParams {
+}
+
+message InfoResParams {
+    
+    message Schema {
+        message Field {
+            optional string name = 1;
+            
+            enum MeasureType {
+                MISC = 0;
+                NOMINAL_TEXT = 1;
+                NOMINAL = 2;
+                ORDINAL = 3;
+                CONTINUOUS = 4;
+            }
+            
+            optional MeasureType measureType = 2;
+            optional int32 width = 3;
+        }
+        repeated Field fields = 1;
+    }
+
+    optional bool hasDataSet = 1;
+    optional Schema schema = 2;
+    optional uint32 rowCount = 3;
+    optional uint32 columnCount = 4;
+}
+
+message CellsReqParams {
+    optional uint32 rowStart = 1;
+    optional uint32 columnStart = 2;
+    optional uint32 rowEnd = 3;
+    optional uint32 columnEnd = 4;
+}
+
+message CellsResParams {
+
+    optional CellsReqParams reqParams = 1;
+
+    message Column {
+    
+        message Ints {
+            repeated int32 values = 1;
+        }
+        message Doubles {
+            repeated double values = 1;
+        }
+        message Strings {
+            repeated string values = 1;
+        }
+    
+        oneof cells {
+            Ints    ints = 1;
+            Doubles doubles = 2;
+            Strings strings = 3;
+        }
+    }
+    
+    repeated Column columns = 2;
+}
+
+message AnalysisReqParams {
+    optional string name = 1;
+    optional string ns = 2;
+}
+
+
