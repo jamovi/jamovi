@@ -1,0 +1,8 @@
+{
+    "globalstrict": true,
+    "browserify": true,
+    "laxbreak": true,
+    "globals": {
+        "console" : true
+    }
+}
