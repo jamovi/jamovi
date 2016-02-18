@@ -17,7 +17,7 @@ client/css/bundle.min.css
 analyses/*/*.js
 analyses/*/*.proto
 analyses/*/*.json
-!analyses/base/*.js
+!analyses/base/*.src.js
 !analyses/common/*.js
 
 # protocol buffers

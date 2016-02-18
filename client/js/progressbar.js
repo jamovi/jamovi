@@ -4,8 +4,9 @@
 var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
+var SilkyView = require('./view');
 
-var ProgressBar = Backbone.View.extend({
+var ProgressBar = SilkyView.extend({
     className: "progress-bar",
     initialize: function() {
         this.model.on("change", this.updateProgress, this);

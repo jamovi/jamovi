@@ -1,6 +1,7 @@
 
 'use strict';
 
+var SilkyView = require('./view');
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
@@ -15,7 +16,7 @@ var FSEntryListModel = Backbone.Model.extend({
     }
 });
 
-var FSEntryListView = Backbone.View.extend({
+var FSEntryListView = SilkyView.extend({
 
     initialize : function() {
         if ( ! this.model)
@@ -124,7 +125,7 @@ var BackstageModel = Backbone.Model.extend({
     }
 });
 
-var BackstageView = Backbone.View.extend({
+var BackstageView = SilkyView.extend({
     className: "backstage",
     initialize: function() {
         this.render();
@@ -213,7 +214,7 @@ var BackstageView = Backbone.View.extend({
     }
 });
 
-var BackstagePlaces = Backbone.View.extend({
+var BackstagePlaces = SilkyView.extend({
     className: "silky-bs-places",
     events: {
         'click  .silky-bs-browse'  : '_browseClicked',
@@ -338,7 +339,7 @@ var BackstagePlaces = Backbone.View.extend({
     }
 });
 
-var BackstageChoices = Backbone.View.extend({
+var BackstageChoices = SilkyView.extend({
     className: "silky-bs-choices",
     initialize : function() {
 
