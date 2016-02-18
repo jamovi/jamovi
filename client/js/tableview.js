@@ -7,13 +7,16 @@ var Backbone = require('backbone');
 Backbone.$ = $;
 
 var Promise = require('es6-promise').Promise;
+var SilkyView = require('./view');
 
-var TableView = Backbone.View.extend({
+var TableView = SilkyView.extend({
     className: "tableview",
     initialize: function() {
         _.bindAll(this, '_dataSetLoaded', 'scrollHandler', 'updateViewRange', 'resizeHandler', 'refreshCells');
 
         $(window).resize(this.resizeHandler);
+
+        this.$el.on('resized', this.resizeHandler);
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);

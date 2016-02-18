@@ -24,7 +24,7 @@ h1 {
 }
 
 body {
-     
+
     background-color: #B7121F ;
 }
 
@@ -41,14 +41,15 @@ body {
 }
 
 #main-view {
-    padding-top: 6px ;
+    padding: 6px ;
     border-top: 1px solid #D0D0D0 ;
     background-color: #dedede ;
     flex-grow: 1;
 }
 
 #main-table {
-
+    border: 1px solid #999999 ;
+    /*border-radius: 5px ;*/
 }
 
 #results {
