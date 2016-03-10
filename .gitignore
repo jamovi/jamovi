@@ -9,16 +9,13 @@ core/libsilky/silky.cpp
 
 **/__pycache__/
 
-client/js/bundle.js
-client/js/bundle.min.js
+client/js/*.js
 client/css/bundle.css
 client/css/bundle.min.css
 
-analyses/*/*.js
-analyses/*/*.proto
-analyses/*/*.json
-!analyses/base/*.src.js
-!analyses/common/*.js
+analyses/inst/*.js
+analyses/inst/*.proto
+analyses/inst/*.json
 
 # protocol buffers
 *.pb.cc
