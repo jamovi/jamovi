@@ -5,9 +5,6 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
-var Promise = require('es6-promise').Promise;
-var ProtoBuf = require('protobufjs');
-
 var BackstageModel = require('./backstage').Model;
 var Analyses = require('./analyses');
 var DataSetViewModel = require('./dataset').DataSetViewModel;
@@ -37,13 +34,8 @@ var Instance = Backbone.Model.extend({
         _.bindAll(this,
             'connect',
             'open',
-            'receiveMessage',
-            'retrieveSettings',
             '_retrieveCells',
-            '_requestCells',
-            '_retrieveInfoEvent',
-            '_retrieveCellsEvent',
-            '_retrieveSettingsEvent');
+            '_requestCells');
 
         this.transId = 0;
         this.command = '';
@@ -64,7 +56,7 @@ var Instance = Backbone.Model.extend({
 
     },
     defaults : {
-        host : ''
+        coms : null
     },
     progressModel : function() {
 
@@ -94,88 +86,26 @@ var Instance = Backbone.Model.extend({
             self._backstageModel.notifyDataSetLoaded();
         });
     },
-    receiveMessage : function(event) {
+    connect : function() {
 
         var self = this;
+        var coms = this.attributes.coms;
 
-        return new Promise(function(resolve, reject) {
+        coms.connect().then(function() {
+        
+            // request settings
 
-            var reader = new FileReader();
-            reader.onloadend = function() {
-                resolve(reader.result);
-            };
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(event.data);
+            var params = new coms.Messages.SettingsReqParams();
+            var request = new coms.Messages.Request();
+            request.settings = params;
+            
+            return coms.send(request);
 
-        }).then(function(arrayBuffer) {
-
-            var response = self._coms.Response.decode(arrayBuffer);
-            switch (response.params) {
-                case 'open':
-                    self._openEvent(response.open);
-                    break;
-                case 'info':
-                    self._retrieveInfoEvent(response.info);
-                    break;
-                case 'cells':
-                    self._retrieveCellsEvent(response.cells);
-                    break;
-                case 'settings':
-                    self._retrieveSettingsEvent(response.settings);
-                    break;
-                default:
-                    console.log('unrecognized response');
-                    console.log(response);
-                    break;
-            }
-        }).catch(function(err) {
-
-            console.log(err);
-        });
-
-    },
-    connect  : function() {
-
-        var host = this.get('host');
-        var self = this;
-
-        Promise.all([
-            new Promise(function(resolve, reject) {
-
-                ProtoBuf.loadProtoFile('s/proto/clientcoms.proto', function(err, builder) {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        self._builder = builder;
-                        self._coms = builder.build();
-                        resolve();
-                    }
-                });
-            }),
-            new Promise(function(resolve, reject) {
-
-                self._ws = new WebSocket('ws://' + host + '/coms');
-
-                self._ws.onopen = function() {
-                    console.log('opened!');
-                    resolve();
-                };
-                self._ws.onerror = reject;
-                self._ws.onmessage = self.receiveMessage;
-                self._ws.onclose = function(msg) {
-                    console.log('websocket closed!');
-                    console.log(msg);
-                };
-            })
-        ]).then(function() {
-
-            return self.retrieveSettings();
-
-        }).then(function() {
-
-            return self.retrieveInfo();
-
+        }).then(function(response) {
+        
+            self._backstageModel.set('settings', response.settings);
+            return self._retrieveInfo();
+            
         }).catch(function(err) {
 
             console.log('error ' + err);
@@ -184,101 +114,126 @@ var Instance = Backbone.Model.extend({
     },
     open : function(path) {
 
-        var params  = new this._coms.OpenReqParams(path);
-        var request = new this._coms.Request();
-        request.open = params;
+        var self = this;
+        var coms = this.attributes.coms;
 
-        return this._send(request);
+        var params  = new coms.Messages.OpenReqParams(path);
+        var request = new coms.Messages.Request();
+        request.open = params;
+        
+        var onresolve = function(response) {
+            self._retrieveInfo();
+        };
+        
+        var onprogress = function(progress) {
+            console.log(progress);
+        };
+
+        return coms.send(request).then(onresolve, null, onprogress);
+    },
+    _retrieveInfo : function() {
+    
+        var self = this;
+        var coms = this.attributes.coms;
+    
+        var params  = new coms.Messages.InfoReqParams();
+        var request = new coms.Messages.Request();
+        request.info = params;
+
+        return coms.send(request).then(function(response) {
+        
+            var params = response.info;
+        
+            if (params.hasDataSet) {
+
+                var columnInfo = _.map(params.schema.fields, function(field) {
+                    return { name : field.name, width: field.width, measureType : self._stringifyMeasureType(field.measureType) };
+                }, self);
+            
+                self._dataSetModel.setNew({
+                    rowCount : params.rowCount,
+                    columnCount : params.columnCount,
+                    columns : columnInfo
+                });
+            }
+            
+            return response;
+        });
     },
     _analysisCreated : function(analysis) {
 
-        return analysis.ready.then(function() {
+        var self = this;
+        var coms = this.attributes.coms;
 
-            var params = new this._coms.AnalysisReqParams();
-            params.name = analysis.name;
-            params.ns = analysis.ns;
+        var params = new coms.Messages.AnalysisReqParams();
+        params.name = analysis.name;
+        params.ns = analysis.ns;
 
-            var request = new this._coms.Request();
-            request.analysis = params;
+        var request = new coms.Messages.Request();
+        request.analysis = params;
 
-            return this._send(request);
+        return coms.send(request).then(function(response) {
+
+            var analysisId = response.analysis.analysisId;
+            var options = JSON.parse(response.analysis.options);
+            
+            analysis.setup(analysisId, options);
         });
-    },
-    retrieveInfo : function() {
-
-        var params  = new this._coms.InfoReqParams();
-        var request = new this._coms.Request();
-        request.info = params;
-
-        return this._send(request);
     },
     _retrieveCells : function() {
         this._viewport = this._dataSetModel.get('viewport');
         this._requestCells();
     },
-    retrieveSettings : function() {
-
-        var params = new this._coms.SettingsReqParams();
-        var request = new this._coms.Request();
-        request.settings = params;
-
-        return this._send(request);
-    },
-    _retrieveSettingsEvent : function(settings) {
-
-        this._backstageModel.set('settings', settings);
-
-        if (this._notifySuccess)
-            this._notifySuccess();
-        this._notifySuccess = null;
-        this._notifyFailure = null;
-    },
     _requestCells : function() {
 
-        var params = new this._coms.CellsReqParams();
+        var self = this;
+        var coms = this.attributes.coms;
+
+        var params = new coms.Messages.CellsReqParams();
         params.rowStart    = this._viewport.top;
         params.columnStart = this._viewport.left;
         params.rowEnd      = this._viewport.bottom;
         params.columnEnd   = this._viewport.right;
 
-        var request = new this._coms.Request();
+        var request = new coms.Messages.Request();
         request.cells = params;
 
-        return this._send(request);
-    },
-    _retrieveCellsEvent : function(params) {
+        return coms.send(request).then(function(response) {
 
-        var columns = params.columns;
+            var params = response.cells;
+            var columns = params.columns;
 
-        var rowStart    = params.reqParams.get('rowStart');
-        var columnStart = params.reqParams.get('columnStart');
-        var rowEnd      = params.reqParams.get('rowEnd');
-        var columnEnd   = params.reqParams.get('columnEnd');
+            var rowStart    = params.reqParams.get('rowStart');
+            var columnStart = params.reqParams.get('columnStart');
+            var rowEnd      = params.reqParams.get('rowEnd');
+            var columnEnd   = params.reqParams.get('columnEnd');
 
-        var viewport = this._viewport;
+            var viewport = self._viewport;
 
-        if (rowStart != viewport.top || columnStart != viewport.left || rowEnd != viewport.bottom || columnEnd != viewport.right)
-            return;
+            if (rowStart === viewport.top && columnStart === viewport.left && rowEnd === viewport.bottom && columnEnd === viewport.right) {
 
-        var columnCount = columnEnd - columnStart + 1;
-        var rowCount    = rowEnd    - rowStart + 1;
+                var columnCount = columnEnd - columnStart + 1;
+                var rowCount    = rowEnd    - rowStart + 1;
 
-        var cells = new Array(columnCount);
+                var cells = new Array(columnCount);
 
-        for (var colNo = 0; colNo < columnCount; colNo++) {
+                for (var colNo = 0; colNo < columnCount; colNo++) {
 
-            var column = columns[colNo];
-            var values = column.get(column.cells).values;
+                    var column = columns[colNo];
+                    var values = column.get(column.cells).values;
 
-            cells[colNo] = values;
-        }
+                    cells[colNo] = values;
+                }
 
-        this._dataSetModel.set('cells', cells);
-
-        if (this._notifySuccess)
-            this._notifySuccess();
-        this._notifySuccess = null;
-        this._notifyFailure = null;
+                self._dataSetModel.set('cells', cells);
+            }
+        
+            return response;
+            
+        }).catch(function(err) {
+        
+            console.log(err);
+        });
     },
     _stringifyMeasureType : function(measureType) {
         switch (measureType) {
@@ -293,56 +248,6 @@ var Instance = Backbone.Model.extend({
             default:
                 return '';
         }
-    },
-    _retrieveInfoEvent : function(params) {
-
-        if (params.hasDataSet) {
-
-            var columnInfo = _.map(params.schema.fields, function(field) {
-                return { name : field.name, width: field.width, measureType : this._stringifyMeasureType(field.measureType) };
-            }, this);
-            this._dataSetModel.setNew({
-                rowCount : params.rowCount,
-                columnCount : params.columnCount,
-                columns : columnInfo
-            });
-        }
-
-        if (this._notifySuccess)
-            this._notifySuccess();
-        this._notifySuccess = null;
-        this._notifyFailure = null;
-    },
-    _openEvent : function(params) {
-
-        var complete = (params.status === this._coms.Status.COMPLETE);
-
-        this._progressModel.set("task",     params.progress_task);
-        this._progressModel.set("progress", params.progress);
-        this._progressModel.set("complete", complete);
-
-        if (complete) {
-            if (this._notifySuccess)
-                this._notifySuccess();
-            this._notifySuccess = null;
-            this._notifyFailure = null;
-
-            this.retrieveInfo();
-        }
-    },
-    _send : function(request) {
-
-        this.transId++;
-
-        request.id = this.transId;
-        this._ws.send(request.toArrayBuffer());
-
-        var self = this;
-
-        return new Promise(function(resolve, reject) {
-            self._notifySuccess = resolve;
-            self._notifyFailure = reject;
-        });
     }
 });
 

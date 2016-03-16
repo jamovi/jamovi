@@ -6,15 +6,13 @@
 var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
-var Promise = require('es6-promise').Promise;
 
-var Analysis = function(id, name, ns) {
+var Analysis = function(name, ns) {
 
-    this.id = id;
+    this.id = -1;
     this.name = name;
     this.ns = ns;
-    
-    this.def = null;
+    this.options = null;
 
     var self = this;
 
@@ -22,35 +20,25 @@ var Analysis = function(id, name, ns) {
         self._notifyReady = resolve;
         self._notifyFail  = reject;
     });
+};
 
-    var url = 's/analyses/' + this.ns + '/' + this.name;
-
-    $.getScript(url, function(script) {
-
-        self.def = script;
-        self._notifyReady();
-
-    }).fail(function(err) {
-
-        self._notifyFail(err);
-    });
+Analysis.prototype.setup = function(id, options) {
+    this.id = id;
+    this.options = options;
+    this._notifyReady(this);
 };
 
 var Analyses = Backbone.Model.extend({
 
     initialize : function() {
         this._analyses = [ ];
-        this._nextId = 0;
     },
     defaults : {
         dataSetModel : null
     },
     createAnalysis : function(name, ns) {
-        var id = this._nextId;
-        var analysis = new Analysis(id, name, ns);
-        this._analyses[id] = analysis;
-        this._nextId += 1;
-
+        var analysis = new Analysis(name, ns);
+        this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
     }
 });

@@ -1,6 +1,5 @@
 
 import tornado.ioloop
-import tornado.web
 import tornado.netutil
 import tornado.httpserver
 
@@ -13,7 +12,7 @@ from instance import Instance
 import os.path
 import uuid
 
-from threading import Thread, main_thread
+import threading
 import time
 
 import clientcoms
@@ -69,7 +68,7 @@ class AnalysisDescriptor(RequestHandler):
         self._path = path
 
     def get(self, module_name, analysis_name):
-        analysis_path = os.path.join(self._path, module_name, analysis_name + '.js')
+        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name + '.js')
         analysis_path = os.path.realpath(analysis_path)
         try:
             with open(analysis_path, 'rb') as file:
@@ -124,7 +123,7 @@ class Server:
 
     def check_for_shutdown(self):
 
-        parent = main_thread()
+        parent = threading.main_thread()
 
         while True:
             time.sleep(.2)
@@ -164,7 +163,7 @@ class Server:
             listener(self.port)
 
         if self._shutdown_on_idle:
-            thread = Thread(target=self.check_for_shutdown)
+            thread = threading.Thread(target=self.check_for_shutdown)
             thread.start()
 
         self._ioloop.start()

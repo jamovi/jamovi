@@ -2,6 +2,7 @@
     "globalstrict": true,
     "browserify": true,
     "laxbreak": true,
+    "esversion" : 6,
     "globals": {
         "console" : true
     }

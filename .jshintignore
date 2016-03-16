@@ -1,4 +1,3 @@
 client/lib
-client/js/bundle.js
-client/js/bundle.min.js
-analyses/base/descriptives.js
+client/js/*.js
+analyses/*

@@ -6,7 +6,6 @@ from silky import ColumnType
 from silky import Dirs
 from silky import TempFiles
 from silky import MemoryMap
-
 from silky import DataSet
 
 import formatio.csv
@@ -17,6 +16,8 @@ import clientcoms
 
 from enginemanager import EngineManager
 from analyses import Analyses
+
+import json
 
 
 class Instance:
@@ -67,8 +68,8 @@ class Instance:
         self._dataset = dataset
 
         response = clientcoms.Response()
-        response.open.status = clientcoms.Status.COMPLETE
-        response.open.progress = 100
+        response.status = clientcoms.Status.COMPLETE
+        response.progress = 100
 
         self._send(response)
 
@@ -102,8 +103,15 @@ class Instance:
     def timeWithoutHandlers(self):
         return time.time() - self._timeSinceLastHandler
 
-    def analysis(self, analysis):
-        self._analyses.create(analysis.name, analysis.ns)
+    def analysis(self, a):
+        analysis = self._analyses.create(a.name, a.ns)
+
+        response = clientcoms.Response()
+        response.status = clientcoms.Status.IN_PROGRESS
+        response.analysis.analysisId = analysis.id
+        response.analysis.options = json.dumps(analysis.options)
+
+        self._send(response)
 
     def info(self, id):
         response = clientcoms.Response()

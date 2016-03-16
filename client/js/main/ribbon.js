@@ -16,7 +16,7 @@ var RibbonModel = Backbone.Model.extend({
         selectedIndex : 1
     },
     _activateAnalysis : function(index) {
-        this.trigger('analysisSelected', { name : 'descriptives', ns : 'base'} );
+        this.trigger('analysisSelected', { name : 'descriptives', ns : 'silkyR'} );
     }
 
 });

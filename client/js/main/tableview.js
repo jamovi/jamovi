@@ -6,7 +6,6 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
-var Promise = require('es6-promise').Promise;
 var SilkyView = require('./view');
 
 var TableView = SilkyView.extend({

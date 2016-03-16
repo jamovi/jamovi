@@ -1,6 +1,6 @@
-from protobuf3.fields import StringField, EnumField, UInt32Field, MessageField, BoolField, DoubleField, Int32Field
 from protobuf3.message import Message
 from enum import Enum
+from protobuf3.fields import MessageField, StringField, UInt32Field, BoolField, Int32Field, EnumField, DoubleField
 
 
 class Request(Message):
@@ -79,6 +79,10 @@ class AnalysisReqParams(Message):
     pass
 
 
+class AnalysisResParams(Message):
+    pass
+
+
 class Status(Enum):
     COMPLETE = 1
     IN_PROGRESS = 2
@@ -91,15 +95,17 @@ Request.add_field('info', MessageField(field_number=4, optional=True, message_cl
 Request.add_field('cells', MessageField(field_number=5, optional=True, message_cls=CellsReqParams))
 Request.add_field('analysis', MessageField(field_number=6, optional=True, message_cls=AnalysisReqParams))
 Response.add_field('id', Int32Field(field_number=1, required=True))
-Response.add_field('settings', MessageField(field_number=2, optional=True, message_cls=SettingsResParams))
-Response.add_field('open', MessageField(field_number=3, optional=True, message_cls=OpenResParams))
-Response.add_field('info', MessageField(field_number=4, optional=True, message_cls=InfoResParams))
-Response.add_field('cells', MessageField(field_number=5, optional=True, message_cls=CellsResParams))
+Response.add_field('status', EnumField(field_number=2, optional=True, enum_cls=Status))
+Response.add_field('progress', Int32Field(field_number=3, optional=True))
+Response.add_field('progressTask', StringField(field_number=4, optional=True))
+Response.add_field('errorMessage', StringField(field_number=5, optional=True))
+Response.add_field('errorCode', Int32Field(field_number=6, optional=True))
+Response.add_field('settings', MessageField(field_number=7, optional=True, message_cls=SettingsResParams))
+Response.add_field('open', MessageField(field_number=8, optional=True, message_cls=OpenResParams))
+Response.add_field('info', MessageField(field_number=9, optional=True, message_cls=InfoResParams))
+Response.add_field('cells', MessageField(field_number=10, optional=True, message_cls=CellsResParams))
+Response.add_field('analysis', MessageField(field_number=11, optional=True, message_cls=AnalysisResParams))
 OpenReqParams.add_field('filename', StringField(field_number=1, optional=True))
-OpenResParams.add_field('status', EnumField(field_number=1, optional=True, enum_cls=Status))
-OpenResParams.add_field('errorMessage', StringField(field_number=2, optional=True))
-OpenResParams.add_field('progress', Int32Field(field_number=3, optional=True))
-OpenResParams.add_field('progress_task', StringField(field_number=4, optional=True))
 DataSetEntry.add_field('name', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('path', StringField(field_number=2, optional=True))
 DataSetEntry.add_field('location', StringField(field_number=3, optional=True))
@@ -129,3 +135,5 @@ CellsResParams.add_field('reqParams', MessageField(field_number=1, optional=True
 CellsResParams.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResParams.Column))
 AnalysisReqParams.add_field('name', StringField(field_number=1, optional=True))
 AnalysisReqParams.add_field('ns', StringField(field_number=2, optional=True))
+AnalysisResParams.add_field('analysisId', Int32Field(field_number=1, optional=True))
+AnalysisResParams.add_field('options', StringField(field_number=2, optional=True))

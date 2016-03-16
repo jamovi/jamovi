@@ -2,8 +2,8 @@
 
 var $ = require('jquery');
 
-var Host = require('./host');
-window.host = new Host();
+var Coms = require('./coms');
+var coms = new Coms();
 
 if (window.location.protocol === 'file:') {
 
@@ -13,11 +13,11 @@ if (window.location.protocol === 'file:') {
     var port = remote.getGlobal('port');
 
     if (typeof(port) !== 'undefined')
-        window.host.set('localhost:' + port);
+        coms.setBaseUrl('localhost:' + port);
 }
 else {
 
-    window.host.setBaseUrl('');
+    coms.setBaseUrl('');
 }
 
 
@@ -32,7 +32,8 @@ var OptionsPanel = require('./optionspanel');
 
 var Instance = require('./instance');
 
-var instance = new Instance();
+var instance = new Instance({ coms : coms });
+
 var dataSetModel = instance.dataSetModel();
 
 var analyses = instance.analyses();
@@ -92,10 +93,9 @@ $(document).ready(function() {
     var progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
     var optionspanel = new OptionsPanel({ el : "#main-options" });
 
-    window.host.ready.then(start);
+    coms.ready.then(start);
 });
 
 function start() {
-    instance.set('host', window.host.host);
     instance.connect();
 }
