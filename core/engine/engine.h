@@ -13,6 +13,7 @@
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 
+#include "enginecoms.h"
 #include "enginer.h"
 
 class Engine
@@ -25,6 +26,8 @@ public:
 	
 private:
     void messageLoop();
+    
+    EngineComs _coms;
 
     EngineR *_R;
     

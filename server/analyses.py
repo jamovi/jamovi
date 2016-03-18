@@ -4,17 +4,24 @@ import yaml
 
 
 class Analysis:
-    def __init__(self, id, name, ns, options):
+    def __init__(self, id, name, ns, options, parent):
         self.id = id
         self.name = name
         self.ns = ns
         self.options = options
+        self.parent = parent
+
+    def setOptions(self, options):
+        for name, option in options:
+            self.options[name] = option
+        self.parent._analysisChanged(self)
 
 
 class Analyses:
     def __init__(self):
         self._nextId = 0
         self._analyses = []
+        self._analysisChangedListeners = []
 
     def create(self, name, ns):
 
@@ -26,7 +33,7 @@ class Analyses:
             defn = yaml.load(stream)
             optionDefs = defn['options']
 
-            options = []
+            options = {}
 
             for optionDef in optionDefs:
                 if 'name' not in optionDef or 'type' not in optionDef:
@@ -49,10 +56,19 @@ class Analyses:
                 else:
                     o_default = None
 
-                options.append({ 'name': o_name, 'type': o_type, 'value': o_default })
+                options[o_name] = o_default
 
-            analysis = Analysis(self._nextId, name, ns, options)
+            analysis = Analysis(self._nextId, name, ns, options, self)
             self._analyses.append(analysis)
             self._nextId += 1
 
+            self._analysisChanged(analysis)
+
             return analysis
+
+    def addAnalysisChangedListener(self, listener):
+        self._analysisChangedListeners.append(listener)
+
+    def _analysisChanged(self, analysis):
+        for listener in self._analysisChangedListeners:
+            listener(analysis)

@@ -18,6 +18,7 @@ public:
     static void run(Analysis &analysis);
     
 private:
+    static std::string makeAbsolute(const std::string &path);
     static RInside *_rInside;
 };
 

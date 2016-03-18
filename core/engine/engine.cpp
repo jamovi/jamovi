@@ -13,7 +13,6 @@
 #include <nanomsg/pair.h>
 
 #include "enginer.h"
-#include "enginecoms.pb.h"
 #include "analysisloader.h"
 #include "analysis.h"
 
@@ -75,13 +74,14 @@ void Engine::messageLoop()
         char *buf = NULL;
         int nbytes = nn_recv (_socket, &buf, NN_MSG, 0);
 
-        if (nbytes < 0)
+        if (nbytes >= 0)
         {
-
+            _coms.parse(buf, nbytes);
+            nn_freemsg(buf);
         }
         else
         {
-            nn_freemsg (buf);
+
         }
     }
 }

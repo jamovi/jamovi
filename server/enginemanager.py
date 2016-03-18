@@ -8,6 +8,9 @@ from subprocess import Popen
 
 from nanomsg import Socket, PAIR
 
+import enginecoms
+import json
+
 
 class EngineManager:
 
@@ -16,6 +19,8 @@ class EngineManager:
         self._socket = None
         self._address = "ipc://silky{}".format(os.getpid())
         self._process = None
+        self._scheduledAnalyses = [ ]
+        self._runningAnalyses = [ ]
 
     def __del__(self):
         if self._process is not None:
@@ -24,6 +29,17 @@ class EngineManager:
     def start(self):
         self._thread = Thread(target=self._run)
         self._thread.start()
+
+    def scheduleAnalysis(self, analysis):
+        request = enginecoms.Request()
+        request.id = 1
+        request.analysis.id = analysis.id
+        request.analysis.name = analysis.name
+        request.analysis.ns = analysis.ns
+        request.analysis.perform = enginecoms.AnalysisRequest.Perform.RUN
+        request.analysis.options = json.dumps(analysis.options)
+
+        self._socket.send(request.encode_to_bytes())
 
     @property
     def address(self):

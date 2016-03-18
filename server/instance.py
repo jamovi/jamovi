@@ -31,6 +31,8 @@ class Instance:
         self._analyses = Analyses()
         self._em = EngineManager()
 
+        self._analyses.addAnalysisChangedListener(self._em.scheduleAnalysis)
+
         self._em.start()
 
         settings = Settings.retrieve()
