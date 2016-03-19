@@ -19,8 +19,9 @@ var TableView = SilkyView.extend({
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
+        this.model.on('cellsChanged', this._cellsChanged, this);
 
-        this.viewIndices = null;
+        this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
         this.$el.addClass("silky-tableview");
@@ -113,6 +114,35 @@ var TableView = SilkyView.extend({
         }
 
     },
+    _cellsChanged : function(range) {
+    
+        var viewport = this.viewport;
+        
+        var colOffset = range.left - viewport.left;
+        var rowOffset = range.top - viewport.top;
+        var nCols = range.right - range.left + 1;
+        var nRows = range.bottom - range.top + 1;
+        
+        var cells = this.model.get("cells");
+    
+        for (var colNo = 0; colNo < nCols; colNo++) {
+
+            var column = cells[colOffset + colNo];
+            var $column = $(this.$columns[range.left + colNo]);
+            var $cells  = $column.children();
+        
+            for (var rowNo = 0; rowNo < nRows; rowNo++) {
+            
+                var $cell = $($cells[rowOffset + rowNo]);
+                var cell = column[rowOffset + rowNo];
+
+                if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
+                    cell = '';
+
+                $cell.text(cell);
+            }
+        }
+    },
     scrollHandler : function(evt) {
 
         if (this.model.get('hasDataSet') === false)
@@ -150,15 +180,6 @@ var TableView = SilkyView.extend({
         var rowCount = this.model.get('rowCount');
         var columnCount = this.model.get('columnCount');
 
-        if (botRow > rowCount - 1)
-            botRow = rowCount - 1;
-        if (botRow < 0)
-            botRow = 0;
-        if (topRow > rowCount - 1)
-            topRow = rowCount - 1;
-        if (topRow < 0)
-            topRow = 0;
-
         var columns = this.model.get("columns");
 
         var leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
@@ -173,8 +194,8 @@ var TableView = SilkyView.extend({
         if (rightColumn < 0)
             rightColumn = 0;
 
-        var oTop  = (topRow * this._rowHeight);
-        var oBot  = (botRow * this._rowHeight);
+        var oTop  = ((topRow + 1) * this._rowHeight);
+        var oBot  = ((botRow + 1) * this._rowHeight);
         var oLeft = this._lefts[leftColumn];
 
         var oRight;
@@ -182,27 +203,36 @@ var TableView = SilkyView.extend({
             oRight = Infinity;
         else
             oRight = this._lefts[rightColumn] + columns[rightColumn].width;
+            
+        if (botRow > rowCount - 1)
+            botRow = rowCount - 1;
+        if (botRow < 0)
+            botRow = 0;
+        if (topRow > rowCount - 1)
+            topRow = rowCount - 1;
+        if (topRow < 0)
+            topRow = 0;
 
-        var oldViewIndices = this.viewIndices;
+        var oldViewport = this.viewport;
 
         this.viewRange      = v;
         this.viewOuterRange = { top : oTop,   bottom : oBot,   left : oLeft,      right : oRight };
-        this.viewIndices    = { top : topRow, bottom : botRow, left : leftColumn, right : rightColumn };
+        this.viewport    = { top : topRow, bottom : botRow, left : leftColumn, right : rightColumn };
 
         //console.log("view");
-        //console.log(this.viewIndices);
+        //console.log(this.viewport);
         //console.log(this.viewRange);
         //console.log(this.viewOuterRange);
 
-        this.refreshCells(oldViewIndices, this.viewIndices);
+        this.refreshCells(oldViewport, this.viewport);
     },
     _createCellHTML : function(top, height, content) {
         return '<div class="silky-column-cell" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
     },
-    refreshCells : function(oldViewIndices, newViewIndices) {
+    refreshCells : function(oldViewport, newViewport) {
 
-        var o = oldViewIndices;
-        var n = newViewIndices;
+        var o = oldViewport;
+        var n = newViewport;
         var i, j, count;
 
         var columns = this.model.get('columns');
@@ -236,11 +266,12 @@ var TableView = SilkyView.extend({
                     $column.append($cell);
                 }
             }
+            
+            this.model.setViewport(n);
         }
         else {  // add or subtract from cells displayed
 
-
-            if (n.right > o.right) {
+            if (n.right > o.right) {  // add columns to the right
 
                 nCols = n.right - o.right;
                 nRows = n.bottom - n.top + 1;
@@ -260,7 +291,7 @@ var TableView = SilkyView.extend({
                     }
                 }
             }
-            else if (n.right < o.right) {
+            else if (n.right < o.right) {  // delete columns from the right
                 nCols = o.right - n.right;
                 count = this.$columns.length;
                 for (i = 0; i < nCols; i++) {
@@ -269,7 +300,7 @@ var TableView = SilkyView.extend({
                 }
             }
 
-            if (n.left < o.left) {
+            if (n.left < o.left) {  // add columns to the left
 
                 nCols = o.left - n.left;
                 nRows = n.bottom - n.top + 1;
@@ -289,7 +320,7 @@ var TableView = SilkyView.extend({
                     }
                 }
             }
-            else if (n.left > o.left) {
+            else if (n.left > o.left) {  // delete columns from the left
                 nCols = n.left - o.left;
                 count = this.$columns.length;
                 for (i = 0; i < nCols; i++) {
@@ -300,7 +331,7 @@ var TableView = SilkyView.extend({
 
             if (n.bottom > o.bottom) {
 
-                nRows = n.bottom - o.bottom;  // to add to the bottom
+                nRows = n.bottom - o.bottom;  // to add rows to the bottom
 
                 left  = Math.max(o.left,  n.left);
                 right = Math.min(o.right, n.right);
@@ -358,7 +389,7 @@ var TableView = SilkyView.extend({
                 }
             }
 
-            if (n.top > o.top) {
+            if (n.top > o.top) {  // remove from the top
 
                 nRows = n.top - o.top;
 
@@ -372,14 +403,18 @@ var TableView = SilkyView.extend({
                         $($cells[r]).remove();
                 }
             }
+            
+            var deltaLeft   = o.left - n.left;
+            var deltaRight  = n.right - o.right;
+            var deltaTop    = o.top - n.top;
+            var deltaBottom = n.bottom - o.bottom;
+            
+            this.model.reshape(deltaLeft, deltaTop, deltaRight, deltaBottom);
         }
-
-        this.model.set('viewport', n);
-
     },
     getViewRange : function() {
         var vTop   = this.$container.scrollTop();
-        var vBot   = vTop + this.$el.height();
+        var vBot   = vTop + this.$el.height() - this._rowHeight;
         var vLeft  = this.$container.scrollLeft();
         var vRight = vLeft + this.$el.width();
 
