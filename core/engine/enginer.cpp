@@ -40,6 +40,7 @@ void EngineR::run(Analysis *analysis)
         nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
                 
         _rInside = new RInside();
+        _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");  // hack which i don't know why we need
     }
 
     stringstream ss;
