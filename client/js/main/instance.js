@@ -41,7 +41,7 @@ var Instance = Backbone.Model.extend({
         this.command = '';
         this.seqNo = 0;
 
-        this._dataSetModel = new DataSetViewModel();
+        this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
         this._dataSetModel.on('change:viewport', this._retrieveCells, this);
 
         this._progressModel = new ProgressModel();
@@ -208,25 +208,22 @@ var Instance = Backbone.Model.extend({
             var rowEnd      = params.reqParams.get('rowEnd');
             var columnEnd   = params.reqParams.get('columnEnd');
 
-            var viewport = self._viewport;
+            var viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
 
-            if (rowStart === viewport.top && columnStart === viewport.left && rowEnd === viewport.bottom && columnEnd === viewport.right) {
+            var columnCount = columnEnd - columnStart + 1;
+            var rowCount    = rowEnd    - rowStart + 1;
 
-                var columnCount = columnEnd - columnStart + 1;
-                var rowCount    = rowEnd    - rowStart + 1;
+            var cells = new Array(columnCount);
 
-                var cells = new Array(columnCount);
+            for (var colNo = 0; colNo < columnCount; colNo++) {
 
-                for (var colNo = 0; colNo < columnCount; colNo++) {
+                var column = columns[colNo];
+                var values = column.get(column.cells).values;
 
-                    var column = columns[colNo];
-                    var values = column.get(column.cells).values;
-
-                    cells[colNo] = values;
-                }
-
-                self._dataSetModel.set('cells', cells);
+                cells[colNo] = values;
             }
+
+            self._dataSetModel.setCells(viewport, cells);
         
             return response;
             
