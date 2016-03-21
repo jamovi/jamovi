@@ -7,27 +7,31 @@
 #include <iostream>
 #include <stdexcept>
 #include <thread>
+#include <mutex>
 #include <chrono>
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pair.h>
+
+#include <boost/bind.hpp>
 
 #include "enginer.h"
 #include "analysisloader.h"
 #include "analysis.h"
 
 using namespace std;
+using namespace boost;
 
 Engine::Engine()
 {
     _slave = false;
     _exiting = false;
+    _waiting = NULL;
+    _running = NULL;
     
     _R = new EngineR();
     
-    Analysis *a = AnalysisLoader::create(0, "descriptives", "base");
-    
-    _R->run(*a);
+    _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1));
 }
 
 void Engine::setSlave(bool slave)
@@ -62,9 +66,30 @@ void Engine::start()
     nn_send(_socket, message, 20, 0);
 
     thread t(&Engine::messageLoop, this);
-    this_thread::sleep_for(chrono::milliseconds(3000));
-    //_exiting = true;
+
+    unique_lock<mutex> lock(_mutex);
+
+    while (true)
+    {
+        while (_waiting == NULL)
+            _condition.wait(lock);
+
+        _running = _waiting;
+        _waiting = NULL;
+        _R->run(_running);
+        delete _running;
+        _running = NULL;
+    }
+
     t.join();
+}
+
+void Engine::analysisRequested(Analysis *analysis)
+{
+    lock_guard<mutex> lock(_mutex);
+    _condition.notify_all();
+    
+    _waiting = analysis;
 }
 
 void Engine::messageLoop()

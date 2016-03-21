@@ -4,7 +4,7 @@
 
 #include "analysisloader.h"
 
-Analysis *AnalysisLoader::create(int id, const std::string &name, const std::string &ns)
+Analysis *AnalysisLoader::create(int id, const std::string &name, const std::string &ns, const std::string &options)
 {
-    return new Analysis(id, name,  ns);
+    return new Analysis(id, name,  ns, options);
 }

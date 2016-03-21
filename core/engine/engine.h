@@ -9,12 +9,15 @@
 
 #include <string>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 
 #include "enginecoms.h"
 #include "enginer.h"
+#include "analysis.h"
 
 class Engine
 {
@@ -26,6 +29,7 @@ public:
 	
 private:
     void messageLoop();
+    void analysisRequested(Analysis *analysis);
     
     EngineComs _coms;
 
@@ -36,6 +40,12 @@ private:
     int _socket;
     int _conId;
     bool _exiting;
+    
+    std::mutex _mutex;
+    std::condition_variable _condition;
+    
+    Analysis *_waiting;
+    Analysis *_running;
 };
 
 #endif // ENGINE_H

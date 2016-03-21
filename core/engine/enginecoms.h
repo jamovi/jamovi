@@ -6,14 +6,18 @@
 #define ENGINECOMS_H
 
 #include <string>
+#include <boost/signals2.hpp>
+
+#include "analysis.h"
 
 class EngineComs
 {
 public:
     EngineComs();
     
+    boost::signals2::signal<void (Analysis *analysis)> analysisRequested;
+    
     void parse(char *data, int len);
-
 
 };
 

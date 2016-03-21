@@ -29,8 +29,9 @@ class Analyses:
         root = os.path.realpath(os.path.join(here, '..'))
         analysis_root = os.path.join(root, 'analyses', ns, 'silky', name)
 
-        with open(analysis_root + '.say', 'r') as stream:
+        with open(analysis_root + '.a.yaml', 'r') as stream:
             defn = yaml.load(stream)
+            analysisName = defn['name']
             optionDefs = defn['options']
 
             options = {}
@@ -58,7 +59,7 @@ class Analyses:
 
                 options[o_name] = o_default
 
-            analysis = Analysis(self._nextId, name, ns, options, self)
+            analysis = Analysis(self._nextId, analysisName, ns, options, self)
             self._analyses.append(analysis)
             self._nextId += 1
 

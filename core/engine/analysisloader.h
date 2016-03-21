@@ -10,7 +10,7 @@
 class AnalysisLoader
 {
 public:
-    static Analysis *create(int id, const std::string &name, const std::string &ns);
+    static Analysis *create(int id, const std::string &name, const std::string &ns, const std::string &options);
     
 };
 

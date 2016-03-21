@@ -14,11 +14,13 @@ class Analysis
 public:
     enum Type { R, Python };
     
-private:
-    Analysis(int id, std::string name, std::string ns);
     int id;
     std::string name;
     std::string ns;
+    std::string options;
+    
+private:
+    Analysis(int id, std::string name, std::string ns, std::string options);
     Type type;
 };
 

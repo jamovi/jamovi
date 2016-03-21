@@ -3,10 +3,12 @@
 //
 
 #include "enginecoms.h"
-#include "enginecoms.pb.h"
 
 #include <streambuf>
 #include <iostream>
+
+#include "enginecoms.pb.h"
+#include "analysisloader.h"
 
 using namespace std;
 
@@ -32,11 +34,20 @@ void EngineComs::parse(char *data, int len)
     
     bool success = request.ParseFromIstream(&is);
 
-    if (success)    
-        request.PrintDebugString();
+    if (success)
+    {
+        Analysis *analysis = AnalysisLoader::create(request.analysis().id(), request.analysis().name(), request.analysis().ns(), request.analysis().options());
+        analysisRequested(analysis);
+        
+        //request.PrintDebugString();
+        //std::cout << "\n";
+        //std::cout.flush();
+    }
     else
+    {
         std::cout << "failed to parse message";
-    
-    std::cout << "\n";
-    std::cout.flush();
+        std::cout << "\n";
+        std::cout.flush();
+    }
+
 }

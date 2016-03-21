@@ -15,7 +15,7 @@
 class EngineR
 {
 public:
-    static void run(Analysis &analysis);
+    static void run(Analysis *analysis);
     
 private:
     static std::string makeAbsolute(const std::string &path);

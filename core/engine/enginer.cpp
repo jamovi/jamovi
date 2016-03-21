@@ -4,7 +4,10 @@
 
 #include "enginer.h"
 
+#include <sstream>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 #include "boost/nowide/cstdlib.hpp"
 #include "settings.h"
@@ -15,7 +18,7 @@ using namespace boost;
 
 RInside *EngineR::_rInside = NULL;
 
-void EngineR::run(Analysis &analysis)
+void EngineR::run(Analysis *analysis)
 {
     if (_rInside == NULL)
     {
@@ -39,18 +42,40 @@ void EngineR::run(Analysis &analysis)
         _rInside = new RInside();
     }
 
-    _rInside->parseEvalQNT("print(1 + 2)");
+    stringstream ss;
+    
+    ss << "print(" << analysis->ns << "::" << analysis->name << "(silkyR::Options('" << analysis->options << "')))";
+    
+    // std::cout << ss.str();
+    // std::cout.flush();
+
+    _rInside->parseEvalQNT(ss.str());
 }
 
-string EngineR::makeAbsolute(const string &p)
+string EngineR::makeAbsolute(const string &paths)
 {
-    filesystem::path path = p;
+    vector<string> out;
+    algorithm::split(out, paths, algorithm::is_any_of(";:"), token_compress_on);
     
-    if (path.is_relative())
+    stringstream result;
+    string sep = "";
+    
+    filesystem::path here = Dirs2::exeDir();
+
+    for (string &p : out)
     {
-        filesystem::path here = Dirs2::exeDir();
-        path = here / path;
+        system::error_code ec;
+        filesystem::path path = p;
+        path = canonical(path, here, ec);
+        
+        result << sep << path.generic_string();
+        
+#ifdef _WIN32
+        sep = ";";
+#else
+        sep = ":";
+#endif
     }
     
-    return path.generic_string();
+    return result.str();
 }
