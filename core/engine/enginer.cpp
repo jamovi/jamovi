@@ -40,17 +40,28 @@ void EngineR::run(Analysis *analysis)
         nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
                 
         _rInside = new RInside();
-        _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");  // hack which i don't know why we need
+        
+        // calls to methods functions on windows fail without this
+        _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
     }
 
     stringstream ss;
     
-    ss << "print(" << analysis->ns << "::" << analysis->name << "(silkyR::Options('" << analysis->options << "')))";
+    ss << "{\n";
+    ss << "  options <- silkyR::Options('" << analysis->options << "')\n";
+    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "(id=" << analysis->id << ", options=options)\n";
+    ss << "  silkyR::initProtoBuf()\n";
+    ss << "  serial <- RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
+    ss << "  print(serial)\n";
+    ss << "  serial\n";
+    ss << "}\n";
     
     // std::cout << ss.str();
     // std::cout.flush();
 
-    _rInside->parseEvalQNT(ss.str());
+    Rcpp::RawVector rawVec = _rInside->parseEvalNT(ss.str());
+    std::string raw(rawVec.begin(), rawVec.end());
+    resultsReceived(raw);
 }
 
 string EngineR::makeAbsolute(const string &paths)

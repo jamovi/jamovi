@@ -55,7 +55,7 @@ SRCS += $(wildcard **/*.cpp)
 SRCS += $(wildcard ../common/*.cpp)
 SRCS += $(wildcard ../common/**/*.cpp)
 
-OBJS += $(BUILD_DIR)/enginecoms.pb.cc.o
+OBJS += $(BUILD_DIR)/silkycoms.pb.cc.o
 OBJS += $(addprefix $(BUILD_DIR)/,$(SRCS:.cpp=.cpp.o))
 
 $(TARGET): $(OBJS)
@@ -63,10 +63,10 @@ $(TARGET): $(OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS)
 	$(INT)
 
-enginecoms.pb.cc: ../../server/enginecoms.proto
-	protoc --cpp_out=. --proto_path=../../server ../../server/enginecoms.proto
+silkycoms.pb.cc: ../../server/silkycoms.proto
+	protoc --cpp_out=. --proto_path=../../server ../../server/silkycoms.proto
 
-$(BUILD_DIR)/enginecoms.pb.cc.o: enginecoms.pb.cc
+$(BUILD_DIR)/silkycoms.pb.cc.o: silkycoms.pb.cc
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
 

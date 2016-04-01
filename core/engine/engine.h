@@ -29,7 +29,8 @@ public:
 	
 private:
     void messageLoop();
-    void analysisRequested(Analysis *analysis);
+    void analysisRequested(int requestId, Analysis *analysis);
+    void resultsReceived(const std::string &results);
     
     EngineComs _coms;
 
@@ -40,6 +41,8 @@ private:
     int _socket;
     int _conId;
     bool _exiting;
+    
+    int _currentRequestId;
     
     std::mutex _mutex;
     std::condition_variable _condition;

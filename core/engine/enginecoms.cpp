@@ -7,10 +7,11 @@
 #include <streambuf>
 #include <iostream>
 
-#include "enginecoms.pb.h"
+#include "silkycoms.pb.h"
 #include "analysisloader.h"
 
 using namespace std;
+using namespace silkycoms;
 
 class MemoryBuffer : public std::streambuf
 {
@@ -27,27 +28,33 @@ EngineComs::EngineComs()
 
 void EngineComs::parse(char *data, int len)
 {
-    Request request;
+    ComsMessage request;
     
-    MemoryBuffer buf(data, len);
-    istream is(&buf);
+    MemoryBuffer buf1(data, len);
+    istream is1(&buf1);
     
-    bool success = request.ParseFromIstream(&is);
-
-    if (success)
-    {
-        Analysis *analysis = AnalysisLoader::create(request.analysis().id(), request.analysis().name(), request.analysis().ns(), request.analysis().options());
-        analysisRequested(analysis);
-        
-        //request.PrintDebugString();
-        //std::cout << "\n";
-        //std::cout.flush();
+    if ( ! request.ParseFromIstream(&is1))
+    {    
+        std::cout << "failed to parse message";
+        std::cout << "\n";
+        std::cout.flush();
+        return;
     }
-    else
+    
+    AnalysisRequest analysisRequest;
+
+    string payload = request.payload();
+    MemoryBuffer buf2((char*)payload.c_str(), payload.size());
+    istream is2(&buf2);
+
+    if ( ! analysisRequest.ParseFromIstream(&is2))
     {
         std::cout << "failed to parse message";
         std::cout << "\n";
         std::cout.flush();
+        return;
     }
 
+    Analysis *analysis = AnalysisLoader::create(analysisRequest.id(), analysisRequest.name(), analysisRequest.ns(), analysisRequest.options());
+    analysisRequested(request.id(), analysis);
 }

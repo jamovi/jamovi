@@ -33,16 +33,13 @@ var Instance = Backbone.Model.extend({
 
         _.bindAll(this,
             'connect',
-            'open',
-            '_retrieveCells',
-            '_requestCells');
+            'open');
 
         this.transId = 0;
         this.command = '';
         this.seqNo = 0;
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
-        this._dataSetModel.on('change:viewport', this._retrieveCells, this);
 
         this._progressModel = new ProgressModel();
 
@@ -78,11 +75,11 @@ var Instance = Backbone.Model.extend({
 
         return this._analyses;
     },
-    _openDataSetRequest : function(params) {
+    _openDataSetRequest : function(openRequest) {
 
         var self = this;
 
-        this.open(params.path).then(function() {
+        this.open(openRequest.path).then(function() {
             self._backstageModel.notifyDataSetLoaded();
         });
     },
@@ -95,15 +92,18 @@ var Instance = Backbone.Model.extend({
         
             // request settings
 
-            var params = new coms.Messages.SettingsReqParams();
-            var request = new coms.Messages.Request();
-            request.settings = params;
+            var settingsRequest = new coms.Messages.SettingsRequest();
+            var request = new coms.Messages.ComsMessage();
+            request.payload = settingsRequest.toArrayBuffer();
+            request.payloadType = "SettingsRequest";
             
             return coms.send(request);
 
         }).then(function(response) {
         
-            self._backstageModel.set('settings', response.settings);
+            var settingsResponse = coms.Messages.SettingsResponse.decode(response.payload);
+        
+            self._backstageModel.set('settings', settingsResponse);
             return self._retrieveInfo();
             
         }).catch(function(err) {
@@ -117,9 +117,10 @@ var Instance = Backbone.Model.extend({
         var self = this;
         var coms = this.attributes.coms;
 
-        var params  = new coms.Messages.OpenReqParams(path);
-        var request = new coms.Messages.Request();
-        request.open = params;
+        var open = new coms.Messages.OpenRequest(path);
+        var request = new coms.Messages.ComsMessage();
+        request.payload = open.toArrayBuffer();
+        request.payloadType = "OpenRequest";
         
         var onresolve = function(response) {
             self._retrieveInfo();
@@ -136,23 +137,24 @@ var Instance = Backbone.Model.extend({
         var self = this;
         var coms = this.attributes.coms;
     
-        var params  = new coms.Messages.InfoReqParams();
-        var request = new coms.Messages.Request();
-        request.info = params;
+        var info = new coms.Messages.InfoRequest();
+        var request = new coms.Messages.ComsMessage();
+        request.payload = info.toArrayBuffer();
+        request.payloadType = "InfoRequest";
 
         return coms.send(request).then(function(response) {
         
-            var params = response.info;
+            var info = coms.Messages.InfoResponse.decode(response.payload);
         
-            if (params.hasDataSet) {
+            if (info.hasDataSet) {
 
-                var columnInfo = _.map(params.schema.fields, function(field) {
+                var columnInfo = _.map(info.schema.fields, function(field) {
                     return { name : field.name, width: field.width, measureType : self._stringifyMeasureType(field.measureType) };
                 }, self);
             
                 self._dataSetModel.setNew({
-                    rowCount : params.rowCount,
-                    columnCount : params.columnCount,
+                    rowCount : info.rowCount,
+                    columnCount : info.columnCount,
                     columns : columnInfo
                 });
             }
@@ -165,72 +167,45 @@ var Instance = Backbone.Model.extend({
         var self = this;
         var coms = this.attributes.coms;
 
-        var params = new coms.Messages.AnalysisReqParams();
-        params.name = analysis.name;
-        params.ns = analysis.ns;
+        var analysisRequest = new coms.Messages.AnalysisRequest();
+        analysisRequest.name = analysis.name;
+        analysisRequest.ns = analysis.ns;
 
-        var request = new coms.Messages.Request();
-        request.analysis = params;
+        var request = new coms.Messages.ComsMessage();
+        request.payload = analysisRequest.toArrayBuffer();
+        request.payloadType = "AnalysisRequest";
 
-        return coms.send(request).then(function(response) {
+        var onreceive = function(message) {
 
-            var analysisId = response.analysis.analysisId;
-            var options = JSON.parse(response.analysis.options);
+            var response = coms.Messages.AnalysisResponse.decode(message.payload);
             
-            analysis.setup(analysisId, options);
-        });
-    },
-    _retrieveCells : function() {
-        this._viewport = this._dataSetModel.get('viewport');
-        this._requestCells();
-    },
-    _requestCells : function() {
+            var ok = false;
 
-        var self = this;
-        var coms = this.attributes.coms;
-
-        var params = new coms.Messages.CellsReqParams();
-        params.rowStart    = this._viewport.top;
-        params.columnStart = this._viewport.left;
-        params.rowEnd      = this._viewport.bottom;
-        params.columnEnd   = this._viewport.right;
-
-        var request = new coms.Messages.Request();
-        request.cells = params;
-
-        return coms.send(request).then(function(response) {
-
-            var params = response.cells;
-            var columns = params.columns;
-
-            var rowStart    = params.reqParams.get('rowStart');
-            var columnStart = params.reqParams.get('columnStart');
-            var rowEnd      = params.reqParams.get('rowEnd');
-            var columnEnd   = params.reqParams.get('columnEnd');
-
-            var viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
-
-            var columnCount = columnEnd - columnStart + 1;
-            var rowCount    = rowEnd    - rowStart + 1;
-
-            var cells = new Array(columnCount);
-
-            for (var colNo = 0; colNo < columnCount; colNo++) {
-
-                var column = columns[colNo];
-                var values = column.get(column.cells).values;
-
-                cells[colNo] = values;
+            if (analysis.isSetup === false
+                && _.has(response, "id")
+                && _.has(response, "options")) {
+                
+                var id = response.id;
+                var options = JSON.parse(response.options);
+        
+                analysis.setup(id, options);
+                
+                ok = true;
+            }
+            
+            if (analysis.isSetup && _.has(response, "results")) {
+                analysis.setResults(response.results);
+                ok = true;
             }
 
-            self._dataSetModel.setCells(viewport, cells);
+            if (ok === false) {
+                console.log("Unexpected analysis results received");
+                console.log(response);
+            }
+        };
+
+        return coms.send(request).then(onreceive, null, onreceive);
         
-            return response;
-            
-        }).catch(function(err) {
-        
-            console.log(err);
-        });
     },
     _stringifyMeasureType : function(measureType) {
         switch (measureType) {

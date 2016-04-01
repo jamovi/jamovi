@@ -19,6 +19,8 @@
 #include "analysisloader.h"
 #include "analysis.h"
 
+#include "silkycoms.pb.h"
+
 using namespace std;
 using namespace boost;
 
@@ -31,7 +33,8 @@ Engine::Engine()
     
     _R = new EngineR();
     
-    _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1));
+    _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
+    _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1));
 }
 
 void Engine::setSlave(bool slave)
@@ -61,9 +64,6 @@ void Engine::start()
     _conId = nn_connect(_socket, _conString.c_str());
     if (_conId < 0)
         throw runtime_error("Unable to connect : could not connect to endpoint");
-    
-    char *message = "Mes3sage from engine";
-    nn_send(_socket, message, 20, 0);
 
     thread t(&Engine::messageLoop, this);
 
@@ -84,12 +84,28 @@ void Engine::start()
     t.join();
 }
 
-void Engine::analysisRequested(Analysis *analysis)
+void Engine::analysisRequested(int requestId, Analysis *analysis)
 {
     lock_guard<mutex> lock(_mutex);
     _condition.notify_all();
     
+    _currentRequestId = requestId;
     _waiting = analysis;
+}
+
+void Engine::resultsReceived(const string &results)
+{
+    silkycoms::ComsMessage message;
+    
+    message.set_id(_currentRequestId);
+    message.set_payload(results);
+    message.set_payloadtype("AnalysisResults");
+    
+    string data;
+    
+    message.SerializeToString(&data);
+
+    nn_send(_socket, data.data(), data.size(), 0);
 }
 
 void Engine::messageLoop()

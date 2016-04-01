@@ -1,6 +1,4 @@
 
-/* jshint evil: true, strict: true */
-
 'use strict';
 
 var $ = require('jquery');
@@ -13,6 +11,8 @@ var Analysis = function(name, ns) {
     this.name = name;
     this.ns = ns;
     this.options = null;
+    this.results = null;
+    this.isSetup = false;
 
     var self = this;
 
@@ -25,7 +25,12 @@ var Analysis = function(name, ns) {
 Analysis.prototype.setup = function(id, options) {
     this.id = id;
     this.options = options;
+    this.isSetup = true;
     this._notifyReady(this);
+};
+
+Analysis.prototype.setResults = function(results) {
+    this.results = results;
 };
 
 var Analyses = Backbone.Model.extend({

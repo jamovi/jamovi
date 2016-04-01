@@ -3,13 +3,12 @@ import sys
 import os
 import os.path as path
 
-from threading import Thread, main_thread
+import threading
 from subprocess import Popen
 
-from nanomsg import Socket, PAIR
+import nanomsg
 
-import enginecoms
-import json
+import silkycoms
 
 
 class EngineManager:
@@ -19,27 +18,57 @@ class EngineManager:
         self._socket = None
         self._address = "ipc://silky{}".format(os.getpid())
         self._process = None
-        self._scheduledAnalyses = [ ]
-        self._runningAnalyses = [ ]
+        self._requests_sent = { }
+        self._nextId = 1
+        self._results_listeners = [ ]
 
     def __del__(self):
         if self._process is not None:
             self._process.terminate()
 
     def start(self):
-        self._thread = Thread(target=self._run)
+        self._thread = threading.Thread(target=self._run)
         self._thread.start()
 
-    def scheduleAnalysis(self, analysis):
-        request = enginecoms.Request()
-        request.id = 1
-        request.analysis.id = analysis.id
-        request.analysis.name = analysis.name
-        request.analysis.ns = analysis.ns
-        request.analysis.perform = enginecoms.AnalysisRequest.Perform.RUN
-        request.analysis.options = json.dumps(analysis.options)
+    def send(self, request):
 
-        self._socket.send(request.encode_to_bytes())
+        request.perform = silkycoms.AnalysisRequest.Perform.RUN
+
+        message = silkycoms.ComsMessage()
+        message.id = self._nextId
+        message.payload = request.encode_to_bytes()
+        message.payloadType = "AnalysisRequest"
+
+        self._requests_sent[message.id] = request
+
+        self._nextId += 1
+
+        self._socket.send(message.encode_to_bytes())
+
+    def _receive(self, message):
+
+        if message.id in self._requests_sent:
+            request = self._requests_sent[message.id]
+            results = silkycoms.AnalysisResponse.create_from_bytes(message.payload)
+
+            complete = False
+
+            if results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE:
+                complete = True
+            elif results.status == silkycoms.AnalysisStatus.ANALYSIS_INITED and request.perform == silkycoms.AnalysisRequest.Perform.INIT:
+                complete = True
+
+            self._notify_results(results, request, complete)
+
+        else:
+            print('id : {} not found in waiting requests'.format(message.id))
+
+    def _notify_results(self, results, request, complete):
+        for listener in self._results_listeners:
+            listener(results, request, complete)
+
+    def add_results_listener(self, listener):
+        self._results_listeners.append(listener)
 
     @property
     def address(self):
@@ -66,7 +95,7 @@ class EngineManager:
         args = '--con={}'.format(self._address)
         self._process = Popen([exe_path, args], env=env)
 
-        self._socket = Socket(PAIR)
+        self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)
 
         if os.name == 'nt':  # windows
@@ -74,13 +103,16 @@ class EngineManager:
         else:
             self._socket.bind(self._address)
 
-        parent = main_thread()
+        parent = threading.main_thread()
         while parent.is_alive():
             try:
-                message = self._socket.recv()
-                print(message)
-            except:
-                pass
+                bytes = self._socket.recv()
+                message = silkycoms.ComsMessage.create_from_bytes(bytes)
+                self._receive(message)
+
+            except nanomsg.NanoMsgAPIError as e:
+                if e.errno != nanomsg.ETIMEDOUT:
+                    raise e
 
             self._process.poll()
             if self._process.returncode is not None:

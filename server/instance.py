@@ -1,6 +1,5 @@
 
 import os
-import time
 
 from silky import ColumnType
 from silky import Dirs
@@ -12,7 +11,7 @@ import formatio.csv
 
 from settings import Settings
 
-import clientcoms
+import silkycoms
 
 from enginemanager import EngineManager
 from analyses import Analyses
@@ -23,39 +22,42 @@ import json
 class Instance:
 
     def __init__(self):
-        self._handlers = [ ]
-        self._id = None
-        self._awaitingFirstHandler = True
-        self._timeSinceLastHandler = time.time()
+
+        self._coms = None
         self._dataset = None
         self._analyses = Analyses()
         self._em = EngineManager()
 
-        self._analyses.addAnalysisChangedListener(self._em.scheduleAnalysis)
+        self._em.add_results_listener(self._on_results)
 
         self._em.start()
 
         settings = Settings.retrieve()
         settings.sync()
 
-    def on_request(self, request):
-        self._id = request.id
+    def set_coms(self, coms):
+        self._coms = coms
 
-        if 'open' in request:
-            self.open(request.open)
-        elif 'info' in request:
-            self.info(request.info)
-        elif 'cells' in request:
-            self.cells(request.cells)
-        elif 'settings' in request:
-            self.settings(request.settings)
-        elif 'analysis' in request:
-            self.analysis(request.analysis)
+    def on_request(self, request):
+        if type(request) == silkycoms.OpenRequest:
+            self._on_open(request)
+        elif type(request) == silkycoms.InfoRequest:
+            self._on_info(request)
+        elif type(request) == silkycoms.CellsRequest:
+            self._on_cells(request)
+        elif type(request) == silkycoms.SettingsRequest:
+            self._on_settings(request)
+        elif type(request) == silkycoms.AnalysisRequest:
+            self._on_analysis(request)
         else:
             print('unrecognised request')
-            print(request)
+            print(request.payloadType)
 
-    def open(self, request):
+    def _on_results(self, results, request, complete):
+
+        self._coms.send(results, request, complete)
+
+    def _on_open(self, request):
         print('opening ' + request.filename)
 
         TempFiles.init(os.getpid())
@@ -69,77 +71,56 @@ class Instance:
 
         self._dataset = dataset
 
-        response = clientcoms.Response()
-        response.status = clientcoms.Status.COMPLETE
-        response.progress = 100
-
-        self._send(response)
+        self._coms.send(None, request)
 
         self._addToRecents(request.filename)
 
     def _openCallback(self, task, progress):
-        response = clientcoms.Response()
-        response.open.status = clientcoms.Status.IN_PROGRESS
+        response = silkycoms.ComsMessage()
+        response.open.status = silkycoms.Status.IN_PROGRESS
         response.open.progress = progress
         response.open.progress_task = task
 
-        self._send(response)
+        self._coms.send(response)
 
-    def _send(self, response):
-        response.id = self._id
-        for handler in self._handlers:
-            handler(response)
+    def _on_analysis(self, request):
+        analysis = self._analyses.create(request.name, request.ns)
+        options = json.dumps(analysis.options)
 
-    def addHandler(self, fun):
-        self._awaitingFirstHandler = False
-        self._handlers.append(fun)
+        response = silkycoms.AnalysisResponse()
+        response.id = analysis.id
+        response.options = options
+        response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
 
-    def removeHandler(self, fun):
-        self._handlers.remove(fun)
-        if self.hasHandlers() is False:
-            self._timeSinceLastHandler = time.time()
+        self._coms.send(response, request, False)
 
-    def hasHandlers(self):
-        return self._awaitingFirstHandler or len(self._handlers) != 0
+        request.options = options
+        self._em.send(request)
 
-    def timeWithoutHandlers(self):
-        return time.time() - self._timeSinceLastHandler
+    def _on_info(self, request):
 
-    def analysis(self, a):
-        analysis = self._analyses.create(a.name, a.ns)
-
-        response = clientcoms.Response()
-        response.status = clientcoms.Status.IN_PROGRESS
-        response.analysis.analysisId = analysis.id
-        response.analysis.options = json.dumps(analysis.options)
-
-        self._send(response)
-
-    def info(self, id):
-        response = clientcoms.Response()
+        response = silkycoms.InfoResponse()
 
         hasDataSet = self._dataset is not None
-        response.info.hasDataSet = hasDataSet
+        response.hasDataSet = hasDataSet
 
         if hasDataSet:
 
-            response.info.rowCount = self._dataset.rowCount()
-            response.info.columnCount = self._dataset.columnCount()
+            response.rowCount = self._dataset.rowCount()
+            response.columnCount = self._dataset.columnCount()
 
             for column in self._dataset:
 
-                field = clientcoms.InfoResParams.Schema.Field()
+                field = silkycoms.InfoResponse.Schema.Field()
                 field.name = column.name()
-                field.measureType = clientcoms.InfoResParams.Schema.Field.MeasureType(column.column_type)
+                field.measureType = silkycoms.InfoResponse.Schema.Field.MeasureType(column.column_type)
                 field.width = 100
 
-                response.info.schema.fields.append(field)
+                response.schema.fields.append(field)
 
-        self._send(response)
+        self._coms.send(response, request)
 
-    def cells(self, request):
-
-        response = clientcoms.Response()
+    def _on_cells(self, request):
 
         if self._dataset is None:
             return None
@@ -151,17 +132,19 @@ class Instance:
         rowCount = rowEnd - rowStart + 1
         colCount = colEnd - colStart + 1
 
-        response.cells.reqParams.rowStart    = rowStart
-        response.cells.reqParams.columnStart = colStart
-        response.cells.reqParams.rowEnd      = rowEnd
-        response.cells.reqParams.columnEnd   = colEnd
+        response = silkycoms.CellsResponse()
+
+        response.request.rowStart    = rowStart
+        response.request.columnStart = colStart
+        response.request.rowEnd      = rowEnd
+        response.request.columnEnd   = colEnd
 
         dataset = self._dataset
 
         for c in range(colStart, colStart + colCount):
             column = dataset[c]
 
-            colRes = clientcoms.CellsResParams.Column()
+            colRes = silkycoms.CellsResponse.Column()
 
             if column.column_type == ColumnType.CONTINUOUS:
                 for r in range(rowStart, rowStart + rowCount):
@@ -176,9 +159,9 @@ class Instance:
                     value = column[r]
                     colRes.ints.values.append(value)
 
-            response.cells.columns.append(colRes)
+            response.columns.append(colRes)
 
-        self._send(response)
+        self._coms.send(response, request)
 
     def _addToRecents(self, path):
 
@@ -210,11 +193,10 @@ class Instance:
         settings.set('recents', recents)
         settings.sync()
 
-        self.settings()
+        self._on_settings()
 
-    def settings(self, request=None):
+    def _on_settings(self, request=None):
 
-        response = clientcoms.Response()
         settings = Settings.retrieve('backstage')
 
         localFSRecents = settings.get('localFSRecents')
@@ -225,19 +207,21 @@ class Instance:
 
         recents = settings.get('recents', [ ])
 
+        response = silkycoms.SettingsResponse()
+
         for recent in recents:
-            recentEntry = clientcoms.DataSetEntry()
+            recentEntry = silkycoms.DataSetEntry()
             recentEntry.name = recent['name']
             recentEntry.path = recent['path']
             recentEntry.location = recent['location']
 
-            response.settings.recents.append(recentEntry)
+            response.recents.append(recentEntry)
 
         for localFSRecent in localFSRecents:
-            recent = clientcoms.DataSetEntry()
+            recent = silkycoms.DataSetEntry()
             recent.name = localFSRecent['name']
             recent.path = localFSRecent['path']
 
-            response.settings.localFSRecents.append(recent)
+            response.localFSRecents.append(recent)
 
-        self._send(response)
+        self._coms.send(response, request)

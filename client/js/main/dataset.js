@@ -147,24 +147,26 @@ var DataSetViewModel = DataSetModel.extend({
         var self = this;
         var coms = this.attributes.coms;
 
-        var params = new coms.Messages.CellsReqParams();
-        params.rowStart    = viewport.top;
-        params.columnStart = viewport.left;
-        params.rowEnd      = viewport.bottom;
-        params.columnEnd   = viewport.right;
+        var cellsRequest = new coms.Messages.CellsRequest();
+        cellsRequest.rowStart    = viewport.top;
+        cellsRequest.columnStart = viewport.left;
+        cellsRequest.rowEnd      = viewport.bottom;
+        cellsRequest.columnEnd   = viewport.right;
 
-        var request = new coms.Messages.Request();
-        request.cells = params;
+        var request = new coms.Messages.ComsMessage();
+        request.payload = cellsRequest.toArrayBuffer();
+        request.payloadType = "CellsRequest";
 
         return coms.send(request).then(function(response) {
 
-            var params = response.cells;
-            var columns = params.columns;
+            var cellsResponse = coms.Messages.CellsResponse.decode(response.payload);
 
-            var rowStart    = params.reqParams.get('rowStart');
-            var columnStart = params.reqParams.get('columnStart');
-            var rowEnd      = params.reqParams.get('rowEnd');
-            var columnEnd   = params.reqParams.get('columnEnd');
+            var columns = cellsResponse.columns;
+
+            var rowStart    = cellsResponse.request.get('rowStart');
+            var columnStart = cellsResponse.request.get('columnStart');
+            var rowEnd      = cellsResponse.request.get('rowEnd');
+            var columnEnd   = cellsResponse.request.get('columnEnd');
 
             var viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
 

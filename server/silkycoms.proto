@@ -1,0 +1,191 @@
+
+package silkycoms;
+
+enum Status {
+    COMPLETE = 1;
+    IN_PROGRESS = 2;
+    FAILED = 3;
+}
+
+message ComsMessage {
+    optional int32 id = 1;
+    optional bytes payload = 2;
+    optional string payloadType = 3;
+    optional Status status = 4 [default = COMPLETE];
+}
+
+message OpenRequest {
+    optional string filename = 1;
+}
+
+message OpenProgress {
+}
+
+message DataSetEntry {
+    optional string name = 1;
+    optional string path = 2;
+    optional string location = 3;
+}
+
+message SettingsRequest {
+}
+
+message SettingsResponse {
+    repeated DataSetEntry recents = 1;
+    repeated DataSetEntry localFSRecents = 2;
+}
+
+message InfoRequest {
+}
+
+message InfoResponse {
+    
+    message Schema {
+        message Field {
+            optional string name = 1;
+            
+            enum MeasureType {
+                MISC = 0;
+                NOMINAL_TEXT = 1;
+                NOMINAL = 2;
+                ORDINAL = 3;
+                CONTINUOUS = 4;
+            }
+            
+            optional MeasureType measureType = 2;
+            optional int32 width = 3;
+        }
+        repeated Field fields = 1;
+    }
+
+    optional bool hasDataSet = 1;
+    optional Schema schema = 2;
+    optional uint32 rowCount = 3;
+    optional uint32 columnCount = 4;
+}
+
+message CellsRequest {
+    optional uint32 rowStart = 1;
+    optional uint32 columnStart = 2;
+    optional uint32 rowEnd = 3;
+    optional uint32 columnEnd = 4;
+}
+
+message CellsResponse {
+
+    optional CellsRequest request = 1;
+
+    message Column {
+    
+        message Ints {
+            repeated int32 values = 1;
+        }
+        message Doubles {
+            repeated double values = 1;
+        }
+        message Strings {
+            repeated string values = 1;
+        }
+    
+        oneof cells {
+            Ints    ints = 1;
+            Doubles doubles = 2;
+            Strings strings = 3;
+        }
+    }
+    
+    repeated Column columns = 2;
+}
+
+
+message AnalysisRequest {
+    optional int32 id = 1;
+    optional int32 revision = 2;
+    optional string name = 3;
+    optional string ns = 4;
+    
+    enum Perform {
+        INIT = 1;
+        RUN = 2;
+    }
+    
+    optional Perform perform = 5;
+    optional string options = 6;
+}
+
+enum AnalysisStatus {
+    ANALYSIS_INITING = 0;
+    ANALYSIS_INITED = 1;
+    ANALYSIS_RUNNING = 2;
+    ANALYSIS_COMPLETE = 3;
+    ANALYSIS_ERROR = 4;
+    ANALYSIS_ABORTED = 5;
+}
+
+message AnalysisResponse {
+
+    message Results {
+        repeated ResultsElement elements = 1;
+        optional bytes error = 2;
+    }
+
+    optional int32 id = 1;
+    optional string options = 2;
+    optional Results results = 3;
+    optional AnalysisStatus status = 4;
+    optional bytes error = 5;
+}
+
+message ResultsCell {
+
+    enum Other {
+        MISSING = 1;
+        NOT_A_NUMBER = 2;
+    }
+    
+    oneof cellType {
+        int32  i = 1;
+        double d = 2;
+        string s = 3;
+        Other  o = 4;
+    }
+    
+    repeated int32 footnotes = 5;
+}
+
+message ResultsColumn {
+
+    optional string name = 1;
+    optional string title = 2;
+    optional string format = 3;
+
+    repeated ResultsCell cells = 4;
+}
+
+message ResultsTable {
+    optional string name = 2;
+    repeated ResultsColumn columns = 4;
+}
+
+message ResultsImage {
+    optional string path = 1;
+    optional int32 width = 2;
+    optional int32 height = 3;
+
+}
+
+message ResultsElement {
+    optional string name = 1;
+    optional string title = 2;
+    optional AnalysisStatus status = 3 [default=ANALYSIS_RUNNING];
+    
+    oneof type {
+        ResultsTable table = 4;
+        ResultsImage image = 5;
+        ResultsGroup group = 6;
+    }
+}
+
+message ResultsGroup {
+    repeated ResultsElement elements = 1;
+}

@@ -10,18 +10,17 @@ class Analysis:
         self.ns = ns
         self.options = options
         self.parent = parent
+        self.results = None
 
     def setOptions(self, options):
         for name, option in options:
             self.options[name] = option
-        self.parent._analysisChanged(self)
 
 
 class Analyses:
     def __init__(self):
         self._nextId = 0
         self._analyses = []
-        self._analysisChangedListeners = []
 
     def create(self, name, ns):
 
@@ -63,13 +62,4 @@ class Analyses:
             self._analyses.append(analysis)
             self._nextId += 1
 
-            self._analysisChanged(analysis)
-
             return analysis
-
-    def addAnalysisChangedListener(self, listener):
-        self._analysisChangedListeners.append(listener)
-
-    def _analysisChanged(self, analysis):
-        for listener in self._analysisChangedListeners:
-            listener(analysis)

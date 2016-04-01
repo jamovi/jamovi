@@ -3,6 +3,7 @@
 
 var $ = require('jquery');
 var ProtoBuf = require('protobufjs');
+var Q = require('q');
 
 var Coms = function() {
 
@@ -29,12 +30,12 @@ Coms.prototype.connect = function(url) {
     return Promise.all([
         new Promise(function(resolve, reject) {
         
-            ProtoBuf.loadProtoFile('s/proto/clientcoms.proto', function(err, builder) {
+            ProtoBuf.loadProtoFile('s/proto/coms.proto', function(err, builder) {
                 if (err) {
                     reject(err);
                 }
                 else {
-                    self.Messages = builder.build();
+                    self.Messages = builder.build().silkycoms;
                     resolve();
                 }
             });
@@ -42,6 +43,7 @@ Coms.prototype.connect = function(url) {
         new Promise(function(resolve, reject) {
 
             self._ws = new WebSocket('ws://' + self._baseUrl + '/coms');
+            self._ws.binaryType = 'arraybuffer';
 
             self._ws.onopen = function() {
                 console.log('opened!');
@@ -65,7 +67,7 @@ Coms.prototype.send = function(request) {
 
     var self = this;
 
-    return new Promise(function(resolve, reject) {
+    return new Q.promise(function(resolve, reject, onprogress) {
     
         self._transId++;
 
@@ -76,6 +78,7 @@ Coms.prototype.send = function(request) {
             id : self._transId,
             resolve : resolve,
             reject  : reject,
+            onprogress : onprogress,
             requestTime : new Date()
         });
     });
@@ -83,32 +86,19 @@ Coms.prototype.send = function(request) {
 
 Coms.prototype.receive = function(event) {
     
-    var self = this;
-
-    return new Promise(function(resolve, reject) {
-
-        var reader = new FileReader();
-        reader.onloadend = function() {
-            resolve(reader.result);
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(event.data);
-
-    }).then(function(arrayBuffer) {
-
-        var response = self.Messages.Response.decode(arrayBuffer);
-        
-        for (var i = 0; i < self._transactions.length; i++) {
-        
-            var trans = self._transactions[i];
-            if (trans.id === response.id)
+    var response = this.Messages.ComsMessage.decode(event.data);
+    
+    for (var i = 0; i < this._transactions.length; i++) {
+    
+        var trans = this._transactions[i];
+        if (trans.id === response.id) {
+            if (response.status === this.Messages.Status.COMPLETE)
                 trans.resolve(response);
+            else
+                trans.onprogress(response);
+            break;
         }
-
-    }).catch(function(err) {
-
-        console.log(err);
-    });
+    }
 };
 
 module.exports = Coms;

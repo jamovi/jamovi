@@ -6,6 +6,8 @@
 #define ENGINER_H
 
 #include <RInside.h>
+#include <Rcpp.h>
+#include <boost/signals2.hpp>
 
 #undef Free
 #undef ERROR
@@ -15,7 +17,9 @@
 class EngineR
 {
 public:
-    static void run(Analysis *analysis);
+    void run(Analysis *analysis);
+    
+    boost::signals2::signal<void (const std::string &)> resultsReceived;
     
 private:
     static std::string makeAbsolute(const std::string &path);

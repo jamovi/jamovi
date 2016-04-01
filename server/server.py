@@ -5,8 +5,8 @@ import tornado.httpserver
 
 from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
-from tornado.websocket import WebSocketHandler
 
+from clientconnection import ClientConnection
 from instance import Instance
 
 import os.path
@@ -14,8 +14,6 @@ import uuid
 
 import threading
 import time
-
-import clientcoms
 
 
 class SingleFileHandler(RequestHandler):
@@ -82,31 +80,6 @@ class AnalysisDescriptor(RequestHandler):
             self.write(str(e))
 
 
-class DataHandler(WebSocketHandler):
-
-    def initialize(self, instance):
-        self._instance = instance
-
-    def check_origin(self, origin):
-        return True
-
-    def open(self):
-        print('websocket opened')
-        self.set_nodelay(True)
-        self._instance.addHandler(self._send)
-
-    def on_close(self):
-        print('websocket closed')
-        self._instance.removeHandler(self._send)
-
-    def on_message(self, message):
-        request = clientcoms.Request.create_from_bytes(message)
-        self._instance.on_request(request)
-
-    def _send(self, response):
-        self.write_message(response.encode_to_bytes(), binary=True)
-
-
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
@@ -124,16 +97,24 @@ class Server:
     def check_for_shutdown(self):
 
         parent = threading.main_thread()
+        time_without_listeners = None
 
         while True:
             time.sleep(.2)
             if parent.is_alive() is False:
                 break
-            if self._instance.hasHandlers() is False and self._instance.timeWithoutHandlers() > .5:
-                print('Server shutting down due to inactivity')
-                ioloop = tornado.ioloop.IOLoop.instance()
-                ioloop.stop()
-                break
+
+            now = time.time()
+
+            if ClientConnection.number_of_connections == 0:
+                if time_without_listeners is None:
+                    time_without_listeners = now
+                elif now - time_without_listeners > 1:
+                    print('Server shutting down due to inactivity')
+                    tornado.ioloop.IOLoop.instance().stop()
+                    break
+            else:
+                time_without_listeners = None
 
     def start(self):
 
@@ -141,14 +122,12 @@ class Server:
 
         client_path = os.path.join(here, '..', 'client')
         analyses_path = os.path.join(here, '..', 'analyses')
-        enginecoms_path  = os.path.join(here, 'enginecoms.proto')
-        clientcoms_path  = os.path.join(here, 'clientcoms.proto')
+        coms_path  = os.path.join(here, 'silkycoms.proto')
 
         self._app = tornado.web.Application([
-            (r'/coms',   DataHandler, { 'instance': self._instance }),
+            (r'/coms',   ClientConnection, { 'instance': self._instance }),
             (r'/upload', UploadHandler),
-            (r'/proto/clientcoms.proto',  SingleFileHandler, { 'path': clientcoms_path, 'mime_type': 'text/plain' }),
-            (r'/proto/enginecoms.proto',  SingleFileHandler, { 'path': enginecoms_path, 'mime_type': 'text/plain' }),
+            (r'/proto/coms.proto',  SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
             (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
