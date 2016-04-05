@@ -1,7 +1,7 @@
 
 #help {
     overflow: auto;
-    border: 1px solid #999999 ;
+    border: 1px solid #555555 ;
     border-radius: 5px ;
     padding: 5px ;
     background-color: white;
@@ -9,13 +9,11 @@
 
 #main-options {
     background-color: inherit;
-    border: 1px solid #999999 ;
-    border-radius: 5px ;
+    border: 1px solid #555555 ;
 }
 
 #results {
-    border: 1px solid #999999 ;
-    border-radius: 5px ;
+    border: 1px solid #555555 ;
     padding: 5px ;
 }
 
@@ -27,15 +25,6 @@
     height: 100%;
     float: right;
     box-sizing: border-box;
-    width: 400px;
-    padding-top: 5px ;
-    padding-left: 15px ;
-    padding-right: 15px ;
-}
-
-#options-layout-control-control {
-    height: 100% ;
-    width: 100% ;
-    background-color: yellow;
-    overflow: auto;
+    width: 585px;
+    border: none;
 }

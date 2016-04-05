@@ -1,4 +1,91 @@
 
+* {
+    user-select: none ;
+    -webkit-user-select: none;
+}
+
+html, body {
+    box-sizing: border-box ;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    height:100%
+}
+
+body {
+    font-family: "Segoe UI", "Open Sans", sans-serif, serif;
+    font-size: 0.875rem;
+    line-height: 1.1;
+    font-weight: 400;
+    font-style: normal;
+
+    cursor: default ;
+}
+
+h1 {
+    font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
+}
+
+.silky-layout-cell {
+    overflow:hidden;
+}
+
+.silky-layout-cell.cell-border:not(.first-cell) {
+    border-left: 1px solid rgb(130, 130, 130);
+}
+
+.silky-layout-cell.cell-border:not(.first-row) {
+    border-top: 1px solid rgb(130, 130, 130);
+}
+
+.silky-layout-cell.selected {
+    background-color: rgb(180, 180, 255);
+}
+
+.silky-listview-header {
+    font-size: 110% ;
+    font-weight: bold;
+}
+
+.silky-options-content {
+    border: none;
+    overflow: auto;
+    padding-right: 15px;
+    padding-left: 15px;
+    padding-top: 15px;
+    box-sizing: border-box ;
+}
+
+.silky-sp-back-button {
+    font-size: 24px ;
+    width: 40px ;
+    height: 40px ;
+    /*float: right;*/
+    box-sizing: border-box ;
+    border: 3px solid #555555 ;
+    border-radius: 50% ;
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-top: 6px ;
+    margin-bottom: 6px ;
+    margin-right: 6px ;
+    color: #555555 ;
+    display: inline-block;
+}
+
+.silky-sp-back-button:hover {
+
+    border-color: #999999 ;
+    color: #999999 ;
+}
+
+.silky-sp-back-button span {
+    line-height: 34px ;
+}
+
+
+
 .silky-options-title {
     font-size: 170% ;
 }

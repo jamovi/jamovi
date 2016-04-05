@@ -9,6 +9,7 @@ var SplitPanelSection = require('./splitpanelsection');
 
 var SplitPanel = SilkyView.extend({
     className: "splitpanel",
+
     initialize: function() {
 
         this._resizing = false;
@@ -95,21 +96,9 @@ var SplitPanel = SilkyView.extend({
     addContent: function(name, $content) {
         var section = this.getSection(name);
 
-        /*var hideButton = section.getHideButton();
-        if (hideButton)
-            hideButton.off('click');*/
-
         section.$panel.empty();
 
         section.$panel.append($content);
-
-        /*hideButton = section.getHideButton();
-        var self = this;
-        if (hideButton) {
-            hideButton.on("click", function(event) {
-                self.setVisibility(section, false);
-            });
-        };*/
     },
 
     _fastDuration : 100,
@@ -229,14 +218,6 @@ var SplitPanel = SilkyView.extend({
             self.setVisibility(section, false);
         });
 
-        /*var hideButton = section.getHideButton();
-        var self = this;
-        if (hideButton) {
-            hideButton.on("click", function(event) {
-                self.setVisibility(section, false);
-            });
-        };*/
-
         this._sections._list[section.listIndex] = section;
         this._sections[section.name] = section;
 
@@ -293,6 +274,7 @@ var SplitPanel = SilkyView.extend({
 
         this._rendering = false;
     },
+
     onMouseDown: function(event) {
         if (this._resizing === true || event.data === null)
             return;
@@ -306,6 +288,7 @@ var SplitPanel = SilkyView.extend({
         self._startPosY = _.isUndefined(event.pageY) ? event.originalEvent.pageY : event.pageY;
 
     },
+
     _mouseUpGeneral: function(event) {
 
         var self = event.data;
@@ -315,6 +298,7 @@ var SplitPanel = SilkyView.extend({
         self._sizingData = null;
         self._resizing = false;
     },
+
     _mouseMoveGeneral: function(event) {
 
         var self = event.data;
@@ -375,6 +359,7 @@ var SplitPanel = SilkyView.extend({
 
         self.updateDisplay();
     },
+
     resized: function() {
 
         var totalHeight = this.$el.height();
@@ -473,6 +458,7 @@ var SplitPanel = SilkyView.extend({
 
         this.updateDisplay();
     },
+
     updateDisplay: function() {
         this._moveThroughSections(this.firstSection, "right", function(currentSection) {
             currentSection.updateDisplay();

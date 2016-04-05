@@ -61,18 +61,17 @@ $(document).ready(function() {
     });
 
     var halfWindowWidth = $(document).width() * 0.5;
-    var optionsFixedWidth = 400;
+    var optionsFixedWidth = 585;
     var splitPanel  = new SplitPanel({el : "#main-view"});
 
-    splitPanel.addPanel("main-table", { minWidth: 150, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
+    splitPanel.addPanel("main-table", { minWidth: 90, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
     splitPanel.addPanel("main-options", { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferedWidth: optionsFixedWidth, visible: false, strongEdge: "right", stretchyEdge: "left", level: 1 });
     splitPanel.addPanel("results", { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
     splitPanel.addPanel("help", { minWidth: 30, preferedWidth: 200, visible: false, strongEdge: "right", level: 1 });
 
     analyses.on("analysisCreated", function(analysis) {
         analysis.ready.then(function() {
-
-            optionspanel.setContent(new analysis.View( { className: "silky-options-content", model: analysis.model } ));
+            optionspanel.setAnalysis(analysis);
             splitPanel.setVisibility("main-options", true);
         });
     });
@@ -92,6 +91,7 @@ $(document).ready(function() {
     var mainTable   = new TableView({el : "#main-table", model : dataSetModel });
     var progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
     var optionspanel = new OptionsPanel({ el : "#main-options" });
+    optionspanel.setDataSetModel(dataSetModel);
 
     coms.ready.then(start);
 });
