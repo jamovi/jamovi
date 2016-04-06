@@ -115,6 +115,10 @@ class ColumnWriter:
         if self._column_type is None:
             if self._only_integers and self._many_uniques is False:
                 self._column_type = ColumnType.NOMINAL
+
+                for label in self._unique_values:
+                    self._column.addLabel(int(label), label)
+
             elif self._only_floats:
                 self._column_type = ColumnType.CONTINUOUS
             elif self._many_uniques:

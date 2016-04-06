@@ -12,7 +12,7 @@
 class MemoryMap {
 
 public:
-    static MemoryMap *attach(const std::string &path, unsigned long long size);
+    static MemoryMap *attach(const std::string &path);
     
     template<class T> inline T *resolve(T *p)
     {

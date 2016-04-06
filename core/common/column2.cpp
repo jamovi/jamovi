@@ -38,16 +38,38 @@ ColumnStruct *Column2::struc() const
     return _mm->resolve(_rel);
 }
 
+int Column2::labelCount() const
+{
+    return struc()->labelsUsed;
+}
+
+map<int, string> Column2::labels() const
+{
+    map<int, string> m;
+    
+    ColumnStruct *s = struc();
+    Label *labels = _mm->resolve(s->labels);
+    
+    for (int i = 0; i < s->labelsUsed; i++)
+    {
+        Label &l = labels[i];
+        m[l.value] = _mm->resolve(l.label);
+    }
+    
+    return m;
+}
+
 const char *Column2::getLabel(int value)
 {
     if (value == INT_MIN)
         return ".";
 
     ColumnStruct *s = struc();
+    Label *labels = _mm->resolve(s->labels);
     
     for (int i = 0; i < s->labelsUsed; i++)
     {
-        Label &l = _mm->resolve(s->labels)[i];
+        Label &l = labels[i];
         if (l.value == value)
             return _mm->resolve(l.label);
     }

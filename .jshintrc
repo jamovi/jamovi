@@ -3,6 +3,7 @@
     "browserify": true,
     "laxbreak": true,
     "esversion" : 6,
+    "multistr": true,
     "globals": {
         "console" : true
     }

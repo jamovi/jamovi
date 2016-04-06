@@ -7,7 +7,11 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 
 if (process.argv.length >= 3)
-    global.port = process.argv[2];
+    global.mainPort = process.argv[2];
+if (process.argv.length >= 4)
+    global.analysisUIPort = process.argv[3];
+if (process.argv.length >= 5)
+    global.resultsViewPort = process.argv[4];
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.

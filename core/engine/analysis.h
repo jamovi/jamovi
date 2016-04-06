@@ -18,6 +18,9 @@ public:
     std::string name;
     std::string ns;
     std::string options;
+
+    bool requiresDataset;
+    std::string datasetId;
     
 private:
     Analysis(int id, std::string name, std::string ns, std::string options);

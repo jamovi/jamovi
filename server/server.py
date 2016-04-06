@@ -84,7 +84,15 @@ class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
 
-        self.port = port
+        self._main_port = port
+
+        if port == 0:
+            self._analysisui_port = 0
+            self._resultsview_port = 0
+        else:
+            self._analysisui_port = int(port) + 1
+            self._resultsview_port = int(port) + 2
+
         self._ioloop = tornado.ioloop.IOLoop.instance()
         self._shutdown_on_idle = shutdown_on_idle
         self._debug = debug
@@ -124,7 +132,7 @@ class Server:
         analyses_path = os.path.join(here, '..', 'analyses')
         coms_path  = os.path.join(here, 'silkycoms.proto')
 
-        self._app = tornado.web.Application([
+        self._main_app = tornado.web.Application([
             (r'/coms',   ClientConnection, { 'instance': self._instance }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto',  SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
@@ -133,13 +141,39 @@ class Server:
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
         ], debug=self._debug)
 
-        sockets = tornado.netutil.bind_sockets(self.port, 'localhost')
-        server = tornado.httpserver.HTTPServer(self._app)
-        server.add_sockets(sockets)
+        analysisui_path = os.path.join(client_path,   'analysisui.html')
+        analysisuijs_path = os.path.join(client_path, 'js/analysisui.js')
 
-        self.port = sockets[0].getsockname()[1]
+        self._analysisui_app = tornado.web.Application([
+            (r'/', SingleFileHandler, { 'path': analysisui_path }),
+            (r'/js/analysisui.js', SingleFileHandler, { 'path': analysisuijs_path })
+        ], debug=self._debug)
+
+        resultsview_path   = os.path.join(client_path, 'resultsview.html')
+        resultsviewjs_path = os.path.join(client_path, 'js/resultsview.js')
+
+        self._resultsview_app = tornado.web.Application([
+            (r'/', SingleFileHandler, { 'path': resultsview_path }),
+            (r'/js/resultsview.js', SingleFileHandler, { 'path': resultsviewjs_path })
+        ], debug=self._debug)
+
+        sockets = tornado.netutil.bind_sockets(self._main_port, 'localhost')
+        server = tornado.httpserver.HTTPServer(self._main_app)
+        server.add_sockets(sockets)
+        self._main_port = sockets[0].getsockname()[1]
+
+        sockets = tornado.netutil.bind_sockets(self._analysisui_port, 'localhost')
+        server = tornado.httpserver.HTTPServer(self._analysisui_app)
+        server.add_sockets(sockets)
+        self._analysisui_port = sockets[0].getsockname()[1]
+
+        sockets = tornado.netutil.bind_sockets(self._resultsview_port, 'localhost')
+        server = tornado.httpserver.HTTPServer(self._resultsview_app)
+        server.add_sockets(sockets)
+        self._results_port = sockets[0].getsockname()[1]
+
         for listener in self._port_opened_listener:
-            listener(self.port)
+            listener((self._main_port, self._analysisui_port, self._resultsview_port))
 
         if self._shutdown_on_idle:
             thread = threading.Thread(target=self.check_for_shutdown)

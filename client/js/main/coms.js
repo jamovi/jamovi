@@ -30,7 +30,9 @@ Coms.prototype.connect = function(url) {
     return Promise.all([
         new Promise(function(resolve, reject) {
         
-            ProtoBuf.loadProtoFile('s/proto/coms.proto', function(err, builder) {
+            var protoUrl = 'http://' + self._baseUrl + '/proto/coms.proto';
+
+            ProtoBuf.loadProtoFile(protoUrl, function(err, builder) {
                 if (err) {
                     reject(err);
                 }

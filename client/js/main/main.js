@@ -10,10 +10,12 @@ if (window.location.protocol === 'file:') {
     window.inElectron = true;
 
     var remote = window.require('electron').remote;
-    var port = remote.getGlobal('port');
+    var mainPort = remote.getGlobal('mainPort');
+    var analysisUIPort = remote.getGlobal('analysisUIPort');
+    var resultsViewPort = remote.getGlobal('resultsViewPort');
 
-    if (typeof(port) !== 'undefined')
-        coms.setBaseUrl('localhost:' + port);
+    if (typeof(mainPort) !== 'undefined')
+        coms.setBaseUrl('localhost:' + mainPort);
 }
 else {
 
@@ -22,6 +24,7 @@ else {
 
 
 var TableView   = require('./tableview');
+var ResultsView = require('./results');
 var SplitPanel  = require('./splitpanel');
 var ProgressBar = require('./progressbar');
 var Backstage   = require('./backstage').View;
@@ -92,6 +95,9 @@ $(document).ready(function() {
     var progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
     var optionspanel = new OptionsPanel({ el : "#main-options" });
     optionspanel.setDataSetModel(dataSetModel);
+    
+    var resultsUrl = 'http://localhost:' + resultsViewPort + '/';
+    var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance.analyses() });
 
     coms.ready.then(start);
 });

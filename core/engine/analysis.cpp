@@ -10,4 +10,7 @@ Analysis::Analysis(int id, std::string name, std::string ns, std::string options
     this->name = name;
     this->ns = ns;
     this->options = options;
+
+    this->requiresDataset = false;
+    this->datasetId = "";
 }

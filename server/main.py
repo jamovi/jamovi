@@ -31,19 +31,19 @@ class Unbuffered(object):
         return getattr(self.stream, attr)
 
 
-def _port_opened(port_no):
+def _ports_opened(ports):
 
-    print('Server listening on port: ' + str(port_no))
+    print('Server listening on ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
 
-    port_lock_path = Dirs.appDataDir() + '/' + str(port_no) + '.lock'
+    port_lock_path = Dirs.appDataDir() + '/' + str(ports[0]) + '.lock'
     with open(port_lock_path, 'a'):
         pass
 
     if launch_client:
-        _launch_electron(port_no)
+        _launch_electron(ports)
 
 
-def _launch_electron(port_no):
+def _launch_electron(ports):
 
     if os.name == 'nt':
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron.exe')
@@ -51,7 +51,7 @@ def _launch_electron(port_no):
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/Electron.app/Contents/MacOS/Electron')
 
     main = os.path.join(tld, 'silky/electron/main.js')
-    subprocess.Popen([exe, main, str(port_no)], close_fds=True)
+    subprocess.Popen([exe, main, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
 
 
 if __name__ == "__main__":
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             os.remove(left_over)
 
         server = Server(port, shutdown_on_idle=shutdown_on_idle, debug=debug)
-        server.add_port_opened_listener(_port_opened)
+        server.add_port_opened_listener(_ports_opened)
         server.start()
     else:
         print('Server already running')

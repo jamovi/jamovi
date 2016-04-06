@@ -100,9 +100,9 @@ message CellsResponse {
 
 message AnalysisRequest {
     optional int32 id = 1;
-    optional int32 revision = 2;
-    optional string name = 3;
-    optional string ns = 4;
+    optional string name = 2;
+    optional string ns = 3;
+    optional string datasetId = 4;
     
     enum Perform {
         INIT = 1;
@@ -183,6 +183,7 @@ message ResultsElement {
         ResultsTable table = 4;
         ResultsImage image = 5;
         ResultsGroup group = 6;
+        string text = 7;
     }
 }
 

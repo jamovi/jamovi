@@ -3,6 +3,7 @@
 *.pyd
 *.swp
 
+analyses/
 node_modules/
 
 core/libsilky/silky.cpp
@@ -12,10 +13,6 @@ core/libsilky/silky.cpp
 client/js/*.js
 client/css/bundle.css
 client/css/bundle.min.css
-
-analyses/inst/*.js
-analyses/inst/*.proto
-analyses/inst/*.json
 
 # protocol buffers
 *.pb.cc

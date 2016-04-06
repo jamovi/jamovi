@@ -1,6 +1,6 @@
-from protobuf3.fields import BytesField, MessageField, DoubleField, EnumField, UInt32Field, StringField, BoolField, Int32Field
-from protobuf3.message import Message
+from protobuf3.fields import BytesField, BoolField, MessageField, UInt32Field, DoubleField, Int32Field, EnumField, StringField
 from enum import Enum
+from protobuf3.message import Message
 
 
 class ComsMessage(Message):
@@ -148,9 +148,9 @@ CellsResponse.Column.add_field('strings', MessageField(field_number=3, optional=
 CellsResponse.add_field('request', MessageField(field_number=1, optional=True, message_cls=CellsRequest))
 CellsResponse.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResponse.Column))
 AnalysisRequest.add_field('id', Int32Field(field_number=1, optional=True))
-AnalysisRequest.add_field('revision', Int32Field(field_number=2, optional=True))
-AnalysisRequest.add_field('name', StringField(field_number=3, optional=True))
-AnalysisRequest.add_field('ns', StringField(field_number=4, optional=True))
+AnalysisRequest.add_field('name', StringField(field_number=2, optional=True))
+AnalysisRequest.add_field('ns', StringField(field_number=3, optional=True))
+AnalysisRequest.add_field('datasetId', StringField(field_number=4, optional=True))
 AnalysisRequest.add_field('perform', EnumField(field_number=5, optional=True, enum_cls=AnalysisRequest.Perform))
 AnalysisRequest.add_field('options', StringField(field_number=6, optional=True))
 AnalysisResponse.Results.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))
@@ -180,4 +180,5 @@ ResultsElement.add_field('status', EnumField(field_number=3, optional=True, enum
 ResultsElement.add_field('table', MessageField(field_number=4, optional=True, message_cls=ResultsTable))
 ResultsElement.add_field('image', MessageField(field_number=5, optional=True, message_cls=ResultsImage))
 ResultsElement.add_field('group', MessageField(field_number=6, optional=True, message_cls=ResultsGroup))
+ResultsElement.add_field('text', StringField(field_number=7, optional=True))
 ResultsGroup.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))

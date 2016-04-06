@@ -8,6 +8,7 @@
 #include "memorymap.h"
 
 #include <string>
+#include <map>
 
 class DataSet2;
 
@@ -61,6 +62,8 @@ public:
     enum ColumnType { Misc = 0, NominalText = 1, Nominal = 2, Ordinal = 3, Continuous = 4 };
     
     ColumnType columnType() const;
+    int labelCount() const;
+    std::map<int, std::string> labels() const;
     const char *getLabel(int value);
     
     template<typename T> T& cell(int rowIndex)

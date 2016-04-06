@@ -27,6 +27,7 @@ class Instance:
         self._dataset = None
         self._analyses = Analyses()
         self._em = EngineManager()
+        self._datasetId = None
 
         self._em.add_results_listener(self._on_results)
 
@@ -55,6 +56,11 @@ class Instance:
 
     def _on_results(self, results, request, complete):
 
+        if 'results' in results:
+            for element in results.results.elements:
+                if 'text' in element:
+                    print(element.text)
+
         self._coms.send(results, request, complete)
 
     def _on_open(self, request):
@@ -70,6 +76,7 @@ class Instance:
         formatio.csv.read(dataset, request.filename)
 
         self._dataset = dataset
+        self._datasetId = path
 
         self._coms.send(None, request)
 
@@ -95,6 +102,7 @@ class Instance:
         self._coms.send(response, request, False)
 
         request.options = options
+        request.datasetId = self._datasetId
         self._em.send(request)
 
     def _on_info(self, request):

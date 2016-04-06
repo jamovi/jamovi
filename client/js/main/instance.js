@@ -17,16 +17,6 @@ var ProgressModel = Backbone.Model.extend({
     }
 });
 
-var ResultsModel = Backbone.Model.extend({
-
-    createAnalysis : function(name) {
-
-        console.log('analysis created: ' + name);
-        this.trigger("analysisSelected", name);
-    }
-
-});
-
 var Instance = Backbone.Model.extend({
 
     initialize: function() {
@@ -49,8 +39,6 @@ var Instance = Backbone.Model.extend({
         this._analyses = new Analyses();
         this._analyses.on('analysisCreated', this._analysisCreated, this);
 
-        this._resultsModel = new ResultsModel();
-
     },
     defaults : {
         coms : null
@@ -66,10 +54,6 @@ var Instance = Backbone.Model.extend({
     backstageModel: function() {
 
         return this._backstageModel;
-    },
-    resultsModel : function() {
-
-        return this._resultsModel;
     },
     analyses : function() {
 
@@ -193,7 +177,7 @@ var Instance = Backbone.Model.extend({
                 ok = true;
             }
             
-            if (analysis.isSetup && _.has(response, "results")) {
+            if (analysis.isSetup && _.has(response, "results") && response.results !== null) {
                 analysis.setResults(response.results);
                 ok = true;
             }

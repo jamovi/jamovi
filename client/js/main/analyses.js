@@ -13,6 +13,8 @@ var Analysis = function(name, ns) {
     this.options = null;
     this.results = null;
     this.isSetup = false;
+    
+    this._parent = null;
 
     var self = this;
 
@@ -31,6 +33,8 @@ Analysis.prototype.setup = function(id, options) {
 
 Analysis.prototype.setResults = function(results) {
     this.results = results;
+    if (this._parent !== null)
+        this._parent._notifyResults(this);
 };
 
 var Analyses = Backbone.Model.extend({
@@ -43,8 +47,12 @@ var Analyses = Backbone.Model.extend({
     },
     createAnalysis : function(name, ns) {
         var analysis = new Analysis(name, ns);
+        analysis._parent = this;
         this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
+    },
+    _notifyResults : function(analysis) {
+        this.trigger('analysisResults', analysis);
     }
 });
 

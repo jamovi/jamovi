@@ -56,5 +56,12 @@ void EngineComs::parse(char *data, int len)
     }
 
     Analysis *analysis = AnalysisLoader::create(analysisRequest.id(), analysisRequest.name(), analysisRequest.ns(), analysisRequest.options());
+    
+    if (analysisRequest.has_datasetid())
+    {
+        analysis->datasetId = analysisRequest.datasetid();
+        analysis->requiresDataset = true;
+    }
+    
     analysisRequested(request.id(), analysis);
 }
