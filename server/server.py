@@ -6,14 +6,15 @@ import tornado.httpserver
 from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
 
+from settings import Settings
 from clientconnection import ClientConnection
-from instance import Instance
 
 import os.path
 import uuid
 
 import threading
 import time
+import json
 
 
 class SingleFileHandler(RequestHandler):
@@ -80,6 +81,35 @@ class AnalysisDescriptor(RequestHandler):
             self.write(str(e))
 
 
+class LoginHandler(RequestHandler):
+    def post(self):
+        # username = self.get_argument('username', None)
+        # password = self.get_argument('password', None)
+        self.set_cookie('authId', str(uuid.uuid4()))
+        self.set_status(204)
+
+
+class BackstageInfoHandler(RequestHandler):
+    def get(self):
+        settings = Settings.retrieve('backstage')
+
+        localFSRecents = settings.get('localFSRecents')
+        if localFSRecents is None:
+            localFSRecents = [
+                { 'name': '{{Documents}}', 'path': '{{Documents}}' },
+                { 'name': '{{Desktop}}',   'path': '{{Desktop}}' } ]
+
+        recents = settings.get('recents', [ ])
+
+        info = {
+            'recents': recents,
+            'localFSRecents': localFSRecents
+        }
+
+        self.set_header('Content-Type', 'text/plain')
+        self.write(json.dumps(info))
+
+
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
@@ -96,7 +126,6 @@ class Server:
         self._ioloop = tornado.ioloop.IOLoop.instance()
         self._shutdown_on_idle = shutdown_on_idle
         self._debug = debug
-        self._instance = Instance()
         self._port_opened_listener = [ ]
 
     def add_port_opened_listener(self, listener):
@@ -133,7 +162,9 @@ class Server:
         coms_path  = os.path.join(here, 'silkycoms.proto')
 
         self._main_app = tornado.web.Application([
-            (r'/coms',   ClientConnection, { 'instance': self._instance }),
+            (r'/login', LoginHandler),
+            (r'/backstage', BackstageInfoHandler),
+            (r'/coms', ClientConnection),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto',  SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
             (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),

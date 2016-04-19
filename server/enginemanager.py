@@ -78,7 +78,7 @@ class EngineManager:
         root = path.realpath(path.join(path.dirname(__file__), '../../..'))
         exe_path = path.join(root, 'bin/engine')
 
-        if os.name == 'nt':
+        if os.uname().sysname == 'Windows':
             r_home = path.join(root, 'Frameworks', 'R')
             paths = [
                 path.join(root, 'Resources', 'lib'),
@@ -98,8 +98,8 @@ class EngineManager:
         self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)
 
-        if os.name == 'nt':  # windows
-            self._socket.bind(self._address.encode('utf-8'))  # weird
+        if os.uname().sysname == 'Windows':
+            self._socket.bind(self._address.encode('utf-8'))
         else:
             self._socket.bind(self._address)
 
@@ -111,7 +111,7 @@ class EngineManager:
                 self._receive(message)
 
             except nanomsg.NanoMsgAPIError as e:
-                if e.errno != nanomsg.ETIMEDOUT:
+                if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
                     raise e
 
             self._process.poll()

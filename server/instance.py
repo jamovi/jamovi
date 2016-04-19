@@ -17,11 +17,14 @@ from enginemanager import EngineManager
 from analyses import Analyses
 
 import json
+import uuid
 
 
 class Instance:
 
-    def __init__(self):
+    instances = { }
+
+    def __init__(self, instanceId=None):
 
         self._coms = None
         self._dataset = None
@@ -35,6 +38,17 @@ class Instance:
 
         settings = Settings.retrieve()
         settings.sync()
+
+        if instanceId is not None:
+            self._instanceId = instanceId
+        else:
+            self._instanceId = str(uuid.uuid4())
+
+        Instance.instances[self._instanceId] = self
+
+    @property
+    def id(self):
+        return self._instanceId
 
     def set_coms(self, coms):
         self._coms = coms
@@ -82,7 +96,7 @@ class Instance:
 
         self._addToRecents(request.filename)
 
-    def _openCallback(self, task, progress):
+    def _open_callback(self, task, progress):
         response = silkycoms.ComsMessage()
         response.open.status = silkycoms.Status.IN_PROGRESS
         response.open.progress = progress

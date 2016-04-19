@@ -32,8 +32,8 @@ void EngineR::run(Analysis *analysis)
     stringstream ss;
     
     ss << "{\n";
-    ss << "  options <- silkyR::Options('" << analysis->options << "', vars=c('a', 'b', 'f'), freq=TRUE)\n";
-    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "(id=" << analysis->id << ", options=options)\n";
+    ss << "  options <- silkycore::Options$new('" << analysis->options << "', vars=c('a', 'b', 'f'), freq=TRUE)\n";
+    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', id=" << analysis->id << ", options=options)\n";
     ss << "}\n";
     
     rInside.parseEvalQNT(ss.str());
@@ -45,14 +45,13 @@ void EngineR::run(Analysis *analysis)
         rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
         rInside.parseEvalQNT("analysis$.setReadDataset(readDataset)\n");
         rInside.parseEvalQNT("rm(list='readDataset')\n");
-        rInside.parseEvalQNT("analysis$.readDataset()\n");
+        rInside.parseEvalQNT("analysis$readDataset()\n");
+
     }
     
     ss.str(""); // clear
     
     ss << "{\n";
-    ss << "  analysis$run()\n";
-    ss << "  silkyR::initProtoBuf()\n";
     ss << "  serial <- RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
     ss << "  serial\n";
     ss << "}\n";
@@ -60,6 +59,18 @@ void EngineR::run(Analysis *analysis)
     Rcpp::RawVector rawVec = rInside.parseEvalNT(ss.str());
     std::string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw);
+    
+    ss.str(""); // clear
+    
+    ss << "{\n";
+    ss << "  analysis$run()\n";
+    ss << "  serial <- RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
+    ss << "  serial\n";
+    ss << "}\n";
+
+    Rcpp::RawVector rawVec2 = rInside.parseEvalNT(ss.str());
+    std::string raw2(rawVec2.begin(), rawVec2.end());
+    resultsReceived(raw2);
 }
 
 Rcpp::DataFrame EngineR::readDataset(const std::string &path, const vector<string> &columnsRequired)

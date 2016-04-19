@@ -8,11 +8,14 @@ sys.path.append(os.path.join(tld, 'lib/python3.5/lib-dynload'))
 os.environ['PATH'] = os.path.join(tld, 'lib') + ';' + os.environ['PATH']
 
 from server import Server
+from clientconnection import ClientConnection
 
 from silky import Dirs
 from fasteners.process_lock import InterProcessLock as Lock
+
 import glob
 import subprocess
+import threading
 import time
 
 global shutdown_on_idle
@@ -44,14 +47,28 @@ def _ports_opened(ports):
 
 
 def _launch_electron(ports):
+    threading.Thread(target=_launch_electron_thread, args=(ports,)).start()
+
+
+def _launch_electron_thread(ports):
 
     if os.name == 'nt':
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron.exe')
+    elif os.uname()[0] == "Linux":
+        exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron')
     else:
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/Electron.app/Contents/MacOS/Electron')
 
     main = os.path.join(tld, 'silky/electron/main.js')
-    subprocess.Popen([exe, main, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
+
+    process = subprocess.Popen([exe, main, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
+
+    # we add to the number of connections to prevent the server shutting down
+    # before the client has first connected (if the start up is particularly slow)
+
+    ClientConnection.number_of_connections += 1
+    process.wait()
+    ClientConnection.number_of_connections -= 1
 
 
 if __name__ == "__main__":
@@ -91,17 +108,21 @@ if __name__ == "__main__":
         server = Server(port, shutdown_on_idle=shutdown_on_idle, debug=debug)
         server.add_port_opened_listener(_ports_opened)
         server.start()
+
     else:
+
         print('Server already running')
-        server_found = False
-        while server_found is False:
-            lock_files = glob.glob(app_data_path + '/*.lock')
-            for file in lock_files:
-                try:
-                    port_no = int(os.path.splitext(os.path.basename(file))[0])
-                    _launch_electron(port_no)
-                    server_found = True
-                    break
-                except:
-                    pass
-            time.sleep(.2)
+
+        if launch_client:
+            server_found = False
+            while server_found is False:
+                lock_files = glob.glob(app_data_path + '/*.lock')
+                for file in lock_files:
+                    try:
+                        port_no = int(os.path.splitext(os.path.basename(file))[0])
+                        _launch_electron(port_no)
+                        server_found = True
+                        break
+                    except:
+                        pass
+                time.sleep(.2)

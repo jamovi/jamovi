@@ -1,9 +1,17 @@
-from protobuf3.fields import BytesField, BoolField, MessageField, UInt32Field, DoubleField, Int32Field, EnumField, StringField
-from enum import Enum
 from protobuf3.message import Message
+from enum import Enum
+from protobuf3.fields import StringField, UInt32Field, Int32Field, DoubleField, BoolField, MessageField, EnumField, BytesField
 
 
 class ComsMessage(Message):
+    pass
+
+
+class InstanceRequest(Message):
+    pass
+
+
+class InstanceResponse(Message):
     pass
 
 
@@ -121,6 +129,8 @@ ComsMessage.add_field('id', Int32Field(field_number=1, optional=True))
 ComsMessage.add_field('payload', BytesField(field_number=2, optional=True))
 ComsMessage.add_field('payloadType', StringField(field_number=3, optional=True))
 ComsMessage.add_field('status', EnumField(field_number=4, optional=True, enum_cls=Status, default=Status.COMPLETE))
+InstanceRequest.add_field('instanceId', StringField(field_number=1, optional=True))
+InstanceResponse.add_field('instanceId', StringField(field_number=1, optional=True))
 OpenRequest.add_field('filename', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('name', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('path', StringField(field_number=2, optional=True))

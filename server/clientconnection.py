@@ -2,18 +2,19 @@
 from tornado.websocket import WebSocketHandler
 
 import silkycoms
+from instance import Instance
 
 
 class ClientConnection(WebSocketHandler):
 
     number_of_connections = 0
 
-    def initialize(self, instance):
-        self._instance = instance
+    def initialize(self):
+
         self._transactions = { }
         self._listeners = [ ]
 
-        self._instance.set_coms(self)
+        self._instance = None
 
     def check_origin(self, origin):
         return True
@@ -35,8 +36,29 @@ class ClientConnection(WebSocketHandler):
         m = silkycoms.ComsMessage.create_from_bytes(message)
         clas = getattr(silkycoms, m.payloadType)
         request = clas.create_from_bytes(m.payload)
+
         self._transactions[m.id] = request
-        self._instance.on_request(request)
+
+        if self._instance is not None:
+            self._instance.on_request(request)
+        else:
+            self._on_instance_request(request)
+
+    def _on_instance_request(self, request):
+
+        if type(request) == silkycoms.InstanceRequest:
+            if 'instanceId' in request:
+                if request.instanceId in Instance.instances:
+                    self._instance = Instance.instances[request.instanceId]
+            if self._instance is None:
+                self._instance = Instance()
+
+            self._instance.set_coms(self)
+
+            response = silkycoms.InstanceResponse()
+            response.instanceId = self._instance.id
+
+            self.send(response, request)
 
     def send(self, message=None, response_to=None, complete=True):
 

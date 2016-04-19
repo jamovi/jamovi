@@ -9,7 +9,7 @@ Backbone.$ = $;
 
 var Options = require('./options');
 var OptionsView = require('./optionsview');
-var Layoutdef = require('./Layoutdef');
+var Layoutdef = require('./layoutdef');
 
 function addMsgListener(cmd, callback, failed) {
     window.addEventListener("message",

@@ -7,16 +7,21 @@ Backbone.$ = $;
 
 var RibbonModel = Backbone.Model.extend({
 
+    enabled : false,
     defaults : {
         tabs : [
             { title : "File" },
-            { title : "Silky"},
-            { title : "Silky J"}
+            { title : "Silky", analyses : [
+                { name : 'Descriptives', title : 'Descriptives', ns : 'silkyR' },
+                { name : 'TTestOneS', title : 'TTestOneS', ns : 'silkyR' },
+                { name : 'TTestPS',   title : 'TTestPS', ns : 'silkyR' } ]
+            },
+            { title : "Silky J" }
         ],
         selectedIndex : 1
     },
-    _activateAnalysis : function(index) {
-        this.trigger('analysisSelected', { name : 'Descriptives', ns : 'silkyR'} );
+    _activateAnalysis : function(ns, name) {
+        this.trigger('analysisSelected', { name : name, ns : ns } );
     }
 
 });
@@ -36,10 +41,18 @@ var RibbonView = Backbone.View.extend({
         html += '<div class="silky-ribbon-header">';
         html += '</div>';
         html += '<div class="silky-ribbon-body">';
-        html += '   <div class="silky-ribbon-button">';
-        html += '       <div class="silky-ribbon-button-icon"></div>';
-        html += '       <div class="silky-ribbon-button-label">Descriptives</div>';
-        html += '   </div>';
+
+        var currentTabIndex = this.model.get('selectedIndex');
+        var currentTab = this.model.get('tabs')[currentTabIndex];
+        var analyses = currentTab.analyses;
+        
+        analyses.forEach(function(value) {
+            html += '   <button class="silky-ribbon-button" data-name="' + value.name + '" + data-ns="' + value.ns + '">';
+            html += '       <div class="silky-ribbon-button-icon"></div>';
+            html += '       <div class="silky-ribbon-button-label">' + value.title + '</div>';
+            html += '   </button>';
+        });
+        
         html += '</div>';
 
         this.$el.append(html);
@@ -62,7 +75,10 @@ var RibbonView = Backbone.View.extend({
         this.model.set('selectedIndex', index);
     },
     _analysisClicked : function(event) {
-        this.model._activateAnalysis(0);
+        var button = event.currentTarget;
+        var name = button.dataset.name;
+        var ns   = button.dataset.ns;
+        this.model._activateAnalysis(ns, name);
     }
 });
 

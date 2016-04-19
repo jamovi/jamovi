@@ -37,7 +37,7 @@ window.addEventListener('message', function(event) {
         content += '<pre>' + element.text + '</pre>';
     });
     
-    $("body").append(content);
+    $("body").empty().append(content);
 
     _notifyResize();
 });

@@ -97,11 +97,38 @@ $(document).ready(function() {
     optionspanel.setDataSetModel(dataSetModel);
     
     var resultsUrl = 'http://localhost:' + resultsViewPort + '/';
-    var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance.analyses() });
+    var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
+    
+    Promise.resolve(function() {
 
-    coms.ready.then(start);
+        return $.post('http://localhost:' + mainPort + '/login');
+
+    }).then(function() {
+        
+        return $.getJSON('http://localhost:' + mainPort + '/backstage');
+    
+    }).then(function(settings) {
+
+        instance.backstageModel().set('settings', settings);
+
+    }).then(function() {
+    
+        return coms.ready;
+        
+    }).then(function() {
+    
+        var instanceId;
+        if (window.location.search.indexOf('?id=') !== -1)
+            instanceId = window.location.search.split('?id=')[1];
+
+        return instance.connect(instanceId);
+        
+    }).then(function(instanceId) {
+
+        var newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
+        history.replaceState({}, '', newUrl);
+    
+    });
 });
 
-function start() {
-    instance.connect();
-}
+

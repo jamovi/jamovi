@@ -13,7 +13,7 @@
 #include <CoreServices/CoreServices.h>
 #include <libproc.h>
 #else
-
+#include <pwd.h>
 #endif
 
 #include <boost/filesystem.hpp>
@@ -159,7 +159,14 @@ string Dirs2::exePath()
         _exePath = string(buf);
 
 #else
-        throw runtime_exception("not implemented")
+        
+        char buf[1024];
+        pid_t pid = getpid();
+
+        int n = readlink("/proc/self/exe", buf, sizeof(buf));
+
+        _exePath = string(buf, buf+n);
+
 #endif  
     }
     
@@ -222,7 +229,21 @@ string Dirs2::exeDir()
 
 #else
 
-        throw runtime_error("not implemented");
+        char buf[1024];
+        pid_t pid = getpid();
+
+        int n = readlink("/proc/self/exe", buf, sizeof(buf));
+
+        for (int i = n - 1; i > 0; i--)
+        {
+            if (buf[i] == '/')  // lop the exe off, leaving the dir
+            {
+                buf[i] = '\0';
+                break;
+            }
+        }
+
+        _exePath = string(buf);
 
 #endif
     }

@@ -32,6 +32,15 @@ ifeq ($(os),OSX)
 			
 	INT = install_name_tool -change /usr/local/lib/libnanomsg.4.dylib @executable_path/../Frameworks/libnanomsg.4.dylib $(TARGET)
 else
+ifeq ($(os),Linux)
+	R_HOME = /usr/lib/R
+	INCLUDES += -I/usr/share/R/include
+	LIBS  = -L$(R_HOME)/library/RInside/lib -L$(R_HOME)/site-library/RInside/lib \
+			-lboost_filesystem \
+			-lboost_system \
+			-lpthread \
+            -Wl,-R$(R_HOME)/site-library/RInside/lib
+else
 	R_HOME = ../../../../Frameworks/R
 	LIBS =	-L../../../lib \
 			-L../../../lib/libgcc \
@@ -40,13 +49,14 @@ else
 			-lboost_filesystem-mgw49-mt-1_60 \
 			-lboost_system-mgw49-mt-1_60
 endif
+endif
 
 INCLUDES += -I../libsilky/silky \
 	-I../../../include \
 	-I../common \
 	-I$(R_HOME)/include \
-	-I$(R_HOME)/library/RInside/include \
-	-I$(R_HOME)/library/Rcpp/include
+	-I$(R_HOME)/library/RInside/include -I$(R_HOME)/site-library/RInside/include \
+	-I$(R_HOME)/library/Rcpp/include	-I$(R_HOME)/site-library/Rcpp/include
 	
 LIBS += -lR -lnanomsg -lprotobuf -lRInside
 

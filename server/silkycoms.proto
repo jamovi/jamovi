@@ -14,6 +14,14 @@ message ComsMessage {
     optional Status status = 4 [default = COMPLETE];
 }
 
+message InstanceRequest {
+    optional string instanceId = 1;
+}
+
+message InstanceResponse {
+    optional string instanceId = 1;
+}
+
 message OpenRequest {
     optional string filename = 1;
 }

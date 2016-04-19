@@ -23,7 +23,7 @@ Coms.prototype.setBaseUrl = function(url) {
     this._notifyReady();
 };
 
-Coms.prototype.connect = function(url) {
+Coms.prototype.connect = function(sessionId) {
 
     var self = this;
 
@@ -43,8 +43,13 @@ Coms.prototype.connect = function(url) {
             });
         }),
         new Promise(function(resolve, reject) {
+        
+            var url = 'ws://' + self._baseUrl + '/coms';
+            
+            if (sessionId)
+                url += '/' + sessionId;
 
-            self._ws = new WebSocket('ws://' + self._baseUrl + '/coms');
+            self._ws = new WebSocket(url);
             self._ws.binaryType = 'arraybuffer';
 
             self._ws.onopen = function() {

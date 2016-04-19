@@ -3,3 +3,15 @@
     overflow: scroll ;
 }
 
+#results {
+    background-color: white ;
+}
+
+#results[data-analysis-selected] {
+    background-color: #D8D8D8 ;
+}
+
+#results iframe[data-selected] {
+    background-color: white ;
+}
+

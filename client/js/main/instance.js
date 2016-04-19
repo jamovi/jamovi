@@ -38,10 +38,13 @@ var Instance = Backbone.Model.extend({
 
         this._analyses = new Analyses();
         this._analyses.on('analysisCreated', this._analysisCreated, this);
+        
+        this._instanceId = null;
 
     },
     defaults : {
-        coms : null
+        coms : null,
+        selectedAnalysis : null
     },
     progressModel : function() {
 
@@ -67,28 +70,26 @@ var Instance = Backbone.Model.extend({
             self._backstageModel.notifyDataSetLoaded();
         });
     },
-    connect : function() {
+    connect : function(instanceId) {
 
         var self = this;
         var coms = this.attributes.coms;
 
-        coms.connect().then(function() {
+        return coms.connect().then(function() {
         
-            // request settings
-
-            var settingsRequest = new coms.Messages.SettingsRequest();
-            var request = new coms.Messages.ComsMessage();
-            request.payload = settingsRequest.toArrayBuffer();
-            request.payloadType = "SettingsRequest";
-            
-            return coms.send(request);
-
-        }).then(function(response) {
+            return self._beginInstance(instanceId);
         
-            var settingsResponse = coms.Messages.SettingsResponse.decode(response.payload);
+        }).then(function(instanceId) {
         
-            self._backstageModel.set('settings', settingsResponse);
+            self._instanceId = instanceId;
+        
+        }).then(function() {
+        
             return self._retrieveInfo();
+        
+        }).then(function() {
+        
+            return self._instanceId;
             
         }).catch(function(err) {
 
@@ -115,6 +116,24 @@ var Instance = Backbone.Model.extend({
         };
 
         return coms.send(request).then(onresolve, null, onprogress);
+    },
+    _beginInstance : function(instanceId) {
+    
+        var coms = this.attributes.coms;
+
+        var instanceRequest = new coms.Messages.InstanceRequest();
+        if (instanceId)
+            instanceRequest.instanceId = instanceId;
+        
+        var request = new coms.Messages.ComsMessage();
+        request.payload = instanceRequest.toArrayBuffer();
+        request.payloadType = "InstanceRequest";
+        
+        return coms.send(request).then(function(response) {
+        
+            var instanceResponse = coms.Messages.InstanceResponse.decode(response.payload);
+            return instanceResponse.instanceId;
+        });    
     },
     _retrieveInfo : function() {
     
@@ -158,6 +177,8 @@ var Instance = Backbone.Model.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = "AnalysisRequest";
+        
+        this.set("selectedAnalysis", analysis);
 
         var onreceive = function(message) {
 

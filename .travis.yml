@@ -8,5 +8,5 @@ install:
   - "npm install jshint"
   - "pip install flake8"
 script:
-  - "jshint client analyses"
+  - "jshint client"
   - "flake8 server"
