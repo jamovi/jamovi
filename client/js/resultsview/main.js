@@ -5,6 +5,8 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
+var createItem = require('./create').createItem;
+
 var mainWindow = null;
 
 var _notifyResize = function() {
@@ -26,18 +28,12 @@ window.addEventListener('message', function(event) {
     
     var content = '';
     
+    var $body = $('body');
+    $body.empty();
+    
     var results = event.data;
     
-    if (_.has(results, 'title'))
-        content += '<h2>' + results.title + '</h2>';
-    
-    results.elements.forEach(function(element) {
-        if (_.has(element, 'title'))
-            content += '<h3>' + element.title + '</h3>';
-        content += '<pre>' + element.text + '</pre>';
-    });
-    
-    $("body").empty().append(content);
+    createItem(results).appendTo($body);
 
     _notifyResize();
 });

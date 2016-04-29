@@ -28,7 +28,8 @@ public:
 private:
 
     void initR();
-    Rcpp::DataFrame readDataset(const std::string &path, const std::vector<std::string> &columns);
+    Rcpp::DataFrame readDataset(const std::string &datasetId, const std::vector<std::string> &columns);
+    Rcpp::CharacterVector statePath(const std::string &datasetId, int analysisId);
 
     static std::string makeAbsolute(const std::string &path);
     static RInside *_rInside;

@@ -3,7 +3,6 @@ import os
 
 from silky import ColumnType
 from silky import Dirs
-from silky import TempFiles
 from silky import MemoryMap
 from silky import DataSet
 
@@ -18,19 +17,19 @@ from analyses import Analyses
 
 import json
 import uuid
+import tempfile
 
 
 class Instance:
 
     instances = { }
 
-    def __init__(self, instanceId=None):
+    def __init__(self, instance_id=None):
 
         self._coms = None
         self._dataset = None
         self._analyses = Analyses()
         self._em = EngineManager()
-        self._datasetId = None
 
         self._em.add_results_listener(self._on_results)
 
@@ -39,16 +38,20 @@ class Instance:
         settings = Settings.retrieve()
         settings.sync()
 
-        if instanceId is not None:
-            self._instanceId = instanceId
+        if instance_id is not None:
+            self._instance_id = instance_id
         else:
-            self._instanceId = str(uuid.uuid4())
+            self._instance_id = str(uuid.uuid4())
 
-        Instance.instances[self._instanceId] = self
+        self._instance_dir = tempfile.TemporaryDirectory(prefix=self._instance_id)
+        self._instance_path = self._instance_dir.name
+        self._buffer_path = os.path.join(self._instance_path, 'buffer')
+
+        Instance.instances[self._instance_id] = self
 
     @property
     def id(self):
-        return self._instanceId
+        return self._instance_id
 
     def set_coms(self, coms):
         self._coms = coms
@@ -69,28 +72,17 @@ class Instance:
             print(request.payloadType)
 
     def _on_results(self, results, request, complete):
-
-        if 'results' in results:
-            for element in results.results.elements:
-                if 'text' in element:
-                    print(element.text)
-
         self._coms.send(results, request, complete)
 
     def _on_open(self, request):
         print('opening ' + request.filename)
 
-        TempFiles.init(os.getpid())
-        TempFiles.delete_orphans()
-        path = TempFiles.create_specific('', 'data')
-
-        mm = MemoryMap.create(path, 65536)
+        mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
         formatio.csv.read(dataset, request.filename)
 
         self._dataset = dataset
-        self._datasetId = path
 
         self._coms.send(None, request)
 
@@ -116,7 +108,7 @@ class Instance:
         self._coms.send(response, request, False)
 
         request.options = options
-        request.datasetId = self._datasetId
+        request.datasetId = self._instance_path
         self._em.send(request)
 
     def _on_info(self, request):

@@ -132,14 +132,9 @@ enum AnalysisStatus {
 
 message AnalysisResponse {
 
-    message Results {
-        repeated ResultsElement elements = 1;
-        optional bytes error = 2;
-    }
-
     optional int32 id = 1;
     optional string options = 2;
-    optional Results results = 3;
+    optional ResultsElement results = 3;
     optional AnalysisStatus status = 4;
     optional bytes error = 5;
 }

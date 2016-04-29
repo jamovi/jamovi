@@ -38,16 +38,21 @@ void EngineR::run(Analysis *analysis)
     
     rInside.parseEvalQNT(ss.str());
 
+    string datasetId = analysis->datasetId;
+
     if (analysis->requiresDataset)
     {
-        string path = analysis->datasetId;
-        std::function<Rcpp::DataFrame(vector<string>)> readDataset = std::bind(&EngineR::readDataset, this, path, std::placeholders::_1);
+        std::function<Rcpp::DataFrame(vector<string>)> readDataset = std::bind(&EngineR::readDataset, this, datasetId, placeholders::_1);
         rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
-        rInside.parseEvalQNT("analysis$.setReadDataset(readDataset)\n");
+        rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
         rInside.parseEvalQNT("rm(list='readDataset')\n");
         rInside.parseEvalQNT("analysis$readDataset()\n");
-
     }
+    
+    std::function<Rcpp::CharacterVector()> statePath = std::bind(&EngineR::statePath, this, datasetId, analysis->id);
+    rInside["statePath"] = Rcpp::InternalFunction(statePath);
+    rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
+    rInside.parseEvalQNT("rm(list='statePath')\n");
     
     ss.str(""); // clear
     
@@ -73,10 +78,14 @@ void EngineR::run(Analysis *analysis)
     resultsReceived(raw2);
 }
 
-Rcpp::DataFrame EngineR::readDataset(const std::string &path, const vector<string> &columnsRequired)
+Rcpp::DataFrame EngineR::readDataset(const string &datasetId, const vector<string> &columnsRequired)
 {
     if (_rInside == NULL)
         initR();
+    
+    filesystem::path p = datasetId;
+    p /= "buffer";
+    string path = p.generic_string();
         
     MemoryMap *mm = MemoryMap::attach(path);
     DataSet2 &dataset = *DataSet2::retrieve(mm);
@@ -164,6 +173,19 @@ Rcpp::DataFrame EngineR::readDataset(const std::string &path, const vector<strin
     columns.attr("names") = columnNames;
     
     return Rcpp::DataFrame(columns);
+}
+
+Rcpp::CharacterVector EngineR::statePath(const string &datasetId, int analysisId)
+{
+    stringstream ss;
+    ss << datasetId << "/" << analysisId;
+    
+    filesystem::path analysisPath = filesystem::path(ss.str());
+    filesystem::create_directories(analysisPath);
+    
+    ss << "/state";
+    
+    return ss.str();
 }
 
 void EngineR::initR()

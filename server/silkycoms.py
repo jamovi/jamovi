@@ -1,6 +1,6 @@
+from protobuf3.fields import BytesField, Int32Field, DoubleField, BoolField, MessageField, StringField, EnumField, UInt32Field
 from protobuf3.message import Message
 from enum import Enum
-from protobuf3.fields import StringField, UInt32Field, Int32Field, DoubleField, BoolField, MessageField, EnumField, BytesField
 
 
 class ComsMessage(Message):
@@ -79,9 +79,7 @@ class AnalysisRequest(Message):
 
 
 class AnalysisResponse(Message):
-
-    class Results(Message):
-        pass
+    pass
 
 
 class ResultsCell(Message):
@@ -163,11 +161,9 @@ AnalysisRequest.add_field('ns', StringField(field_number=3, optional=True))
 AnalysisRequest.add_field('datasetId', StringField(field_number=4, optional=True))
 AnalysisRequest.add_field('perform', EnumField(field_number=5, optional=True, enum_cls=AnalysisRequest.Perform))
 AnalysisRequest.add_field('options', StringField(field_number=6, optional=True))
-AnalysisResponse.Results.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))
-AnalysisResponse.Results.add_field('error', BytesField(field_number=2, optional=True))
 AnalysisResponse.add_field('id', Int32Field(field_number=1, optional=True))
 AnalysisResponse.add_field('options', StringField(field_number=2, optional=True))
-AnalysisResponse.add_field('results', MessageField(field_number=3, optional=True, message_cls=AnalysisResponse.Results))
+AnalysisResponse.add_field('results', MessageField(field_number=3, optional=True, message_cls=ResultsElement))
 AnalysisResponse.add_field('status', EnumField(field_number=4, optional=True, enum_cls=AnalysisStatus))
 AnalysisResponse.add_field('error', BytesField(field_number=5, optional=True))
 ResultsCell.add_field('i', Int32Field(field_number=1, optional=True))
