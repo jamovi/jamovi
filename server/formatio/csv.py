@@ -95,7 +95,9 @@ class ColumnWriter:
 
         if self._only_integers:
             try:
-                int(value)
+                i = int(value)
+                if i > 2147483647 or i < -2147483647:
+                    self._only_integers = False
             except ValueError:
                 self._only_integers = False
 
