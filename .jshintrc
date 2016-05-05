@@ -4,6 +4,7 @@
     "laxbreak": true,
     "esversion" : 6,
     "multistr": true,
+    "mocha": true,
     "globals": {
         "console" : true
     }
