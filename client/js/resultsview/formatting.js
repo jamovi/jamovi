@@ -1,4 +1,4 @@
-
+'use strict';
 var _ = require('underscore');
 
 //find the number of decimal places that the column needs to be formated to
@@ -25,7 +25,7 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
                 minAbsNS = absValue;
         }
         else {
-            var exponent = parseInt(Math.log10(absValue))
+            var exponent = parseInt(Math.log10(absValue));
             var absS = Math.abs(exponent);
             if (absS !== 0 && isFinite(absS) && absS > maxAbsExpnt)
                 maxAbsExpnt = absS;
@@ -41,8 +41,8 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
         dp = sf - 1;
     }
     else {
-        var logAbs = Math.log10(minAbsNS)
-        dp = sf - 1 - Math.floor(logAbs)
+        var logAbs = Math.log10(minAbsNS);
+        dp = sf - 1 - Math.floor(logAbs);
     }
     dp = Math.max(dp, 0);
 
@@ -51,7 +51,7 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
     expw = parseInt(Math.log10(maxAbsExpnt)+1);
     console.log(maxAbsExpnt);
     return { dp: dp, expw: expw};
-}
+};
 
 var format = function(value, format, sf, maxNS, minNS) {
     if (_.isUndefined(minNS))
@@ -67,8 +67,8 @@ var format = function(value, format, sf, maxNS, minNS) {
     else {
         var exponent = Math.floor(Math.log10(Math.abs(value)));
         var mantissa = value/Math.pow(10, exponent);
-        if (value == 0){
-            return value.toFixed(sf-1)
+        if (value === 0){
+            return value.toFixed(sf-1);
         }
         var expntSpan = Math.log10(exponent);
         var sign = '+'; 
@@ -77,17 +77,11 @@ var format = function(value, format, sf, maxNS, minNS) {
         }
         var spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
-        console.log("-----")
-        console.log(value)
-        console.log(format.expw)
-        console.log(format.dp)
-        console.log(exponent)
-        console.log(spaces)
         var gap = Array(spaces).join(" ");
         return mantissa.toFixed(sf-1)+'e'+gap+sign+Math.abs(exponent);
     }
     
-}
+};
 
 module.exports = { determineFormatting: determineFormatting, format: format };
 

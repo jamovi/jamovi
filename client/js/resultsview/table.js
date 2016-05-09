@@ -56,20 +56,20 @@ var TableView = Backbone.View.extend({
         var cells = {
             header : new Array(table.columns.length),
             body : new Array(table.columns.length)
-        }
+        };
         var formattings = [];
         for (var colNo = 0; colNo < table.columns.length; colNo++) {
             formattings[colNo] = determineFormatting(_.pluck(table.columns[colNo].cells, 'd'));
         }
         
-        console.log("first")
-        console.log(JSON.stringify(formattings, null, 4))
+        console.log("first");
+        console.log(JSON.stringify(formattings, null, 4));
         
         for (var c = 0; c < table.columns.length; c++) {
             cells.body[c] = new Array(rowCount);
             
             for (var r = 0; r < rowCount; r++){
-                var newCell = new Object();
+                var newCell = {};
                 var refCell = table.columns[c].cells[r];
                 //footnotes
                 newCell.sup = "";
@@ -122,18 +122,18 @@ var TableView = Backbone.View.extend({
         if (table.columns.length === 0 || table.columns[0].cells.length === 0)
             return;
         
-        console.log("second")
-        console.log(JSON.stringify(formattings, null, 4))
+        console.log("second");
+        console.log(JSON.stringify(formattings, null, 4));
         
         for (var rowNo = 0; rowNo < table.columns[0].cells.length; rowNo++) {
             
             html += '<tr>';
             
-            for (var colNo = 0; colNo < table.columns.length; colNo++) {
+            for (colNo = 0; colNo < table.columns.length; colNo++) {
                 
                 var cell = cells.body[colNo][rowNo];
                 html += '<td class="silky-results-table-cell silky-results-table-cell-'+cell.format+'">' + cell.value + '</td>';
-                html += '<td class="silky-results-table-cell silky-results-table-cell-sup">'+cell.sup+'</td>'
+                html += '<td class="silky-results-table-cell silky-results-table-cell-sup">'+cell.sup+'</td>';
             }
             
             html += '</tr>';
