@@ -46,6 +46,9 @@ var Instance = Backbone.Model.extend({
         coms : null,
         selectedAnalysis : null
     },
+    instanceId : function() {
+        return this._instanceId;
+    },
     progressModel : function() {
 
         return this._progressModel;
@@ -187,10 +190,10 @@ var Instance = Backbone.Model.extend({
             var ok = false;
 
             if (analysis.isSetup === false
-                && _.has(response, "id")
+                && _.has(response, "analysisId")
                 && _.has(response, "options")) {
                 
-                var id = response.id;
+                var id = response.analysisId;
                 var options = JSON.parse(response.options);
         
                 analysis.setup(id, options);

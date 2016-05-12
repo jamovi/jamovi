@@ -9,8 +9,9 @@ class ClientConnection(WebSocketHandler):
 
     number_of_connections = 0
 
-    def initialize(self):
+    def initialize(self, session_path):
 
+        self._session_path = session_path
         self._transactions = { }
         self._listeners = [ ]
 
@@ -51,7 +52,7 @@ class ClientConnection(WebSocketHandler):
                 if request.instanceId in Instance.instances:
                     self._instance = Instance.instances[request.instanceId]
             if self._instance is None:
-                self._instance = Instance()
+                self._instance = Instance(session_path=self._session_path)
 
             self._instance.set_coms(self)
 

@@ -17,23 +17,26 @@ from analyses import Analyses
 
 import json
 import uuid
-import tempfile
 
 
 class Instance:
 
     instances = { }
 
-    def __init__(self, instance_id=None):
+    @staticmethod
+    def get(instanceId):
+        return Instance.instances.get(instanceId)
+
+    def __init__(self, session_path, instance_id=None):
 
         self._coms = None
         self._dataset = None
         self._analyses = Analyses()
         self._em = EngineManager()
 
-        self._em.add_results_listener(self._on_results)
+        self._session_path = session_path
 
-        self._em.start()
+        self._em.add_results_listener(self._on_results)
 
         settings = Settings.retrieve()
         settings.sync()
@@ -43,9 +46,11 @@ class Instance:
         else:
             self._instance_id = str(uuid.uuid4())
 
-        self._instance_dir = tempfile.TemporaryDirectory(prefix=self._instance_id)
-        self._instance_path = self._instance_dir.name
+        self._instance_path = os.path.join(self._session_path, self._instance_id)
+        os.makedirs(self._instance_path, exist_ok=True)
         self._buffer_path = os.path.join(self._instance_path, 'buffer')
+
+        self._em.start(self._session_path)
 
         Instance.instances[self._instance_id] = self
 
@@ -55,6 +60,10 @@ class Instance:
 
     def set_coms(self, coms):
         self._coms = coms
+
+    def get_path_to_resource(self, resourceId):
+        resource_path = os.path.join(self._instance_path, resourceId)
+        return resource_path
 
     def on_request(self, request):
         if type(request) == silkycoms.OpenRequest:
@@ -101,14 +110,15 @@ class Instance:
         options = json.dumps(analysis.options)
 
         response = silkycoms.AnalysisResponse()
-        response.id = analysis.id
+        response.analysisId = analysis.id
         response.options = options
         response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
 
         self._coms.send(response, request, False)
 
+        request.datasetId = self._instance_id
+        request.analysisId = analysis.id
         request.options = options
-        request.datasetId = self._instance_path
         self._em.send(request)
 
     def _on_info(self, request):

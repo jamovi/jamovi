@@ -47,6 +47,12 @@ void Engine::setConnection(const string &con)
     _conString = con;
 }
 
+void Engine::setPath(const string &path)
+{
+    _path = path;
+    _R->setPath(path);
+}
+
 void Engine::start()
 {
     _socket = nn_socket(AF_SP, NN_PAIR);

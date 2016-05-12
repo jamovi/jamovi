@@ -2,8 +2,10 @@
 import sys
 import os
 import os.path as path
+import platform
 
 import threading
+import tempfile
 from subprocess import Popen
 
 import nanomsg
@@ -16,23 +18,56 @@ class EngineManager:
     def __init__(self):
         self._thread = None
         self._socket = None
-        self._address = "ipc://silky{}".format(os.getpid())
+
+        self._dir = tempfile.TemporaryDirectory()
+        self._address = "ipc://{}/connection".format(self._dir.name)
+
         self._process = None
         self._requests_sent = { }
         self._nextId = 1
         self._results_listeners = [ ]
+        self._session_path = None
 
     def __del__(self):
         if self._process is not None:
             self._process.terminate()
 
-    def start(self):
+    def start(self, session_path):
+        self._session_path = session_path
+
+        root = path.realpath(path.join(path.dirname(__file__), '../../..'))
+        exe_path = path.join(root, 'bin/engine')
+
+        if platform.uname().system == 'Windows':
+            r_home = path.join(root, 'Frameworks', 'R')
+            paths = [
+                path.join(root, 'Resources', 'lib'),
+                path.join(r_home, 'bin', 'x64'),
+                path.join(r_home, 'library', 'RInside', 'lib', 'x64'),
+            ]
+            all_paths = ';'.join(paths)
+        else:
+            all_paths = ''
+
+        env = os.environ
+        env['PATH'] = all_paths
+
+        con = '--con={}'.format(self._address)
+        pth = '--path={}'.format(self._session_path)
+        self._process = Popen([exe_path, con, pth], env=env)
+
+        self._socket = nanomsg.Socket(nanomsg.PAIR)
+        self._socket._set_recv_timeout(500)
+
+        if platform.uname().system == 'Windows':
+            self._socket.bind(self._address.encode('utf-8'))
+        else:
+            self._socket.bind(self._address)
+
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
 
     def send(self, request):
-
-        request.perform = silkycoms.AnalysisRequest.Perform.RUN
 
         message = silkycoms.ComsMessage()
         message.id = self._nextId
@@ -75,34 +110,6 @@ class EngineManager:
         return self._address
 
     def _run(self):
-        root = path.realpath(path.join(path.dirname(__file__), '../../..'))
-        exe_path = path.join(root, 'bin/engine')
-
-        if os.uname().sysname == 'Windows':
-            r_home = path.join(root, 'Frameworks', 'R')
-            paths = [
-                path.join(root, 'Resources', 'lib'),
-                path.join(r_home, 'bin', 'x64'),
-                path.join(r_home, 'library', 'RInside', 'lib', 'x64'),
-            ]
-            all_paths = ';'.join(paths)
-        else:
-            all_paths = ''
-
-        env = os.environ
-        env['PATH'] = all_paths
-
-        args = '--con={}'.format(self._address)
-        self._process = Popen([exe_path, args], env=env)
-
-        self._socket = nanomsg.Socket(nanomsg.PAIR)
-        self._socket._set_recv_timeout(500)
-
-        if os.uname().sysname == 'Windows':
-            self._socket.bind(self._address.encode('utf-8'))
-        else:
-            self._socket.bind(self._address)
-
         parent = threading.main_thread()
         while parent.is_alive():
             try:

@@ -1,6 +1,6 @@
-from protobuf3.fields import BytesField, Int32Field, DoubleField, BoolField, MessageField, StringField, EnumField, UInt32Field
-from protobuf3.message import Message
 from enum import Enum
+from protobuf3.fields import MessageField, DoubleField, EnumField, Int32Field, StringField, BoolField, UInt32Field, BytesField
+from protobuf3.message import Message
 
 
 class ComsMessage(Message):
@@ -101,11 +101,15 @@ class ResultsImage(Message):
     pass
 
 
-class ResultsElement(Message):
+class ResultsArray(Message):
     pass
 
 
 class ResultsGroup(Message):
+    pass
+
+
+class ResultsElement(Message):
     pass
 
 
@@ -155,36 +159,39 @@ CellsResponse.Column.add_field('doubles', MessageField(field_number=2, optional=
 CellsResponse.Column.add_field('strings', MessageField(field_number=3, optional=True, message_cls=CellsResponse.Column.Strings))
 CellsResponse.add_field('request', MessageField(field_number=1, optional=True, message_cls=CellsRequest))
 CellsResponse.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResponse.Column))
-AnalysisRequest.add_field('id', Int32Field(field_number=1, optional=True))
-AnalysisRequest.add_field('name', StringField(field_number=2, optional=True))
-AnalysisRequest.add_field('ns', StringField(field_number=3, optional=True))
-AnalysisRequest.add_field('datasetId', StringField(field_number=4, optional=True))
+AnalysisRequest.add_field('datasetId', StringField(field_number=1, optional=True))
+AnalysisRequest.add_field('analysisId', Int32Field(field_number=2, optional=True))
+AnalysisRequest.add_field('name', StringField(field_number=3, optional=True))
+AnalysisRequest.add_field('ns', StringField(field_number=4, optional=True))
 AnalysisRequest.add_field('perform', EnumField(field_number=5, optional=True, enum_cls=AnalysisRequest.Perform))
 AnalysisRequest.add_field('options', StringField(field_number=6, optional=True))
-AnalysisResponse.add_field('id', Int32Field(field_number=1, optional=True))
-AnalysisResponse.add_field('options', StringField(field_number=2, optional=True))
-AnalysisResponse.add_field('results', MessageField(field_number=3, optional=True, message_cls=ResultsElement))
-AnalysisResponse.add_field('status', EnumField(field_number=4, optional=True, enum_cls=AnalysisStatus))
-AnalysisResponse.add_field('error', BytesField(field_number=5, optional=True))
+AnalysisResponse.add_field('datasetId', StringField(field_number=1, optional=True))
+AnalysisResponse.add_field('analysisId', Int32Field(field_number=2, optional=True))
+AnalysisResponse.add_field('options', StringField(field_number=3, optional=True))
+AnalysisResponse.add_field('results', MessageField(field_number=4, optional=True, message_cls=ResultsElement))
+AnalysisResponse.add_field('status', EnumField(field_number=5, optional=True, enum_cls=AnalysisStatus))
+AnalysisResponse.add_field('error', BytesField(field_number=6, optional=True))
 ResultsCell.add_field('i', Int32Field(field_number=1, optional=True))
 ResultsCell.add_field('d', DoubleField(field_number=2, optional=True))
 ResultsCell.add_field('s', StringField(field_number=3, optional=True))
 ResultsCell.add_field('o', EnumField(field_number=4, optional=True, enum_cls=ResultsCell.Other))
-ResultsCell.add_field('footnotes', Int32Field(field_number=5, repeated=True))
+ResultsCell.add_field('footnotes', StringField(field_number=5, repeated=True))
 ResultsColumn.add_field('name', StringField(field_number=1, optional=True))
 ResultsColumn.add_field('title', StringField(field_number=2, optional=True))
 ResultsColumn.add_field('format', StringField(field_number=3, optional=True))
 ResultsColumn.add_field('cells', MessageField(field_number=4, repeated=True, message_cls=ResultsCell))
-ResultsTable.add_field('name', StringField(field_number=2, optional=True))
-ResultsTable.add_field('columns', MessageField(field_number=4, repeated=True, message_cls=ResultsColumn))
+ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, message_cls=ResultsColumn))
+ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
 ResultsImage.add_field('path', StringField(field_number=1, optional=True))
 ResultsImage.add_field('width', Int32Field(field_number=2, optional=True))
 ResultsImage.add_field('height', Int32Field(field_number=3, optional=True))
+ResultsArray.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))
+ResultsGroup.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))
 ResultsElement.add_field('name', StringField(field_number=1, optional=True))
 ResultsElement.add_field('title', StringField(field_number=2, optional=True))
 ResultsElement.add_field('status', EnumField(field_number=3, optional=True, enum_cls=AnalysisStatus, default=AnalysisStatus.ANALYSIS_RUNNING))
 ResultsElement.add_field('table', MessageField(field_number=4, optional=True, message_cls=ResultsTable))
 ResultsElement.add_field('image', MessageField(field_number=5, optional=True, message_cls=ResultsImage))
 ResultsElement.add_field('group', MessageField(field_number=6, optional=True, message_cls=ResultsGroup))
-ResultsElement.add_field('text', StringField(field_number=7, optional=True))
-ResultsGroup.add_field('elements', MessageField(field_number=1, repeated=True, message_cls=ResultsElement))
+ResultsElement.add_field('array', MessageField(field_number=7, optional=True, message_cls=ResultsArray))
+ResultsElement.add_field('text', StringField(field_number=8, optional=True))

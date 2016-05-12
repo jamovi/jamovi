@@ -25,6 +25,7 @@ public:
 	Engine();
 	void setSlave(bool slave);
     void setConnection(const std::string &conn);
+    void setPath(const std::string &path);
     void start();
 	
 private:
@@ -38,6 +39,7 @@ private:
     
     bool _slave;
     std::string _conString;
+    std::string _path;
     int _socket;
     int _conId;
     bool _exiting;

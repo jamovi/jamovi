@@ -22,6 +22,7 @@ class EngineR
 {
 public:
     void run(Analysis *analysis);
+    void setPath(const std::string &path);
     
     boost::signals2::signal<void (const std::string &)> resultsReceived;
     
@@ -29,10 +30,16 @@ private:
 
     void initR();
     Rcpp::DataFrame readDataset(const std::string &datasetId, const std::vector<std::string> &columns);
-    Rcpp::CharacterVector statePath(const std::string &datasetId, int analysisId);
-
+    Rcpp::DataFrame readDatasetHeader(const std::string &datasetId, const std::vector<std::string> &columns);
+    std::string analysisDirPath(const std::string &datasetId, const std::string &analysisId);
+    std::string statePath(const std::string &datasetId, const std::string &analysisId);
+    Rcpp::List resourcesPath(const std::string &datasetId, const std::string &analysisId, const std::string &elementId, const std::string &suffix);
+    
+    static void createDirectories(const std::string &path);
     static std::string makeAbsolute(const std::string &path);
     static RInside *_rInside;
+    
+    std::string _path;
 };
 
 #endif // ENGINER_H

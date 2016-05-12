@@ -18,6 +18,8 @@ public:
     std::string name;
     std::string ns;
     std::string options;
+    std::string nameAndId;
+    int perform;
 
     bool requiresDataset;
     std::string datasetId;

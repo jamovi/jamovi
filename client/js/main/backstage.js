@@ -305,8 +305,8 @@ var BackstagePlaces = SilkyView.extend({
 
         if (window.inElectron) {
 
-            var remote = window.require('remote');  // window.require prevents browserfy replacement
-            var dialog = remote.require('dialog');
+            var remote = window.require('electron').remote;
+            var dialog = remote.dialog;
 
             var self = this;
 

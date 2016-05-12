@@ -8,6 +8,7 @@ from tornado.web import StaticFileHandler
 
 from settings import Settings
 from clientconnection import ClientConnection
+from instance import Instance
 
 import os.path
 import uuid
@@ -15,6 +16,7 @@ import uuid
 import threading
 import time
 import json
+import tempfile
 
 
 class SingleFileHandler(RequestHandler):
@@ -27,6 +29,23 @@ class SingleFileHandler(RequestHandler):
         if self._mime_type is not None:
             self.set_header('Content-Type', self._mime_type)
         with open(self._path, 'rb') as file:
+            content = file.read()
+            self.write(content)
+
+
+class ResourceHandler(RequestHandler):
+
+    def get(self, instance_id, resource_id):
+        instance = Instance.get(instance_id)
+        if instance is None:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write('instance ' + instance_id + ' could not be found')
+            return
+
+        resource_path = instance.get_path_to_resource(resource_id)
+
+        with open(resource_path, 'rb') as file:
             content = file.read()
             self.write(content)
 
@@ -161,12 +180,15 @@ class Server:
         analyses_path = os.path.join(here, '..', 'analyses')
         coms_path  = os.path.join(here, 'silkycoms.proto')
 
+        session_dir = tempfile.TemporaryDirectory()
+        session_path = session_dir.name
+
         self._main_app = tornado.web.Application([
             (r'/login', LoginHandler),
             (r'/backstage', BackstageInfoHandler),
-            (r'/coms', ClientConnection),
+            (r'/coms', ClientConnection, { 'session_path': session_path }),
             (r'/upload', UploadHandler),
-            (r'/proto/coms.proto',  SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
+            (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
             (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
@@ -184,8 +206,9 @@ class Server:
         resultsviewjs_path = os.path.join(client_path, 'js/resultsview.js')
 
         self._resultsview_app = tornado.web.Application([
-            (r'/', SingleFileHandler, { 'path': resultsview_path }),
-            (r'/js/resultsview.js', SingleFileHandler, { 'path': resultsviewjs_path })
+            (r'/.*/', SingleFileHandler, { 'path': resultsview_path }),
+            (r'/.*/js/resultsview.js', SingleFileHandler, { 'path': resultsviewjs_path }),
+            (r'/(.*)/res/(.*)', ResourceHandler),
         ], debug=self._debug)
 
         sockets = tornado.netutil.bind_sockets(self._main_port, 'localhost')

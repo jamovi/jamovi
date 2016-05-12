@@ -32,9 +32,10 @@ var ResultsView = Backbone.View.extend({
         var analysisResults = this.results[analysis.id];
         
         if (_.isUndefined(analysisResults)) {
+        
             var element = '<iframe \
                 class="id' + analysis.id + '" \
-                src="' + this.iframeUrl + '" \
+                src="' + this.iframeUrl + this.model.instanceId() + '/" \
                 sandbox="allow-scripts allow-same-origin" \
                 style="border: 0 ; height : 0 ;" \
                 data-selected \

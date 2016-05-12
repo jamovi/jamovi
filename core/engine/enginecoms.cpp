@@ -55,13 +55,12 @@ void EngineComs::parse(char *data, int len)
         return;
     }
 
-    Analysis *analysis = AnalysisLoader::create(analysisRequest.id(), analysisRequest.name(), analysisRequest.ns(), analysisRequest.options());
-    
-    if (analysisRequest.has_datasetid())
-    {
-        analysis->datasetId = analysisRequest.datasetid();
-        analysis->requiresDataset = true;
-    }
+    Analysis *analysis = AnalysisLoader::create(analysisRequest.analysisid(), analysisRequest.name(), analysisRequest.ns(), analysisRequest.options());
+
+    analysis->datasetId = analysisRequest.datasetid();
+
+    if (analysisRequest.has_perform())
+        analysis->perform = analysisRequest.perform();
     
     analysisRequested(request.id(), analysis);
 }

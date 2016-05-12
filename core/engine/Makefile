@@ -22,7 +22,7 @@ CFLAGS = -std=c++11 -DUNICODE
 
 ifeq ($(os),OSX)
 
-	R_HOME = ../../../../Frameworks/R.framework/Versions/3.2/Resources
+	R_HOME = ../../../../Frameworks/R.framework/Versions/3.3/Resources
 	LIBS =	-L../../../../Frameworks \
 			-L../../../lib \
 			-L$(R_HOME)/lib \
