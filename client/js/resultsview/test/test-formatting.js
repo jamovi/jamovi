@@ -26,15 +26,15 @@ var tests = [
     { v : [ -1e-5, 8.66e-33, -77e50], r : { dp : 2, expw: 2 } },
      ];
 
-tests.forEach(function(test) {
-
-    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
-    
-        mocha.it('should be ' + JSON.stringify(test.r), function() {
-            expect(determineFormatting(test.v, test.sf)).to.deep.equal(test.r);
-        });
-    });
-});
+//tests.forEach(function(test) {
+//
+//    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
+//    
+//        mocha.it('should be ' + JSON.stringify(test.r), function() {
+//            expect(determineFormatting(test.v, test.sf)).to.deep.equal(test.r);
+//        });
+//    });
+//});
 
 tests = [
     {v : 100 , f : { dp : 0, expw: NaN }, r : "100" },
@@ -48,12 +48,12 @@ tests = [
     {v : 0 , f : { dp : 2, expw: 0 }, r : "0.00" }
     ];
     
-    tests.forEach(function(test) {
-
-    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
-    
-        mocha.it('should be ' + JSON.stringify(test.r), function() {
-            expect(format(test.v, test.f)).to.eql(test.r);
-        });
-    });
-});
+//    tests.forEach(function(test) {
+//
+//    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
+//    
+//        mocha.it('should be ' + JSON.stringify(test.r), function() {
+//            expect(format(test.v, test.f)).to.eql(test.r);
+//        });
+//    });
+//});
