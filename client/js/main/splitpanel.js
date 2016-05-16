@@ -242,8 +242,8 @@ var SplitPanel = SilkyView.extend({
             if (currentSection.getVisibility()) {
                 if (_.isUndefined(currentSection.initialWidth) === false)
                     currentSection.setCoreWidth(currentSection.initialWidth);
-                else if (currentSection.preferedWidth)
-                    currentSection.setCoreWidth(currentSection.preferedWidth);
+                else if (currentSection.preferredWidth)
+                    currentSection.setCoreWidth(currentSection.preferredWidth);
                 else
                     currentSection.setCoreWidth(currentSection.displayWidth());
             }

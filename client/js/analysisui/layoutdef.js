@@ -3,8 +3,11 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
+//var FormatDef = require('./formatdef');
 
 function Layoutdef() {
+
+    //this._typedef = new FormatDef();
 
     this.getTitle = function() {
         return this.title ? this.title : "Undefined";

@@ -11,7 +11,7 @@ var View = Backbone.View.extend({
 
 	/** Removes DOM tree elements and any listeners from or too the view object */
     close: function () {
-        if (!this._isClosed) {
+        if ( ! this._isClosed) {
             if (this.onClose)
                 this.onClose();
 
