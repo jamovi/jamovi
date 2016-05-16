@@ -4,43 +4,40 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
-Backbone.$ = $;
 var LayoutCell = require('./layoutcell').LayoutCell;
 var SpacerCell = require('./layoutcell').SpacerCell;
+var Overridable = require('./overridable');
 
-var LayoutGrid = Backbone.View.extend({
+var LayoutGrid = function() {
+    Overridable.extendTo(this);
 
-    initialize: function() {
+    this.$el = $('<div></div>');
 
-        this.hasFocus = false;
-        this._firstColumnIndex = -1;
-        this._firstRowIndex = -1;
-        this._layoutValid = false;
-        this._currentId = 0;
-        this._selectedCells = [];
-        this._oldKnownSize = { width: 0, height: 0, hScrollSpace: false, vScrollSpace: false };
-        this._sizesInited = false;
-        this._dockWidth = false;
-        this._hasResized = null;
-        this._cells = [];
-        this._orderedCells = [];
-        this._orderedColumns = [];
-        this._columnCount = -1;
-        this._rowCount = - 1;
-        this._layouts = [];
-        this.preferedHeight = 10;
-        this.preferedWidth = 10;
-        this.autoSizeWidth = true;
-        this.autoSizeHeight = true;
-        this._resizeSuspended = 0;
-        LayoutGrid.prototype._scrollbarWidth = null;
-        LayoutGrid.prototype._scrollbarHeight = null;
+    _.extend(this, Backbone.Events);
 
-        if (this.onInitialise)
-            this.onInitialise();
-    },
+    this._layoutValid = false;
+    this._currentId = 0;
+    this._oldKnownSize = { width: 0, height: 0, hScrollSpace: false, vScrollSpace: false };
+    this._sizesInited = false;
+    this._dockWidth = false;
+    this._hasResized = null;
+    this._cells = [];
+    this._orderedCells = [];
+    this._orderedColumns = [];
+    this._columnCount = -1;
+    this._rowCount = - 1;
+    this._layouts = [];
+    this.preferredHeight = 10;
+    this.preferredWidth = 10;
+    this.autoSizeWidth = true;
+    this.autoSizeHeight = true;
+    this._resizeSuspended = 0;
+    LayoutGrid.prototype._scrollbarWidth = null;
+    LayoutGrid.prototype._scrollbarHeight = null;
+    this.allocateSpaceForScrollbars = true;
+    this.stretchEndCells = true;
 
-    getScrollbarWidth: function() {
+    this.getScrollbarWidth = function() {
         if (LayoutGrid.prototype._scrollbarWidth === null) {
             var outer = document.createElement("div");
             outer.style.visibility = "hidden";
@@ -66,9 +63,9 @@ var LayoutGrid = Backbone.View.extend({
             LayoutGrid.prototype._scrollbarWidth = widthNoScroll - widthWithScroll;
         }
         return LayoutGrid.prototype._scrollbarWidth;
-    },
+    };
 
-    getScrollbarHeight: function() {
+    this.getScrollbarHeight = function() {
         if (LayoutGrid.prototype._scrollbarHeight === null) {
             var outer = document.createElement("div");
             outer.style.visibility = "hidden";
@@ -94,9 +91,9 @@ var LayoutGrid = Backbone.View.extend({
             LayoutGrid.prototype._scrollbarHeight = heightNoScroll - heightWithScroll;
         }
         return LayoutGrid.prototype._scrollbarHeight;
-    },
+    };
 
-    render: function() {
+    this.render = function() {
 
         this._initaliseContent();
 
@@ -105,9 +102,9 @@ var LayoutGrid = Backbone.View.extend({
             self._processCells('both', 0);
             self._postProcessCells();
         }, 0);
-    },
+    };
 
-    invalidateLayout: function(type, updateId) {
+    this.invalidateLayout = function(type, updateId) {
         this._layoutValid = false;
         if (this._resizeSuspended > 0) {
             if (this._hasResized !== null && this._hasResized.type !== 'both' && type !== this._hasResized.type)
@@ -117,9 +114,9 @@ var LayoutGrid = Backbone.View.extend({
         }
         else if (this._processCells(type, updateId) === false)
             this._postProcessCells();
-    },
+    };
 
-    _postProcessCells: function() {
+    this._postProcessCells = function() {
 
         if (this._postProcessCellList.length > 0) {
             var gridWidth = null;
@@ -131,7 +128,7 @@ var LayoutGrid = Backbone.View.extend({
 
             var r;
             for (var i = 0; i < this._postProcessCellList.length; i++) {
-                var cell = this._cells[i];
+                var cell = this._postProcessCellList[i];
                 var cellData = cell.data;
                 if (cell.isVirtual)
                     continue;
@@ -140,7 +137,7 @@ var LayoutGrid = Backbone.View.extend({
                     if (gridHeight === null)
                         gridHeight = parseFloat(this.$el.css("height")) - hScrollSpace;
 
-                    if (gridHeight > cell.bottom())
+                    if (this.stretchEndCells && gridHeight > cell.bottom())
                         cell.adjustCellHeight(cell.actualHeight() + (gridHeight - cell.bottom()));
                 }
                 if (cell.spanAllRows) {
@@ -150,6 +147,7 @@ var LayoutGrid = Backbone.View.extend({
                     cell.adjustCellVertically(0, gridHeight);
                 }
                 if (cell.horizontalStretchFactor > 0) {
+
                     if (gridWidth === null)
                         gridWidth = parseFloat(this.$el.css("width")) - vScrollSpace;
 
@@ -173,13 +171,14 @@ var LayoutGrid = Backbone.View.extend({
                     cell.adjustCellWidth(newWidth);
 
                     if (cell.spanAllRows) {
-                        for (r = 0; r < this._rowCount; r++) {
+                        for (r = 0; r < this._rowStrechDetails.length; r++) {
                             this._rowStrechDetails[r].fixed += newWidth;
                             this._rowStrechDetails[r].flex -= cell.horizontalStretchFactor;
                         }
                     }
                     this._onCellRightEdgeMove(cell);
                 }
+                cell._queuedForPostProcess = false;
             }
         }
 
@@ -191,9 +190,9 @@ var LayoutGrid = Backbone.View.extend({
             if (layout._requiresPostProccessing)
                 layout._postProcessCells();
         }
-    },
+    };
 
-    _onCellRightEdgeMove: function(cell) {
+    this._onCellRightEdgeMove = function(cell) {
         var r;
         var column;
         var mCell;
@@ -233,9 +232,9 @@ var LayoutGrid = Backbone.View.extend({
                     this._updateRowCellPositionsFrom(cell.right(), rightCell);
             }
         }
-    },
+    };
 
-    _updateRowCellPositionsFrom: function(rightBoundary, nextCell) {
+    this._updateRowCellPositionsFrom = function(rightBoundary, nextCell) {
         var rightEdgeMove = 0;
 
         if (nextCell.left() < rightBoundary) {
@@ -248,16 +247,16 @@ var LayoutGrid = Backbone.View.extend({
             else if (roomToMove >= diff)
                 nextCell.adjustCellHorizontally(rightBoundary, nextCell.actualWidth() - diff);
             else {
-                nextCell.adjustCellHorizontally(rightBoundary, nextCell.preferedWidth());
+                nextCell.adjustCellHorizontally(rightBoundary, nextCell.preferredWidth());
                 rightEdgeMove = diff - roomToMove;
             }
         }
 
         if (rightEdgeMove > 0)
             this._onCellRightEdgeMove(nextCell);
-    },
+    };
 
-    _initaliseContent: function() {
+    this._initaliseContent = function() {
         this.$el.css("position", "relative");
         var foundNewContent = false;
 
@@ -282,9 +281,9 @@ var LayoutGrid = Backbone.View.extend({
         }
 
         return foundNewContent;
-    },
+    };
 
-    _processCells: function(type, updateId) {
+    this._processCells = function(type, updateId) {
 
         if (updateId === this._currentUpdateId)
             return false;
@@ -309,21 +308,21 @@ var LayoutGrid = Backbone.View.extend({
         this._layoutValid = true;
 
         return this._updateSize(updateId);
-    },
+    };
 
-    _updateSize: function(updateId) {
+    this._updateSize = function(updateId) {
 
         var height;
         var width;
 
         if (this._sizesInited === false) {
-            height = this._maxPreferedColumnHeight > this.preferedHeight ? this._maxPreferedColumnHeight : this.preferedHeight;
-            width = this.preferedWidth;
+            height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
+            width = this.preferredWidth;
         }
         else {
-            height = this.autoSizeHeight ? this.preferedHeight : this._oldKnownSize.height;
-            height = this._maxPreferedColumnHeight > height ? this._maxPreferedColumnHeight : height;
-            width = this.autoSizeWidth ? this.preferedWidth : this._oldKnownSize.width;
+            height = this.autoSizeHeight ? this.preferredHeight : this._oldKnownSize.height;
+            height = this._maxPreferredColumnHeight > height ? this._maxPreferredColumnHeight : height;
+            width = this.autoSizeWidth ? this.preferredWidth : this._oldKnownSize.width;
         }
 
         this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || this.contentWidth > width);
@@ -364,55 +363,21 @@ var LayoutGrid = Backbone.View.extend({
         this._sizesInited = true;
 
         return eventFired;
-    },
+    };
 
-    allocateSpaceForScrollbars: true,
-
-    addLayout: function(name, column, row, fitToGrid, layoutView) {
+    this.addLayout = function(name, column, row, fitToGrid, layoutView) {
         var grid = layoutView;
         this[name] = grid;
         layoutView.isChildLayout = true;
         this._layouts.push(grid);
         return this.addCell(column, row, fitToGrid, grid.$el);
-    },
+    };
 
-    _add: function(column, row, cell) {
-
-        if (cell.isVirtual === false) {
-            if (this._firstColumnIndex === -1 || column === this._firstColumnIndex) {
-                cell.$el.addClass("first-cell");
-                this._firstColumnIndex = column;
-            }
-            else if (column < this._firstColumnIndex) {
-                var columnCells = this._orderedColumns[this._firstColumnIndex];
-                for (var i = 0; i < columnCells.length; i++)
-                    columnCells[i].$el.removeClass("first-cell");
-
-                cell.$el.addClass("first-cell");
-                this._firstColumnIndex = column;
-            }
-
-            if (this._firstRowIndex === -1 || row === this._firstRowIndex) {
-                cell.$el.addClass("first-row");
-                this._firstRowIndex = row;
-            }
-            else if (row < this._firstRowIndex) {
-                var rowCells = this._orderedCells[this._firstRowIndex];
-                for (var j = 0; j < rowCells.length; j++)
-                    rowCells[j].$el.removeClass("first-row");
-
-                cell.$el.addClass("first-row");
-                this._firstRowIndex = row;
-            }
-
-            if (this._cellBorders)
-                cell.$el.addClass("cell-border");
-        }
-
+    this._add = function(column, row, cell) {
         cell._parentLayout = this;
         cell._id = this._currentId++;
-        row = this.rowTransform(row, column);
-        column = this.columnTransform(row, column);
+        row = this.rowTransform ? this.rowTransform(row, column) : row;
+        column = this.columnTransform ? this.columnTransform(row, column) : column;
         if (_.isUndefined(this._orderedCells[row]))
             this._orderedCells[row] = [];
         else if (cell.spanAllRows)
@@ -441,32 +406,33 @@ var LayoutGrid = Backbone.View.extend({
 
         if (this.onCellAdded)
             this.onCellAdded(cell);
-    },
+    };
 
-    renderNewCells: function() {
+    this.renderNewCells = function() {
         if (this._initaliseContent()) {
             var self = this;
             window.setTimeout(function() {
                 self.invalidateLayout('both', Math.random());
             }, 0);
         }
-    },
+    };
 
-    suspendLayout: function() {
+    this.suspendLayout = function() {
         this._resizeSuspended += 1;
-    },
+    };
 
-    resumeLayout: function() {
+    this.resumeLayout = function() {
         this._resizeSuspended -= 1;
         if (this._resizeSuspended <= 0 && this._hasResized !== null) {
             this.invalidateLayout(this._hasResized.type, Math.random());
             this._hasResized = null;
             this._resizeSuspended = 0;
         }
-    },
+    };
 
-    addColumn: function(column, $content) {
-        var cell = new LayoutCell({ className: "silky-layout-cell", model: { column: column, row: 0 } });
+    this.addColumn = function(column, $content) {
+        var cell = new LayoutCell();
+        cell.$el.addClass('silky-layout-cell');
         cell.setContent($content);
         this._addCellEventListeners(cell);
         cell.fitToGrid = false;
@@ -483,9 +449,9 @@ var LayoutGrid = Backbone.View.extend({
         this._add(column, 0, cell);
 
         return cell;
-    },
+    };
 
-    _addCellEventListeners: function(cell) {
+    this._addCellEventListeners = function(cell) {
         var self = this;
         cell.on('layoutcell.contentChanged', function(updateId) {
             self.invalidateLayout('both', updateId);
@@ -493,112 +459,12 @@ var LayoutGrid = Backbone.View.extend({
         cell.on('layoutcell.sizeChanged', function(type, updateId) {
             self.invalidateLayout(type, updateId);
         });
-        cell.on('layoutcell.clicked', function(ctrlKey, shiftKey) {
-            self.onSelectionChanged(cell, ctrlKey, shiftKey);
-        });
-    },
+    };
 
-    onSelectionChanged: function(cell, ctrlKey, shiftKey) {
-        var changed = false;
-        var selected = cell.isSelected();
-        var selectedCell = null;
+    this.addCell = function(column, row, fitToGrid, $content) {
 
-        if (this._selectedCells.length > 0 && shiftKey) {
-            var cell2 = this._selectedCells[this._selectedCells.length - 1];
-            var rStart = cell.data.row;
-            var cStart = cell.data.column;
-            var rEnd = cell2.data.row;
-            var cEnd = cell2.data.column;
-            var rDiff = rEnd - rStart;
-            var cDiff = cEnd - cStart;
-            var rDir = rDiff < 0 ? -1 : 1;
-            var cDir = cDiff < 0 ? -1 : 1;
-
-            for (var i = 0; i < this._selectedCells.length; i++) {
-                selectedCell = this._selectedCells[i];
-                var rSel = selectedCell.data.row;
-                var cSel = selectedCell.data.column;
-                if (((rStart*rDir >= rSel*rDir) && (cStart*cDir >= cSel*cDir) && ((rDiff * rDir) >= ((rEnd - rSel) * rDir)) && ((cDiff * cDir) >= ((cEnd - cSel) * cDir))) === false) { //outside of range
-                    selectedCell.setSelection(false, false, false);
-                    selectedCell.$el.removeClass('selected');
-                }
-            }
-
-            this._selectedCells = [];
-
-            for (var r = rStart; r*rDir <= rEnd*rDir; r+=rDir) {
-                for (var c = cStart; c*cDir <= cEnd*cDir; c+=cDir) {
-                    var tCell = this.getCell(c, r);
-                    tCell.$el.addClass('selected');
-                    tCell.setSelection(true, ctrlKey, shiftKey);
-                    this._selectedCells.push(tCell);
-                }
-            }
-        }
-        else if (selected === false || ctrlKey === false) {
-            changed = true;
-            cell.setSelection(true, ctrlKey, shiftKey);
-            cell.$el.addClass('selected');
-            if (ctrlKey)
-                this._selectedCells.push(cell);
-            else {
-                for (var j = 0; j < this._selectedCells.length; j++) {
-                    selectedCell = this._selectedCells[j];
-                    if (selectedCell._id !== cell._id) {
-                        selectedCell.setSelection(false, false, false);
-                        selectedCell.$el.removeClass('selected');
-                    }
-                }
-                this._selectedCells = [ cell ];
-            }
-        }
-        else if (ctrlKey && this._selectedCells.length > 1) {
-            changed = true;
-            cell.setSelection(false, ctrlKey, shiftKey);
-            cell.$el.removeClass('selected');
-            if (ctrlKey) {
-                for (var k = 0; k < this._selectedCells.length; k++) {
-                    selectedCell = this._selectedCells[k];
-                    if (selectedCell._id === cell._id) {
-                        this._selectedCells.splice(k, 1);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (changed)
-            this.trigger('layoutgrid.selectionChanged');
-
-        var gotFocus = this.hasFocus === false;
-        this.hasFocus = true;
-
-        if (gotFocus)
-            this.trigger('layoutgrid.gotFocus');
-
-
-    },
-
-    clearSelection: function() {
-        for (var i = 0; i < this._selectedCells.length; i++) {
-            var selectedCell = this._selectedCells[i];
-            selectedCell.setSelection(false, false, false);
-            selectedCell.$el.removeClass('selected');
-        }
-        this._selectedCells = [];
-
-        var lostFocus = this.hasFocus === true;
-        this.hasFocus = false;
-
-        if (lostFocus)
-            this.trigger('layoutgrid.lostFocus');
-
-
-    },
-
-    addCell: function(column, row, fitToGrid, $content) {
-
-        var cell = new LayoutCell({ className: "silky-layout-cell" });
+        var cell = new LayoutCell();
+        cell.$el.addClass('silky-layout-cell');
         cell.setContent($content);
         this._addCellEventListeners(cell);
         cell.fitToGrid = fitToGrid;
@@ -606,13 +472,27 @@ var LayoutGrid = Backbone.View.extend({
         this._add(column, row, cell);
 
         return cell;
-    },
+    };
 
-    addSpacer: function(column, row, fitToGrid, width, height) {
+    this.addSpacer = function(column, row, fitToGrid, width, height) {
         this._add(column, row, new SpacerCell(width, height, fitToGrid));
-    },
+    };
 
-    removeCell: function(cell) {
+    this.setCellVisibility = function(cell, value) {
+
+        if (cell._visible !== value) {
+            cell._visible = value;
+            //this.$el.visible(value);
+            if (value)
+                this.$el.append(cell.$el);
+            else
+                cell.$el.detach();
+
+            this.invalidateLayout("both", Math.random());
+        }
+    };
+
+    this.removeCell = function(cell) {
 
         cell.off('layoutcell.contentChanged');
         cell.off('layoutcell.sizeChanged');
@@ -630,35 +510,14 @@ var LayoutGrid = Backbone.View.extend({
         if (cell.$el)
             cell.$el.remove();
 
-        this._firstRowIndex = -1;
-        if (cellData.row === this._firstRowIndex && this._orderedCells[cellData.row].length === 0) {
-            for (var r = this._firstRowIndex + 1; r < this._orderedCells.length; r++) {
-                var rowCells = this._orderedCells[r];
-                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
-                    this._firstRowIndex = r;
-                    break;
-                }
-            }
-        }
-
-        this._firstColumnIndex = -1;
-        if (cellData.column === this._firstColumnIndex && this._orderedColumns[cellData.column].length === 0) {
-            for (var c = this._firstColumnIndex + 1; c < this._orderedColumns.length; c++) {
-                var columnCells = this._orderedColumns[c];
-                if (columnCells !== null && _.isUndefined(columnCells) === false && columnCells.length > 0) {
-                    this._firstColumnIndex = c;
-                    break;
-                }
-            }
-        }
-
         if (this.onCellRemoved)
             this.onCellRemoved(cell);
 
-        this.invalidateLayout("both");
-    },
+        this.invalidateLayout("both", Math.random());
 
-    removeRow: function(rowIndex) {
+    };
+
+    this.removeRow = function(rowIndex) {
 
         this.suspendLayout();
         var rowCells = this.getRow(rowIndex);
@@ -685,9 +544,9 @@ var LayoutGrid = Backbone.View.extend({
         this._rowCount -= 1;
 
         this.resumeLayout();
-    },
+    };
 
-    insertRow:function(rowIndex, count) {
+    this.insertRow = function(rowIndex, count) {
         for (var j = 0; j < this._cells.length; j++) {
             var data = this._cells[j].data;
             if (data.row >= rowIndex)
@@ -701,43 +560,31 @@ var LayoutGrid = Backbone.View.extend({
         this._orderedCells.splice.apply(this._orderedCells, [rowIndex, 0].concat(a2));
 
         this._rowCount += count;
-    },
+    };
 
-    rowTransform: function(row, column) {
-        return row;
-    },
-
-    columnTransform: function(row, column) {
-        return column;
-    },
-
-    setFixedWidth: function(width) {
-        this.preferedWidth = width;
+    this.setFixedWidth = function(width) {
+        this.preferredWidth = width;
         this._dockWidth = false;
         this.autoSizeWidth = false;
-    },
+    };
 
-    setDockWidth: function(value) {
+    this.setDockWidth = function(value) {
         this._dockWidth = value;
         this.autoSizeWidth = false;
-    },
+    };
 
-    setFixedHeight: function(height) {
-        this.preferedHeight = height;
+    this.setFixedHeight = function(height) {
+        this.preferredHeight = height;
         this.autoSizeHeight = false;
-    },
+    };
 
-    setAutoSize: function() {
+    this.setAutoSize = function() {
         this.autoSizeHeight = true;
         this._dockWidth = false;
         this.autoSizeWidth = true;
-    },
+    };
 
-    setCellBorders: function() {
-        this._cellBorders = true;
-    },
-
-    getCell: function(columnIndex, rowIndex) {
+    this.getCell = function(columnIndex, rowIndex) {
 
         var row = this._orderedCells[rowIndex];
         if (_.isUndefined(row))
@@ -755,19 +602,19 @@ var LayoutGrid = Backbone.View.extend({
         }
 
         return cell;
-    },
+    };
 
-    getRow: function(row) {
+    this.getRow = function(row) {
         return this._orderedCells[row];
-    },
+    };
 
-    _calculateGrid: function() {
+    this._calculateGrid = function() {
 
         var columnData;
 
         this._gridColumnData = [];
         this._gridRowData = [];
-        this._maxPreferedColumnHeight = 0;
+        this._maxPreferredColumnHeight = 0;
 
         var top = 0;
         var firstRow = true;
@@ -785,16 +632,16 @@ var LayoutGrid = Backbone.View.extend({
                     this._gridColumnData[c] = { left: 0, width: 0, tight: false };
 
                 var cell = this.getCell(c, r);
-                if (cell === null) {
+                if (cell === null || cell._visible === false) {
                     topCells[c] = null;
                     continue;
                 }
 
-                var preferedSize = cell.preferedSize();
+                var preferredSize = cell.preferredSize();
 
                 columnData = this._gridColumnData[c];
 
-                var cellWidth = preferedSize.width;
+                var cellWidth = preferredSize.width;
 
                 if (cell.fitToGrid) {
 
@@ -808,13 +655,13 @@ var LayoutGrid = Backbone.View.extend({
                 }
 
                 if (cell.spanAllRows === false || this._rowCount === 1) {
-                    var rowHeight = preferedSize.height;
+                    var rowHeight = preferredSize.height;
                     if (rowData.height < rowHeight)
                         rowData.height = rowHeight;
                 }
 
-                if (cell.spanAllRows && this._maxPreferedColumnHeight < preferedSize.height)
-                    this._maxPreferedColumnHeight = preferedSize.height;
+                if (cell.spanAllRows && this._maxPreferredColumnHeight < preferredSize.height)
+                    this._maxPreferredColumnHeight = preferredSize.height;
 
                 left += cellWidth;
 
@@ -837,9 +684,9 @@ var LayoutGrid = Backbone.View.extend({
                     columnData.width = nextColumnData.left - columnData.left;
             }
         }
-    },
+    };
 
-    beginCellManipulation: function() {
+    this.beginCellManipulation = function() {
 
             for (var i = 0; i < this._cells.length; i++) {
                 var cell = this._cells[i];
@@ -848,9 +695,9 @@ var LayoutGrid = Backbone.View.extend({
 
                 cell.beginManipulation();
             }
-    },
+    };
 
-    endCellManipulation: function(animate) {
+    this.endCellManipulation = function(animate) {
 
         var animatedCells = 0;
         for (var i = 0; i < this._cells.length; i++) {
@@ -864,9 +711,9 @@ var LayoutGrid = Backbone.View.extend({
                     animatedCells += 1;
             }
         }
-    },
+    };
 
-    _layoutGrid: function(type) {
+    this._layoutGrid = function(type) {
 
         var layoutForHeight = (type === 'height' || type === 'both');
         var layoutForWidth = (type === 'width' || type === 'both');
@@ -884,11 +731,11 @@ var LayoutGrid = Backbone.View.extend({
             var hasRowOnlyStrechFactor = false;
             for (var c = 0; c < this._columnCount; c++) {
                 var cell = this.getCell(c, r);
-                if (cell === null)
+                if (cell === null || cell._visible === false)
                     continue;
 
                 if (cell.fitToGrid && cell.horizontalStretchFactor > 0)
-                    throw "A cell cannot have a horizontal strech factor and be fit to grid.";
+                    throw "A cell cannot have a horizontal stretch factor and be fit to grid.";
 
                 if (hasRowOnlyStrechFactor === false && cell.horizontalStretchFactor > 0 && cell.spanAllRows === false) {
                     hasRowOnlyStrechFactor = true;
@@ -899,13 +746,12 @@ var LayoutGrid = Backbone.View.extend({
                     allowRowOnlyStrechFactor = cell.fitToGrid === false;
 
                 if (hasRowOnlyStrechFactor && allowRowOnlyStrechFactor === false)
-                    throw "Cannot have a horizontal strech factor and fitted cells in the same row.";
+                    throw "Cannot have a horizontal stretch factor and fitted cells in the same row.";
 
                 left = cell.fitToGrid ? this._gridColumnData[c].left : left;
 
-                //var contentsWidth = cell.preferedWidth();
                 var columnWidth = this._gridColumnData[c].width;
-                var width = cell.fitToGrid ? columnWidth : cell.preferedWidth();
+                var width = cell.fitToGrid ? columnWidth : cell.preferredWidth();
 
                 if (cell.spanAllRows === false || r === 0) {
                     if (type === 'height')
@@ -923,31 +769,38 @@ var LayoutGrid = Backbone.View.extend({
                 else
                     this._rowStrechDetails[r].fixed += width;
 
+
                 if (c === this._columnCount - 1 && left > contentWidth)
                     contentWidth = left;
 
-                if (layoutForHeight && (cell.data.row === this._rowCount - 1 || cell.spanAllRows))
+                if ( ! cell._queuedForPostProcess && ((layoutForHeight && (cell.data.row === this._rowCount - 1 || cell.spanAllRows)) || (layoutForWidth && cell.horizontalStretchFactor > 0))) {
                     this._postProcessCellList.push(cell);
-                else if (layoutForWidth && cell.horizontalStretchFactor > 0)
-                    this._postProcessCellList.push(cell);
+                    cell._queuedForPostProcess = true;
+                }
+
             }
             if (r === this._rowCount - 1)
                 contentHeight = top + height;
         }
 
         if (layoutForWidth && this.autoSizeWidth)
-            this.preferedWidth = contentWidth;
+            this.preferredWidth = contentWidth;
 
         if (layoutForHeight && this.autoSizeHeight)
-            this.preferedHeight = contentHeight;
+            this.preferredHeight = contentHeight;
 
         if (layoutForHeight)
             this.contentHeight = contentHeight;
 
         if (layoutForWidth)
             this.contentWidth = contentWidth;
-    }
-});
+    };
+
+};
+
+LayoutGrid.extendTo = function(target) {
+    LayoutGrid.call(target);
+};
 
 module.exports.Grid = LayoutGrid;
-module.exports.prototype = LayoutGrid.prototype;
+//module.exports.prototype = LayoutGrid.prototype;

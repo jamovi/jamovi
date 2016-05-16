@@ -3,6 +3,7 @@
 
 var _ = require('underscore');
 var Backbone = require('backbone');
+var FormatDef = require('./formatdef');
 
 var Opt = function(type, initialValue, params) {
 
@@ -21,12 +22,15 @@ var Opt = function(type, initialValue, params) {
 
         var value = null;
         var a = this._value;
-        for (var i = keys.length - 1; i >= 0; i--) {
+        for (var i = 0; i < keys.length; i++) {
             var index = keys[i];
             a = a[index];
-            if (i === 0)
+            if (i === keys.length - 1)
                 value = a;
         }
+
+        if (value === null)
+            return 0;
 
         if (Array.isArray(value) === false)
             return 1;
@@ -44,10 +48,10 @@ var Opt = function(type, initialValue, params) {
             else {
                 var value = null;
                 var a = this._value;
-                for (var i = keys.length - 1; i >= 0; i--) {
+                for (var i = 0; i < keys.length; i++) {
                     var index = keys[i];
                     a = a[index];
-                    if (i === 0)
+                    if (i === keys.length - 1)
                         value = a;
                 }
 
@@ -56,6 +60,11 @@ var Opt = function(type, initialValue, params) {
         }
         else
             return this._value[keys];
+    };
+
+    this.getFormattedValue = function(keys, format) {
+        var obj = this.getValue(keys);
+        return FormatDef.constructor(obj, format);
     };
 
     this.setValue = function(value, keys, eventParams) {
@@ -74,6 +83,9 @@ var Opt = function(type, initialValue, params) {
         var force = eventParams.force;
 
         var fValue = value;
+        if (_.isUndefined(value.raw) === false) //To handle typed values
+            fValue = value.raw;
+
         if (keys.length === 0) {
             if (force || _.isEqual(fValue, this._value) === false) {
                 this._value = fValue;
@@ -133,13 +145,57 @@ var Opt = function(type, initialValue, params) {
         }
         else {
             if (index in obj)
-                throw 'Key already exists in object';
-            else {
+                eventParams.eventType = 'valuechanged';
+            //    throw 'Key already exists in object';
+            //else {
                 obj[index] = value;
                 if (eventParams.silent === false)
                     this.trigger(eventParams.eventType, keys, eventParams.data);
                 return true;
+            //}
+        }
+        return false;
+    };
+
+    this.removeAt = function(keys, eventParams) {
+
+        if (_.isUndefined(eventParams))
+            eventParams = Opt.getDefaultEventParams("removed");
+
+        var baseKeys = keys.slice(0, keys.length - 1);
+        var index = keys[keys.length - 1];
+        var obj = this.getValue(baseKeys);
+
+        if (typeof(obj) !== 'object')
+            throw 'Can only remove from an array or object';
+
+        var isArray = Array.isArray(obj);
+
+        if (isArray === true && typeof(index) !== 'number')
+            throw 'Index can only be a number for an array';
+        else if (isArray === false && typeof(index) !== 'string')
+            throw 'Index can only be a string for an object';
+
+        if (isArray) {
+            if (index < obj.length)
+                obj.splice(index, 1);
+            else
+                throw 'not a valid index for the array';
+
+            if (eventParams.silent === false)
+                this.trigger(eventParams.eventType, keys, eventParams.data);
+            return true;
+        }
+        else {
+            if (index in obj) {
+                delete obj[index];
+                if (eventParams.silent === false)
+                    this.trigger(eventParams.eventType, keys, eventParams.data);
+                return true;
             }
+
+            else
+                throw "Key doesn't exists in object";
         }
         return false;
     };

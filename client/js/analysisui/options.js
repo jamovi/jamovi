@@ -6,9 +6,6 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 var Opt = require('./option');
-/*var Int = require('./int');
-var Bool = require('./Bool');
-var Variables = require('./variables');*/
 
 var keyedQueue = function() {
 
@@ -83,7 +80,7 @@ var keyedQueue = function() {
         else if (compare.sibling && compare.distance !== null && (unsafeDirection * compare.distance) >= 0)
             oldData.push(obj);
         else
-            this.processChangeEvent(obj, oldData, startIndex - 1);
+            this.processEvent(obj, oldData, startIndex - 1);
     };
 
     this.contains = function(key) {
@@ -110,11 +107,7 @@ var Options = function(def) {
         for (var i = 0;i < def.length; i++) {
             var item = def[i];
 
-            var option = null;
-            //if (item.type === 'Variables')
-            //    option = new Variables(item);
-            //else
-                option = new Opt(item.type, item.default, item);
+            var option = new Opt(item.type, item.default, item);
 
             this._list.push(option);
         }
@@ -204,6 +197,24 @@ var Options = function(def) {
 
         if (option.insertValueAt(value, keys, eOpt) && eventParams.silent === false)
             this.onValueChanged(option, value, keys, "insert");
+    };
+
+    this.removeOptionValue = function(name, keys, eventParams) {
+
+        if (_.isUndefined(eventParams))
+            eventParams = Options.getDefaultEventParams();
+
+        var option = null;
+        if (_.isUndefined(name.type) === false)
+            option = name;
+        else
+            option = this.getOption(name);
+
+        var eOpt = Opt.getDefaultEventParams("removed");
+        eOpt.force = eventParams.force;
+
+        if (option.removeAt(keys, eOpt) && eventParams.silent === false)
+            this.onValueChanged(option, null, keys, "remove");
     };
 
     this.onValueChanged = function(option, value, keys, type) {

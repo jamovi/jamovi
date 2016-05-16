@@ -4,55 +4,62 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
-Backbone.$ = $;
+var Overridable = require('./overridable');
 
-var LayoutCell = Backbone.View.extend({
+var LayoutCell = function() {
 
-    initialize: function() {
-        this.cssProperties = null;
-        this._manipulating = 0;
-        this.hAlign = "left";
-        this.vAlign = "top";
-        this.$content = null;
-        this.$previousContent = null;
-        this._clickable = false;
-        this._selected = false;
-        this._preferedWidth = -1;
-        this._preferedHeight = -1;
-        this._contentWidth = -1;
-        this._contentHeight = -1;
-        this._initialised = false;
-        this._width = -1;
-        this._height = -1;
-        this._left = -1;
-        this._top = -1;
-    },
+    Overridable.extendTo(this);
 
-    onMouseDown: function(event) {
+    this.$el = $('<div></div>');
+    this.$el.css("position", "absolute");
+    this.$el.css("box-sizing", "border-box");
+
+    _.extend(this, Backbone.Events);
+
+    this._visible = true;
+    this.cssProperties = null;
+    this._manipulating = 0;
+    this.hAlign = "left";
+    this.vAlign = "top";
+    this.$content = null;
+    this.$previousContent = null;
+    this._clickable = false;
+    this._selected = false;
+    this._preferredWidth = -1;
+    this._preferredHeight = -1;
+    this._contentWidth = -1;
+    this._contentHeight = -1;
+    this._initialised = false;
+    this._width = -1;
+    this._height = -1;
+    this._left = -1;
+    this._top = -1;
+
+    this.onMouseDown = function(event) {
         var self = event.data;
         self.trigger('layoutcell.clicked', event.ctrlKey, event.shiftKey);
-    },
+    };
 
-    clickable: function(value) {
+    this.clickable = function(value) {
         this._clickable = value;
         if (value)
             this.$el.on("mousedown", null, this, this.onMouseDown);
         else
             this.$el.off("mousedown", this.onMouseDown);
-    },
+    };
 
-    setSelection: function(value, ctrlKey, shiftKey) {
+    this.setSelection = function(value, ctrlKey, shiftKey) {
         if (this._selected !== value) {
             this._selected = value;
             this.trigger('layoutcell.selectionChanged', ctrlKey, shiftKey);
         }
-    },
+    };
 
-    isSelected: function() {
+    this.isSelected = function() {
         return this._selected;
-    },
+    };
 
-    setContent: function($content) {
+    this.setContent = function($content) {
         if (this.$content !== null) {
             this.$content.off('layoutgrid.sizeChanged', null, this.onContentSizeChanged);
             this.$previousContent = this.$content;
@@ -65,13 +72,13 @@ var LayoutCell = Backbone.View.extend({
 
         if (this.$previousContent !== null)
             this.trigger('layoutcell.contentChanged', Math.random());
-    },
+    };
 
-    onContentSizeChanged: function(event, data) {
+    this.onContentSizeChanged = function(event, data) {
         var self = event.data;
 
-        self._preferedWidth = -1;
-        self._preferedHeight = -1;
+        self._preferredWidth = -1;
+        self._preferredHeight = -1;
         self._contentWidth = -1;
         self._contentHeight = -1;
         this._width = -1;
@@ -81,53 +88,47 @@ var LayoutCell = Backbone.View.extend({
             data.updateId = Math.random();
 
         self.trigger('layoutcell.sizeChanged', data.type, data.updateId);
-    },
+    };
 
-
-
-    render: function() {
+    this.render = function() {
 
         if (this.$previousContent !== null) {
             this.$previousContent.remove();
             this.$previousContent = null;
         }
 
-        this.$el.css("position", "absolute");
-        this.$el.css("box-sizing", "border-box");
-        //this.$el.css("border", " 1px solid #555555");
-
-        this.$content.css( "position", "absolute");
-
-        if (this.$content)
+        if (this.$content) {
+            this.$content.css( "position", "absolute");
             this.$el.append(this.$content);
-    },
+        }
+    };
 
-    setAlignment: function(hAlign, vAlign) {
+    this.setAlignment = function(hAlign, vAlign) {
         this.hAlign = hAlign;
         this.vAlign = vAlign;
-    },
+    };
 
-    top: function() {
+    this.top = function() {
         if (this._top === -1)
             this._top = parseFloat(this.$el.css('top'));
         return this._top;
-    },
+    };
 
-    left: function() {
+    this.left = function() {
         if (this._left === -1)
             this._left = parseFloat(this.$el.css('left'));
         return this._left;
-    },
+    };
 
-    right: function() {
+    this.right = function() {
         return this.left() + this.actualWidth();
-    },
+    };
 
-    bottom: function() {
+    this.bottom = function() {
         return this.top() + this.actualHeight();
-    },
+    };
 
-    refreshCSSProperties : function() {
+    this.refreshCSSProperties = function() {
         this.cssProperties = this.$el.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width", "padding-left", "padding-right", "border-left-width", "border-right-width"]);
         this.cssProperties["padding-top"] = parseFloat(this.cssProperties["padding-top"]);
         this.cssProperties["padding-bottom"] = parseFloat(this.cssProperties["padding-bottom"]);
@@ -137,36 +138,36 @@ var LayoutCell = Backbone.View.extend({
         this.cssProperties["padding-right"] = parseFloat(this.cssProperties["padding-right"]);
         this.cssProperties["border-left-width"] = parseFloat(this.cssProperties["border-left-width"]);
         this.cssProperties["border-right-width"] = parseFloat(this.cssProperties["border-right-width"]);
-    },
+    };
 
-    preferedWidth: function() {
-        if (this._preferedWidth === -1) {
+    this.preferredWidth = function() {
+        if (this._preferredWidth === -1) {
             if (this.cssProperties === null)
                 this.refreshCSSProperties();
             //var properties = this.$el.css(["padding-left", "padding-right", "border-left-width", "border-right-width"]);
             var contentSpace = (this.dockContentWidth || (this.horizontalStretchFactor > 0)) ? 0 : this.contentWidth();
-            this._preferedWidth =  contentSpace + this.cssProperties["padding-left"] + this.cssProperties["padding-right"] + this.cssProperties["border-left-width"] + this.cssProperties["border-right-width"];
+            this._preferredWidth =  contentSpace + this.cssProperties["padding-left"] + this.cssProperties["padding-right"] + this.cssProperties["border-left-width"] + this.cssProperties["border-right-width"];
         }
-        return this._preferedWidth;
-    },
+        return this._preferredWidth;
+    };
 
-    preferedHeight: function() {
-        if (this._preferedHeight === -1) {
+    this.preferredHeight = function() {
+        if (this._preferredHeight === -1) {
             if (this.cssProperties === null)
                 this.refreshCSSProperties();
             //var properties = this.$el.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width"]);
             var contentSpace = this.dockContentHeight ? 0 : this.contentHeight();
-            this._preferedHeight = this.contentHeight() + this.cssProperties["padding-top"] + this.cssProperties["padding-bottom"] + this.cssProperties["border-top-width"] + this.cssProperties["border-bottom-width"];
+            this._preferredHeight = this.contentHeight() + this.cssProperties["padding-top"] + this.cssProperties["padding-bottom"] + this.cssProperties["border-top-width"] + this.cssProperties["border-bottom-width"];
         }
 
-        return this._preferedHeight;
-    },
+        return this._preferredHeight;
+    };
 
-    preferedSize: function() {
-        return { height: this.preferedHeight(), width: this.preferedWidth() };
-    },
+    this.preferredSize = function() {
+        return { height: this.preferredHeight(), width: this.preferredWidth() };
+    };
 
-    contentWidth: function() {
+    this.contentWidth = function() {
         if (this._contentWidth === -1) {
             var properties = this.$content.css(["margin-left", "margin-right"]);
             var f = this.$content[0].getBoundingClientRect().width;
@@ -174,9 +175,9 @@ var LayoutCell = Backbone.View.extend({
         }
 
         return this._contentWidth;
-    },
+    };
 
-    contentHeight: function() {
+    this.contentHeight = function() {
         if (this._contentHeight === -1) {
             var properties = this.$content.css(["margin-top", "margin-bottom"]);
             var f = this.$content[0].getBoundingClientRect().height;
@@ -184,23 +185,23 @@ var LayoutCell = Backbone.View.extend({
         }
 
         return this._contentHeight;
-    },
+    };
 
-    adjustCellLeft: function(left) {
+    this.adjustCellLeft = function(left) {
         if (this._left !== left) {
             this._left = left;
             this._leftAdjusted = true;
         }
-    },
+    };
 
-    adjustCellWidth: function(width) {
+    this.adjustCellWidth = function(width) {
         if (this._width !== width) {
             this._width = width;
             this._widthAdjusted = true;
         }
-    },
+    };
 
-    adjustCellPosition: function(left, top) {
+    this.adjustCellPosition = function(left, top) {
         if (this._left !== left) {
             this._left = left;
             this._leftAdjusted = true;
@@ -210,9 +211,9 @@ var LayoutCell = Backbone.View.extend({
             this._top = top;
             this._topAdjusted = true;
         }
-    },
+    };
 
-    adjustCellDimensions: function(width, height) {
+    this.adjustCellDimensions = function(width, height) {
         if (this._width !== width) {
             this._width = width;
             this._widthAdjusted = true;
@@ -222,9 +223,9 @@ var LayoutCell = Backbone.View.extend({
             this._height = height;
             this._heightAdjusted = true;
         }
-    },
+    };
 
-    adjustCellHorizontally: function(left, width) {
+    this.adjustCellHorizontally = function(left, width) {
         if (this._left !== left) {
             this._left = left;
             this._leftAdjusted = true;
@@ -234,9 +235,9 @@ var LayoutCell = Backbone.View.extend({
             this._width = width;
             this._widthAdjusted = true;
         }
-    },
+    };
 
-    adjustCellVertically: function(top, height) {
+    this.adjustCellVertically = function(top, height) {
         if (this._top !== top) {
             this._top = top;
             this._topAdjusted = true;
@@ -246,16 +247,16 @@ var LayoutCell = Backbone.View.extend({
             this._height = height;
             this._heightAdjusted = true;
         }
-    },
+    };
 
-    adjustCellHeight: function(height) {
+    this.adjustCellHeight = function(height) {
         if (this._height !== height) {
             this._height = height;
             this._heightAdjusted = true;
         }
-    },
+    };
 
-    adjustCell: function(left, top, width, height) {
+    this.adjustCell = function(left, top, width, height) {
         if (left !== this._left) {
             this._left = left;
             this._leftAdjusted = true;
@@ -275,9 +276,9 @@ var LayoutCell = Backbone.View.extend({
             this._height = height;
             this._heightAdjusted = true;
         }
-    },
+    };
 
-    updateContentHorizontalAlignment: function(cellWidth) {
+    this.updateContentHorizontalAlignment = function(cellWidth) {
         var properties = null;
         var innerWidth = null;
 
@@ -300,9 +301,9 @@ var LayoutCell = Backbone.View.extend({
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
             this.$content.css( { "left": this.cssProperties["padding-left"] + (innerWidth/2) - (Math.ceil(this.contentWidth())/2) });
         }
-    },
+    };
 
-    updateContentVerticalAlignment: function(cellHeight) {
+    this.updateContentVerticalAlignment = function(cellHeight) {
         var properties = null;
         var innerHeight = null;
 
@@ -325,23 +326,23 @@ var LayoutCell = Backbone.View.extend({
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
             this.$content.css( { "top": this.cssProperties["padding-top"] + (innerHeight/2) - (Math.ceil(this.contentHeight())/2) });
         }
-    },
+    };
 
-    actualWidth: function() {
+    this.actualWidth = function() {
         if (this._width === -1)
             this._width = this.$el[0].getBoundingClientRect().width;
 
         return this._width;
-    },
+    };
 
-    actualHeight: function() {
+    this.actualHeight = function() {
         if (this._height === -1)
             this._height = this.$el[0].getBoundingClientRect().height;
 
         return this._height;
-    },
+    };
 
-    rightCell: function() {
+    this.rightCell = function() {
         var cell = null;
         var c = this.data.column + 1;
         if (c < this._parentLayout._columnCount) {
@@ -353,25 +354,25 @@ var LayoutCell = Backbone.View.extend({
             while (cell === null && c < this._parentLayout._columnCount);
         }
         return cell;
-    },
+    };
 
-    bottomCell: function() {
+    this.bottomCell = function() {
         return this._parentLayout.getCell(this.data.column, this.data.row + 1);
-    },
+    };
 
-    adjustableWidth: function() {
+    this.adjustableWidth = function() {
 
-        var diff = this.preferedWidth() - this.actualWidth();
+        var diff = this.preferredWidth() - this.actualWidth();
         return diff < 0 ? 0 : diff;
-    },
+    };
 
-    adjustableHeight: function() {
+    this.adjustableHeight = function() {
 
-        var diff = this.preferedHeight() - this.actualHeight();
+        var diff = this.preferredHeight() - this.actualHeight();
         return diff < 0 ? 0 : diff;
-    },
+    };
 
-    beginManipulation: function() {
+    this.beginManipulation = function() {
 
         if (this._manipulating++ > 0)
             return;
@@ -382,9 +383,9 @@ var LayoutCell = Backbone.View.extend({
         this._leftAdjusted = false;
         this._widthAdjusted = false;
         this._heightAdjusted = false;
-    },
+    };
 
-    endManipulation: function(animate) {
+    this.endManipulation = function(animate) {
         this._manipulating -= 1;
         if (this._manipulating > 0)
             return;
@@ -421,25 +422,29 @@ var LayoutCell = Backbone.View.extend({
         this._initialised = true;
 
         return animated;
-    },
+    };
 
-    manipulating: function() {
+    this.manipulating = function() {
         return this._manipulating > 0;
-    },
+    };
 
 
-    fitToGrid: false,
+    this.fitToGrid = false;
 
-    horizontalStretchFactor: 0,
+    this.horizontalStretchFactor = 0;
 
-    spanAllRows: false,
+    this.spanAllRows = false;
 
-    dockContentWidth: false,
+    this.dockContentWidth = false;
 
-    dockContentHeight: false,
+    this.dockContentHeight = false;
 
-    isVirtual: false
-});
+    this.isVirtual = false;
+};
+
+LayoutCell.extendTo = function(target) {
+    LayoutCell.call(target);
+};
 
 var SpacerCell = function(width, height, fitToGrid) {
 
@@ -448,16 +453,17 @@ var SpacerCell = function(width, height, fitToGrid) {
     this.height = height;
     this.width = width;
     this.fitToGrid = fitToGrid;
+    this._visible = true;
 
-    this.preferedWidth = function() {
+    this.preferredWidth = function() {
         return this._initalWidth;
     };
 
-    this.preferedHeight = function() {
+    this.preferredHeight = function() {
         return this._initalHeight;
     };
 
-    this.preferedSize = function() {
+    this.preferredSize = function() {
         return { height: this._initalHeight, width: this._initalWidth };
     };
 

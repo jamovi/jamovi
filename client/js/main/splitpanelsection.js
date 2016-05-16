@@ -22,7 +22,7 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
     this.maxWidth = -1;
     this.strongEdge = "none";
     this.stretchyEdge = "none";
-    this.preferedWidth = -1;
+    this.preferredWidth = -1;
     this.level = 0;
     this._visible = true;
     this._lastWeakMinWidth = -1;
@@ -48,8 +48,8 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
                 throw "Max width must be greater or equal to min width";
         }
 
-        if (_.isUndefined(initData.preferedWidth) === false)
-            this.preferedWidth = initData.preferedWidth;
+        if (_.isUndefined(initData.preferredWidth) === false)
+            this.preferredWidth = initData.preferredWidth;
 
         if (_.isUndefined(initData.strongEdge) === false)
             this.strongEdge = initData.strongEdge;
@@ -60,8 +60,8 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
         if (_.isUndefined(initData.initialWidth) === false)
             this.initialWidth = initData.initialWidth;
 
-        if (_.isUndefined(initData.preferedWidth) === false)
-            this.preferedWidth = initData.preferedWidth;
+        if (_.isUndefined(initData.preferredWidth) === false)
+            this.preferredWidth = initData.preferredWidth;
 
         if (initData.visible === false) {
             this.$panel.css("opacity", initData.visible ? 1 : 0);
@@ -70,8 +70,8 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
         }
         else if (_.isUndefined(this.initialWidth) === false)
             this.$panel.css("width", this._clipSizeToBounds(initData.initialWidth).clipped);
-        else if (_.isUndefined(this.preferedWidth) === false)
-            this.$panel.css("width", this._clipSizeToBounds(initData.preferedWidth).clipped);
+        else if (_.isUndefined(this.preferredWidth) === false)
+            this.$panel.css("width", this._clipSizeToBounds(initData.preferredWidth).clipped);
 
 
         if (_.isUndefined(initData.stretchyEdge) === false) {
@@ -215,8 +215,8 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
             return this.absoluteWidth();
         else {
             var reservedWidth = this._lastAbsoluteWidth;
-            if (_.isUndefined(this.preferedWidth) === false && this._lastAbsoluteWidth < this.preferedWidth)
-                reservedWidth = this.preferedWidth;
+            if (_.isUndefined(this.preferredWidth) === false && this._lastAbsoluteWidth < this.preferredWidth)
+                reservedWidth = this.preferredWidth;
 
             return reservedWidth;
         }

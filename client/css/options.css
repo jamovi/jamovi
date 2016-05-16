@@ -117,7 +117,7 @@ h1 {
 }
 
 /*Adding a space after a header if the grid is inline*/
-.silky-options-group.silky-options-group-format-inline .silky-options-group-header {
+.silky-options-group.silky-options-group-style-inline .silky-options-group-header {
     margin-right: 1ex;
 }
 
