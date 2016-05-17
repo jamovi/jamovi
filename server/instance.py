@@ -106,18 +106,25 @@ class Instance:
         self._coms.send(response)
 
     def _on_analysis(self, request):
-        analysis = self._analyses.create(request.name, request.ns)
-        options = json.dumps(analysis.options)
 
-        response = silkycoms.AnalysisResponse()
-        response.analysisId = analysis.id
-        response.options = options
-        response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
+        if 'analysisId' not in request:
+            analysis = self._analyses.create(request.name, request.ns)
+            analysisId = analysis.id
+            options = json.dumps(analysis.options)
 
-        self._coms.send(response, request, False)
+            response = silkycoms.AnalysisResponse()
+            response.analysisId = analysisId
+            response.options = options
+            response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
+
+            self._coms.send(response, request, False)
+
+        else:
+            analysisId = request.analysisId
+            options = request.options
 
         request.datasetId = self._instance_id
-        request.analysisId = analysis.id
+        request.analysisId = analysisId
         request.options = options
         self._em.send(request)
 

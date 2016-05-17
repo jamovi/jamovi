@@ -38,7 +38,8 @@ var Instance = Backbone.Model.extend({
 
         this._analyses = new Analyses();
         this._analyses.on('analysisCreated', this._analysisCreated, this);
-        
+        this._analyses.on('analysisOptionsChanged', this._analysisOptionsChanged, this);
+
         this._instanceId = null;
 
     },
@@ -79,21 +80,21 @@ var Instance = Backbone.Model.extend({
         var coms = this.attributes.coms;
 
         return coms.connect().then(function() {
-        
+
             return self._beginInstance(instanceId);
-        
+
         }).then(function(instanceId) {
-        
+
             self._instanceId = instanceId;
-        
+
         }).then(function() {
-        
+
             return self._retrieveInfo();
-        
+
         }).then(function() {
-        
+
             return self._instanceId;
-            
+
         }).catch(function(err) {
 
             console.log('error ' + err);
@@ -109,11 +110,11 @@ var Instance = Backbone.Model.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = open.toArrayBuffer();
         request.payloadType = "OpenRequest";
-        
+
         var onresolve = function(response) {
             self._retrieveInfo();
         };
-        
+
         var onprogress = function(progress) {
             console.log(progress);
         };
@@ -121,54 +122,59 @@ var Instance = Backbone.Model.extend({
         return coms.send(request).then(onresolve, null, onprogress);
     },
     _beginInstance : function(instanceId) {
-    
+
         var coms = this.attributes.coms;
 
         var instanceRequest = new coms.Messages.InstanceRequest();
         if (instanceId)
             instanceRequest.instanceId = instanceId;
-        
+
         var request = new coms.Messages.ComsMessage();
         request.payload = instanceRequest.toArrayBuffer();
         request.payloadType = "InstanceRequest";
-        
+
         return coms.send(request).then(function(response) {
-        
+
             var instanceResponse = coms.Messages.InstanceResponse.decode(response.payload);
             return instanceResponse.instanceId;
-        });    
+        });
     },
     _retrieveInfo : function() {
-    
+
         var self = this;
         var coms = this.attributes.coms;
-    
+
         var info = new coms.Messages.InfoRequest();
         var request = new coms.Messages.ComsMessage();
         request.payload = info.toArrayBuffer();
         request.payloadType = "InfoRequest";
 
         return coms.send(request).then(function(response) {
-        
+
             var info = coms.Messages.InfoResponse.decode(response.payload);
-        
+
             if (info.hasDataSet) {
 
                 var columnInfo = _.map(info.schema.fields, function(field) {
                     return { name : field.name, width: field.width, measureType : self._stringifyMeasureType(field.measureType) };
                 }, self);
-            
+
                 self._dataSetModel.setNew({
                     rowCount : info.rowCount,
                     columnCount : info.columnCount,
                     columns : columnInfo
                 });
             }
-            
+
             return response;
         });
     },
     _analysisCreated : function(analysis) {
+
+        this.set("selectedAnalysis", analysis);
+        this._analysisOptionsChanged(analysis);
+    },
+    _analysisOptionsChanged : function(analysis) {
 
         var self = this;
         var coms = this.attributes.coms;
@@ -177,30 +183,32 @@ var Instance = Backbone.Model.extend({
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
 
+        if (analysis.isSetup) {
+            analysisRequest.analysisId = analysis.id;
+            analysisRequest.options = JSON.stringify(analysis.options);
+        }
+
         var request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = "AnalysisRequest";
-        
-        this.set("selectedAnalysis", analysis);
 
         var onreceive = function(message) {
 
             var response = coms.Messages.AnalysisResponse.decode(message.payload);
-            
             var ok = false;
 
             if (analysis.isSetup === false
                 && _.has(response, "analysisId")
                 && _.has(response, "options")) {
-                
+
                 var id = response.analysisId;
                 var options = JSON.parse(response.options);
-        
+
                 analysis.setup(id, options);
-                
+
                 ok = true;
             }
-            
+
             if (analysis.isSetup && _.has(response, "results") && response.results !== null) {
                 analysis.setResults(response.results);
                 ok = true;
@@ -213,7 +221,6 @@ var Instance = Backbone.Model.extend({
         };
 
         return coms.send(request).then(onreceive, null, onreceive);
-        
     },
     _stringifyMeasureType : function(measureType) {
         switch (measureType) {

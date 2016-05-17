@@ -105,7 +105,7 @@ void Engine::resultsReceived(const string &results)
     
     message.set_id(_currentRequestId);
     message.set_payload(results);
-    message.set_payloadtype("AnalysisResults");
+    message.set_payloadtype("AnalysisResponse");
     
     string data;
     

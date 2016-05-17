@@ -2,6 +2,7 @@
 'use strict';
 
 var $ = require('jquery');
+var _ = require('underscore');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -13,7 +14,7 @@ var Analysis = function(name, ns) {
     this.options = null;
     this.results = null;
     this.isSetup = false;
-    
+
     this._parent = null;
 
     var self = this;
@@ -34,7 +35,13 @@ Analysis.prototype.setup = function(id, options) {
 Analysis.prototype.setResults = function(results) {
     this.results = results;
     if (this._parent !== null)
-        this._parent._notifyResults(this);
+        this._parent._notifyResultsChanged(this);
+};
+
+Analysis.prototype.setOptions = function(options) {
+    this.options = _.extend(this.options, options);
+    if (this._parent !== null)
+        this._parent._notifyOptionsChanged(this);
 };
 
 var Analyses = Backbone.Model.extend({
@@ -51,8 +58,11 @@ var Analyses = Backbone.Model.extend({
         this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
     },
-    _notifyResults : function(analysis) {
-        this.trigger('analysisResults', analysis);
+    _notifyResultsChanged : function(analysis) {
+        this.trigger('analysisResultsChanged', analysis);
+    },
+    _notifyOptionsChanged : function(analysis) {
+        this.trigger('analysisOptionsChanged', analysis);
     }
 });
 
