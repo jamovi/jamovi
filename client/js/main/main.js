@@ -68,9 +68,9 @@ $(document).ready(function() {
     var splitPanel  = new SplitPanel({el : "#main-view"});
 
     splitPanel.addPanel("main-table", { minWidth: 90, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
-    splitPanel.addPanel("main-options", { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferedWidth: optionsFixedWidth, visible: false, strongEdge: "right", stretchyEdge: "left", level: 1 });
+    splitPanel.addPanel("main-options", { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferredWidth: optionsFixedWidth, visible: false, strongEdge: "right", stretchyEdge: "left", level: 1 });
     splitPanel.addPanel("results", { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
-    splitPanel.addPanel("help", { minWidth: 30, preferedWidth: 200, visible: false, strongEdge: "right", level: 1 });
+    splitPanel.addPanel("help", { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: "right", level: 1 });
 
     analyses.on("analysisCreated", function(analysis) {
         analysis.ready.then(function() {
@@ -95,40 +95,38 @@ $(document).ready(function() {
     var progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
     var optionspanel = new OptionsPanel({ el : "#main-options" });
     optionspanel.setDataSetModel(dataSetModel);
-    
+
     var resultsUrl = 'http://localhost:' + resultsViewPort + '/';
     var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
-    
+
     Promise.resolve(function() {
 
         return $.post('http://localhost:' + mainPort + '/login');
 
     }).then(function() {
-        
+
         return $.getJSON('http://localhost:' + mainPort + '/backstage');
-    
+
     }).then(function(settings) {
 
         instance.backstageModel().set('settings', settings);
 
     }).then(function() {
-    
+
         return coms.ready;
-        
+
     }).then(function() {
-    
+
         var instanceId;
         if (window.location.search.indexOf('?id=') !== -1)
             instanceId = window.location.search.split('?id=')[1];
 
         return instance.connect(instanceId);
-        
+
     }).then(function(instanceId) {
 
         var newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
         history.replaceState({}, '', newUrl);
-    
+
     });
 });
-
-

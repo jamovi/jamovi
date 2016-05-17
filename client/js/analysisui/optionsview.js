@@ -15,7 +15,7 @@ Backbone.$ = $;
 
 var OptionsView = Backbone.View.extend({
 
-    renderLayout: function(items, groupView, currentFormat, level) {
+    renderLayout: function(items, groupView, currentStyle, level) {
         this._nextCell = {row: 0, column: 0};
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
@@ -25,7 +25,7 @@ var OptionsView = Backbone.View.extend({
             if (isGroup === true) {
                 var cell = item.cell;
                 var groupType = item.type;
-                if (!groupType)
+                if ( ! groupType)
                     groupType = "group";
 
                 var newGroup = null;
@@ -41,7 +41,10 @@ var OptionsView = Backbone.View.extend({
                     groupCell.dockContentWidth = true;
                 }
 
-                this.renderLayout(item.items, newGroup, newGroup.format, level + 1);
+                if (_.isUndefined(item.stretchFactor) === false)
+                    groupCell.horizontalStretchFactor = item.stretchFactor;
+
+                this.renderLayout(item.items, newGroup, newGroup.style, level + 1);
             }
             else {
 
@@ -54,7 +57,7 @@ var OptionsView = Backbone.View.extend({
 
                 var cellRange = this._insertControl(this.getCtrlOption(option), item, groupView, this._nextCell.row, this._nextCell.column);
 
-                if (currentFormat === 'inline') {
+                if (currentStyle === 'inline') {
                     this._nextCell.row = 0;
                     this._nextCell.column = this._nextCell.column + cellRange.width;
                 }
@@ -69,14 +72,14 @@ var OptionsView = Backbone.View.extend({
     createLayoutView_group: function(level, item) {
 
         var name = item.name;
-        var format = item.format;
-        if (!format)
-            format = "list";
+        var style = item.style;
+        if ( ! style)
+            style = "list";
 
         var option = this.model.options.getOption(name);
 
         var newGroup = new LayoutGroupView();
-        newGroup.setInfo(format, level);
+        newGroup.setInfo(style, level);
 
         var $header = null;
 
@@ -90,7 +93,7 @@ var OptionsView = Backbone.View.extend({
                 throw "A group header cannot be of this type.";
         }
         else {
-            var groupText = this.model.layoutdef.getGroupText(name);
+            var groupText = this.model.layoutDef.getGroupText(name);
             if (groupText) {
                 var t = '';
                 if (level === 1)
@@ -113,32 +116,32 @@ var OptionsView = Backbone.View.extend({
             }
         }
 
-        newGroup.$el.addClass("silky-options-group silky-options-level-" + level + " silky-options-group-format-" + format);
+        newGroup.$el.addClass("silky-options-group silky-options-level-" + level + " silky-options-group-style-" + style);
 
         return newGroup;
     },
 
     createLayoutView_supplier: function(level, item) {
 
-        var format = "list";
+        var style = "list";
 
-        var newGroup = new LayoutVariablesView();
-        newGroup.setInfo(this.model.resources, format, level);
+        var newGroup = new LayoutVariablesView(item);
+        newGroup.setInfo(this.model.resources, style, level);
 
-        newGroup.$el.addClass("silky-options-group silky-options-level-" + level + " silky-options-group-format-" + format);
+        newGroup.$el.addClass("silky-options-group silky-options-level-" + level + " silky-options-group-style-" + style);
 
         return newGroup;
     },
 
     render: function() {
         var options = this.model.options;
-        var layoutdef = this.model.layoutdef;
+        var layoutDef = this.model.layoutDef;
 
 
         var layoutGrid = new LayoutGrid();
         layoutGrid.setFixedWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
 
-        this.renderLayout(layoutdef.layout, layoutGrid, 'list', 1);
+        this.renderLayout(layoutDef.layout, layoutGrid, 'list', 1);
 
         layoutGrid.render();
 
@@ -151,7 +154,7 @@ var OptionsView = Backbone.View.extend({
             this._ctrlOptions = {};
 
         var self = this;
-        var layoutdef = this.model.layoutdef;
+        var layoutDef = this.model.layoutDef;
         var options = this.model.options;
         var ctrlOption = this._ctrlOptions[option.name];
         if (_.isUndefined(ctrlOption)) {
@@ -160,31 +163,51 @@ var OptionsView = Backbone.View.extend({
                 source: option,
 
                 getTitle: function() {
-                    return layoutdef.getTitle();
+                    return layoutDef.getTitle();
                 },
 
                 getGroupText: function(id) {
-                    return layoutdef.getGroupText(id);
+                    return layoutDef.getGroupText(id);
                 },
 
                 getText: function() {
-                    return layoutdef.getOptionText(option.name);
+                    return layoutDef.getOptionText(option.name);
                 },
 
                 getSuffix: function() {
-                    return layoutdef.getOptionSuffix(option.name);
+                    return layoutDef.getOptionSuffix(option.name);
                 },
 
-                insertValueAt: function(value, keys, eventParams) {
-                    options.insertOptionValue(option, value, keys, eventParams);
+                beginEdit: function() {
+                    options.beginEdit();
                 },
 
-                setValue: function(value, keys, eventParams) {
-                    options.setOptionValue(option, value, keys, eventParams);
+                endEdit: function() {
+                    options.endEdit();
                 },
 
-                getValue: function(keys) {
-                    return option.getValue(keys);
+                insertValueAt: function(value, key, eventParams) {
+                    options.insertOptionValue(option, value, key, eventParams);
+                },
+
+                removeAt: function(key, eventParams) {
+                    options.removeOptionValue(option, key, eventParams);
+                },
+
+                setValue: function(value, key, eventParams) {
+                    options.setOptionValue(option, value, key, eventParams);
+                },
+
+                getLength: function(key) {
+                    return option.getLength(key);
+                },
+
+                getValue: function(key) {
+                    return option.getValue(key);
+                },
+
+                getFormattedValue: function(key, format) {
+                    return option.getFormattedValue(key, format);
                 },
 
                 getValueAsString: function() {

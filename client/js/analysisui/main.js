@@ -9,7 +9,8 @@ Backbone.$ = $;
 
 var Options = require('./options');
 var OptionsView = require('./optionsview');
-var Layoutdef = require('./layoutdef');
+var LayoutDef = require('./layoutdef');
+var FormatDef = require('./formatdef');
 
 function addMsgListener(cmd, callback, failed) {
     window.addEventListener("message",
@@ -38,7 +39,7 @@ var Analysis = function(def) {
 
     var options = module.exports.options;
 
-    this.model = { options: new Options(options), layoutdef: new module.exports.Layoutdef() };
+    this.model = { options: new Options(options), layoutDef: new module.exports.LayoutDef() };
     this.View = new OptionsView( { className: "silky-options-content", model: this.model } );
 };
 
@@ -68,7 +69,7 @@ function loadAnalysis(def) {
 
     analysis.model.resources = analysisResources;
 
-    var title = analysis.model.layoutdef.getTitle();
+    var title = analysis.model.layoutDef.getTitle();
     console.log("loading - " + title + "...");
     var $title = $('.silky-options-title');
     $title.empty();

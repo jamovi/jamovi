@@ -8,7 +8,7 @@ var GridTextbox = function(option, params) {
 
     this.parse = function(value) {
 
-        if (this.params.format === 'number')
+        if (this.params.formatName === 'number')
             return parseFloat(value);
         else
             return value;
@@ -36,7 +36,8 @@ var GridTextbox = function(option, params) {
 
         var suffix = this.option.getSuffix();
         if (suffix !== null) {
-            var subgrid = new LayoutGrid({ className: "silky-layout-grid" });
+            var subgrid = new LayoutGrid();
+            subgrid.$el.addClass("silky-layout-grid");
             grid.addLayout("textBox_" + id, column + 1, row, true, subgrid);
             grid = subgrid;
         }

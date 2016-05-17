@@ -3,8 +3,11 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
+//var FormatDef = require('./formatdef');
 
-function Layoutdef() {
+function LayoutDef() {
+
+    //this._typedef = new FormatDef();
 
     this.getTitle = function() {
         return this.title ? this.title : "Undefined";
@@ -52,15 +55,15 @@ function Layoutdef() {
     this.layout = [];
 }
 
-Layoutdef.asBase = function(target) {
-    Layoutdef.call(target);
+LayoutDef.asBase = function(target) {
+    LayoutDef.call(target);
 };
 
-Layoutdef.extend = function(params) {
+LayoutDef.extend = function(params) {
     return function() {
-        Layoutdef.asBase(this);
+        LayoutDef.asBase(this);
         _.extend(this, params);
     };
 };
 
-module.exports = Layoutdef;
+module.exports = LayoutDef;
