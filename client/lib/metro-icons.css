@@ -1,7 +1,7 @@
 @font-face {
   font-family: 'metro';
-  src: url('../assets/metro.eot?izvoei');
-  src: url('../assets/metro.eot?#iefixizvoei') format('embedded-opentype'), url('../assets/metro.woff?izvoei') format('woff'), url('../assets/metro.ttf?izvoei') format('truetype'), url('../assets/metro.svg?izvoei#metro') format('svg');
+  src: url('assets/metro.eot?izvoei');
+  src: url('assets/metro.eot?#iefixizvoei') format('embedded-opentype'), url('assets/metro.woff?izvoei') format('woff'), url('assets/metro.ttf?izvoei') format('truetype'), url('assets/metro.svg?izvoei#metro') format('svg');
   font-weight: normal;
   font-style: normal;
 }

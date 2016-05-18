@@ -11,7 +11,7 @@
 }
 
 .silky-bs-op-panel {
-    
+
     position: fixed ;
     left: 0;
     top: 0 ;
@@ -38,7 +38,7 @@
 }
 
 .silky-bs-back-button:hover {
-    
+
     border-color: #DDDDDD ;
     color: #DDDDDD ;
 }
@@ -105,7 +105,7 @@
 }
 
 .silky-bs-osf {
-    background-image: url('../assets/logo-osf.png');
+    background-image: url('assets/logo-osf.png');
     background-size: auto 60% ;
     background-repeat: no-repeat ;
     background-position: 8px center ;
@@ -158,4 +158,3 @@
 .silky-bs-fslist-entry-path {
     display: none ;
 }
-

@@ -194,20 +194,24 @@ class Server:
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
         ], debug=self._debug)
 
-        analysisui_path = os.path.join(client_path,   'analysisui.html')
-        analysisuijs_path = os.path.join(client_path, 'js/analysisui.js')
+        analysisui_path = os.path.join(client_path,    'analysisui.html')
+        analysisuijs_path  = os.path.join(client_path, 'analysisui.js')
+        analysisuicss_path = os.path.join(client_path, 'analysisui.css')
 
         self._analysisui_app = tornado.web.Application([
             (r'/', SingleFileHandler, { 'path': analysisui_path }),
-            (r'/js/analysisui.js', SingleFileHandler, { 'path': analysisuijs_path })
+            (r'/analysisui.js',  SingleFileHandler, { 'path': analysisuijs_path }),
+            (r'/analysisui.css', SingleFileHandler, { 'path': analysisuicss_path }),
         ], debug=self._debug)
 
-        resultsview_path   = os.path.join(client_path, 'resultsview.html')
-        resultsviewjs_path = os.path.join(client_path, 'js/resultsview.js')
+        resultsview_path    = os.path.join(client_path, 'resultsview.html')
+        resultsviewjs_path  = os.path.join(client_path, 'resultsview.js')
+        resultsviewcss_path = os.path.join(client_path, 'resultsview.css')
 
         self._resultsview_app = tornado.web.Application([
             (r'/.*/', SingleFileHandler, { 'path': resultsview_path }),
-            (r'/.*/js/resultsview.js', SingleFileHandler, { 'path': resultsviewjs_path }),
+            (r'/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path }),
+            (r'/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path }),
             (r'/(.*)/res/(.*)', ResourceHandler),
         ], debug=self._debug)
 
