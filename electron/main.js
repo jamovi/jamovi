@@ -19,7 +19,7 @@ let mainWindow;
 
 app.on('ready', function() {
 
-    mainWindow = new BrowserWindow({ width: 800, height: 1200 });
+    mainWindow = new BrowserWindow({ width: 1280, height: 800 });
 
     var rootPath = path.join(__dirname, '..', 'client') + '/';
 
