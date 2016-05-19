@@ -5,6 +5,7 @@
 
 analyses/
 node_modules/
+npm-debug.log
 
 core/libsilky/silky.cpp
 
