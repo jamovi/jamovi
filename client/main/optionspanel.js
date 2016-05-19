@@ -14,7 +14,7 @@ var AnalysisInfo = function(analysis, resources) {
     this.name = analysis.name;
     this.options = null;
     this.def = null;
-    this.$frame = $('<iframe id="sandboxed-options" class="silky-options-control" style="overflow: hidden; box-sizing: border-box;" src="./js/options.html"></iframe>');
+    this.$frame = $('<iframe id="sandboxed-options" class="silky-options-control" style="overflow: hidden; box-sizing: border-box;" src="./analysisui.html"></iframe>');
 
     var self = this;
 
