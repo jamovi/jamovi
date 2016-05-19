@@ -199,9 +199,9 @@ class Server:
         analysisuicss_path = os.path.join(client_path, 'analysisui.css')
 
         self._analysisui_app = tornado.web.Application([
-            (r'/', SingleFileHandler, { 'path': analysisui_path }),
-            (r'/analysisui.js',  SingleFileHandler, { 'path': analysisuijs_path }),
-            (r'/analysisui.css', SingleFileHandler, { 'path': analysisuicss_path }),
+            (r'/.*/', SingleFileHandler, { 'path': analysisui_path }),
+            (r'/.*/analysisui.js',  SingleFileHandler, { 'path': analysisuijs_path }),
+            (r'/.*/analysisui.css', SingleFileHandler, { 'path': analysisuicss_path }),
         ], debug=self._debug)
 
         resultsview_path    = os.path.join(client_path, 'resultsview.html')
