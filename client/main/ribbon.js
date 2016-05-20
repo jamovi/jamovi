@@ -14,7 +14,8 @@ var RibbonModel = Backbone.Model.extend({
             { title : "Silky", analyses : [
                 { name : 'Descriptives', title : 'Descriptives', ns : 'silkyR' },
                 { name : 'TTestOneS', title : 'TTestOneS', ns : 'silkyR' },
-                { name : 'TTestPS',   title : 'TTestPS', ns : 'silkyR' } ]
+                { name : 'TTestPS',   title : 'TTestPS', ns : 'silkyR' },
+                { name : 'Anova',   title : 'ANOVA', ns : 'silkyR' } ]
             },
             { title : "Silky J" }
         ],
@@ -45,14 +46,14 @@ var RibbonView = Backbone.View.extend({
         var currentTabIndex = this.model.get('selectedIndex');
         var currentTab = this.model.get('tabs')[currentTabIndex];
         var analyses = currentTab.analyses;
-        
+
         analyses.forEach(function(value) {
             html += '   <button class="silky-ribbon-button" data-name="' + value.name + '" + data-ns="' + value.ns + '">';
             html += '       <div class="silky-ribbon-button-icon"></div>';
             html += '       <div class="silky-ribbon-button-label">' + value.title + '</div>';
             html += '   </button>';
         });
-        
+
         html += '</div>';
 
         this.$el.append(html);
