@@ -56,7 +56,7 @@ $(document).ready(function() {
     $(document).mousemove(this, mouseMove);
 
     addMsgListener("options.def", loadAnalysis, loadFailed);
-    addMsgListener("analysis.resources", setResources);
+    addMsgListener("analysis.context", setResources);
     addMsgListener("options.changed", setOptionsValues);
 
     sendMsg("document.ready");

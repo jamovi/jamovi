@@ -7,9 +7,9 @@ Backbone.$ = $;
 
 var SilkyView = require('./view');
 
-var AnalysisInfo = function(analysis, resources) {
+var AnalysisResources = function(analysis, context) {
 
-    this.resources = resources;
+    this.context = context;
     this.analysis = analysis;
     this.name = analysis.name;
     this.options = null;
@@ -38,11 +38,11 @@ var AnalysisInfo = function(analysis, resources) {
         }, false);
     };
 
-    this.updateData = function(options, resources) {
-        this.resources = resources;
+    this.updateData = function(options, context) {
+        this.context = context;
         this.options = options;
 
-        this.sendMsg("analysis.resources", this.resources);
+        this.sendMsg("analysis.context", this.context);
         this.sendMsg("options.changed", this.options);
     };
 
@@ -62,7 +62,7 @@ var AnalysisInfo = function(analysis, resources) {
             notifyAborted = reject;
         })
     ]).then(function() {
-        self.sendMsg("analysis.resources", self.resources);
+        self.sendMsg("analysis.context", self.context);
         self.sendMsg("options.def", self.def);
     });
 
@@ -77,7 +77,7 @@ var OptionsPanel = SilkyView.extend({
 
     initialize: function() {
 
-        this._analysisFrameData = {};
+        this._analysesResources = {};
 
         this.addMsgListener("options.changed", this.optionsChanged);
         this.addMsgListener("options.close", this.hideOptions);
@@ -85,7 +85,7 @@ var OptionsPanel = SilkyView.extend({
         this.addMsgListener("document.ready", this.frameReady);
         this.addMsgListener("document.mouse", this.frameMouseEvent);
 
-        this._currentFrameData = null;
+        this._currentResources = null;
 
         var self = this;
         $(window).resize(function() { self.resizeHandler(); });
@@ -96,25 +96,26 @@ var OptionsPanel = SilkyView.extend({
 
     setAnalysis: function(analysis) {
 
-        var info = this._analysisFrameData[analysis.name];
-        if (_.isUndefined(info)) {
-            info = new AnalysisInfo(analysis, { columns: this.dataSetModel.get('columns') });
-            this._analysisFrameData[analysis.name] = info;
+        var resources = this._analysesResources[analysis.name];
+        if (_.isUndefined(resources)) {
+            resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') });
+            this._analysesResources[analysis.name] = resources;
         }
-        else if (this._currentFrameData !== null && info.name !== this._currentFrameData.name) {
-            this._currentFrameData.abort();
-            this._currentFrameData.$frame.detach();
-            this._currentFrameData = null;
+        else if (resources !== this._currentResources) {
+            this._currentResources.abort();
+            this._currentResources.$frame.detach();
+            this._currentResources = null;
         }
 
-        var resources = { columns: this.dataSetModel.get('columns') };
-        info.ready.then(function() {
-            info.updateData(analysis.options, resources);
+        var context = { columns: this.dataSetModel.get('columns') };
+        resources.ready.then(function() {
+            resources.updateData(analysis.options, context);
         });
 
-        if (this._currentFrameData === null) {
-            this._currentFrameData = info;
-            this.$el.append(info.$frame);
+        resources.analysis = analysis;
+        if (this._currentResources === null) {
+            this._currentResources = resources;
+            this.$el.append(resources.$frame);
         }
     },
 
@@ -128,10 +129,10 @@ var OptionsPanel = SilkyView.extend({
     },
 
     updateContentHeight: function() {
-        if (this._currentFrameData === null)
+        if (this._currentResources === null)
             return;
 
-        var $frame = this._currentFrameData.$frame;
+        var $frame = this._currentResources.$frame;
         var pos = $frame.position();
 
         var properties = this.$el.css(["height", "padding-top", "padding-bottom", "border-top", "border-bottom"]);
@@ -162,7 +163,7 @@ var OptionsPanel = SilkyView.extend({
     },
 
     optionsChanged: function(data) {
-        this._currentFrameData.analysis.setOptions(data);
+        this._currentResources.analysis.setOptions(data);
     },
 
     frameReady: function(data) {
