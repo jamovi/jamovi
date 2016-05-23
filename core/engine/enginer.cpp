@@ -32,209 +32,137 @@ void EngineR::run(Analysis *analysis)
 {
     if (_rInside == NULL)
         initR();
-    
+
     RInside &rInside = *_rInside;
 
     stringstream ss;
-    
+
     ss << "{\n";
-    ss << "  options <- silkycore::Options$new(package='" << analysis->ns << "', name='" << analysis->name << "', json='" << analysis->options << "', vars=c('a', 'b', 'f'))\n";
+    ss << "  options <- silkycore::Options$new(package='" << analysis->ns << "', name='" << analysis->name << "', json='" << analysis->options << "')\n";
     ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ", options=options)\n";
     ss << "}\n";
-    
-    rInside.parseEvalQNT(ss.str());
-    
-    std::function<Rcpp::DataFrame(vector<string>)> readDatasetHeader;
-    std::function<Rcpp::DataFrame(vector<string>)> readDataset;
 
-    readDatasetHeader = std::bind(&EngineR::readDatasetHeader, this, analysis->datasetId, std::placeholders::_1);
+    rInside.parseEvalQNT(ss.str());
+
+    std::function<Rcpp::DataFrame(Rcpp::List)> readDatasetHeader;
+    std::function<Rcpp::DataFrame(Rcpp::List)> readDataset;
+
+    readDatasetHeader = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, true);
     rInside["readDatasetHeader"] = Rcpp::InternalFunction(readDatasetHeader);
     rInside.parseEvalQNT("analysis$.setReadDatasetHeaderSource(readDatasetHeader)\n");
     rInside.parseEvalQNT("rm(list='readDatasetHeader')\n");
 
-    if (analysis->perform == 2)
-    {
-        readDataset = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1);
-        rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
-        rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
-        rInside.parseEvalQNT("rm(list='readDataset')\n");
-    }
-    
+    readDataset = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, false);
+    rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
+    rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
+    rInside.parseEvalQNT("rm(list='readDataset')\n");
+
     std::function<string()> statePath = std::bind(&EngineR::statePath, this, analysis->datasetId, analysis->nameAndId);
     rInside["statePath"] = Rcpp::InternalFunction(statePath);
     rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
     rInside.parseEvalQNT("rm(list='statePath')\n");
-    
+
     std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(&EngineR::resourcesPath, this, analysis->datasetId, analysis->nameAndId, std::placeholders::_1, std::placeholders::_2);
     rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
     rInside.parseEvalQNT("analysis$.setResourcesPathSource(resourcesPath)");
     rInside.parseEvalQNT("rm(list='resourcesPath')\n");
-    
-    ss.str(""); // clear
-    
-    ss << "{\n";
 
+    ss.str(""); // clear
+
+    ss << "{\n";
     ss << "  analysis$init()\n";
     ss << "  analysis$.load()\n";
-
-    if (analysis->perform == 2)
-        ss << "  analysis$run()\n";
-    
-    ss << "  analysis$print()\n";
-    ss << "  analysis$render()\n";
-
-    if (analysis->perform == 2)
-        ss << "  analysis$.save()\n";
-
-    ss << "  serial <- RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
-    ss << "  serial\n";
+    ss << "  RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
     ss << "}\n";
 
-    Rcpp::RawVector rawVec2 = rInside.parseEvalNT(ss.str());
-    std::string raw2(rawVec2.begin(), rawVec2.end());
-    
+    Rcpp::RawVector rawVec = rInside.parseEvalNT(ss.str());
+    std::string raw(rawVec.begin(), rawVec.end());
+
+    resultsReceived(raw);
+
+    ss.str(""); // clear
+
+    ss << "{\n";
+    ss << "  analysis$run()\n";
+    ss << "  analysis$print()\n";
+    ss << "  analysis$render()\n";
+    ss << "  analysis$.save()\n";
+    ss << "  RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
+    ss << "}\n";
+
+    Rcpp::RawVector ravVec2 = rInside.parseEvalNT(ss.str());
+    std::string raw2(ravVec2.begin(), ravVec2.end());
+
     resultsReceived(raw2);
 }
 
-Rcpp::DataFrame EngineR::readDatasetHeader(const string &datasetId, const vector<string> &columnsRequired)
+Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columnsRequired, bool headerOnly)
 {
     if (_rInside == NULL)
         initR();
-    
+
     filesystem::path p = _path;
     p /= datasetId;
     p /= "buffer";
     string path = p.generic_string();
-        
+
     MemoryMap *mm = MemoryMap::attach(path);
     DataSet2 &dataset = *DataSet2::retrieve(mm);
-    
+
     int columnCount = dataset.columnCount();
-    int rowCount = dataset.rowCount();
-    
+    int rowCount;
+
+    if (headerOnly)
+        rowCount = 0;
+    else
+        rowCount = dataset.rowCount();
+
     Rcpp::List columns(columnsRequired.size());
     Rcpp::CharacterVector columnNames(columnsRequired.size());
-    
+
     int index = 0;
-    
+
     for (int i = 0; i < columnCount; i++)
     {
         Column2 column = dataset[i];
         string columnName = column.name();
-        
-        if (find(columnsRequired.begin(), columnsRequired.end(), columnName) == columnsRequired.end())
-            continue;
-        
-        columnNames[index] = columnName;
-        
-        if (column.columnType() == Column2::Continuous)
+
+        bool required = false;
+
+        for (string hay : columnsRequired)
         {
-            Rcpp::NumericVector v;
-            columns[index] = v;
+            if (hay == columnName)
+                required = true;
         }
-        else
-        {
-            // populate labels
-            
-            map<int, string> m = column.labels();
-            
-            Rcpp::CharacterVector labels(m.size());
-            Rcpp::IntegerVector values(m.size());
 
-            map<int, int> indexes;
-            int j = 0;
-            
-            for (auto p : m)
-            {
-                values[j] = p.first;
-                labels[j] = p.second;
-                j++;
-                indexes[p.first] = j;
-            }
-            
-            // cells
-
-            Rcpp::IntegerVector v;
-            
-            // assign labels
-            
-            v.attr("levels") = labels;
-            
-            if (column.columnType() == Column2::NominalText)
-            {
-                v.attr("class") = "factor";
-            }
-            else
-            {
-                v.attr("values") = values;
-                v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
-            }
-
-            columns[index] = v;
-        }
-        
-        index++;
-    }
-    
-    columns.attr("names") = columnNames;
-    
-    return Rcpp::DataFrame(columns);
-}
-
-Rcpp::DataFrame EngineR::readDataset(const string &datasetId, const vector<string> &columnsRequired)
-{
-    if (_rInside == NULL)
-        initR();
-    
-    filesystem::path p = _path;
-    p /= datasetId;
-    p /= "buffer";
-    string path = p.generic_string();
-        
-    MemoryMap *mm = MemoryMap::attach(path);
-    DataSet2 &dataset = *DataSet2::retrieve(mm);
-    
-    int columnCount = dataset.columnCount();
-    int rowCount = dataset.rowCount();
-    
-    Rcpp::List columns(columnsRequired.size());
-    Rcpp::CharacterVector columnNames(columnsRequired.size());
-    
-    int index = 0;
-    
-    for (int i = 0; i < columnCount; i++)
-    {
-        Column2 column = dataset[i];
-        string columnName = column.name();
-        
-        if (find(columnsRequired.begin(), columnsRequired.end(), columnName) == columnsRequired.end())
+        if ( ! required)
             continue;
-        
+
         columnNames[index] = columnName;
-        
+
         if (column.columnType() == Column2::Continuous)
         {
             Rcpp::NumericVector v(rowCount, Rcpp::NumericVector::get_na());
-            
+
             for (int j = 0; j < rowCount; j++)
                 v[j] = column.cell<double>(j);
-            
+
             columns[index] = v;
         }
         else
         {
             int MISSING = Rcpp::IntegerVector::get_na();
-            
+
             // populate labels
-            
+
             map<int, string> m = column.labels();
-            
+
             Rcpp::CharacterVector labels(m.size());
             Rcpp::IntegerVector values(m.size());
 
             map<int, int> indexes;
             int j = 0;
-            
+
             for (auto p : m)
             {
                 values[j] = p.first;
@@ -242,22 +170,22 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, const vector<strin
                 j++;
                 indexes[p.first] = j;
             }
-            
+
             // populate cells
 
             Rcpp::IntegerVector v(rowCount, MISSING);
-            
+
             for (j = 0; j < rowCount; j++)
             {
                 int value = column.cell<int>(j);
                 if (value != MISSING)
                     v[j] = indexes[value];
             }
-            
+
             // assign labels
-            
+
             v.attr("levels") = labels;
-            
+
             if (column.columnType() == Column2::NominalText)
             {
                 v.attr("class") = "factor";
@@ -270,12 +198,12 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, const vector<strin
 
             columns[index] = v;
         }
-        
+
         index++;
     }
-    
+
     columns.attr("names") = columnNames;
-    
+
     return Rcpp::DataFrame(columns);
 }
 
@@ -284,9 +212,9 @@ string EngineR::analysisDirPath(const std::string &datasetId, const string &anal
     stringstream ss;
     ss << _path << "/" << datasetId << "/" << analysisId;
     string path = ss.str();
-    
+
     EngineR::createDirectories(path);
-    
+
     return path;
 }
 
@@ -304,7 +232,7 @@ Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &an
     EngineR::createDirectories(fullPath);
 
     relPath += "/" + elementId;
-    
+
     if (suffix != "")
         relPath += "." + suffix;
 
@@ -322,7 +250,7 @@ void EngineR::createDirectories(const string &path)
 void EngineR::initR()
 {
     string path;
-    
+
     path = Settings::get("ENV.R_HOME", "");
     if (path != "")
         nowide::setenv("R_HOME", makeAbsolute(path).c_str(), 1);
@@ -330,20 +258,20 @@ void EngineR::initR()
     path = Settings::get("ENV.R_LIBS", "");
     if (path != "")
         nowide::setenv("R_LIBS", makeAbsolute(path).c_str(), 1);
-    
+
     path = Settings::get("ENV.FONTCONFIG_PATH", "");
     if (path != "")
         nowide::setenv("FONTCONFIG_PATH", makeAbsolute(path).c_str(), 1);
-    
+
     nowide::setenv("R_ENVIRON", "something-which-doesnt-exist", 1);
     nowide::setenv("R_PROFILE", "something-which-doesnt-exist", 1);
     nowide::setenv("R_PROFILE_USER", "something-which-doesnt-exist", 1);
     nowide::setenv("R_ENVIRON_USER", "something-which-doesnt-exist", 1);
     nowide::setenv("R_LIBS_SITE", "something-which-doesnt-exist", 1);
     nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
-            
+
     _rInside = new RInside();
-    
+
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
 }
@@ -352,10 +280,10 @@ string EngineR::makeAbsolute(const string &paths)
 {
     vector<string> out;
     algorithm::split(out, paths, algorithm::is_any_of(";:"), token_compress_on);
-    
+
     stringstream result;
     string sep = "";
-    
+
     filesystem::path here = Dirs2::exeDir();
 
     for (string &p : out)
@@ -363,15 +291,15 @@ string EngineR::makeAbsolute(const string &paths)
         system::error_code ec;
         filesystem::path path = p;
         path = canonical(path, here, ec);
-        
+
         result << sep << path.generic_string();
-        
+
 #ifdef _WIN32
         sep = ";";
 #else
         sep = ":";
 #endif
     }
-    
+
     return result.str();
 }

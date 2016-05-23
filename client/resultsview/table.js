@@ -22,50 +22,51 @@ var TableModel = Backbone.Model.extend({
 var TableView = Backbone.View.extend({
     initialize: function() {
         this.$el.addClass('silky-results-table');
-        
+
         if (this.model === null)
             this.model = new TableModel();
-        
+
         this.$table = $('<table class="silky-results-table-table silky-results-item"></table>').appendTo(this.$el);
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
         this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
         this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
-        
+
         this.$columnHeaderRowSuper = $('<tr class="silky-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
         this.$columnHeaderRow      = $('<tr class="silky-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
-        
+
         this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
         this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
-        
+
         this.render();
     },
     render: function() {
-        
+
         var table = this.model.attributes.element;
         var html;
 
         if (this.model.attributes.title)
             this.$titleCell.text(this.model.attributes.title);
-        
+
         var rowCount;
         if (table.columns.length > 0)
             rowCount = table.columns[0].cells.length;
         else
             rowCount = 0;
-        
-        
+
+
         var cells = {
             header : new Array(table.columns.length),
             body : new Array(table.columns.length)
         };
         var formattings = [];
         for (var colNo = 0; colNo < table.columns.length; colNo++) {
-            formattings[colNo] = determineFormatting(_.pluck(table.columns[colNo].cells, 'd'));
+            var values = _.pluck(table.columns[colNo].cells, 'd');
+            formattings[colNo] = determineFormatting(values);
         }
-        
+
         for (var c = 0; c < table.columns.length; c++) {
             cells.body[c] = new Array(rowCount);
-            
+
             for (var r = 0; r < rowCount; r++){
                 var newCell = {};
                 var refCell = table.columns[c].cells[r];
@@ -92,15 +93,20 @@ var TableView = Backbone.View.extend({
                     newCell.format = "text";
                     break;
                 case 'o':
-                    newCell.value = refCell.o;
-                    newCell.format = "number";
-                    
+                    if (refCell.o == 1) {
+                        newCell.value = 'NaN';
+                        newCell.format = "number";
+                    }
+                    else {
+                        newCell.value = '';
+                        newCell.format = "text";
+                    }
                     break;
                 }
                 cells.body[c][r] = newCell;
             }
         }
-        
+
         html = '';
 
         for (var i = 0; i < table.columns.length; i++) {
@@ -111,26 +117,26 @@ var TableView = Backbone.View.extend({
             else
                 html += '<th class="silky-results-table-cell" colspan="2">' + column.name + '</th>';
         }
-        
+
         this.$columnHeaderRowSuper.empty();
         this.$columnHeaderRow.html(html);
-        
+
         html = '';
-        
+
         if (table.columns.length === 0 || table.columns[0].cells.length === 0)
             return;
-        
+
         for (var rowNo = 0; rowNo < table.columns[0].cells.length; rowNo++) {
-            
+
             html += '<tr>';
-            
+
             for (colNo = 0; colNo < table.columns.length; colNo++) {
-                
+
                 var cell = cells.body[colNo][rowNo];
                 html += '<td class="silky-results-table-cell silky-results-table-cell-'+cell.format+'">' + cell.value + '</td>';
-                html += '<td class="silky-results-table-cell silky-results-table-cell-sup">'+cell.sup+'</td>';
+                html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + /*cell.sup+*/ '</td>';
             }
-            
+
             html += '</tr>';
         }
 

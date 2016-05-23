@@ -14,10 +14,14 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
 
     var minAbsNS = Infinity;
     var maxAbsExpnt = -Infinity;
-    
+
     for (var i = 0; i < values.length; i++) {
-    
+
         var value = values[i];
+
+        if (isNaN(value))
+            continue;
+
         var absValue = Math.abs(value);
         if (absValue >= minNS && absValue <= maxNS) {
 
@@ -31,10 +35,10 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
                 maxAbsExpnt = absS;
         }
     }
-    
+
     var dp;
     var expw;
-    
+
     if ( ! isFinite(minAbsNS)) {
         dp = sf - 1;
     }
@@ -45,9 +49,9 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
         var logAbs = Math.log10(minAbsNS);
         dp = sf - 1 - Math.floor(logAbs);
     }
-    
+
     dp = Math.max(dp, 0);
-    
+
     expw = parseInt(Math.log10(maxAbsExpnt)+1);
 
     return { dp: dp, expw: expw};
@@ -60,8 +64,17 @@ var format = function(value, format, sf, maxNS, minNS) {
         maxNS = 1e6;
     if (_.isUndefined(sf))
         sf = 3;
-    
-    if (Math.abs(value) >= minNS && Math.abs(value) <= maxNS) {
+
+    if ( ! isFinite(value)) {
+        if (value  > 0)
+            return 'Inf';
+        else
+            return '-Inf';
+    }
+    else if (isNaN(value)) {
+        return 'NaN';
+    }
+    else if (Math.abs(value) >= minNS && Math.abs(value) <= maxNS) {
         return value.toFixed(format.dp);
     }
     else {
@@ -71,7 +84,7 @@ var format = function(value, format, sf, maxNS, minNS) {
             return value.toFixed(sf-1);
         }
         var expntSpan = Math.log10(exponent);
-        var sign = '+'; 
+        var sign = '+';
         if (value < 1) {
             sign = '-';
         }
@@ -80,8 +93,7 @@ var format = function(value, format, sf, maxNS, minNS) {
         var gap = Array(spaces).join(" ");
         return mantissa.toFixed(sf-1)+'e'+gap+sign+Math.abs(exponent);
     }
-    
+
 };
 
 module.exports = { determineFormatting: determineFormatting, format: format };
-

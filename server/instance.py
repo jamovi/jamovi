@@ -81,6 +81,7 @@ class Instance:
             print(request.payloadType)
 
     def _on_results(self, results, request, complete):
+        complete = (results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE)
         self._coms.send(results, request, complete)
 
     def _on_open(self, request):
