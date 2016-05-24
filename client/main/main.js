@@ -93,7 +93,9 @@ $(document).ready(function() {
 
     var mainTable   = new TableView({el : "#main-table", model : dataSetModel });
     var progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
-    var optionspanel = new OptionsPanel({ el : "#main-options" });
+
+    var optionsUrl = 'http://localhost:' + analysisUIPort + '/';
+    var optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : optionsUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
 
     var resultsUrl = 'http://localhost:' + resultsViewPort + '/';

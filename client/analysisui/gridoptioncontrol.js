@@ -1,6 +1,8 @@
 'use strict';
 
 var GridControl = require('./gridcontrol');
+var _ = require('underscore');
+var $ = require('jquery');
 
 var GridOptionControl = function(option, params) {
 
@@ -8,6 +10,17 @@ var GridOptionControl = function(option, params) {
 
     this.option = option;
     this.params = params;
+
+    this.getParam = function(name) {
+        var value = this.params[name];
+        if (_.isUndefined(value) === false) {
+            if ($.isFunction(value))
+                return value.call(this);
+            else
+                return value;
+        }
+        return null;
+    };
 
     option.source.on("valuechanged", function(keys, data) {
         if (this.onOptionValueChanged)

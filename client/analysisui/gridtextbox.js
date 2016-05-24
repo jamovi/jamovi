@@ -24,7 +24,9 @@ var GridTextbox = function(option, params) {
     this.onRender = function(grid, row, column) {
 
         var id = this.option.getName();
-        var label = this.option.getText();
+        var label = this.getParam('label');
+        if (label === null)
+            label = this.getParam('name');
 
         var columnUsed = 0;
         var cell = null;
@@ -34,7 +36,7 @@ var GridTextbox = function(option, params) {
             columnUsed += 1;
         }
 
-        var suffix = this.option.getSuffix();
+        var suffix = this.getParam('suffix');
         if (suffix !== null) {
             var subgrid = new LayoutGrid();
             subgrid.$el.addClass("silky-layout-grid");

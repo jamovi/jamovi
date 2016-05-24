@@ -8,8 +8,12 @@ var LayoutGrid = require('./layoutgrid').Grid;
 //var LayoutGridProtoType = require('./layoutgrid').prototype;
 
 
-var LayoutGroupView = function() {
+var LayoutGroupView = function(params) {
     LayoutGrid.extendTo(this);
+
+    this._colapsed = _.isUndefined(params.colapsed) ? false : params.colapsed;
+    if (this._colapsed)
+        this.$el.addClass("silky-gridlayout-colapsed");
 
     this.rowTransform = function(row, column) {
         if ( ! this.ignoreTransform) {
@@ -38,6 +42,7 @@ var LayoutGroupView = function() {
         this.ignoreTransform = true;
         var fitToGrid = this.style === 'inline';
         this.headerCell = this.addCell(0, 0, fitToGrid, $header);
+        this.headerCell.setVisibility(true);
         this.headerCell.$el.addClass("silky-group-header");
         if (this.style === 'list')
             this.addSpacer(0, 1, true, 10, 5);
@@ -50,34 +55,19 @@ var LayoutGroupView = function() {
         if (this._colapsed)
             return;
 
-        this._ignoreLayout = true;
-
         this.$el.addClass("silky-gridlayout-colapsed");
 
-        var self = this;
-        //window.setTimeout(function() {
-            var height = _.isUndefined(self.headerCell) ? 0 : self.headerCell.contentHeight();
-            var data = {height: height };
-            self.$el.animate(data, {
-                duration: 100,
-                queue: false,
-                complete: function() {
-                    self.animationComplete('colapse');
-                },
-                progress: function() {
-                    self.onSizeChanged('height');
-                }
-            });
-            var $contents = self.$el.children(':not(.silky-group-header)').animate(
-                {
-                    opacity: 0
-                },
-                {
-                    duration: 100,
-                    queue: false
-                }
-            );
-        //});
+        this.setContentVisibility(false);
+        this.invalidateLayout('both', Math.random());
+        this._colapsed = true;
+    };
+
+    this.setContentVisibility = function(visible) {
+        for (var i = 0; i < this._cells.length; i++) {
+            var cell = this._cells[i];
+            if (this.headerCell._id !== cell._id)
+                cell.setVisibility(visible);
+        }
     };
 
     this.expand = function() {
@@ -87,28 +77,10 @@ var LayoutGroupView = function() {
 
         this.$el.removeClass("silky-gridlayout-colapsed");
 
-        var height = this.preferredHeight;
-        var data = {height: height };
-        var self = this;
-        this.$el.animate(data, {
-            duration: 100,
-            queue: false,
-            complete: function() {
-                self.animationComplete('expand');
-            },
-            progress: function() {
-                self.onSizeChanged('height');
-            }
-        });
-        var $contents = this.$el.children(':not(.silky-group-header)').animate(
-            {
-                opacity: 1
-            },
-            {
-                duration: 100,
-                queue: false,
-            }
-        );
+        this.setContentVisibility(true);
+        this.invalidateLayout('both', Math.random());
+        this._colapsed = false;
+
     };
 
     this.toggleColapsedState = function() {
@@ -118,17 +90,10 @@ var LayoutGroupView = function() {
             this.colapse();
     };
 
-    this.animationComplete = function(action) {
-        if (action === 'colapse' || action === 'expand') {
-            this._colapsed = action === 'colapse';
-            this._ignoreLayout =  action === 'colapse';
-        }
+    this.onCellAdded = function(cell) {
+        if (_.isUndefined(this.headerCell) === false && this.headerCell._id !== cell._id)
+            cell.setVisibility(this._colapsed === false);
     };
-
-    this.onSizeChanged = function(type) {
-        this.$el.trigger('layoutgrid.sizeChanged', { type:type, updateId: Math.random() });
-    };
-
 };
 
 module.exports = LayoutGroupView;
