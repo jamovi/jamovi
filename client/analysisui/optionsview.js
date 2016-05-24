@@ -223,6 +223,10 @@ var OptionsView = Backbone.View.extend({
 
                 getName: function() {
                     return option.name;
+                },
+
+                valueInited: function() {
+                    return option.valueInited();
                 }
             };
             this._ctrlOptions[option.name] = ctrlOption;

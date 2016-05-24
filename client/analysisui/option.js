@@ -53,7 +53,11 @@ var Opt = function(type, initialValue, params) {
                 var a = this._value;
                 for (var i = 0; i < keys.length; i++) {
                     var index = keys[i];
-                    a = a[index];
+                    if (Array.isArray(a))
+                        a = a[index];
+                    else if (index !== 0)
+                        throw 'Cannot access a non array with a non zero key';
+                        
                     if (i === keys.length - 1)
                         value = a;
                 }
@@ -203,19 +207,18 @@ var Opt = function(type, initialValue, params) {
         return false;
     };
 
-    this.onInitialise = function(params) {
-        if (_.isUndefined(params) === false) {
-            //this.setValue(params.default);
-            this.name = params.name;
-            this.text = params.text;
-        }
-    };
-
     this.toString = function() {
         return this._value.toString();
     };
 
-    this.onInitialise(params);
+    this.valueInited = function() {
+        return this._value !== null;
+    };
+
+    if (_.isUndefined(params) === false) {
+        this.name = params.name;
+        this.text = params.text;
+    }
 };
 
 Opt.extend = function(target, type, initialValue, params) {
