@@ -9,6 +9,8 @@ var FormatDef = {
 
         name: 'variable',
 
+        default: '',
+
         toString: function(raw) {
             return FormatDef.variable._itemToString(raw, 0);
         },
@@ -91,6 +93,8 @@ var FormatDef = {
 
         name: 'number',
 
+        default: 0,
+
         toString: function(raw) {
             return raw.toString();
         },
@@ -112,6 +116,8 @@ var FormatDef = {
 
         name: 'bool',
 
+        default: false,
+
         toString: function(raw) {
             return raw.toString();
         },
@@ -127,12 +133,13 @@ var FormatDef = {
         isEqual: function(raw1, raw2) {
             return raw1 === raw2;
         }
-
     },
 
     string:  {
 
         name: 'string',
+
+        default: '',
 
         toString: function(raw) {
             return raw;

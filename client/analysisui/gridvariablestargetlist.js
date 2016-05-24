@@ -208,10 +208,14 @@ var GridVariablesTargetList = function(option, params) {
                     var key = [this.option.getLength()];
                     var data = selected.raw;
                     if (typeof data !== 'object') {
-                        var value = this.option.getValue(this.option.getLength() - 1);
-                        var emptyProperty = _.isUndefined(value) ? null : this.findEmptyProperty(value, selected.format.name);
+                        var lastRow = this.option.getLength() - 1;
+                        var emptyProperty = null;
+                        if (lastRow >= 0) {
+                            var value = this.option.getValue(lastRow);
+                            emptyProperty = _.isUndefined(value) ? null : this.findEmptyProperty(value, selected.format.name);
+                        }
                         if (emptyProperty === null) {
-                            if (hasMaxItemCount && currentCount >= this.maxItemCount)
+                            if (this.isSingleItem === false && hasMaxItemCount && currentCount >= this.maxItemCount)
                                 break;
                             var newItem = this.createEmptyItem();
                             if (newItem !== null) {
@@ -220,12 +224,15 @@ var GridVariablesTargetList = function(option, params) {
                             }
                         }
                         else
-                            key = [this.option.getLength() - 1, emptyProperty];
+                            key = [lastRow, emptyProperty];
                     }
                     else if (hasMaxItemCount && currentCount >= this.maxItemCount)
                         break;
 
-                    this.option.insertValueAt( data, key );
+                    if (this.option.valueInited() === false || this.isSingleItem)
+                        this.option.setValue(this.isSingleItem ? data : [data]);
+                    else
+                        this.option.insertValueAt( data, key );
                 }
                 this.option.endEdit();
                 this.targetGrid.resumeLayout();
@@ -238,7 +245,10 @@ var GridVariablesTargetList = function(option, params) {
             this.option.beginEdit();
             while (this.targetGrid.selectedCellCount() > 0) {
                 var cell = this.targetGrid.getSelectedCell(0);
-                this.option.removeAt([this.displayRowToRowIndex(cell.data.row)]);
+                if (this.isSingleItem)
+                    this.option.setValue(null);
+                else
+                    this.option.removeAt([this.displayRowToRowIndex(cell.data.row)]);
             }
             this._supplier.filterSuppliersList();
             this.option.endEdit();
@@ -352,30 +362,33 @@ var GridVariablesTargetList = function(option, params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
+        this.targetGrid.suspendLayout();
+        if (this._supplier !== null)
+            this.pushRowsBackToSupplier(0, this._localData.length);
+        this._localData = [];
+
         var list = this.option.getValue();
-        if (Array.isArray(list)) {
-            this.targetGrid.suspendLayout();
-            if (this._supplier !== null)
-                this.pushRowsBackToSupplier(0, this._localData.length);
-            this._localData = [];
-
-            for (var i = 0; i < list.length; i++) {
-                var dispIndex = this.rowIndexToDisplayIndex(i);
-                this.updateItem(list[i], this.targetGrid, dispIndex);
-                this._localData.push(list[i]);
+        if (list !== null) {
+            if (Array.isArray(list)) {
+                for (var i = 0; i < list.length; i++) {
+                    this.updateItem(list[i], this.targetGrid, this.rowIndexToDisplayIndex(i));
+                    this._localData.push(list[i]);
+                }
+                var countToRemove = this.displayRowToRowIndex(this.targetGrid._rowCount) - this._localData.length;
+                this.targetGrid.removeRow(this.rowIndexToDisplayIndex(this._localData.length), countToRemove);
             }
-
-            var countToRemove = this.displayRowToRowIndex(this.targetGrid._rowCount) - this._localData.length;
-            this.targetGrid.removeRow(this._localData.length, countToRemove);
-
-            if (this._localData.length > 0)
-                this.targetGrid.render();
-
-            this.targetGrid.resumeLayout();
-
-            if (this._supplier !== null)
-                this._supplier.filterSuppliersList();
+            else if (this.isSingleItem) {
+                this._localData[0] = list;
+                this.updateItem(list, this.targetGrid, this.rowIndexToDisplayIndex(0));
+            }
         }
+        else
+            this.targetGrid.removeRow(this.rowIndexToDisplayIndex(0), this.targetGrid._rowCount);
+
+        this.targetGrid.render();
+        this.targetGrid.resumeLayout();
+        if (this._supplier !== null)
+            this._supplier.filterSuppliersList();
     };
 };
 
