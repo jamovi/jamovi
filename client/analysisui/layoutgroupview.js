@@ -11,9 +11,9 @@ var LayoutGrid = require('./layoutgrid').Grid;
 var LayoutGroupView = function(params) {
     LayoutGrid.extendTo(this);
 
-    this._colapsed = _.isUndefined(params.colapsed) ? false : params.colapsed;
-    if (this._colapsed)
-        this.$el.addClass("silky-gridlayout-colapsed");
+    this._collapsed = _.isUndefined(params.collapsed) ? false : params.collapsed;
+    if (this._collapsed)
+        this.$el.addClass("silky-gridlayout-collapsed");
 
     this.rowTransform = function(row, column) {
         if ( ! this.ignoreTransform) {
@@ -50,16 +50,16 @@ var LayoutGroupView = function(params) {
         return this.headerCell;
     };
 
-    this.colapse = function() {
+    this.collapse = function() {
 
-        if (this._colapsed)
+        if (this._collapsed)
             return;
 
-        this.$el.addClass("silky-gridlayout-colapsed");
+        this.$el.addClass("silky-gridlayout-collapsed");
 
         this.setContentVisibility(false);
         this.invalidateLayout('both', Math.random());
-        this._colapsed = true;
+        this._collapsed = true;
     };
 
     this.setContentVisibility = function(visible) {
@@ -72,27 +72,27 @@ var LayoutGroupView = function(params) {
 
     this.expand = function() {
 
-        if ( ! this._colapsed)
+        if ( ! this._collapsed)
             return;
 
-        this.$el.removeClass("silky-gridlayout-colapsed");
+        this.$el.removeClass("silky-gridlayout-collapsed");
 
         this.setContentVisibility(true);
         this.invalidateLayout('both', Math.random());
-        this._colapsed = false;
+        this._collapsed = false;
 
     };
 
     this.toggleColapsedState = function() {
-        if (this._colapsed)
+        if (this._collapsed)
             this.expand();
         else
-            this.colapse();
+            this.collapse();
     };
 
     this.onCellAdded = function(cell) {
         if (_.isUndefined(this.headerCell) === false && this.headerCell._id !== cell._id)
-            cell.setVisibility(this._colapsed === false);
+            cell.setVisibility(this._collapsed === false);
     };
 };
 

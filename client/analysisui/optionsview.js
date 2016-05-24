@@ -115,7 +115,7 @@ var OptionsView = Backbone.View.extend({
             if (groupText) {
                 var t = '';
                 if (level === 1)
-                    t = '<div class="silky-options-colapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
+                    t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
                 $header = $('<div class="silky-options-h' + level + '" style="white-space: nowrap;">' + t + groupText + '</div>');
             }
         }
