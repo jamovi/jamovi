@@ -24,6 +24,11 @@ var OptionsView = Backbone.View.extend({
 
             if (isGroup === true) {
                 var cell = item.cell;
+                if (_.isUndefined(cell) === false) {
+                    this._nextCell.row = cell[1];
+                    this._nextCell.column = cell[0];
+                }
+
                 var groupType = item.type;
                 if ( ! groupType)
                     groupType = "group";
@@ -34,17 +39,30 @@ var OptionsView = Backbone.View.extend({
                 else
                     newGroup = this.createLayoutView_group(level, item);
 
-                var groupCell = groupView.addLayout(item.name + '_group', cell[0], cell[1], true, newGroup);
-                if (level === 1) {
+                var groupCell = groupView.addLayout(item.name + '_group', this._nextCell.column, this._nextCell.row, true, newGroup);
+
+                if (level === 0) {
+                    newGroup._animateCells = true;
+                }
+                else if (level === 1) {
                     groupCell.fitToGrid = false;
                     groupCell.horizontalStretchFactor = 1;
                     groupCell.dockContentWidth = true;
+                    this._animateCells = true;
                 }
 
                 if (_.isUndefined(item.stretchFactor) === false)
                     groupCell.horizontalStretchFactor = item.stretchFactor;
 
+                if (_.isUndefined(item.fitToGrid) === false)
+                    groupCell.fitToGrid = item.fitToGrid;
+
+                if (_.isUndefined(item.dockContentWidth) === false)
+                    groupCell.dockContentWidth = item.dockContentWidth;
+
                 this.renderLayout(item.items, newGroup, newGroup.style, level + 1);
+
+                this._nextCell.row += 1;
             }
             else {
 
@@ -78,7 +96,7 @@ var OptionsView = Backbone.View.extend({
 
         var option = this.model.options.getOption(name);
 
-        var newGroup = new LayoutGroupView();
+        var newGroup = new LayoutGroupView(item);
         newGroup.setInfo(style, level);
 
         var $header = null;
@@ -93,7 +111,7 @@ var OptionsView = Backbone.View.extend({
                 throw "A group header cannot be of this type.";
         }
         else {
-            var groupText = this.model.layoutDef.getGroupText(name);
+            var groupText = this.model.layoutDef.getGroupText(item);
             if (groupText) {
                 var t = '';
                 if (level === 1)
@@ -140,6 +158,7 @@ var OptionsView = Backbone.View.extend({
 
         var layoutGrid = new LayoutGrid();
         layoutGrid.setFixedWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+        layoutGrid._animateCells = true;
 
         this.renderLayout(layoutDef.layout, layoutGrid, 'list', 1);
 
@@ -164,18 +183,6 @@ var OptionsView = Backbone.View.extend({
 
                 getTitle: function() {
                     return layoutDef.getTitle();
-                },
-
-                getGroupText: function(id) {
-                    return layoutDef.getGroupText(id);
-                },
-
-                getText: function() {
-                    return layoutDef.getOptionText(option.name);
-                },
-
-                getSuffix: function() {
-                    return layoutDef.getOptionSuffix(option.name);
                 },
 
                 beginEdit: function() {
@@ -261,8 +268,10 @@ var OptionsView = Backbone.View.extend({
 
     _insertControl_listbox: function(ctrlOption, uiDef, grid, row, column) {
         var targetList = new GridVariablesTargetList(ctrlOption, uiDef);
-        targetList.setSupplier(grid);
-        grid.addTarget(targetList);
+        if (grid.addTarget) {
+            targetList.setSupplier(grid);
+            grid.addTarget(targetList);
+        }
         return targetList.render(grid, row, column);
     },
 

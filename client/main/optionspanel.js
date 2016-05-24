@@ -7,14 +7,24 @@ Backbone.$ = $;
 
 var SilkyView = require('./view');
 
-var AnalysisResources = function(analysis, context) {
+
+var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
 
     this.context = context;
     this.analysis = analysis;
     this.name = analysis.name;
     this.options = null;
     this.def = null;
-    this.$frame = $('<iframe id="sandboxed-options" class="silky-options-control" style="overflow: hidden; box-sizing: border-box;" src="./analysisui.html"></iframe>');
+
+    var element = '<iframe id="sandboxed-options" \
+            sandbox="allow-scripts allow-same-origin" \
+            src="' + iframeUrl + instanceId + '/" \
+            class="silky-options-control" \
+            style="overflow: hidden; box-sizing: border-box;" \
+            src="./analysisui.html" \
+            ></iframe>';
+
+    this.$frame = $(element);
 
     var self = this;
 
@@ -75,7 +85,11 @@ var AnalysisResources = function(analysis, context) {
 
 var OptionsPanel = SilkyView.extend({
 
-    initialize: function() {
+    initialize: function(args) {
+
+
+        if (_.has(args, 'iframeUrl'))
+            this.iframeUrl = args.iframeUrl;
 
         this._analysesResources = {};
 
@@ -98,10 +112,11 @@ var OptionsPanel = SilkyView.extend({
 
         var resources = this._analysesResources[analysis.name];
         if (_.isUndefined(resources)) {
-            resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') });
+            resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') }, this.iframeUrl, this.model.instanceId());
             this._analysesResources[analysis.name] = resources;
         }
-        else if (resources !== this._currentResources) {
+
+        if (this._currentResources !== null && resources !== this._currentResources) {
             this._currentResources.abort();
             this._currentResources.$frame.detach();
             this._currentResources = null;

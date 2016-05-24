@@ -74,6 +74,16 @@ var LayoutVariablesView = function(params) {
         return item;
     };
 
+    this.pullItem = function(formatted) {
+        for (var i = 0; i < this._items._list.length; i++) {
+            var item = this._items._list[i];
+            if (item.value.equalTo(formatted)) {
+                item.used += 1;
+                break;
+            }
+        }
+    };
+
     this.pushItem = function(formatted) {
         for (var i = 0; i < this._items._list.length; i++) {
             var item = this._items._list[i];

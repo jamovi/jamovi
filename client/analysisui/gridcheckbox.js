@@ -12,7 +12,11 @@ var GridCheckbox = function(option, params) {
     var type = "checkbox";
 
     var value = this.option.getValue();
-    this.$el = $('<label class="silky-option-checkbox" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + this.option.getText() + '</span></label>');
+    var label = this.getParam('label');
+    if (label === null)
+        label = this.getParam('name');
+
+    this.$el = $('<label class="silky-option-checkbox" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + label + '</span></label>');
 
     var self = this;
     this.$input = this.$el.find('input');

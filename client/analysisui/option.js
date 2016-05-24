@@ -14,6 +14,9 @@ var Opt = function(type, initialValue, params) {
     _.extend(this, Backbone.Events);
 
     this.getLength = function(keys) {
+        if (this._value === null)
+            return 0;
+
         if (Array.isArray(this._value) === false)
             return 1;
 
@@ -83,7 +86,7 @@ var Opt = function(type, initialValue, params) {
         var force = eventParams.force;
 
         var fValue = value;
-        if (_.isUndefined(value.raw) === false) //To handle typed values
+        if (value !== null && _.isUndefined(value.raw) === false) //To handle typed values
             fValue = value.raw;
 
         if (keys.length === 0) {

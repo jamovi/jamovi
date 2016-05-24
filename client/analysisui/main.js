@@ -33,21 +33,23 @@ function sendMsg(id, data) {
     window.parent.postMessage(msg, '*');
 }
 
-var Analysis = function(def) {
+var Analysis = function(def, resources) {
     //var module = { exports : { } };
     eval(def);
 
     var options = module.exports.options;
 
-    this.model = { options: new Options(options), layoutDef: new module.exports.LayoutDef() };
+    this.model = { options: new Options(options), layoutDef: new module.exports.LayoutDef(), resources: resources };
     this.View = new OptionsView( { className: "silky-options-content", model: this.model } );
 };
 
 var analysis = null;
-var analysisResources = null;
+var _def = null;
+var _analysisResources = null;
 var errored = false;
 var $header = null;
 var $hide = null;
+
 
 $(document).ready(function() {
 
@@ -55,7 +57,7 @@ $(document).ready(function() {
     $(document).mouseup(this, mouseUp);
     $(document).mousemove(this, mouseMove);
 
-    addMsgListener("options.def", loadAnalysis, loadFailed);
+    addMsgListener("options.def", loadAnalysisDef, loadFailed);
     addMsgListener("analysis.context", setResources);
     addMsgListener("options.changed", setOptionsValues);
 
@@ -64,17 +66,20 @@ $(document).ready(function() {
     $(window).resize( updateContainerHeight );
 });
 
-function loadAnalysis(def) {
-    analysis = new Analysis(def);
+function loadAnalysisDef(def) {
+    _def = def;
+    if (_def !== null && _analysisResources !== null)
+        loadAnalysis(_def, _analysisResources);
+}
 
-    analysis.model.resources = analysisResources;
+function loadAnalysis(def, resources) {
+    analysis = new Analysis(def, resources);
 
     var title = analysis.model.layoutDef.getTitle();
     console.log("loading - " + title + "...");
     var $title = $('.silky-options-title');
     $title.empty();
     $title.append(title);
-
 
     $('body').append(analysis.View.$el);
     analysis.View.render();
@@ -96,12 +101,14 @@ function loadFailed(e) {
 
 function setResources(resources) {
 
-    analysisResources = resources;
+    _analysisResources = resources;
 
-    if (analysis === null)
-        return;
-
-    analysis.model.resources = resources;
+    if (analysis === null) {
+        if (_analysisResources && _def !== null)
+            loadAnalysis(_def, _analysisResources);
+    }
+    else
+        analysis.model.resources = resources;
 }
 
 function setOptionsValues(data) {

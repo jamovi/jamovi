@@ -13,7 +13,10 @@ var GridRadioButton = function(option, params) {
     var actionGroup = this.params.actiongroup;
 
     var value = this.option.getValue();
-    this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="radio" name="' + actionGroup + '" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + this.option.getText() + '</span></label>');
+    var label = this.getParam('label');
+    if (label === null)
+        label = this.getParam('name');
+    this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="radio" name="' + actionGroup + '" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + label + '</span></label>');
 
     var self = this;
     this.$input = this.$el.find('input');

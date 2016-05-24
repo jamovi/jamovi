@@ -15,6 +15,7 @@ var LayoutGrid = function() {
 
     _.extend(this, Backbone.Events);
 
+    this._parentCell = null;
     this._layoutValid = false;
     this._currentId = 0;
     this._oldKnownSize = { width: 0, height: 0, hScrollSpace: false, vScrollSpace: false };
@@ -94,14 +95,12 @@ var LayoutGrid = function() {
     };
 
     this.render = function() {
-
-        this._initaliseContent();
-
-        var self = this;
-        window.setTimeout(function() {
-            self._processCells('both', 0);
-            self._postProcessCells();
-        }, 0);
+        if (this._initaliseContent()) {
+            var self = this;
+            window.setTimeout(function() {
+                self.invalidateLayout('both', Math.random());
+            }, 0);
+        }
     };
 
     this.invalidateLayout = function(type, updateId) {
@@ -295,7 +294,7 @@ var LayoutGrid = function() {
 
         for (var i = 0; i < this._layouts.length; i++) {
             var layout = this._layouts[i];
-            if (layout._layoutValid === false)
+            if (layout._parentCell.visible() && layout._layoutValid === false)
                 layout._processCells(type, updateId);
         }
 
@@ -370,7 +369,9 @@ var LayoutGrid = function() {
         this[name] = grid;
         layoutView.isChildLayout = true;
         this._layouts.push(grid);
-        return this.addCell(column, row, fitToGrid, grid.$el);
+        var cell = this.addCell(column, row, fitToGrid, grid.$el);
+        layoutView._parentCell = cell;
+        return cell;
     };
 
     this._add = function(column, row, cell) {
@@ -406,15 +407,6 @@ var LayoutGrid = function() {
 
         if (this.onCellAdded)
             this.onCellAdded(cell);
-    };
-
-    this.renderNewCells = function() {
-        if (this._initaliseContent()) {
-            var self = this;
-            window.setTimeout(function() {
-                self.invalidateLayout('both', Math.random());
-            }, 0);
-        }
     };
 
     this.suspendLayout = function() {
@@ -480,14 +472,8 @@ var LayoutGrid = function() {
 
     this.setCellVisibility = function(cell, value) {
 
-        if (cell._visible !== value) {
-            cell._visible = value;
-            //this.$el.visible(value);
-            if (value)
-                this.$el.append(cell.$el);
-            else
-                cell.$el.detach();
-
+        if (cell.visible() !== value) {
+            cell.setVisibility(value);
             this.invalidateLayout("both", Math.random());
         }
     };
@@ -517,31 +503,35 @@ var LayoutGrid = function() {
 
     };
 
-    this.removeRow = function(rowIndex) {
+    this.removeRow = function(rowIndex, count) {
+
+        count = _.isUndefined(count) ? 1 : count;
 
         this.suspendLayout();
-        var rowCells = this.getRow(rowIndex);
-        for (var i = 0; i < rowCells.length; i++) {
-            var cell = rowCells[i];
-            if (cell !== null)
-                this.removeCell(cell);
+        for (var r = 0; r < count; r++) {
+            var rowCells = this.getRow(rowIndex + r);
+            for (var i = 0; i < rowCells.length; i++) {
+                var cell = rowCells[i];
+                if (cell !== null)
+                    this.removeCell(cell);
+            }
         }
 
         for (var j = 0; j < this._cells.length; j++) {
             var data = this._cells[j].data;
             if (data.row > rowIndex)
-                data.row -= 1;
+                data.row -= count;
         }
 
 
-        this._orderedCells.splice(rowIndex, 1);
+        this._orderedCells.splice(rowIndex, count);
 
         for (var c = 0; c < this._orderedColumns.length; c++) {
             var columnCells = this._orderedColumns[c];
-            columnCells.splice(rowIndex, 1);
+            columnCells.splice(rowIndex, count);
         }
 
-        this._rowCount -= 1;
+        this._rowCount -= count;
 
         this.resumeLayout();
     };
@@ -563,9 +553,13 @@ var LayoutGrid = function() {
     };
 
     this.setFixedWidth = function(width) {
-        this.preferredWidth = width;
+        if (width < 0)
+            this.autoSizeWidth = true;
+        else {
+            this.preferredWidth = width;
+            this.autoSizeWidth = false;
+        }
         this._dockWidth = false;
-        this.autoSizeWidth = false;
     };
 
     this.setDockWidth = function(value) {
@@ -574,8 +568,12 @@ var LayoutGrid = function() {
     };
 
     this.setFixedHeight = function(height) {
-        this.preferredHeight = height;
-        this.autoSizeHeight = false;
+        if (height < 0)
+            this.autoSizeHeight = true;
+        else {
+            this.preferredHeight = height;
+            this.autoSizeHeight = false;
+        }
     };
 
     this.setAutoSize = function() {
@@ -632,7 +630,7 @@ var LayoutGrid = function() {
                     this._gridColumnData[c] = { left: 0, width: 0, tight: false };
 
                 var cell = this.getCell(c, r);
-                if (cell === null || cell._visible === false) {
+                if (cell === null || cell.visible() === false) {
                     topCells[c] = null;
                     continue;
                 }
@@ -731,7 +729,7 @@ var LayoutGrid = function() {
             var hasRowOnlyStrechFactor = false;
             for (var c = 0; c < this._columnCount; c++) {
                 var cell = this.getCell(c, r);
-                if (cell === null || cell._visible === false)
+                if (cell === null || cell.visible() === false)
                     continue;
 
                 if (cell.fitToGrid && cell.horizontalStretchFactor > 0)
@@ -770,7 +768,7 @@ var LayoutGrid = function() {
                     this._rowStrechDetails[r].fixed += width;
 
 
-                if (c === this._columnCount - 1 && left > contentWidth)
+                if (left > contentWidth)
                     contentWidth = left;
 
                 if ( ! cell._queuedForPostProcess && ((layoutForHeight && (cell.data.row === this._rowCount - 1 || cell.spanAllRows)) || (layoutForWidth && cell.horizontalStretchFactor > 0))) {

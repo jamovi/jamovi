@@ -128,6 +128,10 @@ var LayoutCell = function() {
         return this.top() + this.actualHeight();
     };
 
+    this.visible = function() {
+        return this._visible;
+    };
+
     this.refreshCSSProperties = function() {
         this.cssProperties = this.$el.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width", "padding-left", "padding-right", "border-left-width", "border-right-width"]);
         this.cssProperties["padding-top"] = parseFloat(this.cssProperties["padding-top"]);
@@ -185,6 +189,13 @@ var LayoutCell = function() {
         }
 
         return this._contentHeight;
+    };
+
+    this.setVisibility = function(visible) {
+        if (this._visible !== visible) {
+            this._visible = visible;
+            this._visibleAdjusted = true;
+        }
     };
 
     this.adjustCellLeft = function(left) {
@@ -379,10 +390,7 @@ var LayoutCell = function() {
 
         this.cssProperties = null;
 
-        this._topAdjusted = false;
-        this._leftAdjusted = false;
-        this._widthAdjusted = false;
-        this._heightAdjusted = false;
+
     };
 
     this.endManipulation = function(animate) {
@@ -391,8 +399,8 @@ var LayoutCell = function() {
             return;
 
         var animated = false;
-        if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted)) {
-            this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top }, {
+        if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)) {
+            this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0) }, {
                 duration: 100,
                 queue: false
             });
@@ -408,8 +416,10 @@ var LayoutCell = function() {
                 data.width = this._width;
             if (this._heightAdjusted)
                 data.height = this._height;
+            if (this._visibleAdjusted)
+                data.opacity = (this._visible ? 1 : 0);
 
-            if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted)
+            if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
                 this.$el.css(data);
         }
 
@@ -420,6 +430,12 @@ var LayoutCell = function() {
             this.updateContentVerticalAlignment(this._height);
 
         this._initialised = true;
+
+        this._topAdjusted = false;
+        this._leftAdjusted = false;
+        this._widthAdjusted = false;
+        this._heightAdjusted = false;
+        this._visibleAdjusted = false;
 
         return animated;
     };
@@ -450,10 +466,15 @@ var SpacerCell = function(width, height, fitToGrid) {
 
     this._initalHeight = height;
     this._initalWidth = width;
+    this.spanAllRows = false;
+    this.horizontalStretchFactor = 0;
     this.height = height;
     this.width = width;
     this.fitToGrid = fitToGrid;
     this._visible = true;
+    this.visible = function() { return this._visible; };
+
+    this.setVisibility = function(visible) { this._visible = visible; };
 
     this.preferredWidth = function() {
         return this._initalWidth;
