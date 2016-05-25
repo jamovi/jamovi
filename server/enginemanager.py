@@ -19,8 +19,11 @@ class EngineManager:
         self._thread = None
         self._socket = None
 
-        self._dir = tempfile.TemporaryDirectory()
-        self._address = "ipc://{}/connection".format(self._dir.name)
+        if platform.uname().system == 'Windows':
+            self._address = "ipc://{}".format(os.getpid())
+        else:
+            self._dir = tempfile.TemporaryDirectory()
+            self._address = "ipc://{}/connection".format(self._dir.name)
 
         self._process = None
         self._requests_sent = { }
