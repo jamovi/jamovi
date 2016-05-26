@@ -59,7 +59,7 @@ var GridVariablesTargetList = function(option, params) {
             label = this.getParam('name');
         var hasSupplier = this._supplier !== null;
 
-        grid.addCell(hasSupplier ? column + 1 : column, row, true, $('<div style="white-space: nowrap; ">' + label + '</div>'));
+        grid.addCell(hasSupplier ? column + 1 : column, row, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
 
         if (hasSupplier === true)
             this.renderTransferButton(grid, row + 1, column);
@@ -67,7 +67,7 @@ var GridVariablesTargetList = function(option, params) {
         //this.targetGrid = new LayoutGrid({ className: "silky-layout-grid silky-variable-target" });
         this.targetGrid._animateCells = true;
         this.targetGrid.allocateSpaceForScrollbars = false;
-        this.targetGrid.setCellBorders();
+        //this.targetGrid.setCellBorders();
         this.targetGrid.$el.css("overflow", "auto");
         if (this.isSingleItem)
             this.targetGrid.setFixedHeight(20);
@@ -124,33 +124,37 @@ var GridVariablesTargetList = function(option, params) {
         $span.removeClass(gainOnClick ? 'mif-arrow-left' : 'mif-arrow-right');
     };
 
-    this.renderCell = function(grid, value, columnInfo, dispRow) {
-        var c = columnInfo.index;
-        var cell = grid.getCell(c, dispRow);
+    this.updateValueCell = function(columnInfo, dispRow, value) {
+        var dispColumn = columnInfo.index;
+        var cell = this.targetGrid.getCell(dispColumn, dispRow);
 
         if (columnInfo.formatName === null)
             columnInfo.formatName = FormatDef.infer(value).name;
 
         var displayValue = '';
+        var supplierItem = null;
+        var localItem = null;
         if (value !== null && columnInfo.formatName !== null) {
             displayValue = 'error';
             var columnFormat = FormatDef[columnInfo.formatName];
             if (columnFormat.isValid(value)) {
                 displayValue = columnFormat.toString(value);
-                var formattedValue = new FormatDef.constructor(value, columnFormat);
+                localItem = new FormatDef.constructor(value, columnFormat);
                 if (this._supplier !== null)
-                    this._supplier.pullItem(formattedValue);
+                    supplierItem = this._supplier.pullItem(localItem);
             }
         }
 
         var $contents = null;
-        if (columnInfo.readOnly)
-            $contents = $('<div style="white-space: nowrap; ">' + displayValue + '</div>');
+        var renderFunction = this['renderItem_' + columnInfo.formatName];
+        if (localItem !== null && _.isUndefined(renderFunction) === false)
+            $contents = renderFunction.call(this, displayValue, columnInfo.readOnly, localItem, supplierItem);
         else
-            $contents = $('<input class="silky-option-input silky-option-value silky-option-short-text" style="display: inline;" type="text" value="' + displayValue + '"/>');
+            $contents = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-' + columnInfo.formatName + '">' + displayValue + '</div>');
+
 
         if (cell === null) {
-            cell = grid.addCell(c, dispRow, false, $contents);
+            cell = this.targetGrid.addCell(dispColumn, dispRow, false, $contents);
             cell.clickable(columnInfo.readOnly);
         }
         else {
@@ -163,24 +167,32 @@ var GridVariablesTargetList = function(option, params) {
         cell.vAlign = 'centre';
     };
 
-    this.updateItem = function(item, grid, dispRow) {
-         var self = this;
+    this.renderItem_variable = function(displayValue, readOnly, localItem, supplierItem) {
+        var imageClasses = 'silky-variable-type-img';
+        if (supplierItem !== null && _.isUndefined(supplierItem.properties.type) === false)
+            imageClasses = imageClasses + ' silky-variable-type-' + supplierItem.properties.type;
+
+        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
+        $item.append('<div style="display: inline-block; overflow: hidden;" class="' + imageClasses + '"></div>');
+        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
+
+
+        return $item;
+    };
+
+    this.updateDisplayRow = function(dispRow, value) {
          var columnInfo = null;
 
-         if (typeof item !== 'object') {
-             columnInfo = self._columnInfo._list[0];
-             if (_.isUndefined(columnInfo))
-                 return;
-
-             this.renderCell(grid, item, columnInfo, dispRow);
+         if (typeof value !== 'object') {
+             columnInfo = this._columnInfo._list[0];
+             if (_.isUndefined(columnInfo) === false)
+                 this.updateValueCell(columnInfo, dispRow, value);
          }
         else {
-            _.each(item, function(value, key, list) {
-                columnInfo = self._columnInfo[key];
-                if (_.isUndefined(columnInfo))
-                    return;
-
-                self.renderCell(grid, value, columnInfo, dispRow);
+            _.each(value, function(value, key, list) {
+                columnInfo = this._columnInfo[key];
+                if (_.isUndefined(columnInfo) === false)
+                    this.updateValueCell(columnInfo, dispRow, value);
             });
         }
     };
@@ -189,10 +201,8 @@ var GridVariablesTargetList = function(option, params) {
         var list = this.option.getValue();
         if (_.isUndefined(list) || list === null)
             this.state = 'Uninitialised';
-        else if (Array.isArray(list))
-            this.state = 'OK';
         else
-            this.state = 'Invalid';
+            this.state = 'OK';
     };
 
     this.onAddButtonClick = function() {
@@ -337,11 +347,11 @@ var GridVariablesTargetList = function(option, params) {
     //outside -> in
     this.onOptionValueInserted = function(keys, data) {
 
-        var dispIndex = this.rowIndexToDisplayIndex(keys[0]);
-        this.targetGrid.insertRow(dispIndex, 1);
+        var dispRow = this.rowIndexToDisplayIndex(keys[0]);
+        this.targetGrid.insertRow(dispRow, 1);
         var item = this.option.getValue(keys);
         this._localData.splice(keys[0], 0, item);
-        this.updateItem(item, this.targetGrid, dispIndex);
+        this.updateDisplayRow(dispRow, item);
         this.targetGrid.render();
 
         if (this._supplier !== null)
@@ -350,10 +360,10 @@ var GridVariablesTargetList = function(option, params) {
 
     this.onOptionValueRemoved = function(keys, data) {
 
-        var dispIndex = this.rowIndexToDisplayIndex(keys[0]);
+        var dispRow = this.rowIndexToDisplayIndex(keys[0]);
         if (this._supplier !== null)
             this.pushRowsBackToSupplier(keys[0], 1);
-        this.targetGrid.removeRow(dispIndex);
+        this.targetGrid.removeRow(dispRow);
 
         this._localData.splice(keys[0], 1);
 
@@ -371,7 +381,7 @@ var GridVariablesTargetList = function(option, params) {
         if (list !== null) {
             if (Array.isArray(list)) {
                 for (var i = 0; i < list.length; i++) {
-                    this.updateItem(list[i], this.targetGrid, this.rowIndexToDisplayIndex(i));
+                    this.updateDisplayRow(this.rowIndexToDisplayIndex(i), list[i]);
                     this._localData.push(list[i]);
                 }
                 var countToRemove = this.displayRowToRowIndex(this.targetGrid._rowCount) - this._localData.length;
@@ -379,7 +389,7 @@ var GridVariablesTargetList = function(option, params) {
             }
             else if (this.isSingleItem) {
                 this._localData[0] = list;
-                this.updateItem(list, this.targetGrid, this.rowIndexToDisplayIndex(0));
+                this.updateDisplayRow(this.rowIndexToDisplayIndex(0), list);
             }
         }
         else

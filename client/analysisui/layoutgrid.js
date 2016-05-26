@@ -306,54 +306,82 @@ var LayoutGrid = function() {
 
         this._layoutValid = true;
 
-        return this._updateSize(updateId);
+        return this._updateSize(type, updateId);
     };
 
-    this._updateSize = function(updateId) {
+    this._updateSize = function(type, updateId) {
+
+        var updateHeight = (type === 'height' || type === 'both');
+        var updateWidth = (type === 'width' || type === 'both');
 
         var height;
         var width;
 
         if (this._sizesInited === false) {
-            height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
-            width = this.preferredWidth;
+            if (updateHeight)
+                height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
+            if (updateWidth)
+                width = this.preferredWidth;
         }
         else {
-            height = this.autoSizeHeight ? this.preferredHeight : this._oldKnownSize.height;
-            height = this._maxPreferredColumnHeight > height ? this._maxPreferredColumnHeight : height;
-            width = this.autoSizeWidth ? this.preferredWidth : this._oldKnownSize.width;
+            if (updateHeight) {
+                height = this.autoSizeHeight ? this.preferredHeight : this._oldKnownSize.height;
+                height = this._maxPreferredColumnHeight > height ? this._maxPreferredColumnHeight : height;
+            }
+            if (updateWidth)
+                width = this.autoSizeWidth ? this.preferredWidth : this._oldKnownSize.width;
         }
 
-        this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || this.contentWidth > width);
-        this._hasVScrollbars = this.autoSizeHeight === false && (this.allocateSpaceForScrollbars === true || this.contentHeight > height);
+        this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || (updateWidth && this.contentWidth > width));
 
-        var properties = { "width" : width, "height" : height  };
+        this._hasVScrollbars = this.autoSizeHeight === false && (this.allocateSpaceForScrollbars === true || (updateHeight && this.contentHeight > height));
+
+
+        var properties = { };
+
+        var widthChanged = false;
+        var heightChanged = false;
+
+        if (updateWidth && this._oldKnownSize.width !== width) {
+            properties.width = width;
+            this._oldKnownSize.width = width;
+            widthChanged = true;
+        }
+
+        var makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
+        if (makeSpaceForHScroll && this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll) {
+            properties["margin-bottom"] = this.getScrollbarHeight();
+            this._oldKnownSize.hScrollSpace = makeSpaceForHScroll;
+            heightChanged = true;
+        }
+
+        if (updateHeight && this._oldKnownSize.height !== height)  {
+            properties.height = height;
+            this._oldKnownSize.height = height;
+            heightChanged = true;
+        }
 
         var makeSpaceForVScroll = this._hasVScrollbars && this.autoSizeWidth;
-        var makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
-
-        if (makeSpaceForVScroll)
+        if (makeSpaceForVScroll && this._oldKnownSize.vScrollSpace !== makeSpaceForVScroll) {
             properties["margin-right"] = this.getScrollbarWidth();
-        if (makeSpaceForHScroll)
-            properties["margin-bottom"] = this.getScrollbarHeight();
-
-        var widthChanged = this._oldKnownSize.width !== properties.width || this._oldKnownSize.vScrollSpace !== makeSpaceForVScroll;
-        var heightChanged = this._oldKnownSize.height !== properties.height || this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll;
-        var eventFired = false;
-        if (this._sizesInited === false || widthChanged || heightChanged) {
-
-            this._oldKnownSize.width = properties.width;
-            this._oldKnownSize.height = properties.height;
-            this._oldKnownSize.hScrollSpace = makeSpaceForHScroll;
             this._oldKnownSize.vScrollSpace = makeSpaceForVScroll;
+            widthChanged = true;
+        }
+
+
+        var eventFired = false;
+
+        if (widthChanged || heightChanged) {
 
             this.$el.css(properties);
-            var type = 'both';
+
+
+            var eventType = 'both';
             if (widthChanged !== heightChanged)
-                type = widthChanged ? 'width' : 'height';
+                eventType = widthChanged ? 'width' : 'height';
 
             if (this._sizesInited) {
-                this.$el.trigger('layoutgrid.sizeChanged', { type: type, updateId: updateId } );
+                this.$el.trigger('layoutgrid.sizeChanged', { type: eventType, updateId: updateId } );
                 if (this.isChildLayout)
                     eventFired = true;
             }
@@ -751,7 +779,7 @@ var LayoutGrid = function() {
                 var columnWidth = this._gridColumnData[c].width;
                 var width = cell.fitToGrid ? columnWidth : cell.preferredWidth();
 
-                if (cell.spanAllRows === false || r === 0) {
+                if (cell.isVirtual === false && (cell.spanAllRows === false || r === 0)) {
                     if (type === 'height')
                         cell.adjustCellVertically(top, height);
                     else if (type === 'width')

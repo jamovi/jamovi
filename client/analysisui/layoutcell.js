@@ -81,8 +81,8 @@ var LayoutCell = function() {
         self._preferredHeight = -1;
         self._contentWidth = -1;
         self._contentHeight = -1;
-        this._width = -1;
-        this._height = -1;
+        self._width = -1;
+        self._height = -1;
 
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
