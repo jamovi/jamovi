@@ -93,7 +93,7 @@ var TableView = Backbone.View.extend({
                     newCell.format = "text";
                     break;
                 case 'o':
-                    if (refCell.o == 1) {
+                    if (refCell.o == 2) {
                         newCell.value = 'NaN';
                         newCell.format = "number";
                     }

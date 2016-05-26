@@ -1,0 +1,69 @@
+
+
+.silky-ribbon-button {
+    background-color: #EDEDED ;
+    border: 0 ;
+    width: 74px ;
+    padding: 2px ;
+    font-size: 80% ;
+    text-align: center ;
+}
+
+.silky-ribbon-button[disabled] {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+}
+
+.silky-ribbon-button:not([disabled]):hover {
+    background-color: #DDD ;
+}
+
+.silky-ribbon-button:not([disabled]):active {
+    background-color: #CCC ;
+}
+
+.silky-ribbon-button:focus {
+    outline: none ;
+}
+
+.silky-ribbon-button-icon {
+    width: 100% ;
+    height: 30px ;
+    padding: 4px ;
+    background-image: url('assets/analysis-descriptives.svg');
+    background-size: 80% ;
+    background-position: 25% ;
+    background-repeat: no-repeat ;
+}
+
+.silky-ribbon-button-label {
+    margin-top: 5px ;
+    margin-bottom: 3px ;
+}
+
+.silky-ribbon-button-menu {
+    position: absolute;
+    z-index: 100;
+    color: #666666 ;
+    background-color: white ;
+    border: 1px solid #DDDDDD ;
+    max-width: 300px ;
+    line-height: 1.4em ;
+    margin: 0 ;
+    padding: 0 ;
+}
+
+.silky-ribbon-button-menu ul {
+    margin: 0 ;
+    padding: 0 ;
+}
+
+.silky-ribbon-button-menu li {
+    list-style-type: none ;
+    padding: 8px 18px ;
+    display: block ;
+}
+
+.silky-ribbon-button-menu li:hover {
+    background-color: #F2F2F2 ;
+}

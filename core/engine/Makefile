@@ -17,7 +17,7 @@ endif
 
 BUILD_DIR = ../../../../build/engine/engine
 TARGET = ../../../../bin/engine
-	
+
 CFLAGS = -std=c++11 -DUNICODE
 
 ifeq ($(os),OSX)
@@ -29,7 +29,7 @@ ifeq ($(os),OSX)
 			-L$(R_HOME)/library/RInside/lib \
 			-lboost_filesystem-mt \
 			-lboost_system-mt
-			
+
 	INT = install_name_tool -change /usr/local/lib/libnanomsg.4.dylib @executable_path/../Frameworks/libnanomsg.4.dylib $(TARGET)
 else
 ifeq ($(os),Linux)
@@ -57,7 +57,7 @@ INCLUDES += -I../libsilky/silky \
 	-I$(R_HOME)/include \
 	-I$(R_HOME)/library/RInside/include -I$(R_HOME)/site-library/RInside/include \
 	-I$(R_HOME)/library/Rcpp/include	-I$(R_HOME)/site-library/Rcpp/include
-	
+
 LIBS += -lR -lnanomsg -lprotobuf -lRInside
 
 SRCS  = $(wildcard *.cpp)
@@ -84,5 +84,9 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
 
+all: $(TARGET)
+
 clean:
 	rm -f $(TARGET) $(OBJS)
+
+.PHONY:	clean all

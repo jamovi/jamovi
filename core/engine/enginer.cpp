@@ -84,7 +84,6 @@ void EngineR::run(Analysis *analysis)
 
     ss << "{\n";
     ss << "  analysis$run()\n";
-    ss << "  analysis$print()\n";
     ss << "  analysis$render()\n";
     ss << "  analysis$.save()\n";
     ss << "  RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";

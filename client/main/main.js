@@ -48,6 +48,10 @@ ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
 });
 
+dataSetModel.on('dataSetLoaded', function(event) {
+    ribbonModel.set('dataAvailable', true);
+});
+
 $(document).ready(function() {
 
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });

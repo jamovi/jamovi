@@ -11,7 +11,14 @@
     background-color: #D8D8D8 ;
 }
 
+#results iframe {
+    overflow: hidden ;
+}
+
+#results iframe::-webkit-scrollbar {  
+    display: none;
+}
+
 #results iframe[data-selected] {
     background-color: white ;
 }
-
