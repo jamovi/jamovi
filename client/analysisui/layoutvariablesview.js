@@ -79,7 +79,7 @@ var LayoutVariablesView = function(params) {
             var item = this._items._list[i];
             if (item.value.equalTo(formatted)) {
                 item.used += 1;
-                break;
+                return item;
             }
         }
     };
@@ -121,7 +121,12 @@ var LayoutVariablesView = function(params) {
     };
 
     this.render_variable = function(item, row) {
-        var c1 = this.supplierGrid.addCell(0, row, false, $('<div class="silky-variable silky-variable-type-' + item.properties.type + '">' + item.value.toString() + '</div>'));
+
+        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
+        $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + item.properties.type + '"></div>');
+        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+
+        var c1 = this.supplierGrid.addCell(0, row, false,  $item);
         c1.horizontalStretchFactor = 1;
         c1.dockContentWidth = true;
         c1.clickable(true);
