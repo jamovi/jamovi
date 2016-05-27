@@ -14,6 +14,7 @@ var GridVariablesTargetList = function(option, params) {
     this.showHeaders = _.isUndefined(params.showColumnHeaders) ? false : params.showColumnHeaders;
     this.gainOnClick = true;
     this._supplier = null;
+    this._actionsBlocked = false;
 
     this.targetGrid = new SelectableLayoutGrid();
     this.targetGrid.$el.addClass("silky-layout-grid silky-variable-target");
@@ -31,10 +32,24 @@ var GridVariablesTargetList = function(option, params) {
         this._supplier.supplierGrid.on('layoutgrid.gotFocus', function() {
             self.gainOnClick = true;
             self.targetGrid.clearSelection();
+            self.unblockActionButtons();
         });
         this._supplier.supplierGrid.$el.on('dblclick', function() {
-            self.onAddButtonClick();
+            if (self._supplier.isMultiTarget() === false)
+                self.onAddButtonClick();
         });
+    };
+
+
+    this.blockActionButtons = function() {
+        this.$button.prop('disabled', true);
+        this.targetGrid.clearSelection();
+        this._actionsBlocked = true;
+    };
+
+    this.unblockActionButtons = function() {
+        this.$button.prop('disabled', false);
+        this._actionsBlocked = false;
     };
 
     this.renderTransferButton = function(grid, row, column) {
@@ -42,7 +57,8 @@ var GridVariablesTargetList = function(option, params) {
         this.$button = $('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
         var self = this;
         this.$button.click(function(event) {
-            self.onAddButtonClick();
+            if (self._actionsBlocked === false)
+                self.onAddButtonClick();
         });
 
         grid.addCell(column, row, true, this.$button);
@@ -64,16 +80,16 @@ var GridVariablesTargetList = function(option, params) {
         if (hasSupplier === true)
             this.renderTransferButton(grid, row + 1, column);
 
-        //this.targetGrid = new LayoutGrid({ className: "silky-layout-grid silky-variable-target" });
         this.targetGrid._animateCells = true;
         this.targetGrid.allocateSpaceForScrollbars = false;
-        //this.targetGrid.setCellBorders();
-        this.targetGrid.$el.css("overflow", "auto");
+        //this.targetGrid.$el.css("overflow", "auto");
+
         if (this.isSingleItem)
-            this.targetGrid.setFixedHeight(20);
+            this.targetGrid.$el.addClass('single-item');
         else
-            this.targetGrid.setFixedHeight(100);
-        this.targetGrid.setDockWidth(true);
+            this.targetGrid.$el.addClass('multi-item');
+        this.targetGrid.setAutoSizeHeight(false);
+
         this.targetGrid.on('layoutgrid.lostFocus layoutgrid.gotFocus', function() {
             self.onSelectionChanged();
         });
@@ -152,7 +168,6 @@ var GridVariablesTargetList = function(option, params) {
         else
             $contents = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-' + columnInfo.formatName + '">' + displayValue + '</div>');
 
-
         if (cell === null) {
             cell = this.targetGrid.addCell(dispColumn, dispRow, false, $contents);
             cell.clickable(columnInfo.readOnly);
@@ -176,7 +191,6 @@ var GridVariablesTargetList = function(option, params) {
         $item.append('<div style="display: inline-block; overflow: hidden;" class="' + imageClasses + '"></div>');
         $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
 
-
         return $item;
     };
 
@@ -189,10 +203,11 @@ var GridVariablesTargetList = function(option, params) {
                  this.updateValueCell(columnInfo, dispRow, value);
          }
         else {
+            var self = this;
             _.each(value, function(value, key, list) {
-                columnInfo = this._columnInfo[key];
+                columnInfo = self._columnInfo[key];
                 if (_.isUndefined(columnInfo) === false)
-                    this.updateValueCell(columnInfo, dispRow, value);
+                    self.updateValueCell(columnInfo, dispRow, value);
             });
         }
     };
@@ -207,6 +222,7 @@ var GridVariablesTargetList = function(option, params) {
 
     this.onAddButtonClick = function() {
         var hasMaxItemCount = this.maxItemCount >= 0;
+        var postProcessSelectionIndex = 0;
         if (this.gainOnClick) {
             var selectedCount = this._supplier.supplierGrid.selectedCellCount();
             if (selectedCount > 0) {
@@ -214,22 +230,25 @@ var GridVariablesTargetList = function(option, params) {
                 this.option.beginEdit();
                 for (var i = 0; i < selectedCount; i++) {
                     var currentCount = this.option.getLength();
-                    var selected = this._supplier.getSelectedItem(i).value;
+                    var selectedItem = this._supplier.getSelectedItem(i);
+                    if (selectedCount === 1)
+                        postProcessSelectionIndex = selectedItem.index;
+                    var selectedValue = selectedItem.value;
                     var key = [this.option.getLength()];
-                    var data = selected.raw;
+                    var data = selectedValue.raw;
                     if (typeof data !== 'object') {
                         var lastRow = this.option.getLength() - 1;
                         var emptyProperty = null;
                         if (lastRow >= 0) {
                             var value = this.option.getValue(lastRow);
-                            emptyProperty = _.isUndefined(value) ? null : this.findEmptyProperty(value, selected.format.name);
+                            emptyProperty = _.isUndefined(value) ? null : this.findEmptyProperty(value, selectedValue.format.name);
                         }
                         if (emptyProperty === null) {
                             if (this.isSingleItem === false && hasMaxItemCount && currentCount >= this.maxItemCount)
                                 break;
                             var newItem = this.createEmptyItem();
                             if (newItem !== null) {
-                                emptyProperty = this.findEmptyProperty(newItem, selected.format.name, data);
+                                emptyProperty = this.findEmptyProperty(newItem, selectedValue.format.name, data);
                                 data = newItem;
                             }
                         }
@@ -245,6 +264,7 @@ var GridVariablesTargetList = function(option, params) {
                         this.option.insertValueAt( data, key );
                 }
                 this.option.endEdit();
+                this._supplier.selectNextAvaliableItem(postProcessSelectionIndex);
                 this.targetGrid.resumeLayout();
             }
         }
@@ -253,8 +273,12 @@ var GridVariablesTargetList = function(option, params) {
             var length = 0;
             this.targetGrid.suspendLayout();
             this.option.beginEdit();
+            var selectionCount = this.targetGrid.selectedCellCount();
             while (this.targetGrid.selectedCellCount() > 0) {
                 var cell = this.targetGrid.getSelectedCell(0);
+                if (selectionCount === 1)
+                    postProcessSelectionIndex = this.displayRowToRowIndex(cell.data.row);
+
                 if (this.isSingleItem)
                     this.option.setValue(null);
                 else
@@ -262,8 +286,14 @@ var GridVariablesTargetList = function(option, params) {
             }
             this._supplier.filterSuppliersList();
             this.option.endEdit();
+            this.selectNextAvaliableItem(postProcessSelectionIndex);
             this.targetGrid.resumeLayout();
         }
+    };
+
+    this.selectNextAvaliableItem = function(from) {
+        var cell = this.targetGrid.getCell(0, this.rowIndexToDisplayIndex(from >= this._localData.length ? this._localData.length - 1 : from));
+        this.targetGrid.selectCell(cell);
     };
 
     this.rowIndexToDisplayIndex = function(rowIndex) {

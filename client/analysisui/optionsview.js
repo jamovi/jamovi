@@ -16,7 +16,7 @@ Backbone.$ = $;
 var OptionsView = Backbone.View.extend({
 
     renderLayout: function(items, groupView, currentStyle, level) {
-        this._nextCell = {row: 0, column: 0};
+        var _nextCell = {row: 0, column: 0};
         for (var i = 0; i < items.length; i++) {
             var item = items[i];
 
@@ -25,26 +25,30 @@ var OptionsView = Backbone.View.extend({
             if (isGroup === true) {
                 var cell = item.cell;
                 if (_.isUndefined(cell) === false) {
-                    this._nextCell.row = cell[1];
-                    this._nextCell.column = cell[0];
+                    _nextCell.row = cell[1];
+                    _nextCell.column = cell[0];
                 }
 
                 var groupType = item.type;
                 if ( ! groupType)
                     groupType = "group";
 
+                var labeledGroup = _.isUndefined(item.label) === false;
+
+                var itemLevel = _.isUndefined(item.level) ? level : item.level;
+
                 var newGroup = null;
                 if (_.isUndefined(this["createLayoutView_" + groupType]) === false)
-                    newGroup = this["createLayoutView_" + groupType](level, item);
+                    newGroup = this["createLayoutView_" + groupType](itemLevel, item);
                 else
-                    newGroup = this.createLayoutView_group(level, item);
+                    newGroup = this.createLayoutView_group(itemLevel, item);
 
-                var groupCell = groupView.addLayout(item.name + '_group', this._nextCell.column, this._nextCell.row, true, newGroup);
+                var groupCell = groupView.addLayout(item.name + '_group', _nextCell.column, _nextCell.row, true, newGroup);
 
-                if (level === 0) {
+                if (itemLevel === 0) {
                     newGroup._animateCells = true;
                 }
-                else if (level === 1) {
+                else if (itemLevel === 1) {
                     groupCell.fitToGrid = false;
                     groupCell.horizontalStretchFactor = 1;
                     groupCell.dockContentWidth = true;
@@ -60,9 +64,11 @@ var OptionsView = Backbone.View.extend({
                 if (_.isUndefined(item.dockContentWidth) === false)
                     groupCell.dockContentWidth = item.dockContentWidth;
 
-                this.renderLayout(item.items, newGroup, newGroup.style, level + 1);
+                var nextLevel = labeledGroup ? itemLevel + 1 : itemLevel;
 
-                this._nextCell.row += 1;
+                this.renderLayout(item.items, newGroup, newGroup.style, nextLevel);
+
+                _nextCell.row += 1;
             }
             else {
 
@@ -73,15 +79,15 @@ var OptionsView = Backbone.View.extend({
                     continue;
                 }
 
-                var cellRange = this._insertControl(this.getCtrlOption(option), item, groupView, this._nextCell.row, this._nextCell.column);
+                var cellRange = this._insertControl(this.getCtrlOption(option), item, groupView, _nextCell.row, _nextCell.column);
 
                 if (currentStyle === 'inline') {
-                    this._nextCell.row = 0;
-                    this._nextCell.column = this._nextCell.column + cellRange.width;
+                    _nextCell.row = 0;
+                    _nextCell.column = _nextCell.column + cellRange.width;
                 }
                 else {
-                    this._nextCell.row = this._nextCell.row + cellRange.height;
-                    this._nextCell.column = 0;
+                    _nextCell.row = _nextCell.row + cellRange.height;
+                    _nextCell.column = 0;
                 }
             }
         }
@@ -157,7 +163,9 @@ var OptionsView = Backbone.View.extend({
 
 
         var layoutGrid = new LayoutGrid();
-        layoutGrid.setFixedWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+        layoutGrid.$el.addClass('silky-layout-grid top-level');
+        layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+        layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
         layoutGrid._animateCells = true;
 
         this.renderLayout(layoutDef.layout, layoutGrid, 'list', 1);

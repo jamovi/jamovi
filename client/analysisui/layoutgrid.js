@@ -15,12 +15,13 @@ var LayoutGrid = function() {
 
     _.extend(this, Backbone.Events);
 
+
     this._parentCell = null;
     this._layoutValid = false;
     this._currentId = 0;
     this._oldKnownSize = { width: 0, height: 0, hScrollSpace: false, vScrollSpace: false };
     this._sizesInited = false;
-    this._dockWidth = false;
+    //this._dockWidth = false;
     this._hasResized = null;
     this._cells = [];
     this._orderedCells = [];
@@ -28,8 +29,14 @@ var LayoutGrid = function() {
     this._columnCount = -1;
     this._rowCount = - 1;
     this._layouts = [];
-    this.preferredHeight = 10;
-    this.preferredWidth = 10;
+
+    this.maximumHeight = -1;
+    this.minimumHeight = -1;
+    this.maximumWidth = -1;
+    this.minimumWidth = -1;
+
+    this.preferredHeight = -1;
+    this.preferredWidth =-1;
     this.autoSizeWidth = true;
     this.autoSizeHeight = true;
     this._resizeSuspended = 0;
@@ -311,66 +318,59 @@ var LayoutGrid = function() {
 
     this._updateSize = function(type, updateId) {
 
-        var updateHeight = (type === 'height' || type === 'both');
-        var updateWidth = (type === 'width' || type === 'both');
-
-        var height;
-        var width;
-
-        if (this._sizesInited === false) {
-            if (updateHeight)
-                height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
-            if (updateWidth)
-                width = this.preferredWidth;
-        }
-        else {
-            if (updateHeight) {
-                height = this.autoSizeHeight ? this.preferredHeight : this._oldKnownSize.height;
-                height = this._maxPreferredColumnHeight > height ? this._maxPreferredColumnHeight : height;
-            }
-            if (updateWidth)
-                width = this.autoSizeWidth ? this.preferredWidth : this._oldKnownSize.width;
-        }
-
-        this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || (updateWidth && this.contentWidth > width));
-
-        this._hasVScrollbars = this.autoSizeHeight === false && (this.allocateSpaceForScrollbars === true || (updateHeight && this.contentHeight > height));
-
-
-        var properties = { };
-
         var widthChanged = false;
         var heightChanged = false;
 
-        if (updateWidth && this._oldKnownSize.width !== width) {
-            properties.width = width;
-            this._oldKnownSize.width = width;
-            widthChanged = true;
+        var properties = { };
+
+        if (this.autoSizeHeight) {
+            var height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
+            height = (this.maximumHeight !== -1 && height > this.maximumHeight) ? this.maximumHeight : height;
+            height = (this.minimumHeight !== -1 && height < this.minimumHeight) ? this.minimumHeight : height;
+            if (this._oldKnownSize.height !== height) {
+                properties.height = height;
+                this._oldKnownSize.height = height;
+                heightChanged = true;
+            }
         }
 
+        if (this.autoSizeWidth) {
+            var width = this.preferredWidth;
+            width = (this.maximumWidth !== -1 && width > this.maximumWidth) ? this.maximumWidth : width;
+            width = (this.minimumWidth !== -1 && width < this.minimumWidth) ? this.minimumWidth : width;
+            if (this._oldKnownSize.width !== width) {
+                properties.width = width;
+                this._oldKnownSize.width = width;
+                widthChanged = true;
+            }
+        }
+
+        this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || (this._parentCell !== null && this.contentWidth > this._parentCell.actualWidth()));
+        this._hasVScrollbars = this.autoSizeHeight === false && (this.allocateSpaceForScrollbars === true || (this._parentCell !== null && this.contentHeight > this._parentCell.actualHeight()));
+
         var makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
-        if (makeSpaceForHScroll && this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll) {
-            properties["margin-bottom"] = this.getScrollbarHeight();
+        if (this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll) {
+            if (makeSpaceForHScroll)
+                properties["padding-bottom"] = this.getScrollbarHeight();
+            else
+                properties["padding-bottom"] = 0;
+
             this._oldKnownSize.hScrollSpace = makeSpaceForHScroll;
             heightChanged = true;
         }
 
-        if (updateHeight && this._oldKnownSize.height !== height)  {
-            properties.height = height;
-            this._oldKnownSize.height = height;
-            heightChanged = true;
-        }
-
         var makeSpaceForVScroll = this._hasVScrollbars && this.autoSizeWidth;
-        if (makeSpaceForVScroll && this._oldKnownSize.vScrollSpace !== makeSpaceForVScroll) {
-            properties["margin-right"] = this.getScrollbarWidth();
+        if (this._oldKnownSize.vScrollSpace !== makeSpaceForVScroll) {
+            if (makeSpaceForVScroll)
+                properties["padding-right"] = this.getScrollbarWidth();
+            else
+                properties["padding-right"] = 0;
+
             this._oldKnownSize.vScrollSpace = makeSpaceForVScroll;
             widthChanged = true;
         }
 
-
         var eventFired = false;
-
         if (widthChanged || heightChanged) {
 
             this.$el.css(properties);
@@ -580,34 +580,33 @@ var LayoutGrid = function() {
         this._rowCount += count;
     };
 
-    this.setFixedWidth = function(width) {
-        if (width < 0)
-            this.autoSizeWidth = true;
-        else {
-            this.preferredWidth = width;
-            this.autoSizeWidth = false;
-        }
-        this._dockWidth = false;
+    this.setAutoSizeWidth = function(value) {
+        this.autoSizeWidth = value;
     };
 
-    this.setDockWidth = function(value) {
-        this._dockWidth = value;
-        this.autoSizeWidth = false;
+    this.setAutoSizeHeight = function(value) {
+        this.autoSizeHeight = value;
     };
 
-    this.setFixedHeight = function(height) {
-        if (height < 0)
-            this.autoSizeHeight = true;
-        else {
-            this.preferredHeight = height;
-            this.autoSizeHeight = false;
-        }
+    this.setAutoSize = function(value) {
+        this.autoSizeHeight = value;
+        this.autoSizeWidth = value;
     };
 
-    this.setAutoSize = function() {
-        this.autoSizeHeight = true;
-        this._dockWidth = false;
-        this.autoSizeWidth = true;
+    this.setMinimumWidth = function(width) {
+        this.minimumWidth = width;
+    };
+
+    this.setMaximumWidth = function(width) {
+        this.maximumWidth = width;
+    };
+
+    this.setMinimumHeight = function(height) {
+        this.minimumHeight = height;
+    };
+
+    this.setMaximumHeight = function(height) {
+        this.maximumHeight = height;
     };
 
     this.getCell = function(columnIndex, rowIndex) {
@@ -741,9 +740,6 @@ var LayoutGrid = function() {
 
     this._layoutGrid = function(type) {
 
-        var layoutForHeight = (type === 'height' || type === 'both');
-        var layoutForWidth = (type === 'width' || type === 'both');
-
         var contentHeight = 0;
         var contentWidth = 0;
         this._rowStrechDetails = [];
@@ -780,11 +776,11 @@ var LayoutGrid = function() {
                 var width = cell.fitToGrid ? columnWidth : cell.preferredWidth();
 
                 if (cell.isVirtual === false && (cell.spanAllRows === false || r === 0)) {
-                    if (type === 'height')
-                        cell.adjustCellVertically(top, height);
-                    else if (type === 'width')
-                        cell.adjustCellHorizontally(left, width);
-                    else
+                    //if (type === 'height')
+                    //    cell.adjustCellVertically(top, height);
+                    //else if (type === 'width')
+                    //    cell.adjustCellHorizontally(left, width);
+                    //else
                         cell.adjustCell(left, top, width, height);
                 }
 
@@ -799,7 +795,7 @@ var LayoutGrid = function() {
                 if (left > contentWidth)
                     contentWidth = left;
 
-                if ( ! cell._queuedForPostProcess && ((layoutForHeight && (cell.data.row === this._rowCount - 1 || cell.spanAllRows)) || (layoutForWidth && cell.horizontalStretchFactor > 0))) {
+                if ( ! cell._queuedForPostProcess && ((cell.data.row === this._rowCount - 1 || cell.spanAllRows) || (cell.horizontalStretchFactor > 0))) {
                     this._postProcessCellList.push(cell);
                     cell._queuedForPostProcess = true;
                 }
@@ -809,17 +805,11 @@ var LayoutGrid = function() {
                 contentHeight = top + height;
         }
 
-        if (layoutForWidth && this.autoSizeWidth)
-            this.preferredWidth = contentWidth;
+        this.preferredWidth = contentWidth;
+        this.preferredHeight = contentHeight;
 
-        if (layoutForHeight && this.autoSizeHeight)
-            this.preferredHeight = contentHeight;
-
-        if (layoutForHeight)
-            this.contentHeight = contentHeight;
-
-        if (layoutForWidth)
-            this.contentWidth = contentWidth;
+        this.contentHeight = contentHeight;
+        this.contentWidth = contentWidth;
     };
 
 };
