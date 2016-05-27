@@ -82,24 +82,24 @@ var TableView = Backbone.View.extend({
                 switch (refCell.cellType) {
                 case 'i':
                     newCell.value = refCell.i;
-                    newCell.format = "integer";
+                    newCell.type = "integer";
                     break;
                 case 'd':
                     newCell.value = format(refCell.d, formattings[c]).replace(/-/g , "\u2212").replace(/ /g,"\u2007");
-                    newCell.format = "number";
+                    newCell.type = "number";
                     break;
                 case 's':
                     newCell.value = refCell.s;
-                    newCell.format = "text";
+                    newCell.type = "text";
                     break;
                 case 'o':
                     if (refCell.o == 2) {
                         newCell.value = 'NaN';
-                        newCell.format = "number";
+                        newCell.type = "number";
                     }
                     else {
                         newCell.value = '';
-                        newCell.format = "text";
+                        newCell.type = "text";
                     }
                     break;
                 }
@@ -133,7 +133,7 @@ var TableView = Backbone.View.extend({
             for (colNo = 0; colNo < table.columns.length; colNo++) {
 
                 var cell = cells.body[colNo][rowNo];
-                html += '<td class="silky-results-table-cell silky-results-table-cell-'+cell.format+'">' + cell.value + '</td>';
+                html += '<td class="silky-results-table-cell silky-results-table-cell-'+cell.type+'">' + cell.value + '</td>';
                 html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + /*cell.sup+*/ '</td>';
             }
 

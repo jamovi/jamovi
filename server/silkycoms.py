@@ -1,5 +1,5 @@
 from enum import Enum
-from protobuf3.fields import MessageField, DoubleField, EnumField, Int32Field, StringField, BoolField, UInt32Field, BytesField
+from protobuf3.fields import StringField, BytesField, DoubleField, BoolField, Int32Field, UInt32Field, MessageField, EnumField
 from protobuf3.message import Message
 
 
@@ -178,7 +178,7 @@ ResultsCell.add_field('o', EnumField(field_number=4, optional=True, enum_cls=Res
 ResultsCell.add_field('footnotes', StringField(field_number=5, repeated=True))
 ResultsColumn.add_field('name', StringField(field_number=1, optional=True))
 ResultsColumn.add_field('title', StringField(field_number=2, optional=True))
-ResultsColumn.add_field('format', StringField(field_number=3, optional=True))
+ResultsColumn.add_field('type', StringField(field_number=3, optional=True))
 ResultsColumn.add_field('cells', MessageField(field_number=4, repeated=True, message_cls=ResultsCell))
 ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, message_cls=ResultsColumn))
 ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
