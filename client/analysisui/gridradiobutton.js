@@ -1,28 +1,26 @@
 'use strict';
 
 var $ = require('jquery');
-var _ = require('underscore');
 var GridOptionControl = require('./gridoptioncontrol');
 
 var GridRadioButton = function(option, params) {
 
     GridOptionControl.extend(this, option, params);
 
-    var id = this.option.getName();
-
-    var actionGroup = this.params.actiongroup;
-
-    var value = this.option.getValue();
+    var optionValue = this.option.getValue();
+    this.checkedValue = this.getParam('value');
     var label = this.getParam('label');
+    var name = this.getParam('name');
     if (label === null)
-        label = this.getParam('name');
-    this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="radio" name="' + actionGroup + '" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + label + '</span></label>');
+        label = name;
+    this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' ><span>' + label + '</span></label>');
 
     var self = this;
     this.$input = this.$el.find('input');
     this.$input.change(function(event) {
-        var value = self.$input[0].checked;
-        self.option.setValue(value);
+        var checked = self.$input[0].checked;
+        if (checked)
+            self.option.setValue(self.checkedValue);
     });
 
     this.onRender = function(grid, row, column) {
@@ -33,7 +31,8 @@ var GridRadioButton = function(option, params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
-        this.$input.prop('checked', this.option.getValue(keys));
+        var optionValue = this.option.getValue();
+        this.$input.prop('checked', optionValue === this.checkedValue);
     };
 };
 
