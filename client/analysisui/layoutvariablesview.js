@@ -26,11 +26,11 @@ var LayoutVariablesView = function(params) {
     this._targets = [];
 
     this.supplierGrid = new SelectableLayoutGrid();
-    this.supplierGrid.$el.addClass("silky-layout-grid silky-variable-supplier");
+    this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
     this.supplierGrid.stretchEndCells = false;
-    this.supplierGrid.$el.css("overflow", "auto");
     this.supplierGrid._animateCells = true;
-    this.supplierGrid.setFixedHeight(200);
+    this.supplierGrid.setMinimumHeight(200);
+    this.supplierGrid.setMaximumHeight(200);
     this.ignoreTransform = true;
     var cell = this.addLayout("supplier", 0, 0, false, this.supplierGrid);
     this.ignoreTransform = false;
@@ -58,6 +58,13 @@ var LayoutVariablesView = function(params) {
 
     this.getItem = function(index) {
         return this._items._list[index];
+    };
+
+    this.getSelectedItems = function() {
+        var items = [];
+        for (var i = 0; i < this.supplierGrid.selectedCellCount(); i++)
+            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row));
+        return items;
     };
 
     this.getSelectedItem = function(index) {
@@ -95,21 +102,49 @@ var LayoutVariablesView = function(params) {
     };
 
     this.addTarget = function(target) {
+        var targetIndex = this._targets.length;
         this._targets.push(target);
         var self = this;
         target.targetGrid.on('layoutgrid.gotFocus', function() {
             self.supplier.clearSelection();
+            for (var i = 0; i < self._targets.length; i++) {
+                if (i !== targetIndex)
+                    self._targets[i].blockActionButtons();
+                else
+                    self._targets[i].unblockActionButtons();
+            }
         });
     };
 
+    this.isMultiTarget = function() {
+        return this._targets.length > 1;
+    };
 
     this.populateItemList = function() {
         var columns = this.resources.columns;
         for (var i = 0; i < columns.length; i++) {
             var column = columns[i];
-            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), used: 0, properties: { type: column.measureType } };
+            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), used: 0, index: i, properties: { type: column.measureType } };
             this._items._list.push(item);
             this._items[column.name] = item;
+        }
+    };
+
+    this.selectNextAvaliableItem = function(from) {
+        var cell = null;
+        for (var r = from; r < this._items._list.length; r++) {
+            cell = this.supplierGrid.getCell(0, r);
+            if (cell.visible()) {
+                this.supplierGrid.selectCell(cell);
+                return;
+            }
+        }
+        for (var r1 = from; r1 >= 0; r1--) {
+            cell = this.supplierGrid.getCell(0, r1);
+            if (cell.visible()) {
+                this.supplierGrid.selectCell(cell);
+                return;
+            }
         }
     };
 

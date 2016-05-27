@@ -55,7 +55,8 @@ h1 {
     padding-right: 15px;
     padding-left: 15px;
     padding-top: 15px;
-    box-sizing: border-box ;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .silky-sp-back-button {
@@ -85,8 +86,6 @@ h1 {
 .silky-sp-back-button span {
     line-height: 34px ;
 }
-
-
 
 .silky-options-title {
     font-size: 170% ;
@@ -243,6 +242,10 @@ label.silky-option-checkbox span, label.silky-option-radio span, {
     margin-bottom: 5px;
 }
 
+.silky-option-text-label  {
+    margin-right: 1ex;
+}
+
 /*textbox sizing*/
 input[type="text"].silky-option-short-text {
     width: 50px;
@@ -319,10 +322,30 @@ input[type="text"].silky-option-long-text {
 }
 
 .silky-option-variable-button {
-    width: 40px;
-    height:25px;
+    width: 34px;
+    height:28px;
     border: 1px solid rgb(130, 130, 130) ;
     background-color: rgb(255, 255, 255);
     margin-left: 10px;
     margin-right: 10px;
 }
+
+.silky-option-variable-button[disabled] {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+    background-color: rgb(200, 200, 200);
+}
+
+.silky-layout-grid.single-item {
+    height: 26px;
+}
+
+.silky-layout-grid.multi-item {
+    height: 100px;
+    overflow-x: hidden;
+}
+
+.silky-layout-grid.silky-variable-supplier {
+    height: 200px;
+}
+

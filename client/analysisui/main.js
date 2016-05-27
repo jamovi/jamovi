@@ -53,7 +53,7 @@ var $hide = null;
 
 $(document).ready(function() {
 
-    $(document).mouseup(this, mouseDown);
+    $(document).mousedown(this, mouseDown);
     $(document).mouseup(this, mouseUp);
     $(document).mousemove(this, mouseMove);
 

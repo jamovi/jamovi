@@ -12,6 +12,17 @@ var SelectableLayoutGrid = function() {
     this.hasFocus = false;
     this._selectedCells = [];
 
+    this.selectCell = function(cell) {
+        if (cell === null)
+            return;
+
+        var selected = cell.isSelected();
+        if (selected)
+            return;
+
+        this.onSelectionChanged(cell, false, false);
+    };
+
     this.onSelectionChanged = function(cell, ctrlKey, shiftKey) {
         var changed = false;
         var selected = cell.isSelected();
