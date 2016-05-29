@@ -21,7 +21,7 @@ var ImageModel = Backbone.Model.extend({
 
 var ImageView = Backbone.View.extend({
     initialize: function() {
-        this.$el.addClass('silky-results-image');
+        this.$el.addClass('silky-results-image silky-results-item');
 
         if (this.model === null)
             this.model = new ImageModel();

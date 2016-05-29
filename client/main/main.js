@@ -76,11 +76,17 @@ $(document).ready(function() {
     splitPanel.addPanel("results", { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
     splitPanel.addPanel("help", { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: "right", level: 1 });
 
-    analyses.on("analysisCreated", function(analysis) {
-        analysis.ready.then(function() {
-            optionspanel.setAnalysis(analysis);
-            splitPanel.setVisibility("main-options", true);
-        });
+    instance.on("change:selectedAnalysis", function(event) {
+        var analysis = event.changed.selectedAnalysis;
+        if (analysis !== null) {
+            analysis.ready.then(function() {
+                optionspanel.setAnalysis(analysis);
+                splitPanel.setVisibility("main-options", true);
+            });
+        }
+        else {
+            splitPanel.setVisibility("main-options", false);
+        }
     });
 
     var section = splitPanel.getSection("main-options");

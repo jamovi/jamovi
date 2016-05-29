@@ -34,6 +34,7 @@ var ResultsView = Backbone.View.extend({
         if (_.isUndefined(analysisResults)) {
 
             var element = '<iframe \
+                scrolling="no" \
                 class="id' + analysis.id + '" \
                 src="' + this.iframeUrl + this.model.instanceId() + '/" \
                 sandbox="allow-scripts allow-same-origin" \
@@ -41,10 +42,12 @@ var ResultsView = Backbone.View.extend({
                 data-selected \
                 ></iframe>';
 
-            var $iframe = $(element).appendTo(this.$el);
+            var $container = $('<div class="silky-results-container"></div>').appendTo(this.$el);
+            var $cover = $('<div class="silky-results-cover"></div>').appendTo($container);
+            var $iframe = $(element).appendTo($container);
             var iframe = $iframe[0];
 
-            analysisResults = { iframe : iframe, $iframe : $iframe, results : analysis.results, loaded : false };
+            analysisResults = { iframe : iframe, $iframe : $iframe, $container : $container, results : analysis.results, loaded : false };
             this.results[analysis.id] = analysisResults;
 
             var self = this;
@@ -53,6 +56,10 @@ var ResultsView = Backbone.View.extend({
                 analysisResults.iframe.contentWindow.postMessage(analysisResults.results, self.iframeUrl);
                 analysisResults.loaded = true;
             });
+
+            $cover.click(function() {
+                self._resultsClicked(analysis);
+            });
         }
         else {
 
@@ -60,6 +67,13 @@ var ResultsView = Backbone.View.extend({
             if (analysisResults.loaded)
                 analysisResults.iframe.contentWindow.postMessage(analysisResults.results, this.iframeUrl);
         }
+    },
+    _resultsClicked : function(analysis) {
+        var current = this.model.get('selectedAnalysis');
+        if (current === null || current.id !== analysis.id)
+            this.model.set('selectedAnalysis', analysis);
+        else
+            this.model.set('selectedAnalysis', null);
     },
     _onMessage : function(event) {
 
@@ -76,13 +90,16 @@ var ResultsView = Backbone.View.extend({
             var eventType = event.data.eventType;
             var eventData = event.data.eventData;
             var $iframe = analysisResults.$iframe;
+            var $container = analysisResults.$container;
 
             switch (eventType) {
                 case "sizeChanged":
                     if ($iframe.height() === 0)
                         $iframe.width(eventData.width);
-                    this._scrollIntoView($iframe, eventData.height);
-                    analysisResults.$iframe.animate(eventData);
+                    this._scrollIntoView($container, eventData.height);
+                    $iframe.animate(eventData, 400);
+                    $container.width(eventData.width);
+                    $container.height(eventData.height);
                     break;
                 default:
                     break;
@@ -93,13 +110,16 @@ var ResultsView = Backbone.View.extend({
 
         itemHeight = itemHeight || $item.height();
 
-        var itemTop = $item.position().top;
-        var itemBottom = itemTop + itemHeight;
+        var viewPad = parseInt(this.$el.css('padding-top'));
         var viewTop = this.$el.scrollTop();
         var viewHeight = this.$el.parent().height();
         var viewBottom = viewTop + viewHeight;
+        var itemTop = viewTop + $item.position().top;
+        var itemBottom = itemTop + itemHeight;
 
-        if ($item.height() < viewHeight) {
+        viewTop += viewPad;
+
+        if (itemHeight < viewHeight) {
 
             if (itemTop < viewTop)
                 this.$el.animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });

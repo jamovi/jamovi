@@ -8,10 +8,11 @@ Backbone.$ = $;
 var createItem = require('./create').createItem;
 
 var mainWindow = null;
+var $results = null;
 
 var _reallyNotifyResize = function() {
-    var width  = $(document).width() + 8;
-    var height = $(document).height() + 8;
+    var width  = $results.width();
+    var height = $results.height();
 
     mainWindow.postMessage({ eventType : 'sizeChanged', eventData : { width: width, height: height }}, '*');
 };
@@ -32,7 +33,7 @@ window.addEventListener('message', function(event) {
 
     var results = event.data;
 
-    createItem(results).appendTo($body);
+    $results = createItem(results).appendTo($body);
 
     _notifyResize();
 });

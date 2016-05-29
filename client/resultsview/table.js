@@ -21,12 +21,12 @@ var TableModel = Backbone.Model.extend({
 
 var TableView = Backbone.View.extend({
     initialize: function() {
-        this.$el.addClass('silky-results-table');
+        this.$el.addClass('silky-results-table silky-results-item');
 
         if (this.model === null)
             this.model = new TableModel();
 
-        this.$table = $('<table class="silky-results-table-table silky-results-item"></table>').appendTo(this.$el);
+        this.$table = $('<table class="silky-results-table-table"></table>').appendTo(this.$el);
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
         this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
         this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
@@ -85,7 +85,7 @@ var TableView = Backbone.View.extend({
                     newCell.type = "integer";
                     break;
                 case 'd':
-                    newCell.value = format(refCell.d, formattings[c]).replace(/-/g , "\u2212").replace(/ /g,"\u2007");
+                    newCell.value = format(refCell.d, formattings[c]).replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
                     newCell.type = "number";
                     break;
                 case 's':

@@ -5,6 +5,7 @@
 
 #results {
     background-color: white ;
+    position: relative ;
 }
 
 #results[data-analysis-selected] {
@@ -15,10 +16,24 @@
     overflow: hidden ;
 }
 
-#results iframe::-webkit-scrollbar {  
+#results iframe::-webkit-scrollbar {
     display: none;
 }
 
 #results iframe[data-selected] {
     background-color: white ;
+}
+
+.silky-results-container {
+    position: relative ;
+}
+
+.silky-results-cover {
+    position: absolute ;
+    top: 0;
+    right: 0 ;
+    left: 0;
+    bottom: 0;
+    opacity: 0 ;
+    z-index: 1 ;
 }
