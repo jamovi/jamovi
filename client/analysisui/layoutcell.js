@@ -47,10 +47,14 @@ var LayoutCell = function() {
 
     this.clickable = function(value) {
         this._clickable = value;
-        if (value)
+        if (value) {
             this.$el.on("mousedown", null, this, this.onMouseDown);
-        else
+            this.$el.on("mouseup", null, this, this.onMouseUp);
+        }
+        else {
             this.$el.off("mousedown", this.onMouseDown);
+            this.$el.on("mouseup", this.onMouseUp);
+        }
     };
 
     this.setSelection = function(value, ctrlKey, shiftKey) {
@@ -397,8 +401,20 @@ var LayoutCell = function() {
             return;
 
         this.cssProperties = null;
+    };
 
+    this.checkForHeightDiscrepancy = function() {
+        var oldPreferedHeight = this._preferredHeight;
+        //var oldPreferedWidth = this._preferredWidth;
 
+        //this._preferredWidth = -1;
+        this._preferredHeight = -1;
+        //this._contentWidth = -1;
+        this._contentHeight = -1;
+        //this._width = -1;
+        this._height = -1;
+
+        return oldPreferedHeight !== this.preferredHeight() ;//|| oldPreferedWidth !== this.preferredWidth();
     };
 
     this.endManipulation = function(animate) {
@@ -409,15 +425,9 @@ var LayoutCell = function() {
         var animated = false;
         var self = this;
         if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)) {
-            this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0) }, {
+            this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0), "z-index": (this._visible ? 1 : 0) }, {
                 duration: 100,
-                queue: false,
-                complete: function() {
-                    if (self._visible === false)
-                        self.$el.addClass('silky-hidden-cell');
-                    else
-                        self.$el.removeClass('silky-hidden-cell');
-                }
+                queue: false
             });
             animated = true;
         }
@@ -431,16 +441,13 @@ var LayoutCell = function() {
                 data.width = this._width;
             if (this._heightAdjusted)
                 data.height = this._height;
-            if (this._visibleAdjusted)
+            if (this._visibleAdjusted) {
                 data.opacity = (this._visible ? 1 : 0);
+                data['z-index'] = this._visible ? 1 : 0;
+            }
 
             if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
                 this.$el.css(data);
-
-            if (this._visible === false)
-                this.$el.addClass('silky-hidden-cell');
-            else
-                this.$el.removeClass('silky-hidden-cell');
         }
 
         if (this._visibleAdjusted)
