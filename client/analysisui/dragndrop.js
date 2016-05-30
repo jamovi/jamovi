@@ -3,61 +3,137 @@
 var $ = require('jquery');
 var _ = require('underscore');
 
-/*var Draggable = function($el, targets) {
+var DragNDrop = function() {
 
-    this.$el = $el;
-    this.targets = targets;
-    this._dragging = false;
+    this._itemsBeingDragged = null;
+    this._$el = null;
+    this._dropTargets = [];
+    this._isDragging = false;
+    this._currentlyOverTargetIndex = -1;
 
-    this.$el.mouseup(this, this._mouseUp);
-    this.$el.mousedown(this, this._mouseDown);
-
-    this._mouseDown = function(event) {
-        this._dragging = true;
+    this._ddMouseUp = function(event) {
+        var self = event.data;
+        self._ddDropItems();
     };
 
-    this._mouseUp = function(event) {
-        if (this._dragging) {
-            for (var i = 0; i < this.targets.length; i++) {
-                var target = this.targets[i];
-                if (target.)
-            }
-            this._droppable.dropData(this._draggable.getDragData(), { x: event.X, y: event.Y });
+    this._ddMouseDown = function(event) {
+        var self = event.data;
+        var items = self.getPickupItems();
+        self._ddPickupItems(items.length === 0 ? null : items);
+        self._currentlyOverTargetIndex = -1;
+    };
+
+    this._ddMouseMove = function(event) {
+        var self = event.data;
+
+        if (self.hasItems() === false)
+            return;
+
+        if (self._isDragging === false) {
+            self._$el = self.constructDragElement(self._itemsBeingDragged);
+            self._$el.addClass('silky-item-dragging');
+            $('body').append(self._$el);
+            self._isDragging = true;
         }
-        this._dragging = false;
+
+        var data = {
+            eventName: "mouseup",
+            which: event.which,
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
+
+        self._$el.css({ top: event.pageY + 1, left: event.pageX + 1 });
     };
 
-    this.getDragData = function() {
-        throw 'this needs to be overridden.';
-    }
+    this._ddPickupItems = function(items) {
+        this._itemsBeingDragged = items;
+    };
+
+    this._ddDropItems = function() {
+        if (this._isDragging) {
+            if (this._currentlyOverTargetIndex !== -1) {
+                var target = this._dropTargets[this._currentlyOverTargetIndex];
+                var itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged);
+                if (this.onItemsDropping)
+                    this.onItemsDropping(itemsToDrop);
+                target.catchDroppedItems(this, itemsToDrop);
+            }
+            this._$el.remove();
+            this._isDragging = false;
+        }
+
+        this._itemsBeingDragged = null;
+    };
+
+
+    this.setPickupSourceElement = function($source) {
+        $source.mousedown(this, this._ddMouseDown);
+    };
+
+    this.registerDropTargets = function(target) {
+        var targetIndex = this._dropTargets.length;
+        this._dropTargets.push(target);
+        var self = this;
+        var targetPos = {};
+
+        target.dropTargetElement().on('mouseenter', function(event) {
+            if (self._isDragging)
+                target.inspectDraggedItems(self, self._itemsBeingDragged);
+
+            self._currentlyOverTargetIndex = targetIndex;
+            targetPos.x = {
+                min: target.dropTargetElement().offset().left,
+                max: target.dropTargetElement().offset().left + target.dropTargetElement().width()
+            };
+            targetPos.y = {
+                min: target.dropTargetElement().offset().top,
+                max: target.dropTargetElement().offset().top + target.dropTargetElement().height()
+            };
+        });
+
+        target.dropTargetElement().on('mouseleave', function(event) {
+            var x_con = event.pageX >= targetPos.x.min && event.pageX <= targetPos.x.max;
+            var y_con = event.pageY >= targetPos.y.min && event.pageY <= targetPos.y.max;
+            if ( x_con && y_con ) {
+                return false;
+            }
+
+            if (self._currentlyOverTargetIndex === targetIndex)
+                self._currentlyOverTargetIndex = -1;
+        });
+    };
+
+    this.constructDragElement = function(items) {
+        var $items = $('<div></div>');
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var $item = item.$el.clone();
+            $item.css('position', 'static');
+            $items.append($item);
+        }
+        return $items;
+    };
+
+    this.hasItems = function() {
+        return this._itemsBeingDragged !== null;
+    };
+
+    this.filterItemsForDrop = function(items) {
+        var itemsToDrop = [];
+        for (var i = 0; i < items.length; i++) {
+            itemsToDrop.push(items[i]);
+        }
+        return itemsToDrop;
+    };
+
+    $(document).mouseup(this, this._ddMouseUp);
+    $(document).mousemove(this, this._ddMouseMove);
 };
 
-var Droppable = function($el) {
-    this.$el = $el;
-    this.$el.mouseup(this, this._mouseUp);
 
+DragNDrop.extendTo = function(target) {
+    DragNDrop.call(target);
+};
 
-    this.dropData = function(data, point) {
-        throw 'this needs to be overridden.';
-    };
-}
-
-var DragAndDrop = function(draggable, droppable) {
-
-    this._draggable = draggable;
-    this._droppable = droppable;
-
-
-    $(document).mouseup(this, this._mouseUp);
-
-    draggable.$dragElement.mouseDown(this, this.mouseDown);
-
-
-    this.isDragging = function() {
-        return this._dragging;
-    };
-
-
-
-
-}*/
+module.exports = DragNDrop;

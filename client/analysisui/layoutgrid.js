@@ -11,7 +11,7 @@ var Overridable = require('./overridable');
 var LayoutGrid = function() {
     Overridable.extendTo(this);
 
-    this.$el = $('<div></div>');
+    this.$el = $('<div class="silky-layout-grid"></div>');
 
     _.extend(this, Backbone.Events);
 

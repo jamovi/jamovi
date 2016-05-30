@@ -6,9 +6,11 @@ var _ = require('underscore');
 var FormatDef = require('./formatdef');
 var LayoutGrid = require('./layoutgrid').Grid;
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
+var DragNDrop = require('./dragndrop');
 
 var LayoutVariablesView = function(params) {
     LayoutGrid.extendTo(this);
+    DragNDrop.extendTo(this);
 
     this._persistentItems = _.isUndefined(params.persistentItems) ? false : params.persistentItems;
 
@@ -39,6 +41,35 @@ var LayoutVariablesView = function(params) {
     cell.dockContentHeight = true;
     cell.spanAllRows = true;
 
+    this.setPickupSourceElement(this.supplierGrid.$el);
+
+    this.getPickupItems = function() {
+        return this.getSelectedItems();
+    };
+
+
+    // Catching methods
+    this.catchDroppedItems = function(source, items) {
+
+    };
+
+    this.filterItemsForDrop = function(items) {
+        var itemsToDrop = [];
+        for (var i = 0; i < items.length; i++) {
+            itemsToDrop.push(items[i]);
+        }
+        return itemsToDrop;
+    };
+
+    this.inspectDraggedItems = function(source, items) {
+
+    };
+
+    this.dropTargetElement = function() {
+        return this.supplierGrid.$el;
+    };
+
+
 
     this.addHeader = function(title) {
         var cell = this.addCell(0, 0, false);
@@ -68,8 +99,10 @@ var LayoutVariablesView = function(params) {
     };
 
     this.getSelectedItem = function(index) {
-        if (this.supplierGrid.selectedCellCount() > index)
-            return this.getItem(this.supplierGrid.getSelectedCell(index).data.row);
+        if (this.supplierGrid.selectedCellCount() > index) {
+            var cell = this.supplierGrid.getSelectedCell(index);
+            return this.getItem(cell.data.row);
+        }
 
         return null;
     };
@@ -102,6 +135,19 @@ var LayoutVariablesView = function(params) {
     };
 
     this.addTarget = function(target) {
+
+        this.registerDropTargets(target);
+        if (target.registerDropTargets || target.dropTargetElement) {
+            if (target.registerDropTargets)
+                target.registerDropTargets(this);
+            for (var t = 0; t < this._targets.length; t++) {
+                if (target.registerDropTargets)
+                    target.registerDropTargets(this._targets[t]);
+                if (target.dropTargetElement && this._targets[t].registerDropTargets)
+                    this._targets[t].registerDropTargets(target);
+            }
+        }
+
         var targetIndex = this._targets.length;
         this._targets.push(target);
         var self = this;
@@ -165,6 +211,8 @@ var LayoutVariablesView = function(params) {
         c1.horizontalStretchFactor = 1;
         c1.dockContentWidth = true;
         c1.clickable(true);
+
+        item.$el = c1.$el;
     };
 
     this.filterSuppliersList = function() {

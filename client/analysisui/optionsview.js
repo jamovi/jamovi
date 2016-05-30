@@ -11,6 +11,7 @@ var GridCheckbox = require('./gridcheckbox');
 var GridRadioButton = require('./gridradiobutton');
 var GridTextbox = require('./gridtextbox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
+var OptionListControl = require('./optionlistcontrol');
 Backbone.$ = $;
 
 var OptionsView = Backbone.View.extend({
@@ -279,12 +280,23 @@ var OptionsView = Backbone.View.extend({
     },
 
     _insertControl_listbox: function(ctrlOption, uiDef, grid, row, column) {
-        var targetList = new GridVariablesTargetList(ctrlOption, uiDef);
+
         if (grid.addTarget) {
+            var targetList = new GridVariablesTargetList(ctrlOption, uiDef);
             targetList.setSupplier(grid);
             grid.addTarget(targetList);
+            return targetList.render(grid, row, column);
         }
-        return targetList.render(grid, row, column);
+
+        var list = new OptionListControl(ctrlOption, uiDef);
+        list.setAutoSizeHeight(false);
+
+        var cell = grid.addLayout(uiDef.name, column, row, false, list);
+        cell.horizontalStretchFactor = 0.5;
+        cell.dockContentWidth = true;
+        cell.dockContentHeight = true;
+
+        return { height: 1, width: 1 };
     },
 
     _insertControl_checkbox: function(ctrlOption, uiDef, grid, row, column) {
