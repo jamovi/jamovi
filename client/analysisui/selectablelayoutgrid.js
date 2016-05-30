@@ -54,9 +54,11 @@ var SelectableLayoutGrid = function() {
             for (var r = rStart; r*rDir <= rEnd*rDir; r+=rDir) {
                 for (var c = cStart; c*cDir <= cEnd*cDir; c+=cDir) {
                     var tCell = this.getCell(c, r);
-                    tCell.$el.addClass('selected');
-                    tCell.setSelection(true, ctrlKey, shiftKey);
-                    this._selectedCells.push(tCell);
+                    if (tCell.visible()) {
+                        tCell.$el.addClass('selected');
+                        tCell.setSelection(true, ctrlKey, shiftKey);
+                        this._selectedCells.push(tCell);
+                    }
                 }
             }
         }
@@ -77,7 +79,7 @@ var SelectableLayoutGrid = function() {
                 this._selectedCells = [ cell ];
             }
         }
-        else if (ctrlKey && this._selectedCells.length > 1) {
+        else if (ctrlKey && this._selectedCells.length > 0) {
             changed = true;
             cell.setSelection(false, ctrlKey, shiftKey);
             cell.$el.removeClass('selected');
@@ -146,8 +148,18 @@ var SelectableLayoutGrid = function() {
 
     this._override('_addCellEventListeners', function(baseFunction, cell) {
         baseFunction.call(this, cell);
-        cell.on('layoutcell.clicked', function(ctrlKey, shiftKey) {
-            self.onSelectionChanged(cell, ctrlKey, shiftKey);
+        cell.on('layoutcell.mousedown', function(ctrlKey, shiftKey) {
+            if (cell.isSelected() === false)
+                self.onSelectionChanged(cell, ctrlKey, shiftKey);
+        });
+        cell.on('layoutcell.mouseup', function(ctrlKey, shiftKey) {
+            if (cell.isSelected() === true)
+                self.onSelectionChanged(cell, ctrlKey, shiftKey);
+        });
+        cell.on('layoutcell.visibleChanged', function() {
+            if (cell.isSelected() && cell.visible() === false) {
+                self.onSelectionChanged(cell, true, false);
+            }
         });
     });
 

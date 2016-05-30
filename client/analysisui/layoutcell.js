@@ -37,7 +37,12 @@ var LayoutCell = function() {
 
     this.onMouseDown = function(event) {
         var self = event.data;
-        self.trigger('layoutcell.clicked', event.ctrlKey, event.shiftKey);
+        self.trigger('layoutcell.mousedown', event.ctrlKey, event.shiftKey);
+    };
+
+    this.onMouseUp = function(event) {
+        var self = event.data;
+        self.trigger('layoutcell.mouseup', event.ctrlKey, event.shiftKey);
     };
 
     this.clickable = function(value) {
@@ -49,6 +54,9 @@ var LayoutCell = function() {
     };
 
     this.setSelection = function(value, ctrlKey, shiftKey) {
+        if (value && this.visible() === false)
+            return;
+
         if (this._selected !== value) {
             this._selected = value;
             this.trigger('layoutcell.selectionChanged', ctrlKey, shiftKey);
@@ -399,10 +407,17 @@ var LayoutCell = function() {
             return;
 
         var animated = false;
+        var self = this;
         if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)) {
             this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0) }, {
                 duration: 100,
-                queue: false
+                queue: false,
+                complete: function() {
+                    if (self._visible === false)
+                        self.$el.addClass('silky-hidden-cell');
+                    else
+                        self.$el.removeClass('silky-hidden-cell');
+                }
             });
             animated = true;
         }
@@ -421,7 +436,15 @@ var LayoutCell = function() {
 
             if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
                 this.$el.css(data);
+
+            if (this._visible === false)
+                this.$el.addClass('silky-hidden-cell');
+            else
+                this.$el.removeClass('silky-hidden-cell');
         }
+
+        if (this._visibleAdjusted)
+            this.trigger('layoutcell.visibleChanged');
 
         if (this._widthAdjusted)
             this.updateContentHorizontalAlignment(this._width);
