@@ -215,7 +215,12 @@ var LayoutVariablesView = function(params) {
         item.$el = c1.$el;
     };
 
+    this.blockFilterProcess = false;
+
     this.filterSuppliersList = function() {
+        if (this.blockFilterProcess)
+            return;
+
         if (this._persistentItems === false) {
             this.supplierGrid.suspendLayout();
             for (var i = 0; i < this._items._list.length; i++) {

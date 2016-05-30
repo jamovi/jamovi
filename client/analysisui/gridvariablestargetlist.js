@@ -39,8 +39,16 @@ var GridVariablesTargetList = function(option, params) {
         if (items === null || items.length === 0)
             return;
 
-        for (var i = 0; i < items.length; i++)
-            this.targetGrid.removeFromOption(items[i].index);
+        this.option.beginEdit();
+        for (var i = 0; i < items.length; i++) {
+            var itemIndex = items[i].index;
+            this.targetGrid.removeFromOption(itemIndex);
+            for (var j = i + 1; j < items.length; j++) {
+                if (items[j].index > itemIndex)
+                    items[j].index -= 1;
+            }
+        }
+        this.option.endEdit();
     };
 
     // Catching methods
@@ -50,7 +58,7 @@ var GridVariablesTargetList = function(option, params) {
 
         this.option.beginEdit();
         for (var i = 0; i < items.length; i++)
-            this.targetGrid.addRawToOption(items[i].value.raw, [0], items[i].value.format);
+            this.targetGrid.addRawToOption(items[i].value.raw, [0 + i], items[i].value.format);
         this.option.endEdit();
     };
 
@@ -65,15 +73,12 @@ var GridVariablesTargetList = function(option, params) {
     };
 
     this.inspectDraggedItems = function(source, items) {
-        console.log('hover');
-        console.log(items);
+
     };
 
     this.dropTargetElement = function() {
         return this.targetGrid.$el;
     };
-
-
 
     this.setSupplier = function(supplier) {
         this._supplier = supplier;
@@ -155,12 +160,14 @@ var GridVariablesTargetList = function(option, params) {
     };
 
     this.onAddButtonClick = function() {
+        this._supplier.blockFilterProcess = true;
+        this.targetGrid.suspendLayout();
+        this.option.beginEdit();
         var postProcessSelectionIndex = 0;
+        var postProcessList = null;
         if (this.gainOnClick) {
             var selectedCount = this._supplier.supplierGrid.selectedCellCount();
             if (selectedCount > 0) {
-                this.targetGrid.suspendLayout();
-                this.option.beginEdit();
                 for (var i = 0; i < selectedCount; i++) {
                     var selectedItem = this._supplier.getSelectedItem(i);
                     if (selectedCount === 1)
@@ -171,16 +178,12 @@ var GridVariablesTargetList = function(option, params) {
                     if (this.targetGrid.addRawToOption(data, key, selectedValue.format) === false)
                         break;
                 }
-                this.option.endEdit();
-                this._supplier.selectNextAvaliableItem(postProcessSelectionIndex);
-                this.targetGrid.resumeLayout();
+                postProcessList = this._supplier;
             }
         }
         else if (this.targetGrid.selectedCellCount() > 0) {
             var startRow = -1;
             var length = 0;
-            this.targetGrid.suspendLayout();
-            this.option.beginEdit();
             var selectionCount = this.targetGrid.selectedCellCount();
             while (this.targetGrid.selectedCellCount() > 0) {
                 var cell = this.targetGrid.getSelectedCell(0);
@@ -189,11 +192,14 @@ var GridVariablesTargetList = function(option, params) {
 
                 this.targetGrid.removeFromOption(this.targetGrid.displayRowToRowIndex(cell.data.row));
             }
-            this._supplier.filterSuppliersList();
-            this.option.endEdit();
-            this.targetGrid.selectNextAvaliableItem(postProcessSelectionIndex);
-            this.targetGrid.resumeLayout();
+            postProcessList = this.targetGrid;
         }
+        this.option.endEdit();
+        this.targetGrid.resumeLayout();
+        this._supplier.blockFilterProcess = false;
+        this._supplier.filterSuppliersList();
+
+        postProcessList.selectNextAvaliableItem(postProcessSelectionIndex);
     };
 
     this.pushRowsBackToSupplier = function(rowIndex, count) {

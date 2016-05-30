@@ -9,18 +9,18 @@ var DragNDrop = function() {
     this._$el = null;
     this._dropTargets = [];
     this._isDragging = false;
-    this._currentlyOverTargetIndex = -1;
+    this._currentTarget = { index: -1 };
 
     this._ddMouseUp = function(event) {
         var self = event.data;
-        self._ddDropItems();
+        self._ddDropItems(event.pageX, event.pageY);
     };
 
     this._ddMouseDown = function(event) {
         var self = event.data;
         var items = self.getPickupItems();
         self._ddPickupItems(items.length === 0 ? null : items);
-        self._currentlyOverTargetIndex = -1;
+        self._currentTarget.index = -1;
     };
 
     this._ddMouseMove = function(event) {
@@ -50,10 +50,10 @@ var DragNDrop = function() {
         this._itemsBeingDragged = items;
     };
 
-    this._ddDropItems = function() {
+    this._ddDropItems = function(pageX, pageY) {
         if (this._isDragging) {
-            if (this._currentlyOverTargetIndex !== -1) {
-                var target = this._dropTargets[this._currentlyOverTargetIndex];
+            if (this._stillOverTarget(pageX, pageY)) {
+                var target = this._dropTargets[this._currentTarget.index];
                 var itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged);
                 if (this.onItemsDropping)
                     this.onItemsDropping(itemsToDrop);
@@ -66,6 +66,14 @@ var DragNDrop = function() {
         this._itemsBeingDragged = null;
     };
 
+    this._stillOverTarget = function(pageX, pageY) {
+        if (this._currentTarget.index === -1)
+            return false;
+
+        var x_con = pageX >= this._currentTarget.x.min && pageX <= this._currentTarget.x.max;
+        var y_con = pageY >= this._currentTarget.y.min && pageY <= this._currentTarget.y.max;
+        return x_con && y_con;
+    };
 
     this.setPickupSourceElement = function($source) {
         $source.mousedown(this, this._ddMouseDown);
@@ -75,32 +83,23 @@ var DragNDrop = function() {
         var targetIndex = this._dropTargets.length;
         this._dropTargets.push(target);
         var self = this;
-        var targetPos = {};
 
         target.dropTargetElement().on('mouseenter', function(event) {
             if (self._isDragging)
                 target.inspectDraggedItems(self, self._itemsBeingDragged);
 
-            self._currentlyOverTargetIndex = targetIndex;
-            targetPos.x = {
-                min: target.dropTargetElement().offset().left,
-                max: target.dropTargetElement().offset().left + target.dropTargetElement().width()
-            };
-            targetPos.y = {
-                min: target.dropTargetElement().offset().top,
-                max: target.dropTargetElement().offset().top + target.dropTargetElement().height()
+            var element = target.dropTargetElement();
+            var offset = element.offset();
+            self._currentTarget = {
+                index: targetIndex,
+                x: { min: offset.left, max: offset.left + element.width() },
+                y: { min: offset.top, max: offset.top + element.height() }
             };
         });
 
         target.dropTargetElement().on('mouseleave', function(event) {
-            var x_con = event.pageX >= targetPos.x.min && event.pageX <= targetPos.x.max;
-            var y_con = event.pageY >= targetPos.y.min && event.pageY <= targetPos.y.max;
-            if ( x_con && y_con ) {
-                return false;
-            }
-
-            if (self._currentlyOverTargetIndex === targetIndex)
-                self._currentlyOverTargetIndex = -1;
+            if (self._currentTarget.index === targetIndex && self._stillOverTarget(event.pageX, event.pageY) === false)
+                self._currentTarget.index = -1;
         });
     };
 

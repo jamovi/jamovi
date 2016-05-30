@@ -151,10 +151,11 @@ var SelectableLayoutGrid = function() {
         cell.on('layoutcell.mousedown', function(ctrlKey, shiftKey) {
             if (cell.isSelected() === false)
                 self.onSelectionChanged(cell, ctrlKey, shiftKey);
-        });
-        cell.on('layoutcell.mouseup', function(ctrlKey, shiftKey) {
-            if (cell.isSelected() === true)
-                self.onSelectionChanged(cell, ctrlKey, shiftKey);
+            else {
+                cell.once('layoutcell.mouseup', function(ctrlKey, shiftKey) {
+                    self.onSelectionChanged(cell, ctrlKey, shiftKey);
+                });
+            }
         });
         cell.on('layoutcell.visibleChanged', function() {
             if (cell.isSelected() && cell.visible() === false) {
