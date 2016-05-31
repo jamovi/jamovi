@@ -87,17 +87,10 @@ var OptionsPanel = SilkyView.extend({
 
     initialize: function(args) {
 
-
         if (_.has(args, 'iframeUrl'))
             this.iframeUrl = args.iframeUrl;
 
         this._analysesResources = {};
-
-        this.addMsgListener("options.changed", this.optionsChanged);
-        this.addMsgListener("options.close", this.hideOptions);
-
-        this.addMsgListener("document.ready", this.frameReady);
-        this.addMsgListener("document.mouse", this.frameMouseEvent);
 
         this._currentResources = null;
 
@@ -112,6 +105,8 @@ var OptionsPanel = SilkyView.extend({
 
         var resources = this._analysesResources[analysis.name];
         var createdNew = false;
+        this.removeMsgListeners();
+
         if (_.isUndefined(resources)) {
             resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') }, this.iframeUrl, this.model.instanceId());
             this._analysesResources[analysis.name] = resources;
@@ -134,6 +129,7 @@ var OptionsPanel = SilkyView.extend({
         if (this._currentResources === null) {
             this._currentResources = resources;
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
+            this.addMsgListeners(this._currentResources.$frame);
             this.updateContentHeight();
             if (createdNew)
                 this.$el.append(resources.$frame);
@@ -164,19 +160,40 @@ var OptionsPanel = SilkyView.extend({
         $frame.css("height", value);
     },
 
-    addMsgListener: function(cmd, callback) {
-        var self = this;
-        window.addEventListener("message",
-            function (e) {
-                var frame = document.getElementById('sandboxed-options');
-                if (e.source === frame.contentWindow) {
-                    var msg = e.data;
-                    if (msg.cmd !== cmd)
-                        return;
+    addMsgListeners: function($frame) {
+        this.addMsgListener($frame, "options.changed", this.optionsChanged);
+        this.addMsgListener($frame, "options.close", this.hideOptions);
+        this.addMsgListener($frame, "document.ready", this.frameReady);
+        this.addMsgListener($frame, "document.mouse", this.frameMouseEvent);
+    },
 
-                    callback.call(self, msg.data);
-                }
-        }, false);
+    addMsgListener: function($frame, cmd, callback) {
+        var self = this;
+        var action = function (e) {
+            //var frames = document.getElementsByClassName('silky-options-control active-options');
+            if (e.source === $frame[0].contentWindow) {
+                var msg = e.data;
+                if (msg.cmd !== cmd)
+                    return;
+
+                callback.call(self, msg.data);
+            }
+        };
+
+        if (_.isUndefined(this._msgActions))
+            this._msgActions = [];
+        this._msgActions.push(action);
+
+        window.addEventListener("message", action, false);
+    },
+
+    removeMsgListeners: function(cmd) {
+        if (_.isUndefined(this._msgActions) === false) {
+            for(var i = 0; i < this._msgActions.length; i++)
+                window.removeEventListener("message", this._msgActions[i], false);
+        }
+
+        this._msgActions = [];
     },
 
     hideOptions: function(data) {
@@ -184,6 +201,7 @@ var OptionsPanel = SilkyView.extend({
     },
 
     optionsChanged: function(data) {
+        console.log(data);
         this._currentResources.analysis.setOptions(data);
     },
 
