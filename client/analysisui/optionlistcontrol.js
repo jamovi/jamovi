@@ -55,7 +55,7 @@ var OptionListControl = function(option, params) {
 
                 if (this.showHeaders) {
                     var hCell = this.addCell(i, 0, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
-                    hCell.horizontalStretchFactor = columnInfo.stretchFactor;//this.cellStrechFactor;
+                    hCell.horizontalStretchFactor = columnInfo.stretchFactor;
                     hCell.hAlign = 'centre';
                 }
             }

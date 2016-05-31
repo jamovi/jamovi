@@ -58,7 +58,7 @@ var GridVariablesTargetList = function(option, params) {
 
         this.option.beginEdit();
         for (var i = 0; i < items.length; i++)
-            this.targetGrid.addRawToOption(items[i].value.raw, [0 + i], items[i].value.format);
+            this.targetGrid.addRawToOption(items[i].value.raw, [this.option.getLength()], items[i].value.format);
         this.option.endEdit();
     };
 

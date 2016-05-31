@@ -105,7 +105,6 @@ var OptionsPanel = SilkyView.extend({
 
         var resources = this._analysesResources[analysis.name];
         var createdNew = false;
-        this.removeMsgListeners();
 
         if (_.isUndefined(resources)) {
             resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') }, this.iframeUrl, this.model.instanceId());
@@ -114,6 +113,7 @@ var OptionsPanel = SilkyView.extend({
         }
 
         if (this._currentResources !== null && resources !== this._currentResources) {
+            this.removeMsgListeners();
             this._currentResources.abort();
             this._currentResources.$frame.addClass('silky-hidden-options-control');
             this._currentResources.$frame.css("height", 0);
@@ -201,7 +201,6 @@ var OptionsPanel = SilkyView.extend({
     },
 
     optionsChanged: function(data) {
-        console.log(data);
         this._currentResources.analysis.setOptions(data);
     },
 

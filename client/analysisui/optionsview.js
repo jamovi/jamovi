@@ -10,6 +10,7 @@ var Options = require('./options');
 var GridCheckbox = require('./gridcheckbox');
 var GridRadioButton = require('./gridradiobutton');
 var GridTextbox = require('./gridtextbox');
+var GridCombobox = require('./gridcombobox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
 var OptionListControl = require('./optionlistcontrol');
 Backbone.$ = $;
@@ -273,6 +274,11 @@ var OptionsView = Backbone.View.extend({
 
         return t;
     },
+
+    _insertControl_combobox: function(ctrlOption, uiDef, grid, row, column) {
+        var combobox = new GridCombobox(ctrlOption, uiDef);
+        return combobox.render(grid, row, column);
+        },
 
     _insertControl_textbox: function(ctrlOption, uiDef, grid, row, column) {
         var textbox = new GridTextbox(ctrlOption, uiDef);
