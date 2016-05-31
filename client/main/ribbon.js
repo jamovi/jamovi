@@ -25,6 +25,7 @@ var RibbonModel = Backbone.Model.extend({
                     { name : 'AnovaRM', title : 'Repeated Measures ANOVA', ns : 'silkyR' },
                     { name : 'Ancova',  title : 'ANCOVA', ns : 'silkyR' },
                     { name : 'Mancova', title : 'MANCOVA', ns : 'silkyR' },
+                    { name : 'Kruskal', title : 'Kruskal-Wallis', ns : 'silkyR' },
                 ]},
                 { name : 'Regression', type : 'menu', title : 'Regression', requiresData: true, items : [
                     { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'silkyR' },
