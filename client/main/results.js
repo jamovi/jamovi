@@ -5,6 +5,8 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
+var Menu = require('./menu');
+
 var ResultsView = Backbone.View.extend({
     className: "ResultsView",
     initialize: function(args) {
@@ -12,6 +14,16 @@ var ResultsView = Backbone.View.extend({
         _.bindAll(this, '_onMessage');
 
         this.$el.empty();
+
+        this.$menu = $('<div></div>');
+        this.menu = new Menu(this.$menu);
+        this.$el.append(this.$menu);
+
+
+        var self = this;
+        this.menu.onActiveChanged(function(entry) {
+            self._activeMenuChanged(entry);
+        });
 
         this.results = { };
 
@@ -21,11 +33,11 @@ var ResultsView = Backbone.View.extend({
         this.model.analyses().on('analysisResultsChanged', this._onResults, this);
         this.model.on('change:selectedAnalysis', this._onSelectedChanged, this);
 
-        var self = this;
-
         window.addEventListener('message', function(event) {
             self._onMessage(event);
         });
+
+        this.clickPos = null;
     },
     _onResults : function(analysis) {
 
@@ -53,27 +65,41 @@ var ResultsView = Backbone.View.extend({
             var self = this;
 
             $iframe.load(function() {
-                analysisResults.iframe.contentWindow.postMessage(analysisResults.results, self.iframeUrl);
+                var event = { type: 'results', results : analysis.results };
+                iframe.contentWindow.postMessage(event, self.iframeUrl);
                 analysisResults.loaded = true;
             });
 
-            $cover.click(function() {
-                self._resultsClicked(analysis);
+            $cover.on('click', function(event) {
+                self._resultsClicked(event, analysis);
+            });
+            $cover.on('mousedown', function(event) {
+                if (event.button === 2)
+                    self._resultsRightClicked(event, analysis);
             });
         }
         else {
 
             analysisResults.results = analysis.results;
-            if (analysisResults.loaded)
-                analysisResults.iframe.contentWindow.postMessage(analysisResults.results, this.iframeUrl);
+            if (analysisResults.loaded) {
+                var event = { type: 'results', results : analysis.results };
+                analysisResults.iframe.contentWindow.postMessage(event, this.iframeUrl);
+            }
         }
     },
-    _resultsClicked : function(analysis) {
+    _resultsClicked : function(event, analysis) {
         var current = this.model.get('selectedAnalysis');
         if (current === null || current.id !== analysis.id)
             this.model.set('selectedAnalysis', analysis);
         else
             this.model.set('selectedAnalysis', null);
+    },
+    _resultsRightClicked : function(event, analysis) {
+        var analysisResults = this.results[analysis.id];
+        var iframe = analysisResults.iframe;
+        this.clickPos = { left: event.offsetX, top: event.offsetY };
+        var clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
+        iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
     },
     _onMessage : function(event) {
 
@@ -101,10 +127,37 @@ var ResultsView = Backbone.View.extend({
                     $container.width(eventData.width);
                     $container.height(eventData.height);
                     break;
-                default:
+                case "menuRequest":
+                    this._showMenu(id, eventData);
                     break;
             }
         }
+    },
+    _showMenu : function(id, data) {
+
+        this._menuId = id;
+
+        var entries = [ ];
+        for (var i = 0; i < data.length; i++) {
+            var entry = data[i];
+            entries.push({ label: entry.type, address: entry.address, options: entry.options });
+        }
+
+        if (entries.length > 0) {
+            var lastEntry = entries[entries.length-1];
+            lastEntry.active = true;
+        }
+
+        this.menu.setup(entries);
+        this.menu.show({ clickPos: this.clickPos });
+    },
+    _activeMenuChanged: function(entry) {
+        var address = null;
+        if (entry !== null)
+            address = entry.address;
+
+        var message = { type: 'activeChanged', data: address };
+        this.results[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
     },
     _scrollIntoView : function($item, itemHeight) {
 

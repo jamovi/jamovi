@@ -54,6 +54,8 @@ dataSetModel.on('dataSetLoaded', function(event) {
 
 $(document).ready(function() {
 
+    document.oncontextmenu = function() { return false; };
+
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     var backstage = new Backstage({ el : "#backstage", model : instance.backstageModel() });
 

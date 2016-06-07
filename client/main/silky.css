@@ -9,6 +9,7 @@ html, body {
     padding: 0;
     margin: 0;
     height: 100%;
+    color: #333333 ;
 }
 
 body {
@@ -25,13 +26,13 @@ h1 {
 
 body {
 
-    background-color: #B7121F ;
+    background-color: #3E6DA9 ;
 }
 
 hr {
     height: 1px ;
     border: 0 ;
-    background-color: #CCC ;
+    background-color: #CCCCCC ;
 }
 
 body {
@@ -41,19 +42,21 @@ body {
 }
 
 #main-view {
-    padding: 6px ;
+    padding-top: 6px ;
     border-top: 1px solid #D0D0D0 ;
-    background-color: #dedede ;
+    background-color: #E6E6E6 ;
     flex-grow: 1;
 }
 
-#main-table {
-    border: 1px solid #999999 ;
-    /*border-radius: 5px ;*/
+#main-options {
+    background-color: inherit;
+    border: 1px solid #ACACAC ;
 }
 
 #results {
     font-style: sans-serif ;
+    border: 1px solid #ACACAC ;
+    padding: 5px ;
 }
 
 #results h1 {
@@ -65,10 +68,37 @@ body {
 }
 
 #header {
-    color: #ffffff ;
-    margin: 6px ;
+    color: #3E6DA9 ;
     text-align: center ;
+    height: 6px ;
 }
+
+
+#help {
+    overflow: auto;
+    border: 1px solid #555555 ;
+    border-radius: 5px ;
+    padding: 5px ;
+    background-color: white;
+}
+
+.silky-splitpanel-splitter {
+    background-color: inherit;
+}
+
+.silky-options-control {
+    height: 100%;
+    float: right;
+    box-sizing: border-box;
+    width: 585px;
+    border: none;
+}
+
+.silky-hidden-options-control {
+    visibility: hidden;
+    height: 0px;
+}
+
 
 #progress-bar-helper {
     position: absolute ;
@@ -93,5 +123,3 @@ body {
     width: 400px ;
     background-color: #B7121F ;
 }
-
-

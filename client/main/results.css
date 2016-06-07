@@ -9,7 +9,7 @@
 }
 
 #results[data-analysis-selected] {
-    background-color: #D8D8D8 ;
+    background-color: #E8E8E8 ;
 }
 
 #results iframe {
@@ -35,5 +35,6 @@
     left: 0;
     bottom: 0;
     opacity: 0 ;
+    background-color: white ;
     z-index: 1 ;
 }

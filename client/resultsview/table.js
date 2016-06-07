@@ -7,6 +7,8 @@ Backbone.$ = $;
 var determineFormatting = require('./formatting').determineFormatting;
 var format = require('./formatting').format;
 
+var Element = require('./element');
+
 var TableModel = Backbone.Model.extend({
     defaults : {
         name: "name",
@@ -19,9 +21,12 @@ var TableModel = Backbone.Model.extend({
     }
 });
 
-var TableView = Backbone.View.extend({
-    initialize: function() {
-        this.$el.addClass('silky-results-table silky-results-item');
+var TableView = Element.View.extend({
+    initialize: function(data) {
+
+        Element.View.prototype.initialize.call(this, data);
+
+        this.$el.addClass('silky-results-table');
 
         if (this.model === null)
             this.model = new TableModel();
@@ -38,6 +43,9 @@ var TableView = Backbone.View.extend({
         this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
 
         this.render();
+    },
+    type: function() {
+        return "Table";
     },
     render: function() {
 

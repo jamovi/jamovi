@@ -1,6 +1,7 @@
 
 .silky-ribbon {
     width: 100% ;
+    color: #777777 ;
 }
 
 .silky-ribbon-tab {
@@ -11,16 +12,36 @@
 }
 
 .silky-ribbon-tab:hover {
-    color: #EEE ;
+    color: #EEEEEE ;
 }
 
 .silky-ribbon-tab.selected {
     background-color : #EDEDED ;
-    color: #B7121F ;
+    color: #3E6DA9 ;
 }
 
 .silky-ribbon-body {
-    background-color : #EDEDED ;
-    height: 60px ;
+    background-color : #F0F0F0 ;
+    height: 50px ;
     padding: 6px 6px ;
+}
+
+.silky-ribbon-button[data-name=descriptives] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-descriptives.svg');
+}
+
+.silky-ribbon-button[data-name=ttest] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-ttest.svg');
+}
+
+.silky-ribbon-button[data-name=anova] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-anova.svg');
+}
+
+.silky-ribbon-button[data-name=regression] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-regression.svg');
+}
+
+.silky-ribbon-button[data-name=frequencies] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-frequencies.svg');
 }

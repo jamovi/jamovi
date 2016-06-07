@@ -1,16 +1,22 @@
 
+@import (inline) "../lib/metro-icons.css";
+
 body {
-    font-family: Helvetica, sans-serif ;
+    font-family: "Segoe UI", "Open Sans", sans-serif, serif ;
+    color: #555555 ;
     cursor: default ;
+    margin: 0 ;
 }
 
 h1 {
    font-size: 1.3em ;
+   color: #3E6DA9 ;
 }
 
 h2 {
    font-size: 1.15em ;
     margin-bottom: 12px ;
+    color: #3E6DA9 ;
 }
 
 h3, h4, h5 {
@@ -26,7 +32,15 @@ h3, h4, h5 {
 .silky-results-item {
     margin-bottom: 24px ;
     margin-right: 24px ;
+    padding: 8px ;
     display: inline-block ;
+    border: 2px solid transparent ;
+    box-sizing: border-box;
+}
+
+.silky-results-item.active {
+    background-color: #B5CAEF ;
+    border: 2px solid #8BA4D6;
 }
 
 .silky-results-group .silky-results-group {

@@ -47,7 +47,7 @@ var FSEntryListView = SilkyView.extend({
                 location = location.replace('{{Documents}}', 'Documents');
 
             html += '<div class="silky-bs-fslist-entry">';
-            html += '   <div class="silky-bs-fslist-entry-icon"><span class="mif-file-text"></span></div>';
+            html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
             html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
             html += '       <div class="silky-bs-fslist-entry-location">' + location + '</div>';
@@ -219,9 +219,9 @@ var BackstagePlaces = SilkyView.extend({
     events: {
         'click  .silky-bs-browse'  : '_browseClicked',
         'change .silky-bs-browse-invoker' : '_fileUpload',
-        'click  .silky-bs-recent'  : '_recentClicked',
-        'click  .silky-bs-osf'     : '_osfClicked',
-        'click  .silky-bs-this-pc' : '_thisPCClicked'
+        'mousedown  .silky-bs-recent'  : '_recentClicked',
+        'mousedown  .silky-bs-osf'     : '_osfClicked',
+        'mousedown  .silky-bs-this-pc' : '_thisPCClicked'
     },
     initialize: function() {
         _.bindAll(this, '_operationChanged');
@@ -235,21 +235,19 @@ var BackstagePlaces = SilkyView.extend({
         + '<div class="silky-bs-places-panel silky-bs-places-panel-open">'
         + '    <h1 class="silky-bs-title">Open</h1>'
         + '    <div class="silky-bs-places">'
-        + '        <div class="silky-bs-place silky-bs-recent selected"><span class="mif-list2"></span>Recent</div>'
-        + '        <div class="silky-bs-place silky-bs-this-pc"><span class="mif-display"></span>This PC</div>'
+        + '        <div class="silky-bs-place silky-bs-recent selected">Recent</div>'
+        + '        <div class="silky-bs-place silky-bs-this-pc">This PC</div>'
         + '        <div class="silky-bs-place silky-bs-osf">OSF</input></div>'
-        + '        <hr>'
-        + '        <div class="silky-bs-place silky-bs-browse"><span class="mif-folder-open"></span>Browse</div>'
+        + '        <div class="silky-bs-place silky-bs-browse">Browse</div>'
         + '        <input class="silky-bs-browse-invoker" type="file" accept=".csv" style="display: none"></input>'
         + '    </div>'
         + '</div>'
         + '<div class="silky-bs-places-panel silky-bs-places-panel-save" style="display: none">'
         + '    <h1 class="silky-bs-title">Save As</h1>'
         + '    <div class="silky-bs-places">'
-        + '        <div class="silky-bs-place silky-bs-this-pc"><span class="mif-display"></span>This PC</div>'
-        + '        <div class="silky-bs-place silky-bs-osf">OSF</input></div>'
-        + '        <hr>'
-        + '        <div class="silky-bs-place silky-bs-browse"><span class="mif-folder-open"></span>Browse</div>'
+        + '        <div class="silky-bs-place silky-bs-this-pc">This PC</div>'
+        + '        <div class="silky-bs-place silky-bs-osf">OSF</div>'
+        + '        <div class="silky-bs-place silky-bs-browse">Browse</div>'
         + '        <input class="silky-bs-browse-invoker" type="file" accept=".csv" style="display: none"></input>'
         + '    </div>'
         + '</div>'

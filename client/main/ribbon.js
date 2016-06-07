@@ -13,9 +13,11 @@ var RibbonModel = Backbone.Model.extend({
         dataAvailable : false,
         tabs : [
             { title : "File" },
-            { title : "Silky", items : [
-                { name : 'Descriptives', type : 'analysis', title : 'Descriptives', ns : 'silkyR', requiresData: true },
-                { name : 'TTests', type : 'menu', title : 'T-Tests', requiresData: true, items : [
+            { title : "Analyse", items : [
+                { name : 'Descriptives', type : 'menu', title : 'Exploration', requiresData: true, items : [
+                    { name : 'Descriptives', type: 'analysis', title : 'Descriptives', ns : 'silkyR' },
+                ]},
+                { name : 'TTest', type : 'menu', title : 'T-Test', requiresData: true, items : [
                     { name : 'TTestIS',   type: 'analysis', title : 'Independent Samples T-Test', ns : 'silkyR' },
                     { name : 'TTestPS',   type: 'analysis', title : 'Paired Samples T-Test', ns : 'silkyR' },
                     { name : 'TTestOneS', type: 'analysis', title : 'One Sample T-Test', ns : 'silkyR' },
@@ -25,14 +27,25 @@ var RibbonModel = Backbone.Model.extend({
                     { name : 'AnovaRM', title : 'Repeated Measures ANOVA', ns : 'silkyR' },
                     { name : 'Ancova',  title : 'ANCOVA', ns : 'silkyR' },
                     { name : 'Mancova', title : 'MANCOVA', ns : 'silkyR' },
-                    { name : 'Kruskal', title : 'Kruskal-Wallis', ns : 'silkyR' },
+                    { name : 'Non-param', type : 'group', title : 'Non-Parametric', items : [
+                        { name : 'Kruskal', title : 'One Way ANOVA', subtitle : 'Kruskal-Wallis', ns : 'silkyR' },
+                        { name : 'Friedman', title : 'Repeated Measures ANOVA', subtitle : 'Friedman', ns : 'silkyR' },
+                    ]},
+                    { name : 'Bayesian', type : 'group', title : 'Bayesian', items : [
+                        { name : 'BAnova', title : 'Bayesian ANOVA', ns : 'silkyR' },
+                        { name : 'BRMAnova', title : 'B. Repeated Measures ANOVA', ns : 'silkyR' },
+                        { name : 'BAncova', title : 'Bayesian ANCOVA', ns : 'silkyR' },
+                    ]}
                 ]},
                 { name : 'Regression', type : 'menu', title : 'Regression', requiresData: true, items : [
                     { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'silkyR' },
                     { name : 'LinReg',     title : 'Linear Regression', ns : 'silkyR' },
                 ]},
-            ]},
-            { title : "Silky J" }
+                { name : 'Frequencies', type : 'menu', title : 'Frequencies', requiresData: true, items : [
+                    { name : 'ContTable', title : 'Contingency Table', ns : 'silkyR' },
+                    { name : 'BinomialTest', title : 'Binomial Test', ns : 'silkyR' },
+                ]},
+            ]}
         ],
         selectedIndex : 1
     },

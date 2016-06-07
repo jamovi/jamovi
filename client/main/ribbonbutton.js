@@ -12,6 +12,9 @@ var RibbonButton = function($el, analysis) {
     if (_.has(analysis, 'title'))
         this.title = analysis.title;
 
+    if (_.has(analysis, 'name'))
+        this.name = analysis.name;
+
     if (_.has(analysis, 'items')) {
         this.items = analysis.items;
         this.isMenu = true;
@@ -78,11 +81,32 @@ RibbonButton.prototype._itemClicked = function(event) {
     this._notifySelected(source.dataset.name, source.dataset.ns);
 };
 
+RibbonButton.prototype._createMenuItem = function(item) {
+    if (item.subtitle)
+        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="silky-ribbon-menu-item">' + item.title + '<div class="silky-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
+    return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="silky-ribbon-menu-item">' + item.title + '</div>';
+};
+
+RibbonButton.prototype._createMenuGroup = function(group) {
+
+    var html = '';
+
+    html += '<div class="silky-ribbon-menu-group">';
+    html += '<div class="silky-ribbon-menu-heading">' + group.title + '</div>';
+
+    for (var i = 0; i < group.items.length; i++)
+        html += this._createMenuItem(group.items[i]);
+
+    html += '</div>';
+
+    return html;
+};
+
 RibbonButton.prototype.refresh = function() {
 
     var html = '';
 
-    html += '   <button class="silky-ribbon-button" data-name="' + this.name + '" disabled>';
+    html += '   <button class="silky-ribbon-button" data-name="' + this.name.toLowerCase() + '" disabled>';
     html += '       <div class="silky-ribbon-button-icon"></div>';
     html += '       <div class="silky-ribbon-button-label">' + this.title + '</div>';
     html += '   </button>';
@@ -90,14 +114,15 @@ RibbonButton.prototype.refresh = function() {
     if (this.isMenu) {
 
         html += '   <div class="silky-ribbon-button-menu" style="display: none ;">';
-        html += '      <ul>';
 
         for (var i = 0; i < this.items.length; i++) {
             var item = this.items[i];
-            html += '<li data-name="' + item.name + '" data-ns="' + item.ns + '">' + item.title + '</li>';
+            if (item.type === 'group')
+                html += this._createMenuGroup(item);
+            else
+                html += this._createMenuItem(item);
         }
 
-        html += '      </ul>';
         html += '   </div>';
     }
 
@@ -105,7 +130,7 @@ RibbonButton.prototype.refresh = function() {
 
     this.$button = this.$el.find('button');
     this.$menu   = this.$el.find('.silky-ribbon-button-menu');
-    this.$menuItems = this.$el.find('li');
+    this.$menuItems = this.$el.find('.silky-ribbon-menu-item');
 
     var self = this;
     this.$button.click(function() { self._clicked(); });

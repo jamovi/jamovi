@@ -1,10 +1,9 @@
 
 .silky-bs {
-
     position: fixed ;
     left: 0 ;
     top: 0 ;
-    background-color: rgb(223, 223, 223) ;
+    background-color: #F0F0F0 ;
     z-index: 10 ;
     width: 100% ;
     height: 100% ;
@@ -17,8 +16,8 @@
     top: 0 ;
     height: 100% ;
     z-index: 10 ;
-    background-color: #B7121F ;
-    color: #ffffff ;
+    background-color: #3E6DA9 ;
+    color: #FFFFFF ;
     padding: 8px 0px;
 }
 
@@ -53,11 +52,11 @@
 }
 
 .silky-bs-op-button:hover {
-    background-color: #D84B54 ;
+    background-color: #325787 ;
 }
 
 .silky-bs-op-button.selected {
-    background-color: #97121F ;
+    background-color: #6E96CA ;
 }
 
 .silky-bs-mid {
@@ -77,14 +76,13 @@
 }
 
 .silky-bs-mid .silky-bs-places {
-    border-right: 1px solid #CCC ;
-    padding-right: 18px ;
+    border-right: 1px solid #CCCCCC ;
     bottom: 24px ;
 }
 
 .silky-bs-mid hr {
     height: 1px ;
-    background-color: #CCC ;
+    background-color: #CCCCCC ;
 }
 
 .silky-bs-place {
@@ -93,29 +91,35 @@
     line-height: 40px ;
     padding-left: 12px ;
     margin-top: 6px ;
-}
-
-.silky-bs-place:hover {
-    background-color: #CCCCCC ;
-}
-
-.silky-bs-place.selected {
-    background-color: #E86D78 ;
-    color: #333333 ;
-}
-
-.silky-bs-osf {
-    background-image: url('assets/logo-osf.png');
     background-size: auto 60% ;
     background-repeat: no-repeat ;
     background-position: 8px center ;
     padding-left: 40px ;
 }
 
-.silky-bs-place [class^="mif-"] {
-    position: relative ;
-    top: -1px ;
-    margin-right: 12px ;
+.silky-bs-place:hover {
+    background-color: #DBE4F3 ;
+}
+
+.silky-bs-place:active,
+.silky-bs-place.selected {
+    background-color: #BACDE6 ;
+}
+
+.silky-bs-recent {
+    background-image: url('assets/place-recent.svg');
+}
+
+.silky-bs-this-pc {
+    background-image: url('assets/place-this-pc.svg');
+}
+
+.silky-bs-browse {
+    background-image: url('assets/place-browse.svg');
+}
+
+.silky-bs-osf {
+    background-image: url('assets/place-osf.svg');
 }
 
 .silky-bs-choices {
@@ -125,7 +129,7 @@
     height: 100% ;
     width: 100% ;
     margin-left: 425px ;
-    padding: 120px 18px 18px 18px ;
+    padding: 136px 18px 18px 18px ;
     box-sizing: border-box ;
 }
 
@@ -135,11 +139,14 @@
 }
 
 .silky-bs-fslist-entry:hover {
-    background-color: #EEEEEE ;
+    background-color: #DBE4F3 ;
 }
 
 .silky-bs-fslist-entry-icon {
-    font-size: 130% ;
+    width: 32px ;
+    height: 32px ;
+    background-image: url('assets/document-spreadsheet.svg');
+    background-size: 100% ;
     margin-left: 6px ;
     margin-right: 6px ;
 }
