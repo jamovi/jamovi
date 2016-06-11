@@ -43,14 +43,14 @@ def _ports_opened(ports):
         pass
 
     if launch_client:
-        _launch_electron(ports)
+        _launch_electron('', ports)
 
 
-def _launch_electron(ports):
-    threading.Thread(target=_launch_electron_thread, args=(ports,)).start()
+def _launch_electron(instance_id, ports):
+    threading.Thread(target=_launch_electron_thread, args=(instance_id, ports)).start()
 
 
-def _launch_electron_thread(ports):
+def _launch_electron_thread(instance_id, ports):
 
     if os.name == 'nt':
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron.exe')
@@ -61,7 +61,7 @@ def _launch_electron_thread(ports):
 
     main = os.path.join(tld, 'silky/electron/main.js')
 
-    process = subprocess.Popen([exe, main, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
+    process = subprocess.Popen([exe, main, instance_id, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
 
     # we add to the number of connections to prevent the server shutting down
     # before the client has first connected (if the start up is particularly slow)
@@ -106,7 +106,8 @@ if __name__ == "__main__":
             os.remove(left_over)
 
         server = Server(port, shutdown_on_idle=shutdown_on_idle, debug=debug)
-        server.add_port_opened_listener(_ports_opened)
+        server.add_ports_opened_listener(_ports_opened)
+        server.set_client_launcher(_launch_electron)
         server.start()
 
     else:

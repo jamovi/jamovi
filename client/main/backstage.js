@@ -7,6 +7,8 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
+var Request = require('./request');
+
 var FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ]
@@ -105,10 +107,12 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     requestOpen: function(path) {
-        this.trigger('dataSetOpenRequested', { path : path });
-    },
-    notifyDataSetLoaded : function() {
-        this.trigger('dataSetLoaded');
+        var request = new Request({ path : path });
+        this.trigger('dataSetOpenRequested', request);
+        var self = this;
+        request.then(function() {
+            self.set('activated', false);
+        });
     },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
@@ -129,7 +133,7 @@ var BackstageView = SilkyView.extend({
     className: "backstage",
     initialize: function() {
         this.render();
-        this.model.on("dataSetLoaded", this.deactivate, this);
+        this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._operationChanged, this);
     },
     events: {
@@ -184,6 +188,12 @@ var BackstageView = SilkyView.extend({
         this.$op.animate({left:-width}, 200);
 
         this.model.set('activated', false);
+    },
+    _activationChanged : function() {
+        if (this.model.get('activated'))
+            this.activate();
+        else
+            this.deactivate();
     },
     _openClicked : function() {
         this.model.set('operation', 'open');

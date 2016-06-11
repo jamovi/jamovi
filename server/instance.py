@@ -24,8 +24,8 @@ class Instance:
     instances = { }
 
     @staticmethod
-    def get(instanceId):
-        return Instance.instances.get(instanceId)
+    def get(instance_id):
+        return Instance.instances.get(instance_id)
 
     def __init__(self, session_path, instance_id=None):
 
@@ -45,6 +45,7 @@ class Instance:
             self._instance_id = instance_id
         else:
             self._instance_id = str(uuid.uuid4())
+            print("created " + self._instance_id)
 
         self._instance_path = os.path.join(self._session_path, self._instance_id)
         os.makedirs(self._instance_path, exist_ok=True)
@@ -82,7 +83,7 @@ class Instance:
 
     def _on_results(self, results, request, complete):
         complete = (results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE)
-        self._coms.send(results, request, complete)
+        self._coms.send(results, self._instance_id, request, complete)
 
     def _on_open(self, request):
         print('opening ' + request.filename)
@@ -94,9 +95,9 @@ class Instance:
 
         self._dataset = dataset
 
-        self._coms.send(None, request)
+        self._coms.send(None, self._instance_id, request)
 
-        self._addToRecents(request.filename)
+        self._add_to_recents(request.filename)
 
     def _open_callback(self, task, progress):
         response = silkycoms.ComsMessage()
@@ -104,7 +105,7 @@ class Instance:
         response.open.progress = progress
         response.open.progress_task = task
 
-        self._coms.send(response)
+        self._coms.send(response, self._instance_id)
 
     def _on_analysis(self, request):
 
@@ -118,7 +119,7 @@ class Instance:
             response.options = options
             response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
 
-            self._coms.send(response, request, False)
+            self._coms.send(response, self._instance_id, request, False)
 
         else:
             analysisId = request.analysisId
@@ -150,7 +151,7 @@ class Instance:
 
                 response.schema.fields.append(field)
 
-        self._coms.send(response, request)
+        self._coms.send(response, self._instance_id, request)
 
     def _on_cells(self, request):
 
@@ -193,9 +194,9 @@ class Instance:
 
             response.columns.append(colRes)
 
-        self._coms.send(response, request)
+        self._coms.send(response, self._instance_id, request)
 
-    def _addToRecents(self, path):
+    def _add_to_recents(self, path):
 
         settings = Settings.retrieve('backstage')
         recents  = settings.get('recents', [ ])
@@ -256,4 +257,4 @@ class Instance:
 
             response.localFSRecents.append(recent)
 
-        self._coms.send(response, request)
+        self._coms.send(response, self._instance_id, request)

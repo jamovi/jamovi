@@ -15,8 +15,6 @@ class ClientConnection(WebSocketHandler):
         self._transactions = { }
         self._listeners = [ ]
 
-        self._instance = None
-
     def check_origin(self, origin):
         return True
 
@@ -33,40 +31,33 @@ class ClientConnection(WebSocketHandler):
 
         print('websocket closed')
 
-    def on_message(self, message):
-        m = silkycoms.ComsMessage.create_from_bytes(message)
-        clas = getattr(silkycoms, m.payloadType)
-        request = clas.create_from_bytes(m.payload)
-
-        self._transactions[m.id] = request
-
-        if self._instance is not None:
-            self._instance.on_request(request)
-        else:
-            self._on_instance_request(request)
-
-    def _on_instance_request(self, request):
+    def on_message(self, m_bytes):
+        message = silkycoms.ComsMessage.create_from_bytes(m_bytes)
+        clas = getattr(silkycoms, message.payloadType)
+        request = clas.create_from_bytes(message.payload)
+        self._transactions[message.id] = request
 
         if type(request) == silkycoms.InstanceRequest:
-            if 'instanceId' in request:
-                if request.instanceId in Instance.instances:
-                    self._instance = Instance.instances[request.instanceId]
-            if self._instance is None:
-                self._instance = Instance(session_path=self._session_path)
-
-            self._instance.set_coms(self)
-
+            if 'instanceId' not in message:
+                instance = Instance(session_path=self._session_path)  # create new
+            else:
+                instance = Instance.instances[message.instanceId]
+            instance.set_coms(self)
             response = silkycoms.InstanceResponse()
-            response.instanceId = self._instance.id
+            self.send(response, instance.id, request)
+        else:
+            instance = Instance.instances[message.instanceId]
+            instance.on_request(request)
 
-            self.send(response, request)
-
-    def send(self, message=None, response_to=None, complete=True):
+    def send(self, message=None, instance_id=None, response_to=None, complete=True):
 
         if message is None and response_to is None:
             return
 
         m = silkycoms.ComsMessage()
+
+        if instance_id is not None:
+            m.instanceId = instance_id
 
         if response_to is not None:
             for key, value in self._transactions.items():
@@ -94,4 +85,3 @@ class ClientConnection(WebSocketHandler):
             if value is message:
                 del self._transactions[key]
                 break
-

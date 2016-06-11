@@ -15,7 +15,8 @@ var DataSetModel = Backbone.Model.extend({
         columns    : [ ],
         rowCount : 0,
         columnCount : 0,
-        coms : null
+        coms : null,
+        instanceId : null,
     },
     setNew : function(info) {
 
@@ -39,33 +40,33 @@ var DataSetViewModel = DataSetModel.extend({
         }, DataSetModel.prototype.defaults);
     },
     setViewport : function(viewport) {
-        
+
         var nCols = viewport.right - viewport.left + 1;
         var nRows = viewport.bottom - viewport.top + 1;
 
         var cells = Array(nCols);
-        
+
         for (var i = 0; i < nCols; i++) {
             var column = new Array(nRows);
-            
+
             for (var j = 0; j < nRows; j++)
                 column[j] = "" + (viewport.left + i) + ", " + (viewport.top + j);
-            
+
             cells[i] = column;
         }
-        
+
         this.attributes.cells = cells;
         this.attributes.viewport = viewport;
-        
+
         this.trigger("viewportChanged");
         this.trigger("viewportReset");
-        
+
         this._requestCells(viewport);
     },
     reshape : function(left, top, right, bottom) {
-    
+
         // console.log("reshape : " + JSON.stringify({left:left,top:top,right:right,bottom:bottom}));
-    
+
         var viewport = this.attributes.viewport;
         var cells = this.attributes.cells;
         var delta = { left: left, top: top, right: right, bottom: bottom };
@@ -73,26 +74,26 @@ var DataSetViewModel = DataSetModel.extend({
         var i, j, column;
 
         var nv = _.clone(viewport);
-        
+
         nv.left  -= left;
         nv.right += right;
         nv.top   -= top;
         nv.bottom += bottom;
-        
+
         var nRows = nv.bottom - nv.top + 1;
         var nCols = nv.right - nv.left + 1;
-        
+
         var innerLeft  = Math.max(viewport.left,  nv.left);
         var innerRight = Math.min(viewport.right, nv.right);
         var innerNCols = innerRight - innerLeft + 1;
-               
+
         var requests = [ ];
 
         for (i = 0; i > left; i--)
             cells.shift();
         for (i = 0; i > right; i--)
             cells.pop();
-            
+
         if (top < 0) {
             for (i = 0; i < cells.length; i++) {
                 column = cells[i];
@@ -107,17 +108,17 @@ var DataSetViewModel = DataSetModel.extend({
                     column.pop();
             }
         }
-        
+
         if (left > 0) {
             for (i = 0; i < left; i++)
                 cells.unshift(new Array(nRows));
-            
+
             this._requestCells({ left : nv.left, right : viewport.left - 1, top : nv.top, bottom : nv.bottom });
         }
         if (right > 0) {
             for (i = 0; i < right; i++)
                 cells.push(new Array(nRows));
-            
+
             this._requestCells({ left : viewport.right + 1, right : nv.right, top : nv.top, bottom : nv.bottom });
         }
         if (top > 0) {
@@ -125,7 +126,7 @@ var DataSetViewModel = DataSetModel.extend({
                 for (j = 0; j < top; j++)
                     cells[i].unshift("X");
             }
-            
+
             this._requestCells({ left : innerLeft, right : innerRight, top : nv.top, bottom : viewport.top });
         }
         if (bottom > 0) {
@@ -133,13 +134,13 @@ var DataSetViewModel = DataSetModel.extend({
                 for (j = 0; j < bottom; j++)
                     cells[i].push("x");
             }
-            
+
             this._requestCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });
         }
-        
+
         this.attributes.viewport = nv;
         this.attributes.cells = cells;
-        
+
         this.trigger("viewportChanged");
     },
     _requestCells : function(viewport) {
@@ -156,6 +157,7 @@ var DataSetViewModel = DataSetModel.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = cellsRequest.toArrayBuffer();
         request.payloadType = "CellsRequest";
+        request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(function(response) {
 
@@ -184,11 +186,11 @@ var DataSetViewModel = DataSetModel.extend({
             }
 
             self.setCells(viewport, cells);
-        
+
             return cells;
-            
+
         }).catch(function(err) {
-        
+
             console.log(err);
         });
     },
@@ -198,28 +200,28 @@ var DataSetViewModel = DataSetModel.extend({
         var right  = Math.min(viewport.right,  this.attributes.viewport.right);
         var top    = Math.max(viewport.top,    this.attributes.viewport.top);
         var bottom = Math.min(viewport.bottom, this.attributes.viewport.bottom);
-        
+
         var inColOffset = viewport.left - left;
         var inRowOffset = viewport.top  - top;
-        
+
         var outColOffset = left - this.attributes.viewport.left;
         var outRowOffset = top - this.attributes.viewport.top;
-        
+
         var i, j;
         var nRows = bottom - top + 1;
         var nCols = right - left + 1;
-        
+
         for (i = 0; i < nCols; i++) {
-        
+
             var inCol  = cells[inColOffset + i];
             var outCol = this.attributes.cells[outColOffset + i];
-            
+
             for (j = 0; j < nRows; j++) {
                 outCol[outRowOffset + j] = inCol[inRowOffset + j];
             }
-                
+
         }
-        
+
         this.trigger("cellsChanged", { left: left, top: top, right: right, bottom: bottom });
     }
 });

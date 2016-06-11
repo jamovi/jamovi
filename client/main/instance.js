@@ -5,7 +5,6 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
-var BackstageModel = require('./backstage').Model;
 var Analyses = require('./analyses');
 var DataSetViewModel = require('./dataset').DataSetViewModel;
 
@@ -33,9 +32,6 @@ var Instance = Backbone.Model.extend({
 
         this._progressModel = new ProgressModel();
 
-        this._backstageModel = new BackstageModel();
-        this._backstageModel.on('dataSetOpenRequested', this._openDataSetRequest, this);
-
         this._analyses = new Analyses();
         this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._analysisOptionsChanged, this);
@@ -45,7 +41,8 @@ var Instance = Backbone.Model.extend({
     },
     defaults : {
         coms : null,
-        selectedAnalysis : null
+        selectedAnalysis : null,
+        hasDataSet : false
     },
     instanceId : function() {
         return this._instanceId;
@@ -58,21 +55,9 @@ var Instance = Backbone.Model.extend({
 
         return this._dataSetModel;
     },
-    backstageModel: function() {
-
-        return this._backstageModel;
-    },
     analyses : function() {
 
         return this._analyses;
-    },
-    _openDataSetRequest : function(openRequest) {
-
-        var self = this;
-
-        this.open(openRequest.path).then(function() {
-            self._backstageModel.notifyDataSetLoaded();
-        });
     },
     connect : function(instanceId) {
 
@@ -110,6 +95,7 @@ var Instance = Backbone.Model.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = open.toArrayBuffer();
         request.payloadType = "OpenRequest";
+        request.instanceId = this._instanceId;
 
         var onresolve = function(response) {
             self._retrieveInfo();
@@ -126,17 +112,15 @@ var Instance = Backbone.Model.extend({
         var coms = this.attributes.coms;
 
         var instanceRequest = new coms.Messages.InstanceRequest();
-        if (instanceId)
-            instanceRequest.instanceId = instanceId;
-
         var request = new coms.Messages.ComsMessage();
         request.payload = instanceRequest.toArrayBuffer();
         request.payloadType = "InstanceRequest";
 
-        return coms.send(request).then(function(response) {
+        if (instanceId)
+            request.instanceId = instanceId;
 
-            var instanceResponse = coms.Messages.InstanceResponse.decode(response.payload);
-            return instanceResponse.instanceId;
+        return coms.send(request).then(function(response) {
+            return response.instanceId;
         });
     },
     _retrieveInfo : function() {
@@ -148,6 +132,7 @@ var Instance = Backbone.Model.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = info.toArrayBuffer();
         request.payloadType = "InfoRequest";
+        request.instanceId = this._instanceId;
 
         return coms.send(request).then(function(response) {
 
@@ -159,11 +144,14 @@ var Instance = Backbone.Model.extend({
                     return { name : field.name, width: field.width, measureType : self._stringifyMeasureType(field.measureType) };
                 }, self);
 
+                self._dataSetModel.set('instanceId', self._instanceId);
                 self._dataSetModel.setNew({
                     rowCount : info.rowCount,
                     columnCount : info.columnCount,
                     columns : columnInfo
                 });
+
+                self.set('hasDataSet', true);
             }
 
             return response;
@@ -191,6 +179,7 @@ var Instance = Backbone.Model.extend({
         var request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = "AnalysisRequest";
+        request.instanceId = this._instanceId;
 
         var onreceive = function(message) {
 

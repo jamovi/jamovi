@@ -12,14 +12,13 @@ message ComsMessage {
     optional bytes payload = 2;
     optional string payloadType = 3;
     optional Status status = 4 [default = COMPLETE];
+    optional string instanceId = 5;
 }
 
 message InstanceRequest {
-    optional string instanceId = 1;
 }
 
 message InstanceResponse {
-    optional string instanceId = 1;
 }
 
 message OpenRequest {
@@ -47,11 +46,11 @@ message InfoRequest {
 }
 
 message InfoResponse {
-    
+
     message Schema {
         message Field {
             optional string name = 1;
-            
+
             enum MeasureType {
                 MISC = 0;
                 NOMINAL_TEXT = 1;
@@ -59,7 +58,7 @@ message InfoResponse {
                 ORDINAL = 3;
                 CONTINUOUS = 4;
             }
-            
+
             optional MeasureType measureType = 2;
             optional int32 width = 3;
         }
@@ -84,7 +83,7 @@ message CellsResponse {
     optional CellsRequest request = 1;
 
     message Column {
-    
+
         message Ints {
             repeated int32 values = 1;
         }
@@ -94,14 +93,14 @@ message CellsResponse {
         message Strings {
             repeated string values = 1;
         }
-    
+
         oneof cells {
             Ints    ints = 1;
             Doubles doubles = 2;
             Strings strings = 3;
         }
     }
-    
+
     repeated Column columns = 2;
 }
 
@@ -111,12 +110,12 @@ message AnalysisRequest {
     optional int32 analysisId = 2;
     optional string name = 3;
     optional string ns = 4;
-    
+
     enum Perform {
         INIT = 1;
         RUN = 2;
     }
-    
+
     optional Perform perform = 5;
     optional string options = 6;
 }
@@ -147,14 +146,14 @@ message ResultsCell {
         MISSING = 1;
         NOT_A_NUMBER = 2;
     }
-    
+
     oneof cellType {
         int32  i = 1;
         double d = 2;
         string s = 3;
         Other  o = 4;
     }
-    
+
     repeated string footnotes = 5;
 }
 
@@ -190,7 +189,7 @@ message ResultsElement {
     optional string name = 1;
     optional string title = 2;
     optional AnalysisStatus status = 3 [default=ANALYSIS_RUNNING];
-    
+
     oneof type {
         ResultsTable table = 4;
         ResultsImage image = 5;

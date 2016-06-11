@@ -28,6 +28,7 @@ var ResultsView = require('./results');
 var SplitPanel  = require('./splitpanel');
 var ProgressBar = require('./progressbar');
 var Backstage   = require('./backstage').View;
+var BackstageModel = require('./backstage').Model;
 var Ribbon      = require('./ribbon').View;
 var RibbonModel = require('./ribbon').Model;
 var SplitPanelSection = require('./splitpanelsection');
@@ -35,6 +36,7 @@ var OptionsPanel = require('./optionspanel');
 
 var Instance = require('./instance');
 
+var backstageModel = new BackstageModel();
 var instance = new Instance({ coms : coms });
 
 var dataSetModel = instance.dataSetModel();
@@ -48,7 +50,36 @@ ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
 });
 
-dataSetModel.on('dataSetLoaded', function(event) {
+backstageModel.on('dataSetOpenRequested', function(request) {
+
+    var target;
+    var opening;
+
+    if ( ! instance.get('hasDataSet')) {
+        target = instance;
+        opening = target.open(request.data.path);
+        request.waitOn(opening);
+        opening.then(function() {
+            ribbonModel.set('dataAvailable', true);
+        });
+    }
+    else {
+        target = new Instance({ coms : coms });
+        request.resolve();
+        target.connect().then(function() {
+            opening = target.open(request.data.path);
+        }).then(function() {
+            $.post('http://localhost:' + mainPort + '/launch/' + target.instanceId());
+        });
+    }
+});
+
+backstageModel.on('change:activated', function(event) {
+    if (event.changed.activated === false)
+        ribbonModel.set('selectedIndex', 1);
+});
+
+dataSetModel.on('change:hasDataSet', function() {
     ribbonModel.set('dataAvailable', true);
 });
 
@@ -57,16 +88,11 @@ $(document).ready(function() {
     document.oncontextmenu = function() { return false; };
 
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
-    var backstage = new Backstage({ el : "#backstage", model : instance.backstageModel() });
+    var backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
     ribbonModel.on('change:selectedIndex', function(event) {
         if (event.changed.selectedIndex === 0)
             backstage.activate();
-    });
-
-    instance.backstageModel().on('change:activated', function(event) {
-        if (event.changed.activated === false)
-            ribbonModel.set('selectedIndex', 1);
     });
 
     var halfWindowWidth = $(document).width() * 0.5;
@@ -123,7 +149,7 @@ $(document).ready(function() {
 
     }).then(function(settings) {
 
-        instance.backstageModel().set('settings', settings);
+        backstageModel.set('settings', settings);
 
     }).then(function() {
 

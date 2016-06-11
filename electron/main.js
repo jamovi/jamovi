@@ -6,12 +6,17 @@ const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 
+var instanceId = '';
+
 if (process.argv.length >= 3)
-    global.mainPort = process.argv[2];
+    instanceId = process.argv[2]
+
 if (process.argv.length >= 4)
-    global.analysisUIPort = process.argv[3];
+    global.mainPort = process.argv[3];
 if (process.argv.length >= 5)
-    global.resultsViewPort = process.argv[4];
+    global.analysisUIPort = process.argv[4];
+if (process.argv.length >= 6)
+    global.resultsViewPort = process.argv[5];
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -32,7 +37,11 @@ app.on('ready', function() {
     var serverPath = rootPath + 's/';
     var serverUrl = rootUrl + 's/';
 
-    mainWindow.loadURL(rootUrl + 'index.html');
+    var url = rootUrl + 'index.html'
+    if (instanceId)
+        url += '?id=' + instanceId
+
+    mainWindow.loadURL(url);
 
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
@@ -63,7 +72,7 @@ app.on('ready', function() {
         // in an array if your app supports multi windows, this is the time
         // when you should delete the corresponding element.
         mainWindow = null;
-    })
+    });
 })
 
 app.on('window-all-closed', function() {

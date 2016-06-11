@@ -129,26 +129,41 @@ class BackstageInfoHandler(RequestHandler):
         self.write(json.dumps(info))
 
 
+class LaunchClientHandler(RequestHandler):
+
+    def initialize(self, launcher, ports):
+        self._launcher = launcher
+        self._ports = ports
+
+    def post(self, instance_id):
+        print(instance_id)
+        if self._launcher is not None:
+            self._launcher(instance_id, self._ports)
+            self.set_status(204)
+        else:
+            self.set_status(500)
+
+
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
 
-        self._main_port = port
-
         if port == 0:
-            self._analysisui_port = 0
-            self._resultsview_port = 0
+            self._ports = [ 0, 0, 0 ]
         else:
-            self._analysisui_port = int(port) + 1
-            self._resultsview_port = int(port) + 2
+            self._ports = [int(port), int(port) + 1, int(port) + 2]
 
         self._ioloop = tornado.ioloop.IOLoop.instance()
         self._shutdown_on_idle = shutdown_on_idle
         self._debug = debug
-        self._port_opened_listener = [ ]
+        self._ports_opened_listeners = [ ]
+        self._client_launcher = None
 
-    def add_port_opened_listener(self, listener):
-        self._port_opened_listener.append(listener)
+    def add_ports_opened_listener(self, listener):
+        self._ports_opened_listeners.append(listener)
+
+    def set_client_launcher(self, launcher):
+        self._client_launcher = launcher
 
     def check_for_shutdown(self):
 
@@ -191,8 +206,9 @@ class Server:
             (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
             (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
+            (r'/launch/(.*)',        LaunchClientHandler, { 'launcher': self._client_launcher, 'ports': self._ports }),
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
-        ], debug=self._debug)
+        ])
 
         analysisui_path = os.path.join(client_path,    'analysisui.html')
         analysisuijs_path  = os.path.join(client_path, 'analysisui.js')
@@ -204,7 +220,7 @@ class Server:
             (r'/.*/analysisui.js',  SingleFileHandler, { 'path': analysisuijs_path, 'mime_type': 'text/javascript' }),
             (r'/.*/analysisui.css', SingleFileHandler, { 'path': analysisuicss_path, 'mime_type': 'text/css' }),
             (r'/.*/assets/(.*)', StaticFileHandler, { 'path': assets_path }),
-        ], debug=self._debug)
+        ])
 
         resultsview_path    = os.path.join(client_path, 'resultsview.html')
         resultsviewjs_path  = os.path.join(client_path, 'resultsview.js')
@@ -215,25 +231,25 @@ class Server:
             (r'/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
             (r'/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
             (r'/(.*)/res/(.*)', ResourceHandler),
-        ], debug=self._debug)
+        ])
 
-        sockets = tornado.netutil.bind_sockets(self._main_port, 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[0], 'localhost')
         server = tornado.httpserver.HTTPServer(self._main_app)
         server.add_sockets(sockets)
-        self._main_port = sockets[0].getsockname()[1]
+        self._ports[0] = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._analysisui_port, 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[1], 'localhost')
         server = tornado.httpserver.HTTPServer(self._analysisui_app)
         server.add_sockets(sockets)
-        self._analysisui_port = sockets[0].getsockname()[1]
+        self._ports[1] = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._resultsview_port, 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[2], 'localhost')
         server = tornado.httpserver.HTTPServer(self._resultsview_app)
         server.add_sockets(sockets)
-        self._results_port = sockets[0].getsockname()[1]
+        self._ports[2] = sockets[0].getsockname()[1]
 
-        for listener in self._port_opened_listener:
-            listener((self._main_port, self._analysisui_port, self._resultsview_port))
+        for listener in self._ports_opened_listeners:
+            listener(self._ports)
 
         if self._shutdown_on_idle:
             thread = threading.Thread(target=self.check_for_shutdown)
