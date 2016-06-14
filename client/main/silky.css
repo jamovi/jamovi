@@ -14,19 +14,23 @@ html, body {
 
 body {
     font-family: "Segoe UI", "Open Sans", sans-serif, serif;
-    font-size: 0.875rem;
+    font-size: 80%;
     line-height: 1.1;
     font-weight: 400;
     font-style: normal;
+    background-color: #3E6DA9 ;
+    padding: 0 ;
+    cursor: default ;
+    display: flex ;
+    flex-flow: column ;
+}
+
+body.windows {
+    padding: 1px ;
 }
 
 h1 {
     font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
-}
-
-body {
-
-    background-color: #3E6DA9 ;
 }
 
 hr {
@@ -35,10 +39,82 @@ hr {
     background-color: #CCCCCC ;
 }
 
-body {
-    cursor: default ;
-    display: flex ;
-    flex-flow: column ;
+#header {
+    font-weight: normal ;
+    color: white ;
+    text-align: center ;
+    min-height: 6px ;
+}
+
+body.windows #header {
+    height: 32px ;
+    line-height: 32px ;
+}
+
+#header-text {
+    display: none ;
+}
+
+body.windows #header-text {
+    -webkit-app-region: drag;
+    margin-left: 80px ;
+    margin-right: 150px ;
+}
+
+#header-buttons {
+    position: fixed;
+    top: 1px;
+    right: 1px;
+}
+
+body #header-buttons {
+    display: none ;
+}
+
+body.windows.electron #header-buttons {
+    display: block ;
+}
+
+.header-button {
+    display: inline-block ;
+    width: 46px ;
+    height: 31px ;
+    box-sizing: border-box ;
+}
+
+.header-button:hover {
+    background-color: #6E96CA ;
+}
+
+.header-button .header-button-icon {
+    margin: 10px auto ;
+    width:10px ;
+    height:10px ;
+    box-sizing: border-box ;
+    border-style: solid ;
+    border-width: 0 ;
+}
+
+.header-button:hover .header-button-icon {
+    border-color: white ;
+}
+
+#min-button .header-button-icon {
+    margin-top: 15px ;
+    height: 1px ;
+    border-width: 1px 0 0 0 ;
+}
+
+#max-button .header-button-icon {
+    border-width: 1px ;
+}
+
+#close-button .header-button-icon {
+    background-image: url('assets/action-close.svg');
+}
+
+#close-button:hover {
+    background-color: #E81123 ;
 }
 
 #main-view {
@@ -66,13 +142,6 @@ body {
 #splitter {
     width: 8px ;
 }
-
-#header {
-    color: #3E6DA9 ;
-    text-align: center ;
-    height: 6px ;
-}
-
 
 #help {
     overflow: auto;

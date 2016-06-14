@@ -2,6 +2,7 @@
 .silky-ribbon {
     width: 100% ;
     color: #777777 ;
+    -webkit-app-region: drag ;
 }
 
 .silky-ribbon-tab {
@@ -9,6 +10,7 @@
     background-color : inherit ;
     color: white ;
     padding: 8px 20px ;
+    -webkit-app-region: no-drag;
 }
 
 .silky-ribbon-tab:hover {
@@ -24,6 +26,7 @@
     background-color : #F0F0F0 ;
     height: 50px ;
     padding: 6px 6px ;
+    -webkit-app-region: no-drag;
 }
 
 .silky-ribbon-button[data-name=descriptives] .silky-ribbon-button-icon {

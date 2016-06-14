@@ -5,6 +5,7 @@ const electron = require('electron');
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
+const ipc = electron.ipcMain;
 
 var instanceId = '';
 
@@ -24,7 +25,28 @@ let mainWindow;
 
 app.on('ready', function() {
 
-    mainWindow = new BrowserWindow({ width: 1280, height: 800 });
+    mainWindow = new BrowserWindow({ width: 1280, height: 800, frame: process.platform !== 'win32' });
+
+    ipc.on('request', function(event, arg) {
+        switch (arg) {
+        case 'openDevTools':
+            mainWindow.webContents.toggleDevTools();
+            break;
+        case 'close':
+            mainWindow.close();
+            break;
+        case 'minimize':
+            mainWindow.minimize();
+            break;
+        case 'maximize':
+            if (mainWindow.isMaximized())
+                mainWindow.unmaximize();
+            else
+                mainWindow.maximize();
+            break;
+        }
+
+    });
 
     var rootPath = path.join(__dirname, '..', 'client') + '/';
 
@@ -42,9 +64,6 @@ app.on('ready', function() {
         url += '?id=' + instanceId
 
     mainWindow.loadURL(url);
-
-    // Open the DevTools.
-    mainWindow.webContents.openDevTools();
 
     var session = mainWindow.webContents.session;
     session.webRequest.onBeforeRequest(function(details, callback) {

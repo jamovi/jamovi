@@ -9,13 +9,17 @@ if (window.location.protocol === 'file:') {
 
     window.inElectron = true;
 
-    var remote = window.require('electron').remote;
+    var electron = window.require('electron');
+
+    var remote = electron.remote;
     var mainPort = remote.getGlobal('mainPort');
     var analysisUIPort = remote.getGlobal('analysisUIPort');
     var resultsViewPort = remote.getGlobal('resultsViewPort');
 
     if (typeof(mainPort) !== 'undefined')
         coms.setBaseUrl('localhost:' + mainPort);
+
+    var ipc = electron.ipcRenderer;
 }
 else {
 
@@ -84,6 +88,36 @@ dataSetModel.on('change:hasDataSet', function() {
 });
 
 $(document).ready(function() {
+
+    if (navigator.platform === "Win32")
+        $('body').addClass("windows");
+    else if (navigator.platform == "MacIntel")
+        $('body').addClass("mac");
+    else
+        $('body').addClass("other");
+
+    if (window.inElectron)
+        $('body').addClass('electron');
+
+    $(window).on('keydown', function(event) {
+        if (event.key === "F10" || event.keyCode === 121)
+            ipc.send('request', 'openDevTools');
+    });
+
+    if (window.inElectron && navigator.platform === "Win32") {
+
+        $('#close-button').on('click', function() {
+            ipc.send('request', 'close');
+        });
+
+        $('#min-button').on('click', function() {
+            ipc.send('request', 'minimize');
+        });
+
+        $('#max-button').on('click', function() {
+            ipc.send('request', 'maximize');
+        });
+    }
 
     document.oncontextmenu = function() { return false; };
 
