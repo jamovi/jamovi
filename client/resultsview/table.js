@@ -15,7 +15,9 @@ var TableModel = Backbone.Model.extend({
         title: "(no title)",
         element : {
             columns : [ ]
-        }
+        },
+        error: null,
+        status: 'complete'
     },
     initialize: function() {
     }

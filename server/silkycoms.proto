@@ -7,12 +7,18 @@ enum Status {
     FAILED = 3;
 }
 
+message Error {
+    optional string message = 1;
+    optional int32 code = 2;
+}
+
 message ComsMessage {
     optional int32 id = 1;
-    optional bytes payload = 2;
-    optional string payloadType = 3;
-    optional Status status = 4 [default = COMPLETE];
-    optional string instanceId = 5;
+    optional string instanceId = 2;
+    optional bytes payload = 3;
+    optional string payloadType = 4;
+    optional Status status = 5 [default = COMPLETE];
+    optional Error error = 6;
 }
 
 message InstanceRequest {
@@ -136,7 +142,7 @@ message AnalysisResponse {
     optional string options = 3;
     optional ResultsElement results = 4;
     optional AnalysisStatus status = 5;
-    optional bytes error = 6;
+    optional Error error = 6;
 
 }
 
@@ -189,12 +195,13 @@ message ResultsElement {
     optional string name = 1;
     optional string title = 2;
     optional AnalysisStatus status = 3 [default=ANALYSIS_RUNNING];
+    optional Error error = 4;
 
     oneof type {
-        ResultsTable table = 4;
-        ResultsImage image = 5;
-        ResultsGroup group = 6;
-        ResultsArray array = 7;
-        string text = 8;
+        ResultsTable table = 6;
+        ResultsImage image = 7;
+        ResultsGroup group = 8;
+        ResultsArray array = 9;
+        string text = 10;
     }
 }

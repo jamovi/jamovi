@@ -1,6 +1,10 @@
-from protobuf3.message import Message
 from enum import Enum
-from protobuf3.fields import MessageField, BytesField, UInt32Field, EnumField, Int32Field, StringField, BoolField, DoubleField
+from protobuf3.fields import BytesField, StringField, EnumField, UInt32Field, DoubleField, BoolField, Int32Field, MessageField
+from protobuf3.message import Message
+
+
+class Error(Message):
+    pass
 
 
 class ComsMessage(Message):
@@ -127,11 +131,14 @@ class AnalysisStatus(Enum):
     ANALYSIS_ERROR = 4
     ANALYSIS_ABORTED = 5
 
+Error.add_field('message', StringField(field_number=1, optional=True))
+Error.add_field('code', Int32Field(field_number=2, optional=True))
 ComsMessage.add_field('id', Int32Field(field_number=1, optional=True))
-ComsMessage.add_field('payload', BytesField(field_number=2, optional=True))
-ComsMessage.add_field('payloadType', StringField(field_number=3, optional=True))
-ComsMessage.add_field('status', EnumField(field_number=4, optional=True, enum_cls=Status, default=Status.COMPLETE))
-ComsMessage.add_field('instanceId', StringField(field_number=5, optional=True))
+ComsMessage.add_field('instanceId', StringField(field_number=2, optional=True))
+ComsMessage.add_field('payload', BytesField(field_number=3, optional=True))
+ComsMessage.add_field('payloadType', StringField(field_number=4, optional=True))
+ComsMessage.add_field('status', EnumField(field_number=5, optional=True, enum_cls=Status, default=Status.COMPLETE))
+ComsMessage.add_field('error', MessageField(field_number=6, optional=True, message_cls=Error))
 OpenRequest.add_field('filename', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('name', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('path', StringField(field_number=2, optional=True))
@@ -169,7 +176,7 @@ AnalysisResponse.add_field('analysisId', Int32Field(field_number=2, optional=Tru
 AnalysisResponse.add_field('options', StringField(field_number=3, optional=True))
 AnalysisResponse.add_field('results', MessageField(field_number=4, optional=True, message_cls=ResultsElement))
 AnalysisResponse.add_field('status', EnumField(field_number=5, optional=True, enum_cls=AnalysisStatus))
-AnalysisResponse.add_field('error', BytesField(field_number=6, optional=True))
+AnalysisResponse.add_field('error', MessageField(field_number=6, optional=True, message_cls=Error))
 ResultsCell.add_field('i', Int32Field(field_number=1, optional=True))
 ResultsCell.add_field('d', DoubleField(field_number=2, optional=True))
 ResultsCell.add_field('s', StringField(field_number=3, optional=True))
@@ -189,8 +196,9 @@ ResultsGroup.add_field('elements', MessageField(field_number=1, repeated=True, m
 ResultsElement.add_field('name', StringField(field_number=1, optional=True))
 ResultsElement.add_field('title', StringField(field_number=2, optional=True))
 ResultsElement.add_field('status', EnumField(field_number=3, optional=True, enum_cls=AnalysisStatus, default=AnalysisStatus.ANALYSIS_RUNNING))
-ResultsElement.add_field('table', MessageField(field_number=4, optional=True, message_cls=ResultsTable))
-ResultsElement.add_field('image', MessageField(field_number=5, optional=True, message_cls=ResultsImage))
-ResultsElement.add_field('group', MessageField(field_number=6, optional=True, message_cls=ResultsGroup))
-ResultsElement.add_field('array', MessageField(field_number=7, optional=True, message_cls=ResultsArray))
-ResultsElement.add_field('text', StringField(field_number=8, optional=True))
+ResultsElement.add_field('error', MessageField(field_number=4, optional=True, message_cls=Error))
+ResultsElement.add_field('table', MessageField(field_number=6, optional=True, message_cls=ResultsTable))
+ResultsElement.add_field('image', MessageField(field_number=7, optional=True, message_cls=ResultsImage))
+ResultsElement.add_field('group', MessageField(field_number=8, optional=True, message_cls=ResultsGroup))
+ResultsElement.add_field('array', MessageField(field_number=9, optional=True, message_cls=ResultsArray))
+ResultsElement.add_field('text', StringField(field_number=10, optional=True))

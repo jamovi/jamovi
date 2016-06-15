@@ -110,25 +110,45 @@ class Instance:
     def _on_analysis(self, request):
 
         if 'analysisId' not in request:
-            analysis = self._analyses.create(request.name, request.ns)
-            analysisId = analysis.id
-            options = json.dumps(analysis.options)
 
-            response = silkycoms.AnalysisResponse()
-            response.analysisId = analysisId
-            response.options = options
-            response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
+            try:
+                analysis = self._analyses.create(request.name, request.ns)
+                analysisId = analysis.id
+                options = json.dumps(analysis.options)
 
-            self._coms.send(response, self._instance_id, request, False)
+                response = silkycoms.AnalysisResponse()
+                response.analysisId = analysisId
+                response.options = options
+                response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
+
+                self._coms.send(response, self._instance_id, request, False)
+
+                request.datasetId = self._instance_id
+                request.analysisId = analysisId
+                request.options = options
+                self._em.send(request)
+
+            except Exception as e:
+
+                print('Could not create analysis: ' + str(e))
+                self._coms.discard(request)
+
+                # We should handle this properly at some point, something like:
+                #
+                # response = silkycoms.AnalysisResponse()
+                # response.status = silkycoms.AnalysisStatus.ANALYSIS_ERROR
+                # response.error.message = 'Could not create analysis: ' + str(e)
+                #
+                # self._coms.send(response, self._instance_id, request)
 
         else:
             analysisId = request.analysisId
             options = request.options
 
-        request.datasetId = self._instance_id
-        request.analysisId = analysisId
-        request.options = options
-        self._em.send(request)
+            request.datasetId = self._instance_id
+            request.analysisId = analysisId
+            request.options = options
+            self._em.send(request)
 
     def _on_info(self, request):
 

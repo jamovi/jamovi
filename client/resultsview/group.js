@@ -13,7 +13,9 @@ var GroupModel = Backbone.Model.extend({
         title: "(no title)",
         element : {
             elements : [ ]
-        }
+        },
+        error: null,
+        status: 'complete'
     },
     initialize: function() {
     }
@@ -70,6 +72,14 @@ var GroupView = Element.View.extend({
     render: function() {
 
         var self = this;
+
+        var error = this.model.get('error');
+        if (error !== null) {
+            var $error = $('<div class="silky-results-error-message"></div>');
+            $error.append(error.message);
+            $error.appendTo(this.$el);
+            this.$el.addClass('silky-results-error');
+        }
 
         this.model.attributes.element.elements.forEach(function(element) {
             var $el = $('<div></div>');

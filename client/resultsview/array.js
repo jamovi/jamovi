@@ -13,7 +13,9 @@ var ArrayModel = Backbone.Model.extend({
         title: "(no title)",
         element : {
             elements : [ ]
-        }
+        },
+        error: null,
+        status: 'complete'
     },
     initialize: function() {
     }

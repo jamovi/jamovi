@@ -21,19 +21,39 @@ var createItem = function(element, $el, level, parent) {
     var view;
 
     if (element.table) {
-        model = new TableModel({ name : element.name, title : element.title, element : element.table });
+        model = new TableModel({
+            name: element.name,
+            title: element.title,
+            element: element.table,
+            status: element.status,
+            error: element.error });
         view = new TableView({ el : $el, model : model, parent : parent });
     }
     else if (element.group) {
-        model = new GroupModel({ name : element.name, title : element.title, element : element.group });
+        model = new GroupModel({
+            name: element.name,
+            title: element.title,
+            element: element.group,
+            status: element.status,
+            error: element.error });
         view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent });
     }
     else if (element.image) {
-        model = new ImageModel({ name : element.name, title : element.title, element : element.image });
+        model = new ImageModel({
+            name : element.name,
+            title : element.title,
+            element : element.image,
+            status: element.status,
+            error: element.error });
         view = new ImageView({ el : $el, model : model, parent : parent });
     }
     else if (element.array) {
-        model = new ArrayModel({ name : element.name, title : element.title, element : element.array });
+        model = new ArrayModel({
+            name : element.name,
+            title : element.title,
+            element : element.array,
+            status: element.status,
+            error: element.error });
         view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent });
     }
     else if (element.text) {
