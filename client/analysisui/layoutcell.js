@@ -34,6 +34,7 @@ var LayoutCell = function() {
     this._height = -1;
     this._left = -1;
     this._top = -1;
+    this._parentLayout = null;
 
     this.onMouseDown = function(event) {
         var self = event.data;
@@ -53,7 +54,7 @@ var LayoutCell = function() {
         }
         else {
             this.$el.off("mousedown", this.onMouseDown);
-            this.$el.on("mouseup", this.onMouseUp);
+            this.$el.off("mouseup", this.onMouseUp);
         }
     };
 
@@ -72,22 +73,28 @@ var LayoutCell = function() {
     };
 
     this.setContent = function($content) {
-        if (this.$content !== null) {
-            this.$content.off('layoutgrid.sizeChanged', null, this.onContentSizeChanged);
+        if (this.$content !== null)
             this.$previousContent = this.$content;
-        }
 
         this.$content = $content;
 
-        if (this.$content !== null)
-            this.$content.on('layoutgrid.sizeChanged', null, this, this.onContentSizeChanged);
+        this._preferredWidth = -1;
+        this._preferredHeight = -1;
+        this._contentWidth = -1;
+        this._contentHeight = -1;
+        this._width = -1;
+        this._height = -1;
 
-        if (this.$previousContent !== null)
-            this.trigger('layoutcell.contentChanged', Math.random());
+        if (this.$previousContent !== null) {
+            this.data.hasNewContent = true;
+            this._parentLayout.invalidateLayout('both', Math.random());
+        }
+
+        return this.$previousContent;
     };
 
-    this.onContentSizeChanged = function(event, data) {
-        var self = event.data;
+    this.onContentSizeChanged = function(data) {
+        var self = this;
 
         self._preferredWidth = -1;
         self._preferredHeight = -1;
@@ -99,7 +106,7 @@ var LayoutCell = function() {
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
 
-        self.trigger('layoutcell.sizeChanged', data.type, data.updateId);
+        this._parentLayout.invalidateLayout(data.type, data.updateId);
     };
 
     this.render = function() {
@@ -427,7 +434,12 @@ var LayoutCell = function() {
         if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)) {
             this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0), "z-index": (this._visible ? 1 : 0) }, {
                 duration: 100,
-                queue: false
+                queue: false,
+                complete: function() {
+                    if (self._visibleAdjusted)
+                        self.trigger('layoutcell.visibleChanged');
+                    this._visibleAdjusted = false;
+                }
             });
             animated = true;
         }
@@ -448,10 +460,11 @@ var LayoutCell = function() {
 
             if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
                 this.$el.css(data);
-        }
 
-        if (this._visibleAdjusted)
-            this.trigger('layoutcell.visibleChanged');
+            if (self._visibleAdjusted)
+                self.trigger('layoutcell.visibleChanged');
+            this._visibleAdjusted = false;
+        }
 
         if (this._widthAdjusted)
             this.updateContentHorizontalAlignment(this._width);
@@ -465,7 +478,7 @@ var LayoutCell = function() {
         this._leftAdjusted = false;
         this._widthAdjusted = false;
         this._heightAdjusted = false;
-        this._visibleAdjusted = false;
+        //this._visibleAdjusted = false;
 
         return animated;
     };
