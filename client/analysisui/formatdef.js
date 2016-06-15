@@ -27,6 +27,44 @@ var FormatDef = {
             return FormatDef.variable._areItemsEqual(raw1, raw2);
         },
 
+        contains: function(raw, value) {
+
+            var type1 = typeof raw;
+            var type2 = typeof value;
+
+            if (type1 === 'string' && type2 === 'string')
+                return raw === value;
+            else if (type1 === 'string')
+                return false;
+
+            for (var j = 0; j < raw.length; j++) {
+
+                if (FormatDef.variable.contains(raw[j], value))
+                    return true;
+            }
+
+            if (raw.length < value.length)
+                return false;
+
+            var jStart = 0;
+            for (var i = 0; i < value.length; i++) {
+                var found = false;
+                for (var k = jStart; k < raw.length; k++) {
+                    if (FormatDef.variable._areItemsEqual(value[i], raw[k])) {
+                        if (jStart === k)
+                            jStart = k + 1;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found === false)
+                    return false;
+            }
+
+            return true;
+        },
+
         _areItemsEqual: function(item1, item2) {
             var type1 = typeof item1;
             var type2 = typeof item1;
@@ -40,14 +78,21 @@ var FormatDef = {
             if (Array.isArray(item1) === false || Array.isArray(item2) === false)
                 return false;
 
-            if (item1.length > 2 || item2.length > 2)
-                throw 'Not a valid variable type';
-
             if (item1.length !== item2.length)
                 return false;
 
+            var jStart = 0;
             for (var i = 0; i < item1.length; i++) {
-                if (FormatDef.variable._validateItem(item1[i], item2[i]) === false)
+                var found = false;
+                for (var j = jStart; j < item2.length; j++) {
+                    if (FormatDef.variable._areItemsEqual(item1[i], item2[j])) {
+                        if (j === jStart)
+                            jStart = j + 1;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found === false)
                     return false;
             }
 
@@ -66,9 +111,9 @@ var FormatDef = {
                 return item;
 
             var joiner = FormatDef.variable._getJoiner(level);
-            var combined = '';
-            for (var i = 0; i < item.length; i++)
-                combined = combined + joiner + FormatDef.variable._itemToString(item[i], level + 1);
+            var combined = FormatDef.variable._itemToString(item[0], level + 1);
+            for (var i = 1; i < item.length; i++)
+                combined = combined + " " + joiner + " " + FormatDef.variable._itemToString(item[i], level + 1);
 
             return combined;
         },
@@ -77,7 +122,7 @@ var FormatDef = {
             if (typeof item === 'string')
                 return true;
 
-            if (level < 2 || Array.isArray(item) === false || item.length === 0)
+            if (level > 2 || Array.isArray(item) === false || item.length === 0)
                 return false;
 
             for (var i = 0; i < item.length; i++) {

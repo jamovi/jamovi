@@ -8,22 +8,27 @@ var GridCombobox = function(option, params) {
 
     GridOptionControl.extend(this, option, params);
 
+    this.registerSimpleProperty("options", []);
+
+    this.$label = null;
+
     this.onRender = function(grid, row, column) {
 
         var id = this.option.getName();
-        var label = this.getParam('label');
+        var label = this.getPropertyValue('label');
         if (label === null)
-            label = this.getParam('name');
+            label = this.getPropertyValue('name');
 
         var columnUsed = 0;
         var cell = null;
         if (label !== "") {
-            cell = grid.addCell(column, row, true, $('<div class="silky-option-text-label" style="display: inline; white-space: nowrap;" >' + label + '</div>'));
+            this.$label = $('<div class="silky-option-text-label" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+            cell = grid.addCell(column, row, true, this.$label);
             cell.setAlignment("left", "centre");
             columnUsed += 1;
         }
 
-        var options = this.getParam('options');
+        var options = this.getPropertyValue('options');
 
         var t = '<select class="silky-option-input">';
         for (var i = 0; i < options.length; i++)
@@ -50,7 +55,7 @@ var GridCombobox = function(option, params) {
     this.onOptionValueChanged = function(keys, data) {
         var select = this.$input[0];
         var value = this.option.getValue();
-        var options = this.getParam('options');
+        var options = this.getPropertyValue('options');
         var index = -1;
         for (var i = 0; i < options.length; i++) {
             if (options[i].value === value) {
@@ -60,6 +65,19 @@ var GridCombobox = function(option, params) {
         }
         if (index !== -1)
             select.selectedIndex = index;
+    };
+
+    this.onPropertyChanged = function(name) {
+        if (name === 'disabled') {
+            var disabled = this.getPropertyValue(name);
+            this.$input.prop('disabled', disabled);
+            if (this.$label !== null) {
+                if (disabled)
+                    this.$label.addClass("disabled-text");
+                else
+                    this.$label.removeClass("disabled-text");
+            }
+        }
     };
 };
 

@@ -13,6 +13,8 @@ var GridTextbox = require('./gridtextbox');
 var GridCombobox = require('./gridcombobox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
 var OptionListControl = require('./optionlistcontrol');
+var LayoutActionManager = require('./layoutactionmanager');
+var OptionControlBase = require('./optioncontrolbase');
 Backbone.$ = $;
 
 var OptionsView = Backbone.View.extend({
@@ -45,6 +47,7 @@ var OptionsView = Backbone.View.extend({
                 else
                     newGroup = this.createLayoutView_group(itemLevel, item);
 
+
                 var groupCell = groupView.addLayout(item.name + '_group', _nextCell.column, _nextCell.row, true, newGroup);
 
                 if (itemLevel === 0) {
@@ -74,10 +77,12 @@ var OptionsView = Backbone.View.extend({
             }
             else {
 
-                var name = item.name;
-                var option = this.model.options.getOption(name);
+                var id = item.optionId;
+                if (_.isUndefined(id))
+                    id = item.name;
+                var option = this.model.options.getOption(id);
                 if (option === null) {
-                    console.log("The option " + name + " does not exist.");
+                    console.log("The option " + id + " does not exist.");
                     continue;
                 }
 
@@ -97,18 +102,20 @@ var OptionsView = Backbone.View.extend({
 
     createLayoutView_group: function(level, item) {
 
-        var name = item.name;
+        var id = item.optionId;
+        if (_.isUndefined(id))
+            id = item.name;
         var style = item.style;
         if ( ! style)
             style = "list";
 
-        var option = this.model.options.getOption(name);
+        var option = this.model.options.getOption(id);
 
         var newGroup = new LayoutGroupView(item);
+
         newGroup.setInfo(style, level);
 
         var $header = null;
-
 
         if (option !== null) {
             if (level === 1)
@@ -136,8 +143,7 @@ var OptionsView = Backbone.View.extend({
                 cell.dockContentWidth = true;
                 $header.on('click', null, newGroup, function(event) {
                     var group = event.data;
-                    //if (group.level === 1)
-                        group.toggleColapsedState();
+                    group.toggleColapsedState();
                 });
             }
         }
@@ -152,6 +158,9 @@ var OptionsView = Backbone.View.extend({
         var style = "list";
 
         var newGroup = new LayoutVariablesView(item);
+
+        this.layoutActionManager.addResource(item.name, newGroup);
+
         newGroup.setInfo(this.model.resources, style, level);
 
         newGroup.$el.addClass("silky-options-group silky-options-level-" + level + " silky-options-group-style-" + style);
@@ -163,6 +172,11 @@ var OptionsView = Backbone.View.extend({
         var options = this.model.options;
         var layoutDef = this.model.layoutDef;
 
+        if (_.isUndefined(this.layoutActionManager) === false)
+            this.layoutActionManager.close();
+
+        this.layoutActionManager = new LayoutActionManager(layoutDef);
+
 
         var layoutGrid = new LayoutGrid();
         layoutGrid.$el.addClass('silky-layout-grid top-level');
@@ -170,11 +184,20 @@ var OptionsView = Backbone.View.extend({
         layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
         layoutGrid._animateCells = true;
 
-        this.renderLayout(layoutDef.layout, layoutGrid, 'list', 1);
+        this.renderLayout(layoutDef.items, layoutGrid, 'list', 1);
 
         layoutGrid.render();
 
         this.$el.append(layoutGrid.$el);
+
+        for (var i = 0; i < options._list.length; i++) {
+            var option = options._list[i];
+            var name = option.params.name;
+            if (this.layoutActionManager.exists(name) === false)
+                this.layoutActionManager.addResource(name, new OptionControlBase(this.getCtrlOption(option)));
+        }
+
+        this.layoutActionManager.initialiseAll();
     },
 
 
@@ -257,11 +280,13 @@ var OptionsView = Backbone.View.extend({
 
     _createControl_checkbox: function(ctrlOption, uiDef) {
         var checkbox = new GridCheckbox(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, checkbox);
         return checkbox.$el;
     },
 
     _createControl_radiobutton: function(ctrlOption, uiDef) {
         var radioButton = new GridRadioButton(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, radioButton);
         return radioButton.$el;
     },
 
@@ -277,11 +302,13 @@ var OptionsView = Backbone.View.extend({
 
     _insertControl_combobox: function(ctrlOption, uiDef, grid, row, column) {
         var combobox = new GridCombobox(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, combobox);
         return combobox.render(grid, row, column);
         },
 
     _insertControl_textbox: function(ctrlOption, uiDef, grid, row, column) {
         var textbox = new GridTextbox(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, textbox);
         return textbox.render(grid, row, column);
     },
 
@@ -289,12 +316,14 @@ var OptionsView = Backbone.View.extend({
 
         if (grid.addTarget) {
             var targetList = new GridVariablesTargetList(ctrlOption, uiDef);
+            this.layoutActionManager.addResource(uiDef.name, targetList);
             targetList.setSupplier(grid);
             grid.addTarget(targetList);
             return targetList.render(grid, row, column);
         }
 
         var list = new OptionListControl(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, list);
         list.setAutoSizeHeight(false);
 
         var cell = grid.addLayout(uiDef.name, column, row, false, list);
@@ -307,11 +336,13 @@ var OptionsView = Backbone.View.extend({
 
     _insertControl_checkbox: function(ctrlOption, uiDef, grid, row, column) {
         var checkbox = new GridCheckbox(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, checkbox);
         return checkbox.render(grid, row, column);
     },
 
     _insertControl_radiobutton: function(ctrlOption, uiDef, grid, row, column) {
         var radiobutton = new GridRadioButton(ctrlOption, uiDef);
+        this.layoutActionManager.addResource(uiDef.name, radiobutton);
         return radiobutton.render(grid, row, column);
     }
 

@@ -7,12 +7,50 @@ var FormatDef = require('./formatdef');
 var LayoutGrid = require('./layoutgrid').Grid;
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var DragNDrop = require('./dragndrop');
+var PropertySupplier = require('./propertysupplier');
 
 var LayoutVariablesView = function(params) {
     LayoutGrid.extendTo(this);
     DragNDrop.extendTo(this);
+    PropertySupplier.extendTo(this, params);
+
+    this.setList = function(value) {
+
+        var newItems = [];
+        for (var i = 0; i < value.length; i++) {
+            var item = value[i];
+            for (var j = 0; j < this._items.length; j++) {
+                if (this._items[j].value.equalTo(item.value)) {
+                    item = this._items[j];
+                    break;
+                }
+            }
+            item.index = i;
+            if (_.isUndefined(item.used))
+                item.used = 0;
+            if (_.isUndefined(item.properties))
+                item.properties = {};
+
+            newItems.push(item);
+        }
+
+        this._items = newItems;
+        this.trigger("list_changed");
+
+        this.supplierGrid.suspendLayout();
+        this.renderItemList();
+        this.filterSuppliersList();
+        this.supplierGrid.resumeLayout();
+    };
+
+    this.getList = function() {
+        return this._items;
+    };
+
+    this.registerComplexProperty("list", this.getList, this.setList, "list_changed");
 
     this._persistentItems = _.isUndefined(params.persistentItems) ? false : params.persistentItems;
+    this._useVariables = _.isUndefined(params.useVariables) ? false : params.useVariables;
 
     this.rowTransform = function(row, column) {
         return row;
@@ -81,14 +119,14 @@ var LayoutVariablesView = function(params) {
         this.resources = resources;
         this.style = style;
         this.level = level;
-        this._items = { _list:[] };
+        this._items = [];
 
-        this.populateItemList();
-        this.renderItemList();
+        if (this._useVariables)
+            this.populateItemList();
     };
 
     this.getItem = function(index) {
-        return this._items._list[index];
+        return this._items[index];
     };
 
     this.getSelectedItems = function() {
@@ -115,8 +153,8 @@ var LayoutVariablesView = function(params) {
     };
 
     this.pullItem = function(formatted) {
-        for (var i = 0; i < this._items._list.length; i++) {
-            var item = this._items._list[i];
+        for (var i = 0; i < this._items.length; i++) {
+            var item = this._items[i];
             if (item.value.equalTo(formatted)) {
                 item.used += 1;
                 return item;
@@ -125,8 +163,8 @@ var LayoutVariablesView = function(params) {
     };
 
     this.pushItem = function(formatted) {
-        for (var i = 0; i < this._items._list.length; i++) {
-            var item = this._items._list[i];
+        for (var i = 0; i < this._items.length; i++) {
+            var item = this._items[i];
             if (item.value.equalTo(formatted)) {
                 item.used -= 1;
                 break;
@@ -167,18 +205,19 @@ var LayoutVariablesView = function(params) {
     };
 
     this.populateItemList = function() {
+        var items = [];
         var columns = this.resources.columns;
         for (var i = 0; i < columns.length; i++) {
             var column = columns[i];
-            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), used: 0, index: i, properties: { type: column.measureType } };
-            this._items._list.push(item);
-            this._items[column.name] = item;
+            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: { type: column.measureType } };
+            items.push(item);
         }
+        this.setList(items);
     };
 
     this.selectNextAvaliableItem = function(from) {
         var cell = null;
-        for (var r = from; r < this._items._list.length; r++) {
+        for (var r = from; r < this._items.length; r++) {
             cell = this.supplierGrid.getCell(0, r);
             if (cell.visible()) {
                 this.supplierGrid.selectCell(cell);
@@ -195,22 +234,47 @@ var LayoutVariablesView = function(params) {
     };
 
     this.renderItemList = function() {
-        for (var i = 0; i < this._items._list.length; i++) {
-            var item = this._items._list[i];
+        this.supplierGrid.suspendLayout();
+        for (var i = 0; i < this._items.length; i++) {
+            var item = this._items[i];
             this['render_' + item.value.format.name](item, i);
         }
+
+        while (this._items.length < this.supplierGrid._rowCount) {
+            this.supplierGrid.removeRow(this._items.length);
+        }
+        this.supplierGrid.resumeLayout();
     };
 
     this.render_variable = function(item, row) {
 
-        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
-        $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + item.properties.type + '"></div>');
-        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+        //if (_.isUndefined(item.$item)) {
+            var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
-        var c1 = this.supplierGrid.addCell(0, row, false,  $item);
+            var variableType = 'none';
+            if (_.isUndefined(item.properties.type) === false)
+                variableType = item.properties.type;
+
+            $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + '"></div>');
+            $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+        //}
+        //else
+        //    item.$item.detach();
+
+        var c1 = this.supplierGrid.getCell(0, row);
+
+        if (c1 === null) {
+            c1 = this.supplierGrid.addCell(0, row, false,  $item);
+            c1.clickable(true);
+        }
+        else {
+            c1.setContent($item);
+        }
+
+
+
         c1.horizontalStretchFactor = 1;
         c1.dockContentWidth = true;
-        c1.clickable(true);
 
         item.$el = c1.$el;
     };
@@ -223,8 +287,8 @@ var LayoutVariablesView = function(params) {
 
         if (this._persistentItems === false) {
             this.supplierGrid.suspendLayout();
-            for (var i = 0; i < this._items._list.length; i++) {
-                var item = this._items._list[i];
+            for (var i = 0; i < this._items.length; i++) {
+                var item = this._items[i];
                 var rowCells = this.supplierGrid.getRow(i);
                 for (var j = 0; j < rowCells.length; j++) {
                     var cell = rowCells[j];

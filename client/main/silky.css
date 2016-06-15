@@ -60,6 +60,7 @@ body.windows #header-text {
     -webkit-app-region: drag;
     margin-left: 80px ;
     margin-right: 150px ;
+    display: block;
 }
 
 #header-buttons {

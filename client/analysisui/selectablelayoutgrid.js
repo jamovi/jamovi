@@ -146,8 +146,7 @@ var SelectableLayoutGrid = function() {
 
     var self = this;
 
-    this._override('_addCellEventListeners', function(baseFunction, cell) {
-        baseFunction.call(this, cell);
+    this._addCellEventListeners = function(cell) {
         cell.on('layoutcell.mousedown', function(ctrlKey, shiftKey) {
             if (cell.isSelected() === false)
                 self.onSelectionChanged(cell, ctrlKey, shiftKey);
@@ -162,8 +161,7 @@ var SelectableLayoutGrid = function() {
                 self.onSelectionChanged(cell, true, false);
             }
         });
-    });
-
+    };
 };
 
 SelectableLayoutGrid.extendTo = function(target) {
