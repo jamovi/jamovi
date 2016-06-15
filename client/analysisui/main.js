@@ -12,6 +12,8 @@ var OptionsView = require('./optionsview');
 var LayoutDef = require('./layoutdef');
 var FormatDef = require('./formatdef');
 
+window._ = _;
+
 function addMsgListener(cmd, callback, failed) {
     window.addEventListener("message",
         function (e) {

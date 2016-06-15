@@ -6,10 +6,11 @@ var $ = require('jquery');
 
 function LayoutDef() {
 
-    this.getTitle = function() {
-        return this.title ? this.title : "Undefined";
-    };
+    this.items = [];
 
+    this.getTitle = function() {
+        return this.label ? this.label : "Undefined";
+    };
 
     this.getGroupText = function(item) {
 
@@ -22,17 +23,15 @@ function LayoutDef() {
         }
         return null;
     };
-
-    this.layout = [];
 }
 
-LayoutDef.asBase = function(target) {
+LayoutDef.extendTo = function(target) {
     LayoutDef.call(target);
 };
 
 LayoutDef.extend = function(params) {
     return function() {
-        LayoutDef.asBase(this);
+        LayoutDef.extendTo(this);
         _.extend(this, params);
     };
 };

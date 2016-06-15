@@ -12,6 +12,8 @@ var OptionListControl = function(option, params) {
     SelectableLayoutGrid.extendTo(this);
     Overridable.extendTo(this);
 
+    this.registerSimpleProperty("columns", null);
+
     this.maxItemCount = _.isUndefined(params.maxItemCount) ? -1 : params.maxItemCount;
     this.isSingleItem = this.maxItemCount === 1;
     this.showHeaders = _.isUndefined(params.showColumnHeaders) ? false : params.showColumnHeaders;
@@ -30,7 +32,7 @@ var OptionListControl = function(option, params) {
 
     this.initialise = function() {
 
-        var columns = this.params.columns;
+        var columns = this.getPropertyValue("columns");
         this._columnInfo = { _list:[] };
 
         if (Array.isArray(columns)) {
@@ -94,10 +96,8 @@ var OptionListControl = function(option, params) {
             cell = this.addCell(dispColumn, dispRow, false, $contents);
             cell.clickable(columnInfo.readOnly);
         }
-        else {
+        else
             cell.setContent($contents);
-            cell.render();
-        }
 
         cell.horizontalStretchFactor = columnInfo.stretchFactor;
         cell.hAlign = 'left';
@@ -106,7 +106,7 @@ var OptionListControl = function(option, params) {
 
     this.renderItem_variable = function(displayValue, readOnly, localItem, supplierItem) {
         var imageClasses = 'silky-variable-type-img';
-        if (supplierItem !== null && _.isUndefined(supplierItem.properties.type) === false)
+        if (_.isUndefined(supplierItem) === false && supplierItem !== null && _.isUndefined(supplierItem.properties.type) === false)
             imageClasses = imageClasses + ' silky-variable-type-' + supplierItem.properties.type;
 
         var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
@@ -119,7 +119,7 @@ var OptionListControl = function(option, params) {
     this.updateDisplayRow = function(dispRow, value) {
          var columnInfo = null;
 
-         if (typeof value !== 'object') {
+         if (typeof value !== 'object' || (this._columnInfo._list.length === 1 && FormatDef[this._columnInfo._list[0].formatName].isValid(value))) {
              columnInfo = this._columnInfo._list[0];
              if (_.isUndefined(columnInfo) === false)
                  this.updateValueCell(columnInfo, dispRow, value);
@@ -165,7 +165,7 @@ var OptionListControl = function(option, params) {
         info.listIndex = rowIndex;
 
         info.value = this._localData[rowIndex];
-        if (typeof info.value === 'object')
+        if (typeof info.value === 'object' && Array.isArray(info.value) === false)
             info.value = info.value[info.columnInfo.name];
 
         if (info.columnInfo.formatName === null) {
@@ -257,13 +257,14 @@ var OptionListControl = function(option, params) {
     //outside -> in
     this.onOptionValueInserted = function(keys, data) {
 
+        this.suspendLayout();
         var dispRow = this.rowIndexToDisplayIndex(keys[0]);
         this.insertRow(dispRow, 1);
         var rowData = this.option.getValue(keys);
 
         this._localData.splice(keys[0], 0, rowData);
         this.updateDisplayRow(dispRow, rowData);
-        this.render();
+        this.resumeLayout();
 
     };
 
@@ -298,7 +299,6 @@ var OptionListControl = function(option, params) {
         else
             this.removeRow(this.rowIndexToDisplayIndex(0), this._rowCount);
 
-        this.render();
         this.resumeLayout();
 
     };

@@ -12,16 +12,15 @@ var LayoutGrid = function() {
     Overridable.extendTo(this);
 
     this.$el = $('<div class="silky-layout-grid"></div>');
+    this.$el.css("position", "relative");
 
     _.extend(this, Backbone.Events);
-
 
     this._parentCell = null;
     this._layoutValid = false;
     this._currentId = 0;
     this._oldKnownSize = { width: 0, height: 0, hScrollSpace: false, vScrollSpace: false };
     this._sizesInited = false;
-    //this._dockWidth = false;
     this._hasResized = null;
     this._cells = [];
     this._orderedCells = [];
@@ -44,6 +43,9 @@ var LayoutGrid = function() {
     LayoutGrid.prototype._scrollbarHeight = null;
     this.allocateSpaceForScrollbars = true;
     this.stretchEndCells = true;
+    this._parentLayout = null;
+    this._preparingLayout = true;
+    this._waitingForValidation = false;
 
     this.getScrollbarWidth = function() {
         if (LayoutGrid.prototype._scrollbarWidth === null) {
@@ -101,25 +103,57 @@ var LayoutGrid = function() {
         return LayoutGrid.prototype._scrollbarHeight;
     };
 
-    this.render = function() {
-        if (this._initaliseContent()) {
-            var self = this;
-            window.setTimeout(function() {
-                self.invalidateLayout('both', Math.random());
-            }, 0);
+    this._setAsPrepared = function() {
+        this._preparingLayout = false;
+        for (var i = 0; i < this._layouts.length; i++) {
+            var layout = this._layouts[i];
+            layout._setAsPrepared();
         }
     };
 
-    this.invalidateLayout = function(type, updateId) {
+    this.render = function() {
+        this._setAsPrepared();
+        this.invalidateLayout('both', Math.random());
+    };
+
+    this.invalidateChildLayouts = function(deep) {
+        for (var i = 0; i < this._layouts.length; i++) {
+            var layout = this._layouts[i];
+            layout._layoutValid = false;
+            if (deep)
+                layout.invalidateChildLayouts(deep);
+        }
+    };
+
+    this.invalidateLayout = function(type, updateId, deep) {
+        if (this._waitingForValidation)
+            return;
+
         this._layoutValid = false;
-        if (this._resizeSuspended > 0) {
+        if (deep)
+            this.invalidateChildLayouts(deep);
+        if (this.isLayoutSuspended()) {
             if (this._hasResized !== null && this._hasResized.type !== 'both' && type !== this._hasResized.type)
                 this._hasResized = {  type: 'both' };
             else if (this._hasResized === null)
                 this._hasResized = {  type: type };
         }
-        else if (this._processCells(type, updateId) === false)
-            this._postProcessCells();
+        else {
+            var newContent = this._initaliseContent();
+            if (newContent) {
+                this._waitingForValidation = true;
+                var self = this;
+                window.setTimeout(function() {
+                    if (self._processCells(type, updateId) === false)
+                        self._postProcessCells();
+                    self._waitingForValidation = false;
+                    }, 0);
+            }
+            else {
+                if (this._processCells(type, updateId) === false)
+                    this._postProcessCells();
+            }
+        }
     };
 
     this._postProcessCells = function() {
@@ -263,30 +297,38 @@ var LayoutGrid = function() {
     };
 
     this._initaliseContent = function() {
-        this.$el.css("position", "relative");
-        var foundNewContent = false;
 
+        var requiresDelay = false;
         for (var i = 0; i < this._layouts.length; i++) {
-            var newContent = this._layouts[i]._initaliseContent();
-            if (newContent)
-                foundNewContent = newContent;
+            var delay = this._layouts[i]._initaliseContent();
+            if (delay)
+                requiresDelay = delay;
         }
 
         for (var j = 0; j < this._cells.length; j++) {
             var cell = this._cells[j];
             var cellData = cell.data;
-            if (cellData.initialized)
-                continue;
 
-            if (cell.render)
-                cell.render();
-            if (cell.$el)
-                this.$el.append(cell.$el);
-            cellData.initialized = true;
-            foundNewContent = true;
+            /*if (cellData.requiresValidationDelay) {
+                requiresDelay = true;
+                cellData.requiresValidationDelay = false;
+            }*/
+
+            if (cellData.hasNewContent) {
+                requiresDelay = true;
+                if (cell.render)
+                    cell.render();
+                cellData.hasNewContent = false;
+            }
+
+            if (cellData.initialized === false) {
+                if (cell.$el)
+                    this.$el.append(cell.$el);
+                cellData.initialized = true;
+            }
         }
 
-        return foundNewContent;
+        return requiresDelay;
     };
 
     this._processCells = function(type, updateId) {
@@ -380,16 +422,24 @@ var LayoutGrid = function() {
             if (widthChanged !== heightChanged)
                 eventType = widthChanged ? 'width' : 'height';
 
-            if (this._sizesInited) {
-                this.$el.trigger('layoutgrid.sizeChanged', { type: eventType, updateId: updateId } );
-                if (this.isChildLayout)
-                    eventFired = true;
+            if (this._sizesInited && this._parentCell !== null) {
+                this._parentCell.onContentSizeChanged({ type: eventType, updateId: updateId });
+                eventFired = true;
             }
         }
 
         this._sizesInited = true;
 
         return eventFired;
+    };
+
+    this.isLayoutVisible = function() {
+
+        var visible = this._parentCell === null || this._parentCell.visible();
+        if (visible === false)
+            return false;
+
+        return this._parentLayout === null || this._parentLayout.isLayoutVisible();
     };
 
     this.addLayout = function(name, column, row, fitToGrid, layoutView) {
@@ -399,6 +449,16 @@ var LayoutGrid = function() {
         this._layouts.push(grid);
         var cell = this.addCell(column, row, fitToGrid, grid.$el);
         layoutView._parentCell = cell;
+        layoutView._parentLayout = this;
+
+        cell.on("layoutcell.visibleChanged", function() {
+            if (cell.visible()) {
+                window.setTimeout(function() {
+                    layoutView.invalidateLayout('both', Math.random(), true);
+                }, 0);
+            }
+
+        });
         return cell;
     };
 
@@ -418,7 +478,7 @@ var LayoutGrid = function() {
         var oldCell = this._orderedCells[row][column];
         if (_.isUndefined(oldCell) || oldCell === null) {
             this._newCellsAdded = true;
-            var cellData = { cell: cell, row: row, column: column, listIndex: this._cells.length, initialized: false };
+            var cellData = { cell: cell, row: row, column: column, listIndex: this._cells.length, initialized: false, hasNewContent: true };
             cell.data = cellData;
             this._orderedCells[row][column] = cell;
             this._orderedColumns[column][row] = cell;
@@ -435,50 +495,27 @@ var LayoutGrid = function() {
 
         if (this.onCellAdded)
             this.onCellAdded(cell);
+
+        this.invalidateLayout("both", Math.random());
     };
 
     this.suspendLayout = function() {
         this._resizeSuspended += 1;
     };
 
+    this.isLayoutSuspended = function() {
+        return this._resizeSuspended > 0 || this._preparingLayout || this._waitingForValidation || (this._parentLayout !== null && this._parentLayout.isLayoutSuspended());
+    };
+
     this.resumeLayout = function() {
+        if (this._resizeSuspended === 0)
+            return;
+
         this._resizeSuspended -= 1;
-        if (this._resizeSuspended <= 0 && this._hasResized !== null) {
+        if (this.isLayoutSuspended() === false && this._hasResized !== null) {
             this.invalidateLayout(this._hasResized.type, Math.random());
             this._hasResized = null;
-            this._resizeSuspended = 0;
         }
-    };
-
-    this.addColumn = function(column, $content) {
-        var cell = new LayoutCell();
-        cell.$el.addClass('silky-layout-cell');
-        cell.setContent($content);
-        this._addCellEventListeners(cell);
-        cell.fitToGrid = false;
-        cell.spanAllRows = true;
-
-        if (_.isUndefined(this._columns))
-            this._columns = [];
-
-        if (_.isUndefined(this._columns[column]))
-            this._columns[column] = cell;
-        else
-            throw "Column already exists.";
-
-        this._add(column, 0, cell);
-
-        return cell;
-    };
-
-    this._addCellEventListeners = function(cell) {
-        var self = this;
-        cell.on('layoutcell.contentChanged', function(updateId) {
-            self.invalidateLayout('both', updateId);
-        });
-        cell.on('layoutcell.sizeChanged', function(type, updateId) {
-            self.invalidateLayout(type, updateId);
-        });
     };
 
     this.addCell = function(column, row, fitToGrid, $content) {
@@ -486,7 +523,8 @@ var LayoutGrid = function() {
         var cell = new LayoutCell();
         cell.$el.addClass('silky-layout-cell');
         cell.setContent($content);
-        this._addCellEventListeners(cell);
+        if (this._addCellEventListeners)
+            this._addCellEventListeners(cell);
         cell.fitToGrid = fitToGrid;
 
         this._add(column, row, cell);
@@ -508,8 +546,6 @@ var LayoutGrid = function() {
 
     this.removeCell = function(cell) {
 
-        cell.off('layoutcell.contentChanged');
-        cell.off('layoutcell.sizeChanged');
         cell._parentLayout = null;
 
         var cellData = cell.data;
@@ -528,7 +564,6 @@ var LayoutGrid = function() {
             this.onCellRemoved(cell);
 
         this.invalidateLayout("both", Math.random());
-
     };
 
     this.removeRow = function(rowIndex, count) {

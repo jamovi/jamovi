@@ -39,6 +39,7 @@ var GridVariablesTargetList = function(option, params) {
         if (items === null || items.length === 0)
             return;
 
+        this.beginPropertyEdit();
         this.option.beginEdit();
         for (var i = 0; i < items.length; i++) {
             var itemIndex = items[i].index;
@@ -49,6 +50,7 @@ var GridVariablesTargetList = function(option, params) {
             }
         }
         this.option.endEdit();
+        this.endPropertyEdit();
     };
 
     // Catching methods
@@ -56,10 +58,12 @@ var GridVariablesTargetList = function(option, params) {
         if (items === null || items.length === 0)
             return;
 
+        this.beginPropertyEdit();
         this.option.beginEdit();
         for (var i = 0; i < items.length; i++)
             this.targetGrid.addRawToOption(items[i].value.raw, [this.option.getLength()], items[i].value.format);
         this.option.endEdit();
+        this.endPropertyEdit();
     };
 
     this.filterItemsForDrop = function(items) {
@@ -123,9 +127,9 @@ var GridVariablesTargetList = function(option, params) {
 
         var self = this;
         var id = this.option.getName();
-        var label = this.getParam('label');
+        var label = this.getPropertyValue('label');
         if (label === null)
-            label = this.getParam('name');
+            label = this.getPropertyValue('name');
         var hasSupplier = this._supplier !== null;
 
         grid.addCell(hasSupplier ? column + 1 : column, row, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
@@ -162,6 +166,7 @@ var GridVariablesTargetList = function(option, params) {
     this.onAddButtonClick = function() {
         this._supplier.blockFilterProcess = true;
         this.targetGrid.suspendLayout();
+        this.beginPropertyEdit();
         this.option.beginEdit();
         var postProcessSelectionIndex = 0;
         var postProcessList = null;
@@ -195,6 +200,7 @@ var GridVariablesTargetList = function(option, params) {
             postProcessList = this.targetGrid;
         }
         this.option.endEdit();
+        this.endPropertyEdit();
         this.targetGrid.resumeLayout();
         this._supplier.blockFilterProcess = false;
         this._supplier.filterSuppliersList();
