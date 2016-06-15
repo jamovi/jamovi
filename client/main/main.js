@@ -73,7 +73,7 @@ backstageModel.on('dataSetOpenRequested', function(request) {
         target.connect().then(function() {
             opening = target.open(request.data.path);
         }).then(function() {
-            $.post('http://localhost:' + mainPort + '/launch/' + target.instanceId());
+            ipc.send('request', { type: 'openWindow', data: target.instanceId() });
         });
     }
 });
@@ -101,21 +101,21 @@ $(document).ready(function() {
 
     $(window).on('keydown', function(event) {
         if (event.key === "F10" || event.keyCode === 121)
-            ipc.send('request', 'openDevTools');
+            ipc.send('request', { type: 'openDevTools' });
     });
 
     if (window.inElectron && navigator.platform === "Win32") {
 
         $('#close-button').on('click', function() {
-            ipc.send('request', 'close');
+            ipc.send('request', { type: 'close' });
         });
 
         $('#min-button').on('click', function() {
-            ipc.send('request', 'minimize');
+            ipc.send('request', { type: 'minimize' });
         });
 
         $('#max-button').on('click', function() {
-            ipc.send('request', 'maximize');
+            ipc.send('request', { type: 'maximize' });
         });
     }
 

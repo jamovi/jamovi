@@ -129,21 +129,6 @@ class BackstageInfoHandler(RequestHandler):
         self.write(json.dumps(info))
 
 
-class LaunchClientHandler(RequestHandler):
-
-    def initialize(self, launcher, ports):
-        self._launcher = launcher
-        self._ports = ports
-
-    def post(self, instance_id):
-        print(instance_id)
-        if self._launcher is not None:
-            self._launcher(instance_id, self._ports)
-            self.set_status(204)
-        else:
-            self.set_status(500)
-
-
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
@@ -157,13 +142,9 @@ class Server:
         self._shutdown_on_idle = shutdown_on_idle
         self._debug = debug
         self._ports_opened_listeners = [ ]
-        self._client_launcher = None
 
     def add_ports_opened_listener(self, listener):
         self._ports_opened_listeners.append(listener)
-
-    def set_client_launcher(self, launcher):
-        self._client_launcher = launcher
 
     def check_for_shutdown(self):
 
@@ -206,7 +187,6 @@ class Server:
             (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
             (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
-            (r'/launch/(.*)',        LaunchClientHandler, { 'launcher': self._client_launcher, 'ports': self._ports }),
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
         ])
 

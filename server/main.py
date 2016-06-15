@@ -107,7 +107,6 @@ if __name__ == "__main__":
 
         server = Server(port, shutdown_on_idle=shutdown_on_idle, debug=debug)
         server.add_ports_opened_listener(_ports_opened)
-        server.set_client_launcher(_launch_electron)
         server.start()
 
     else:
