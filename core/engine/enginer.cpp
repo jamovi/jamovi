@@ -118,6 +118,10 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
     Rcpp::List columns(columnsRequired.size());
     Rcpp::CharacterVector columnNames(columnsRequired.size());
+    Rcpp::CharacterVector rowNames(rowCount);
+
+    for (int i = 0; i < rowCount; i++)
+        rowNames[i] = std::to_string(i);
 
     int index = 0;
 
@@ -202,8 +206,10 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     }
 
     columns.attr("names") = columnNames;
+    columns.attr("row.names") = rowNames;
+    columns.attr("class") = "data.frame";
 
-    return Rcpp::DataFrame(columns);
+    return columns;
 }
 
 string EngineR::analysisDirPath(const std::string &datasetId, const string &analysisId)

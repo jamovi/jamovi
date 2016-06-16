@@ -29,18 +29,18 @@ EngineComs::EngineComs()
 void EngineComs::parse(char *data, int len)
 {
     ComsMessage request;
-    
+
     MemoryBuffer buf1(data, len);
     istream is1(&buf1);
-    
+
     if ( ! request.ParseFromIstream(&is1))
-    {    
+    {
         std::cout << "failed to parse message";
         std::cout << "\n";
         std::cout.flush();
         return;
     }
-    
+
     AnalysisRequest analysisRequest;
 
     string payload = request.payload();
@@ -49,7 +49,7 @@ void EngineComs::parse(char *data, int len)
 
     if ( ! analysisRequest.ParseFromIstream(&is2))
     {
-        std::cout << "failed to parse message";
+        std::cout << "EngineComs::parse(); failed to parse message";
         std::cout << "\n";
         std::cout.flush();
         return;
@@ -61,6 +61,6 @@ void EngineComs::parse(char *data, int len)
 
     if (analysisRequest.has_perform())
         analysis->perform = analysisRequest.perform();
-    
+
     analysisRequested(request.id(), analysis);
 }
