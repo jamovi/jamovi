@@ -123,7 +123,8 @@ var ResultsView = Backbone.View.extend({
                     if ($iframe.height() === 0)
                         $iframe.width(eventData.width);
                     this._scrollIntoView($container, eventData.height);
-                    $iframe.animate(eventData, 400);
+                    $iframe.width(eventData.width);
+                    $iframe.height(eventData.height);
                     $container.width(eventData.width);
                     $container.height(eventData.height);
                     break;

@@ -48,13 +48,19 @@ var createItem = function(element, $el, level, parent) {
         view = new ImageView({ el : $el, model : model, parent : parent });
     }
     else if (element.array) {
-        model = new ArrayModel({
-            name : element.name,
-            title : element.title,
-            element : element.array,
-            status: element.status,
-            error: element.error });
-        view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+
+        if (element.array.elements.length > 0) {
+            model = new ArrayModel({
+                name : element.name,
+                title : element.title,
+                element : element.array,
+                status: element.status,
+                error: element.error });
+            view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+        }
+        else {
+            view = null;
+        }
     }
     else if (element.text) {
         $el.append(element.text);

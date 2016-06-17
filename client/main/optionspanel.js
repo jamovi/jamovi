@@ -197,6 +197,7 @@ var OptionsPanel = SilkyView.extend({
     },
 
     hideOptions: function(data) {
+        this.model.set('selectedAnalysis', null);
         this.$el.trigger("splitpanel-hide");
     },
 

@@ -84,8 +84,10 @@ var GroupView = Element.View.extend({
         this.model.attributes.element.elements.forEach(function(element) {
             var $el = $('<div></div>');
             var child = self.create(element, $el, self.level+1, self);
-            self.children.push(child);
-            $el.appendTo(self.$el);
+            if (child !== null) {
+                self.children.push(child);
+                $el.appendTo(self.$el);
+            }
         });
     }
 });

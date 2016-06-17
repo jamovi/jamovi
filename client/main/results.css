@@ -5,19 +5,26 @@
 
 #results {
     background-color: white ;
+    transition: background-color 0.2s ;
     position: relative ;
 }
 
 #results[data-analysis-selected] {
     background-color: #E8E8E8 ;
+    transition: background-color 0.2s ;
 }
 
 #results iframe {
     overflow: hidden ;
+    transition: width 0.4s, height 0.2s, background-color 0.2s ;
 }
 
 #results iframe::-webkit-scrollbar {
     display: none;
+}
+
+#results[data-analysis-selected] iframe:not([data-selected]) {
+    background-color: #E8E8E8 ;
 }
 
 #results iframe[data-selected] {
