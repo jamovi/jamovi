@@ -45,13 +45,17 @@ var LayoutActionManager = function(layoutDef) {
         this._resources = { };
     };
 
-    var self = this;
-    _.each(this._layoutDef.actions, function(value, key, list) {
-        if (_.isFunction(value) === false)
-            throw "An action must be a function.";
 
-        self.addAction(value);
-    });
+    for (var i = 0; i < this._layoutDef.actions.length; i++) {
+        var action = this._layoutDef.actions[i];
+        if (_.isFunction(action.execute) === false)
+            throw "An action must contain an execute function.";
+
+        if (_.isUndefined(action.onChange))
+            throw "An action must contain an onChange property.";
+
+        this.addAction(action);
+    }
 
 
 };

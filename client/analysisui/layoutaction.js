@@ -6,7 +6,13 @@ var LayoutActionResource = require('./layoutactionresource');
 
 var LayoutAction = function(manager, callback) {
 
-    this._callback = callback;
+    this._callback = callback.execute;
+
+    if (Array.isArray(callback.onChange))
+        this._registeredListeners = callback.onChange;
+    else
+        this._registeredListeners = [ callback.onChange ];
+
     this._manager = manager;
     this.data = { };
 
@@ -30,16 +36,45 @@ var LayoutAction = function(manager, callback) {
         });
     };
 
-    this.getObject = function(name) {
+    this.get = function(name, property) {
         var actionResource = this._resources[name];
         if (_.isUndefined(actionResource)) {
             var supplier = this._manager.getObject(name);
-            actionResource = new LayoutActionResource(this, supplier);
+            actionResource = new LayoutActionResource(this, name, supplier);
             this._resources[name] = actionResource;
         }
+
+        if (_.isUndefined(property) === false)
+            return actionResource.get(property);
+
         return actionResource;
     };
 
+    this.set = function(name, property, value) {
+        var obj = this.get(name);
+        obj.set(property, value);
+    };
+
+    this.setValue = function(name, value) {
+        this.set(name, "value", value);
+    };
+
+    this.getValue = function(name) {
+        return this.get(name, "value");
+    };
+
+    this.isListenerRegistered = function(name, property) {
+
+        var found = false;
+
+        if (property === "value")
+            found = this._registeredListeners.includes(name);
+
+        if (found === false)
+            found = this._registeredListeners.includes(name + "." + property);
+
+        return found;
+    };
 };
 
 LayoutAction.extendTo = function(target, manager, callback) {

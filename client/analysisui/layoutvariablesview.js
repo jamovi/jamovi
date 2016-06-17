@@ -35,7 +35,7 @@ var LayoutVariablesView = function(params) {
         }
 
         this._items = newItems;
-        this.trigger("list_changed");
+        this.trigger("value_changed");
 
         this.supplierGrid.suspendLayout();
         this.renderItemList();
@@ -47,7 +47,7 @@ var LayoutVariablesView = function(params) {
         return this._items;
     };
 
-    this.registerComplexProperty("list", this.getList, this.setList, "list_changed");
+    this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
 
     this._persistentItems = _.isUndefined(params.persistentItems) ? false : params.persistentItems;
     this._useVariables = _.isUndefined(params.useVariables) ? false : params.useVariables;
