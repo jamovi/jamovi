@@ -13,10 +13,13 @@ var OptionListControl = function(option, params) {
     Overridable.extendTo(this);
 
     this.registerSimpleProperty("columns", null);
+    this.registerSimpleProperty("maxItemCount", -1);
+    this.registerSimpleProperty("showColumnHeaders", false);
 
-    this.maxItemCount = _.isUndefined(params.maxItemCount) ? -1 : params.maxItemCount;
+    this.maxItemCount = this.getPropertyValue('maxItemCount');
+    this.showHeaders = this.getPropertyValue('showColumnHeaders');
+
     this.isSingleItem = this.maxItemCount === 1;
-    this.showHeaders = _.isUndefined(params.showColumnHeaders) ? false : params.showColumnHeaders;
 
     this.$el.addClass("silky-option-list");
     this.stretchEndCells = false;
@@ -57,7 +60,7 @@ var OptionListControl = function(option, params) {
 
                 if (this.showHeaders) {
                     var hCell = this.addCell(i, 0, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
-                    hCell.horizontalStretchFactor = columnInfo.stretchFactor;
+                    hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.hAlign = 'centre';
                 }
             }
@@ -99,7 +102,7 @@ var OptionListControl = function(option, params) {
         else
             cell.setContent($contents);
 
-        cell.horizontalStretchFactor = columnInfo.stretchFactor;
+        cell.setStretchFactor(columnInfo.stretchFactor);
         cell.hAlign = 'left';
         cell.vAlign = 'centre';
     };
@@ -304,6 +307,10 @@ var OptionListControl = function(option, params) {
     };
 
     this.initialise();
+};
+
+OptionListControl.extendTo = function(target, option, params) {
+    OptionListControl.call(target, option, params);
 };
 
 module.exports = OptionListControl;

@@ -4,15 +4,14 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var FormatDef = require('./formatdef');
-var LayoutGrid = require('./layoutgrid').Grid;
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var DragNDrop = require('./dragndrop');
-var PropertySupplier = require('./propertysupplier');
+var ControlContainer = require('./controlcontainer');
 
-var LayoutVariablesView = function(params) {
-    LayoutGrid.extendTo(this);
+var LayoutVariablesView = function(model, params) {
+
     DragNDrop.extendTo(this);
-    PropertySupplier.extendTo(this, params);
+    ControlContainer.extendTo(this, model, params);
 
     this.setList = function(value) {
 
@@ -37,10 +36,12 @@ var LayoutVariablesView = function(params) {
         this._items = newItems;
         this.trigger("value_changed");
 
-        this.supplierGrid.suspendLayout();
-        this.renderItemList();
-        this.filterSuppliersList();
-        this.supplierGrid.resumeLayout();
+        if (_.isUndefined(this.supplierGrid) === false) {
+            this.supplierGrid.suspendLayout();
+            this.renderItemList();
+            this.filterSuppliersList();
+            this.supplierGrid.resumeLayout();
+        }
     };
 
     this.getList = function() {
@@ -48,9 +49,37 @@ var LayoutVariablesView = function(params) {
     };
 
     this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
+    this.registerSimpleProperty("persistentItems", false);
+    this.registerSimpleProperty("useVariables", false);
+    this.registerSimpleProperty("style", "list");
 
-    this._persistentItems = _.isUndefined(params.persistentItems) ? false : params.persistentItems;
-    this._useVariables = _.isUndefined(params.useVariables) ? false : params.useVariables;
+    this._persistentItems = this.getPropertyValue('persistentItems');
+
+    this.$el.addClass("silky-options-group silky-options-level-" + this.getPropertyValue('level') + " silky-options-group-style-" + this.getPropertyValue('style'));
+
+    this.resources = model.resources;
+    this._items = [];
+    this._targets = [];
+
+    this.onLayoutRendering = function() {
+        this.supplierGrid = new SelectableLayoutGrid();
+        this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
+        this.supplierGrid.stretchEndCells = false;
+        this.supplierGrid._animateCells = true;
+        this.supplierGrid.setMinimumHeight(200);
+        this.supplierGrid.setMaximumHeight(200);
+        this.ignoreTransform = true;
+        var cell = this.addLayout("supplier", 0, 0, false, this.supplierGrid);
+        this.ignoreTransform = false;
+        cell.setStretchFactor(0.5);
+        cell.dockContentHeight = true;
+        cell.spanAllRows = true;
+
+        this.setPickupSourceElement(this.supplierGrid.$el);
+
+        if (this.getPropertyValue('useVariables'))
+            this.populateItemList();
+    };
 
     this.rowTransform = function(row, column) {
         return row;
@@ -63,30 +92,10 @@ var LayoutVariablesView = function(params) {
         return column;
     };
 
-    this._targets = [];
-
-    this.supplierGrid = new SelectableLayoutGrid();
-    this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
-    this.supplierGrid.stretchEndCells = false;
-    this.supplierGrid._animateCells = true;
-    this.supplierGrid.setMinimumHeight(200);
-    this.supplierGrid.setMaximumHeight(200);
-    this.ignoreTransform = true;
-    var cell = this.addLayout("supplier", 0, 0, false, this.supplierGrid);
-    this.ignoreTransform = false;
-    cell.horizontalStretchFactor = 0.5;
-    cell.dockContentWidth = true;
-    cell.dockContentHeight = true;
-    cell.spanAllRows = true;
-
-    this.setPickupSourceElement(this.supplierGrid.$el);
-
     this.getPickupItems = function() {
         return this.getSelectedItems();
     };
 
-
-    // Catching methods
     this.catchDroppedItems = function(source, items) {
 
     };
@@ -111,18 +120,6 @@ var LayoutVariablesView = function(params) {
 
     this.addHeader = function(title) {
         var cell = this.addCell(0, 0, false);
-    };
-
-
-    this.setInfo = function(resources, style, level) {
-
-        this.resources = resources;
-        this.style = style;
-        this.level = level;
-        this._items = [];
-
-        if (this._useVariables)
-            this.populateItemList();
     };
 
     this.getItem = function(index) {
@@ -248,18 +245,15 @@ var LayoutVariablesView = function(params) {
 
     this.render_variable = function(item, row) {
 
-        //if (_.isUndefined(item.$item)) {
-            var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
+        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
-            var variableType = 'none';
-            if (_.isUndefined(item.properties.type) === false)
-                variableType = item.properties.type;
+        var variableType = 'none';
+        if (_.isUndefined(item.properties.type) === false)
+            variableType = item.properties.type;
 
-            $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + '"></div>');
-            $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
-        //}
-        //else
-        //    item.$item.detach();
+        $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + '"></div>');
+        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+
 
         var c1 = this.supplierGrid.getCell(0, row);
 
@@ -273,8 +267,7 @@ var LayoutVariablesView = function(params) {
 
 
 
-        c1.horizontalStretchFactor = 1;
-        c1.dockContentWidth = true;
+        c1.setStretchFactor(1);
 
         item.$el = c1.$el;
     };

@@ -16,7 +16,7 @@ var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
     this.options = null;
     this.def = null;
 
-    var element = '<iframe id="sandboxed-options" \
+    var element = '<iframe id="' + analysis.ns + '-' + analysis.name + '" \
             sandbox="allow-scripts allow-same-origin" \
             src="' + iframeUrl + instanceId + '/" \
             class="silky-options-control" \
@@ -128,12 +128,13 @@ var OptionsPanel = SilkyView.extend({
         resources.analysis = analysis;
         if (this._currentResources === null) {
             this._currentResources = resources;
-            this._currentResources.$frame.removeClass('silky-hidden-options-control');
             this.addMsgListeners(this._currentResources.$frame);
             this.updateContentHeight();
             if (createdNew)
                 this.$el.append(resources.$frame);
         }
+        if (this._currentResources !== null)
+            this._currentResources.$frame.removeClass('silky-hidden-options-control');
     },
 
     setDataSetModel: function(dataSetModel) {
@@ -198,6 +199,7 @@ var OptionsPanel = SilkyView.extend({
 
     hideOptions: function(data) {
         this.model.set('selectedAnalysis', null);
+        this._currentResources.$frame.addClass('silky-hidden-options-control');
         this.$el.trigger("splitpanel-hide");
     },
 

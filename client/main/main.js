@@ -146,9 +146,8 @@ $(document).ready(function() {
                 splitPanel.setVisibility("main-options", true);
             });
         }
-        else {
-            splitPanel.setVisibility("main-options", false);
-        }
+        else
+            optionspanel.hideOptions();
     });
 
     var section = splitPanel.getSection("main-options");

@@ -29,7 +29,7 @@ var GridRadioButton = function(option, params) {
             self.option.setValue(self.checkedValue);
     });
 
-    this.onRender = function(grid, row, column) {
+    this.onRenderToGrid = function(grid, row, column) {
         var cell = grid.addCell(column, row, true, this.$el);
         cell.setAlignment("left", "centre");
 

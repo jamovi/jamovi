@@ -27,7 +27,7 @@ var GridTextbox = function(option, params) {
     this.$suffix = null;
     this.$label = null;
 
-    this.onRender = function(grid, row, column) {
+    this.onRenderToGrid = function(grid, row, column) {
 
         var id = this.option.getName();
         var label = this.getPropertyValue('label');
