@@ -2,11 +2,11 @@
 
 var GridControl = function() {
 
-    this.render = function(grid, row, column) {
+    this.renderToGrid = function(grid, row, column) {
 
         var returnData = { height: 0, width: 0 };
-        if (this.onRender)
-            returnData = this.onRender(grid, row, column);
+        if (this.onRenderToGrid)
+            returnData = this.onRenderToGrid(grid, row, column);
 
         return returnData;
     };

@@ -487,8 +487,16 @@ var LayoutCell = function() {
         return this._manipulating > 0;
     };
 
+    this.setStretchFactor = function(factor) {
+        this.horizontalStretchFactor = factor;
+        this.dockContentWidth = this.horizontalStretchFactor > 0;
+        if (this.horizontalStretchFactor > 0)
+            this.fitToGrid = false;
+        else
+            this.fitToGrid = true;
+    };
 
-    this.fitToGrid = false;
+    this.fitToGrid = true;
 
     this.horizontalStretchFactor = 0;
 

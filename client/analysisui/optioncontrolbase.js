@@ -2,11 +2,11 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
-var PropertySupplier = require('./propertysupplier');
+var ControlBase = require('./controlbase');
 
 var OptionControlBase = function(option, params) {
 
-    PropertySupplier.extendTo(this, params);
+    ControlBase.extendTo(this, params);
 
     this.setValue = function(value, keys) {
         this.option.setValue(value);

@@ -123,7 +123,12 @@ var GridVariablesTargetList = function(option, params) {
         return { height: 1, width: 1 };
     };
 
-    this.onRender = function(grid, row, column) {
+    this.onRenderToGrid = function(grid, row, column) {
+
+        if (grid.addTarget) {
+            this.setSupplier(grid);
+            grid.addTarget(this);
+        }
 
         var self = this;
         var id = this.option.getName();
@@ -143,8 +148,7 @@ var GridVariablesTargetList = function(option, params) {
             self.onSelectionChanged();
         });
         var cell = grid.addLayout("target", column + 1, row + 1, false, this.targetGrid);
-        cell.horizontalStretchFactor = 0.5;
-        cell.dockContentWidth = true;
+        cell.setStretchFactor(0.5);
         cell.dockContentHeight = true;
 
         return { height: 2, width: 2 };
@@ -166,8 +170,9 @@ var GridVariablesTargetList = function(option, params) {
     this.onAddButtonClick = function() {
         this._supplier.blockFilterProcess = true;
         this.targetGrid.suspendLayout();
-        this.beginPropertyEdit();
+
         this.option.beginEdit();
+        this.beginPropertyEdit();
         var postProcessSelectionIndex = 0;
         var postProcessList = null;
         if (this.gainOnClick) {
@@ -199,8 +204,10 @@ var GridVariablesTargetList = function(option, params) {
             }
             postProcessList = this.targetGrid;
         }
-        this.option.endEdit();
+
         this.endPropertyEdit();
+        this.option.endEdit();
+
         this.targetGrid.resumeLayout();
         this._supplier.blockFilterProcess = false;
         this._supplier.filterSuppliersList();
