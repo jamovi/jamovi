@@ -70,6 +70,7 @@
     font-size: 85% ;
     padding-top: 1px ;
     padding-left: 60px ;
+    pointer-events: none ;
 }
 
 .silky-ribbon-menu-heading {

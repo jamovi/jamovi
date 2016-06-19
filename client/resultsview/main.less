@@ -14,7 +14,7 @@ h1 {
 }
 
 h2 {
-   font-size: 1.15em ;
+   font-size: 1em ;
     margin-bottom: 12px ;
     color: #3E6DA9 ;
 }
@@ -30,7 +30,6 @@ h3, h4, h5 {
 }
 
 .silky-results-item {
-    margin-bottom: 24px ;
     margin-right: 24px ;
     padding: 8px ;
     display: inline-block ;
@@ -47,15 +46,28 @@ h3, h4, h5 {
     color: #AAAAAA ;
 }
 
+.silky-results-error-placement {
+    height: 0px ;
+    position: relative ;
+}
+
 .silky-results-error-message {
     color: #FF3333 ;
     background-color: pink ;
     padding: 6px 12px ;
     padding-right: 20px ;
+    position: absolute ;
+}
+
+#results > .silky-results-item:last-child {
+    margin-bottom: 24px ;
 }
 
 .silky-results-group .silky-results-group {
     padding-left: 12px ;
+    padding-top: 0 ;
+    padding-bottom: 0 ;
+    margin-bottom: 0 ;
 }
 
 .silky-results-table {
@@ -71,9 +83,17 @@ h3, h4, h5 {
     text-align: left ;
 }
 
-.silky-results-table-table td {
+td.silky-results-table-cell {
     padding: 2px 8px ;
     white-space: nowrap ;
+}
+
+.silky-results-table-table tbody tr:first-child td {
+    padding-top: 6px ;
+}
+
+.silky-results-table-table tbody tr:last-child td {
+    padding-bottom: 6px ;
 }
 
 .silky-results-table-table th {
@@ -106,9 +126,17 @@ th.silky-results-table-title-cell{
 }
 
 td.silky-results-table-cell-group-begin {
-    padding-top: 8px ;
+    padding-top: 5px ;
 }
 
 td.silky-results-table-cell-group-end {
-    padding-bottom: 8px ;
+    padding-bottom: 5px ;
+}
+
+th.silky-results-table-cell-format-sep,
+td.silky-results-table-cell-format-sep,
+td.silky-results-table-cell-format-sep + td.silky-results-table-cell-sup {
+    padding-left: 0 ;
+    padding-right: 0 ;
+    min-width: 0 ;
 }

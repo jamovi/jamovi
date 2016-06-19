@@ -62,6 +62,73 @@ var TableView = Element.View.extend({
             this.$titleCell.text(this.model.attributes.title);
 
         var columnCount = table.columns.length;
+        var rowCount;
+
+        if (table.columns.length > 0)
+            rowCount = table.columns[0].cells.length;
+        else
+            rowCount = 0;
+
+        var cells = {
+            header : new Array(table.columns.length),
+            body : new Array(rowCount)
+        };
+
+        var formattings = new Array(table.columns.length);
+
+        for (let colNo = 0; colNo < table.columns.length; colNo++) {
+            let column = table.columns[colNo];
+            var classes = this.makeFormatClasses(column);
+            if (_.has(column, 'title'))
+                cells.header[colNo] = { value : column.title, classes : classes };
+            else
+                cells.header[colNo] = { value : column.name, classes : classes };
+
+            let values = _.pluck(column.cells, 'd');
+            formattings[colNo] = determineFormatting(values, column.format);
+        }
+
+        for (let rowNo = 0; rowNo < rowCount; rowNo++) {
+
+            cells.body[rowNo] = new Array(table.columns.length);
+
+            for (let colNo = 0; colNo < table.columns.length; colNo++) {
+                let sourceColumn = table.columns[colNo];
+                let sourceCell = sourceColumn.cells[rowNo];
+                let cell = { };
+                switch (sourceCell.cellType) {
+                case 'i':
+                    cell.value = sourceCell.i;
+                    cell.classes = "silky-results-table-cell-integer";
+                    break;
+                case 'd':
+                    let value = format(sourceCell.d, formattings[colNo]);
+                    value = value.replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
+                    cell.value = value;
+                    cell.classes = "silky-results-table-cell-number";
+                    break;
+                case 's':
+                    cell.value = sourceCell.s;
+                    cell.classes = "silky-results-table-cell-text";
+                    break;
+                case 'o':
+                    if (sourceCell.o == 2) {
+                        cell.value = 'NaN';
+                        cell.classes = "silky-results-table-cell-number";
+                    }
+                    else {
+                        cell.value = '';
+                        cell.classes = "silky-results-table-cell-text";
+                    }
+                    break;
+                }
+
+                cell.classes += this.makeFormatClasses(sourceColumn);
+
+                cells.body[rowNo][colNo] = cell;
+            }
+        }
+
         var rowPlan = {};
         var foldedNames = [];
         var nFolds = 1;
@@ -82,66 +149,6 @@ var TableView = Element.View.extend({
             else {
                 foldedNames.push(foldedName);
                 rowPlan[foldedName] = [ i ];
-            }
-        }
-
-        var rowCount;
-        if (table.columns.length > 0)
-            rowCount = table.columns[0].cells.length;
-        else
-            rowCount = 0;
-
-        var cells = {
-            header : new Array(table.columns.length),
-            body : new Array(rowCount)
-        };
-
-        var formattings = new Array(table.columns.length);
-
-        for (let colNo = 0; colNo < table.columns.length; colNo++) {
-            let column = table.columns[colNo];
-            if (_.has(column, 'title'))
-                cells.header[colNo] = { value : column.title };
-            else
-                cells.header[colNo] = { value : column.name };
-
-            let values = _.pluck(column.cells, 'd');
-            formattings[colNo] = determineFormatting(values);
-        }
-
-        for (let rowNo = 0; rowNo < rowCount; rowNo++) {
-
-            cells.body[rowNo] = new Array(table.columns.length);
-
-            for (let colNo = 0; colNo < table.columns.length; colNo++) {
-                let source = table.columns[colNo].cells[rowNo];
-                let newCell = { };
-                switch (source.cellType) {
-                case 'i':
-                    newCell.value = source.i;
-                    newCell.classes = "silky-results-table-cell-integer";
-                    break;
-                case 'd':
-                    newCell.value = format(source.d, formattings[colNo]).replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
-                    newCell.classes = "silky-results-table-cell-number";
-                    break;
-                case 's':
-                    newCell.value = source.s;
-                    newCell.classes = "silky-results-table-cell-text";
-                    break;
-                case 'o':
-                    if (source.o == 2) {
-                        newCell.value = 'NaN';
-                        newCell.classes = "silky-results-table-cell-number";
-                    }
-                    else {
-                        newCell.value = '';
-                        newCell.classes = "silky-results-table-cell-text";
-                    }
-                    break;
-                }
-
-                cells.body[rowNo][colNo] = newCell;
             }
         }
 
@@ -190,7 +197,7 @@ var TableView = Element.View.extend({
 
         for (let i = 0; i < cells.header.length; i++) {
             var head = cells.header[i];
-            html += '<th class="silky-results-table-cell" colspan="2">' + head.value + '</th>';
+            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + head.value + '</th>';
         }
 
         this.$columnHeaderRowSuper.empty();
@@ -226,6 +233,18 @@ var TableView = Element.View.extend({
         }
 
         this.$tableBody.html(html);
+    },
+    makeFormatClasses : function(column) {
+        var classes = '';
+        if (column.format) {
+            let formats = column.format.split(',');
+            if (formats.length !== 1 || formats[0] !== '') {
+                for (let i = 0; i < formats.length; i++)
+                    formats[i] = 'silky-results-table-cell-format-' + formats[i];
+                classes = ' ' + formats.join(' ');
+            }
+        }
+        return classes;
     }
 });
 

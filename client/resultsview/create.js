@@ -30,13 +30,19 @@ var createItem = function(element, $el, level, parent) {
         view = new TableView({ el : $el, model : model, parent : parent });
     }
     else if (element.group) {
-        model = new GroupModel({
-            name: element.name,
-            title: element.title,
-            element: element.group,
-            status: element.status,
-            error: element.error });
-        view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+
+        if (element.group.elements.length > 0) {
+            model = new GroupModel({
+                name: element.name,
+                title: element.title,
+                element: element.group,
+                status: element.status,
+                error: element.error });
+            view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+        }
+        else {
+            view = null;
+        }
     }
     else if (element.image) {
         model = new ImageModel({

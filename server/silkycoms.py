@@ -1,6 +1,6 @@
-from enum import Enum
-from protobuf3.fields import BytesField, StringField, EnumField, UInt32Field, DoubleField, BoolField, Int32Field, MessageField
 from protobuf3.message import Message
+from protobuf3.fields import Int32Field, MessageField, UInt32Field, BytesField, BoolField, EnumField, StringField, DoubleField
+from enum import Enum
 
 
 class Error(Message):
@@ -185,7 +185,8 @@ ResultsCell.add_field('footnotes', StringField(field_number=5, repeated=True))
 ResultsColumn.add_field('name', StringField(field_number=1, optional=True))
 ResultsColumn.add_field('title', StringField(field_number=2, optional=True))
 ResultsColumn.add_field('type', StringField(field_number=3, optional=True))
-ResultsColumn.add_field('cells', MessageField(field_number=4, repeated=True, message_cls=ResultsCell))
+ResultsColumn.add_field('format', StringField(field_number=4, optional=True))
+ResultsColumn.add_field('cells', MessageField(field_number=7, repeated=True, message_cls=ResultsCell))
 ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, message_cls=ResultsColumn))
 ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
 ResultsImage.add_field('path', StringField(field_number=1, optional=True))

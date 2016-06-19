@@ -168,8 +168,9 @@ message ResultsColumn {
     optional string name = 1;
     optional string title = 2;
     optional string type = 3;
+    optional string format = 4;
 
-    repeated ResultsCell cells = 4;
+    repeated ResultsCell cells = 7;
 }
 
 message ResultsTable {

@@ -3,8 +3,10 @@ var _ = require('underscore');
 
 // determine the number of decimal places that the column needs to be formatted to
 
-var determineFormatting = function(values, sf, maxNS, minNS) {
+var determineFormatting = function(values, format, sf, maxNS, minNS) {
 
+    if (_.isUndefined(format))
+        format = [ ];
     if (_.isUndefined(sf))
         sf = 3;
     if (_.isUndefined(minNS))
@@ -54,7 +56,7 @@ var determineFormatting = function(values, sf, maxNS, minNS) {
 
     expw = parseInt(Math.log10(maxAbsExpnt)+1);
 
-    return { dp: dp, expw: expw};
+    return { dp: dp, expw: expw, format: format };
 };
 
 var format = function(value, format, sf, maxNS, minNS) {
@@ -65,14 +67,17 @@ var format = function(value, format, sf, maxNS, minNS) {
     if (_.isUndefined(sf))
         sf = 3;
 
-    if ( ! isFinite(value)) {
+    if (isNaN(value)) {
+        return 'NaN';
+    }
+    else if ( ! isFinite(value)) {
         if (value  > 0)
             return 'Inf';
         else
             return '-Inf';
     }
-    else if (isNaN(value)) {
-        return 'NaN';
+    else if (format.format.indexOf('pvalue') !== -1 && value < 0.001) {
+        return '<\u2009.001';
     }
     else if (Math.abs(value) >= minNS && Math.abs(value) <= maxNS) {
         return value.toFixed(format.dp);

@@ -75,9 +75,11 @@ var GroupView = Element.View.extend({
 
         var error = this.model.get('error');
         if (error !== null) {
+            var $errorPlacement = $('<div class="silky-results-error-placement"></div>');
             var $error = $('<div class="silky-results-error-message"></div>');
             $error.append(error.message);
-            $error.appendTo(this.$el);
+            $errorPlacement.append($error);
+            this.$el.append($errorPlacement);
             this.$el.addClass('silky-results-error');
         }
 
