@@ -1,7 +1,6 @@
 
 import csv
 from silky import ColumnType
-from ordered_set import OrderedSet
 
 
 def read(dataset, path):
@@ -66,7 +65,7 @@ class ColumnWriter:
         self._only_integers = True
         self._only_floats = True
         self._is_empty = True
-        self._unique_values = OrderedSet()
+        self._unique_values = set()
         self._many_uniques = False
         self._column_type = None
         self._examination_complete = False
@@ -117,7 +116,8 @@ class ColumnWriter:
         if self._column_type is None:
             if self._only_integers and self._many_uniques is False:
                 self._column_type = ColumnType.NOMINAL
-
+                self._unique_values = list(self._unique_values)
+                self._unique_values.sort()
                 for label in self._unique_values:
                     self._column.addLabel(int(label), label)
 
@@ -127,8 +127,9 @@ class ColumnWriter:
                 self._column_type = ColumnType.MISC
             else:
                 self._column_type = ColumnType.NOMINAL_TEXT
-
-                for i in range(len(self._unique_values)):
+                self._unique_values = list(self._unique_values)
+                self._unique_values.sort()
+                for i in range(0, len(self._unique_values)):
                     label = self._unique_values[i]
                     self._column.addLabel(i, label)
 
