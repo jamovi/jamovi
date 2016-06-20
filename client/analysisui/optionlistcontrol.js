@@ -7,8 +7,8 @@ var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
 var Overridable = require('./overridable');
 
-var OptionListControl = function(option, params) {
-    OptionControl.extendTo(this, option, params);
+var OptionListControl = function(params) {
+    OptionControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
     Overridable.extendTo(this);
 
@@ -309,8 +309,8 @@ var OptionListControl = function(option, params) {
     this.initialise();
 };
 
-OptionListControl.extendTo = function(target, option, params) {
-    OptionListControl.call(target, option, params);
+OptionListControl.extendTo = function(target, params) {
+    OptionListControl.call(target, params);
 };
 
 module.exports = OptionListControl;

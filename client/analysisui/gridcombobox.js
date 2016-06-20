@@ -4,9 +4,9 @@ var $ = require('jquery');
 var LayoutGrid = require('./layoutgrid').Grid;
 var GridOptionControl = require('./gridoptioncontrol');
 
-var GridCombobox = function(option, params) {
+var GridCombobox = function(params) {
 
-    GridOptionControl.extend(this, option, params);
+    GridOptionControl.extend(this, params);
 
     this.registerSimpleProperty("options", []);
 

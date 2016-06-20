@@ -442,9 +442,8 @@ var LayoutGrid = function() {
         return this._parentLayout === null || this._parentLayout.isLayoutVisible();
     };
 
-    this.addLayout = function(name, column, row, fitToGrid, layoutView) {
+    this.addLayout = function(column, row, fitToGrid, layoutView) {
         var grid = layoutView;
-        this[name] = grid;
         layoutView.isChildLayout = true;
         this._layouts.push(grid);
         var cell = this.addCell(column, row, fitToGrid, grid.$el);
@@ -462,11 +461,19 @@ var LayoutGrid = function() {
         return cell;
     };
 
+    this.getTranformedRow = function(row, column) {
+        return this.rowTransform ? this.rowTransform(row, column) : row;
+    };
+
+    this.getTranformedColumn = function(row, column) {
+        return this.columnTransform ? this.columnTransform(row, column) : column;
+    };
+
     this._add = function(column, row, cell) {
         cell._parentLayout = this;
         cell._id = this._currentId++;
-        row = this.rowTransform ? this.rowTransform(row, column) : row;
-        column = this.columnTransform ? this.columnTransform(row, column) : column;
+        row = this.getTranformedRow(row, column);
+        column = this.getTranformedColumn(row, column);
         if (_.isUndefined(this._orderedCells[row]))
             this._orderedCells[row] = [];
         else if (cell.spanAllRows)

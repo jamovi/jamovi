@@ -7,15 +7,15 @@ var GridOptionControl = require('./gridoptioncontrol');
 var FormatDef = require('./formatdef');
 var DragNDrop = require('./dragndrop');
 
-var GridVariablesTargetList = function(option, params) {
-    GridOptionControl.extend(this, option, params);
+var GridVariablesTargetList = function(params) {
+    GridOptionControl.extend(this, params);
     DragNDrop.extendTo(this);
 
     this.gainOnClick = true;
     this._supplier = null;
     this._actionsBlocked = false;
 
-    this.targetGrid = new OptionListControl(option, params);
+    this.targetGrid = new OptionListControl(params);
     this.targetGrid.$el.addClass("silky-variable-target");
     this.targetGrid.$el.on('dblclick', null, this, function(event) {
         var self = event.data;
@@ -125,6 +125,8 @@ var GridVariablesTargetList = function(option, params) {
 
     this.onRenderToGrid = function(grid, row, column) {
 
+        this.targetGrid.setOption(this.option);
+
         if (grid.addTarget) {
             this.setSupplier(grid);
             grid.addTarget(this);
@@ -133,11 +135,10 @@ var GridVariablesTargetList = function(option, params) {
         var self = this;
         var id = this.option.getName();
         var label = this.getPropertyValue('label');
-        if (label === null)
-            label = this.getPropertyValue('name');
         var hasSupplier = this._supplier !== null;
 
-        grid.addCell(hasSupplier ? column + 1 : column, row, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
+        if (label !== null)
+            grid.addCell(hasSupplier ? column + 1 : column, row, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
 
         if (hasSupplier === true)
             this.renderTransferButton(grid, row + 1, column);
@@ -147,9 +148,10 @@ var GridVariablesTargetList = function(option, params) {
         this.targetGrid.on('layoutgrid.lostFocus layoutgrid.gotFocus', function() {
             self.onSelectionChanged();
         });
-        var cell = grid.addLayout("target", column + 1, row + 1, false, this.targetGrid);
+        var cell = grid.addLayout(column + 1, row + 1, false, this.targetGrid);
         cell.setStretchFactor(0.5);
-        cell.dockContentHeight = true;
+        if (this.targetGrid.isSingleItem === false)
+            cell.dockContentHeight = true;
 
         return { height: 2, width: 2 };
     };

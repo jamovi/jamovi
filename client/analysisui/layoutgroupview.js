@@ -6,9 +6,9 @@ var _ = require('underscore');
 
 var ControlContainer = require('./controlcontainer');
 
-var LayoutGroupView = function(model, params) {
+var LayoutGroupView = function(params) {
 
-    ControlContainer.extendTo(this, model, params);
+    ControlContainer.extendTo(this, params);
 
     this.registerSimpleProperty("collapsed", false);
     this.registerSimpleProperty("label", null);
@@ -21,38 +21,25 @@ var LayoutGroupView = function(model, params) {
         this.$el.addClass("silky-gridlayout-collapsed");
     this.$el.addClass("silky-options-group silky-options-level-" + this.level + " silky-options-group-style-" + this.style);
 
-    this.onLayoutRendering = function() {
+    this.onContainerRendering = function(context) {
 
         var groupText = this.getPropertyValue('label');
         if (groupText !== null) {
             var $header = null;
-            if (typeof groupText === "string") {
-                var t = '';
-                if (this.level === 1)
-                    t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
-                $header = $('<div class="silky-options-h' + this.level + '" style="white-space: nowrap;">' + t + groupText + '</div>');
-            }
-            else {
-                if (this.level === 1)
-                    throw "An option cannot be a level 1 heading.";
 
-                var ctrl = this.model.createControl(groupText);
-                if (ctrl !== null)
-                    $header = ctrl.$el;
-                else
-                    throw "A group header cannot be of this type.";
-            }
+            var t = '';
+            if (this.level === 1)
+                t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
+            $header = $('<div class="silky-options-h' + this.level + '" style="white-space: nowrap;">' + t + groupText + '</div>');
 
-            if ($header !== null) {
-                $header.addClass("silky-options-group-header silky-options-group-header"  + this.level);
-                var cell = this.addHeader($header);
-                if (this.level === 1) {
-                    cell.setStretchFactor(1);
-                    $header.on('click', null, this, function(event) {
-                        var group = event.data;
-                        group.toggleColapsedState();
-                    });
-                }
+            $header.addClass("silky-options-group-header silky-options-group-header"  + this.level);
+            var cell = this.addHeader($header);
+            if (this.level === 1) {
+                cell.setStretchFactor(1);
+                $header.on('click', null, this, function(event) {
+                    var group = event.data;
+                    group.toggleColapsedState();
+                });
             }
         }
     };

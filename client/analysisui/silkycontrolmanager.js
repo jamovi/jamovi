@@ -10,6 +10,7 @@ var GridTextbox = require('./gridtextbox');
 var GridCombobox = require('./gridcombobox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
 var GridOptionListControl = require('./gridoptionlistcontrol');
+var ControlContainer = require('./controlcontainer');
 
 var SilkyControlManager = function() {
 
@@ -22,7 +23,8 @@ var SilkyControlManager = function() {
     this.registerControl("listbox", GridOptionListControl);
     this.registerControl("targetlistbox", GridVariablesTargetList);
     this.registerControl("supplier", LayoutVariablesView);
-    this.registerControl("group", LayoutGroupView);
+    this.registerControl("groupbox", LayoutGroupView);
+    this.registerControl("collection", ControlContainer);
 };
 
 

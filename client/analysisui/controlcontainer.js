@@ -5,26 +5,29 @@ var $ = require('jquery');
 var LayoutGrid = require('./layoutgrid').Grid;
 var GridControl = require('./gridcontrol');
 var ControlBase = require('./controlbase');
+var LayoutGridBorderSupport = require('./layoutgridbordersupport');
 
-var ControlContainer = function(uiModel, params) {
+var ControlContainer = function(params) {
 
     ControlBase.extendTo(this, params);
     LayoutGrid.extendTo(this);
     GridControl.extend(this);
+    LayoutGridBorderSupport.extendTo(this);
 
     this.registerSimpleProperty("stretchFactor", 0);
-    this.registerSimpleProperty("level", 0);
     this.registerSimpleProperty("animate", false);
     this.registerSimpleProperty("style", "list");
+    this.registerSimpleProperty("name", null);
 
-    this.model = uiModel;
 
     this.onRenderToGrid = function(grid, row, column) {
-        var name = this.getPropertyValue("name");
+
+        this.$el.addClass("silky-control-container");
+
         var stretchFactor = this.getPropertyValue("stretchFactor");
         var animate = this.getPropertyValue("animate");
 
-        var cell = grid.addLayout(name + '_group', column, row, true, this);
+        var cell = grid.addLayout(column, row, true, this);
 
         cell.setStretchFactor(stretchFactor);
         this._animateCells = animate;
@@ -32,69 +35,71 @@ var ControlContainer = function(uiModel, params) {
         return { height: 1, width: 1 };
     };
 
-    this.renderLayout = function(level) {
-        if (this.onLayoutRendering)
-            this.onLayoutRendering();
+    this.renderContainer = function(context, level) {
+        if (this.onContainerRendering)
+            this.onContainerRendering(context);
 
         var currentStyle = this.getPropertyValue("style");
-        var items = this.getPropertyValue("items");
+        var controls = this.getPropertyValue("controls");
         var _nextCell = { row: 0, column: 0 };
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
+        for (var i = 0; i < controls.length; i++) {
+            var ctrlDef = controls[i];
 
-            var cell = item.cell;
+            var itemLevel = ctrlDef.level;
+            if (_.isUndefined(itemLevel)) {
+                ctrlDef.level = level;
+                itemLevel = level;
+            }
+
+            var cell = ctrlDef.cell;
             if (_.isUndefined(cell) === false) {
                 _nextCell.row = cell[1];
                 _nextCell.column = cell[0];
             }
+            else
+                ctrlDef.cell = [_nextCell.column, _nextCell.row];
 
-            var isGroup = _.isUndefined(item.items) === false;
+            var ctrl = context.createControl(ctrlDef);
+            if (ctrl === null)
+                continue;
 
-            if (isGroup === true) {
+            var bodyContainer = null;
+            if (ctrl.renderContainer) {
+                var labeledGroup = _.isUndefined(ctrlDef.label) === false;
+                ctrl.renderContainer(context, labeledGroup ? itemLevel + 1 : itemLevel);
+            }
+            else if (_.isUndefined(ctrlDef.controls) === false) {
+                ctrlDef.style = _.isUndefined(ctrlDef.style) ? "list" : ctrlDef.style;
+                bodyContainer = new ControlContainer( { name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: ctrlDef.style });
+                bodyContainer.$el.addClass("silky-options-indented-" + ctrlDef.style);
+                bodyContainer.renderContainer(context, itemLevel);
+            }
 
-                if (_.isUndefined(item.type))
-                    item.type = "group";
+            var cr2 = ctrl.renderToGrid(this, _nextCell.row, _nextCell.column);
+            if (bodyContainer !== null) {
+                if (ctrlDef.style === 'inline')
+                    _nextCell.column += cr2.width;
+                else
+                    _nextCell.row += cr2.height;
+                cr2 = bodyContainer.renderToGrid(this, _nextCell.row, _nextCell.column);
+            }
 
-                if (_.isUndefined(item.level))
-                    item.level = level;
-
-                var newGroup = this.model.createContainer(item);
-
-                var cr1 = { height: 0, width: 0 };
-                if (newGroup !== null && newGroup.getPropertyValue("stage") === "release") {
-                    var labeledGroup = _.isUndefined(item.label) === false;
-                    newGroup.renderLayout(labeledGroup ? item.level + 1 : item.level);
-                    cr1 = newGroup.renderToGrid(this, _nextCell.row, _nextCell.column);
-                }
-                _nextCell.row += cr1.height;
+            if (currentStyle === 'inline') {
+                _nextCell.row = 0;
+                _nextCell.column = _nextCell.column + cr2.width;
             }
             else {
-
-                var ctrl = this.model.createControl(item);
-                if (ctrl !== null) {
-                    var stage = ctrl.getPropertyValue("stage");
-                    if (stage === "release") {
-                        var cr2 = ctrl.renderToGrid(this, _nextCell.row, _nextCell.column);
-
-                        if (currentStyle === 'inline') {
-                            _nextCell.row = 0;
-                            _nextCell.column = _nextCell.column + cr2.width;
-                        }
-                        else {
-                            _nextCell.row = _nextCell.row + cr2.height;
-                            _nextCell.column = 0;
-                        }
-                    }
-                }
+                _nextCell.row = _nextCell.row + cr2.height;
+                _nextCell.column = 0;
             }
         }
-        if (this.onLayoutRendered)
-            this.onLayoutRendered();
+        if (this.onContainerRendered)
+            this.onContainerRendered();
     };
 };
 
-ControlContainer.extendTo = function(target, uiModel, params) {
-    ControlContainer.call(target, uiModel, params);
+ControlContainer.extendTo = function(target, params) {
+    ControlContainer.call(target, params);
 };
 
 module.exports = ControlContainer;

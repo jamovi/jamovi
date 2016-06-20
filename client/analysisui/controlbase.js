@@ -7,6 +7,8 @@ var ControlBase = function(params) {
     PropertySupplier.extendTo(this, params);
 
     this.registerSimpleProperty("stage", "release");
+    this.registerSimpleProperty("cell", null);
+    this.registerSimpleProperty("level", null);
 
 };
 
