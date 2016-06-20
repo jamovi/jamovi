@@ -4,32 +4,33 @@ var $ = require('jquery');
 var GridOptionControl = require('./gridoptioncontrol');
 var Overridable = require('./overridable');
 
-var GridRadioButton = function(option, params) {
+var GridRadioButton = function(params) {
 
-    GridOptionControl.extend(this, option, params);
+    GridOptionControl.extend(this, params);
     Overridable.extendTo(this);
 
     this.registerSimpleProperty("checkedValue", null);
 
-    var optionValue = this.option.getValue();
-    this.checkedValue = this.getPropertyValue('checkedValue');
-    var options = this.option.source.params.options;
-    this.otherValue = options[0] === this.checkedValue ? options[1] : options[0];
-    var label = this.getPropertyValue('label');
-    var name = this.getPropertyValue('name');
-    if (label === null)
-        label = name;
-    this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' ><span>' + label + '</span></label>');
-
-    var self = this;
-    this.$input = this.$el.find('input');
-    this.$input.change(function(event) {
-        var checked = self.$input[0].checked;
-        if (checked)
-            self.option.setValue(self.checkedValue);
-    });
-
     this.onRenderToGrid = function(grid, row, column) {
+
+        var optionValue = this.option.getValue();
+        this.checkedValue = this.getPropertyValue('checkedValue');
+        var options = this.option.source.params.options;
+        this.otherValue = options[0] === this.checkedValue ? options[1] : options[0];
+        var label = this.getPropertyValue('label');
+        var name = this.getPropertyValue('name');
+        if (label === null)
+            label = name;
+        this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' ><span>' + label + '</span></label>');
+
+        var self = this;
+        this.$input = this.$el.find('input');
+        this.$input.change(function(event) {
+            var checked = self.$input[0].checked;
+            if (checked)
+                self.option.setValue(self.checkedValue);
+        });
+
         var cell = grid.addCell(column, row, true, this.$el);
         cell.setAlignment("left", "centre");
 
@@ -52,6 +53,7 @@ var GridRadioButton = function(option, params) {
         }
     };
 
+    var self = this;
     this._override('getValue', function(baseFunction, keys) {
         return baseFunction.call(self, keys) === self.checkedValue;
     });

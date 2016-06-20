@@ -23,13 +23,13 @@ var OptionsView = function(uiModel) {
 
         this.layoutActionManager = this.model.actionManager;
 
-        var layoutGrid = new ControlContainer(this, layoutDef);
+        var layoutGrid = new ControlContainer(layoutDef);
         layoutGrid.$el.addClass('top-level');
         layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
         layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
         layoutGrid._animateCells = true;
 
-        layoutGrid.renderLayout(1);
+        layoutGrid.renderContainer(this, 1);
 
         layoutGrid.render();
 
@@ -38,8 +38,11 @@ var OptionsView = function(uiModel) {
         for (var i = 0; i < options._list.length; i++) {
             var option = options._list[i];
             var name = option.params.name;
-            if (this.layoutActionManager.exists(name) === false)
-                this.layoutActionManager.addResource(name, new OptionControlBase(this._getOption(name)));
+            if (this.layoutActionManager.exists(name) === false) {
+                var backgroundOption = new OptionControlBase( { name: name });
+                backgroundOption.setOption(this._getOption(name));
+                this.layoutActionManager.addResource(name, backgroundOption);
+            }
         }
 
         this.layoutActionManager.initialiseAll();
@@ -112,6 +115,39 @@ var OptionsView = function(uiModel) {
     };
 
     this.createControl = function(uiDef) {
+        if (_.isUndefined(uiDef.type)) {
+            if (_.isUndefined(uiDef.controls) === false)
+                uiDef.type = "collection";
+            else
+                throw "Type has not been defined for control '"+ uiDef.name + "'";
+        }
+
+        var ctrl = this.model.controls.create(uiDef.type, uiDef);
+
+        if (ctrl.getPropertyValue("stage") !== "release")
+            return null;
+
+        var name = ctrl.getPropertyValue("name");
+        if (ctrl.setOption) {
+            var id = ctrl.getPropertyValue("optionId");
+            if (id === null)
+                id = name;
+            var option = this._getOption(id);
+            if (option === null) {
+                console.log("The option " + id + " does not exist.");
+                ctrl = null;
+            }
+            else
+                ctrl.setOption(option);
+        }
+
+        if (ctrl !== null && name !== null)
+            this.model.actionManager.addResource(uiDef.name, ctrl);
+
+        return ctrl;
+    };
+/*
+    this.createControl = function(uiDef) {
 
         var id = uiDef.optionId;
         if (_.isUndefined(id))
@@ -136,7 +172,7 @@ var OptionsView = function(uiModel) {
 
         return ctrl;
     };
-
+*/
 };
 
 

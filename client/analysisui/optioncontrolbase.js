@@ -4,7 +4,7 @@ var _ = require('underscore');
 var $ = require('jquery');
 var ControlBase = require('./controlbase');
 
-var OptionControlBase = function(option, params) {
+var OptionControlBase = function(params) {
 
     ControlBase.extendTo(this, params);
 
@@ -17,30 +17,35 @@ var OptionControlBase = function(option, params) {
     };
 
     this.registerComplexProperty("value", this.getValue, this.setValue, "value_changed");
+    this.registerSimpleProperty("name", null);
 
-    this.option = option;
+    this.option = null;
 
-    option.source.on("valuechanged", function(keys, data) {
-        if (this.onOptionValueChanged)
-            this.onOptionValueChanged(keys, data);
-        this.firePropertyChangedEvent("value");
-    }, this);
+    this.setOption = function(option) {
+        this.option = option;
 
-    option.source.on("valueinserted", function(keys, data) {
-        if (this.onOptionValueInserted)
-            this.onOptionValueInserted(keys, data);
-        this.firePropertyChangedEvent("value");
-    }, this);
+        option.source.on("valuechanged", function(keys, data) {
+            if (this.onOptionValueChanged)
+                this.onOptionValueChanged(keys, data);
+            this.firePropertyChangedEvent("value");
+        }, this);
 
-    option.source.on("valueremoved", function(keys, data) {
-        if (this.onOptionValueRemoved)
-            this.onOptionValueRemoved(keys, data);
-        this.firePropertyChangedEvent("value");
-    }, this);
+        option.source.on("valueinserted", function(keys, data) {
+            if (this.onOptionValueInserted)
+                this.onOptionValueInserted(keys, data);
+            this.firePropertyChangedEvent("value");
+        }, this);
+
+        option.source.on("valueremoved", function(keys, data) {
+            if (this.onOptionValueRemoved)
+                this.onOptionValueRemoved(keys, data);
+            this.firePropertyChangedEvent("value");
+        }, this);
+    };
 };
 
-OptionControlBase.extendTo = function(target, option, params) {
-    OptionControlBase.call(target, option, params);
+OptionControlBase.extendTo = function(target, params) {
+    OptionControlBase.call(target, params);
 };
 
 module.exports = OptionControlBase;

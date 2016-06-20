@@ -4,7 +4,7 @@ var $ = require('jquery');
 var LayoutGrid = require('./layoutgrid').Grid;
 var GridOptionControl = require('./gridoptioncontrol');
 
-var GridTextbox = function(option, params) {
+var GridTextbox = function(params) {
 
     this.parse = function(value) {
 
@@ -19,7 +19,7 @@ var GridTextbox = function(option, params) {
         return value == 'true';
     };
 
-    GridOptionControl.extend(this, option, params);
+    GridOptionControl.extend(this, params);
     this.registerSimpleProperty("formatName", null);
     this.registerSimpleProperty("suffix", null);
     this.registerSimpleProperty("inputPattern", null);
@@ -47,7 +47,7 @@ var GridTextbox = function(option, params) {
         if (suffix !== null) {
             var subgrid = new LayoutGrid();
             subgrid.$el.addClass("silky-layout-grid");
-            grid.addLayout("textBox_" + id, column + 1, row, true, subgrid);
+            grid.addLayout(column + 1, row, true, subgrid);
             grid = subgrid;
         }
 

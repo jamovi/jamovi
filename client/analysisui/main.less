@@ -109,9 +109,26 @@ h1 {
     background-repeat: no-repeat;
 }
 
+
+.silky-layout-cell:not(.first-cell) > .silky-option-checkbox, .silky-layout-cell:not(.first-cell) > .silky-option-radio {
+    margin-left: 7px;
+}
+
+.silky-layout-cell:not(.first-cell) > .silky-control-container {
+    margin-left: 7px;
+}
+
+.silky-control-container {
+    margin-right: 7px;
+}
+
+.silky-layout-cell:not(.first-row) > .silky-options-group:not(.silky-options-level-1) {
+    margin-top: 7px;
+}
+
 .silky-options-group {
-    margin-right: 15px;
-    margin-bottom: 15px;
+    margin-right: 7px;
+    margin-bottom: 7px;
     overflow: hidden;
 }
 
@@ -143,6 +160,7 @@ h1 {
 .silky-option-checkbox, .silky-option-radio {
     margin-top: 5px;
     margin-bottom: 5px;
+    margin-right: 7px;
 }
 
 .silky-options-h1 {
@@ -376,4 +394,14 @@ input[type="text"].silky-option-long-text {
 select.silky-option-input, select option {
     padding-top: 3px;
     padding-bottom: 2px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.silky-options-indented-list {
+    margin-left: 15px;
+}
+
+.silky-options-indented-inline {
+    margin-left: 1ex;
 }

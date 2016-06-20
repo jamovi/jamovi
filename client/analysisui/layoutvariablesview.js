@@ -7,11 +7,12 @@ var FormatDef = require('./formatdef');
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var DragNDrop = require('./dragndrop');
 var ControlContainer = require('./controlcontainer');
+var LayoutGrid = require('./layoutgrid').Grid;
 
-var LayoutVariablesView = function(model, params) {
+var LayoutVariablesView = function(params) {
 
     DragNDrop.extendTo(this);
-    ControlContainer.extendTo(this, model, params);
+    ControlContainer.extendTo(this, params);
 
     this.setList = function(value) {
 
@@ -52,16 +53,24 @@ var LayoutVariablesView = function(model, params) {
     this.registerSimpleProperty("persistentItems", false);
     this.registerSimpleProperty("useVariables", false);
     this.registerSimpleProperty("style", "list");
+    this.registerSimpleProperty("label", null);
 
     this._persistentItems = this.getPropertyValue('persistentItems');
 
     this.$el.addClass("silky-options-group silky-options-level-" + this.getPropertyValue('level') + " silky-options-group-style-" + this.getPropertyValue('style'));
 
-    this.resources = model.resources;
     this._items = [];
     this._targets = [];
 
-    this.onLayoutRendering = function() {
+    this.onContainerRendering = function(context) {
+
+        this.resources = context.resources;
+
+        var baseLayout = new LayoutGrid();
+        var label = this.getPropertyValue('label');
+        if (label !== null)
+            baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
+
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
         this.supplierGrid.stretchEndCells = false;
@@ -69,13 +78,19 @@ var LayoutVariablesView = function(model, params) {
         this.supplierGrid.setMinimumHeight(200);
         this.supplierGrid.setMaximumHeight(200);
         this.ignoreTransform = true;
-        var cell = this.addLayout("supplier", 0, 0, false, this.supplierGrid);
+        var cell = baseLayout.addLayout(0, label !== null ? 1 : 0, false, this.supplierGrid);
         this.ignoreTransform = false;
+        cell.setStretchFactor(1);
+        cell.dockContentHeight = true;
+
+        this.setPickupSourceElement(this.supplierGrid.$el);
+
+        this.ignoreTransform = true;
+        cell = this.addLayout(0, 0, false, baseLayout);
         cell.setStretchFactor(0.5);
         cell.dockContentHeight = true;
         cell.spanAllRows = true;
-
-        this.setPickupSourceElement(this.supplierGrid.$el);
+        this.ignoreTransform = false;
 
         if (this.getPropertyValue('useVariables'))
             this.populateItemList();
@@ -116,11 +131,6 @@ var LayoutVariablesView = function(model, params) {
         return this.supplierGrid.$el;
     };
 
-
-
-    this.addHeader = function(title) {
-        var cell = this.addCell(0, 0, false);
-    };
 
     this.getItem = function(index) {
         return this._items[index];

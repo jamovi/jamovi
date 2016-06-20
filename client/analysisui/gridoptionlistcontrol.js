@@ -12,8 +12,7 @@ var GridOptionListControl = function(option, params) {
     this.onRenderToGrid = function(grid, row, column) {
 
         this.setAutoSizeHeight(false);
-        var name = this.getPropertyValue("name");
-        var cell = grid.addLayout(name, column, row, false, this);
+        var cell = grid.addLayout(column, row, false, this);
         cell.setStretchFactor(0.5);
         //cell.dockContentWidth = true;
         cell.dockContentHeight = true;

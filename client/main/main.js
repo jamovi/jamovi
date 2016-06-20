@@ -129,7 +129,7 @@ $(document).ready(function() {
             backstage.activate();
     });
 
-    var halfWindowWidth = $(document).width() * 0.5;
+    var halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     var optionsFixedWidth = 585;
     var splitPanel  = new SplitPanel({el : "#main-view"});
 

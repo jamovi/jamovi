@@ -6,22 +6,10 @@ var $ = require('jquery');
 
 function LayoutDef() {
 
-    this.items = [];
+    this.controls = [];
 
     this.getTitle = function() {
         return this.label ? this.label : "Undefined";
-    };
-
-    this.getGroupText = function(item) {
-
-        var value = item.label;
-        if (_.isUndefined(value) === false) {
-            if ($.isFunction(value))
-                return value.call(this);
-            else
-                return value;
-        }
-        return null;
     };
 }
 

@@ -3,15 +3,15 @@
 var GridControl = require('./gridcontrol');
 var OptionControl = require('./optioncontrol');
 
-var GridOptionControl = function(option, params) {
+var GridOptionControl = function(params) {
 
     GridControl.extend(this);
-    OptionControl.extendTo(this, option, params);
+    OptionControl.extendTo(this, params);
 
 };
 
-GridOptionControl.extend = function(target, option, params) {
-    GridOptionControl.call(target, option, params);
+GridOptionControl.extend = function(target, params) {
+    GridOptionControl.call(target, params);
 };
 
 module.exports = GridOptionControl;
