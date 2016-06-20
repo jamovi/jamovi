@@ -176,6 +176,7 @@ message ResultsColumn {
 message ResultsTable {
     repeated ResultsColumn columns = 1;
     repeated string rowNames = 2;
+    optional bool swapRowsColumns = 3;
 }
 
 message ResultsImage {

@@ -1,5 +1,5 @@
 from protobuf3.message import Message
-from protobuf3.fields import Int32Field, MessageField, UInt32Field, BytesField, BoolField, EnumField, StringField, DoubleField
+from protobuf3.fields import DoubleField, BytesField, BoolField, UInt32Field, EnumField, Int32Field, StringField, MessageField
 from enum import Enum
 
 
@@ -189,6 +189,7 @@ ResultsColumn.add_field('format', StringField(field_number=4, optional=True))
 ResultsColumn.add_field('cells', MessageField(field_number=7, repeated=True, message_cls=ResultsCell))
 ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, message_cls=ResultsColumn))
 ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
+ResultsTable.add_field('swapRowsColumns', BoolField(field_number=3, optional=True))
 ResultsImage.add_field('path', StringField(field_number=1, optional=True))
 ResultsImage.add_field('width', Int32Field(field_number=2, optional=True))
 ResultsImage.add_field('height', Int32Field(field_number=3, optional=True))
