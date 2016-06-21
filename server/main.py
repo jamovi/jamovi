@@ -3,8 +3,8 @@ import sys
 import os
 
 tld = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
-sys.path.append(os.path.join(tld, 'lib/python3.5/site-packages'))
-sys.path.append(os.path.join(tld, 'lib/python3.5/lib-dynload'))
+sys.path.append(os.path.join(tld, 'lib', 'python3.5', 'site-packages'))
+sys.path.append(os.path.join(tld, 'lib', 'python3.5', 'lib-dynload'))
 os.environ['PATH'] = os.path.join(tld, 'lib') + ';' + os.environ['PATH']
 
 from server import Server
@@ -47,6 +47,7 @@ def _ports_opened(ports):
 
 
 def _launch_electron(instance_id, ports):
+    ClientConnection.number_of_connections += 1
     threading.Thread(target=_launch_electron_thread, args=(instance_id, ports)).start()
 
 
@@ -66,7 +67,6 @@ def _launch_electron_thread(instance_id, ports):
     # we add to the number of connections to prevent the server shutting down
     # before the client has first connected (if the start up is particularly slow)
 
-    ClientConnection.number_of_connections += 1
     process.wait()
     ClientConnection.number_of_connections -= 1
 
