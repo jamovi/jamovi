@@ -47,13 +47,15 @@ var FSEntryListView = SilkyView.extend({
 
             if (location.startsWith('{{Documents}}'))
                 location = location.replace('{{Documents}}', 'Documents');
+            if (location.startsWith('{{Home}}'))
+                location = location.replace('{{Home}}', 'Home');
+            location = location.replace(/\//g, ' \uFE65 ');
 
-            html += '<div class="silky-bs-fslist-entry">';
+            html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
             html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
             html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
             html += '       <div class="silky-bs-fslist-entry-location">' + location + '</div>';
-            html += '       <div class="silky-bs-fslist-entry-path">' + path + '</div>';
             html += '   </div>';
             html += '</div>';
         }
@@ -63,7 +65,8 @@ var FSEntryListView = SilkyView.extend({
     },
     _itemClicked : function(event) {
         var target = event.currentTarget;
-        var path = $(target).find('.silky-bs-fslist-entry-path').text();
+        var path = $(target).attr('data-path');
+        console.log(path);
         this.model.requestOpen(path);
     }
 });
