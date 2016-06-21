@@ -29,6 +29,7 @@ public:
 private:
 
     void initR();
+    void checkpoint(SEXP results = R_NilValue);
     Rcpp::DataFrame readDataset(const std::string &datasetId, Rcpp::List columns, bool headerOnly);
     std::string analysisDirPath(const std::string &datasetId, const std::string &analysisId);
     std::string statePath(const std::string &datasetId, const std::string &analysisId);

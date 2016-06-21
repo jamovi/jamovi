@@ -50,49 +50,45 @@ void EngineR::run(Analysis *analysis)
     readDatasetHeader = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, true);
     rInside["readDatasetHeader"] = Rcpp::InternalFunction(readDatasetHeader);
     rInside.parseEvalQNT("analysis$.setReadDatasetHeaderSource(readDatasetHeader)\n");
-    rInside.parseEvalQNT("rm(list='readDatasetHeader')\n");
 
     readDataset = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, false);
     rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
     rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
-    rInside.parseEvalQNT("rm(list='readDataset')\n");
 
     std::function<string()> statePath = std::bind(&EngineR::statePath, this, analysis->datasetId, analysis->nameAndId);
     rInside["statePath"] = Rcpp::InternalFunction(statePath);
     rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
-    rInside.parseEvalQNT("rm(list='statePath')\n");
 
     std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(&EngineR::resourcesPath, this, analysis->datasetId, analysis->nameAndId, std::placeholders::_1, std::placeholders::_2);
     rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
     rInside.parseEvalQNT("analysis$.setResourcesPathSource(resourcesPath)");
-    rInside.parseEvalQNT("rm(list='resourcesPath')\n");
 
-    ss.str(""); // clear
+    std::function<void(SEXP)> check = std::bind(&EngineR::checkpoint, this, std::placeholders::_1);
+    rInside["checkpoint"] = Rcpp::InternalFunction(check);
+    rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
 
-    ss << "{\n";
-    ss << "  analysis$init()\n";
-    ss << "  analysis$.load()\n";
-    ss << "  RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
-    ss << "}\n";
+    rInside.parseEvalQNT("rm(list=c('readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
-    Rcpp::RawVector rawVec = rInside.parseEvalNT(ss.str());
+    rInside.parseEvalQNT("analysis$init();analysis$.load()\n");
+
+    Rcpp::RawVector rawVec = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw(rawVec.begin(), rawVec.end());
-
     resultsReceived(raw);
 
-    ss.str(""); // clear
+    rInside.parseEvalQNT("analysis$run();analysis$render();analysis$.save()\n");
 
-    ss << "{\n";
-    ss << "  analysis$run()\n";
-    ss << "  analysis$render()\n";
-    ss << "  analysis$.save()\n";
-    ss << "  RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n";
-    ss << "}\n";
-
-    Rcpp::RawVector ravVec2 = rInside.parseEvalNT(ss.str());
-    std::string raw2(ravVec2.begin(), ravVec2.end());
-
+    Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+    std::string raw2(rawVec2.begin(), rawVec2.end());
     resultsReceived(raw2);
+}
+
+void EngineR::checkpoint(SEXP results)
+{
+    if ( ! Rf_isNull(results)) {
+        Rcpp::RawVector rawVec = Rcpp::as<Rcpp::RawVector>(results);
+        std::string raw(rawVec.begin(), rawVec.end());
+        resultsReceived(raw);
+    }
 }
 
 Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columnsRequired, bool headerOnly)
