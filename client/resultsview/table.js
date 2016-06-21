@@ -117,8 +117,8 @@ var TableView = Element.View.extend({
                         cell.classes = "silky-results-table-cell-number";
                     }
                     else {
-                        cell.value = '';
-                        cell.classes = "silky-results-table-cell-text";
+                        cell.value = '.';
+                        cell.classes = "silky-results-table-cell-missing";
                     }
                     break;
                 }
