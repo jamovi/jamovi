@@ -197,7 +197,7 @@ var LayoutVariablesView = function(params) {
         this._targets.push(target);
         var self = this;
         target.targetGrid.on('layoutgrid.gotFocus', function() {
-            self.supplier.clearSelection();
+            self.supplierGrid.clearSelection();
             for (var i = 0; i < self._targets.length; i++) {
                 if (i !== targetIndex)
                     self._targets[i].blockActionButtons();
@@ -274,8 +274,6 @@ var LayoutVariablesView = function(params) {
         else {
             c1.setContent($item);
         }
-
-
 
         c1.setStretchFactor(1);
 
