@@ -1,5 +1,5 @@
 from protobuf3.message import Message
-from protobuf3.fields import DoubleField, BytesField, BoolField, UInt32Field, EnumField, Int32Field, StringField, MessageField
+from protobuf3.fields import UInt32Field, EnumField, BoolField, MessageField, BytesField, Int32Field, StringField, DoubleField
 from enum import Enum
 
 
@@ -124,7 +124,7 @@ class Status(Enum):
 
 
 class AnalysisStatus(Enum):
-    ANALYSIS_INITING = 0
+    ANALYSIS_NONE = 0
     ANALYSIS_INITED = 1
     ANALYSIS_RUNNING = 2
     ANALYSIS_COMPLETE = 3

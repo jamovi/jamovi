@@ -127,7 +127,7 @@ message AnalysisRequest {
 }
 
 enum AnalysisStatus {
-    ANALYSIS_INITING = 0;
+    ANALYSIS_NONE = 0;
     ANALYSIS_INITED = 1;
     ANALYSIS_RUNNING = 2;
     ANALYSIS_COMPLETE = 3;

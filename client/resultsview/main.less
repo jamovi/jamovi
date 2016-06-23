@@ -74,6 +74,22 @@ h3, h4, h5 {
     font-size: 12px ;
 }
 
+.silky-results-table-status-indicator {
+    visibility: hidden ;
+    display: inline-block ;
+    width: 16px ;
+    height: 16px ;
+    margin-left: 6px ;
+    background-size: 100% ;
+    position: relative ;
+    top: 2px ;
+}
+
+.silky-results-status-running .silky-results-table-status-indicator {
+    visibility: visible ;
+    background-image: url('assets/indicator-running.gif');
+}
+
 .silky-results-table-table {
     border-collapse: collapse ;
     border-color: black ;
@@ -154,4 +170,12 @@ td.silky-results-table-cell-format-sep + td.silky-results-table-cell-sup {
     padding-left: 0 ;
     padding-right: 0 ;
     min-width: 0 ;
+}
+
+.silky-results-image {
+    margin-top: 30px ;
+}
+
+.silky-results-array > .silky-results-image {
+    margin-top: 0 ;
 }

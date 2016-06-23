@@ -41,6 +41,8 @@ var TableView = Element.View.extend({
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
         this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
         this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
+        this.$titleText = $('<span class="silky-results-table-title-text"></span>').appendTo(this.$titleCell);
+        this.$status = $('<div class="silky-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
         this.$columnHeaderRowSuper = $('<tr class="silky-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
         this.$columnHeaderRow      = $('<tr class="silky-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
@@ -58,8 +60,11 @@ var TableView = Element.View.extend({
         var table = this.model.attributes.element;
         var html;
 
+        if (this.model.attributes.status === 2)
+            this.$el.addClass('silky-results-status-running');
+
         if (this.model.attributes.title)
-            this.$titleCell.text(this.model.attributes.title);
+            this.$titleText.text(this.model.attributes.title);
 
         var columnCount = table.columns.length;
         var rowCount;

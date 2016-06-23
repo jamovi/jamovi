@@ -119,7 +119,7 @@ class Instance:
                 response = silkycoms.AnalysisResponse()
                 response.analysisId = analysisId
                 response.options = options
-                response.status = silkycoms.AnalysisStatus.ANALYSIS_INITING
+                response.status = silkycoms.AnalysisStatus.ANALYSIS_NONE
 
                 self._coms.send(response, self._instance_id, request, False)
 

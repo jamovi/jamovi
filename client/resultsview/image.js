@@ -41,8 +41,16 @@ var ImageView = Element.View.extend({
     render: function() {
 
         var element = this.model.attributes.element;
+
+        var backgroundImage = 'none';
+        if (element.path !== null) {
+            var url = 'res/' + element.path;
+            url = url.replace(/\"/g, '&quot;');
+            backgroundImage = "url('" + url + "')";
+        }
+
         $('<div style=" \
-            background-image: url(\'res/' + element.path + '\'); \
+            background-image: ' + backgroundImage + '; \
             width: ' + element.width + 'px ; \
             height: ' + element.height + 'px ; \
             background-size: ' + element.width + 'px ; \
