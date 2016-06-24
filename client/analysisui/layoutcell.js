@@ -192,9 +192,15 @@ var LayoutCell = function() {
 
     this.contentWidth = function() {
         if (this._contentWidth === -1) {
-            var properties = this.$content.css(["margin-left", "margin-right"]);
             var f = this.$content[0].getBoundingClientRect().width;
-            this._contentWidth = f + parseFloat(properties["margin-left"]) + parseFloat(properties["margin-right"]);
+            if (this.ignoreContentMargin_left === false || this.ignoreContentMargin_right === false) {
+                var properties = this.$content.css(["margin-left", "margin-right"]);
+                if (this.ignoreContentMargin_left === false)
+                    f += parseFloat(properties["margin-left"]);
+                if (this.ignoreContentMargin_right === false)
+                    f += parseFloat(properties["margin-right"]);
+            }
+            this._contentWidth = f;
         }
 
         return this._contentWidth;
@@ -202,9 +208,15 @@ var LayoutCell = function() {
 
     this.contentHeight = function() {
         if (this._contentHeight === -1) {
-            var properties = this.$content.css(["margin-top", "margin-bottom"]);
             var f = this.$content[0].getBoundingClientRect().height;
-            this._contentHeight = f + parseFloat(properties["margin-top"]) + parseFloat(properties["margin-bottom"]);
+            if (this.ignoreContentMargin_top === false || this.ignoreContentMargin_bottom === false) {
+                var properties = this.$content.css(["margin-top", "margin-bottom"]);
+                if (this.ignoreContentMargin_top === false)
+                    f += parseFloat(properties["margin-top"]);
+                if (this.ignoreContentMargin_bottom === false)
+                    f += parseFloat(properties["margin-bottom"]);
+            }
+            this._contentHeight = f;
         }
 
         return this._contentHeight;
@@ -315,22 +327,45 @@ var LayoutCell = function() {
         if (this.cssProperties === null)
             this.refreshCSSProperties();
 
+        var left = null;
+        var width = null;
+
         if (this.dockContentWidth) {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
 
             var contentProperties = this.$content.css(["padding-left", "padding-right", "border-left-width", "border-right-width"]);
-            this.$content.css( { "left": this.cssProperties["padding-left"], "width": innerWidth - parseFloat(contentProperties["padding-left"]) - parseFloat(contentProperties["padding-right"]) - parseFloat(contentProperties["border-left-width"]) - parseFloat(contentProperties["border-right-width"])});
+            left = this.cssProperties["padding-left"];
+            width = innerWidth - parseFloat(contentProperties["padding-left"]) - parseFloat(contentProperties["padding-right"]) - parseFloat(contentProperties["border-left-width"]) - parseFloat(contentProperties["border-right-width"]);
         }
         else if (this.hAlign === "left")
-            this.$content.css( { "left": this.cssProperties["padding-left"] });
+            left = this.cssProperties["padding-left"];
         else if (this.hAlign === "right") {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
-            this.$content.css( { "left": this.cssProperties["padding-left"] + innerWidth - Math.ceil(this.contentWidth()) });
+            left = this.cssProperties["padding-left"] + innerWidth - Math.ceil(this.contentWidth());
         }
         else if (this.hAlign === "centre") {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
-            this.$content.css( { "left": this.cssProperties["padding-left"] + (innerWidth/2) - (Math.ceil(this.contentWidth())/2) });
+            left = this.cssProperties["padding-left"] + (innerWidth/2) - (Math.ceil(this.contentWidth())/2);
         }
+
+        if (this.ignoreContentMargin_left || this.ignoreContentMargin_right) {
+            var margins = this.$content.css(["margin-left", "margin-right"]);
+            if (this.ignoreContentMargin_left) {
+                if (left !== null)
+                    left -= parseFloat(margins["margin-left"]);
+                if (width !== null)
+                    width -= parseFloat(margins["margin-left"]);
+            }
+            if (width !== null && this.ignoreContentMargin_right)
+                width -=  parseFloat(margins["margin-right"]);
+        }
+
+        if (left !== null && width !== null)
+            this.$content.css( { "left": left, "width": width });
+        else if (left !== null)
+            this.$content.css( { "left": left });
+        else if (width !== null)
+            this.$content.css( { "width": width });
     };
 
     this.updateContentVerticalAlignment = function(cellHeight) {
@@ -340,22 +375,45 @@ var LayoutCell = function() {
         if (this.cssProperties === null)
             this.refreshCSSProperties();
 
+        var top = null;
+        var height = null;
+
         if (this.dockContentHeight) {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
 
             var contentProperties = this.$content.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width"]);
-            this.$content.css( { "top": this.cssProperties["padding-top"], "height": innerHeight - parseFloat(contentProperties["padding-top"]) - parseFloat(contentProperties["padding-bottom"]) - parseFloat(contentProperties["border-top-width"]) - parseFloat(contentProperties["border-bottom-width"])});
+            top = this.cssProperties["padding-top"];
+            height = innerHeight - parseFloat(contentProperties["padding-top"]) - parseFloat(contentProperties["padding-bottom"]) - parseFloat(contentProperties["border-top-width"]) - parseFloat(contentProperties["border-bottom-width"]);
         }
         else if (this.vAlign === "top")
-            this.$content.css( { "top": this.cssProperties["padding-top"] });
+            top = this.cssProperties["padding-top"];
         else if (this.vAlign === "bottom") {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
-            this.$content.css( { "top": this.cssProperties["padding-top"] + innerHeight - Math.ceil(this.contentHeight()) });
+            top = this.cssProperties["padding-top"] + innerHeight - Math.ceil(this.contentHeight());
         }
         else if (this.vAlign === "centre") {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
-            this.$content.css( { "top": this.cssProperties["padding-top"] + (innerHeight/2) - (Math.ceil(this.contentHeight())/2) });
+            top = this.cssProperties["padding-top"] + (innerHeight/2) - (Math.ceil(this.contentHeight())/2);
         }
+
+        if (this.ignoreContentMargin_top || this.ignoreContentMargin_bottom) {
+            var margins = this.$content.css(["margin-top", "margin-bottom"]);
+            if (this.ignoreContentMargin_top) {
+                if (top !== null)
+                    top -= parseFloat(margins["margin-top"]);
+                if (height !== null)
+                    height -= parseFloat(margins["margin-top"]);
+            }
+            if (height !== null && this.ignoreContentMargin_bottom)
+                height -= parseFloat(margins["margin-bottom"]);
+        }
+
+        if (top !== null && height !== null)
+            this.$content.css( { "top": top, "height": height });
+        else if (top !== null)
+            this.$content.css( { "top": top });
+        else if (height !== null)
+            this.$content.css( { "height": height });
     };
 
     this.actualWidth = function() {
@@ -424,47 +482,30 @@ var LayoutCell = function() {
         return oldPreferedHeight !== this.preferredHeight() ;//|| oldPreferedWidth !== this.preferredWidth();
     };
 
-    this.endManipulation = function(animate) {
+    this.endManipulation = function() {
         this._manipulating -= 1;
         if (this._manipulating > 0)
             return;
 
-        var animated = false;
-        var self = this;
-        if (this._initialised && animate && (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)) {
-            this.$el.animate({ "width": this._width, "height": this._height, "left": this._left, "top": this._top, "opacity": (this._visible ? 1 : 0), "z-index": (this._visible ? 1 : 0) }, {
-                duration: 100,
-                queue: false,
-                complete: function() {
-                    if (self._visibleAdjusted)
-                        self.trigger('layoutcell.visibleChanged');
-                    this._visibleAdjusted = false;
-                }
-            });
-            animated = true;
+        var data = {};
+        if (this._leftAdjusted)
+            data.left = this._left;
+        if (this._topAdjusted)
+            data.top = this._top;
+        if (this._widthAdjusted)
+            data.width = this._width;
+        if (this._heightAdjusted)
+            data.height = this._height;
+        if (this._visibleAdjusted) {
+            data.opacity = (this._visible ? 1 : 0);
+            data['z-index'] = this._visible ? 1 : 0;
         }
-        else {
-            var data = {};
-            if (this._leftAdjusted)
-                data.left = this._left;
-            if (this._topAdjusted)
-                data.top = this._top;
-            if (this._widthAdjusted)
-                data.width = this._width;
-            if (this._heightAdjusted)
-                data.height = this._height;
-            if (this._visibleAdjusted) {
-                data.opacity = (this._visible ? 1 : 0);
-                data['z-index'] = this._visible ? 1 : 0;
-            }
 
-            if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
-                this.$el.css(data);
+        if (this._leftAdjusted || this._topAdjusted || this._widthAdjusted || this._heightAdjusted || this._visibleAdjusted)
+            this.$el.css(data);
 
-            if (self._visibleAdjusted)
-                self.trigger('layoutcell.visibleChanged');
-            this._visibleAdjusted = false;
-        }
+        if (this._visibleAdjusted)
+            this.trigger('layoutcell.visibleChanged');
 
         if (this._widthAdjusted)
             this.updateContentHorizontalAlignment(this._width);
@@ -472,15 +513,21 @@ var LayoutCell = function() {
         if (this._heightAdjusted)
             this.updateContentVerticalAlignment(this._height);
 
+        var self = this;
+        if (this._initialised === false)
+        {
+            window.setTimeout(function() {
+                self.$el.addClass("rendered");
+            }, 0);
+        }
+
         this._initialised = true;
 
         this._topAdjusted = false;
         this._leftAdjusted = false;
         this._widthAdjusted = false;
         this._heightAdjusted = false;
-        //this._visibleAdjusted = false;
-
-        return animated;
+        this._visibleAdjusted = false;
     };
 
     this.manipulating = function() {
@@ -489,7 +536,9 @@ var LayoutCell = function() {
 
     this.setStretchFactor = function(factor) {
         this.horizontalStretchFactor = factor;
-        this.dockContentWidth = this.horizontalStretchFactor > 0;
+
+        this.dockContentWidth = this.horizontalStretchFactor > 0 && this.hAlign === "left";
+
         if (this.horizontalStretchFactor > 0)
             this.fitToGrid = false;
         else
@@ -505,6 +554,11 @@ var LayoutCell = function() {
     this.dockContentWidth = false;
 
     this.dockContentHeight = false;
+
+    this.ignoreContentMargin_top = false;
+    this.ignoreContentMargin_bottom = false;
+    this.ignoreContentMargin_left = false;
+    this.ignoreContentMargin_right = false;
 
     this.isVirtual = false;
 };

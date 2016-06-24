@@ -225,6 +225,8 @@ var LayoutGrid = function() {
         this.endCellManipulation(this._animateCells);
         this._requiresPostProccessing = false;
 
+        this._postProcessCellList = [];
+
         for (var j = 0; j < this._layouts.length; j++) {
             var layout = this._layouts[j];
             if (layout._requiresPostProccessing)
@@ -515,13 +517,24 @@ var LayoutGrid = function() {
     };
 
     this.resumeLayout = function() {
-        if (this._resizeSuspended === 0)
+
+        if (this._resizeSuspended === 0 && this._hasResized === null)
             return;
 
-        this._resizeSuspended -= 1;
-        if (this.isLayoutSuspended() === false && this._hasResized !== null) {
-            this.invalidateLayout(this._hasResized.type, Math.random());
-            this._hasResized = null;
+        if (this._resizeSuspended > 0)
+            this._resizeSuspended -= 1;
+
+        if (this.isLayoutSuspended() === false) {
+            if (this._hasResized !== null) {
+                this.invalidateLayout(this._hasResized.type, Math.random());
+                this._hasResized = null;
+            }
+            else {
+                for (var i = 0; i < this._layouts.length; i++) {
+                    var layout = this._layouts[i];
+                    layout.resumeLayout();
+                }
+            }
         }
     };
 
@@ -766,17 +779,13 @@ var LayoutGrid = function() {
 
     this.endCellManipulation = function(animate) {
 
-        var animatedCells = 0;
         for (var i = 0; i < this._cells.length; i++) {
             var cell = this._cells[i];
             if (cell.isVirtual)
                 continue;
 
             if (cell.manipulating())
-            {
-                if (cell.endManipulation(animate && animatedCells < 25))
-                    animatedCells += 1;
-            }
+                cell.endManipulation();
         }
     };
 

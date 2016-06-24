@@ -29,7 +29,7 @@ h1 {
 }
 
 .silky-layout-cell {
-    overflow:hidden;
+    overflow:visible;
 }
 
 .silky-layout-cell.cell-border:not(.first-cell) {
@@ -360,6 +360,13 @@ input[type="text"].silky-option-long-text {
     margin-right: 10px;
 }
 
+.supplier-button-filler {
+    width: 34px;
+    height:28px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
 .silky-option-variable-button[disabled] {
     -webkit-filter: grayscale(100%) opacity(50%);
     filter: grayscale(100%) opacity(50%);
@@ -378,6 +385,7 @@ input[type="text"].silky-option-long-text {
     height: 100px;
     overflow-x: hidden;
 }
+
 
 .silky-layout-grid.silky-variable-supplier {
     height: 200px;
@@ -404,4 +412,78 @@ select.silky-option-input, select option {
 
 .silky-options-indented-inline {
     margin-left: 1ex;
+}
+
+.silky-layout-cell.rendered {
+    transition: top 0.1s, left 0.1s, width 0.1s, height 0.1s, opacity 0.1s;
+}
+
+.rmanova-factors-control {
+    border: 1px solid rgb(130, 130, 130);
+    background-color: rgb(255, 255, 255);
+    height: 150px;
+    overflow-x: hidden;
+}
+
+
+input[type=text].silky-option-listitem {
+  -webkit-transition: all 0.30s ease-in-out;
+  -moz-transition: all 0.30s ease-in-out;
+  -ms-transition: all 0.30s ease-in-out;
+  -o-transition: all 0.30s ease-in-out;
+  outline: none;
+  padding: 3px 4px 3px 4px;
+  margin: 3px 0px 3px 0px;
+  border: 1px solid #FFFFFF;
+  border-left: none;
+  border-right: none;
+  z-index: 98;
+}
+
+input[type=text].silky-option-listitem:focus {
+  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
+  padding: 3px 4px 3px 4px;
+  margin: 3px 1px 3px 0px;
+  border: 1px solid rgba(181, 202, 239, 1);
+  border-left: none;
+  border-right: none;
+  z-index: 99;
+}
+
+.rma-factor-label {
+    margin: 5px 1px 5px 0px;
+    font-weight: bold;
+}
+
+.rma-new-factor-level {
+    color: #AAAAAA ;
+}
+
+.rma-new-factor {
+    color: #AAAAAA ;
+}
+
+.centre-text {
+    text-align: center
+}
+
+.rma-delete-button {
+    font-size: 11px ;
+    width: 15px ;
+    height: 15px ;
+    color: #555555 ;
+    /*float: right;*/
+    box-sizing: border-box ;
+    /*border: 3px solid #555555 ;
+    border-radius: 50% ;*/
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-right: 4px ;
+    margin-left: 4px ;
+    /*margin-top: 6px ;
+    margin-bottom: 6px ;
+
+
+    display: inline-block;*/
 }
