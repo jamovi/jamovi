@@ -11,11 +11,13 @@ var GridCombobox = require('./gridcombobox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
 var GridOptionListControl = require('./gridoptionlistcontrol');
 var ControlContainer = require('./controlcontainer');
+var RMAnovaFactorsControl = require('./rmanovafactorscontrol');
 
 var SilkyControlManager = function() {
 
     ControlManager.extendTo(this);
 
+    this.registerControl("rmanovafactorsbox", RMAnovaFactorsControl);
     this.registerControl("checkbox", GridCheckbox);
     this.registerControl("radiobutton", GridRadioButton);
     this.registerControl("combobox", GridCombobox);
