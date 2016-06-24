@@ -3,6 +3,19 @@ import csv
 from silky import ColumnType
 
 
+def fix_names(names):
+    for i in range(1, len(names)):
+        name = names[i]
+        names_used = names[:i - 1]
+        orig_name = name
+        c = 1
+        while name in names_used:
+            c += 1
+            name = orig_name + ' (' + str(c) + ')'
+        names[i] = name
+    return names
+
+
 def read(dataset, path):
 
     with open(path) as csvfile:
@@ -15,6 +28,8 @@ def read(dataset, path):
 
         column_count = 0
         column_writers = [ ]
+
+        column_names = fix_names(column_names)
 
         for i in range(len(column_names)):
             column_name = column_names[i]
