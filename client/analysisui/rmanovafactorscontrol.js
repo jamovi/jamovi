@@ -15,8 +15,6 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     this.$items = [];
     this.levelButtons = [];
 
-
-
     this.render = function() {
 
         this.$closeButton = $('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
@@ -192,7 +190,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         var self = this;
         $item.change(function(event) {
             var value = $item.val();
-            if (_.isUndefined(this.data) || this.data === null) {
+            if (_.isUndefined(self.data) || self.data === null) {
                 self.parent.onItemAdded({label: value, levels: ["Level 1", "Level 2"]});
             }
             else {

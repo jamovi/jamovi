@@ -18,12 +18,26 @@ var PropertySupplier = function(properties) {
         this.properties[name] = { get: getter, set: setter, trigger: externalTrigger, externalTrigger: externalTrigger };
     };
 
-    this.registerSimpleProperty = function(name, value) {
+    this.registerSimpleProperty = function(name, value, filter) {
         if (_.isUndefined(this.properties[name]) === false)
             return;
 
         var self = this;
-        this.properties[name] = { get: function() { return self.properties[name].value; }, set: function(value) { self.properties[name].value = value; }, value: value, trigger: name + "_changed" };
+        this.properties[name] = {
+            get: function()
+            {
+                return self.properties[name].value;
+            },
+            set: function(value)
+            {
+                var v = value;
+                if (_.isUndefined(filter) === false)
+                    v = filter.check(value);
+                self.properties[name].value = v;
+            },
+            value: value,
+            trigger: name + "_changed"
+        };
     };
 
     this.getPropertyValue = function(property) {

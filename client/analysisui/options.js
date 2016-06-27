@@ -166,6 +166,8 @@ var Options = function(def) {
                 eventParams = keys;
                 keys = [];
             }
+            else
+                eventParams = Options.getDefaultEventParams();
         }
 
         var option = null;

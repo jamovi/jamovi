@@ -11,6 +11,7 @@ var SelectableLayoutGrid = function() {
 
     this.hasFocus = false;
     this._selectedCells = [];
+    this.fullRowSelect = false;
 
     this.selectCell = function(cell) {
         if (cell === null)
@@ -27,6 +28,7 @@ var SelectableLayoutGrid = function() {
         var changed = false;
         var selected = cell.isSelected();
         var selectedCell = null;
+        var cells = null;
 
         if (this._selectedCells.length > 0 && shiftKey) {
             var cell2 = this._selectedCells[this._selectedCells.length - 1];
@@ -43,10 +45,8 @@ var SelectableLayoutGrid = function() {
                 selectedCell = this._selectedCells[i];
                 var rSel = selectedCell.data.row;
                 var cSel = selectedCell.data.column;
-                if (((rStart*rDir >= rSel*rDir) && (cStart*cDir >= cSel*cDir) && ((rDiff * rDir) >= ((rEnd - rSel) * rDir)) && ((cDiff * cDir) >= ((cEnd - cSel) * cDir))) === false) { //outside of range
-                    selectedCell.setSelection(false, false, false);
-                    selectedCell.$el.removeClass('selected');
-                }
+                if (((rStart*rDir >= rSel*rDir) && (cStart*cDir >= cSel*cDir) && ((rDiff * rDir) >= ((rEnd - rSel) * rDir)) && ((cDiff * cDir) >= ((cEnd - cSel) * cDir))) === false)  //outside of range
+                    this._setCellSelection(false, selectedCell, false, false);
             }
 
             this._selectedCells = [];
@@ -55,38 +55,38 @@ var SelectableLayoutGrid = function() {
                 for (var c = cStart; c*cDir <= cEnd*cDir; c+=cDir) {
                     var tCell = this.getCell(c, r);
                     if (tCell.visible()) {
-                        tCell.$el.addClass('selected');
-                        tCell.setSelection(true, ctrlKey, shiftKey);
-                        this._selectedCells.push(tCell);
+                        cells = this.setCellSelection(true, tCell, ctrlKey, shiftKey);
+                        for (var u = 0; u < cells.length; u++)
+                            this._selectedCells.push(cells[u]);
+                        if (this.fullRowSelect)
+                            break;
                     }
                 }
             }
         }
         else if (selected === false || ctrlKey === false) {
             changed = true;
-            cell.setSelection(true, ctrlKey, shiftKey);
-            cell.$el.addClass('selected');
-            if (ctrlKey)
-                this._selectedCells.push(cell);
+            cells = this.setCellSelection(true, cell, ctrlKey, shiftKey);
+            if (ctrlKey) {
+                for (var h = 0; h < cells.length; h++)
+                    this._selectedCells.push(cells[h]);
+            }
             else {
                 for (var j = 0; j < this._selectedCells.length; j++) {
                     selectedCell = this._selectedCells[j];
-                    if (selectedCell._id !== cell._id) {
-                        selectedCell.setSelection(false, false, false);
-                        selectedCell.$el.removeClass('selected');
-                    }
+                    if (this.isCellInArray(selectedCell, cells) === false)
+                        this._setCellSelection(false, selectedCell, false, false);
                 }
-                this._selectedCells = [ cell ];
+                this._selectedCells = cells;
             }
         }
         else if (ctrlKey && this._selectedCells.length > 0) {
             changed = true;
-            cell.setSelection(false, ctrlKey, shiftKey);
-            cell.$el.removeClass('selected');
+            cells = this.setCellSelection(false, cell, ctrlKey, shiftKey);
             if (ctrlKey) {
                 for (var k = 0; k < this._selectedCells.length; k++) {
                     selectedCell = this._selectedCells[k];
-                    if (selectedCell._id === cell._id) {
+                    if (this.isCellInArray(selectedCell, cells)) {
                         this._selectedCells.splice(k, 1);
                         break;
                     }
@@ -103,6 +103,52 @@ var SelectableLayoutGrid = function() {
         if (changed)
             this.trigger('layoutgrid.selectionChanged');
 
+    };
+
+    this._setCellSelection = function(value, cell, ctrlKey, shiftKey) {
+        cell.setSelection(value, ctrlKey, shiftKey);
+        if (value)
+            cell.$el.addClass('selected');
+        else
+            cell.$el.removeClass('selected');
+    };
+
+    this.setCellSelection = function(value, cell, ctrlKey, shiftKey) {
+        var cells = [];
+        var selected = null;
+        this._setCellSelection(value, cell, ctrlKey, shiftKey);
+        if (this.fullRowSelect) {
+            var next = cell.leftCell();
+            while (next !== null) {
+                if (next.visible()) {
+                    selected = next.isSelected();
+                    if (selected !== value)
+                        this._setCellSelection(value, next, ctrlKey, shiftKey);
+                    cells.push(next);
+                }
+                next = next.leftCell();
+            }
+            next = cell.rightCell();
+            while (next !== null) {
+                if (next.visible()) {
+                    selected = next.isSelected();
+                    if (selected !== value)
+                        this._setCellSelection(value, next, ctrlKey, shiftKey);
+                    cells.push(next);
+                }
+                next = next.rightCell();
+            }
+        }
+        cells.push(cell);
+        return cells;
+    };
+
+    this.isCellInArray = function(cell, array) {
+        for (var i = 0; i < array.length; i++) {
+            if (cell._id === array[i]._id)
+                return true;
+        }
+        return false;
     };
 
     this.clearSelection = function() {

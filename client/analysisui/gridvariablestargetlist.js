@@ -11,6 +11,8 @@ var GridVariablesTargetList = function(params) {
     GridOptionControl.extend(this, params);
     DragNDrop.extendTo(this);
 
+    this.registerSimpleProperty("maxItemCount", -1);
+
     this.gainOnClick = true;
     this._supplier = null;
     this._actionsBlocked = false;
@@ -22,6 +24,13 @@ var GridVariablesTargetList = function(params) {
         self.onAddButtonClick();
     });
 
+    this.onPropertyChanged = function(name) {
+        if (name === "maxItemCount") {
+            var value = this.getPropertyValue(name);
+            this.targetGrid.setPropertyValue(name, value);
+        }
+    };
+
     // Drag/Drop methods
     this.setPickupSourceElement(this.targetGrid.$el);
 
@@ -30,7 +39,7 @@ var GridVariablesTargetList = function(params) {
         for (var i = 0; i < this.targetGrid.selectedCellCount(); i++) {
             var cell = this.targetGrid.getSelectedCell(i);
             var cellInfo = this.targetGrid.getCellInfo(cell);
-            items.push({ value: new FormatDef.constructor(cellInfo.value, cellInfo.format), index: cellInfo.listIndex, $el: cell.$el });
+            items.push({ value: new FormatDef.constructor(cellInfo.value, cellInfo.format), cellInfo: cellInfo, $el: cell.$el });
         }
         return items;
     };
@@ -42,11 +51,16 @@ var GridVariablesTargetList = function(params) {
         this.beginPropertyEdit();
         this.option.beginEdit();
         for (var i = 0; i < items.length; i++) {
-            var itemIndex = items[i].index;
-            this.targetGrid.removeFromOption(itemIndex);
-            for (var j = i + 1; j < items.length; j++) {
-                if (items[j].index > itemIndex)
-                    items[j].index -= 1;
+            var cellInfo = items[i].cellInfo;
+            if (this.targetGrid.removeFromOption(cellInfo)) {
+                for (var j = i + 1; j < items.length; j++) {
+                    if (items[j].cellInfo.listIndex > cellInfo.listIndex)
+                        items[j].cellInfo.listIndex -= 1;
+                    else if (items[j].cellInfo.listIndex === cellInfo.listIndex) {
+                        items.splice(j, 1);
+                        j -= 1;
+                    }
+                }
             }
         }
         this.option.endEdit();
@@ -197,12 +211,14 @@ var GridVariablesTargetList = function(params) {
             var startRow = -1;
             var length = 0;
             var selectionCount = this.targetGrid.selectedCellCount();
-            while (this.targetGrid.selectedCellCount() > 0) {
-                var cell = this.targetGrid.getSelectedCell(0);
+            var index = 0;
+            while (this.targetGrid.selectedCellCount() > index) {
+                var cell = this.targetGrid.getSelectedCell(index);
                 if (selectionCount === 1)
                     postProcessSelectionIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
 
-                this.targetGrid.removeFromOption(this.targetGrid.displayRowToRowIndex(cell.data.row));
+                if (this.targetGrid.removeFromOption(this.targetGrid.getCellInfo(cell)) === false)
+                    index += 1;
             }
             postProcessList = this.targetGrid;
         }

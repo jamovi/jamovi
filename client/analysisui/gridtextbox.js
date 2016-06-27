@@ -8,19 +8,12 @@ var GridTextbox = function(params) {
 
     this.parse = function(value) {
 
-        if (this.getPropertyValue("formatName") === 'number')
-            return parseFloat(value);
-        else
-            return value;
+        return this.getPropertyValue("format").parse(value);
 
-    };
-
-    this.parseBoolean = function(value) {
-        return value == 'true';
     };
 
     GridOptionControl.extend(this, params);
-    this.registerSimpleProperty("formatName", null);
+    this.registerSimpleProperty("format", null);
     this.registerSimpleProperty("suffix", null);
     this.registerSimpleProperty("inputPattern", null);
 

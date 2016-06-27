@@ -57,7 +57,7 @@ var Opt = function(type, initialValue, params) {
                         a = a[index];
                     else if (index !== 0)
                         throw 'Cannot access a non array with a non zero key';
-                        
+
                     if (i === keys.length - 1)
                         value = a;
                 }
@@ -85,6 +85,8 @@ var Opt = function(type, initialValue, params) {
                 eventParams = keys;
                 keys = [];
             }
+            else
+                eventParams = Opt.getDefaultEventParams("changed");
         }
 
         var force = eventParams.force;
@@ -103,10 +105,10 @@ var Opt = function(type, initialValue, params) {
         }
         else {
             var a = this._value;
-            for (var i = keys.length - 1; i >= 0; i--) {
+            for (var i = 0; i < keys.length; i++) {
                 var index = keys[i];
                 var b = a[index];
-                if (i === 0 && (force || _.isEqual(b, fValue) === false)) {
+                if (i === keys.length - 1 && (force || _.isEqual(b, fValue) === false)) {
                     a[index] = fValue;
                     if (eventParams.silent === false)
                         this.trigger(eventParams.eventType, keys, eventParams.data);

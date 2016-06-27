@@ -6,6 +6,7 @@ var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
 var Overridable = require('./overridable');
+var EnumPropertyFilter = require('./enumpropertyfilter');
 
 var OptionListControl = function(params) {
     OptionControl.extendTo(this, params);
@@ -15,9 +16,16 @@ var OptionListControl = function(params) {
     this.registerSimpleProperty("columns", null);
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("showColumnHeaders", false);
+    this.registerSimpleProperty("fullRowSelect", false);
+    this.registerSimpleProperty("removeAction", "delete_row", new EnumPropertyFilter(["delete_row", "clear_cell"], "delete_row"));
+    this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest"], "normal"));
 
     this.maxItemCount = this.getPropertyValue('maxItemCount');
     this.showHeaders = this.getPropertyValue('showColumnHeaders');
+    this.fullRowSelect = this.getPropertyValue('fullRowSelect');
+    this.removeAction = this.getPropertyValue('removeAction');
+
+    this.$el.addClass(this.getPropertyValue('height') + "-size");
 
     this.isSingleItem = this.maxItemCount === 1;
 
@@ -41,7 +49,7 @@ var OptionListControl = function(params) {
         if (Array.isArray(columns)) {
             for (var i = 0; i < columns.length; i++) {
 
-                var columnInfo = { readOnly: true, formatName: null, stretchFactor: 1, label: columns[i].name };
+                var columnInfo = { readOnly: true, selectable: true, format: null, stretchFactor: 1, label: columns[i].name };
 
                 _.extend(columnInfo, columns[i]);
 
@@ -71,15 +79,15 @@ var OptionListControl = function(params) {
         var dispColumn = columnInfo.index;
         var cell = this.getCell(dispColumn, dispRow);
 
-        if (columnInfo.formatName === null)
-            columnInfo.formatName = FormatDef.infer(value).name;
+        if (columnInfo.format === null)
+            columnInfo.format = FormatDef.infer(value);
 
         var supplierItem = null;
         var displayValue = '';
         var localItem = null;
-        if (value !== null && columnInfo.formatName !== null) {
+        if (value !== null && columnInfo.format !== null) {
             displayValue = 'error';
-            var columnFormat = FormatDef[columnInfo.formatName];
+            var columnFormat = columnInfo.format;
             if (columnFormat.isValid(value)) {
                 displayValue = columnFormat.toString(value);
                 localItem = new FormatDef.constructor(value, columnFormat);
@@ -89,18 +97,20 @@ var OptionListControl = function(params) {
         }
 
         var $contents = null;
-        var renderFunction = this['renderItem_' + columnInfo.formatName];
+        var renderFunction = this['renderItem_' + columnInfo.format.name];
         if (localItem !== null && _.isUndefined(renderFunction) === false)
             $contents = renderFunction.call(this, displayValue, columnInfo.readOnly, localItem, supplierItem);
         else
-            $contents = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-' + columnInfo.formatName + '">' + displayValue + '</div>');
+            $contents = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-' + columnInfo.format.name + '">' + displayValue + '</div>');
 
         if (cell === null) {
             cell = this.addCell(dispColumn, dispRow, false, $contents);
-            cell.clickable(columnInfo.readOnly);
+            cell.clickable(columnInfo.readOnly && columnInfo.selectable);
         }
-        else
+        else {
+            cell.$content.remove();
             cell.setContent($contents);
+        }
 
         cell.setStretchFactor(columnInfo.stretchFactor);
         cell.hAlign = 'left';
@@ -122,7 +132,7 @@ var OptionListControl = function(params) {
     this.updateDisplayRow = function(dispRow, value) {
          var columnInfo = null;
 
-         if (typeof value !== 'object' || (this._columnInfo._list.length === 1 && FormatDef[this._columnInfo._list[0].formatName].isValid(value))) {
+         if (typeof value !== 'object' || (this._columnInfo._list.length === 1 && this._columnInfo._list[0].format.isValid(value))) {
              columnInfo = this._columnInfo._list[0];
              if (_.isUndefined(columnInfo) === false)
                  this.updateValueCell(columnInfo, dispRow, value);
@@ -168,15 +178,19 @@ var OptionListControl = function(params) {
         info.listIndex = rowIndex;
 
         info.value = this._localData[rowIndex];
-        if (typeof info.value === 'object' && Array.isArray(info.value) === false)
+        if (typeof info.value === 'object' && Array.isArray(info.value) === false) {
             info.value = info.value[info.columnInfo.name];
-
-        if (info.columnInfo.formatName === null) {
-            info.format = FormatDef.infer(info.value);
-            info.columnInfo.formatName = info.format.name;
+            info.rowForm = "object";
         }
         else
-            info.format = FormatDef[info.columnInfo.formatName];
+            info.rowForm = "primitive";
+
+        if (info.columnInfo.format === null) {
+            info.format = FormatDef.infer(info.value);
+            info.columnInfo.format = info.format;
+        }
+        else
+            info.format = info.columnInfo.format;
 
         return info;
     };
@@ -189,7 +203,7 @@ var OptionListControl = function(params) {
 
             var name = columns[i].name;
 
-            if (columns[i].formatName === formatName && item[name] === null) {
+            if (columns[i].format.name === formatName && item[name] === null) {
                 if (_.isUndefined(value) === false)
                     item[name] = value;
                 return name;
@@ -214,14 +228,30 @@ var OptionListControl = function(params) {
         return itemPrototype;
     };
 
-    this.removeFromOption = function(index) {
-        if (this.isSingleItem && index !== 0)
+
+    this.clearFromOption = function(cellInfo) {
+        if (this.isSingleItem)
+            this.option.setValue(null);
+        else if (cellInfo.rowForm === "primitive")
+            this.option.setValue(null, [cellInfo.listIndex]);
+        else
+            this.option.setValue(null, [cellInfo.listIndex, cellInfo.columnInfo.name]);
+    };
+
+    this.removeFromOption = function(cellInfo) {
+        if (this.isSingleItem && cellInfo.listIndex !== 0)
             throw 'Index out of list index range.';
 
         if (this.isSingleItem)
             this.option.setValue(null);
-        else
-            this.option.removeAt([index]);
+        else if (this.removeAction === "delete_row")
+            this.option.removeAt([cellInfo.listIndex]);
+        else {
+            this.clearFromOption(cellInfo);
+            return false; //not removed but column has been nulled nulled.
+        }
+
+        return true;
     };
 
     this.addRawToOption = function(data, key, format) {
@@ -230,10 +260,16 @@ var OptionListControl = function(params) {
         if (typeof data !== 'object') {
             var lastRow = this.option.getLength() - 1;
             var emptyProperty = null;
-            if (lastRow >= 0) {
-                var value = this.option.getValue(lastRow);
-                emptyProperty = _.isUndefined(value) ? null : this.findEmptyProperty(value, format.name);
+            var entryRow = lastRow;
+            for (var r = 0; r <= lastRow; r++) {
+                var value = this.option.getValue(r);
+                emptyProperty = _.isUndefined(r) ? null : this.findEmptyProperty(value, format.name);
+                if (emptyProperty !== null) {
+                    entryRow = r;
+                    break;
+                }
             }
+
             if (emptyProperty === null) {
                 if (this.isSingleItem === false && hasMaxItemCount && currentCount >= this.maxItemCount)
                     return false;
@@ -244,7 +280,7 @@ var OptionListControl = function(params) {
                 }
             }
             else
-                key = [lastRow, emptyProperty];
+                key = [entryRow, emptyProperty];
         }
         else if (hasMaxItemCount && currentCount >= this.maxItemCount)
             return false;
@@ -265,7 +301,7 @@ var OptionListControl = function(params) {
         this.insertRow(dispRow, 1);
         var rowData = this.option.getValue(keys);
 
-        this._localData.splice(keys[0], 0, rowData);
+        this._localData.splice(keys[0], 0, this.clone(rowData));
         this.updateDisplayRow(dispRow, rowData);
         this.resumeLayout();
 
@@ -280,22 +316,23 @@ var OptionListControl = function(params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
+        var list = this.option.getValue();
+
         this.suspendLayout();
 
         this._localData = [];
 
-        var list = this.option.getValue();
         if (list !== null) {
             if (Array.isArray(list)) {
                 for (var i = 0; i < list.length; i++) {
                     this.updateDisplayRow(this.rowIndexToDisplayIndex(i), list[i]);
-                    this._localData.push(list[i]);
+                    this._localData.push(this.clone(list[i]));
                 }
                 var countToRemove = this.displayRowToRowIndex(this._rowCount) - this._localData.length;
                 this.removeRow(this.rowIndexToDisplayIndex(this._localData.length), countToRemove);
             }
             else if (this.isSingleItem) {
-                this._localData[0] = list;
+                this._localData[0] = this.clone(list);
                 this.updateDisplayRow(this.rowIndexToDisplayIndex(0), list);
             }
         }
@@ -304,6 +341,10 @@ var OptionListControl = function(params) {
 
         this.resumeLayout();
 
+    };
+
+    this.clone = function(object) {
+        return JSON.parse(JSON.stringify(object));
     };
 
     this.initialise();
