@@ -45,7 +45,10 @@ var OptionsView = function(uiModel) {
             }
         }
 
-        this.layoutActionManager.initialiseAll();
+        var self = this;
+        window.setTimeout(function() {
+            self.layoutActionManager.initialiseAll();
+        }, 0);
     };
 
     this._getOption = function(id) {

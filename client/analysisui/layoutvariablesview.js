@@ -173,7 +173,8 @@ var LayoutVariablesView = function(params) {
         for (var i = 0; i < this._items.length; i++) {
             var item = this._items[i];
             if (item.value.equalTo(formatted)) {
-                item.used -= 1;
+                if (item.used > 0)
+                    item.used -= 1;
                 break;
             }
         }
@@ -272,6 +273,7 @@ var LayoutVariablesView = function(params) {
             c1.clickable(true);
         }
         else {
+            c1.$content.remove();
             c1.setContent($item);
         }
 

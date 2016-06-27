@@ -10,7 +10,7 @@ var LayoutCell = function() {
 
     Overridable.extendTo(this);
 
-    this.$el = $('<div></div>');
+    this.$el = $('<div style="opacity: 0;"></div>');
     this.$el.css("position", "absolute");
     this.$el.css("box-sizing", "border-box");
 
@@ -444,6 +444,24 @@ var LayoutCell = function() {
         return cell;
     };
 
+    this.topCell = function() {
+        return this._parentLayout.getCell(this.data.column, this.data.row - 1);
+    };
+
+    this.leftCell = function() {
+        var cell = null;
+        var c = this.data.column - 1;
+        if (c < this._parentLayout._columnCount) {
+
+            do {
+                cell = this._parentLayout.getCell(c, this.data.row);
+                c -= 1;
+            }
+            while (cell === null && c >= 0);
+        }
+        return cell;
+    };
+
     this.bottomCell = function() {
         return this._parentLayout.getCell(this.data.column, this.data.row + 1);
     };
@@ -517,6 +535,8 @@ var LayoutCell = function() {
         if (this._initialised === false)
         {
             window.setTimeout(function() {
+                if (self._visible)
+                    self.$el.css("opacity", 1);
                 self.$el.addClass("rendered");
             }, 0);
         }
