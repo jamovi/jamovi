@@ -78,6 +78,14 @@ backstageModel.on('dataSetOpenRequested', function(request) {
     }
 });
 
+backstageModel.on('dataSetSaveRequested', function(request) {
+    var saving = instance.save(request.data.path);
+    request.waitOn(saving);
+    saving.then(function() {
+        backstageModel.set('activated', false);
+    });
+});
+
 backstageModel.on('change:activated', function(event) {
     if (event.changed.activated === false)
         ribbonModel.set('selectedIndex', 1);

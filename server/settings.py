@@ -1,6 +1,8 @@
 
-from silky import Dirs
 import json
+import os.path
+
+from silky import Dirs
 
 
 class Settings:
@@ -10,7 +12,7 @@ class Settings:
     @staticmethod
     def retrieve(group_name=None):
         if Settings.settings is None:
-            path = Dirs.appDataDir() + '/settings.json'
+            path = os.path.join(Dirs.app_data_dir(), 'settings.json')
             Settings.settings = Settings(path)
 
         if group_name is None:

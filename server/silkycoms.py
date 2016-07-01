@@ -1,6 +1,6 @@
-from protobuf3.message import Message
-from protobuf3.fields import UInt32Field, EnumField, BoolField, MessageField, BytesField, Int32Field, StringField, DoubleField
 from enum import Enum
+from protobuf3.message import Message
+from protobuf3.fields import EnumField, StringField, BoolField, BytesField, MessageField, UInt32Field, DoubleField, Int32Field
 
 
 class Error(Message):
@@ -24,6 +24,14 @@ class OpenRequest(Message):
 
 
 class OpenProgress(Message):
+    pass
+
+
+class SaveRequest(Message):
+    pass
+
+
+class SaveProgress(Message):
     pass
 
 
@@ -73,6 +81,14 @@ class CellsResponse(Message):
 
         class Strings(Message):
             pass
+
+
+class CommandRequest(Message):
+    pass
+
+
+class CommandResponse(Message):
+    pass
 
 
 class AnalysisRequest(Message):
@@ -140,6 +156,7 @@ ComsMessage.add_field('payloadType', StringField(field_number=4, optional=True))
 ComsMessage.add_field('status', EnumField(field_number=5, optional=True, enum_cls=Status, default=Status.COMPLETE))
 ComsMessage.add_field('error', MessageField(field_number=6, optional=True, message_cls=Error))
 OpenRequest.add_field('filename', StringField(field_number=1, optional=True))
+SaveRequest.add_field('filename', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('name', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('path', StringField(field_number=2, optional=True))
 DataSetEntry.add_field('location', StringField(field_number=3, optional=True))
@@ -165,6 +182,7 @@ CellsResponse.Column.add_field('doubles', MessageField(field_number=2, optional=
 CellsResponse.Column.add_field('strings', MessageField(field_number=3, optional=True, message_cls=CellsResponse.Column.Strings))
 CellsResponse.add_field('request', MessageField(field_number=1, optional=True, message_cls=CellsRequest))
 CellsResponse.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResponse.Column))
+CommandRequest.add_field('reset', BoolField(field_number=1, optional=True))
 AnalysisRequest.add_field('datasetId', StringField(field_number=1, optional=True))
 AnalysisRequest.add_field('analysisId', Int32Field(field_number=2, optional=True))
 AnalysisRequest.add_field('name', StringField(field_number=3, optional=True))

@@ -34,6 +34,13 @@ message OpenRequest {
 message OpenProgress {
 }
 
+message SaveRequest {
+    optional string filename = 1;
+}
+
+message SaveProgress {
+}
+
 message DataSetEntry {
     optional string name = 1;
     optional string path = 2;

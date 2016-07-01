@@ -102,40 +102,47 @@
 }
 
 .silky-bs-place:active,
-.silky-bs-place.selected {
+.silky-bs-place[data-selected] {
     background-color: #BACDE6 ;
 }
 
-.silky-bs-recent {
+.silky-bs-place[data-place="recent"] {
     background-image: url('assets/place-recent.svg');
 }
 
-.silky-bs-this-pc {
+.silky-bs-place[data-place="thispc"] {
     background-image: url('assets/place-this-pc.svg');
 }
 
-.silky-bs-browse {
+.silky-bs-place[data-place="browse"] {
     background-image: url('assets/place-browse.svg');
 }
 
-.silky-bs-osf {
+.silky-bs-place[data-place="osf"] {
     background-image: url('assets/place-osf.svg');
 }
 
 .silky-bs-choices {
     position: absolute ;
-    top: 0 ;
-    left: 0 ;
+    left: 425px ;
+    top: 136px ;
     height: 100% ;
     width: 100% ;
-    margin-left: 425px ;
-    padding: 136px 18px 18px 18px ;
+    padding: 18px 18px 18px 18px ;
     box-sizing: border-box ;
+}
+
+.silky-bs-choices-list {
+    position: absolute ;
+    top: 0 ;
+    min-height: 100px ;
+    min-width: 100px ;
 }
 
 .silky-bs-fslist-entry {
     padding: 6px ;
     width: 300px ;
+    white-space: nowrap ;
 }
 
 .silky-bs-fslist-entry:hover {

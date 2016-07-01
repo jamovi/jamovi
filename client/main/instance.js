@@ -107,6 +107,18 @@ var Instance = Backbone.Model.extend({
 
         return coms.send(request).then(onresolve, null, onprogress);
     },
+    save : function(path) {
+        var self = this;
+        var coms = this.attributes.coms;
+
+        var save = new coms.Messages.SaveRequest(path);
+        var request = new coms.Messages.ComsMessage();
+        request.payload = save.toArrayBuffer();
+        request.payloadType = "SaveRequest";
+        request.instanceId = this._instanceId;
+
+        return coms.send(request);
+    },
     _beginInstance : function(instanceId) {
 
         var coms = this.attributes.coms;

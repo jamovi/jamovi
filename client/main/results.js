@@ -64,7 +64,7 @@ var ResultsView = Backbone.View.extend({
 
             var self = this;
 
-            $iframe.load(function() {
+            $iframe.on('load', function() {
                 var event = { type: 'results', results : analysis.results };
                 iframe.contentWindow.postMessage(event, self.iframeUrl);
                 analysisResults.loaded = true;

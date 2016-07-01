@@ -4,8 +4,8 @@ var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
-var determineFormatting = require('./formatting').determineFormatting;
-var format = require('./formatting').format;
+var determineFormatting = require('../common/formatting').determineFormatting;
+var format = require('../common/formatting').format;
 
 var Element = require('./element');
 

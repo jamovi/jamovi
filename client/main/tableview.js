@@ -8,6 +8,9 @@ Backbone.$ = $;
 
 var SilkyView = require('./view');
 
+var determineFormatting = require('../common/formatting').determineFormatting;
+var format = require('../common/formatting').format;
+
 var TableView = SilkyView.extend({
     className: "tableview",
     initialize: function() {
@@ -109,12 +112,16 @@ var TableView = SilkyView.extend({
             var $column = $(this.$columns[colOffset + colNo]);
             var $cells  = $column.children();
 
+            var formatting = determineFormatting(column);
+
             for (var rowNo = 0; rowNo < column.length; rowNo++) {
                 var  cell = column[rowNo];
                 var $cell = $($cells[rowNo]);
 
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
+                else if (typeof(cell) === 'number')
+                    cell = format(cell, formatting);
 
                 $cell.text(cell);
             }
@@ -128,7 +135,7 @@ var TableView = SilkyView.extend({
         var colOffset = range.left - viewport.left;
         var rowOffset = range.top - viewport.top;
         var nCols = range.right - range.left + 1;
-        var nRows = range.bottom - range.top + 1;
+        var nRows = viewport.bottom - viewport.top + 1;
 
         var cells = this.model.get("cells");
 
@@ -138,13 +145,17 @@ var TableView = SilkyView.extend({
             var $column = $(this.$columns[range.left + colNo]);
             var $cells  = $column.children();
 
+            var formatting = determineFormatting(column);
+
             for (var rowNo = 0; rowNo < nRows; rowNo++) {
 
-                var $cell = $($cells[rowOffset + rowNo]);
-                var cell = column[rowOffset + rowNo];
+                var $cell = $($cells[rowNo]);
+                var cell = column[rowNo];
 
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
+                else if (typeof(cell) === 'number')
+                    cell = format(cell, formatting);
 
                 $cell.text(cell);
             }

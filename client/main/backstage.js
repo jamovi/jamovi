@@ -74,17 +74,90 @@ var FSEntryListView = SilkyView.extend({
 var BackstageModel = Backbone.Model.extend({
     defaults: {
         activated : false,
-        task : "",
+        task : '',
         taskProgress : 0,
         operation : 'open',
         place : 'recent',
-        settings : null
+        lastSelectedPlace : 'recent',
+        settings : null,
+        ops : [ ],
     },
     initialize : function() {
         this.on('change:settings', this._settingsChanged, this);
+        this.on('change:operation', this._opChanged, this);
 
         this._recentsListModel = new FSEntryListModel();
         this._recentsListModel.on('dataSetOpenRequested', this.requestOpen, this);
+
+        this.attributes.ops = [
+            {
+                name: 'open',
+                title: 'Open',
+                places: [
+                    { name: 'recent', title: 'Recent', model: this._recentsListModel },
+                    { name: 'thispc', title: 'This PC' },
+                    { name: 'osf',    title: 'OSF' },
+                    { name: 'browse', title: 'Browse' },
+                ]
+            },
+            /*{
+                name: 'save',
+                title: 'Save',
+            },*/
+            {
+                name: 'saveAs',
+                title: 'Save As',
+                places: [
+                    { name: 'thispc', title: 'This PC' },
+                    { name: 'osf',    title: 'OSF' },
+                    { name: 'browse', title: 'Browse' },
+                ]
+            }
+        ];
+    },
+    getCurrentOp: function() {
+        var names = _.pluck(this.attributes.ops, 'name');
+        var index = names.indexOf(this.attributes.operation);
+
+        if (index !== -1)
+            return this.attributes.ops[index];
+        else
+            return null;
+    },
+    getCurrentPlace: function() {
+
+        var op = this.getCurrentOp();
+        var names = _.pluck(op.places, 'name');
+        var index = names.indexOf(this.attributes.place);
+
+        if (index === -1)
+            index = 0;
+
+        return op.places[index];
+    },
+    _opChanged: function() {
+
+        var op = this.getCurrentOp();
+        var names = _.pluck(op.places, 'name');
+        var index = names.indexOf(this.attributes.lastSelectedPlace);
+
+        if (index === -1)
+            index = names.indexOf(this.attributes.place);
+
+        if (index === -1)
+            index = 0;
+
+        var place = op.places[index].name;
+        var old = this.attributes.place;
+
+        if (old) {
+            this.attributes.place = place;
+            var self = this;
+            setTimeout(function() {
+                this.attributes.place = old;
+                self.set('place', place);
+            }, 0);
+        }
     },
     uploadFile: function(file) {
 
@@ -117,6 +190,14 @@ var BackstageModel = Backbone.Model.extend({
             self.set('activated', false);
         });
     },
+    requestSave: function(path) {
+        var request = new Request({ path : path });
+        this.trigger('dataSetSaveRequested', request);
+        var self = this;
+        request.then(function() {
+            self.set('activated', false);
+        });
+    },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
         this._recentsListModel.set('items', settings.recents);
@@ -137,36 +218,40 @@ var BackstageView = SilkyView.extend({
     initialize: function() {
         this.render();
         this.model.on("change:activated", this._activationChanged, this);
-        this.model.on('change:operation', this._operationChanged, this);
+        this.model.on('change:operation', this._opChanged, this);
     },
     events: {
-        'click .silky-bs-back-button' : 'deactivate',
-        'click .silky-bs-open-button' : '_openClicked',
-        'click .silky-bs-save-button' : '_saveClicked',
-        'click .silky-bs-save-as-button' : '_saveAsClicked'
+        'click .silky-bs-back-button' : 'deactivate'
     },
     render: function() {
 
         this.$el.hide();
         this.$el.addClass("silky-bs");
 
-        var html = ''
-        + '<div class="silky-bs-op silky-bs-op-panel" style="display: none;">'
-        + '    <div class="silky-bs-back-button"><span class="mif-arrow-left"></span></div>'
-        + '    <div class="silky-bs-op-button silky-bs-open-button selected" >Open</div>'
-        + '    <div class="silky-bs-op-button silky-bs-save-button">Save</div>'
-        + '    <div class="silky-bs-op-button silky-bs-save-as-button">Save As</div>'
-        + '</div>'
-        + '<div class="silky-bs-main"></div>';
+        var html = '';
 
-        this.$el.html(html);
-        this.$op = this.$el.find(".silky-bs-op-panel");
+        html += '<div class="silky-bs-op silky-bs-op-panel">';
+        html += '    <div class="silky-bs-back-button"><span class="mif-arrow-left"></span></div>';
+        html += '</div>';
+
+        this.$opPanel = $(html);
+        this.$opPanel.appendTo(this.$el);
+
+        $('<div class="silky-bs-main"></div>').appendTo(this.$el);
+
+        for (let i = 0; i < this.model.attributes.ops.length; i++) {
+            let op = this.model.attributes.ops[i];
+            let selected = (op.name === this.model.attributes.operation);
+            let $op = $('<div class="silky-bs-op-button" data-op="' + op.name + '" ' + (selected ? 'data-selected' : '') + '">' + op.title + '</div>');
+            op.$el = $op;
+            $op.on('click', op, _.bind(this._opClicked, this));
+            $op.appendTo(this.$opPanel);
+        }
+
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
+        this.$ops = this.$el.find('.silky-bs-op-button');
 
-        this.$operationButtons = this.$el.find('.silky-bs-op-button');
-        this.$openButton    = this.$el.find('.silky-bs-open-button');
-        this.$saveButton    = this.$el.find('.silky-bs-save-button');
-        this.$saveAsButton  = this.$el.find('.silky-bs-save-as-button');
+        this._opChanged();
 
         this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
     },
@@ -174,10 +259,10 @@ var BackstageView = SilkyView.extend({
 
         this.$el.fadeIn(100);
 
-        var width = this.$op.outerWidth();
-        this.$op.css("left", -width);
-        this.$op.show();
-        this.$op.animate({left:0}, 200);
+        var width = this.$opPanel.outerWidth();
+        this.$opPanel.css("left", -width);
+        this.$opPanel.show();
+        this.$opPanel.animate({left:0}, 200);
 
         this.main.$el.css("margin-left", width + 32);
 
@@ -187,8 +272,8 @@ var BackstageView = SilkyView.extend({
 
         this.$el.fadeOut(200);
 
-        var width = this.$op.outerWidth();
-        this.$op.animate({left:-width}, 200);
+        var width = this.$opPanel.outerWidth();
+        this.$opPanel.animate({left:-width}, 200);
 
         this.model.set('activated', false);
     },
@@ -198,119 +283,97 @@ var BackstageView = SilkyView.extend({
         else
             this.deactivate();
     },
-    _openClicked : function() {
-        this.model.set('operation', 'open');
+    _opClicked : function(event) {
+        var op = event.data;
+        this.model.set('operation', op.name);
     },
-    _saveClicked : function() {
-        this.model.set('operation', 'save');
-    },
-    _saveAsClicked : function() {
-        this.model.set('operation', 'saveAs');
-    },
-    _operationChanged : function() {
+    _opChanged : function() {
 
-        this.$operationButtons.removeClass('selected');
+        this.$ops.removeClass('selected');
 
         var operation = this.model.get('operation');
-
-        switch (operation) {
-            case 'open':
-                this.$openButton.addClass('selected');
-                break;
-            case 'save':
-                this.$saveButton.addClass('selected');
-                break;
-            case 'saveAs':
-                this.$saveAsButton.addClass('selected');
-                break;
-        }
+        var $op = this.$ops.filter('[data-op="' + operation + '"]');
+        $op.addClass('selected');
     }
 });
 
 var BackstagePlaces = SilkyView.extend({
     className: "silky-bs-places",
     events: {
-        'click  .silky-bs-browse'  : '_browseClicked',
+        'click  .silky-bs-place[data-place="browse"]'  : '_browseClicked',
         'change .silky-bs-browse-invoker' : '_fileUpload',
-        'mousedown  .silky-bs-recent'  : '_recentClicked',
-        'mousedown  .silky-bs-osf'     : '_osfClicked',
-        'mousedown  .silky-bs-this-pc' : '_thisPCClicked'
     },
     initialize: function() {
-        _.bindAll(this, '_operationChanged');
+        _.bindAll(this, '_opChanged');
 
-        this.model.on('change:operation', this._operationChanged, this);
+        this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
 
         this.$el.addClass("silky-bs-mid");
 
-        var html = ''
-        + '<div class="silky-bs-places-panel silky-bs-places-panel-open">'
-        + '    <h1 class="silky-bs-title">Open</h1>'
-        + '    <div class="silky-bs-places">'
-        + '        <div class="silky-bs-place silky-bs-recent selected">Recent</div>'
-        + '        <div class="silky-bs-place silky-bs-this-pc">This PC</div>'
-        + '        <div class="silky-bs-place silky-bs-osf">OSF</input></div>'
-        + '        <div class="silky-bs-place silky-bs-browse">Browse</div>'
-        + '        <input class="silky-bs-browse-invoker" type="file" accept=".csv" style="display: none"></input>'
-        + '    </div>'
-        + '</div>'
-        + '<div class="silky-bs-places-panel silky-bs-places-panel-save" style="display: none">'
-        + '    <h1 class="silky-bs-title">Save As</h1>'
-        + '    <div class="silky-bs-places">'
-        + '        <div class="silky-bs-place silky-bs-this-pc">This PC</div>'
-        + '        <div class="silky-bs-place silky-bs-osf">OSF</div>'
-        + '        <div class="silky-bs-place silky-bs-browse">Browse</div>'
-        + '        <input class="silky-bs-browse-invoker" type="file" accept=".csv" style="display: none"></input>'
-        + '    </div>'
-        + '</div>'
-        + '<div class="silky-bs-choices"></div>';
+        var ops = this.model.attributes.ops;
 
-        this.$el.html(html);
+        for (let i = 0; i < ops.length; i++) {
+
+            let op = ops[i];
+
+            let html = '';
+
+            html += '<div class="silky-bs-places-panel" data-op="' + op.name + '" style="display: none;">';
+            html += '    <h1 class="silky-bs-title">' + op.title + '</h1>';
+            html += '    <div class="silky-bs-places">';
+            html += '    </div>';
+            html += '</div>';
+
+            var $placesPanel = $(html);
+            this.$el.append($placesPanel);
+            var $places = $placesPanel.find('.silky-bs-places');
+
+            for (var j = 0; j < op.places.length; j++) {
+                let place = op.places[j];
+                var $place = $('<div class="silky-bs-place" data-place="' + place.name + '">' + place.title + '</div>');
+                $places.append($place);
+                $place.on('click', place, _.bind(this._placeClicked, this));
+            }
+        }
+
+        var $choices = $('<div class="silky-bs-choices"></div>');
+        this.$el.append($choices);
+
         this.$title = this.$el.find('.silky-bs-title');
-
-        this.$open = this.$el.find('.silky-bs-places-panel-open');
-        this.$save = this.$el.find('.silky-bs-places-panel-save');
-
+        this.$ops = this.$el.find('.silky-bs-places-panel');
         this.$places = this.$el.find('.silky-bs-place');
-        this.$recent = this.$el.find('.silky-bs-recent');
-        this.$osf    = this.$el.find('.silky-bs-osf');
-        this.$thisPC = this.$el.find('.silky-bs-this-pc');
+
+        this._opChanged();
+        this._placeChanged();
 
         this.$choices = this.$el.find('.silky-bs-choices');
         this._choices = new BackstageChoices({ el: this.$choices, model : this.model });
     },
-    _operationChanged : function() {
-        switch (this.model.get('operation')) {
-            case 'open':
-                this.$save.fadeOut(200);
-                this.$open.fadeIn(200);
-                break;
-            case 'saveAs':
-                this.$open.fadeOut(200);
-                this.$save.fadeIn(200);
-                break;
-            default:
-                this.$open.fadeOut(200);
-                this.$save.fadeOut(200);
-                break;
-        }
+    _opChanged : function() {
+        var op = this.model.get('operation');
+        var $current = this.$ops.filter('[data-op="' + op + '"]');
+        var $off = this.$ops.filter(':not([data-op="' + op + '"])');
+
+        $off.fadeOut(200);
+        $off.removeAttr('data-selected');
+
+        $current.fadeIn(200);
+        $current.attr('data-selected', '');
+
+        this.$current = $current;
     },
     _placeChanged : function() {
 
-        this.$places.removeClass('selected');
-
-        switch (this.model.get('place')) {
-            case 'recent':
-                this.$recent.addClass('selected');
-                break;
-            case 'OSF':
-                this.$osf.addClass('selected');
-                break;
-            case 'thisPC':
-                this.$thisPC.addClass('selected');
-                break;
-        }
+        this.$places.removeAttr('data-selected');
+        var place = this.model.get('place');
+        var $place = this.$current.find('[data-place="' + place + '"]');
+        $place.attr('data-selected', '');
+    },
+    _placeClicked: function(event) {
+        var place = event.data;
+        this.model.set('lastSelectedPlace', place.name);
+        this.model.set('place', place.name);
     },
     _browseClicked : function() {
 
@@ -321,10 +384,31 @@ var BackstagePlaces = SilkyView.extend({
 
             var self = this;
 
-            dialog.showOpenDialog({ properties: [ 'openFile' ]}, function(fileNames) {
-                if (fileNames)
-                    self._fileSelected(fileNames[0]);
-            });
+            if (this.model.get('operation') === 'open') {
+
+                let filters = [
+                    { name: 'Data files', extensions: ['osilky', 'csv', 'jasp']},
+                    { name: 'Silky', extensions: ['osilky'] },
+                    { name: 'CSV', extensions: ['csv'] },
+                    { name: 'JASP', extensions: ['jasp'] },
+                ];
+
+                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, function(fileNames) {
+                    if (fileNames)
+                        self._fileSelectedToOpen(fileNames[0]);
+                });
+            }
+            else if (this.model.get('operation') === 'saveAs') {
+
+                let filters = [
+                    { name: 'Silky', extensions: ['osilky'] },
+                ];
+
+                dialog.showSaveDialog({ filters : filters }, function(fileName) {
+                    if (fileName)
+                        self._fileSelectedToSave(fileName);
+                });
+            }
         }
         else {
 
@@ -335,18 +419,13 @@ var BackstagePlaces = SilkyView.extend({
         var file = evt.target.files[0];
         this.model.uploadFile(file);
     },
-    _fileSelected : function(path) {
+    _fileSelectedToOpen : function(path) {
         path = path.replace(/\\/g, '/');
         this.model.requestOpen(path);
     },
-    _recentClicked : function() {
-        this.model.set('place', 'recent');
-    },
-    _osfClicked : function() {
-        this.model.set('place', 'OSF');
-    },
-    _thisPCClicked : function() {
-        this.model.set('place', 'thisPC');
+    _fileSelectedToSave : function(path) {
+        path = path.replace(/\\/g, '/');
+        this.model.requestSave(path);
     }
 });
 
@@ -358,29 +437,36 @@ var BackstageChoices = SilkyView.extend({
 
         var html = '';
 
-        html += '<div class="silky-bs-choices-choice silky-bs-choices-recentlist"></div>';
-        html += '<div class="silky-bs-choices-choice silky-bs-choices-thispc" style="display: none ;"></div>';
+        html += '<div class="silky-bs-choices-list"></div>';
+        html += '<div class="silky-bs-choices-list" style="display: none ;"></div>';
 
         this.$el.html(html);
 
-        this.$choices    = this.$el.find('.silky-bs-choices-choice');
-        this.$recentList = this.$el.find('.silky-bs-choices-recentlist');
-        this.$thisPC     = this.$el.find('.silky-bs-choices-thispc');
+        this.$choices = this.$el.find('.silky-bs-choices-list');
+        this.$current = $(this.$choices[0]);
+        this.$waiting = $(this.$choices[1]);
 
-        this._recentList = new FSEntryListView({ el : this.$recentList, model : this.model.recentsModel() });
+        this._placeChanged();
+
+        //this._recentList = new FSEntryListView({ el : this.$recentList, model : this.model.recentsModel() });
     },
     _placeChanged : function() {
 
-        var place = this.model.get('place');
+        var place = this.model.getCurrentPlace();
 
-        switch (place) {
-            case 'recent':
-                this.$choices.fadeOut(200);
-                this.$recentList.fadeIn(200);
-                break;
-            default:
-                this.$choices.fadeOut(200);
-                break;
+        var  old = this.current;
+        var $old = this.$current;
+
+        if (place.model) {
+            this.$current = $('<div class="silky-bs-choices-list" style="display: none ;"></div>');
+            this.$current.appendTo(this.$el);
+            this.current = new FSEntryListView({ el: this.$current, model: place.model });
+            this.$current.fadeIn(200);
+        }
+
+        if (old) {
+            $old.fadeOut(200);
+            setTimeout(function() { old.remove(); }, 200);
         }
     }
 });

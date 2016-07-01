@@ -38,7 +38,7 @@ def _ports_opened(ports):
 
     print('Server listening on ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
 
-    port_lock_path = Dirs.appDataDir() + '/' + str(ports[0]) + '.lock'
+    port_lock_path = Dirs.app_data_dir() + '/' + str(ports[0]) + '.lock'
     with open(port_lock_path, 'a'):
         pass
 
@@ -95,8 +95,8 @@ if __name__ == "__main__":
         if sys.argv[i] == '--debug':
             debug = True
 
-    app_data_path = Dirs.appDataDir()
-    lock_path = Dirs.appDataDir() + '/lock'
+    app_data_path = Dirs.app_data_dir()
+    lock_path = Dirs.app_data_dir() + '/lock'
     lock = Lock(lock_path)
 
     if lock.acquire(blocking=False):

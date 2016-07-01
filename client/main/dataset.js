@@ -124,7 +124,7 @@ var DataSetViewModel = DataSetModel.extend({
         if (top > 0) {
             for (i = 0; i < innerNCols; i++) {
                 for (j = 0; j < top; j++)
-                    cells[i].unshift("X");
+                    cells[i].unshift(".");
             }
 
             this._requestCells({ left : innerLeft, right : innerRight, top : nv.top, bottom : viewport.top });
@@ -132,7 +132,7 @@ var DataSetViewModel = DataSetModel.extend({
         if (bottom > 0) {
             for (i = 0; i < innerNCols; i++) {
                 for (j = 0; j < bottom; j++)
-                    cells[i].push("x");
+                    cells[i].push(".");
             }
 
             this._requestCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });

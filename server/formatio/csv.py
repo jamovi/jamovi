@@ -1,6 +1,6 @@
 
 import csv
-from silky import ColumnType
+from silky import MeasureType
 
 
 def fix_names(names):
@@ -48,7 +48,7 @@ def read(dataset, path):
             if first:
                 first = False
             else:
-                dataset.appendRow()
+                dataset.append_row()
 
                 for i in range(column_count):
                     column_writers[i].examine_row(row)
@@ -82,7 +82,7 @@ class ColumnWriter:
         self._is_empty = True
         self._unique_values = set()
         self._many_uniques = False
-        self._column_type = None
+        self._measure_type = None
         self._examination_complete = False
 
     def examine_row(self, row):
@@ -122,34 +122,34 @@ class ColumnWriter:
                 self._only_floats = False
 
         if self._many_uniques and self._only_floats is False and self._only_integers is False:
-            self._column_type = ColumnType.MISC
+            self._measure_type = MeasureType.MISC
             self._unique_values = None
             self._examination_complete = True
 
     def _ruminate(self):
 
-        if self._column_type is None:
+        if self._measure_type is None:
             if self._only_integers and self._many_uniques is False:
-                self._column_type = ColumnType.NOMINAL
+                self._measure_type = MeasureType.NOMINAL
                 self._unique_values = list(self._unique_values)
                 self._unique_values.sort()
                 for label in self._unique_values:
-                    self._column.addLabel(int(label), label)
+                    self._column.add_label(int(label), label)
 
             elif self._only_floats:
-                self._column_type = ColumnType.CONTINUOUS
+                self._measure_type = MeasureType.CONTINUOUS
             elif self._many_uniques:
-                self._column_type = ColumnType.MISC
+                self._measure_type = MeasureType.MISC
             else:
-                self._column_type = ColumnType.NOMINAL_TEXT
+                self._measure_type = MeasureType.NOMINAL_TEXT
                 self._unique_values = list(self._unique_values)
                 self._unique_values.sort()
                 for i in range(0, len(self._unique_values)):
                     label = self._unique_values[i]
-                    self._column.addLabel(i, label)
+                    self._column.add_label(i, label)
 
         self._examination_complete = True
-        self._column.set_column_type(self._column_type)
+        self._column.type = self._measure_type
 
     def parse_row(self, row, row_no):
 
@@ -164,19 +164,19 @@ class ColumnWriter:
             if value == '' or value == ' ':
                 value = None
 
-        if self._column_type == ColumnType.NOMINAL or self._column_type == ColumnType.ORDINAL:
+        if self._measure_type == MeasureType.NOMINAL or self._measure_type == MeasureType.ORDINAL:
             if value is None:
                 self._column[row_no] = -2147483648
             else:
                 self._column[row_no] = int(value)
 
-        elif self._column_type == ColumnType.CONTINUOUS:
+        elif self._measure_type == MeasureType.CONTINUOUS:
             if value is None:
                 self._column[row_no] = float('nan')
             else:
                 self._column[row_no] = float(value)
 
-        elif self._column_type == ColumnType.NOMINAL_TEXT:
+        elif self._measure_type == MeasureType.NOMINAL_TEXT:
 
             if value is None:
                 self._column[row_no] = -2147483648

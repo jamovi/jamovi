@@ -1,12 +1,10 @@
 
 import os
 
-from silky import ColumnType
+from silky import MeasureType
 from silky import Dirs
 from silky import MemoryMap
 from silky import DataSet
-
-import formatio.csv
 
 from settings import Settings
 
@@ -14,6 +12,7 @@ import silkycoms
 
 from enginemanager import EngineManager
 from analyses import Analyses
+from fileio import FileIO
 
 import json
 import uuid
@@ -67,12 +66,14 @@ class Instance:
         return resource_path
 
     def on_request(self, request):
-        if type(request) == silkycoms.OpenRequest:
+        if type(request) == silkycoms.CellsRequest:
+            self._on_cells(request)
+        elif type(request) == silkycoms.OpenRequest:
             self._on_open(request)
+        elif type(request) == silkycoms.SaveRequest:
+            self._on_save(request)
         elif type(request) == silkycoms.InfoRequest:
             self._on_info(request)
-        elif type(request) == silkycoms.CellsRequest:
-            self._on_cells(request)
         elif type(request) == silkycoms.SettingsRequest:
             self._on_settings(request)
         elif type(request) == silkycoms.AnalysisRequest:
@@ -85,13 +86,21 @@ class Instance:
         complete = (results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE)
         self._coms.send(results, self._instance_id, request, complete)
 
+    def _on_save(self, request):
+        print('saving ' + request.filename)
+
+        FileIO.write(self._dataset, request.filename)
+
+        response = silkycoms.SaveProgress()
+        self._coms.send(response, self._instance_id, request)
+
     def _on_open(self, request):
         print('opening ' + request.filename)
 
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
-        formatio.csv.read(dataset, request.filename)
+        FileIO.read(dataset, request.filename)
 
         self._dataset = dataset
 
@@ -159,14 +168,14 @@ class Instance:
 
         if hasDataSet:
 
-            response.rowCount = self._dataset.rowCount()
-            response.columnCount = self._dataset.columnCount()
+            response.rowCount = self._dataset.row_count
+            response.columnCount = self._dataset.column_count
 
             for column in self._dataset:
 
                 field = silkycoms.InfoResponse.Schema.Field()
-                field.name = column.name()
-                field.measureType = silkycoms.InfoResponse.Schema.Field.MeasureType(column.column_type)
+                field.name = column.name
+                field.measureType = silkycoms.InfoResponse.Schema.Field.MeasureType(column.type)
                 field.width = 100
 
                 response.schema.fields.append(field)
@@ -199,11 +208,11 @@ class Instance:
 
             colRes = silkycoms.CellsResponse.Column()
 
-            if column.column_type == ColumnType.CONTINUOUS:
+            if column.type == MeasureType.CONTINUOUS:
                 for r in range(rowStart, rowStart + rowCount):
                     value = column[r]
                     colRes.doubles.values.append(value)
-            elif column.column_type == ColumnType.NOMINAL_TEXT:
+            elif column.type == MeasureType.NOMINAL_TEXT:
                 for r in range(rowStart, rowStart + rowCount):
                     value = column[r]
                     colRes.strings.values.append(value)
@@ -229,9 +238,9 @@ class Instance:
         name = os.path.basename(path)
         location = os.path.dirname(path)
 
-        documents_dir = Dirs.documentsDir()
-        home_dir = Dirs.homeDir()
-        desktop_dir = Dirs.desktopDir()
+        documents_dir = Dirs.documents_dir()
+        home_dir = Dirs.home_dir()
+        desktop_dir = Dirs.desktop_dir()
 
         if location.startswith(documents_dir):
             location = location.replace(documents_dir, '{{Documents}}')
