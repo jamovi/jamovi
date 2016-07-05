@@ -19,7 +19,7 @@ var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
     var element = '<iframe id="' + analysis.ns + '-' + analysis.name + '" \
             sandbox="allow-scripts allow-same-origin" \
             src="' + iframeUrl + instanceId + '/" \
-            class="silky-options-control" \
+            class="silky-options-control silky-hidden-options-control" \
             style="overflow: hidden; box-sizing: border-box;" \
             src="./analysisui.html" \
             ></iframe>';
