@@ -168,8 +168,12 @@ body.windows.electron #header-buttons {
 .silky-hidden-options-control {
     visibility: hidden;
     height: 0px;
+    opacity: 0;
 }
 
+.silky-options-control {
+    transition: opacity 0.5s;
+}
 
 #progress-bar-helper {
     position: absolute ;
