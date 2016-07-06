@@ -95,6 +95,13 @@ dataSetModel.on('change:hasDataSet', function() {
     ribbonModel.set('dataAvailable', true);
 });
 
+coms.onBroadcast(function(broadcast) {
+    if (broadcast.payloadType === 'SettingsResponse') {
+        var settings = coms.Messages.SettingsResponse.decode(broadcast.payload);
+        backstageModel.set('settings', settings);
+    }
+});
+
 $(document).ready(function() {
 
     if (navigator.platform === "Win32")
@@ -158,6 +165,12 @@ $(document).ready(function() {
             optionspanel.hideOptions();
     });
 
+    var $fileName = $('.header-file-name');
+    instance.on('change:fileName', function(event) {
+        $fileName.text(event.changed.fileName);
+        document.title = event.changed.fileName;
+    });
+
     var section = splitPanel.getSection("main-options");
     splitPanel.getSection("results").$panel.find(".hideOptions").click(function() {
         splitPanel.setVisibility("main-options", false);
@@ -186,14 +199,6 @@ $(document).ready(function() {
 
     }).then(function() {
 
-        return $.getJSON('http://localhost:' + mainPort + '/backstage');
-
-    }).then(function(settings) {
-
-        backstageModel.set('settings', settings);
-
-    }).then(function() {
-
         return coms.ready;
 
     }).then(function() {
@@ -209,5 +214,21 @@ $(document).ready(function() {
         var newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
         history.replaceState({}, '', newUrl);
 
+        return instanceId;
+
+    }).then(function(instanceId) {
+
+        var settings = new coms.Messages.SettingsRequest();
+        var request = new coms.Messages.ComsMessage();
+        request.payload = settings.toArrayBuffer();
+        request.payloadType = "SettingsRequest";
+        request.instanceId = instanceId;
+
+        return coms.send(request);
+
+    }).then(function(response) {
+
+        var settings = coms.Messages.SettingsResponse.decode(response.payload);
+        backstageModel.set('settings', settings);
     });
 });

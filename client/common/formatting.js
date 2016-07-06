@@ -3,7 +3,7 @@ var _ = require('underscore');
 
 // determine the number of decimal places that the column needs to be formatted to
 
-var determineFormatting = function(values, format, sf, maxNS, minNS) {
+var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
 
     if (_.isUndefined(format))
         format = [ ];
@@ -41,7 +41,10 @@ var determineFormatting = function(values, format, sf, maxNS, minNS) {
     var dp;
     var expw;
 
-    if ( ! isFinite(minAbsNS)) {
+    if (type === 'integer') {
+        dp = 0;
+    }
+    else if ( ! isFinite(minAbsNS)) {
         dp = sf - 1;
     }
     else if (minAbsNS === 0) {
@@ -86,7 +89,7 @@ var format = function(value, format, sf, maxNS, minNS) {
         var exponent = Math.floor(Math.log10(Math.abs(value)));
         var mantissa = value/Math.pow(10, exponent);
         if (value === 0){
-            return value.toFixed(sf-1);
+            return value.toFixed(format.dp);
         }
         var expntSpan = Math.log10(exponent);
         var sign = '+';

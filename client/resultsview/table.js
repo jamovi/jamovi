@@ -90,7 +90,7 @@ var TableView = Element.View.extend({
                 cells.header[colNo] = { value : column.name, classes : classes };
 
             let values = _.pluck(column.cells, 'd');
-            formattings[colNo] = determineFormatting(values, column.format);
+            formattings[colNo] = determineFormatting(values, column.type, column.format);
         }
 
         for (let rowNo = 0; rowNo < rowCount; rowNo++) {

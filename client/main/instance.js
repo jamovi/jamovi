@@ -1,14 +1,15 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
+const path = require('path');
 
-var Analyses = require('./analyses');
-var DataSetViewModel = require('./dataset').DataSetViewModel;
+const Analyses = require('./analyses');
+const DataSetViewModel = require('./dataset').DataSetViewModel;
 
-var ProgressModel = Backbone.Model.extend({
+const ProgressModel = Backbone.Model.extend({
     defaults : {
         task     : '',
         progress : 0,
@@ -42,7 +43,9 @@ var Instance = Backbone.Model.extend({
     defaults : {
         coms : null,
         selectedAnalysis : null,
-        hasDataSet : false
+        hasDataSet : false,
+        filePath : null,
+        fileName : null,
     },
     instanceId : function() {
         return this._instanceId;
@@ -86,18 +89,21 @@ var Instance = Backbone.Model.extend({
         });
 
     },
-    open : function(path) {
+    open : function(filePath) {
 
         var self = this;
         var coms = this.attributes.coms;
 
-        var open = new coms.Messages.OpenRequest(path);
+        var open = new coms.Messages.OpenRequest(filePath);
         var request = new coms.Messages.ComsMessage();
         request.payload = open.toArrayBuffer();
         request.payloadType = "OpenRequest";
         request.instanceId = this._instanceId;
 
         var onresolve = function(response) {
+            let ext = path.extname(filePath);
+            self.set('filePath', filePath);
+            self.set('fileName', path.basename(filePath, ext));
             self._retrieveInfo();
         };
 
@@ -107,17 +113,23 @@ var Instance = Backbone.Model.extend({
 
         return coms.send(request).then(onresolve, null, onprogress);
     },
-    save : function(path) {
+    save : function(filePath) {
         var self = this;
         var coms = this.attributes.coms;
 
-        var save = new coms.Messages.SaveRequest(path);
+        var save = new coms.Messages.SaveRequest(filePath);
         var request = new coms.Messages.ComsMessage();
         request.payload = save.toArrayBuffer();
         request.payloadType = "SaveRequest";
         request.instanceId = this._instanceId;
 
-        return coms.send(request);
+        var onSuccess = function() {
+            let ext = path.extname(filePath);
+            self.set('filePath', filePath);
+            self.set('fileName', path.basename(filePath, ext));
+        };
+
+        return coms.send(request).then(onSuccess);
     },
     _beginInstance : function(instanceId) {
 
@@ -164,6 +176,10 @@ var Instance = Backbone.Model.extend({
                 });
 
                 self.set('hasDataSet', true);
+
+                let ext = path.extname(info.filePath);
+                self.set('filePath', info.filePath);
+                self.set('fileName', path.basename(info.filePath, ext));
             }
 
             return response;

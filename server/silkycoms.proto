@@ -82,6 +82,7 @@ message InfoResponse {
     optional Schema schema = 2;
     optional uint32 rowCount = 3;
     optional uint32 columnCount = 4;
+    optional string filePath = 5;
 }
 
 message CellsRequest {

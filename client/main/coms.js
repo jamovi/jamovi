@@ -10,6 +10,7 @@ var Coms = function() {
     this._baseUrl = null;
     this._transId = 0;
     this._transactions = [ ];
+    this._broadcastListeners = [ ];
 
     var self = this;
 
@@ -103,6 +104,11 @@ Coms.prototype.receive = function(event) {
 
     var response = this.Messages.ComsMessage.decode(event.data);
 
+    if (response.id === 0) {
+        this._notifyBroadcast(response);
+        return;
+    }
+
     for (var i = 0; i < this._transactions.length; i++) {
 
         var trans = this._transactions[i];
@@ -114,6 +120,15 @@ Coms.prototype.receive = function(event) {
             break;
         }
     }
+};
+
+Coms.prototype._notifyBroadcast = function(broadcast) {
+    for (var i = 0; i < this._broadcastListeners.length; i++)
+        this._broadcastListeners[i](broadcast);
+};
+
+Coms.prototype.onBroadcast = function(callback) {
+    this._broadcastListeners.push(callback);
 };
 
 module.exports = Coms;

@@ -46,33 +46,33 @@ int Column2::labelCount() const
 map<int, string> Column2::labels() const
 {
     map<int, string> m;
-    
+
     ColumnStruct *s = struc();
     Label *labels = _mm->resolve(s->labels);
-    
+
     for (int i = 0; i < s->labelsUsed; i++)
     {
         Label &l = labels[i];
         m[l.value] = _mm->resolve(l.label);
     }
-    
+
     return m;
 }
 
 const char *Column2::getLabel(int value)
 {
     if (value == INT_MIN)
-        return ".";
+        return "";
 
     ColumnStruct *s = struc();
     Label *labels = _mm->resolve(s->labels);
-    
+
     for (int i = 0; i < s->labelsUsed; i++)
     {
         Label &l = labels[i];
         if (l.value == value)
             return _mm->resolve(l.label);
     }
-    
+
     throw runtime_error("label not found");
 }

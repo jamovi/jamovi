@@ -30,6 +30,7 @@ class Instance:
 
         self._coms = None
         self._dataset = None
+        self._filepath = None
         self._analyses = Analyses()
         self._em = EngineManager()
 
@@ -91,8 +92,11 @@ class Instance:
 
         FileIO.write(self._dataset, request.filename)
 
+        self._filepath = request.filename
         response = silkycoms.SaveProgress()
         self._coms.send(response, self._instance_id, request)
+
+        self._add_to_recents(request.filename)
 
     def _on_open(self, request):
         print('opening ' + request.filename)
@@ -103,6 +107,7 @@ class Instance:
         FileIO.read(dataset, request.filename)
 
         self._dataset = dataset
+        self._filepath = request.filename
 
         self._coms.send(None, self._instance_id, request)
 
@@ -167,7 +172,7 @@ class Instance:
         response.hasDataSet = hasDataSet
 
         if hasDataSet:
-
+            response.filePath = self._filepath
             response.rowCount = self._dataset.row_count
             response.columnCount = self._dataset.column_count
 
@@ -255,7 +260,8 @@ class Instance:
         settings.set('recents', recents)
         settings.sync()
 
-        self._on_settings()
+        for instanceId, instance in Instance.instances.items():
+            instance._on_settings()
 
     def _on_settings(self, request=None):
 

@@ -63,13 +63,14 @@ body.windows #header-text {
     display: block;
 }
 
+.header-file-name:not(:empty)::before {
+    content: " - ";
+}
+
 #header-buttons {
     position: fixed;
     top: 1px;
     right: 1px;
-}
-
-body #header-buttons {
     display: none ;
 }
 

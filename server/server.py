@@ -6,7 +6,6 @@ import tornado.httpserver
 from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
 
-from settings import Settings
 from clientconnection import ClientConnection
 from instance import Instance
 
@@ -15,7 +14,6 @@ import uuid
 
 import threading
 import time
-import json
 import tempfile
 
 
@@ -109,27 +107,6 @@ class LoginHandler(RequestHandler):
         self.set_status(204)
 
 
-class BackstageInfoHandler(RequestHandler):
-    def get(self):
-        settings = Settings.retrieve('backstage')
-
-        localFSRecents = settings.get('localFSRecents')
-        if localFSRecents is None:
-            localFSRecents = [
-                { 'name': '{{Documents}}', 'path': '{{Documents}}' },
-                { 'name': '{{Desktop}}',   'path': '{{Desktop}}' } ]
-
-        recents = settings.get('recents', [ ])
-
-        info = {
-            'recents': recents,
-            'localFSRecents': localFSRecents
-        }
-
-        self.set_header('Content-Type', 'text/plain')
-        self.write(json.dumps(info))
-
-
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
@@ -182,7 +159,6 @@ class Server:
 
         self._main_app = tornado.web.Application([
             (r'/login', LoginHandler),
-            (r'/backstage', BackstageInfoHandler),
             (r'/coms', ClientConnection, { 'session_path': session_path }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),

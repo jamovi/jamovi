@@ -1,6 +1,6 @@
 from enum import Enum
+from protobuf3.fields import MessageField, DoubleField, BytesField, StringField, UInt32Field, EnumField, Int32Field, BoolField
 from protobuf3.message import Message
-from protobuf3.fields import EnumField, StringField, BoolField, BytesField, MessageField, UInt32Field, DoubleField, Int32Field
 
 
 class Error(Message):
@@ -83,14 +83,6 @@ class CellsResponse(Message):
             pass
 
 
-class CommandRequest(Message):
-    pass
-
-
-class CommandResponse(Message):
-    pass
-
-
 class AnalysisRequest(Message):
 
     class Perform(Enum):
@@ -170,6 +162,7 @@ InfoResponse.add_field('hasDataSet', BoolField(field_number=1, optional=True))
 InfoResponse.add_field('schema', MessageField(field_number=2, optional=True, message_cls=InfoResponse.Schema))
 InfoResponse.add_field('rowCount', UInt32Field(field_number=3, optional=True))
 InfoResponse.add_field('columnCount', UInt32Field(field_number=4, optional=True))
+InfoResponse.add_field('filePath', StringField(field_number=5, optional=True))
 CellsRequest.add_field('rowStart', UInt32Field(field_number=1, optional=True))
 CellsRequest.add_field('columnStart', UInt32Field(field_number=2, optional=True))
 CellsRequest.add_field('rowEnd', UInt32Field(field_number=3, optional=True))
@@ -182,7 +175,6 @@ CellsResponse.Column.add_field('doubles', MessageField(field_number=2, optional=
 CellsResponse.Column.add_field('strings', MessageField(field_number=3, optional=True, message_cls=CellsResponse.Column.Strings))
 CellsResponse.add_field('request', MessageField(field_number=1, optional=True, message_cls=CellsRequest))
 CellsResponse.add_field('columns', MessageField(field_number=2, repeated=True, message_cls=CellsResponse.Column))
-CommandRequest.add_field('reset', BoolField(field_number=1, optional=True))
 AnalysisRequest.add_field('datasetId', StringField(field_number=1, optional=True))
 AnalysisRequest.add_field('analysisId', Int32Field(field_number=2, optional=True))
 AnalysisRequest.add_field('name', StringField(field_number=3, optional=True))
