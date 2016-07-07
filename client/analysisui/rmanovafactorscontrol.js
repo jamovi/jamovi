@@ -281,7 +281,10 @@ var RMAnovaFactorsControl = function(params) {
 
     this.onOptionValueChanged = function(keys, data) {
         var optData = this.clone(this.option.getValue());
-        this.data = (optData === null || optData.length === 0) ? [ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ] : optData;
+        if (optData === null || optData.length === 0)
+            this.option.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
+        else
+            this.data = optData;
 
         this.updateData();
     };
