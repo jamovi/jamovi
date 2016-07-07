@@ -46,6 +46,7 @@ var LayoutGrid = function() {
     this._parentLayout = null;
     this._preparingLayout = true;
     this._waitingForValidation = false;
+    this._postProcessCellList = [];
 
     this.getScrollbarWidth = function() {
         if (LayoutGrid.prototype._scrollbarWidth === null) {
@@ -116,22 +117,20 @@ var LayoutGrid = function() {
         this.invalidateLayout('both', Math.random());
     };
 
-    this.invalidateChildLayouts = function(deep) {
-        for (var i = 0; i < this._layouts.length; i++) {
-            var layout = this._layouts[i];
-            layout._layoutValid = false;
-            if (deep)
-                layout.invalidateChildLayouts(deep);
-        }
+    this.waitingForValidation = function() {
+        if (this._waitingForValidation)
+            return this._waitingForValidation;
+
+        if (this._parentLayout !== null)
+            return this._parentLayout.waitingForValidation();
+
+        return false;
     };
 
     this.invalidateLayout = function(type, updateId, deep) {
-        if (this._waitingForValidation)
-            return;
 
         this._layoutValid = false;
-        if (deep)
-            this.invalidateChildLayouts(deep);
+
         if (this.isLayoutSuspended()) {
             if (this._hasResized !== null && this._hasResized.type !== 'both' && type !== this._hasResized.type)
                 this._hasResized = {  type: 'both' };
@@ -140,17 +139,20 @@ var LayoutGrid = function() {
         }
         else {
             var newContent = this._initaliseContent();
+            if (this.waitingForValidation())
+                return;
+
             if (newContent) {
                 this._waitingForValidation = true;
                 var self = this;
                 window.setTimeout(function() {
-                    if (self._processCells(type, updateId) === false)
+                    if (self._processCells(type, updateId))
                         self._postProcessCells();
                     self._waitingForValidation = false;
-                    }, 0);
+                }, 0);
             }
             else {
-                if (this._processCells(type, updateId) === false)
+                if (this._processCells(type, updateId))
                     this._postProcessCells();
             }
         }
@@ -232,6 +234,8 @@ var LayoutGrid = function() {
             if (layout._requiresPostProccessing)
                 layout._postProcessCells();
         }
+
+        this._layoutValid = true;
     };
 
     this._onCellRightEdgeMove = function(cell) {
@@ -340,14 +344,16 @@ var LayoutGrid = function() {
 
         this._currentUpdateId = updateId;
 
-        if (this._ignoreLayout)
-            return;
+        if (this._parentCell !== null && this._parentCell.visible() === false)
+            return false;
 
         for (var i = 0; i < this._layouts.length; i++) {
             var layout = this._layouts[i];
-            if (layout._parentCell.visible() && layout._layoutValid === false)
-                layout._processCells(type, updateId);
+            layout._processCells(type, updateId);
         }
+
+        if (this._layoutValid)
+            return false;
 
         this.beginCellManipulation();
         this._requiresPostProccessing = true;
@@ -355,9 +361,9 @@ var LayoutGrid = function() {
         this._calculateGrid();
         this._layoutGrid(type);
 
-        this._layoutValid = true;
+        this._updateSize(type, updateId);
 
-        return this._updateSize(type, updateId);
+        return true;
     };
 
     this._updateSize = function(type, updateId) {
@@ -367,7 +373,7 @@ var LayoutGrid = function() {
 
         var properties = { };
 
-        if (this.autoSizeHeight) {
+        if (this.autoSizeHeight && this.heightControlledByParent() === false) {
             var height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
             height = (this.maximumHeight !== -1 && height > this.maximumHeight) ? this.maximumHeight : height;
             height = (this.minimumHeight !== -1 && height < this.minimumHeight) ? this.minimumHeight : height;
@@ -378,7 +384,7 @@ var LayoutGrid = function() {
             }
         }
 
-        if (this.autoSizeWidth) {
+        if (this.autoSizeWidth && this.widthControlledByParent() === false) {
             var width = this.preferredWidth;
             width = (this.maximumWidth !== -1 && width > this.maximumWidth) ? this.maximumWidth : width;
             width = (this.minimumWidth !== -1 && width < this.minimumWidth) ? this.minimumWidth : width;
@@ -458,7 +464,6 @@ var LayoutGrid = function() {
                     layoutView.invalidateLayout('both', Math.random(), true);
                 }, 0);
             }
-
         });
         return cell;
     };
@@ -513,7 +518,7 @@ var LayoutGrid = function() {
     };
 
     this.isLayoutSuspended = function() {
-        return this._resizeSuspended > 0 || this._preparingLayout || this._waitingForValidation || (this._parentLayout !== null && this._parentLayout.isLayoutSuspended());
+        return this._resizeSuspended > 0 || this._preparingLayout || (this._parentLayout !== null && this._parentLayout.isLayoutSuspended());
     };
 
     this.resumeLayout = function() {
@@ -528,12 +533,6 @@ var LayoutGrid = function() {
             if (this._hasResized !== null) {
                 this.invalidateLayout(this._hasResized.type, Math.random());
                 this._hasResized = null;
-            }
-            else {
-                for (var i = 0; i < this._layouts.length; i++) {
-                    var layout = this._layouts[i];
-                    layout.resumeLayout();
-                }
             }
         }
     };
@@ -662,6 +661,20 @@ var LayoutGrid = function() {
 
     this.setMaximumHeight = function(height) {
         this.maximumHeight = height;
+    };
+
+    this.widthControlledByParent = function() {
+        if (this._parentCell === null)
+            return false;
+
+        return this._parentCell.horizontalStretchFactor !== 0 && this._parentCell.dockContentWidth;
+    };
+
+    this.heightControlledByParent = function() {
+        if (this._parentCell === null)
+            return false;
+
+        return false; //this._parentCell.spanAllRows === true && this._parentCell.dockContentHeight;
     };
 
     this.getCell = function(columnIndex, rowIndex) {

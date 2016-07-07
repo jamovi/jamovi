@@ -5,9 +5,12 @@ var $ = require('jquery');
 
 var OptionControlBase = require('./optioncontrolbase');
 var ControlContainer = require('./controlcontainer');
+var Backbone = require('backbone');
 
 
 var OptionsView = function(uiModel) {
+
+    _.extend(this, Backbone.Events);
 
     this.$el = $('<div class="silky-options-content"></div>');
 
@@ -44,6 +47,8 @@ var OptionsView = function(uiModel) {
                 this.layoutActionManager.addResource(name, backgroundOption);
             }
         }
+
+        this.layoutActionManager.addResource("analysis", this);
 
         var self = this;
         window.setTimeout(function() {
@@ -149,33 +154,10 @@ var OptionsView = function(uiModel) {
 
         return ctrl;
     };
-/*
-    this.createControl = function(uiDef) {
 
-        var id = uiDef.optionId;
-        if (_.isUndefined(id))
-            id = uiDef.name;
-        var option = this._getOption(id);
-        if (option === null) {
-            console.log("The option " + id + " does not exist.");
-            return null;
-        }
-
-        var ctrl = this.model.controls.create(uiDef.type, option, uiDef);
-        if (ctrl !== null)
-            this.model.actionManager.addResource(uiDef.name, ctrl);
-
-        return ctrl;
+    this.beginDataInitialisation = function() {
+        this.trigger("initialising");
     };
-
-    this.createContainer = function(uiDef) {
-        var ctrl = this.model.controls.create(uiDef.type, this, uiDef);
-        if (ctrl !== null)
-            this.model.actionManager.addResource(uiDef.name, ctrl);
-
-        return ctrl;
-    };
-*/
 };
 
 

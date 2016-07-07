@@ -39,7 +39,7 @@ function sendMsg(id, data) {
 }
 
 var Analysis = function(def, resources, baseControls) {
-    //var module = { exports : { } };
+
     eval(def);
 
     var options = module.exports.options;
@@ -51,7 +51,8 @@ var Analysis = function(def, resources, baseControls) {
     }
 
     var layoutDef = new module.exports.LayoutDef();
-    this.model = { options: new Options(options), layoutDef: layoutDef, resources: resources, controls: controls, actionManager: new LayoutActionManager(layoutDef) };
+    var actionManager = new LayoutActionManager(layoutDef);
+    this.model = { options: new Options(options), layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager };
 
     this.View = new OptionsView( this.model);
 };
@@ -128,6 +129,7 @@ function setResources(resources) {
 
 function setOptionsValues(data) {
 
+    analysis.View.beginDataInitialisation();
     var model = analysis.model;
     var params = Options.getDefaultEventParams("changed");
     params.silent = true;

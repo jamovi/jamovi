@@ -4,43 +4,104 @@ var _ = require('underscore');
 var $ = require('jquery');
 var LayoutActionResource = require('./layoutactionresource');
 
-var LayoutAction = function(manager, callback) {
+var LayoutAction = function(manager, params) {
 
-    this._callback = callback.execute;
-
-    if (Array.isArray(callback.onChange))
-        this._registeredListeners = callback.onChange;
-    else
-        this._registeredListeners = [ callback.onChange ];
+    this._callback = params.execute;
 
     this._manager = manager;
     this.data = { };
 
     this._resources = { };
+    this._listeners = [];
+    this._propertyListeners = [];
 
-    this.execute = function(context) {
-        _.each(this._resources, function(value, key, list) {
-            value._beginAction();
-        });
+    var self = this;
+    this.execute = function() {
+        self._callback.call(self._manager._layoutDef, self);
+    };
 
-        this._callback.call(context, this);
+    this._connectToListeners = function(eventListeners, propertyListeners) {
+        var i = 0;
+        var q = null;
+        var name = null;
+        var eventObj = null;
+        if (_.isUndefined(propertyListeners) === false) {
+            for (i = 0; i < propertyListeners.length; i++) {
+                q = propertyListeners[i].split(".");
+                if (q.length > 2 || q.length <= 0)
+                    continue;
 
-        _.each(this._resources, function(value, key, list) {
-            value._endAction();
-        });
+                name = q[0];
+                var property = "value";
+                if (q.length > 1)
+                    property = q[1];
+
+                eventObj = {
+                    name: name,
+                    property: property,
+                    eventName: null,
+                    supplier: null,
+                    connected: false,
+                };
+                this._propertyListeners.push(eventObj);
+                this._listeners.push(eventObj);
+            }
+        }
+
+        if (_.isUndefined(eventListeners) === false) {
+            for (i = 0; i < eventListeners.length; i++) {
+                q = eventListeners[i].split(".");
+                if (q.length !== 2)
+                    continue;
+
+                name = q[0];
+                var eventName = q[1];
+
+                eventObj = {
+                    name: name,
+                    property: null,
+                    eventName: eventName,
+                    supplier: null,
+                    connected: false
+                };
+                this._listeners.push(eventObj);
+            }
+        }
+    };
+
+    this.initialise = function() {
+
+        if (this._propertyListeners.length > 0)
+            this._callback.call(this._manager._layoutDef, this);
+
+        for (var i = 0; i < this._listeners.length; i++) {
+            var eventObj = this._listeners[i];
+            if (eventObj.connected === false) {
+                var supplier = this._manager.getObject(eventObj.name);
+                if (eventObj.eventName === null)
+                    eventObj.eventName = supplier.getTrigger(eventObj.property);
+                eventObj.supplier = supplier;
+                eventObj.connected = true;
+                eventObj.supplier.on(eventObj.eventName, this.execute);
+            }
+        }
     };
 
     this.close = function() {
-        _.each(this._resources, function(value, key, list) {
-            value.close();
-        });
+        for (var i = 0; i < this._listeners.length; i++) {
+            var eventObj = this._listeners[i];
+            if (eventObj.connected) {
+                eventObj.supplier.off(eventObj.eventName, this.execute);
+                eventObj.connected = false;
+            }
+        }
     };
 
     this.get = function(name, property) {
         var actionResource = this._resources[name];
         if (_.isUndefined(actionResource)) {
             var supplier = this._manager.getObject(name);
-            actionResource = new LayoutActionResource(this, name, supplier);
+            actionResource = new LayoutActionResource(supplier);
             this._resources[name] = actionResource;
         }
 
@@ -63,22 +124,20 @@ var LayoutAction = function(manager, callback) {
         return this.get(name, "value");
     };
 
-    this.isListenerRegistered = function(name, property) {
+    var eventListeners = params.onEvent;
+    if (_.isUndefined(params.onEvent) === false && Array.isArray(eventListeners) === false)
+        eventListeners = [ eventListeners ];
 
-        var found = false;
+    var propertyListeners = params.onChange;
+    if (_.isUndefined(params.onChange) === false &&  Array.isArray(propertyListeners) === false)
+        propertyListeners = [ propertyListeners ];
 
-        if (property === "value")
-            found = this._registeredListeners.includes(name);
+    this._connectToListeners(eventListeners, propertyListeners);
 
-        if (found === false)
-            found = this._registeredListeners.includes(name + "." + property);
-
-        return found;
-    };
 };
 
-LayoutAction.extendTo = function(target, manager, callback) {
-    LayoutAction.call(target, manager, callback);
+LayoutAction.extendTo = function(target, manager, params) {
+    LayoutAction.call(target, manager, params);
 };
 
 module.exports = LayoutAction;

@@ -10,7 +10,7 @@ var LayoutCell = function() {
 
     Overridable.extendTo(this);
 
-    this.$el = $('<div></div>');
+    this.$el = $('<div class="not-rendered"></div>');
     this.$el.css("position", "absolute");
     this.$el.css("box-sizing", "border-box");
 
@@ -106,7 +106,10 @@ var LayoutCell = function() {
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
 
-        this._parentLayout.invalidateLayout(data.type, data.updateId);
+        window.setTimeout(function() {
+            self._parentLayout.invalidateLayout(data.type, data.updateId);
+        }, 0);
+
     };
 
     this.render = function() {
@@ -515,6 +518,10 @@ var LayoutCell = function() {
         if (this._heightAdjusted)
             data.height = this._height;
         if (this._visibleAdjusted) {
+            if (this._visible)
+                this.$el.removeClass("cell-invisible");
+            else
+                this.$el.addClass("cell-invisible");
             data.opacity = (this._visible ? 1 : 0);
             data['z-index'] = this._visible ? 1 : 0;
         }
@@ -526,6 +533,7 @@ var LayoutCell = function() {
                 if (self._visible)
                     self.$el.css("opacity", 1);
 
+                self.$el.removeClass("notRendered");
                 self.$el.addClass("rendered");
             }, 0);
         }

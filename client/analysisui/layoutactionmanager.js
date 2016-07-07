@@ -33,7 +33,7 @@ var LayoutActionManager = function(layoutDef) {
     this.initialiseAll = function() {
         for (var i = 0; i < this._actions.length; i++) {
             var action = this._actions[i];
-            action.execute(this._layoutDef);
+            action.initialise();
         }
     };
 
@@ -52,8 +52,8 @@ var LayoutActionManager = function(layoutDef) {
             if (_.isFunction(action.execute) === false)
                 throw "An action must contain an execute function.";
 
-            if (_.isUndefined(action.onChange))
-                throw "An action must contain an onChange property.";
+            if (_.isUndefined(action.onChange) && _.isUndefined(action.onEvent))
+                throw "An action must contain an onChange or onEvent property.";
 
             this.addAction(action);
         }
