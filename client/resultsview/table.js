@@ -9,7 +9,7 @@ var format = require('../common/formatting').format;
 
 var Element = require('./element');
 
-var SUBSCRIPTS =["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
+var SUPSCRIPTS =["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
                 "\u1D57", "\u1D58", "\u1D5B", "\u02B7", "\u02E3", "\u02B8", "\u1DBB"];
 
@@ -59,6 +59,8 @@ var TableView = Element.View.extend({
 
         var table = this.model.attributes.element;
         var html;
+        var fnIndices = { };
+        var footnotes = [ ];
 
         if (this.model.attributes.status === 2)
             this.$el.addClass('silky-results-status-running');
@@ -100,7 +102,23 @@ var TableView = Element.View.extend({
             for (let colNo = 0; colNo < table.columns.length; colNo++) {
                 let sourceColumn = table.columns[colNo];
                 let sourceCell = sourceColumn.cells[rowNo];
+
                 let cell = { };
+
+                for (let i = 0; i < sourceCell.footnotes.length; i++) {
+                    let footnote = sourceCell.footnotes[i];
+                    let index = fnIndices[footnote];
+                    if (_.isUndefined(index)) {
+                        index = _.size(fnIndices);
+                        fnIndices[footnote] = index;
+                        footnotes[index] = footnote;
+                    }
+                    if (i === 0)
+                        cell.sups = SUPSCRIPTS[index];
+                    else
+                        cell.sups += SUPSCRIPTS[index];
+                }
+
                 switch (sourceCell.cellType) {
                 case 'i':
                     cell.value = sourceCell.i;
@@ -227,7 +245,7 @@ var TableView = Element.View.extend({
                 var cell = cells.body[rowNo][colNo];
                 if (cell) {
                     html += '<td class="silky-results-table-cell ' + cell.classes + '">' + cell.value + '</td>';
-                    html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + /*cell.sup+*/ '</td>';
+                    html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
                 }
                 else {
                     html += '<td colspan="2"></td>';
@@ -238,6 +256,17 @@ var TableView = Element.View.extend({
         }
 
         this.$tableBody.html(html);
+
+        html = '';
+
+        for (let i = 0; i < table.notes.length; i++)
+            html += '<tr><td colspan="999999"><span style="font-style: italic ;">Note.</span> ' + table.notes[i].note + '</td></tr>';
+
+        for (let i = 0; i < footnotes.length; i++)
+            html += '<tr><td colspan="999999">' + SUPSCRIPTS[i] + ' ' + footnotes[i] + '</td></tr>';
+
+        html += '<tr><td colspan="999999"></td></tr>';
+        this.$tableFooter.html(html);
     },
     makeFormatClasses : function(column) {
         var classes = '';

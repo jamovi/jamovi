@@ -23,6 +23,11 @@ using namespace boost;
 
 RInside *EngineR::_rInside = NULL;
 
+EngineR::EngineR()
+{
+    this->initR();
+}
+
 void EngineR::setPath(const std::string &path)
 {
     _path = path;
@@ -275,6 +280,15 @@ void EngineR::initR()
 
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
+
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('stats'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('RProtoBuf'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('silkycore'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('silkyR'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('rjson'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('yaml'))");
+
+    _rInside->parseEvalQNT("try(car::Anova(), silent=TRUE)");
 }
 
 string EngineR::makeAbsolute(const string &paths)

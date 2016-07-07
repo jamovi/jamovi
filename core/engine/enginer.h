@@ -21,6 +21,7 @@
 class EngineR
 {
 public:
+    EngineR();
     void run(Analysis *analysis);
     void setPath(const std::string &path);
 

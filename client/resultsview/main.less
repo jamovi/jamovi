@@ -94,6 +94,7 @@ h3, h4, h5 {
 .silky-results-table-table {
     border-collapse: collapse ;
     border-color: black ;
+    width: 1px ;
 }
 
 .silky-results-table-title-cell {
@@ -105,6 +106,14 @@ td.silky-results-table-cell {
     white-space: nowrap ;
 }
 
+.silky-results-table-table tfoot td {
+    padding: 2px 8px ;
+}
+
+.silky-results-table-table tfoot tr:first-child td {
+    padding-top: 6px ;
+}
+
 td.silky-results-table-cell-text,
 td.silky-results-table-cell-integer,
 td.silky-results-table-cell-number,
@@ -113,7 +122,7 @@ td.silky-results-table-cell-missing {
 }
 
 td.silky-results-table-cell-sup {
-    padding-left: 0 ;
+    padding-left: 2px ;
 }
 
 .silky-results-table-table tbody tr:first-child td {
@@ -139,7 +148,7 @@ th.silky-results-table-title-cell{
     border-bottom: 1px solid #333333 ;
 }
 
-.silky-results-table-table tr:last-child td {
+.silky-results-table-table tbody tr:last-child td {
     border-bottom: 2px solid #333333 ;
 }
 

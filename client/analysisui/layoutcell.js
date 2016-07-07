@@ -10,7 +10,7 @@ var LayoutCell = function() {
 
     Overridable.extendTo(this);
 
-    this.$el = $('<div class="not-rendered"></div>');
+    this.$el = $('<div style="opacity: 0" class="not-rendered"></div>');
     this.$el.css("position", "absolute");
     this.$el.css("box-sizing", "border-box");
 
