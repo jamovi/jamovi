@@ -198,6 +198,7 @@ var Instance = Backbone.Model.extend({
         var analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
+        analysisRequest.ppi = 72 * (window.devicePixelRatio || 1);
 
         if (analysis.isSetup) {
             analysisRequest.analysisId = analysis.id;

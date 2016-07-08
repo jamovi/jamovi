@@ -9,20 +9,21 @@
 
 using namespace std;
 
-Analysis::Analysis(int id, std::string name, std::string ns, std::string options)
+Analysis::Analysis(int id, std::string name, std::string ns, std::string options, int ppi)
 {
     this->id = id;
     this->name = name;
     this->ns = ns;
     this->options = options;
+    this->ppi = ppi;
     this->perform = 2;
-    
+
     stringstream ss;
     ss << setfill('0') << setw(2);
     ss << id;
     ss << " ";
     ss << name;
-    
+
     this->nameAndId = ss.str();
 
     this->requiresDataset = true;

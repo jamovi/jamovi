@@ -16,7 +16,6 @@
 #include <boost/bind.hpp>
 
 #include "enginer.h"
-#include "analysisloader.h"
 #include "analysis.h"
 
 #include "silkycoms.pb.h"
@@ -30,9 +29,9 @@ Engine::Engine()
     _exiting = false;
     _waiting = NULL;
     _running = NULL;
-    
+
     _R = new EngineR();
-    
+
     _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1));
 }
@@ -94,7 +93,7 @@ void Engine::analysisRequested(int requestId, Analysis *analysis)
 {
     lock_guard<mutex> lock(_mutex);
     _condition.notify_all();
-    
+
     _currentRequestId = requestId;
     _waiting = analysis;
 }
@@ -102,13 +101,13 @@ void Engine::analysisRequested(int requestId, Analysis *analysis)
 void Engine::resultsReceived(const string &results)
 {
     silkycoms::ComsMessage message;
-    
+
     message.set_id(_currentRequestId);
     message.set_payload(results);
     message.set_payloadtype("AnalysisResponse");
-    
+
     string data;
-    
+
     message.SerializeToString(&data);
 
     nn_send(_socket, data.data(), data.size(), 0);

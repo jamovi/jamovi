@@ -80,7 +80,12 @@ void EngineR::run(Analysis *analysis)
     std::string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw);
 
-    rInside.parseEvalQNT("analysis$run();analysis$render();analysis$.save()\n");
+    ss.str("");
+    ss << "analysis$run();";
+    ss << "analysis$render(ppi=" << analysis->ppi << ");";
+    ss << "analysis$.save();";
+
+    rInside.parseEvalQNT(ss.str());
 
     Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw2(rawVec2.begin(), rawVec2.end());

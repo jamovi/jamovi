@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include "silkycoms.pb.h"
-#include "analysisloader.h"
+#include "analysis.h"
 
 using namespace std;
 using namespace silkycoms;
@@ -55,7 +55,12 @@ void EngineComs::parse(char *data, int len)
         return;
     }
 
-    Analysis *analysis = AnalysisLoader::create(analysisRequest.analysisid(), analysisRequest.name(), analysisRequest.ns(), analysisRequest.options());
+    Analysis *analysis = new Analysis(
+        analysisRequest.analysisid(),
+        analysisRequest.name(),
+        analysisRequest.ns(),
+        analysisRequest.options(),
+        analysisRequest.ppi());
 
     analysis->datasetId = analysisRequest.datasetid();
 
