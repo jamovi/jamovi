@@ -157,8 +157,8 @@ $(document).ready(function() {
         var analysis = event.changed.selectedAnalysis;
         if (analysis !== null) {
             analysis.ready.then(function() {
-                optionspanel.setAnalysis(analysis);
                 splitPanel.setVisibility("main-options", true);
+                optionspanel.setAnalysis(analysis);
             });
         }
         else
