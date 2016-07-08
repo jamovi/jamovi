@@ -21,9 +21,6 @@ var OptionsView = function(uiModel) {
         var options = this.model.options;
         var layoutDef = this.model.layoutDef;
 
-        /*if (_.isUndefined(this.layoutActionManager) === false)
-            this.layoutActionManager.close();*/
-
         this.layoutActionManager = this.model.actionManager;
 
         var layoutGrid = new ControlContainer(layoutDef);
@@ -90,6 +87,10 @@ var OptionsView = function(uiModel) {
 
                 setValue: function(value, key, eventParams) {
                     options.setOptionValue(option, value, key, eventParams);
+                },
+
+                isValueInitialised: function() {
+                    return option.isValueInitialised();
                 },
 
                 getLength: function(key) {

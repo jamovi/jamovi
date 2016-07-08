@@ -15,7 +15,6 @@ var ControlContainer = function(params) {
     LayoutGridBorderSupport.extendTo(this);
 
     this.registerSimpleProperty("stretchFactor", 0);
-    this.registerSimpleProperty("animate", false);
     this.registerSimpleProperty("style", "list");
     this.registerSimpleProperty("name", null);
 
@@ -25,12 +24,10 @@ var ControlContainer = function(params) {
         this.$el.addClass("silky-control-container");
 
         var stretchFactor = this.getPropertyValue("stretchFactor");
-        var animate = this.getPropertyValue("animate");
 
         var cell = grid.addLayout(column, row, true, this);
 
         cell.setStretchFactor(stretchFactor);
-        this._animateCells = animate;
 
         return { height: 1, width: 1 };
     };

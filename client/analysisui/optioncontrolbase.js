@@ -41,6 +41,9 @@ var OptionControlBase = function(params) {
                 this.onOptionValueRemoved(keys, data);
             this.firePropertyChangedEvent("value");
         }, this);
+
+        if (this.onOptionSet)
+            this.onOptionSet(option);
     };
 };
 

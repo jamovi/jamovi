@@ -243,10 +243,15 @@ var RMAnovaFactorsControl = function(params) {
         return { height: 2, width: 2 };
     };
 
+    this.onOptionSet = function(option) {
+        if (this.option.isValueInitialised()) {
+            this.data = this.clone(this.option.getValue());
+            this.updateData();
+        }
+    };
+
     this.data = [];
-    for (var i = 0; i < 4; i++) {
-        this.data.push({label: "RM Factor 1", levels: ["Level 1", "Level 2"]});
-    }
+
 
     this.onItemChanged = function(item) {
         this.option.setValue(this.data);
@@ -280,28 +285,31 @@ var RMAnovaFactorsControl = function(params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
-        var optData = this.clone(this.option.getValue());
-        if (optData === null || optData.length === 0)
-            this.option.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
-        else
-            this.data = optData;
-
+        this.data = this.clone(this.option.getValue());
         this.updateData();
     };
 
     this.updateData = function() {
-        this.suspendLayout();
-        for (var i = 0; i <= this.data.length; i++)
-            this.createFactorsObject(this.data[i], i, i  === this.data.length);
 
-        if (this.items.length > this.data.length + 1) {
-            var countToRemove = this.items.length - this.data.length - 1;
-            for (var j = this.data.length + 1; j < this.items.length; j++)
-                this.items[j].close();
-            this.items.splice(this.data.length + 1, countToRemove);
-            this.removeRow(this.data.length + 1, countToRemove);
+        if ((this.data === null || this.data.length === 0) && this.option.isValueInitialised())
+            this.option.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
+        else {
+            if (this.data === null)
+                this.data = [];
+
+            this.suspendLayout();
+            for (var i = 0; i <= this.data.length; i++)
+                this.createFactorsObject(this.data[i], i, i  === this.data.length);
+
+            if (this.items.length > this.data.length + 1) {
+                var countToRemove = this.items.length - this.data.length - 1;
+                for (var j = this.data.length + 1; j < this.items.length; j++)
+                    this.items[j].close();
+                this.items.splice(this.data.length + 1, countToRemove);
+                this.removeRow(this.data.length + 1, countToRemove);
+            }
+            this.resumeLayout();
         }
-        this.resumeLayout();
 
     };
 
@@ -309,7 +317,7 @@ var RMAnovaFactorsControl = function(params) {
         return JSON.parse(JSON.stringify(object));
     };
 
-    this.updateData();
+
 
 };
 
