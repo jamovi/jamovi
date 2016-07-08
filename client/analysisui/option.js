@@ -10,6 +10,7 @@ var Opt = function(type, initialValue, params) {
     this.params = params;
     this.type = type;
     this._value = initialValue;
+    this._initialised = false;
 
     _.extend(this, Backbone.Events);
 
@@ -95,6 +96,8 @@ var Opt = function(type, initialValue, params) {
         if (value !== null && _.isUndefined(value.raw) === false) //To handle typed values
             fValue = value.raw;
 
+        this._initialised = true;
+
         if (keys.length === 0) {
             if (force || _.isEqual(fValue, this._value) === false) {
                 this._value = fValue;
@@ -119,6 +122,10 @@ var Opt = function(type, initialValue, params) {
         }
 
         return false;
+    };
+
+    this.isValueInitialised = function() {
+        return this._initialised;
     };
 
     this.insertValueAt = function(value, keys, eventParams) {

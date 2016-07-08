@@ -101,7 +101,7 @@ var FormatDef = {
 
         _getJoiner: function(level) {
             if (level === 0)
-                return '*';
+                return '✻';
 
             return '-';
         },

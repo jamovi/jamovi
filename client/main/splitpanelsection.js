@@ -496,10 +496,12 @@ var SplitPanelSection = function(index, $panel, initData, parent) {
             this._animationCache[property] = null;
 
         if (this.hasLockedAnimation() === false && this._animationCache._changed === false)
-                this._animationCache = null;
+            this._animationCache = null;
 
         if (property === "width")
             this.$panel.trigger("resized");
+
+        this.$panel.css("z-index", 0);
     };
 
     this.testCoreGrowth = function(x) {

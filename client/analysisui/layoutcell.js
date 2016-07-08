@@ -530,11 +530,10 @@ var LayoutCell = function() {
         if (this._initialised === false)
         {
             window.setTimeout(function() {
+                self.$el.removeClass("not-rendered");
+                self.$el.addClass("rendered");
                 if (self._visible)
                     self.$el.css("opacity", 1);
-
-                self.$el.removeClass("notRendered");
-                self.$el.addClass("rendered");
             }, 0);
         }
 
