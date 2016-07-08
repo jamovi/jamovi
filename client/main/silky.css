@@ -68,6 +68,7 @@ body.windows #header-text {
 }
 
 #header-buttons {
+    z-index: 200 ;
     position: fixed;
     top: 1px;
     right: 1px;
