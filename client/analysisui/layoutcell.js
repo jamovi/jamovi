@@ -36,13 +36,12 @@ var LayoutCell = function() {
     this._top = -1;
     this._parentLayout = null;
 
+    var self = this;
     this.onMouseDown = function(event) {
-        var self = event.data;
         self.trigger('layoutcell.mousedown', event.ctrlKey, event.shiftKey);
     };
 
     this.onMouseUp = function(event) {
-        var self = event.data;
         self.trigger('layoutcell.mouseup', event.ctrlKey, event.shiftKey);
     };
 
@@ -72,11 +71,23 @@ var LayoutCell = function() {
         return this._selected;
     };
 
+    this.onContentChangedEvent = function(event) {
+        self.data.hasContentChanged = true;
+        self.onContentSizeChanged({type: "both"});
+    };
+
     this.setContent = function($content) {
+
+        if (this.$previousContent !== null)
+            this.$previousContent.off("contentchanged", this.onContentChangedEvent);
+
         if (this.$content !== null)
             this.$previousContent = this.$content;
 
         this.$content = $content;
+
+        if (this.$content !== null)
+            this.$content.on("contentchanged", this.onContentChangedEvent);
 
         this._preferredWidth = -1;
         this._preferredHeight = -1;
@@ -94,7 +105,6 @@ var LayoutCell = function() {
     };
 
     this.onContentSizeChanged = function(data) {
-        var self = this;
 
         self._preferredWidth = -1;
         self._preferredHeight = -1;
@@ -106,10 +116,7 @@ var LayoutCell = function() {
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
 
-        window.setTimeout(function() {
-            self._parentLayout.invalidateLayout(data.type, data.updateId);
-        }, 0);
-
+        self._parentLayout.invalidateLayout(data.type, data.updateId);
     };
 
     this.render = function() {
@@ -181,7 +188,7 @@ var LayoutCell = function() {
         if (this._preferredHeight === -1) {
             if (this.cssProperties === null)
                 this.refreshCSSProperties();
-            //var properties = this.$el.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width"]);
+
             var contentSpace = this.dockContentHeight ? 0 : this.contentHeight();
             this._preferredHeight = this.contentHeight() + this.cssProperties["padding-top"] + this.cssProperties["padding-bottom"] + this.cssProperties["border-top-width"] + this.cssProperties["border-bottom-width"];
         }
@@ -526,7 +533,6 @@ var LayoutCell = function() {
             data['z-index'] = this._visible ? 1 : 0;
         }
 
-        var self = this;
         if (this._initialised === false)
         {
             window.setTimeout(function() {

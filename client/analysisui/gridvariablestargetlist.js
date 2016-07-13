@@ -24,6 +24,10 @@ var GridVariablesTargetList = function(params) {
         self.onAddButtonClick();
     });
 
+    this.setControlManager = function(context) {
+        this.targetGrid.setControlManager(context);
+    };
+
     this.onPropertyChanged = function(name) {
         if (name === "maxItemCount") {
             var value = this.getPropertyValue(name);
@@ -180,7 +184,7 @@ var GridVariablesTargetList = function(params) {
 
     var self = this;
     this.targetGrid.getSupplierItem = function(localItem) {
-        return self._supplier.pullItem(localItem);
+        return self._supplier.pullItem(localItem, false);
     };
 
     this.onAddButtonClick = function() {
@@ -249,7 +253,15 @@ var GridVariablesTargetList = function(params) {
 
     //overrideing functions in the target grid
     this.targetGrid._override('onOptionValueInserted', function(baseFunction, keys, data) {
+        if (self._supplier !== null)
+            self.pushRowsBackToSupplier(0, this._localData.length);
+
         baseFunction.call(self.targetGrid, keys, data);
+
+        for (var i = 0; i < self.targetGrid._cells.length; i++) {
+            var cellInfo = this.getCellInfo(self.targetGrid._cells[i]);
+            self._supplier.pullItem(new FormatDef.constructor(cellInfo.value, cellInfo.format));
+        }
 
         if (self._supplier !== null)
             self._supplier.filterSuppliersList();
@@ -272,6 +284,11 @@ var GridVariablesTargetList = function(params) {
             self.pushRowsBackToSupplier(0, this._localData.length);
 
         baseFunction.call(self.targetGrid, keys, data);
+
+        for (var i = 0; i < self.targetGrid._cells.length; i++) {
+            var cellInfo = this.getCellInfo(self.targetGrid._cells[i]);
+            self._supplier.pullItem(new FormatDef.constructor(cellInfo.value, cellInfo.format));
+        }
 
         if (self._supplier !== null)
             self._supplier.filterSuppliersList();
