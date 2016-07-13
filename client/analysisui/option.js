@@ -54,13 +54,17 @@ var Opt = function(type, initialValue, params) {
                 var a = this._value;
                 for (var i = 0; i < keys.length; i++) {
                     var index = keys[i];
-                    if (Array.isArray(a))
+                    if (a === null)
+                        return;
+                    if (typeof a === 'object')
                         a = a[index];
                     else if (index !== 0)
-                        throw 'Cannot access a non array with a non zero key';
+                        return;
 
-                    if (i === keys.length - 1)
+                    if (i === keys.length - 1 || _.isUndefined(a)) {
                         value = a;
+                        break;
+                    }
                 }
 
                 return value;

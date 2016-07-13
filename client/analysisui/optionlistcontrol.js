@@ -49,7 +49,7 @@ var OptionListControl = function(params) {
         if (Array.isArray(columns)) {
             for (var i = 0; i < columns.length; i++) {
 
-                var columnInfo = { readOnly: true, selectable: true, format: null, stretchFactor: 1, label: columns[i].name };
+                var columnInfo = { type: "label", selectable: true, format: null, stretchFactor: 1, label: columns[i].name };
 
                 _.extend(columnInfo, columns[i]);
 
@@ -75,58 +75,50 @@ var OptionListControl = function(params) {
         }
     };
 
+    this._context = null;
+    this.setControlManager = function(context) {
+        this._context = context;
+    };
+
     this.updateValueCell = function(columnInfo, dispRow, value) {
         var dispColumn = columnInfo.index;
         var cell = this.getCell(dispColumn, dispRow);
 
-        if (columnInfo.format === null)
-            columnInfo.format = FormatDef.infer(value);
-
-        var supplierItem = null;
-        var displayValue = '';
-        var localItem = null;
-        if (value !== null && columnInfo.format !== null) {
-            displayValue = 'error';
-            var columnFormat = columnInfo.format;
-            if (columnFormat.isValid(value)) {
-                displayValue = columnFormat.toString(value);
-                localItem = new FormatDef.constructor(value, columnFormat);
-                if (this.getSupplierItem)
-                    supplierItem = this.getSupplierItem(localItem);
-            }
-        }
-
-        var $contents = null;
-        var renderFunction = this['renderItem_' + columnInfo.format.name];
-        if (localItem !== null && _.isUndefined(renderFunction) === false)
-            $contents = renderFunction.call(this, displayValue, columnInfo.readOnly, localItem, supplierItem);
-        else
-            $contents = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-' + columnInfo.format.name + '">' + displayValue + '</div>');
-
         if (cell === null) {
-            cell = this.addCell(dispColumn, dispRow, false, $contents);
-            cell.clickable(columnInfo.readOnly && columnInfo.selectable);
-        }
-        else {
-            cell.$content.remove();
-            cell.setContent($contents);
-        }
+            var params = JSON.parse(JSON.stringify(columnInfo));
+            params.valuekey = [this.displayRowToRowIndex(dispRow)];
+            if (this._columnInfo._list.length > 1)
+                params.valuekey.push(columnInfo.name);
 
-        cell.setStretchFactor(columnInfo.stretchFactor);
-        cell.hAlign = 'left';
-        cell.vAlign = 'centre';
+            params.format = columnInfo.format;
+            var ctrl =  this.createItem(value, params);
+
+            cell = this.addCell(dispColumn, dispRow, false, ctrl.$el);
+            cell.clickable(columnInfo.selectable);
+
+            cell.setStretchFactor(columnInfo.stretchFactor);
+            cell.hAlign = 'left';
+            cell.vAlign = 'centre';
+        }
     };
 
-    this.renderItem_variable = function(displayValue, readOnly, localItem, supplierItem) {
-        var imageClasses = 'silky-variable-type-img';
-        if (_.isUndefined(supplierItem) === false && supplierItem !== null && _.isUndefined(supplierItem.properties.type) === false)
-            imageClasses = imageClasses + ' silky-variable-type-' + supplierItem.properties.type;
+    this.createItem = function(data, params) {
 
-        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
-        $item.append('<div style="display: inline-block; overflow: hidden;" class="' + imageClasses + '"></div>');
-        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
-
-        return $item;
+        var ctrl = this._context.createSubControl(params);
+        var self = this;
+        ctrl.getDataRenderProperties = function(data, format, index) {
+            var properties = null;
+            var localItem = new FormatDef.constructor(data, format);
+            if (self.getSupplierItem) {
+                var supplierItem = self.getSupplierItem(localItem);
+                if (_.isUndefined(supplierItem) === false && supplierItem !== null)
+                    properties = supplierItem.properties;
+            }
+            return properties;
+        };
+        ctrl.setOption(this.option);
+        ctrl.render();
+        return ctrl;
     };
 
     this.updateDisplayRow = function(dispRow, value) {
@@ -176,11 +168,13 @@ var OptionListControl = function(params) {
         info.cell = cell;
         info.columnInfo = this._columnInfo._list[cell.data.column];
         info.listIndex = rowIndex;
+        info.valueIndex = [rowIndex];
 
         info.value = this._localData[rowIndex];
         if (typeof info.value === 'object' && Array.isArray(info.value) === false) {
             info.value = info.value[info.columnInfo.name];
             info.rowForm = "object";
+            info.valueIndex.push(info.columnInfo.name);
         }
         else
             info.rowForm = "primitive";

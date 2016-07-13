@@ -18,8 +18,12 @@ var PropertySupplier = function(properties) {
         this.properties[name] = { get: getter, set: setter, trigger: externalTrigger, externalTrigger: externalTrigger };
     };
 
-    this.registerSimpleProperty = function(name, value, filter) {
-        if (_.isUndefined(this.properties[name]) === false)
+    this.registerSimpleProperty = function(name, initialValue, filter, defined) {
+
+        if (_.isUndefined(defined))
+            defined = false;
+
+        if (_.isUndefined(this.properties[name]) === false && this.properties[name].isDefined)
             return;
 
         var self = this;
@@ -31,12 +35,13 @@ var PropertySupplier = function(properties) {
             set: function(value)
             {
                 var v = value;
-                if (_.isUndefined(filter) === false)
+                if (filter !== null && _.isUndefined(filter) === false)
                     v = filter.check(value);
                 self.properties[name].value = v;
             },
-            value: value,
-            trigger: name + "_changed"
+            value: initialValue,
+            trigger: name + "_changed",
+            isDefined: defined
         };
     };
 
@@ -109,7 +114,7 @@ var PropertySupplier = function(properties) {
         else {
             var self = this;
             _.each(properties, function(value, key, list) {
-                self.registerSimpleProperty(key, value);
+                self.registerSimpleProperty(key, value, null, true);
             });
         }
     }

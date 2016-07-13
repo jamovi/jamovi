@@ -138,6 +138,7 @@ function setOptionsValues(data) {
         model.options.setOptionValue(key, value, params);
     });
     model.options.endEdit();
+    analysis.View.endDataInitialisation();
 }
 
 function onValuesForServerChanges(e) {

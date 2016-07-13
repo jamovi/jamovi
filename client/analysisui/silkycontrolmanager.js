@@ -12,6 +12,9 @@ var GridVariablesTargetList =  require('./gridvariablestargetlist');
 var GridOptionListControl = require('./gridoptionlistcontrol');
 var ControlContainer = require('./controlcontainer');
 var RMAnovaFactorsControl = require('./rmanovafactorscontrol');
+var ListItemVariableLabel = require('./listitemvariablelabel');
+var ListItemCombobox = require('./listitemcombobox');
+var ListItemLabel = require('./listitemlabel');
 
 var SilkyControlManager = function() {
 
@@ -27,6 +30,9 @@ var SilkyControlManager = function() {
     this.registerControl("supplier", LayoutVariablesView);
     this.registerControl("groupbox", LayoutGroupView);
     this.registerControl("collection", ControlContainer);
+    this.registerControl("listitem.variablelabel", ListItemVariableLabel);
+    this.registerControl("listitem.combobox", ListItemCombobox);
+    this.registerControl("listitem.label",ListItemLabel);
 };
 
 

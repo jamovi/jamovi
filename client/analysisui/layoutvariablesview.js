@@ -159,11 +159,12 @@ var LayoutVariablesView = function(params) {
         return item;
     };
 
-    this.pullItem = function(formatted) {
+    this.pullItem = function(formatted, use) {
         for (var i = 0; i < this._items.length; i++) {
             var item = this._items[i];
             if (item.value.equalTo(formatted)) {
-                item.used += 1;
+                if (_.isUndefined(use) || use === true)
+                    item.used += 1;
                 return item;
             }
         }
