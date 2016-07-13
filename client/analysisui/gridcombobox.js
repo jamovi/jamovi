@@ -37,6 +37,7 @@ var GridCombobox = function(params) {
 
         var self = this;
         this.$input = $(t);
+        this.updateDisplayValue();
         this.$input.change(function(event) {
             var select = self.$input[0];
             var option = options[select.selectedIndex];
@@ -53,6 +54,10 @@ var GridCombobox = function(params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
+        this.updateDisplayValue();
+    };
+
+    this.updateDisplayValue = function() {
         var select = this.$input[0];
         var value = this.option.getValue();
         var options = this.getPropertyValue('options');

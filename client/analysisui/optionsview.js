@@ -123,6 +123,22 @@ var OptionsView = function(uiModel) {
         return ctrlOption;
     };
 
+    this.createSubControl = function(uiDef) {
+        if (_.isUndefined(uiDef.type)) {
+            if (_.isUndefined(uiDef.controls) === false)
+                uiDef.type = "collection";
+            else
+                throw "Type has not been defined for control '"+ uiDef.name + "'";
+        }
+
+        var ctrl = this.model.controls.create(uiDef.type, uiDef);
+
+        if (ctrl.setControlManager)
+            ctrl.setControlManager(this);
+
+        return ctrl;
+    };
+
     this.createControl = function(uiDef) {
         if (_.isUndefined(uiDef.type)) {
             if (_.isUndefined(uiDef.controls) === false)
@@ -135,6 +151,9 @@ var OptionsView = function(uiModel) {
 
         if (ctrl.getPropertyValue("stage") !== "release")
             return null;
+
+        if (ctrl.setControlManager)
+            ctrl.setControlManager(this);
 
         var name = ctrl.getPropertyValue("name");
         if (ctrl.setOption) {
@@ -158,6 +177,10 @@ var OptionsView = function(uiModel) {
 
     this.beginDataInitialisation = function() {
         this.trigger("initialising");
+    };
+
+    this.endDataInitialisation = function() {
+        this.trigger("initialised");
     };
 };
 

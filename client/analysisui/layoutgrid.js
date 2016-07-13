@@ -160,80 +160,83 @@ var LayoutGrid = function() {
 
     this._postProcessCells = function() {
 
-        if (this._postProcessCellList.length > 0) {
-            var gridWidth = null;
-            var gridHeight = null;
-            var maxFlexRow = null;
+        if (this._requiresPostProccessing) {
+            if (this._postProcessCellList.length > 0) {
+                var gridWidth = null;
+                var gridHeight = null;
+                var maxFlexRow = null;
 
-            var vScrollSpace = (this._hasVScrollbars && this.autoSizeWidth === false) ? this.getScrollbarWidth() : 0;
-            var hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarHeight() : 0;
+                var vScrollSpace = (this._hasVScrollbars && this.autoSizeWidth === false) ? this.getScrollbarWidth() : 0;
+                var hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarHeight() : 0;
 
-            var r;
-            for (var i = 0; i < this._postProcessCellList.length; i++) {
-                var cell = this._postProcessCellList[i];
-                var cellData = cell.data;
-                if (cell.isVirtual)
-                    continue;
+                var r;
+                for (var i = 0; i < this._postProcessCellList.length; i++) {
+                    var cell = this._postProcessCellList[i];
+                    var cellData = cell.data;
+                    if (cell.isVirtual)
+                        continue;
 
-                if (cellData.row === this._rowCount - 1) {
-                    if (gridHeight === null)
-                        gridHeight = parseFloat(this.$el.css("height")) - hScrollSpace;
+                    if (cellData.row === this._rowCount - 1) {
+                        if (gridHeight === null)
+                            gridHeight = parseFloat(this.$el.css("height")) - hScrollSpace;
 
-                    if (this.stretchEndCells && gridHeight > cell.bottom())
-                        cell.adjustCellHeight(cell.actualHeight() + (gridHeight - cell.bottom()));
-                }
-                if (cell.spanAllRows) {
-                    if (gridHeight === null)
-                        gridHeight = parseFloat(this.$el.css("height")) - hScrollSpace;
-
-                    cell.adjustCellVertically(0, gridHeight);
-                }
-                if (cell.horizontalStretchFactor > 0) {
-
-                    if (gridWidth === null)
-                        gridWidth = parseFloat(this.$el.css("width")) - vScrollSpace;
-
-                    var flexRow = cellData.row;
+                        if (this.stretchEndCells && gridHeight > cell.bottom())
+                            cell.adjustCellHeight(cell.actualHeight() + (gridHeight - cell.bottom()));
+                    }
                     if (cell.spanAllRows) {
-                        if (maxFlexRow === null) {
-                            var maxFlex = {row:0, flex:0 };
-                            for (r = 0; r < this._rowCount; r++) {
-                                var rowFlex = this._rowStrechDetails[r].flex;
-                                if (maxFlex.flex < rowFlex)
-                                    maxFlex = { row: r, flex: rowFlex };
+                        if (gridHeight === null)
+                            gridHeight = parseFloat(this.$el.css("height")) - hScrollSpace;
+
+                        cell.adjustCellVertically(0, gridHeight);
+                    }
+                    if (cell.horizontalStretchFactor > 0) {
+
+                        if (gridWidth === null)
+                            gridWidth = parseFloat(this.$el.css("width")) - vScrollSpace;
+
+                        var flexRow = cellData.row;
+                        if (cell.spanAllRows) {
+                            if (maxFlexRow === null) {
+                                var maxFlex = {row:0, flex:0 };
+                                for (r = 0; r < this._rowCount; r++) {
+                                    var rowFlex = this._rowStrechDetails[r].flex;
+                                    if (maxFlex.flex < rowFlex)
+                                        maxFlex = { row: r, flex: rowFlex };
+                                }
+                                maxFlexRow =  maxFlex.row;
                             }
-                            maxFlexRow =  maxFlex.row;
+                            flexRow = maxFlexRow;
                         }
-                        flexRow = maxFlexRow;
-                    }
-                    var rowStrechDetails = this._rowStrechDetails[flexRow];
+                        var rowStrechDetails = this._rowStrechDetails[flexRow];
 
-                    var newWidth = (gridWidth - rowStrechDetails.fixed) * (cell.horizontalStretchFactor / rowStrechDetails.flex);
-                    var oldWidth = cell.actualWidth();
-                    cell.adjustCellWidth(newWidth);
+                        var newWidth = (gridWidth - rowStrechDetails.fixed) * (cell.horizontalStretchFactor / rowStrechDetails.flex);
+                        var oldWidth = cell.actualWidth();
+                        cell.adjustCellWidth(newWidth);
 
-                    if (cell.spanAllRows) {
-                        for (r = 0; r < this._rowStrechDetails.length; r++) {
-                            this._rowStrechDetails[r].fixed += newWidth;
-                            this._rowStrechDetails[r].flex -= cell.horizontalStretchFactor;
+                        if (cell.spanAllRows) {
+                            for (r = 0; r < this._rowStrechDetails.length; r++) {
+                                this._rowStrechDetails[r].fixed += newWidth;
+                                this._rowStrechDetails[r].flex -= cell.horizontalStretchFactor;
+                            }
                         }
+                        this._onCellRightEdgeMove(cell);
                     }
-                    this._onCellRightEdgeMove(cell);
+                    cell._queuedForPostProcess = false;
                 }
-                cell._queuedForPostProcess = false;
             }
+
+            this.endCellManipulation(this._animateCells);
+            this._requiresPostProccessing = false;
+
+            this._postProcessCellList = [];
         }
-
-        this.endCellManipulation(this._animateCells);
-        this._requiresPostProccessing = false;
-
-        this._postProcessCellList = [];
 
         for (var j = 0; j < this._layouts.length; j++) {
             var layout = this._layouts[j];
-            if (layout._requiresPostProccessing)
+            if (layout._parentCell === null || layout._parentCell.visible())
                 layout._postProcessCells();
         }
+
 
         this._layoutValid = true;
     };
@@ -315,10 +318,10 @@ var LayoutGrid = function() {
             var cell = this._cells[j];
             var cellData = cell.data;
 
-            /*if (cellData.requiresValidationDelay) {
+            if (cellData.hasContentChanged) {
                 requiresDelay = true;
-                cellData.requiresValidationDelay = false;
-            }*/
+                cellData.hasContentChanged = false;
+            }
 
             if (cellData.hasNewContent) {
                 requiresDelay = true;
@@ -328,6 +331,7 @@ var LayoutGrid = function() {
             }
 
             if (cellData.initialized === false) {
+                requiresDelay = true;
                 if (cell.$el)
                     this.$el.append(cell.$el);
                 cellData.initialized = true;
@@ -347,13 +351,16 @@ var LayoutGrid = function() {
         if (this._parentCell !== null && this._parentCell.visible() === false)
             return false;
 
+        var postProcess = false;
         for (var i = 0; i < this._layouts.length; i++) {
             var layout = this._layouts[i];
-            layout._processCells(type, updateId);
+            var pp = layout._processCells(type, updateId);
+            if (pp)
+                postProcess = true;
         }
 
         if (this._layoutValid)
-            return false;
+            return postProcess;
 
         this.beginCellManipulation();
         this._requiresPostProccessing = true;

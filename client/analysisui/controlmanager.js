@@ -13,16 +13,16 @@ var ControlManager = function() {
         this[name] = constructor;
     };
 
-    this.create = function(name, ctrlOption, uiDef) {
+    this.create = function(name, uiDef) {
         var constructor = this[name];
         if (_.isUndefined(constructor)) {
             if (this._baseControlManager !== null)
-                return this._baseControlManager.create(name, ctrlOption, uiDef);
+                return this._baseControlManager.create(name, uiDef);
             else
                 return null;
         }
 
-        return new constructor(ctrlOption, uiDef);
+        return new constructor(uiDef);
     };
 
     this.setBaseControls = function(baseControlManager) {
