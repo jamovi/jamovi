@@ -6,16 +6,22 @@ var OptionListControl = require('./optionlistcontrol');
 var GridOptionControl = require('./gridoptioncontrol');
 var FormatDef = require('./formatdef');
 var DragNDrop = require('./dragndrop');
+var EnumPropertyFilter = require('./enumpropertyfilter');
+var TargetListValueFilter = require('./targetlistvaluefilter');
 
 var GridVariablesTargetList = function(params) {
     GridOptionControl.extend(this, params);
     DragNDrop.extendTo(this);
 
     this.registerSimpleProperty("maxItemCount", -1);
+    this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "unique_per_row", "unique_per_column"], "none"));
+    this.registerSimpleProperty("multipleSelectionAction", null);
 
     this.gainOnClick = true;
     this._supplier = null;
     this._actionsBlocked = false;
+
+    this._listFilter = new TargetListValueFilter();
 
     this.targetGrid = new OptionListControl(params);
     this.targetGrid.$el.addClass("silky-variable-target");
@@ -78,8 +84,11 @@ var GridVariablesTargetList = function(params) {
 
         this.beginPropertyEdit();
         this.option.beginEdit();
-        for (var i = 0; i < items.length; i++)
-            this.targetGrid.addRawToOption(items[i].value.raw, [this.option.getLength()], items[i].value.format);
+        var finalItems = this.checkForMultiSelectionActions(items);
+        for (var i = 0; i < finalItems.length; i++) {
+            if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), finalItems[i].value))
+                this.targetGrid.addRawToOption(finalItems[i].value.raw, [this.option.getLength()], finalItems[i].value.format);
+        }
         this.option.endEdit();
         this.endPropertyEdit();
     };
@@ -187,26 +196,70 @@ var GridVariablesTargetList = function(params) {
         return self._supplier.pullItem(localItem, false);
     };
 
+    this.checkForMultiSelectionActions = function(items) {
+        var msAction = this.getPropertyValue("multipleSelectionAction");
+        if (msAction !== null && items.length > 1)
+            return this.multipleSelectionAction(msAction, items);
+
+        return items;
+    };
+
+    this.getSupplierItems = function() {
+        var items = this._supplier.getSelectedItems();
+        return this.checkForMultiSelectionActions(items);
+    };
+
+    this.multipleSelectionAction = function(action, items) {
+        var newItems = [];
+        var joined = [];
+        var format = null;
+        for (let i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (i === 0)
+                format = item.value.format;
+            else if (format.name !== item.value.format.name) {
+                format = null;
+                break;
+            }
+            joined.push(item.value.raw);
+        }
+
+        if (format !== null && _.isUndefined(format[action]) === false) {
+            var values = format[action](joined);
+            for (let i = 0; i < values.length; i++)
+                newItems.push({ value: new FormatDef.constructor(values[i], format) });
+        }
+
+        return newItems;
+    };
+
+
     this.onAddButtonClick = function() {
         this._supplier.blockFilterProcess = true;
         this.targetGrid.suspendLayout();
 
         this.option.beginEdit();
         this.beginPropertyEdit();
-        var postProcessSelectionIndex = 0;
+        var postProcessSelectionIndex = null;
         var postProcessList = null;
         if (this.gainOnClick) {
-            var selectedCount = this._supplier.supplierGrid.selectedCellCount();
+            var selectedItems = this.getSupplierItems();
+            var selectedCount = selectedItems.length;
             if (selectedCount > 0) {
                 for (var i = 0; i < selectedCount; i++) {
-                    var selectedItem = this._supplier.getSelectedItem(i);
-                    if (selectedCount === 1)
-                        postProcessSelectionIndex = selectedItem.index;
-                    var selectedValue = selectedItem.value;
-                    var key = [this.option.getLength()];
-                    var data = selectedValue.raw;
-                    if (this.targetGrid.addRawToOption(data, key, selectedValue.format) === false)
-                        break;
+                    var selectedItem = selectedItems[i];
+                    if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), selectedItem.value)) {
+                        if (selectedCount === 1) {
+                            postProcessSelectionIndex = selectedItem.index;
+                            if (this._supplier.getPropertyValue("persistentItems"))
+                                postProcessSelectionIndex += 1;
+                        }
+                        var selectedValue = selectedItem.value;
+                        var key = [this.option.getLength()];
+                        var data = selectedValue.raw;
+                        if (this.targetGrid.addRawToOption(data, key, selectedValue.format) === false)
+                            break;
+                    }
                 }
                 postProcessList = this._supplier;
             }
@@ -234,7 +287,8 @@ var GridVariablesTargetList = function(params) {
         this._supplier.blockFilterProcess = false;
         this._supplier.filterSuppliersList();
 
-        postProcessList.selectNextAvaliableItem(postProcessSelectionIndex);
+        if (postProcessSelectionIndex !== null)
+            postProcessList.selectNextAvaliableItem(postProcessSelectionIndex);
     };
 
     this.pushRowsBackToSupplier = function(rowIndex, count) {
@@ -250,6 +304,12 @@ var GridVariablesTargetList = function(params) {
             }
         }
     };
+
+    this.targetGrid._override('updateValueCell', function(baseFunction, columnInfo, dispRow, value) {
+        baseFunction.call(self.targetGrid, columnInfo, dispRow, value);
+        var rowIndex = this.displayRowToRowIndex(dispRow);
+        self._listFilter.addValue(new FormatDef.constructor(value, columnInfo.format), rowIndex, columnInfo.name);
+    });
 
     //overrideing functions in the target grid
     this.targetGrid._override('onOptionValueInserted', function(baseFunction, keys, data) {
@@ -272,6 +332,8 @@ var GridVariablesTargetList = function(params) {
         if (self._supplier !== null)
             self.pushRowsBackToSupplier(keys[0], 1);
 
+        self._listFilter.removeRow(keys[0]);
+
         baseFunction.call(self.targetGrid, keys, data);
 
         if (self._supplier !== null)
@@ -282,6 +344,8 @@ var GridVariablesTargetList = function(params) {
     this.targetGrid._override('onOptionValueChanged', function(baseFunction, keys, data) {
         if (self._supplier !== null)
             self.pushRowsBackToSupplier(0, this._localData.length);
+
+        self._listFilter.clear();
 
         baseFunction.call(self.targetGrid, keys, data);
 

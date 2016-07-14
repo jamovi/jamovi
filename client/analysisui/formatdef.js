@@ -131,6 +131,25 @@ var FormatDef = {
             }
 
             return true;
+        },
+
+        interactions: function(variables) {
+            var list = [];
+            for (let i = 0; i < variables.length; i++) {
+                var listLength = list.length;
+                for (let j = 0; j < listLength; j++) {
+                    var newVar = list[j];
+                    if (Array.isArray(newVar))
+                        newVar = JSON.parse(JSON.stringify(newVar));
+                    else
+                        newVar = [newVar];
+                    newVar.push(variables[i]);
+                    list.push(newVar);
+                }
+                list.push(variables[i]);
+            }
+
+            return list;
         }
     },
 
