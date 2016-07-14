@@ -127,9 +127,20 @@ var LayoutGrid = function() {
         return false;
     };
 
+    this._setInvalidationFlag = function(deep) {
+        this._layoutValid = false;
+        if (deep) {
+            for (var j = 0; j < this._layouts.length; j++) {
+                var layout = this._layouts[j];
+                if (layout._parentCell === null || layout._parentCell.visible())
+                    layout._setInvalidationFlag(deep);
+            }
+        }
+    };
+
     this.invalidateLayout = function(type, updateId, deep) {
 
-        this._layoutValid = false;
+        this._setInvalidationFlag(deep);
 
         if (this.isLayoutSuspended()) {
             if (this._hasResized !== null && this._hasResized.type !== 'both' && type !== this._hasResized.type)
