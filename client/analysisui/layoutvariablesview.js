@@ -138,25 +138,11 @@ var LayoutVariablesView = function(params) {
 
     this.getSelectedItems = function() {
         var items = [];
-        for (var i = 0; i < this.supplierGrid.selectedCellCount(); i++)
+        var selectionCount = this.supplierGrid.selectedCellCount();
+        for (var i = 0; i < selectionCount; i++)
             items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row));
+
         return items;
-    };
-
-    this.getSelectedItem = function(index) {
-        if (this.supplierGrid.selectedCellCount() > index) {
-            var cell = this.supplierGrid.getSelectedCell(index);
-            return this.getItem(cell.data.row);
-        }
-
-        return null;
-    };
-
-    this.pullSelectedItem = function(index) {
-        var item = this.getSelectedItem(index);
-        if (item !== null)
-            item.used += 1;
-        return item;
     };
 
     this.pullItem = function(formatted, use) {
@@ -228,14 +214,14 @@ var LayoutVariablesView = function(params) {
         var cell = null;
         for (var r = from; r < this._items.length; r++) {
             cell = this.supplierGrid.getCell(0, r);
-            if (cell.visible()) {
+            if (cell !== null && cell.visible()) {
                 this.supplierGrid.selectCell(cell);
                 return;
             }
         }
         for (var r1 = from; r1 >= 0; r1--) {
             cell = this.supplierGrid.getCell(0, r1);
-            if (cell.visible()) {
+            if (cell !== null && cell.visible()) {
                 this.supplierGrid.selectCell(cell);
                 return;
             }

@@ -102,7 +102,7 @@ var LayoutGroupView = function(params) {
         this.$el.removeClass("silky-gridlayout-collapsed");
 
         this.setContentVisibility(true);
-        this.invalidateLayout('both', Math.random());
+        this.invalidateLayout('both', Math.random(), true);
         this._collapsed = false;
 
     };
