@@ -118,7 +118,6 @@ message CellsResponse {
     repeated Column columns = 2;
 }
 
-
 message AnalysisRequest {
     optional string datasetId = 1;
     optional int32 analysisId = 2;
@@ -169,7 +168,13 @@ message ResultsCell {
         Other  o = 4;
     }
 
-    repeated string footnotes = 5;
+    optional int32 format = 5; // bit field
+
+    // 1 = begin group
+    // 2 = end group
+    // 4 = negative (red highlight)
+
+    repeated string footnotes = 6;
 }
 
 message ResultsColumn {

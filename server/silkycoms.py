@@ -1,6 +1,6 @@
-from enum import Enum
-from protobuf3.fields import MessageField, DoubleField, BytesField, StringField, UInt32Field, EnumField, Int32Field, BoolField
+from protobuf3.fields import BytesField, UInt32Field, DoubleField, BoolField, MessageField, EnumField, StringField, Int32Field
 from protobuf3.message import Message
+from enum import Enum
 
 
 class Error(Message):
@@ -105,6 +105,10 @@ class ResultsColumn(Message):
     pass
 
 
+class ResultsTableNote(Message):
+    pass
+
+
 class ResultsTable(Message):
     pass
 
@@ -181,6 +185,7 @@ AnalysisRequest.add_field('name', StringField(field_number=3, optional=True))
 AnalysisRequest.add_field('ns', StringField(field_number=4, optional=True))
 AnalysisRequest.add_field('perform', EnumField(field_number=5, optional=True, enum_cls=AnalysisRequest.Perform))
 AnalysisRequest.add_field('options', StringField(field_number=6, optional=True))
+AnalysisRequest.add_field('ppi', Int32Field(field_number=7, optional=True, default=72))
 AnalysisResponse.add_field('datasetId', StringField(field_number=1, optional=True))
 AnalysisResponse.add_field('analysisId', Int32Field(field_number=2, optional=True))
 AnalysisResponse.add_field('options', StringField(field_number=3, optional=True))
@@ -191,15 +196,19 @@ ResultsCell.add_field('i', Int32Field(field_number=1, optional=True))
 ResultsCell.add_field('d', DoubleField(field_number=2, optional=True))
 ResultsCell.add_field('s', StringField(field_number=3, optional=True))
 ResultsCell.add_field('o', EnumField(field_number=4, optional=True, enum_cls=ResultsCell.Other))
-ResultsCell.add_field('footnotes', StringField(field_number=5, repeated=True))
+ResultsCell.add_field('format', Int32Field(field_number=5, optional=True))
+ResultsCell.add_field('footnotes', StringField(field_number=6, repeated=True))
 ResultsColumn.add_field('name', StringField(field_number=1, optional=True))
 ResultsColumn.add_field('title', StringField(field_number=2, optional=True))
 ResultsColumn.add_field('type', StringField(field_number=3, optional=True))
 ResultsColumn.add_field('format', StringField(field_number=4, optional=True))
 ResultsColumn.add_field('cells', MessageField(field_number=7, repeated=True, message_cls=ResultsCell))
+ResultsTableNote.add_field('name', StringField(field_number=1, optional=True))
+ResultsTableNote.add_field('note', StringField(field_number=2, optional=True))
 ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, message_cls=ResultsColumn))
 ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
 ResultsTable.add_field('swapRowsColumns', BoolField(field_number=3, optional=True))
+ResultsTable.add_field('notes', MessageField(field_number=4, repeated=True, message_cls=ResultsTableNote))
 ResultsImage.add_field('path', StringField(field_number=1, optional=True))
 ResultsImage.add_field('width', Int32Field(field_number=2, optional=True))
 ResultsImage.add_field('height', Int32Field(field_number=3, optional=True))

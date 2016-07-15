@@ -8,6 +8,10 @@
 #include "unistd.h"
 #endif
 
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+
 unsigned long Utils2::currentPID()
 {
 #ifdef _WIN32
@@ -36,7 +40,7 @@ unsigned long Utils2::parentPID()
 				ppid = pe.th32ParentProcessID;
 				break;
 			}
-			
+
 		} while( Process32Next(h, &pe));
 	}
 
@@ -70,12 +74,47 @@ bool Utils2::isParentAlive()
 
 		return ( ! ok) || exit == STILL_ACTIVE;
 	}
-	
+
 	return FALSE;
-	
+
 #else
 
 	return getppid() != 1;
-	
+
 #endif
+}
+
+std::string Utils2::makeRelative(const std::string &fromPath, const std::string &toPath)
+{
+   // Start at the root path and while they are the same then do nothing then when they first
+   // diverge take the remainder of the two path and replace the entire from path with ".."
+   // segments.
+
+   fs::path from = fromPath;
+   fs::path to = toPath;
+
+   fs::path::const_iterator fromIter = from.begin();
+   fs::path::const_iterator toIter = to.begin();
+
+   // Loop through both
+   while (fromIter != from.end() && toIter != to.end() && (*toIter) == (*fromIter))
+   {
+      ++toIter;
+      ++fromIter;
+   }
+
+   fs::path finalPath;
+   while (fromIter != from.end())
+   {
+      finalPath /= "..";
+      ++fromIter;
+   }
+
+   while (toIter != to.end())
+   {
+      finalPath /= *toIter;
+      ++toIter;
+   }
+
+   return finalPath.generic_string();
 }
