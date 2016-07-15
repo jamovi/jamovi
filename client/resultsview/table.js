@@ -240,6 +240,34 @@ var TableView = Element.View.extend({
         this.$columnHeaderRow.html(html);
 
         html = '';
+        
+        if (cells.swapRowsColumns) {
+            let swapped = {
+                header : new Array(cells.body.length + 1),
+                body   : new Array(cells.header.length - 1)
+            };
+            //fix header
+            swapped.header[0] = cells.header[0];
+            for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
+                swapped.header[rowNo+1] = cells.body[rowNo][0];
+                swapped.header[rowNo+1].classes = "";
+            }
+            //fix cols
+            for (let colNo = 0; colNo < cells.header.length - 1; colNo++) {
+                swapped.body[colNo] = new Array(cells.body.length + 1);
+                swapped.body[colNo][0] = cells.header[colNo + 1];
+            }
+            //fix body
+            for (let rowNo = 0; rowNo < swapped.body.length; rowNo++) {
+                for (let colNo = 1; colNo < swapped.body[rowNo].length; colNo++) {
+                    swapped.body[rowNo][colNo] = cells.body[colNo - 1][rowNo + 1]; 
+                }    
+            }
+            
+            cells.header = swapped.header;
+            cells.body = swapped.body;
+        }
+        
 
         if (table.columns.length === 0)
             return;
