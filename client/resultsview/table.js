@@ -229,18 +229,6 @@ var TableView = Element.View.extend({
             cells.body = folded.body;
         }
 
-        html = '';
-
-        for (let i = 0; i < cells.header.length; i++) {
-            var head = cells.header[i];
-            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + head.value + '</th>';
-        }
-
-        this.$columnHeaderRowSuper.empty();
-        this.$columnHeaderRow.html(html);
-
-        html = '';
-        
         if (table.swapRowsColumns) {
             let swapped = {
                 header : new Array(cells.body.length + 1),
@@ -267,6 +255,18 @@ var TableView = Element.View.extend({
             cells.header = swapped.header;
             cells.body = swapped.body;
         }
+
+        html = '';
+
+        for (let i = 0; i < cells.header.length; i++) {
+            var head = cells.header[i];
+            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + head.value + '</th>';
+        }
+
+        this.$columnHeaderRowSuper.empty();
+        this.$columnHeaderRow.html(html);
+
+        html = '';
         
 
         if (table.columns.length === 0)
