@@ -241,7 +241,7 @@ var TableView = Element.View.extend({
 
         html = '';
         
-        if (cells.swapRowsColumns) {
+        if (table.swapRowsColumns) {
             let swapped = {
                 header : new Array(cells.body.length + 1),
                 body   : new Array(cells.header.length - 1)
