@@ -38,11 +38,17 @@ var LayoutCell = function() {
 
     var self = this;
     this.onMouseDown = function(event) {
-        self.trigger('layoutcell.mousedown', event.ctrlKey, event.shiftKey);
+        var ctrlKey = event.ctrlKey;
+        if (navigator.platform == "MacIntel")
+            ctrlKey = event.metaKey;
+        self.trigger('layoutcell.mousedown', ctrlKey, event.shiftKey);
     };
 
     this.onMouseUp = function(event) {
-        self.trigger('layoutcell.mouseup', event.ctrlKey, event.shiftKey);
+        var ctrlKey = event.ctrlKey;
+        if (navigator.platform == "MacIntel")
+            ctrlKey = event.metaKey;
+        self.trigger('layoutcell.mouseup', ctrlKey, event.shiftKey);
     };
 
     this.clickable = function(value) {
