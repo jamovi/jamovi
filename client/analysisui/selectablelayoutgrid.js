@@ -12,6 +12,7 @@ var SelectableLayoutGrid = function() {
     this.hasFocus = false;
     this._selectedCells = [];
     this.fullRowSelect = false;
+    this._rootCell = null;
 
     this.selectCell = function(cell) {
         if (cell === null)
@@ -31,7 +32,7 @@ var SelectableLayoutGrid = function() {
         var cells = null;
 
         if (this._selectedCells.length > 0 && shiftKey) {
-            var cell2 = this._selectedCells[this._selectedCells.length - 1];
+            var cell2 = this._rootCell;
             var rStart = cell.data.row;
             var cStart = cell.data.column;
             var rEnd = cell2.data.row;
@@ -57,7 +58,7 @@ var SelectableLayoutGrid = function() {
                     if (tCell.visible()) {
                         cells = this.setCellSelection(true, tCell, ctrlKey, shiftKey);
                         for (var u = 0; u < cells.length; u++)
-                            this._selectedCells.push(cells[u]);
+                            this._selectedCells.unshift(cells[u]);
                         if (this.fullRowSelect)
                             break;
                     }
@@ -79,6 +80,8 @@ var SelectableLayoutGrid = function() {
                 }
                 this._selectedCells = cells;
             }
+
+            this._rootCell = (this._selectedCells.length > 0) ? this._selectedCells[this._selectedCells.length - 1] : null;
         }
         else if (ctrlKey && this._selectedCells.length > 0) {
             changed = true;
@@ -92,6 +95,7 @@ var SelectableLayoutGrid = function() {
                     }
                 }
             }
+            this._rootCell = (this._selectedCells.length > 0) ? this._selectedCells[this._selectedCells.length - 1] : null;
         }
 
         var gotFocus = this.hasFocus === false;
