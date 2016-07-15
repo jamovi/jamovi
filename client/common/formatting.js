@@ -6,13 +6,17 @@ var _ = require('underscore');
 var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
 
     if (_.isUndefined(format))
-        format = [ ];
+        format = '';
     if (_.isUndefined(sf))
         sf = 3;
     if (_.isUndefined(minNS))
         minNS = 1e-3;
     if (_.isUndefined(maxNS))
         maxNS = 1e6;
+
+    var formats = [ ];
+    if (format !== '')
+        formats = format.split(',');
 
     var minAbsNS = Infinity;
     var maxAbsExpnt = -Infinity;
@@ -43,6 +47,9 @@ var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
 
     if (type === 'integer') {
         dp = 0;
+    }
+    else if (formats.indexOf('zto') !== -1) {
+        dp = sf;
     }
     else if ( ! isFinite(minAbsNS)) {
         dp = sf - 1;

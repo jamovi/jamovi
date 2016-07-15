@@ -17,6 +17,7 @@
 #include "dirs2.h"
 #include "memorymap.h"
 #include "dataset2.h"
+#include "utils2.h"
 
 using namespace std;
 using namespace boost;
@@ -81,7 +82,7 @@ void EngineR::run(Analysis *analysis)
     resultsReceived(raw);
 
     ss.str("");
-    ss << "analysis$run();";
+    ss << "analysis$run(silent=TRUE);";
     ss << "analysis$render(ppi=" << analysis->ppi << ");";
     ss << "analysis$.save();";
 
@@ -242,10 +243,13 @@ Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &an
 
     EngineR::createDirectories(fullPath);
 
-    relPath += "/" + elementId;
+    fullPath += "/%%%%%%%%%%%%%%%%";
 
     if (suffix != "")
-        relPath += "." + suffix;
+        fullPath += "." + suffix;
+
+    fullPath = filesystem::unique_path(fullPath).generic_string();
+    relPath = Utils2::makeRelative(rootPath, fullPath);
 
     return Rcpp::List::create(
         Rcpp::Named("rootPath") = rootPath,

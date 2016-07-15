@@ -45,7 +45,6 @@ class ResourceHandler(RequestHandler):
 
         with open(resource_path, 'rb') as file:
             content = file.read()
-            self.set_header('Cache-Control', 'no-cache, no-store, must-revalidate')
             self.write(content)
 
 

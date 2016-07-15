@@ -9,9 +9,15 @@ var format = require('../common/formatting').format;
 
 var Element = require('./element');
 
-var SUPSCRIPTS =["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
+const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
                 "\u1D57", "\u1D58", "\u1D5B", "\u02B7", "\u02E3", "\u02B8", "\u1DBB"];
+
+const Format = {
+    BEGIN_GROUP: 1,
+    END_GROUP: 2,
+    NEGATIVE: 4
+};
 
 var TableModel = Backbone.Model.extend({
     defaults : {
@@ -103,7 +109,14 @@ var TableView = Element.View.extend({
                 let sourceColumn = table.columns[colNo];
                 let sourceCell = sourceColumn.cells[rowNo];
 
-                let cell = { };
+                let cell = { classes : '' };
+
+                if (sourceCell.format & Format.BEGIN_GROUP)
+                    cell.classes += " silky-results-table-cell-group-begin";
+                if (sourceCell.format & Format.END_GROUP)
+                    cell.classes += " silky-results-table-cell-group-end";
+                if (sourceCell.format & Format.NEGATIVE)
+                    cell.classes += " silky-results-table-cell-negative";
 
                 for (let i = 0; i < sourceCell.footnotes.length; i++) {
                     let footnote = sourceCell.footnotes[i];
@@ -122,26 +135,26 @@ var TableView = Element.View.extend({
                 switch (sourceCell.cellType) {
                 case 'i':
                     cell.value = sourceCell.i;
-                    cell.classes = "silky-results-table-cell-integer";
+                    cell.classes += " silky-results-table-cell-integer";
                     break;
                 case 'd':
                     let value = format(sourceCell.d, formattings[colNo]);
                     value = value.replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
                     cell.value = value;
-                    cell.classes = "silky-results-table-cell-number";
+                    cell.classes += " silky-results-table-cell-number";
                     break;
                 case 's':
                     cell.value = sourceCell.s;
-                    cell.classes = "silky-results-table-cell-text";
+                    cell.classes += " silky-results-table-cell-text";
                     break;
                 case 'o':
                     if (sourceCell.o == 2) {
                         cell.value = 'NaN';
-                        cell.classes = "silky-results-table-cell-number";
+                        cell.classes += " silky-results-table-cell-number";
                     }
                     else {
                         cell.value = '.';
-                        cell.classes = "silky-results-table-cell-missing";
+                        cell.classes += " silky-results-table-cell-missing";
                     }
                     break;
                 }
