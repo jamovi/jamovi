@@ -249,7 +249,8 @@ var GridVariablesTargetList = function(params) {
                 for (var i = 0; i < selectedCount; i++) {
                     var selectedItem = selectedItems[i];
                     if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), selectedItem.value)) {
-                        if (selectedCount === 1) {
+
+                        if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
                             postProcessSelectionIndex = selectedItem.index;
                             if (this._supplier.getPropertyValue("persistentItems"))
                                 postProcessSelectionIndex += 1;
@@ -271,8 +272,10 @@ var GridVariablesTargetList = function(params) {
             var index = 0;
             while (this.targetGrid.selectedCellCount() > index) {
                 var cell = this.targetGrid.getSelectedCell(index);
-                if (selectionCount === 1)
-                    postProcessSelectionIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
+
+                var rowIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
+                if (postProcessSelectionIndex === null || postProcessSelectionIndex > rowIndex)
+                    postProcessSelectionIndex = rowIndex;
 
                 if (this.targetGrid.removeFromOption(this.targetGrid.getCellInfo(cell)) === false)
                     index += 1;
