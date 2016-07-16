@@ -84,7 +84,7 @@ class AnalysisDescriptor(RequestHandler):
         self._path = path
 
     def get(self, module_name, analysis_name):
-        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name + '.js')
+        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name.lower() + '.js')
         analysis_path = os.path.realpath(analysis_path)
         try:
             with open(analysis_path, 'rb') as file:
