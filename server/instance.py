@@ -79,6 +79,8 @@ class Instance:
             self._on_settings(request)
         elif type(request) == silkycoms.AnalysisRequest:
             self._on_analysis(request)
+        elif type(request) == silkycoms.FSRequest:
+            self._on_fs_request(request)
         else:
             print('unrecognised request')
             print(request.payloadType)
@@ -86,6 +88,36 @@ class Instance:
     def _on_results(self, results, request, complete):
         complete = (results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE)
         self._coms.send(results, self._instance_id, request, complete)
+
+    def _on_fs_request(self, request):
+        location = request.path
+
+        if location.startswith('{{Documents}}'):
+            location = location.replace('{{Documents}}', Dirs.documents_dir())
+        if location.startswith('{{Desktop}}'):
+            location = location.replace('{{Desktop}}', Dirs.desktop_dir())
+        if location.startswith('{{Home}}'):
+            location = location.replace('{{Home}}', Dirs.home_dir())
+
+        response = silkycoms.FSResponse()
+
+        try:
+            contents = os.scandir(location)
+
+            for direntry in contents:
+                entry = silkycoms.FSEntry()
+                entry.path = direntry.path
+                if direntry.is_dir():
+                    entry.type = silkycoms.FSEntry.Type.FOLDER
+                else:
+                    entry.type = silkycoms.FSEntry.Type.FILE
+                response.contents.append(entry)
+
+        except Exception as e:
+            print(e)
+            response.errorMessage = str(e)
+
+        self._coms.send(response, self._instance_id, request)
 
     def _on_save(self, request):
         print('saving ' + request.filename)

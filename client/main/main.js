@@ -91,6 +91,22 @@ backstageModel.on('change:activated', function(event) {
         ribbonModel.set('selectedIndex', 1);
 });
 
+backstageModel.on('fsRequest', function(request) {
+
+    var fs = new coms.Messages.FSRequest();
+    fs.path = request.data.path;
+
+    var message = new coms.Messages.ComsMessage();
+    message.payload = fs.toArrayBuffer();
+    message.payloadType = "FSRequest";
+    message.instanceId = instance.instanceId();
+
+    var wait = coms.send(message)
+        .then(response => coms.Messages.FSResponse.decode(response.payload));
+
+    request.waitOn(wait);
+});
+
 dataSetModel.on('change:hasDataSet', function() {
     ribbonModel.set('dataAvailable', true);
 });
