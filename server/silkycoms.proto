@@ -41,6 +41,26 @@ message SaveRequest {
 message SaveProgress {
 }
 
+message FSEntry {
+    optional string path = 1;
+
+    enum Type {
+        FILE = 1;
+        FOLDER = 2;
+    }
+
+    optional Type type = 2;
+}
+
+message FSRequest {
+    optional string path = 1;
+}
+
+message FSResponse {
+    repeated FSEntry contents = 1;
+    optional string errorMessage = 2;
+}
+
 message DataSetEntry {
     optional string name = 1;
     optional string path = 2;

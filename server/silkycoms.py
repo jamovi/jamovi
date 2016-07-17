@@ -1,6 +1,6 @@
-from protobuf3.fields import BytesField, UInt32Field, DoubleField, BoolField, MessageField, EnumField, StringField, Int32Field
 from protobuf3.message import Message
 from enum import Enum
+from protobuf3.fields import StringField, BoolField, DoubleField, Int32Field, UInt32Field, MessageField, BytesField, EnumField
 
 
 class Error(Message):
@@ -32,6 +32,21 @@ class SaveRequest(Message):
 
 
 class SaveProgress(Message):
+    pass
+
+
+class FSEntry(Message):
+
+    class Type(Enum):
+        FILE = 1
+        FOLDER = 2
+
+
+class FSRequest(Message):
+    pass
+
+
+class FSResponse(Message):
     pass
 
 
@@ -153,6 +168,11 @@ ComsMessage.add_field('status', EnumField(field_number=5, optional=True, enum_cl
 ComsMessage.add_field('error', MessageField(field_number=6, optional=True, message_cls=Error))
 OpenRequest.add_field('filename', StringField(field_number=1, optional=True))
 SaveRequest.add_field('filename', StringField(field_number=1, optional=True))
+FSEntry.add_field('path', StringField(field_number=1, optional=True))
+FSEntry.add_field('type', EnumField(field_number=2, optional=True, enum_cls=FSEntry.Type))
+FSRequest.add_field('path', StringField(field_number=1, optional=True))
+FSResponse.add_field('contents', MessageField(field_number=1, repeated=True, message_cls=FSEntry))
+FSResponse.add_field('errorMessage', StringField(field_number=2, optional=True))
 DataSetEntry.add_field('name', StringField(field_number=1, optional=True))
 DataSetEntry.add_field('path', StringField(field_number=2, optional=True))
 DataSetEntry.add_field('location', StringField(field_number=3, optional=True))

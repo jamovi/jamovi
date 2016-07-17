@@ -135,6 +135,28 @@ var BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
+    setCurrentDirectory: function(path) {
+
+        var request = new Request({ path : path });
+        this.trigger('fsRequest', request);
+        request.then(response => {
+
+            if (response.errorMessage) {
+                // do something
+            }
+            else {
+
+                for (let i = 0; i < response.contents.length; i++) {
+                    let entry = response.contents[i];
+                    if (entry.type === 1)
+                        console.log('a file at ' + entry.path);
+                    if (entry.type === 2)
+                        console.log('a directory at ' + entry.path);
+                }
+
+            }
+        });
+    },
     _opChanged: function() {
 
         var op = this.getCurrentOp();
@@ -462,6 +484,10 @@ var BackstageChoices = SilkyView.extend({
             this.$current.appendTo(this.$el);
             this.current = new FSEntryListView({ el: this.$current, model: place.model });
             this.$current.fadeIn(200);
+        }
+
+        if (place.name === 'thispc') {  // Damo ...
+            this.model.setCurrentDirectory('{{Documents}}');
         }
 
         if (old) {
