@@ -79,19 +79,23 @@ Coms.prototype.connect = function(sessionId) {
     return this.connected;
 };
 
+Coms.prototype.sendP = function(request) {
+    this._transId++;
+    request.id = this._transId;
+    this._ws.send(request.toArrayBuffer());
+};
+
 Coms.prototype.send = function(request) {
 
-    var self = this;
+    return new Q.promise((resolve, reject, onprogress) => {
 
-    return new Q.promise(function(resolve, reject, onprogress) {
+        this._transId++;
 
-        self._transId++;
+        request.id = this._transId;
+        this._ws.send(request.toArrayBuffer());
 
-        request.id = self._transId;
-        self._ws.send(request.toArrayBuffer());
-
-        self._transactions.push({
-            id : self._transId,
+        this._transactions.push({
+            id : this._transId,
             resolve : resolve,
             reject  : reject,
             onprogress : onprogress,
@@ -109,10 +113,13 @@ Coms.prototype.receive = function(event) {
         return;
     }
 
+    var found = false;
+
     for (var i = 0; i < this._transactions.length; i++) {
 
         var trans = this._transactions[i];
         if (trans.id === response.id) {
+            found = true;
             if (response.status === this.Messages.Status.COMPLETE)
                 trans.resolve(response);
             else
@@ -120,6 +127,10 @@ Coms.prototype.receive = function(event) {
             break;
         }
     }
+
+    if ( ! found)
+        this._notifyBroadcast(response);
+
 };
 
 Coms.prototype._notifyBroadcast = function(broadcast) {

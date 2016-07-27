@@ -29,6 +29,7 @@ var GroupView = Element.View.extend({
         this.create = data.create;
         this.level = data.level;
         this.children = [ ];
+        this.mode = data.mode;
 
         this.hoTag = '<h'  + (this.level+1) + '>';
         this.hcTag = '</h' + (this.level+1) + '>';
@@ -38,7 +39,10 @@ var GroupView = Element.View.extend({
         if (this.model === null)
             this.model = new GroupModel();
 
-        this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+        if (this.mode === 'text')
+            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+        else
+            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
 
         this.render();
     },
@@ -71,8 +75,6 @@ var GroupView = Element.View.extend({
     },
     render: function() {
 
-        var self = this;
-
         var error = this.model.get('error');
         if (error !== null) {
             var $errorPlacement = $('<div class="silky-results-error-placement"></div>');
@@ -83,12 +85,16 @@ var GroupView = Element.View.extend({
             this.$el.addClass('silky-results-error');
         }
 
-        this.model.attributes.element.elements.forEach(function(element) {
+        this.model.attributes.element.elements.forEach(element => {
+            if (this.mode === 'rich' && element.syntax)
+                return;
+
             var $el = $('<div></div>');
-            var child = self.create(element, $el, self.level+1, self);
+            var child = this.create(element, $el, this.level+1, this, this.mode);
             if (child !== null) {
-                self.children.push(child);
-                $el.appendTo(self.$el);
+                this.children.push(child);
+                $el.appendTo(this.$el);
+                $('<br>').appendTo(this.$el);
             }
         });
     }

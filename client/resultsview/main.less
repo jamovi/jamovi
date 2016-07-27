@@ -2,31 +2,37 @@
 @import (inline) "../lib/metro-icons.css";
 
 body {
-    font-family: "Segoe UI", "Open Sans", sans-serif, serif ;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
     color: #333333 ;
     cursor: default ;
     margin: 0 ;
+    font-size: 12px ;
 }
 
 h1 {
-   font-size: 1.3em ;
-   color: #3E6DA9 ;
+    font-size: 160% ;
+    color: #3E6DA9 ;
+    margin-bottom: 12px ;
 }
 
 h2 {
-   font-size: 1em ;
+    font-size: 130% ;
     margin-bottom: 12px ;
     color: #3E6DA9 ;
 }
 
 h3, h4, h5 {
-    font-size: 1em ;
+    font-size: 110% ;
     margin-bottom: 12px ;
 }
 
 * {
     user-select: none ;
     -webkit-user-select: none;
+}
+
+#results {
+    display: inline-block ;
 }
 
 .silky-results-item {
@@ -68,10 +74,6 @@ h3, h4, h5 {
     padding-top: 0 ;
     padding-bottom: 0 ;
     margin-bottom: 0 ;
-}
-
-.silky-results-table {
-    font-size: 12px ;
 }
 
 .silky-results-table-status-indicator {
@@ -159,6 +161,7 @@ th.silky-results-table-title-cell{
 
 .silky-results-table-cell-number,
 .silky-results-table-cell-integer {
+    font-family: "Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     text-align: right ;
 }
 
@@ -192,4 +195,57 @@ td.silky-results-table-cell-format-sep + td.silky-results-table-cell-sup {
 
 .silky-results-array > .silky-results-image {
     margin-top: 0 ;
+}
+
+.silky-results-syntax,
+.silky-results-text {
+    color: #333333 ;
+    user-select: all ;
+    -webkit-user-select: all ;
+}
+
+.silky-results-syntax-heading {
+    font-size: 130% ;
+}
+
+body[data-mode="text"] {
+    padding-left: 12px ;
+}
+
+[data-mode="text"] h1,
+[data-mode="text"] h2,
+[data-mode="text"] h3,
+[data-mode="text"] h4,
+[data-mode="text"] h5 {
+    margin-left: 2px ;
+}
+
+[data-mode="text"] .silky-results-syntax {
+    margin-top: 4px ;
+    margin-bottom: 8px ;
+}
+
+[data-mode="text"],
+pre {
+    font-family: Consolas,"Liberation Mono",Menlo,Courier,monospace;
+    margin-top: 0 ;
+    margin-bottom : 0;
+    border: 2px solid transparent ;
+    box-sizing: border-box;
+    position: relative ;
+}
+
+[data-mode="text"] .silky-results-group,
+[data-mode="text"] .silky-results-array,
+[data-mode="text"] .silky-results-table {
+    position: relative;
+    left: -2px ;
+    margin-top: 0 ;
+    margin-bottom: 0 ;
+    padding-top : 0 ;
+    padding-bottom : 0 ;
+}
+
+[data-mode="text"] .silky-results-item {
+    padding: 0 ;
 }

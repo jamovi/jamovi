@@ -1,21 +1,25 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
+const _ = require('underscore');
+const $ = require('jquery');
 
-var TableModel = require('./table').Model;
-var TableView  = require('./table').View;
-var GroupModel = require('./group').Model;
-var GroupView  = require('./group').View;
-var ImageModel = require('./image').Model;
-var ImageView  = require('./image').View;
-var ArrayModel = require('./array').Model;
-var ArrayView  = require('./array').View;
+const TableModel = require('./table').Model;
+const TableView  = require('./table').View;
+const GroupModel = require('./group').Model;
+const GroupView  = require('./group').View;
+const ImageModel = require('./image').Model;
+const ImageView  = require('./image').View;
+const ArrayModel = require('./array').Model;
+const ArrayView  = require('./array').View;
+const SyntaxModel = require('./syntax').Model;
+const SyntaxView  = require('./syntax').View;
 
-var createItem = function(element, $el, level, parent) {
+const createItem = function(element, $el, level, parent, mode) {
 
     if (_.isUndefined(level))
         level = 1;
+    if (_.isUndefined(mode))
+        mode = 'rich';
 
     var model;
     var view;
@@ -27,7 +31,7 @@ var createItem = function(element, $el, level, parent) {
             element: element.table,
             status: element.status,
             error: element.error });
-        view = new TableView({ el : $el, model : model, parent : parent });
+        view = new TableView({ el : $el, model : model, parent : parent, mode: mode });
     }
     else if (element.group) {
 
@@ -38,7 +42,7 @@ var createItem = function(element, $el, level, parent) {
                 element: element.group,
                 status: element.status,
                 error: element.error });
-            view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+            view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent, mode : mode });
         }
         else {
             view = null;
@@ -51,7 +55,7 @@ var createItem = function(element, $el, level, parent) {
             element : element.image,
             status: element.status,
             error: element.error });
-        view = new ImageView({ el : $el, model : model, parent : parent });
+        view = new ImageView({ el : $el, model : model, parent : parent, mode : mode });
     }
     else if (element.array) {
 
@@ -62,11 +66,20 @@ var createItem = function(element, $el, level, parent) {
                 element : element.array,
                 status: element.status,
                 error: element.error });
-            view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent });
+            view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent, mode : mode });
         }
         else {
             view = null;
         }
+    }
+    else if (element.syntax) {
+        model = new SyntaxModel({
+            name : element.name,
+            title : element.title,
+            element : element.syntax,
+            status: element.status,
+            error: element.error });
+        view = new SyntaxView({ el : $el, model : model, parent : parent, mode : mode });
     }
     else if (element.text) {
         $el.append(element.text);

@@ -91,6 +91,10 @@ void EngineR::run(Analysis *analysis)
     Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw2(rawVec2.begin(), rawVec2.end());
     resultsReceived(raw2);
+
+    Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incAsText=TRUE), NULL)\n");
+    std::string raw3(rawVec3.begin(), rawVec3.end());
+    resultsReceived(raw3);
 }
 
 void EngineR::checkpoint(SEXP results)

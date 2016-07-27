@@ -29,6 +29,7 @@ var ArrayView = Element.View.extend({
         this.create = data.create;
         this.level = data.level;
         this.children = [ ];
+        this.mode = data.mode;
 
         this.hoTag = '<h'  + (this.level+1) + '>';
         this.hcTag = '</h' + (this.level+1) + '>';
@@ -38,7 +39,10 @@ var ArrayView = Element.View.extend({
         if (this.model === null)
             this.model = new ArrayModel();
 
-        this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+        if (this.mode === 'text')
+            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+        else
+            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
 
         this.render();
     },
@@ -71,13 +75,11 @@ var ArrayView = Element.View.extend({
     },
     render: function() {
 
-        var self = this;
-
-        this.model.attributes.element.elements.forEach(function(element) {
+        this.model.attributes.element.elements.forEach(element => {
             var $el = $('<div></div>');
-            var child = self.create(element, $el, self.level+1, self);
-            self.children.push(child);
-            $el.appendTo(self.$el);
+            var child = this.create(element, $el, this.level+1, this, this.mode);
+            this.children.push(child);
+            $el.appendTo(this.$el);
         });
 
     }

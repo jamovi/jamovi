@@ -1,6 +1,6 @@
+from protobuf3.fields import EnumField, BoolField, Int32Field, BytesField, MessageField, StringField, UInt32Field, DoubleField
 from protobuf3.message import Message
 from enum import Enum
-from protobuf3.fields import StringField, BoolField, DoubleField, Int32Field, UInt32Field, MessageField, BytesField, EnumField
 
 
 class Error(Message):
@@ -212,6 +212,7 @@ AnalysisResponse.add_field('options', StringField(field_number=3, optional=True)
 AnalysisResponse.add_field('results', MessageField(field_number=4, optional=True, message_cls=ResultsElement))
 AnalysisResponse.add_field('status', EnumField(field_number=5, optional=True, enum_cls=AnalysisStatus))
 AnalysisResponse.add_field('error', MessageField(field_number=6, optional=True, message_cls=Error))
+AnalysisResponse.add_field('incAsText', BoolField(field_number=7, optional=True))
 ResultsCell.add_field('i', Int32Field(field_number=1, optional=True))
 ResultsCell.add_field('d', DoubleField(field_number=2, optional=True))
 ResultsCell.add_field('s', StringField(field_number=3, optional=True))
@@ -229,6 +230,7 @@ ResultsTable.add_field('columns', MessageField(field_number=1, repeated=True, me
 ResultsTable.add_field('rowNames', StringField(field_number=2, repeated=True))
 ResultsTable.add_field('swapRowsColumns', BoolField(field_number=3, optional=True))
 ResultsTable.add_field('notes', MessageField(field_number=4, repeated=True, message_cls=ResultsTableNote))
+ResultsTable.add_field('asText', StringField(field_number=5, optional=True))
 ResultsImage.add_field('path', StringField(field_number=1, optional=True))
 ResultsImage.add_field('width', Int32Field(field_number=2, optional=True))
 ResultsImage.add_field('height', Int32Field(field_number=3, optional=True))
@@ -242,4 +244,4 @@ ResultsElement.add_field('table', MessageField(field_number=6, optional=True, me
 ResultsElement.add_field('image', MessageField(field_number=7, optional=True, message_cls=ResultsImage))
 ResultsElement.add_field('group', MessageField(field_number=8, optional=True, message_cls=ResultsGroup))
 ResultsElement.add_field('array', MessageField(field_number=9, optional=True, message_cls=ResultsArray))
-ResultsElement.add_field('text', StringField(field_number=10, optional=True))
+ResultsElement.add_field('syntax', StringField(field_number=11, optional=True))

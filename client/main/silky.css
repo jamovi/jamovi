@@ -13,7 +13,7 @@ html, body {
 }
 
 body {
-    font-family: "Segoe UI", "Open Sans", sans-serif, serif;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
     font-size: 80%;
     line-height: 1.1;
     font-weight: 400;
@@ -136,7 +136,6 @@ body.windows.electron #header-buttons {
 #results {
     font-style: sans-serif ;
     border: 1px solid #ACACAC ;
-    padding: 5px ;
 }
 
 #results h1 {
