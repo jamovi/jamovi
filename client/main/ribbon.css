@@ -24,6 +24,11 @@
     background-color : #EDEDED ;
     border-radius: 1px ;
     padding: 0 ;
+    -webkit-app-region: no-drag;
+}
+
+body.windows .silky-ribbon-menu-button {
+    top: 36px ;
 }
 
 .silky-ribbon-menu-button:hover {
