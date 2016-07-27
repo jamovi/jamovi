@@ -39,6 +39,8 @@ var Instance = Backbone.Model.extend({
 
         this._instanceId = null;
 
+        this.attributes.coms.onBroadcast(bc => this._onReceive(bc));
+
     },
     defaults : {
         coms : null,
@@ -46,6 +48,7 @@ var Instance = Backbone.Model.extend({
         hasDataSet : false,
         filePath : null,
         fileName : null,
+        resultsMode : 'rich'
     },
     instanceId : function() {
         return this._instanceId;
@@ -131,6 +134,15 @@ var Instance = Backbone.Model.extend({
 
         return coms.send(request).then(onSuccess);
     },
+    toggleResultsMode : function() {
+
+        let mode = this.attributes.resultsMode;
+        if (mode === 'text')
+            mode = 'rich';
+        else
+            mode = 'text';
+        this.set('resultsMode', mode);
+    },
     _beginInstance : function(instanceId) {
 
         var coms = this.attributes.coms;
@@ -196,39 +208,42 @@ var Instance = Backbone.Model.extend({
         var coms = this.attributes.coms;
 
         var analysisRequest = new coms.Messages.AnalysisRequest();
+        analysisRequest.analysisId = analysis.id;
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
         analysisRequest.ppi = 72 * (window.devicePixelRatio || 1);
 
-        if (analysis.isSetup) {
-            analysisRequest.analysisId = analysis.id;
+        if (analysis.isSetup)
             analysisRequest.options = JSON.stringify(analysis.options);
-        }
 
         var request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = "AnalysisRequest";
         request.instanceId = this._instanceId;
 
-        var onreceive = function(message) {
+        return coms.sendP(request);
+    },
+    _onReceive : function(message) {
 
+        var coms = this.attributes.coms;
+
+        if (message.payloadType === 'AnalysisResponse') {
             var response = coms.Messages.AnalysisResponse.decode(message.payload);
             var ok = false;
 
-            if (analysis.isSetup === false
-                && _.has(response, "analysisId")
-                && _.has(response, "options")) {
+            var id = response.analysisId;
+            var analysis = this._analyses.get(id);
 
-                var id = response.analysisId;
+            if (analysis.isSetup === false && _.has(response, "options")) {
+
                 var options = JSON.parse(response.options);
-
-                analysis.setup(id, options);
+                analysis.setup(options);
 
                 ok = true;
             }
 
             if (analysis.isSetup && _.has(response, "results") && response.results !== null) {
-                analysis.setResults(response.results);
+                analysis.setResults(response.results, response.incAsText, response.syntax);
                 ok = true;
             }
 
@@ -236,9 +251,8 @@ var Instance = Backbone.Model.extend({
                 console.log("Unexpected analysis results received");
                 console.log(response);
             }
-        };
+        }
 
-        return coms.send(request).then(onreceive, null, onreceive);
     },
     _stringifyMeasureType : function(measureType) {
         switch (measureType) {

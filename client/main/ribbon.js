@@ -9,6 +9,9 @@ var RibbonButton = require('./ribbonbutton');
 
 var RibbonModel = Backbone.Model.extend({
 
+    toggleResultsMode : function() {
+        this.trigger('toggleResultsMode');
+    },
     defaults : {
         dataAvailable : false,
         tabs : [
@@ -69,6 +72,7 @@ var RibbonView = Backbone.View.extend({
 
         var html = '';
         html += '<div class="silky-ribbon-header">';
+        html += '    <div class="silky-ribbon-menu-button"><span class="mif-menu"><span></div>';
         html += '</div>';
         html += '<div class="silky-ribbon-body">';
         html += '</div>';
@@ -77,6 +81,7 @@ var RibbonView = Backbone.View.extend({
 
         this.$header = this.$el.find('.silky-ribbon-header');
         this.$body   = this.$el.find('.silky-ribbon-body');
+        this.$menu   = this.$el.find('.silky-ribbon-menu-button');
 
         var currentTabIndex = this.model.get('selectedIndex');
         var currentTab = this.model.get('tabs')[currentTabIndex];
@@ -104,6 +109,8 @@ var RibbonView = Backbone.View.extend({
 
         this.$tabs = this.$header.find('.silky-ribbon-tab');
         $(this.$tabs[1]).addClass('selected');
+
+        this.$menu.on('click', () => this.model.toggleResultsMode());
     },
     _ribbonClicked : function(event) {
         var index = this.$tabs.index(event.target);

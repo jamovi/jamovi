@@ -171,7 +171,7 @@ message AnalysisResponse {
     optional ResultsElement results = 4;
     optional AnalysisStatus status = 5;
     optional Error error = 6;
-
+    optional bool incAsText = 7;
 }
 
 message ResultsCell {
@@ -217,6 +217,7 @@ message ResultsTable {
     repeated string rowNames = 2;
     optional bool swapRowsColumns = 3;
     repeated ResultsTableNote notes = 4;
+    optional string asText = 5;
 }
 
 message ResultsImage {
@@ -244,6 +245,6 @@ message ResultsElement {
         ResultsImage image = 7;
         ResultsGroup group = 8;
         ResultsArray array = 9;
-        string text = 10;
+        string syntax = 11;
     }
 }

@@ -1,33 +1,49 @@
 
-#results {
+.silky-results {
+    margin: 0 ;
+    padding: 0 ;
+}
+
+.silky-results-panel {
+    width: 100% ;
+    height: 100% ;
+    box-sizing: border-box;
+    position: absolute ;
+    top: 0 ;
     overflow: scroll ;
+    transition: all .2s ;
 }
 
-#results {
+.silky-results-panel.silky-results-panel-hidden {
+    width: 0 ;
+    overflow: hidden ;
+    padding-right: 0 ;
+}
+
+.silky-results-panel {
+    padding: 5px ;
     background-color: white ;
-    transition: background-color 0.2s ;
-    position: relative ;
 }
 
-#results[data-analysis-selected] {
+.silky-results-panel[data-analysis-selected] {
     background-color: #E8E8E8 ;
-    transition: background-color 0.2s ;
+
 }
 
-#results iframe {
+.silky-results-panel iframe {
     overflow: hidden ;
     transition: width 0.4s, height 0.2s, background-color 0.2s ;
 }
 
-#results iframe::-webkit-scrollbar {
+.silky-results-panel iframe::-webkit-scrollbar {
     display: none;
 }
 
-#results[data-analysis-selected] iframe:not([data-selected]) {
+.silky-results-panel[data-analysis-selected] iframe:not([data-selected]) {
     background-color: #E8E8E8 ;
 }
 
-#results iframe[data-selected] {
+.silky-results-panel iframe[data-selected] {
     background-color: white ;
 }
 

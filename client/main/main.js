@@ -160,6 +160,8 @@ $(document).ready(function() {
             backstage.activate();
     });
 
+    ribbonModel.on('toggleResultsMode', () => instance.toggleResultsMode());
+
     var halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     var optionsFixedWidth = 585;
     var splitPanel  = new SplitPanel({el : "#main-view"});

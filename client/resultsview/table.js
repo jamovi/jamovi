@@ -27,7 +27,8 @@ var TableModel = Backbone.Model.extend({
             columns : [ ]
         },
         error: null,
-        status: 'complete'
+        status: 'complete',
+        asText: null
     },
     initialize: function() {
     }
@@ -43,20 +44,29 @@ var TableView = Element.View.extend({
         if (this.model === null)
             this.model = new TableModel();
 
-        this.$table = $('<table class="silky-results-table-table"></table>').appendTo(this.$el);
-        this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
-        this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
-        this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
-        this.$titleText = $('<span class="silky-results-table-title-text"></span>').appendTo(this.$titleCell);
-        this.$status = $('<div class="silky-results-table-status-indicator"></div>').appendTo(this.$titleCell);
+        var table = this.model.attributes.element;
 
-        this.$columnHeaderRowSuper = $('<tr class="silky-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
-        this.$columnHeaderRow      = $('<tr class="silky-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
+        if (data.mode === 'rich') {
 
-        this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
-        this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
+            this.$table = $('<table class="silky-results-table-table"></table>').appendTo(this.$el);
+            this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
+            this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
+            this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
+            this.$titleText = $('<span class="silky-results-table-title-text"></span>').appendTo(this.$titleCell);
+            this.$status = $('<div class="silky-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
-        this.render();
+            this.$columnHeaderRowSuper = $('<tr class="silky-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
+            this.$columnHeaderRow      = $('<tr class="silky-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
+
+            this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
+            this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
+
+            this.render();
+        }
+        else if (table.asText !== null) {
+            var $pre = $('<pre class="silky-results-text silky-results-item"></pre>').appendTo(this.$el);
+            $pre.text('#' + table.asText.split('\n').join('\n# '));
+        }
     },
     type: function() {
         return "Table";
@@ -105,18 +115,23 @@ var TableView = Element.View.extend({
 
             cells.body[rowNo] = new Array(table.columns.length);
 
+            let rowFormat = '';
+
             for (let colNo = 0; colNo < table.columns.length; colNo++) {
                 let sourceColumn = table.columns[colNo];
                 let sourceCell = sourceColumn.cells[rowNo];
 
-                let cell = { classes : '' };
-
+                if ((sourceCell.format & Format.BEGIN_END_GROUP) == Format.BEGIN_END_GROUP)
+                    rowFormat = ' silky-results-table-cell-group-begin silky-results-table-cell-group-end';
                 if (sourceCell.format & Format.BEGIN_GROUP)
-                    cell.classes += " silky-results-table-cell-group-begin";
+                    rowFormat += ' silky-results-table-cell-group-begin';
                 if (sourceCell.format & Format.END_GROUP)
-                    cell.classes += " silky-results-table-cell-group-end";
+                    rowFormat += ' silky-results-table-cell-group-end';
+
+                let cell = { value : null, classes : rowFormat };
+
                 if (sourceCell.format & Format.NEGATIVE)
-                    cell.classes += " silky-results-table-cell-negative";
+                    cell.classes += ' silky-results-table-cell-negative';
 
                 for (let i = 0; i < sourceCell.footnotes.length; i++) {
                     let footnote = sourceCell.footnotes[i];
@@ -248,10 +263,10 @@ var TableView = Element.View.extend({
             //fix body
             for (let rowNo = 0; rowNo < swapped.body.length; rowNo++) {
                 for (let colNo = 1; colNo < swapped.body[rowNo].length; colNo++) {
-                    swapped.body[rowNo][colNo] = cells.body[colNo - 1][rowNo + 1]; 
-                }    
+                    swapped.body[rowNo][colNo] = cells.body[colNo - 1][rowNo + 1];
+                }
             }
-            
+
             cells.header = swapped.header;
             cells.body = swapped.body;
         }
@@ -267,7 +282,7 @@ var TableView = Element.View.extend({
         this.$columnHeaderRow.html(html);
 
         html = '';
-        
+
 
         if (table.columns.length === 0)
             return;

@@ -13,6 +13,23 @@
     -webkit-app-region: no-drag;
 }
 
+.silky-ribbon-menu-button {
+    position: absolute ;
+    right: 6px ;
+    top: 8px ;
+    font-size: 125% ;
+    text-align: center ;
+    width: 24px ;
+    height: 20px ;
+    background-color : #EDEDED ;
+    border-radius: 1px ;
+    padding: 0 ;
+}
+
+.silky-ribbon-menu-button:hover {
+    color: #999999 ;
+}
+
 .silky-ribbon-tab:hover {
     color: #EEEEEE ;
 }

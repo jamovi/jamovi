@@ -19,10 +19,9 @@ class Analysis:
 
 class Analyses:
     def __init__(self):
-        self._nextId = 0
         self._analyses = []
 
-    def create(self, name, ns):
+    def create(self, id, name, ns):
 
         here = os.path.realpath(os.path.dirname(__file__))
         root = os.path.realpath(os.path.join(here, '..'))
@@ -58,8 +57,7 @@ class Analyses:
 
                 options[o_name] = o_default
 
-            analysis = Analysis(self._nextId, analysisName, ns, options, self)
+            analysis = Analysis(id, analysisName, ns, options, self)
             self._analyses.append(analysis)
-            self._nextId += 1
 
             return analysis

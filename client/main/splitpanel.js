@@ -76,7 +76,7 @@ var SplitPanel = SilkyView.extend({
     },
 
     addPanel: function(name, properties) {
-        this.$el.append($('<div id="' + name + '">new Panel</div>'));
+        this.$el.append($('<div id="' + name + '"></div>'));
         this.$children  = this.$el.children();
 
         var section = this.getSection(name);

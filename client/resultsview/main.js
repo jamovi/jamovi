@@ -8,7 +8,7 @@ Backbone.$ = $;
 var createItem = require('./create').createItem;
 
 var mainWindow = null;
-var results = null;
+var  results = null;
 var $results = null;
 var active = null;
 
@@ -21,7 +21,7 @@ var _reallyNotifyResize = function() {
 
 var _sendMenuRequest = function(data) {
     var entries = data.data;
-    entries[0].type = "Analysis";
+    entries[0].type = 'Analysis';
     mainWindow.postMessage({ eventType : 'menuRequest', eventData : entries }, '*');
 
     var lastEntry = entries[entries.length-1];
@@ -41,10 +41,11 @@ window.addEventListener('message', function(event) {
     if (hostEvent.type === 'results') {
         var content = '';
         var $body = $('body');
+        $body.attr('data-mode', hostEvent.mode);
         $body.empty();
 
         $results = $('<div id="results"></div>');
-        results = createItem(hostEvent.results, $results, 0, { _sendEvent: _sendMenuRequest });
+        results = createItem(hostEvent.results, $results, 0, { _sendEvent: _sendMenuRequest }, hostEvent.mode);
         $results.appendTo($body);
 
         _notifyResize();

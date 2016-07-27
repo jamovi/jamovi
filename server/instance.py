@@ -155,11 +155,11 @@ class Instance:
 
     def _on_analysis(self, request):
 
-        if 'analysisId' not in request:
+        if 'options' not in request:
 
             try:
-                analysis = self._analyses.create(request.name, request.ns)
-                analysisId = analysis.id
+                analysis = self._analyses.create(request.analysisId, request.name, request.ns)
+                analysisId = request.analysisId
                 options = json.dumps(analysis.options)
 
                 response = silkycoms.AnalysisResponse()
