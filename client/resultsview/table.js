@@ -64,8 +64,13 @@ var TableView = Element.View.extend({
             this.render();
         }
         else if (table.asText !== null) {
+            
+            var text = '#' + table.asText.split('\n').join('\n# ');
+            if (navigator.platform === "Win32")
+                text = text.replace(/\u273B/g, '*');
+            
             var $pre = $('<pre class="silky-results-text silky-results-item"></pre>').appendTo(this.$el);
-            $pre.text('#' + table.asText.split('\n').join('\n# '));
+            $pre.text(text);
         }
     },
     type: function() {
