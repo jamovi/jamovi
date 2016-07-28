@@ -72,6 +72,7 @@ var TableView = SilkyView.extend({
         var left = this.rowHeaderWidth;
 
         this._lefts = new Array(columns.length);  // store the left co-ordinate for each column
+        this._widths = new Array(columns.length);
 
         for (var colNo = 0; colNo < columns.length; colNo++) {
             var column = columns[colNo];
@@ -80,15 +81,18 @@ var TableView = SilkyView.extend({
             var html = '';
             html += '<div class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + (this._rowHeight - 1) + 'px">';
             html +=     column.name;
+            html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
 
             this.$header.append(html);
             this.$body.append('<div class="silky-column ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
 
             this._lefts[colNo] = left;
+            this._widths[colNo] = width;
             left += width;
         }
 
+        this.$headers = this.$header.children(':not(:first-child)');
         this.$columns = this.$body.children();
         this.$body.css('width',  left);
 
@@ -100,6 +104,45 @@ var TableView = SilkyView.extend({
 
         this.updateViewRange();
 
+        let $resizers = this.$header.find('.silky-column-header-resizer');
+        $resizers.on('drag', event => this._columnResizeHandler(event));
+    },
+    _columnResizeHandler(event) {
+        if (event.clientX === 0 && event.clientY === 0)
+            return;
+
+        let $target = $(event.target);
+        let $parent = $target.parent();
+        let x = event.offsetX - 6;
+
+        if (x === 0)
+            return;
+
+        let colNo = parseInt($target.attr('data-index'));
+
+        let newWidth = this._widths[colNo] + x;
+        if (newWidth < 32) {
+            newWidth = 32;
+            x = newWidth - this._widths[colNo];
+        }
+
+        this._widths[colNo] = newWidth;
+        let $header = $(this.$headers[colNo]);
+        let $column = $(this.$columns[colNo]);
+        let css = { width: this._widths[colNo] };
+        $header.css(css);
+        $column.css(css);
+
+        for (let i = colNo + 1; i < this._lefts.length; i++) {
+            this._lefts[i] += x;
+            let $header = $(this.$headers[i]);
+            let $column = $(this.$columns[i]);
+            let css = { left: this._lefts[i] };
+            $header.css(css);
+            $column.css(css);
+        }
+
+        this.resizeHandler();
     },
     _updateCells : function() {
 

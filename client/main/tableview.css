@@ -62,6 +62,18 @@
     box-sizing: border-box ;
 }
 
+.silky-column-header-resizer {
+    position: absolute ;
+    top: -6px ;
+    right: -6px ;
+    width: 12px ;
+    height: 24px ;
+    background-color: red ;
+    cursor: col-resize ;
+    z-index: 20 ;
+    opacity: 0 ;
+}
+
 .silky-column.continuous {
     text-align: right ;
 }
@@ -77,6 +89,7 @@
 .silky-column-cell {
     padding-left: 10px ;
     padding-right: 10px ;
+    overflow: hidden ;
 }
 
 .silky-column-header.nominaltext {
