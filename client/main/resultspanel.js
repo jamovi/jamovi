@@ -183,15 +183,15 @@ var ResultsPanel = Backbone.View.extend({
         if (itemHeight < viewHeight) {
 
             if (itemTop < viewTop)
-                this.$el.animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
             else if (itemBottom > viewBottom)
-                this.$el.animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
         }
         else {
             if (itemTop > viewTop)
-                this.$el.animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
             else if (itemBottom < viewBottom)
-                this.$el.animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
         }
     },
     _onSelectedChanged : function(event) {

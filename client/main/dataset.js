@@ -39,6 +39,18 @@ var DataSetViewModel = DataSetModel.extend({
             viewport   : { left : 0, top : 0, right : -1, bottom : -1}
         }, DataSetModel.prototype.defaults);
     },
+    valueAt : function(rowNo, colNo) {
+        let viewport = this.attributes.viewport;
+        if (rowNo >= viewport.top &&
+            rowNo <= viewport.bottom &&
+            colNo >= viewport.left &&
+            colNo <= viewport.right) {
+
+            return this.attributes.cells[colNo - viewport.left][rowNo - viewport.top];
+        }
+
+        return null;
+    },
     setViewport : function(viewport) {
 
         var nCols = viewport.right - viewport.left + 1;

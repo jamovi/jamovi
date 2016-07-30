@@ -31,7 +31,7 @@ var TableView = SilkyView.extend({
 
         var html = '';
         html += '<div class="silky-table-header">';
-        html += '    <div class="silky-column-header">&nbsp;</div>';   // padding so we can inspect the height of the table header
+        html += '    <div class="silky-column-header" style="width: 110%">&nbsp;</div>';   // padding so we can inspect the height of the table header
         html += '</div>';
         html += '<div class="silky-table-container">';
         html += '    <div class="silky-table-body"></div>';
@@ -58,15 +58,17 @@ var TableView = SilkyView.extend({
         }).then(function() {
 
             self._rowHeight = self.$header.height();  // read and store the row height
-            self.$header.empty();  // clear the temporary cell
             self.$header.css('height', self._rowHeight);
             self.$container.css('top', self._rowHeight);
             self.$container.css('height', self.$el.height() - self._rowHeight);
         });
+
+        this.selection = null;
     },
     _dataSetLoaded : function() {
 
-        this.$header.append('<div class="silky-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + (this._rowHeight - 1) + 'px">&nbsp;</div>');
+        this.$header.empty();  // clear the temporary cell
+        this.$header.append('<div class="silky-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
 
         var columns = this.model.get('columns');
         var left = this.rowHeaderWidth;
@@ -79,7 +81,7 @@ var TableView = SilkyView.extend({
             var width  = column.width;
 
             var html = '';
-            html += '<div class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + (this._rowHeight - 1) + 'px">';
+            html += '<div class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
             html +=     column.name;
             html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
@@ -106,7 +108,91 @@ var TableView = SilkyView.extend({
 
         let $resizers = this.$header.find('.silky-column-header-resizer');
         $resizers.on('drag', event => this._columnResizeHandler(event));
+
+        this.$selection = $('<input class="silky-table-cell-selected" contenteditable>');
+        this.$selection.width(this._lefts[0]);
+        this.$selection.height(this._rowHeight);
+        this.$selection.appendTo(this.$body);
+
+        this.$selectionRowHighlight = $('<div class="silky-table-row-highlight"></div>');
+        this.$selectionRowHighlight.appendTo(this.$body);
+
+        this.$selectionColumnHighlight = $('<div class="silky-table-column-highlight"></div>');
+        this.$selectionColumnHighlight.appendTo(this.$header);
+
+        this.$selection.on('input', event => {
+            this.$selection.addClass('editing');
+        });
+
+        this.$body.on('click', event => {
+            let element = document.elementFromPoint(event.clientX, event.clientY);
+            let $element = $(element);
+            if ( ! $element.hasClass('silky-column-cell'))
+                return;
+
+            var rowNo = $element.data('row');
+            var colNo = $element.data('col');
+
+            this._setSelection(rowNo, colNo);
+        });
     },
+    _setSelection : function(rowNo, colNo) {
+
+        if (this.selection !== null) {
+            if (colNo !== this.selection.colNo)
+                $(this.$headers[this.selection.colNo]).removeClass('highlighted');
+            if (rowNo !== this.selection.colNo && rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+                let vRowNo = this.selection.rowNo - this.viewport.top;
+                let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
+                $cell.removeClass('highlighted');
+            }
+        } else {
+            this.selection = {};
+        }
+
+        this.selection.rowNo = rowNo;
+        this.selection.colNo = colNo;
+
+        $(this.$headers[colNo]).addClass('highlighted');
+
+        if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+            let vRowNo = rowNo - this.viewport.top;
+            let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
+            $cell.addClass('highlighted');
+        }
+
+        let x = this._lefts[colNo];
+        let y = rowNo * this._rowHeight;
+        let width = this._widths[colNo];
+        let height = this._rowHeight;
+
+        this.$selection.css({ left: x, top: y, width: width, height: height});
+        this.$selection.blur();
+        this.$selection.removeClass('editing');
+        this.$selection.val('');
+
+        let promise = new Promise((resolve, reject) => {
+            this.$selection.one('transitionend', resolve);
+        });
+
+        this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
+        this.$selectionColumnHighlight.css({ left: x, width: width, height: height });
+
+        return promise;
+    },
+    /*_beginEditing : function() {
+
+        let rowNo = this.selection.rowNo;
+        let colNo = this.selection.colNo;
+        let value = this.model.valueAt(rowNo, colNo);
+        let type = this.model.attributes.columns[colNo].measureType;
+
+        this.$selection.addClass('editing');
+        this.$selection.attr('data-measuretype', type);
+        this.$selection.val(value);
+
+        setTimeout(() => this.$selection.select(), 50);
+    },*/
     _columnResizeHandler(event) {
         if (event.clientX === 0 && event.clientY === 0)
             return;
@@ -215,6 +301,7 @@ var TableView = SilkyView.extend({
 
         var left = this.$container.scrollLeft();
         this.$rhColumn.css('left', left);
+        this.$selectionRowHighlight.css('left', left);
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
     },
@@ -288,11 +375,22 @@ var TableView = SilkyView.extend({
 
         this.refreshCells(oldViewport, this.viewport);
     },
-    _createCellHTML : function(top, height, content) {
-        return '<div class="silky-column-cell" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
+    _createCellHTML : function(top, height, content, rowNo, colNo) {
+        return '<div ' +
+            ' class="silky-column-cell"' +
+            ' data-row="' + rowNo + '"' +
+            ' data-col="' + colNo + '"' +
+            ' style="top : ' + top + 'px ; height : ' + height + 'px">' +
+            content +
+            '</div>';
     },
-    _createRHCellHTML : function(top, height, content) {
-        return '<div class="silky-row-header-cell" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
+    _createRHCellHTML : function(top, height, content, rowNo) {
+
+        let highlighted = '';
+        if (this.selection !== null && this.selection.rowNo === rowNo)
+            highlighted = 'highlighted';
+
+        return '<div class="silky-row-header-cell ' + highlighted + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
     },
     refreshCells : function(oldViewport, newViewport) {
 
@@ -315,7 +413,7 @@ var TableView = SilkyView.extend({
             for (j = 0; j < nRows; j++) {
                 rowNo = n.top + j;
                 top   = rowNo * this._rowHeight;
-                $cell = $(this._createRHCellHTML(top, this._rowHeight, '' + (n.top+j+1)));
+                $cell = $(this._createRHCellHTML(top, this._rowHeight, '' + (n.top+j+1), rowNo));
                 this.$rhColumn.append($cell);
             }
         }
@@ -340,7 +438,7 @@ var TableView = SilkyView.extend({
                 for (j = 0; j < nRows; j++) {
                     rowNo = n.top + j;
                     top   = rowNo * this._rowHeight;
-                    $cell = $(this._createCellHTML(top, this._rowHeight, ''));
+                    $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                     $column.append($cell);
                 }
             }
@@ -364,7 +462,7 @@ var TableView = SilkyView.extend({
                     for (j = 0; j < nRows; j++) {
                         rowNo = n.top + j;
                         top = this._rowHeight * rowNo;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, ''));
+                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
                         $column.append($cell);
                     }
                 }
@@ -393,7 +491,7 @@ var TableView = SilkyView.extend({
                     for (j = 0; j < nRows; j++) {
                         rowNo = n.top + j;
                         top = this._rowHeight * rowNo;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, ''));
+                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
                         $column.append($cell);
                     }
                 }
@@ -422,7 +520,7 @@ var TableView = SilkyView.extend({
                     for (j = 0; j < nRows; j++) {
                         rowNo = o.bottom + j + 1;
                         top   = rowNo * this._rowHeight;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, ''));
+                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                         $column.append($cell);
                     }
                 }
@@ -461,7 +559,7 @@ var TableView = SilkyView.extend({
                     for (j = 0; j < nRows; j++) {
                         rowNo = o.top - j - 1;
                         top   = rowNo * this._rowHeight;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, ''));
+                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                         $column.prepend($cell);
                     }
                 }
