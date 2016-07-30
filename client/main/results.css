@@ -12,17 +12,13 @@
     top: 0 ;
     overflow: scroll ;
     transition: all .2s ;
+    background-color: white ;
 }
 
 .silky-results-panel.silky-results-panel-hidden {
     width: 0 ;
     overflow: hidden ;
     padding-right: 0 ;
-}
-
-.silky-results-panel {
-    padding: 5px ;
-    background-color: white ;
 }
 
 .silky-results-panel[data-analysis-selected] {
@@ -33,6 +29,7 @@
 .silky-results-panel iframe {
     overflow: hidden ;
     transition: width 0.4s, height 0.2s, background-color 0.2s ;
+    margin: 5px ;
 }
 
 .silky-results-panel iframe::-webkit-scrollbar {
