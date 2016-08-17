@@ -13,8 +13,8 @@ import json
 import os
 import subprocess
 
-cdef extern from "dataset2w.h":
-    cdef cppclass CDataSet "DataSet2W":
+cdef extern from "datasetw.h":
+    cdef cppclass CDataSet "DataSetW":
         @staticmethod
         CDataSet *create(CMemoryMap *mm) except +
         @staticmethod
@@ -74,8 +74,8 @@ cdef class DataSet:
     def column_count(self):
         return self._this.columnCount()
 
-cdef extern from "column2w.h":
-    cdef cppclass CColumn "Column2W":
+cdef extern from "columnw.h":
+    cdef cppclass CColumn "ColumnW":
         string name() const
         void setColumnType(CColumnType columnType)
         CColumnType columnType() const
@@ -87,14 +87,16 @@ cdef extern from "column2w.h":
         void addLabel(int value, const char *label)
         int labelCount()
         map[int, string] labels()
+        void setDPs(int dps)
+        int dps() const
 
-cdef extern from "column2.h":
-    ctypedef enum CColumnType  "Column2::ColumnType":
-        CColumnTypeMisc        "Column2::Misc"
-        CColumnTypeNominalText "Column2::NominalText"
-        CColumnTypeNominal     "Column2::Nominal"
-        CColumnTypeOrdinal     "Column2::Ordinal"
-        CColumnTypeContinuous  "Column2::Continuous"
+cdef extern from "column.h":
+    ctypedef enum CColumnType  "Column::ColumnType":
+        CColumnTypeMisc        "Column::Misc"
+        CColumnTypeNominalText "Column::NominalText"
+        CColumnTypeNominal     "Column::Nominal"
+        CColumnTypeOrdinal     "Column::Ordinal"
+        CColumnTypeContinuous  "Column::Continuous"
 
 cdef class Column:
     cdef CColumn _this
@@ -109,6 +111,13 @@ cdef class Column:
 
         def __set__(self, type):
             self._this.setColumnType(type)
+
+    property dps:
+        def __get__(self):
+            return self._this.dps()
+
+        def __set__(self, dps):
+            self._this.setDPs(dps)
 
     def append(self, value):
         if type(value) is int:
@@ -163,8 +172,8 @@ cdef class Column:
         else:
             return self._this.intCell(index)
 
-cdef extern from "dirs2.h":
-    cdef cppclass CDirs "Dirs2":
+cdef extern from "dirs.h":
+    cdef cppclass CDirs "Dirs":
         @staticmethod
         string homeDir() except +
         @staticmethod
@@ -218,30 +227,6 @@ cdef class MemoryMap:
 
     def __init__(self):
         pass
-
-cdef extern from "tempfiles.h":
-    void tempfiles_init(long pid)
-    void tempfiles_attach(long pid)
-    string tempfiles_createSpecific(const string &dir, const string &filename)
-    void tempfiles_deleteOrphans()
-    void tempfiles_deleteAll()
-
-cdef class TempFiles:
-    @staticmethod
-    def init(pid):
-        tempfiles_init(pid)
-    @staticmethod
-    def attach(pid):
-        tempfiles_init(pid)
-    @staticmethod
-    def create_specific(dir, name):
-        return decode(tempfiles_createSpecific(dir.encode('utf-8'), name.encode('utf-8')))
-    @staticmethod
-    def delete_orphans():
-        tempfiles_deleteOrphans()
-    @staticmethod
-    def delete_all():
-        tempfiles_deleteAll()
 
 
 def decode(string str):

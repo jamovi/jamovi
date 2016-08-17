@@ -37,6 +37,7 @@ var Ribbon      = require('./ribbon').View;
 var RibbonModel = require('./ribbon').Model;
 var SplitPanelSection = require('./splitpanelsection');
 var OptionsPanel = require('./optionspanel');
+var VariableEditor = require('./variableeditor');
 
 var Instance = require('./instance');
 
@@ -210,6 +211,13 @@ $(document).ready(function() {
 
     var resultsUrl = 'http://localhost:' + resultsViewPort + '/';
     var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
+
+    var editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
+
+    mainTable.on('editvariable', event => {
+        let name = event.name;
+        editor.edit(name);
+    });
 
     Promise.resolve(function() {
 

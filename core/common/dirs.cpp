@@ -2,7 +2,7 @@
 // Copyright (C) 2016 Jonathon Love
 //
 
-#include "dirs2.h"
+#include "dirs.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,19 +26,19 @@
 using namespace std;
 using namespace boost;
 
-string Dirs2::_appDataDir = "";
-string Dirs2::_tempDir = "";
-string Dirs2::_exePath = "";
-string Dirs2::_exeDir = "";
-string Dirs2::_rHomeDir = "";
-string Dirs2::_libraryDir = "";
-string Dirs2::_documentsDir = "";
-string Dirs2::_homeDir = "";
-string Dirs2::_desktopDir = "";
+string Dirs::_appDataDir = "";
+string Dirs::_tempDir = "";
+string Dirs::_exePath = "";
+string Dirs::_exeDir = "";
+string Dirs::_rHomeDir = "";
+string Dirs::_libraryDir = "";
+string Dirs::_documentsDir = "";
+string Dirs::_homeDir = "";
+string Dirs::_desktopDir = "";
 
-string Dirs2::appDataDir()
+string Dirs::appDataDir()
 {
-	if (Dirs2::_appDataDir == "")
+	if (Dirs::_appDataDir == "")
 	{
 		string dir;
 		filesystem::path path;
@@ -77,15 +77,15 @@ string Dirs2::appDataDir()
                 throw "could not create app data dir";
 		}
 
-		Dirs2::_appDataDir = filesystem::path(dir).generic_string();
+		Dirs::_appDataDir = filesystem::path(dir).generic_string();
 	}
 
-	return Dirs2::_appDataDir;
+	return Dirs::_appDataDir;
 }
 
-string Dirs2::tempDir()
+string Dirs::tempDir()
 {
-	if (Dirs2::_tempDir == "")
+	if (Dirs::_tempDir == "")
 	{
 		string dir;
 		filesystem::path path;
@@ -124,15 +124,15 @@ string Dirs2::tempDir()
                 throw "could not create app data dir";
 		}
 
-		Dirs2::_tempDir = filesystem::path(dir).generic_string();
+		Dirs::_tempDir = filesystem::path(dir).generic_string();
 	}
 
-	return Dirs2::_tempDir;
+	return Dirs::_tempDir;
 }
 
-string Dirs2::exePath()
+string Dirs::exePath()
 {
-    if (Dirs2::_exePath == "")
+    if (Dirs::_exePath == "")
     {
 #ifdef _WIN32
 
@@ -155,11 +155,11 @@ string Dirs2::exePath()
 
         if (ret <= 0)
             throw runtime_error("could not retrieve exe path");
-        
+
         _exePath = string(buf);
 
 #else
-        
+
         char buf[1024];
         pid_t pid = getpid();
 
@@ -167,15 +167,15 @@ string Dirs2::exePath()
 
         _exePath = string(buf, buf+n);
 
-#endif  
+#endif
     }
-    
+
     return _exePath;
 }
 
-string Dirs2::exeDir()
+string Dirs::exeDir()
 {
-    if (Dirs2::_exeDir == "")
+    if (Dirs::_exeDir == "")
     {
 #ifdef _WIN32
         HMODULE hModule = GetModuleHandleW(NULL);
@@ -251,21 +251,21 @@ string Dirs2::exeDir()
     return _exeDir;
 }
 
-string Dirs2::rHomeDir()
+string Dirs::rHomeDir()
 {
     // TODO
     return "";
 }
 
-string Dirs2::libraryDir()
+string Dirs::libraryDir()
 {
     // TODO
     return "";
 }
 
-string Dirs2::documentsDir()
+string Dirs::documentsDir()
 {
-	if (Dirs2::_documentsDir == "")
+	if (Dirs::_documentsDir == "")
 	{
 
 		string dir;
@@ -278,24 +278,24 @@ string Dirs2::documentsDir()
 
 		if ( ! SUCCEEDED(ret))
 		    throw "Could not retrieve documents directory";
-		
+
 		dir = nowide::narrow(buffer);
-		
+
 #else
 
 		dir = homeDir() + "/Documents";
-		
+
 #endif
 
-		Dirs2::_documentsDir = filesystem::path(dir).generic_string();
+		Dirs::_documentsDir = filesystem::path(dir).generic_string();
 	}
-	
-	return Dirs2::_documentsDir;
+
+	return Dirs::_documentsDir;
 }
 
-string Dirs2::homeDir()
+string Dirs::homeDir()
 {
-	if (Dirs2::_homeDir == "")
+	if (Dirs::_homeDir == "")
 	{
 		string dir;
 
@@ -307,24 +307,24 @@ string Dirs2::homeDir()
 
 		if ( ! SUCCEEDED(ret))
 		    throw "Could not retrieve home directory";
-		
+
 		dir = nowide::narrow(buffer);
-		
+
 #else
 
 		dir = string(getpwuid(getuid())->pw_dir);
-		
+
 #endif
 
-		Dirs2::_homeDir = filesystem::path(dir).generic_string();
+		Dirs::_homeDir = filesystem::path(dir).generic_string();
 	}
-	
-	return Dirs2::_homeDir;
+
+	return Dirs::_homeDir;
 }
 
-string Dirs2::desktopDir()
+string Dirs::desktopDir()
 {
-	if (Dirs2::_desktopDir == "")
+	if (Dirs::_desktopDir == "")
 	{
 
 		string dir;
@@ -337,17 +337,17 @@ string Dirs2::desktopDir()
 
 		if ( ! SUCCEEDED(ret))
 		    throw "Could not retrieve desktop";
-		
+
 		dir = nowide::narrow(buffer);
-		
+
 #else
 
 		dir = string(getpwuid(getuid())->pw_dir) + "/Desktop";
-		
+
 #endif
 
-		Dirs2::_desktopDir = filesystem::path(dir).generic_string();
+		Dirs::_desktopDir = filesystem::path(dir).generic_string();
 	}
-	
-	return Dirs2::_desktopDir;
+
+	return Dirs::_desktopDir;
 }

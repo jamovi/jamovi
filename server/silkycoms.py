@@ -1,4 +1,4 @@
-from protobuf3.fields import EnumField, BoolField, Int32Field, BytesField, MessageField, StringField, UInt32Field, DoubleField
+from protobuf3.fields import DoubleField, MessageField, EnumField, BoolField, BytesField, Int32Field, StringField, UInt32Field
 from protobuf3.message import Message
 from enum import Enum
 
@@ -59,6 +59,10 @@ class SettingsRequest(Message):
 
 
 class SettingsResponse(Message):
+    pass
+
+
+class VariableLevel(Message):
     pass
 
 
@@ -178,9 +182,13 @@ DataSetEntry.add_field('path', StringField(field_number=2, optional=True))
 DataSetEntry.add_field('location', StringField(field_number=3, optional=True))
 SettingsResponse.add_field('recents', MessageField(field_number=1, repeated=True, message_cls=DataSetEntry))
 SettingsResponse.add_field('localFSRecents', MessageField(field_number=2, repeated=True, message_cls=DataSetEntry))
+VariableLevel.add_field('label', StringField(field_number=1, optional=True))
+VariableLevel.add_field('value', Int32Field(field_number=2, optional=True))
 InfoResponse.Schema.Field.add_field('name', StringField(field_number=1, optional=True))
 InfoResponse.Schema.Field.add_field('measureType', EnumField(field_number=2, optional=True, enum_cls=InfoResponse.Schema.Field.MeasureType))
 InfoResponse.Schema.Field.add_field('width', Int32Field(field_number=3, optional=True))
+InfoResponse.Schema.Field.add_field('levels', MessageField(field_number=4, repeated=True, message_cls=VariableLevel))
+InfoResponse.Schema.Field.add_field('dps', Int32Field(field_number=5, optional=True))
 InfoResponse.Schema.add_field('fields', MessageField(field_number=1, repeated=True, message_cls=InfoResponse.Schema.Field))
 InfoResponse.add_field('hasDataSet', BoolField(field_number=1, optional=True))
 InfoResponse.add_field('schema', MessageField(field_number=2, optional=True, message_cls=InfoResponse.Schema))

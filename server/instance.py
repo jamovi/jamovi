@@ -215,6 +215,20 @@ class Instance:
                 field.measureType = silkycoms.InfoResponse.Schema.Field.MeasureType(column.type)
                 field.width = 100
 
+                if column.type is MeasureType.CONTINUOUS:
+                    field.dps = column.dps
+                elif column.type is MeasureType.NOMINAL_TEXT:
+                    for level in column.labels:
+                        levelEntry = silkycoms.VariableLevel()
+                        levelEntry.label = level[1]
+                        field.levels.append(levelEntry)
+                elif column.type is MeasureType.NOMINAL or column.type is MeasureType.ORDINAL:
+                    for level in column.labels:
+                        levelEntry = silkycoms.VariableLevel()
+                        levelEntry.value = level[0]
+                        levelEntry.label = level[1]
+                        field.levels.append(levelEntry)
+
                 response.schema.fields.append(field)
 
         self._coms.send(response, self._instance_id, request)

@@ -2,13 +2,13 @@
 // Copyright (C) 2016 Jonathon Love
 //
 
-#ifndef DATASET2_H
-#define DATASET2_H
+#ifndef DATASET_H
+#define DATASET_H
 
 #include <string>
 
 #include "memorymap.h"
-#include "column2.h"
+#include "column.h"
 
 typedef struct
 {
@@ -16,27 +16,27 @@ typedef struct
     int rowCount;
     ColumnStruct *columns;
     int capacity;
-    
+
 } DataSetStruct;
 
-class DataSet2
+class DataSet
 {
 public:
 
-    static DataSet2 *retrieve(MemoryMap *mm);
+    static DataSet *retrieve(MemoryMap *mm);
 
     int rowCount() const;
     int columnCount() const;
 
-    Column2 operator[](int index);
-    Column2 operator[](std::string name);
+    Column operator[](int index);
+    Column operator[](std::string name);
 
 protected:
 
-    DataSet2(MemoryMap *memoryMap);
+    DataSet(MemoryMap *memoryMap);
     DataSetStruct *struc() const;
     ColumnStruct *strucC(int index) const;
-    
+
     DataSetStruct *_rel;
 
 private:
@@ -45,4 +45,4 @@ private:
 
 };
 
-#endif // DATASET2_H
+#endif // DATASET_H

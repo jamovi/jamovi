@@ -75,6 +75,11 @@ message SettingsResponse {
     repeated DataSetEntry localFSRecents = 2;
 }
 
+message VariableLevel {
+    optional string label = 1;
+    optional int32 value = 2;
+}
+
 message InfoRequest {
 }
 
@@ -94,6 +99,8 @@ message InfoResponse {
 
             optional MeasureType measureType = 2;
             optional int32 width = 3;
+            repeated VariableLevel levels = 4;
+            optional int32 dps = 5;
         }
         repeated Field fields = 1;
     }

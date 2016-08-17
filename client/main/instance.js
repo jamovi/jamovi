@@ -21,10 +21,6 @@ var Instance = Backbone.Model.extend({
 
     initialize: function() {
 
-        _.bindAll(this,
-            'connect',
-            'open');
-
         this.transId = 0;
         this.command = '';
         this.seqNo = 0;
@@ -176,9 +172,27 @@ var Instance = Backbone.Model.extend({
 
             if (info.hasDataSet) {
 
-                var columnInfo = _.map(info.schema.fields, function(field) {
-                    return { name : field.name, width: field.width, measureType : self._stringifyMeasureType(field.measureType) };
-                }, self);
+                var columnInfo = Array(info.schema.fields.length);
+
+                for (let i = 0; i < info.schema.fields.length; i++) {
+
+                    let field = info.schema.fields[i];
+
+                    let levels = new Array(field.levels.length);
+                    for (let j = 0; j < field.levels.length; j++)
+                        levels[j] = {
+                            value: field.levels[j].value,
+                            label: field.levels[j].label,
+                        };
+
+                    columnInfo[i] = {
+                        name : field.name,
+                        width: field.width,
+                        measureType : self._stringifyMeasureType(field.measureType),
+                        levels: levels,
+                        dps: field.dps,
+                    };
+                }
 
                 self._dataSetModel.set('instanceId', self._instanceId);
                 self._dataSetModel.setNew({

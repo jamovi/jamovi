@@ -8,17 +8,12 @@ Backbone.$ = $;
 
 var SilkyView = require('./view');
 
-var determineFormatting = require('../common/formatting').determineFormatting;
-var format = require('../common/formatting').format;
-
 var TableView = SilkyView.extend({
     className: "tableview",
     initialize: function() {
-        _.bindAll(this, '_dataSetLoaded', 'scrollHandler', 'updateViewRange', 'resizeHandler', 'refreshCells');
 
-        $(window).resize(this.resizeHandler);
-
-        this.$el.on('resized', this.resizeHandler);
+        $(window).on('resize', event => this.resizeHandler(event));
+        this.$el.on('resized', event => this.resizeHandler(event));
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
@@ -31,7 +26,7 @@ var TableView = SilkyView.extend({
 
         var html = '';
         html += '<div class="silky-table-header">';
-        html += '    <div class="silky-column-header" style="width: 110%">&nbsp;</div>';   // padding so we can inspect the height of the table header
+        html += '    <div class="silky-column-header" style="width: 110%">&nbsp;</div>';
         html += '</div>';
         html += '<div class="silky-table-container">';
         html += '    <div class="silky-table-body"></div>';
@@ -45,7 +40,7 @@ var TableView = SilkyView.extend({
 
         this.rowHeaderWidth = 32;
 
-        this.$container.on("scroll", this.scrollHandler);
+        this.$container.on("scroll", event => this.scrollHandler(event));
 
         var self = this;
 
@@ -64,6 +59,9 @@ var TableView = SilkyView.extend({
         });
 
         this.selection = null;
+
+        this.$el.on('click', event => this._clickHandler(event));
+        this.$el.on('dblclick', event => this._clickHandler(event));
     },
     _dataSetLoaded : function() {
 
@@ -81,7 +79,7 @@ var TableView = SilkyView.extend({
             var width  = column.width;
 
             var html = '';
-            html += '<div class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+            html += '<div data-name="' + column.name + '" data-index="' + colNo + '" class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
             html +=     column.name;
             html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
@@ -124,17 +122,36 @@ var TableView = SilkyView.extend({
             this.$selection.addClass('editing');
         });
 
-        this.$body.on('click', event => {
-            let element = document.elementFromPoint(event.clientX, event.clientY);
-            let $element = $(element);
-            if ( ! $element.hasClass('silky-column-cell'))
-                return;
+        this.model.on('change:editingVar', event => {
+            let prev = this.model.previous('editingVar');
+            let now  = event.changed.editingVar;
 
-            var rowNo = $element.data('row');
-            var colNo = $element.data('col');
+            if (prev !== null)
+                $(this.$headers[prev]).removeClass('editing');
 
-            this._setSelection(rowNo, colNo);
+            if (now !== null) {
+                let $header = $(this.$headers[now]);
+                $header.addClass('editing');
+            }
         });
+    },
+    _clickHandler : function(event) {
+        let element = document.elementFromPoint(event.clientX, event.clientY);
+        let $element = $(element);
+
+        if (event.type === 'click') {
+            if ($element.hasClass('silky-column-cell')) {
+                let rowNo = $element.data('row');
+                let colNo = $element.data('col');
+                this._setSelection(rowNo, colNo);
+            }
+        }
+        else if (event.type === 'dblclick') {
+            if ($element.hasClass('silky-column-header')) {
+                let colNo = $element.data('index');
+                this.model.set('editingVar', colNo);
+            }
+        }
     },
     _setSelection : function(rowNo, colNo) {
 
@@ -234,6 +251,7 @@ var TableView = SilkyView.extend({
 
         var colOffset = this.model.get('viewport').left;
         var cells = this.model.get('cells');
+        var columns = this.model.get('columns');
 
         for (var colNo = 0; colNo < cells.length; colNo++) {
 
@@ -241,7 +259,7 @@ var TableView = SilkyView.extend({
             var $column = $(this.$columns[colOffset + colNo]);
             var $cells  = $column.children();
 
-            var formatting = determineFormatting(column);
+            var dps = columns[colOffset + colNo].dps;
 
             for (var rowNo = 0; rowNo < column.length; rowNo++) {
                 var  cell = column[rowNo];
@@ -250,7 +268,7 @@ var TableView = SilkyView.extend({
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
                 else if (typeof(cell) === 'number')
-                    cell = format(cell, formatting);
+                    cell = cell.toFixed(dps);
 
                 $cell.text(cell);
             }
@@ -264,9 +282,10 @@ var TableView = SilkyView.extend({
         var colOffset = range.left - viewport.left;
         var rowOffset = range.top - viewport.top;
         var nCols = range.right - range.left + 1;
-        var nRows = viewport.bottom - viewport.top + 1;
+        var nRows = range.bottom - range.top + 1;
 
-        var cells = this.model.get("cells");
+        var cells = this.model.get('cells');
+        var columns = this.model.get('columns');
 
         for (var colNo = 0; colNo < nCols; colNo++) {
 
@@ -274,17 +293,17 @@ var TableView = SilkyView.extend({
             var $column = $(this.$columns[range.left + colNo]);
             var $cells  = $column.children();
 
-            var formatting = determineFormatting(column);
+            var dps = columns[range.left + colNo].dps;
 
             for (var rowNo = 0; rowNo < nRows; rowNo++) {
 
-                var $cell = $($cells[rowNo]);
-                var cell = column[rowNo];
+                var $cell = $($cells[rowOffset + rowNo]);
+                var cell = column[rowOffset + rowNo];
 
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
                 else if (typeof(cell) === 'number')
-                    cell = format(cell, formatting);
+                    cell = cell.toFixed(dps);
 
                 $cell.text(cell);
             }

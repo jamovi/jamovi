@@ -59,6 +59,10 @@
     color: #3E6DA9 ;
 }
 
+.silky-column-header.editing {
+    background-color: #F4F4F4 ;
+}
+
 .silky-column-header:first-child {
     position: relative ;
 }
