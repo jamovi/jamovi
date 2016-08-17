@@ -3,6 +3,21 @@ import csv
 from silky import MeasureType
 
 
+def calc_dps(value, max_dp=3):
+    max_dp_required = 0
+    value %= 1
+    as_string = '{v:.{dp}f}'.format(v=value, dp=max_dp)
+    as_string = as_string[2:]
+
+    for dp in range(max_dp, 0, -1):
+        index = dp - 1
+        if as_string[index] != '0':
+            max_dp_required = dp
+            break
+
+    return max_dp_required
+
+
 def fix_names(names):
     for i in range(1, len(names)):
         name = names[i]
@@ -84,6 +99,7 @@ class ColumnWriter:
         self._many_uniques = False
         self._measure_type = None
         self._examination_complete = False
+        self._dps = 0
 
     def examine_row(self, row):
 
@@ -117,7 +133,8 @@ class ColumnWriter:
 
         if self._only_floats:
             try:
-                float(value)
+                f = float(value)
+                self._dps = max(self._dps, calc_dps(f))
             except ValueError:
                 self._only_floats = False
 
@@ -150,6 +167,7 @@ class ColumnWriter:
 
         self._examination_complete = True
         self._column.type = self._measure_type
+        self._column.dps = self._dps
 
     def parse_row(self, row, row_no):
 

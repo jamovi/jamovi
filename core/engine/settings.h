@@ -5,13 +5,8 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include <map>
 #include <string>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/filesystem.hpp>
-
-#include "dirs2.h"
 
 class Settings
 {

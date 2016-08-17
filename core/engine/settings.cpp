@@ -4,6 +4,11 @@
 
 #include "settings.h"
 
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/filesystem.hpp>
+
+#include "dirs.h"
+
 using namespace std;
 using namespace boost;
 
@@ -19,7 +24,7 @@ string Settings::get(const string &key, const string &defaul)
 
 Settings::Settings()
 {
-    filesystem::path path = Dirs2::exePath();
+    filesystem::path path = Dirs::exePath();
     string filename = path.stem().generic_string() + ".conf";
     path = path.parent_path() / filename;
     try
@@ -31,5 +36,3 @@ Settings::Settings()
         // do nothing
     }
 }
-
-

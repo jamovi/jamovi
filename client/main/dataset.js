@@ -17,6 +17,7 @@ var DataSetModel = Backbone.Model.extend({
         columnCount : 0,
         coms : null,
         instanceId : null,
+        editingVar : null
     },
     setNew : function(info) {
 

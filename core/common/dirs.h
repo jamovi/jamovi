@@ -3,12 +3,12 @@
 //
 
 
-#ifndef DIRS2_H
-#define DIRS2_H
+#ifndef DIRS_H
+#define DIRS_H
 
 #include <string>
 
-class Dirs2 {
+class Dirs {
 
 public:
 	static std::string appDataDir();
@@ -20,7 +20,7 @@ public:
 	static std::string documentsDir();
 	static std::string homeDir();
 	static std::string desktopDir();
-	
+
 private:
 	static std::string _appDataDir;
 	static std::string _tempDir;
@@ -31,7 +31,7 @@ private:
 	static std::string _documentsDir;
 	static std::string _homeDir;
 	static std::string _desktopDir;
-	
+
 };
 
-#endif // DIRS2_H
+#endif // DIRS_H

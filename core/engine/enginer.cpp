@@ -14,9 +14,9 @@
 #include <boost/nowide/fstream.hpp>
 
 #include "settings.h"
-#include "dirs2.h"
+#include "dirs.h"
 #include "memorymap.h"
-#include "dataset2.h"
+#include "dataset.h"
 #include "utils2.h"
 
 using namespace std;
@@ -117,7 +117,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     string path = p.generic_string();
 
     MemoryMap *mm = MemoryMap::attach(path);
-    DataSet2 &dataset = *DataSet2::retrieve(mm);
+    DataSet &dataset = *DataSet::retrieve(mm);
 
     int columnCount = dataset.columnCount();
     int rowCount;
@@ -138,7 +138,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
     for (int i = 0; i < columnCount; i++)
     {
-        Column2 column = dataset[i];
+        Column column = dataset[i];
         string columnName = column.name();
 
         bool required = false;
@@ -154,7 +154,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
         columnNames[index] = columnName;
 
-        if (column.columnType() == Column2::Continuous)
+        if (column.columnType() == Column::Continuous)
         {
             Rcpp::NumericVector v(rowCount, Rcpp::NumericVector::get_na());
 
@@ -200,7 +200,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             v.attr("levels") = labels;
 
-            if (column.columnType() == Column2::NominalText)
+            if (column.columnType() == Column::NominalText)
             {
                 v.attr("class") = "factor";
             }
@@ -312,7 +312,7 @@ string EngineR::makeAbsolute(const string &paths)
     stringstream result;
     string sep = "";
 
-    filesystem::path here = Dirs2::exeDir();
+    filesystem::path here = Dirs::exeDir();
 
     for (string &p : out)
     {

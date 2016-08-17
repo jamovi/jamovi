@@ -2,48 +2,53 @@
 // Copyright (C) 2016 Jonathon Love
 //
 
-#include "column2.h"
+#include "column.h"
 
 #include <stdexcept>
 #include <climits>
 
-#include "dataset2.h"
+#include "dataset.h"
 
 using namespace std;
 
-Column2::Column2(DataSet2 *parent, MemoryMap *mm, ColumnStruct *rel)
+Column::Column(DataSet *parent, MemoryMap *mm, ColumnStruct *rel)
 {
     _parent = parent;
     _mm = mm;
     _rel = rel;
 }
 
-string Column2::name() const
+string Column::name() const
 {
     return string(this->c_str());
 }
 
-const char *Column2::c_str() const
+const char *Column::c_str() const
 {
     return _mm->resolve(struc()->name);
 }
 
-Column2::ColumnType Column2::columnType() const
+Column::ColumnType Column::columnType() const
 {
-    return (Column2::ColumnType) struc()->columnType;
+    return (Column::ColumnType) struc()->columnType;
 }
 
-ColumnStruct *Column2::struc() const
+int Column::dps() const
+{
+    return struc()->dps;
+}
+
+ColumnStruct *Column::struc() const
 {
     return _mm->resolve(_rel);
 }
 
-int Column2::labelCount() const
+int Column::labelCount() const
 {
     return struc()->labelsUsed;
 }
 
-map<int, string> Column2::labels() const
+map<int, string> Column::labels() const
 {
     map<int, string> m;
 
@@ -59,7 +64,7 @@ map<int, string> Column2::labels() const
     return m;
 }
 
-const char *Column2::getLabel(int value)
+const char *Column::getLabel(int value)
 {
     if (value == INT_MIN)
         return "";
