@@ -4,12 +4,12 @@ package silkycoms;
 enum Status {
     COMPLETE = 1;
     IN_PROGRESS = 2;
-    FAILED = 3;
+    ERROR = 3;
 }
 
 message Error {
     optional string message = 1;
-    optional int32 code = 2;
+    optional string cause = 2;
 }
 
 message ComsMessage {

@@ -110,7 +110,15 @@ var Instance = Backbone.Model.extend({
             console.log(progress);
         };
 
-        return coms.send(request).then(onresolve, null, onprogress);
+        var onreject = function(error) {
+            console.log("Error!");
+            console.log(error);
+        };
+
+        let sent = coms.send(request);
+        sent.then(onresolve, onreject, onprogress);
+
+        return sent;
     },
     save : function(filePath) {
         var self = this;

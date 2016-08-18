@@ -62,17 +62,19 @@ backstageModel.on('dataSetOpenRequested', function(request) {
 
     if ( ! instance.get('hasDataSet')) {
         target = instance;
-        opening = target.open(request.data.path);
+        opening = target.open(request.get('data').path);
         request.waitOn(opening);
+
         opening.then(function() {
             ribbonModel.set('dataAvailable', true);
         });
     }
     else {
         target = new Instance({ coms : coms });
-        request.resolve();
         target.connect().then(function() {
-            opening = target.open(request.data.path);
+            opening = target.open(request.get('data').path);
+            request.waitOn(opening);
+            return opening;
         }).then(function() {
             ipc.send('request', { type: 'openWindow', data: target.instanceId() });
         });
@@ -80,7 +82,7 @@ backstageModel.on('dataSetOpenRequested', function(request) {
 });
 
 backstageModel.on('dataSetSaveRequested', function(request) {
-    var saving = instance.save(request.data.path);
+    var saving = instance.save(request.get('data').path);
     request.waitOn(saving);
     saving.then(function() {
         backstageModel.set('activated', false);
@@ -95,7 +97,7 @@ backstageModel.on('change:activated', function(event) {
 backstageModel.on('fsRequest', function(request) {
 
     var fs = new coms.Messages.FSRequest();
-    fs.path = request.data.path;
+    fs.path = request.get('data').path;
 
     var message = new coms.Messages.ComsMessage();
     message.payload = fs.toArrayBuffer();

@@ -136,14 +136,21 @@ class Instance:
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
-        FileIO.read(dataset, request.filename)
+        try:
+            FileIO.read(dataset, request.filename)
+            self._dataset = dataset
+            self._filepath = request.filename
 
-        self._dataset = dataset
-        self._filepath = request.filename
+            self._coms.send(None, self._instance_id, request)
 
-        self._coms.send(None, self._instance_id, request)
+            self._add_to_recents(request.filename)
 
-        self._add_to_recents(request.filename)
+        except Exception as e:
+            base    = os.path.basename(request.filename)
+            message = 'Could not open {}'.format(base)
+            cause = e.strerror
+
+            self._coms.send_error(message, cause, self._instance_id, request)
 
     def _open_callback(self, task, progress):
         response = silkycoms.ComsMessage()

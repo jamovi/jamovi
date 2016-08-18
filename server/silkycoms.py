@@ -1,6 +1,6 @@
-from protobuf3.fields import DoubleField, MessageField, EnumField, BoolField, BytesField, Int32Field, StringField, UInt32Field
-from protobuf3.message import Message
+from protobuf3.fields import BytesField, Int32Field, BoolField, EnumField, DoubleField, StringField, MessageField, UInt32Field
 from enum import Enum
+from protobuf3.message import Message
 
 
 class Error(Message):
@@ -151,7 +151,7 @@ class ResultsElement(Message):
 class Status(Enum):
     COMPLETE = 1
     IN_PROGRESS = 2
-    FAILED = 3
+    ERROR = 3
 
 
 class AnalysisStatus(Enum):
@@ -163,7 +163,7 @@ class AnalysisStatus(Enum):
     ANALYSIS_ABORTED = 5
 
 Error.add_field('message', StringField(field_number=1, optional=True))
-Error.add_field('code', Int32Field(field_number=2, optional=True))
+Error.add_field('cause', StringField(field_number=2, optional=True))
 ComsMessage.add_field('id', Int32Field(field_number=1, optional=True))
 ComsMessage.add_field('instanceId', StringField(field_number=2, optional=True))
 ComsMessage.add_field('payload', BytesField(field_number=3, optional=True))
