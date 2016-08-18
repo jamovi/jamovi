@@ -80,6 +80,35 @@ class ClientConnection(WebSocketHandler):
 
         self.write_message(m.encode_to_bytes(), binary=True)
 
+    def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
+
+        if message is None and response_to is None:
+            return
+
+        m = silkycoms.ComsMessage()
+
+        if instance_id is not None:
+            m.instanceId = instance_id
+
+        if response_to is not None:
+            for key, value in self._transactions.items():
+                if value is response_to:
+                    m.id = key
+                    del self._transactions[key]
+                    break
+        else:
+            m.id = 0
+
+        if message is not None:
+            m.error.message = message
+
+        if cause is not None:
+            m.error.cause = cause
+
+        m.status = silkycoms.Status.ERROR
+
+        self.write_message(m.encode_to_bytes(), binary=True)
+
     def discard(self, message):
         for key, value in self._transactions.items():
             if value is message:

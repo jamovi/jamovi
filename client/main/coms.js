@@ -122,6 +122,8 @@ Coms.prototype.receive = function(event) {
             found = true;
             if (response.status === this.Messages.Status.COMPLETE)
                 trans.resolve(response);
+            else if (response.status === this.Messages.Status.ERROR)
+                trans.reject(response.error);
             else
                 trans.onprogress(response);
             break;

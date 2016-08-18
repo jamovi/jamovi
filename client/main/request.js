@@ -1,22 +1,56 @@
 
 'use strict';
 
-var Request = function(data) {
+const Backbone = require('backbone');
 
-    this.data = data;
+var Request = Backbone.Model.extend({
 
-    var self = this;
-    this._p = new Promise(function(resolve, reject) {
-        self.resolve = resolve;
-        self.reject = reject;
-    });
-    this.then = function(then, catc) {
-        self._p.then(then, catc);
-    };
-};
+    initialize: function() {
+        this._p = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
 
-Request.prototype.waitOn = function(promise) {
-    promise.then(this.resolve, this.reject);
-};
+        this.title = '(no title)';
+        this.notifyOnError = true;
+        this.notifyAlways = false;
+        this.showProgress = false;
+        this.duration = 0; // ms
+        this.cancelable = false;
+        this.dismissable = true;
+        this.waitable = false;
+    },
+    defaults : {
+        data : null,
+        complete : false,
+        success : false,
+        progress : 0,
+        description : null,
+        errorMessage : null,
+        errorCause : null,
+        position: 'main',
+    },
+    resolve : function(arg) {
+        this.set({
+            success: true,
+            progress: 100,
+        });
+        this._resolve(arg);
+    },
+    reject : function(arg) {
+        this.set({
+            success: false,
+            errorMessage: arg.message,
+            errorCause: arg.cause,
+        });
+        this._reject(arg);
+    },
+    then : function(then, catc) {
+        this._p.then(then, catc);
+    },
+    waitOn : function(promise) {
+        promise.then(v => this.resolve(v), e => this.reject(e));
+    },
+});
 
 module.exports = Request;

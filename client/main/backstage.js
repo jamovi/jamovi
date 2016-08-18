@@ -137,7 +137,7 @@ var BackstageModel = Backbone.Model.extend({
     },
     setCurrentDirectory: function(path) {
 
-        var request = new Request({ path : path });
+        var request = new Request({ data : { path : path }});
         this.trigger('fsRequest', request);
         request.then(response => {
 
@@ -205,7 +205,7 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     requestOpen: function(path) {
-        var request = new Request({ path : path });
+        var request = new Request({ data : { path : path }});
         this.trigger('dataSetOpenRequested', request);
         var self = this;
         request.then(function() {
@@ -213,7 +213,7 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     requestSave: function(path) {
-        var request = new Request({ path : path });
+        var request = new Request({ data : { path : path }});
         this.trigger('dataSetSaveRequested', request);
         var self = this;
         request.then(function() {
