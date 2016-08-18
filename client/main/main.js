@@ -35,6 +35,7 @@ var Backstage   = require('./backstage').View;
 var BackstageModel = require('./backstage').Model;
 var Ribbon      = require('./ribbon').View;
 var RibbonModel = require('./ribbon').Model;
+var Notifications = require('./notifications');
 var SplitPanelSection = require('./splitpanelsection');
 var OptionsPanel = require('./optionspanel');
 var VariableEditor = require('./variableeditor');
@@ -50,6 +51,7 @@ var analyses = instance.analyses();
 analyses.set('dataSetModel', dataSetModel);
 
 var ribbonModel = new RibbonModel();
+var notifications = null; // assigned when document.ready
 
 ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
@@ -79,6 +81,10 @@ backstageModel.on('dataSetOpenRequested', function(request) {
             ipc.send('request', { type: 'openWindow', data: target.instanceId() });
         });
     }
+
+    request.title = "Opening file";
+    request.notifyOnError = true;
+    notifications.notify(request);
 });
 
 backstageModel.on('dataSetSaveRequested', function(request) {
@@ -157,6 +163,8 @@ $(document).ready(function() {
 
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     var backstage = new Backstage({ el : "#backstage", model : backstageModel });
+
+    notifications = new Notifications({ el : '#selector-here'});
 
     ribbonModel.on('change:selectedIndex', function(event) {
         if (event.changed.selectedIndex === 0)
