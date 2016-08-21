@@ -17,8 +17,6 @@ const ProgressModel = Backbone.Model.extend({
     }
 });
 
-
-
 var Instance = Backbone.Model.extend({
 
     initialize: function() {

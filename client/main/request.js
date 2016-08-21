@@ -20,7 +20,6 @@ var Request = Backbone.Model.extend({
         this.cancelable = false;
         this.dismissable = true;
         this.waitable = false;
-        this.parent = null;
     },
     defaults : {
         data : null,
@@ -32,7 +31,7 @@ var Request = Backbone.Model.extend({
         errorMessage : null,
         errorCause : null,
         position : 'main',
-        linkText : 'Ok',
+        linkText : 'OK',
         hideOnAction : true,
         visible : true,
         timeToFade : 0,

@@ -14,13 +14,13 @@ var Notification = SilkyView.extend({
     },
     initialize: function() {
         this.model.on("change", this.render, this);
-        this.model.on("change:index", this.movedown, this);
-        this.bottom = (10*(this.model.attributes.index+1)+50*this.model.attributes.index);
+        this.bottom = (10 * (this.model.attributes.index + 1) + 50 * this.model.attributes.index);
+        this.handlers = [];
+        this.$el.addClass("silky-notification");
         this.render();
     },
     render: function() {
 
-        this.$el.addClass("silky-notification");
         
         if (this.model.attributes.visible){
             this.$el.css("visibility", "visible");        
@@ -35,7 +35,7 @@ var Notification = SilkyView.extend({
                 this.secondtimer = setTimeout(() => {
                     this.model.set("visible" , false);
                     this.model.set("timeToFade" , 0);
-                    this.model.parent.remove(this);
+                    this.handlers.forEach( item => item.func.call(item.context, this) );
                 }, 2000);
             }, this.model.attributes.timeToFade);
         }
@@ -64,17 +64,17 @@ var Notification = SilkyView.extend({
         
         
         
-        var newbottom = (10*(this.model.attributes.index+1)+50*this.model.attributes.index);
+        var newbottom = (10 * (this.model.attributes.index + 1) + 50 * this.model.attributes.index);
         var diff = Math.abs(this.bottom-newbottom);
         var $box = this.$el.find(".silky-notification-box");
         
-        if (this.bottom === newbottom){
+        if (this.bottom === newbottom) {
             $box.css("bottom", ""+newbottom+"px");
-        }else if (this.bottom > newbottom){
+        } else if (this.bottom > newbottom) {
             $box.css("bottom", ""+this.bottom+"px");
             $box.animate({bottom: "-="+diff}, "slow");
             this.bottom = newbottom;
-        }else if (this.bottom < newbottom){
+        } else if (this.bottom < newbottom) {
             $box.css("bottom", ""+this.bottom+"px");
             $box.animate({bottom: "+="+diff}, "slow");
             this.bottom = newbottom;
@@ -84,10 +84,19 @@ var Notification = SilkyView.extend({
         this.model.linkAction();
         if (this.model.attributes.hideOnAction){
             this.model.set("visible" , false);
-            this.$el.css("visibility", "hidden");
-            this.render();
-            this.model.parent.remove(this);
+            this.handlers.forEach( item => item.func.call(item.context, this) );
         }
+    },
+    subscribe : function(fn, scope){
+        this.handlers.push({func:fn, context: scope});
+    },
+    unsubscribe : function(fn){
+        this.handlers = this.handlers.filter(
+            item => { if (item.func !== fn) {
+                            return item;
+                        }
+                    }
+                    );
     }
 });
 
