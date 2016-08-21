@@ -1,6 +1,7 @@
 
 'use strict';
 
+
 const Backbone = require('backbone');
 
 var Request = Backbone.Model.extend({
@@ -19,17 +20,25 @@ var Request = Backbone.Model.extend({
         this.cancelable = false;
         this.dismissable = true;
         this.waitable = false;
+        this.parent = null;
     },
     defaults : {
         data : null,
         complete : false,
         success : false,
         progress : 0,
+        content : null,
         description : null,
         errorMessage : null,
         errorCause : null,
-        position: 'main',
+        position : 'main',
+        linkText : 'Ok',
+        hideOnAction : true,
+        visible : true,
+        timeToFade : 0,
+        index : 0,
     },
+    linkAction : function(){},
     resolve : function(arg) {
         this.set({
             success: true,

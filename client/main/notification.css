@@ -1,0 +1,76 @@
+
+.silky-notification {
+    z-index: 21 ;
+    
+}
+.silky-notification-box {
+    pointer-events: none ;
+    position: fixed ;
+    right: 10px ;
+    bottom: 10px ;
+    margin: 0 0 0 0 ;
+    padding: 5 15 5 15 ; 
+    background-color : lightgray ;
+    min-width: 500px ;
+    min-height: 50px ; 
+    box-shadow: 0 0 10px 5px gray ;
+}
+
+.silky-notification-content {
+    pointer-events: none ;
+    position: absolute ;
+    left: 0px ;
+    margin-right: 20 ;
+    padding: 12px ;
+    color: #1a1a1a ;
+    font-weight: 800 ;
+    font-size: little ;
+    width: 80% ;
+     height: 35%;
+    display: inline-block ;
+    vertical-align: middle ;
+    line-height: normal ;
+    overflow: hidden ;
+    display: flex;
+    justify-content:center;
+    align-content:center;
+    flex-direction:column; /* column | row */
+}
+.silky-notification-content h1{
+    padding: 0 ;
+    margin: 0 ;
+    color: #1a1a1a ;
+    font-weight: 900 ;
+    font-size: medium ;
+}
+
+.silky-notification-link {
+    pointer-events: all ;
+    position: absolute ;
+    right: 0px ;
+    margin: 5px ;
+    padding: 12px ;
+    color: blue ;
+    font-weight: 700 ;
+    font-size: medium ;
+    min-width: 10%  ;
+    height: 33%;
+    -webkit-app-region: no-drag;
+    display: flex;
+    justify-content:center;
+    align-content:center;
+    flex-direction:column; /* column | row */
+}
+
+.silky-notification-link-fadeout {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 2s, opacity 2s linear;
+}
+
+
+
+
+.silky-notification-link:hover {
+    background-color: #bdbdbd ;
+}
