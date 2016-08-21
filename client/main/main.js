@@ -164,7 +164,7 @@ $(document).ready(function() {
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     var backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
-    notifications = new Notifications({ el : '#selector-here'});
+    notifications = new Notifications($('#notifications'));
 
     ribbonModel.on('change:selectedIndex', function(event) {
         if (event.changed.selectedIndex === 0)
