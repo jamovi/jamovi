@@ -3,7 +3,7 @@
 
 var $ = require('jquery');
 
-const Notification = require('./notification');
+const NotificationView = require('./notification');
 
 const Notifications = function($el) {
     this.$el = $el;
@@ -19,7 +19,7 @@ Notifications.prototype.notify = function(request) {
     this.$el.append($note);
     request.set("index", this._list.length);
     request.parent = this;
-    var note = new Notification({el : $note, model : request});
+    var note = new NotificationView({el : $note, model : request});
     this._list.push({request: request, view: note});
 };
 

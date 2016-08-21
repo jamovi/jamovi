@@ -47,10 +47,10 @@ var Notification = SilkyView.extend({
         html += '       <h1>';
         html += this.model.title;
         html += '       </h1>';
-        html +=  (this.model.attributes.content == null) ? '':this.model.attributes.content +'</br>';
-        html +=  (this.model.attributes.description == null) ? '':this.model.attributes.description +'</br>';
-        html +=  (this.model.attributes.errorMessage == null) ? '':this.model.attributes.errorMessage +'</br>';
-        html +=  (this.model.attributes.errorCause == null) ? '':this.model.attributes.errorCause;
+        html +=  (this.model.attributes.content === null) ? '':this.model.attributes.content +'</br>';
+        html +=  (this.model.attributes.description === null) ? '':this.model.attributes.description +'</br>';
+        html +=  (this.model.attributes.errorMessage === null) ? '':this.model.attributes.errorMessage +'</br>';
+        html +=  (this.model.attributes.errorCause === null) ? '':this.model.attributes.errorCause;
         html += '    </span>';
         if (this.model.attributes.linkText !== ''){
             html += '    <span class="silky-notification-link">';
