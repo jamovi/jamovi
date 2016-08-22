@@ -17,7 +17,9 @@ var LayoutAction = function(manager, params) {
 
     var self = this;
     this.execute = function() {
+        self._manager._executeStarted(self);
         self._callback.call(self._manager._layoutDef, self);
+        self._manager._executeEnded(self);
     };
 
     this._connectToListeners = function(eventListeners, propertyListeners) {
@@ -72,7 +74,7 @@ var LayoutAction = function(manager, params) {
     this.initialise = function() {
 
         if (this._propertyListeners.length > 0)
-            this._callback.call(this._manager._layoutDef, this);
+            this.execute();
 
         for (var i = 0; i < this._listeners.length; i++) {
             var eventObj = this._listeners[i];

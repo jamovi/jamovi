@@ -1,7 +1,7 @@
 'use strict';
 
 var _ = require('underscore');
-var $ = require('jquery');
+var backbone = require('backbone');
 var LayoutAction = require('./layoutaction');
 
 var LayoutActionManager = function(layoutDef) {
@@ -9,6 +9,21 @@ var LayoutActionManager = function(layoutDef) {
     this._layoutDef = layoutDef;
     this._actions = [];
     this._resources = { };
+    this._executingActions = 0;
+
+    this._executeStarted = function(action) {
+        this._executingActions += 1;
+        if (this._executingActions === 1) {
+            this.onExecutingStateChanged(true);
+        }
+    };
+
+    this._executeEnded = function(action) {
+        this._executingActions -= 1;
+        if (this._executingActions === 0) {
+            this.onExecutingStateChanged(false);
+        }
+    };
 
     this.addAction = function(callback) {
         this._actions.push(new LayoutAction(this, callback));

@@ -52,7 +52,15 @@ var Analysis = function(def, resources, baseControls) {
 
     var layoutDef = new module.exports.LayoutDef();
     var actionManager = new LayoutActionManager(layoutDef);
-    this.model = { options: new Options(options), layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager };
+    var optionsManager = new Options(options);
+    actionManager.onExecutingStateChanged = function(state) {
+        if (state)
+            optionsManager.beginEdit();
+        else
+            optionsManager.endEdit();
+    };
+
+    this.model = { options: optionsManager, layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager };
 
     this.View = new OptionsView( this.model);
 };
@@ -128,17 +136,16 @@ function setResources(resources) {
 }
 
 function setOptionsValues(data) {
-
-    analysis.View.beginDataInitialisation();
     var model = analysis.model;
+    model.options.beginEdit();
+    analysis.View.beginDataInitialisation();
     var params = Options.getDefaultEventParams("changed");
     params.silent = true;
-    model.options.beginEdit();
     _.each(data, function(value, key, list) {
         model.options.setOptionValue(key, value, params);
     });
-    model.options.endEdit();
     analysis.View.endDataInitialisation();
+    model.options.endEdit();
 }
 
 function onValuesForServerChanges(e) {
