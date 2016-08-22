@@ -9,7 +9,11 @@ var OptionControlBase = function(params) {
     ControlBase.extendTo(this, params);
 
     this.setValue = function(value, keys) {
+        this.option.beginEdit();
+        this.beginPropertyEdit();
         this.option.setValue(value);
+        this.endPropertyEdit();
+        this.option.endEdit();
     };
 
     this.getValue = function(keys) {

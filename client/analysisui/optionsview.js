@@ -49,7 +49,9 @@ var OptionsView = function(uiModel) {
 
         var self = this;
         window.setTimeout(function() {
+            self.model.options.beginEdit();
             self.layoutActionManager.initialiseAll();
+            self.model.options.endEdit();
         }, 0);
     };
 

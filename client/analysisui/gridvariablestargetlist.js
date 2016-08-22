@@ -58,8 +58,8 @@ var GridVariablesTargetList = function(params) {
         if (items === null || items.length === 0)
             return;
 
-        this.beginPropertyEdit();
         this.option.beginEdit();
+        this.beginPropertyEdit();
         for (var i = 0; i < items.length; i++) {
             var cellInfo = items[i].cellInfo;
             if (this.targetGrid.removeFromOption(cellInfo)) {
@@ -73,8 +73,8 @@ var GridVariablesTargetList = function(params) {
                 }
             }
         }
-        this.option.endEdit();
         this.endPropertyEdit();
+        this.option.endEdit();
     };
 
     // Catching methods
@@ -82,15 +82,15 @@ var GridVariablesTargetList = function(params) {
         if (items === null || items.length === 0)
             return;
 
-        this.beginPropertyEdit();
         this.option.beginEdit();
+        this.beginPropertyEdit();
         var finalItems = this.checkForMultiSelectionActions(items);
         for (var i = 0; i < finalItems.length; i++) {
             if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), finalItems[i].value))
                 this.targetGrid.addRawToOption(finalItems[i].value.raw, [this.option.getLength()], finalItems[i].value.format);
         }
-        this.option.endEdit();
         this.endPropertyEdit();
+        this.option.endEdit();
     };
 
     this.filterItemsForDrop = function(items) {
