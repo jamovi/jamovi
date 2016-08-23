@@ -40,6 +40,8 @@ class FSEntry(Message):
     class Type(Enum):
         FILE = 1
         FOLDER = 2
+        DRIVE = 3
+        SPECIAL_FOLDER = 4
 
 
 class FSRequest(Message):
@@ -174,6 +176,7 @@ OpenRequest.add_field('filename', StringField(field_number=1, optional=True))
 SaveRequest.add_field('filename', StringField(field_number=1, optional=True))
 FSEntry.add_field('path', StringField(field_number=1, optional=True))
 FSEntry.add_field('type', EnumField(field_number=2, optional=True, enum_cls=FSEntry.Type))
+FSEntry.add_field('name', StringField(field_number=3, optional=True))
 FSRequest.add_field('path', StringField(field_number=1, optional=True))
 FSResponse.add_field('contents', MessageField(field_number=1, repeated=True, message_cls=FSEntry))
 FSResponse.add_field('errorMessage', StringField(field_number=2, optional=True))

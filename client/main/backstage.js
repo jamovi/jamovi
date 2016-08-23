@@ -13,8 +13,8 @@ var FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ]
     },
-    requestOpen : function(path) {
-        this.trigger('dataSetOpenRequested', path);
+    requestOpen : function(path, type) {
+        this.trigger('dataSetOpenRequested', path, type);
     }
 });
 
@@ -25,7 +25,22 @@ var FSEntryListView = SilkyView.extend({
             this.model = new FSEntryListModel();
 
         this.model.on('change:items', this._render, this);
+        this.model.on('change:directory', this._render, this);
         this._render();
+    },
+    _normalisePath: function(path) {
+        var normPath = path;
+        if (path.startsWith('{{Documents}}'))
+            normPath = path.replace('{{Documents}}', 'Documents');
+        else if (path.startsWith('{{Desktop}}'))
+            normPath = path.replace('{{Desktop}}', 'Desktop');
+        else if (path.startsWith('{{Home}}'))
+            normPath = path.replace('{{Home}}', 'Home');
+        else if (path.startsWith('{{Root}}'))
+            normPath = path.replace('{{Root}}', 'This PC');
+
+        normPath = normPath.replace(/\/$/, "");
+        return normPath;
     },
     events : {
         'click .silky-bs-fslist-entry' : '_itemClicked'
@@ -43,12 +58,7 @@ var FSEntryListView = SilkyView.extend({
 
             var name = item.name;
             var path = item.path;
-            var location = item.location;
-
-            if (location.startsWith('{{Documents}}'))
-                location = location.replace('{{Documents}}', 'Documents');
-            if (location.startsWith('{{Home}}'))
-                location = location.replace('{{Home}}', 'Home');
+            var location = this._normalisePath(item.location);
             location = location.replace(/\//g, ' \uFE65 ');
 
             html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
@@ -67,9 +77,150 @@ var FSEntryListView = SilkyView.extend({
         var target = event.currentTarget;
         var path = $(target).attr('data-path');
         console.log(path);
-        this.model.requestOpen(path);
+        this.model.requestOpen(path, 1);
     }
 });
+
+var FSEntryBrowserView = SilkyView.extend({
+
+    initialize : function() {
+        if ( ! this.model)
+            this.model = new FSEntryListModel();
+
+        this.model.on('change:items', this._render, this);
+        this.model.on('change:dirInfo', this._render, this);
+        this._render();
+    },
+    _normalisePath: function(path) {
+        var normPath = path;
+        if (path.startsWith('{{Documents}}'))
+            normPath = path.replace('{{Documents}}', 'Documents');
+        else if (path.startsWith('{{Desktop}}'))
+            normPath = path.replace('{{Desktop}}', 'Desktop');
+        else if (path.startsWith('{{Home}}'))
+            normPath = path.replace('{{Home}}', 'Home');
+        else if (path.startsWith('{{Root}}'))
+            normPath = path.replace('{{Root}}', 'This PC');
+
+        normPath = normPath.replace(/\/$/, "");
+        return normPath;
+    },
+    events : {
+        'click .silky-bs-fslist-item' : '_itemClicked',
+        'click .silky-bs-fslist-browser-back-button' : '_backClicked',
+        'changed input' : '_manualChanged'
+    },
+    _orderItems: function(orderby, direction, items) {
+
+        if (items.length <= 1)
+            return;
+
+        if (orderby === 'type') {
+            for (var i = 0; i < items.length - 1; i++) {
+                var item1 = items[i];
+                var item2 = items[i + 1];
+                if ((direction === 0 && item1[orderby] > item2[orderby]) || (direction === 1 && item1[orderby] < item2[orderby])) {
+                    items[i] = item2;
+                    items[i+1] = item1;
+                    if (i > 1)
+                        i -= 2;
+                }
+            }
+        }
+    },
+    _render : function() {
+
+        this.$el.addClass('silky-bs-fslist');
+
+        var items = this.model.get('items');
+        var dirInfo = this.model.get('dirInfo');
+
+        var path = null;
+        if (_.isUndefined(dirInfo) === false)
+            path = this._normalisePath(dirInfo.path).replace(/\//g, ' \uFE65 ');
+
+        var html = '';
+        html += '<div class="silky-bs-fslist-path-browser">';
+        html += '   <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
+        html += '   <div class="silky-bs-fslist-browser-location-icon"><span class="mif-folder-open"></span></div>';
+        html += '   <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit">' + path + '</div>';
+        html += '</div>';
+        this.$el.html(html);
+
+        var $items = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
+
+        this._orderItems('type', 1, items);
+        this.$items = [];
+        for (var i = 0; i < items.length; i++) {
+            html = '';
+            var item = items[i];
+
+            var name = item.name;
+            var itemPath = item.path;
+            var itemType = item.type;
+
+            html += '<div class="silky-bs-fslist-item">';
+            html += '   <div class="silky-bs-flist-item-icon">';
+            if (itemType === 1) { //file
+                if (name.endsWith(".csv"))
+                    html += '       <span class="mif-file-text"></span>';
+                else
+                    html += '       <span class="mif-file-empty"></span>';
+            }
+            else if (itemType === 2) //folder
+                html += '       <span class="mif-folder"></span>';
+            else if (itemType === 4) //special folder
+                html += '       <span class="mif-folder-special"></span>';
+            else if (itemType === 3) //drive
+                html += '       <span class="mif-drive"></span>';
+            html += '   </div>';
+            html += '   <div class="silky-bs-fslist-entry-group">';
+            html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+            html += '   </div>';
+            html += '</div>';
+
+            var $item = $(html);
+            $item.data('path', itemPath);
+            $item.data('type', itemType);
+            $items.append($item);
+            this.$items.push($item);
+        }
+
+        this.$el.append($items);
+    },
+    _manualChanged : function(event) {
+        console.log("stuff");
+    },
+    _itemClicked : function(event) {
+        var $target = $(event.currentTarget);
+        this.model.requestOpen($target.data('path'), $target.data('type'));
+    },
+    _backClicked : function(event) {
+        var dirInfo = this.model.get('dirInfo');
+        if (_.isUndefined(dirInfo) === false) {
+            var path = dirInfo.path;
+            path = this._calcBackDirectory(path, dirInfo.type);
+            this._goToFolder(path);
+        }
+    },
+    _goToFolder: function(path) {
+        this.model.requestOpen(path, 2);
+    },
+    _calcBackDirectory: function(path, type) {
+        var index = -1;
+        if (path.length > 0 && path !== '/') {
+            index = path.lastIndexOf("/");
+            if (index !== -1 && index === path.length - 1)
+                index = path.lastIndexOf("/", path.length - 2);
+        }
+
+        if (index === -1)
+            return "{{Root}}";
+
+        return path.substring(0, index);
+    }
+});
+
 
 var BackstageModel = Backbone.Model.extend({
     defaults: {
@@ -87,15 +238,18 @@ var BackstageModel = Backbone.Model.extend({
         this.on('change:operation', this._opChanged, this);
 
         this._recentsListModel = new FSEntryListModel();
-        this._recentsListModel.on('dataSetOpenRequested', this.requestOpen, this);
+        this._recentsListModel.on('dataSetOpenRequested', this.tryOpen, this);
+
+        this._pcListModel = new FSEntryListModel();
+        this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this.attributes.ops = [
             {
                 name: 'open',
                 title: 'Open',
                 places: [
-                    { name: 'recent', title: 'Recent', model: this._recentsListModel },
-                    { name: 'thispc', title: 'This PC' },
+                    { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView },
+                    { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
                     { name: 'osf',    title: 'OSF' },
                     { name: 'browse', title: 'Browse' },
                 ]
@@ -135,27 +289,31 @@ var BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
-    setCurrentDirectory: function(path) {
+    tryOpen: function(path, type) {
+        if (type === 1)
+            this.requestOpen(path);
+        else if (type === 2 || type === 3 || type === 4)
+            this.setCurrentDirectory(path, type);
+    },
+    setCurrentDirectory: function(path, type) {
 
         var request = new Request({ path : path });
+        var self = this;
         this.trigger('fsRequest', request);
         request.then(response => {
-
             if (response.errorMessage) {
                 // do something
             }
             else {
-
-                for (let i = 0; i < response.contents.length; i++) {
-                    let entry = response.contents[i];
-                    if (entry.type === 1)
-                        console.log('a file at ' + entry.path);
-                    if (entry.type === 2)
-                        console.log('a directory at ' + entry.path);
-                }
-
+                this._pcListModel.set('error', response.errorMessage);
+                this._pcListModel.set('items', response.contents);
+                this._pcListModel.set('dirInfo', { path: path, type: type } );
+                this._hasCurrentDirectory = true;
             }
         });
+    },
+    hasCurrentDirectory: function() {
+        return _.isUndefined(this._hasCurrentDirectory) ? false : this._hasCurrentDirectory;
     },
     _opChanged: function() {
 
@@ -176,7 +334,7 @@ var BackstageModel = Backbone.Model.extend({
             this.attributes.place = place;
             var self = this;
             setTimeout(function() {
-                this.attributes.place = old;
+                self.attributes.place = old;
                 self.set('place', place);
             }, 0);
         }
@@ -480,15 +638,14 @@ var BackstageChoices = SilkyView.extend({
         var $old = this.$current;
 
         if (place.model) {
-            this.$current = $('<div class="silky-bs-choices-list" style="display: none ;"></div>');
+            this.$current = $('<div class="silky-bs-choices-list" style="display: none ; width:100%; height:100%"></div>');
             this.$current.appendTo(this.$el);
-            this.current = new FSEntryListView({ el: this.$current, model: place.model });
+            this.current = new place.view({ el: this.$current, model: place.model });
             this.$current.fadeIn(200);
         }
 
-        if (place.name === 'thispc') {  // Damo ...
+        if (place.name === 'thispc' && this.model.hasCurrentDirectory() === false)
             this.model.setCurrentDirectory('{{Documents}}');
-        }
 
         if (old) {
             $old.fadeOut(200);

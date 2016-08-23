@@ -26,6 +26,34 @@ class Instance:
     def get(instance_id):
         return Instance.instances.get(instance_id)
 
+    def _normalise_path(path):
+        norPath = path
+        if path.startswith('{{Documents}}'):
+            norPath = path.replace('{{Documents}}', Dirs.documents_dir())
+        elif path.startswith('{{Desktop}}'):
+            norPath = path.replace('{{Desktop}}', Dirs.desktop_dir())
+        elif path.startswith('{{Home}}'):
+            norPath = path.replace('{{Home}}', Dirs.home_dir())
+        return norPath
+
+    def _virtualise_path(path):
+        documents_dir = Dirs.documents_dir()
+        home_dir = Dirs.home_dir()
+        desktop_dir = Dirs.desktop_dir()
+
+        virPath = path
+        if path.startswith(documents_dir):
+            virPath = path.replace(documents_dir, '{{Documents}}')
+        elif path.startswith(desktop_dir):
+            virPath = path.replace(desktop_dir, '{{Desktop}}')
+        elif path.startswith(home_dir):
+            virPath = path.replace(home_dir, '{{Home}}')
+
+        return virPath
+
+    def _is_supported_file(filename):
+        return filename.endswith('.csv') or filename.endswith('.osilky') or filename.endswith('.jasp')
+
     def __init__(self, session_path, instance_id=None):
 
         self._coms = None
@@ -90,32 +118,66 @@ class Instance:
         self._coms.send(results, self._instance_id, request, complete)
 
     def _on_fs_request(self, request):
-        location = request.path
+        path = request.path
+        location = path
 
-        if location.startswith('{{Documents}}'):
-            location = location.replace('{{Documents}}', Dirs.documents_dir())
-        if location.startswith('{{Desktop}}'):
-            location = location.replace('{{Desktop}}', Dirs.desktop_dir())
-        if location.startswith('{{Home}}'):
-            location = location.replace('{{Home}}', Dirs.home_dir())
+        path = Instance._normalise_path(path)
 
         response = silkycoms.FSResponse()
+        if path.startswith('{{Root}}'):
+            path = ''
 
-        try:
-            contents = os.scandir(location)
+            entry = silkycoms.FSEntry()
+            entry.name = 'Documents'
+            entry.path = '{{Documents}}'
+            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
+            response.contents.append(entry)
 
-            for direntry in contents:
+            entry = silkycoms.FSEntry()
+            entry.name = 'Desktop'
+            entry.path = '{{Desktop}}'
+            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
+            response.contents.append(entry)
+
+            entry = silkycoms.FSEntry()
+            entry.name = 'Home'
+            entry.path = '{{Home}}'
+            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
+            response.contents.append(entry)
+
+            drives = [chr(x) + ":" for x in range(65, 90) if os.path.exists(chr(x) + ":")]
+            for drive in drives:
                 entry = silkycoms.FSEntry()
-                entry.path = direntry.path
-                if direntry.is_dir():
-                    entry.type = silkycoms.FSEntry.Type.FOLDER
-                else:
-                    entry.type = silkycoms.FSEntry.Type.FILE
+                entry.name = drive
+                entry.path = drive + '/'
+                entry.type = silkycoms.FSEntry.Type.DRIVE
                 response.contents.append(entry)
+        else:
+            try:
+                contents = os.scandir(path)
 
-        except Exception as e:
-            print(e)
-            response.errorMessage = str(e)
+                for direntry in contents:
+                    name = os.path.basename(direntry.path)
+                    entryType = silkycoms.FSEntry.Type.FILE
+                    validItem = True
+                    if direntry.is_dir():
+                        entryType = silkycoms.FSEntry.Type.FOLDER
+                    else:
+                        validItem = Instance._is_supported_file(name)
+
+                    if validItem:
+                        entry = silkycoms.FSEntry()
+                        entry.name = name
+                        entry.type = entryType
+                        if (location.endswith('/')):
+                            entry.path = location + name
+                        else:
+                            entry.path = location + '/' + name
+                            response.contents.append(entry)
+
+            except Exception as e:
+                print(e)
+                response.errorMessage = str(e)
 
         self._coms.send(response, self._instance_id, request)
 
@@ -131,22 +193,25 @@ class Instance:
         self._add_to_recents(request.filename)
 
     def _on_open(self, request):
-        print('opening ' + request.filename)
+        path = request.filename
+        path = Instance._normalise_path(path)
+
+        print('opening ' + path)
 
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
         try:
-            FileIO.read(dataset, request.filename)
+            FileIO.read(dataset, path)
             self._dataset = dataset
-            self._filepath = request.filename
+            self._filepath = path
 
             self._coms.send(None, self._instance_id, request)
 
-            self._add_to_recents(request.filename)
+            self._add_to_recents(path)
 
         except OSError as e:
-            base    = os.path.basename(request.filename)
+            base    = os.path.basename(path)
             message = 'Could not open {}'.format(base)
             cause = e.strerror
 
@@ -296,16 +361,7 @@ class Instance:
         name = os.path.basename(path)
         location = os.path.dirname(path)
 
-        documents_dir = Dirs.documents_dir()
-        home_dir = Dirs.home_dir()
-        desktop_dir = Dirs.desktop_dir()
-
-        if location.startswith(documents_dir):
-            location = location.replace(documents_dir, '{{Documents}}')
-        if location.startswith(desktop_dir):
-            location = location.replace(desktop_dir, '{{Desktop}}')
-        if location.startswith(home_dir):
-            location = location.replace(home_dir, '{{Home}}')
+        location = Instance._virtualise_path(location)
 
         recents.insert(0, { 'name': name, 'path': path, 'location': location })
         recents = recents[0:5]

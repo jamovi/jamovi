@@ -76,7 +76,7 @@
 }
 
 .silky-bs-mid .silky-bs-places {
-    border-right: 1px solid #CCCCCC ;
+    border-right: 1px solid #DDDDDD ;
     bottom: 24px ;
 }
 
@@ -126,10 +126,11 @@
     position: absolute ;
     left: 425px ;
     top: 136px ;
-    height: 100% ;
-    width: 100% ;
-    padding: 18px 18px 18px 18px ;
+    bottom: 20px ;
+    right: 200px ;
+    padding: 18px 18px 18px 0px ;
     box-sizing: border-box ;
+    overflow: hidden;
 }
 
 .silky-bs-choices-list {
@@ -137,6 +138,12 @@
     top: 0 ;
     min-height: 100px ;
     min-width: 100px ;
+    overflow: hidden;
+}
+
+.silky-bs-fslist {
+    display: flex;
+    flex-flow: column; nowrap;
 }
 
 .silky-bs-fslist-entry {
@@ -145,9 +152,10 @@
     white-space: nowrap ;
 }
 
-.silky-bs-fslist-entry:hover {
+.silky-bs-fslist-entry:hover, .silky-bs-fslist-item:hover {
     background-color: #DBE4F3 ;
 }
+
 
 .silky-bs-fslist-entry-icon {
     width: 32px ;
@@ -159,9 +167,23 @@
 }
 
 .silky-bs-fslist-entry-group,
-.silky-bs-fslist-entry-icon {
+.silky-bs-fslist-entry-icon,
+.silky-bs-flist-item-icon {
     display: inline-block ;
     vertical-align: middle ;
+}
+
+.silky-bs-flist-item-icon {
+    font-size: 30px ;
+    width: 40px ;
+    height: 45px ;
+    box-sizing: border-box ;
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-top: 0px ;
+    margin-bottom: 0px ;
+    margin-left: 6px ;
 }
 
 .silky-bs-fslist-entry-location {
@@ -171,4 +193,62 @@
 
 .silky-bs-fslist-entry-path {
     display: none ;
+}
+
+.silky-bs-fslist-path-browser {
+    flex: 0 1 auto;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    border-bottom-style: solid;
+    border-bottom-width: 2px;
+    border-bottom-color: #DDDDDD ;
+}
+
+
+.silky-bs-fslist-browser-location {
+    font-size: 22px ;
+    overflow: hidden;
+    white-space: nowrap ;
+}
+
+.silky-bs-fslist-browser-location-icon {
+    font-size: 20px ;
+    width: 30px ;
+    height: 30px ;
+    box-sizing: border-box ;
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-top: 6px ;
+    margin-bottom: 6px ;
+    margin-left: 0px ;
+}
+
+.silky-bs-fslist-browser-back-button {
+    font-size: 20px ;
+    width: 30px ;
+    height: 30px ;
+    box-sizing: border-box ;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 1px;
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-top: 6px ;
+    margin-bottom: 6px ;
+    margin-left: 0px ;
+
+    color: #3E6DA9 ;
+    flex: 0 1 auto;
+}
+
+.silky-bs-fslist-browser-back-button:hover {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #B1C5DE ;
+    background-color: #DBE4F3 ;
 }
