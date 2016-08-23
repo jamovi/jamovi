@@ -199,3 +199,14 @@ body.windows.electron #header-buttons {
     width: 400px ;
     background-color: #B7121F ;
 }
+
+#notifications {
+    position: absolute ;
+    width: 400px ;
+    height: 100% ;
+    top : 0 ;
+    padding: 12px 0 ;
+    right: 12px ;
+    box-sizing: border-box;
+    z-index: 110 ;
+}

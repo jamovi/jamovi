@@ -1,0 +1,53 @@
+
+.silky-notifications {
+    display: flex ;
+    flex-direction: column ;
+    justify-content: flex-end ;
+}
+
+.silky-notification {
+    margin: 6px ;
+    padding: 0 12px ;
+    background-color : #F0F0F0 ;
+    border: 1px solid #ACACAC;
+    box-shadow: 0 0 1px 1px rgba(172, 172, 172, 0.5);
+    transition: all .5s ;
+    height: 85px ;
+    overflow: hidden ;
+    box-sizing: border-box ;
+}
+
+.silky-notification.hidden {
+    height: 0 ;
+    opacity: 0 ;
+    margin-top: 0 ;
+    margin-bottom: 0 ;
+}
+
+.silky-notification-title {
+    margin-top: 12px ;
+    font-size: 120% ;
+}
+
+.silky-notification-body {
+    display: flex ;
+    justify-content: space-between ;
+    margin-bottom: 12px ;
+}
+
+.silky-notification-content > * {
+    margin: .6em 0 0 ;
+}
+
+.silky-notification-buttons > * {
+    display: inline-block ;
+    padding: 6px ;
+    border: 1px solid transparent ;
+    width: 30px ;
+    text-align: center ;
+}
+
+.silky-notification-buttons > :hover {
+    background-color: white ;
+    border: 1px solid #ACACAC ;
+}

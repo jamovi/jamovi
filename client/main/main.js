@@ -41,6 +41,7 @@ var OptionsPanel = require('./optionspanel');
 var VariableEditor = require('./variableeditor');
 
 var Instance = require('./instance');
+const Notify = require('./notification');
 
 var backstageModel = new BackstageModel();
 var instance = new Instance({ coms : coms });
@@ -60,35 +61,40 @@ ribbonModel.on('analysisSelected', function(info) {
 backstageModel.on('dataSetOpenRequested', function(request) {
 
     var target;
-    var opening;
+
+    let onerror = function(error) {
+        let notification = new Notify({
+            title: error.message,
+            message: error.cause,
+        });
+        notifications.notify(notification);
+    };
 
     if ( ! instance.get('hasDataSet')) {
+
         target = instance;
-        opening = target.open(request.get('data').path);
+        let opening = target.open(request.data.path);
         request.waitOn(opening);
 
         opening.then(function() {
             ribbonModel.set('dataAvailable', true);
-        });
+        }).catch(onerror);
     }
     else {
+
         target = new Instance({ coms : coms });
         target.connect().then(function() {
-            opening = target.open(request.get('data').path);
+            let opening = target.open(request.data.path);
             request.waitOn(opening);
             return opening;
         }).then(function() {
             ipc.send('request', { type: 'openWindow', data: target.instanceId() });
-        });
+        }).catch(onerror);
     }
-
-    request.title = "Opening file";
-    request.notifyOnError = true;
-    notifications.notify(request);
 });
 
 backstageModel.on('dataSetSaveRequested', function(request) {
-    var saving = instance.save(request.get('data').path);
+    var saving = instance.save(request.data.path);
     request.waitOn(saving);
     saving.then(function() {
         backstageModel.set('activated', false);
@@ -103,7 +109,7 @@ backstageModel.on('change:activated', function(event) {
 backstageModel.on('fsRequest', function(request) {
 
     var fs = new coms.Messages.FSRequest();
-    fs.path = request.get('data').path;
+    fs.path = request.data.path;
 
     var message = new coms.Messages.ComsMessage();
     message.payload = fs.toArrayBuffer();
@@ -164,7 +170,7 @@ $(document).ready(function() {
     var ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     var backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
-    notifications = new Notifications({ el : '#selector-here'});
+    notifications = new Notifications($('#notifications'));
 
     ribbonModel.on('change:selectedIndex', function(event) {
         if (event.changed.selectedIndex === 0)
@@ -223,11 +229,6 @@ $(document).ready(function() {
     var resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
 
     var editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
-
-    mainTable.on('editvariable', event => {
-        let name = event.name;
-        editor.edit(name);
-    });
 
     Promise.resolve(function() {
 

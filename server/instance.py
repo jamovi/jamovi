@@ -145,7 +145,7 @@ class Instance:
 
             self._add_to_recents(request.filename)
 
-        except Exception as e:
+        except OSError as e:
             base    = os.path.basename(request.filename)
             message = 'Could not open {}'.format(base)
             cause = e.strerror
