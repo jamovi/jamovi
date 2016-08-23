@@ -47,9 +47,12 @@ message FSEntry {
     enum Type {
         FILE = 1;
         FOLDER = 2;
+        DRIVE = 3;
+        SPECIAL_FOLDER = 4;
     }
 
     optional Type type = 2;
+    optional string name = 3;
 }
 
 message FSRequest {
