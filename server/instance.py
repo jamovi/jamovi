@@ -88,7 +88,14 @@ class Instance:
         return self._instance_id
 
     def set_coms(self, coms):
+        if self._coms is not None:
+            self._coms.remove_close_listener(self._close)
         self._coms = coms
+        self._coms.add_close_listener(self._close)
+
+    def _close(self):
+        self._coms.remove_close_listener(self._close)
+        del Instance.instances[self._instance_id]
 
     def get_path_to_resource(self, resourceId):
         resource_path = os.path.join(self._instance_path, resourceId)

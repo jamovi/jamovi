@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2016 Jonathon Love
+#
 
 from tornado.websocket import WebSocketHandler
 
@@ -13,23 +16,19 @@ class ClientConnection(WebSocketHandler):
 
         self._session_path = session_path
         self._transactions = { }
-        self._listeners = [ ]
+        self._close_listeners = [ ]
 
     def check_origin(self, origin):
         return True
 
     def open(self):
-
         ClientConnection.number_of_connections += 1
-
-        print('websocket opened')
         self.set_nodelay(True)
 
     def on_close(self):
-
         ClientConnection.number_of_connections -= 1
-
-        print('websocket closed')
+        for listener in self._close_listeners:
+            listener()
 
     def on_message(self, m_bytes):
         message = silkycoms.ComsMessage.create_from_bytes(m_bytes)
@@ -108,6 +107,12 @@ class ClientConnection(WebSocketHandler):
         m.status = silkycoms.Status.ERROR
 
         self.write_message(m.encode_to_bytes(), binary=True)
+
+    def add_close_listener(self, listener):
+        self._close_listeners.append(listener)
+
+    def remove_close_listener(self, listener):
+        self._close_listeners.remove(listener)
 
     def discard(self, message):
         for key, value in self._transactions.items():
