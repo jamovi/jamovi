@@ -1,5 +1,9 @@
+#
+# Copyright (C) 2016 Jonathon Love
+#
 
 import os
+import platform
 
 from silky import MeasureType
 from silky import Dirs
@@ -12,10 +16,13 @@ import silkycoms
 
 from enginemanager import EngineManager
 from analyses import Analyses
-from fileio import FileIO
+import formatio
 
 import json
 import uuid
+import posixpath
+
+import utils.winjunclib
 
 
 class Instance:
@@ -27,32 +34,29 @@ class Instance:
         return Instance.instances.get(instance_id)
 
     def _normalise_path(path):
-        norPath = path
+        nor_path = path
         if path.startswith('{{Documents}}'):
-            norPath = path.replace('{{Documents}}', Dirs.documents_dir())
+            nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
         elif path.startswith('{{Desktop}}'):
-            norPath = path.replace('{{Desktop}}', Dirs.desktop_dir())
+            nor_path = path.replace('{{Desktop}}', Dirs.desktop_dir())
         elif path.startswith('{{Home}}'):
-            norPath = path.replace('{{Home}}', Dirs.home_dir())
-        return norPath
+            nor_path = path.replace('{{Home}}', Dirs.home_dir())
+        return nor_path
 
     def _virtualise_path(path):
         documents_dir = Dirs.documents_dir()
         home_dir = Dirs.home_dir()
         desktop_dir = Dirs.desktop_dir()
 
-        virPath = path
+        vir_path = path
         if path.startswith(documents_dir):
-            virPath = path.replace(documents_dir, '{{Documents}}')
+            vir_path = path.replace(documents_dir, '{{Documents}}')
         elif path.startswith(desktop_dir):
-            virPath = path.replace(desktop_dir, '{{Desktop}}')
+            vir_path = path.replace(desktop_dir, '{{Desktop}}')
         elif path.startswith(home_dir):
-            virPath = path.replace(home_dir, '{{Home}}')
+            vir_path = path.replace(home_dir, '{{Home}}')
 
-        return virPath
-
-    def _is_supported_file(filename):
-        return filename.endswith('.csv') or filename.endswith('.osilky') or filename.endswith('.jasp')
+        return vir_path
 
     def __init__(self, session_path, instance_id=None):
 
@@ -132,7 +136,6 @@ class Instance:
 
         response = silkycoms.FSResponse()
         if path.startswith('{{Root}}'):
-            path = ''
 
             entry = silkycoms.FSEntry()
             entry.name = 'Documents'
@@ -152,46 +155,51 @@ class Instance:
             entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
             response.contents.append(entry)
 
-            drives = [chr(x) + ":" for x in range(65, 90) if os.path.exists(chr(x) + ":")]
-            for drive in drives:
-                entry = silkycoms.FSEntry()
-                entry.name = drive
-                entry.path = drive + '/'
-                entry.type = silkycoms.FSEntry.Type.DRIVE
-                response.contents.append(entry)
+            if platform.uname().system == 'Windows':
+                for drive_letter in range(ord('A'), ord('Z') + 1):
+                    drive = chr(drive_letter) + ':'
+                    if os.path.exists(drive):
+                        entry = silkycoms.FSEntry()
+                        entry.name = drive
+                        entry.path = drive
+                        entry.type = silkycoms.FSEntry.Type.DRIVE
+                        response.contents.append(entry)
+
+            self._coms.send(response, self._instance_id, request)
+
         else:
             try:
-                contents = os.scandir(path)
-
-                for direntry in contents:
-                    name = os.path.basename(direntry.path)
-                    entryType = silkycoms.FSEntry.Type.FILE
-                    validItem = True
+                for direntry in os.scandir(path + '/'):  # add a / in case we get C:
                     if direntry.is_dir():
-                        entryType = silkycoms.FSEntry.Type.FOLDER
-                    else:
-                        validItem = Instance._is_supported_file(name)
-
-                    if validItem:
-                        entry = silkycoms.FSEntry()
-                        entry.name = name
-                        entry.type = entryType
-                        if (location.endswith('/')):
-                            entry.path = location + name
+                        entry_type = silkycoms.FSEntry.Type.FOLDER
+                        if utils.winjunclib.islink(direntry.path):
+                            is_valid = False
                         else:
-                            entry.path = location + '/' + name
-                            response.contents.append(entry)
+                            is_valid = True
+                    else:
+                        entry_type = silkycoms.FSEntry.Type.FILE
+                        is_valid = formatio.is_supported(direntry.name)
 
-            except Exception as e:
-                print(e)
-                response.errorMessage = str(e)
+                    if is_valid:
+                        entry = silkycoms.FSEntry()
+                        entry.name = direntry.name
+                        entry.type = entry_type
+                        entry.path = posixpath.join(location, direntry.name)
+                        response.contents.append(entry)
 
-        self._coms.send(response, self._instance_id, request)
+                self._coms.send(response, self._instance_id, request)
+
+            except OSError as e:
+                base    = os.path.basename(path)
+                message = 'Unable to open {}'.format(base)
+                cause = e.strerror
+
+                self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save(self, request):
         print('saving ' + request.filename)
 
-        FileIO.write(self._dataset, request.filename)
+        formatio.write(self._dataset, request.filename)
 
         self._filepath = request.filename
         response = silkycoms.SaveProgress()
@@ -209,7 +217,7 @@ class Instance:
         dataset = DataSet.create(mm)
 
         try:
-            FileIO.read(dataset, path)
+            formatio.read(dataset, path)
             self._dataset = dataset
             self._filepath = path
 
@@ -219,7 +227,7 @@ class Instance:
 
         except OSError as e:
             base    = os.path.basename(path)
-            message = 'Could not open {}'.format(base)
+            message = 'Unable to open {}'.format(base)
             cause = e.strerror
 
             self._coms.send_error(message, cause, self._instance_id, request)
