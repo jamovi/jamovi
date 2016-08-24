@@ -33,7 +33,7 @@ const NotificationView = SilkyView.extend({
         if (this.model.duration !== 0)
             setTimeout(() => this.dismiss(), this.model.duration);
 
-        setTimeout(() => this._update(), 0);
+        setTimeout(() => this._update(), 50);
     },
     _update: function() {
 
