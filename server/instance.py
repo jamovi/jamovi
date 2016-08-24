@@ -99,7 +99,11 @@ class Instance:
 
     def _close(self):
         self._coms.remove_close_listener(self._close)
-        del Instance.instances[self._instance_id]
+        self._coms = None
+
+    @property
+    def is_active(self):
+        return self._coms is not None
 
     def get_path_to_resource(self, resourceId):
         resource_path = os.path.join(self._instance_path, resourceId)
@@ -385,7 +389,8 @@ class Instance:
         settings.sync()
 
         for instanceId, instance in Instance.instances.items():
-            instance._on_settings()
+            if instance.is_active:
+                instance._on_settings()
 
     def _on_settings(self, request=None):
 
