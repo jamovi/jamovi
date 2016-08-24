@@ -1,3 +1,6 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
 
 'use strict';
 
@@ -7,7 +10,7 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
-var Request = require('./request');
+var Host = require('./host');
 
 var FSEntryListModel = Backbone.Model.extend({
     defaults: {
@@ -233,7 +236,10 @@ var BackstageModel = Backbone.Model.extend({
         settings : null,
         ops : [ ],
     },
-    initialize : function() {
+    initialize : function(args) {
+
+        this.instance = args.instance;
+
         this.on('change:settings', this._settingsChanged, this);
         this.on('change:operation', this._opChanged, this);
 
@@ -296,20 +302,11 @@ var BackstageModel = Backbone.Model.extend({
             this.setCurrentDirectory(path, type);
     },
     setCurrentDirectory: function(path, type) {
-
-        var request = new Request({ path : path });
-        var self = this;
-        this.trigger('fsRequest', request);
-        request.then(response => {
-            if (response.errorMessage) {
-                // do something
-            }
-            else {
-                this._pcListModel.set('error', response.errorMessage);
-                this._pcListModel.set('items', response.contents);
-                this._pcListModel.set('dirInfo', { path: path, type: type } );
-                this._hasCurrentDirectory = true;
-            }
+        this.instance.browse(path).then(response => {
+            this._pcListModel.set('error', response.errorMessage);
+            this._pcListModel.set('items', response.contents);
+            this._pcListModel.set('dirInfo', { path: path, type: type } );
+            this._hasCurrentDirectory = true;
         });
     },
     hasCurrentDirectory: function() {
@@ -363,20 +360,12 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     requestOpen: function(path) {
-        var request = new Request({ path : path });
-        this.trigger('dataSetOpenRequested', request);
-        var self = this;
-        request.then(function() {
-            self.set('activated', false);
-        });
+        this.instance.open(path)
+            .then(() => this.set('activated', false));
     },
     requestSave: function(path) {
-        var request = new Request({ path : path });
-        this.trigger('dataSetSaveRequested', request);
-        var self = this;
-        request.then(function() {
-            self.set('activated', false);
-        });
+        this.instance.save(path)
+            .then(() => this.set('activated', false));
     },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
@@ -557,7 +546,7 @@ var BackstagePlaces = SilkyView.extend({
     },
     _browseClicked : function() {
 
-        if (window.inElectron) {
+        if (Host.isElectron) {
 
             var remote = window.require('electron').remote;
             var dialog = remote.dialog;

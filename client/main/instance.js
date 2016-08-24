@@ -1,3 +1,7 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
+
 'use strict';
 
 const _ = require('underscore');
@@ -5,6 +9,9 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const path = require('path');
+
+const Host = require('./host');
+const Notify = require('./notification');
 
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset').DataSetViewModel;
@@ -17,7 +24,7 @@ const ProgressModel = Backbone.Model.extend({
     }
 });
 
-var Instance = Backbone.Model.extend({
+const Instance = Backbone.Model.extend({
 
     initialize: function() {
 
@@ -63,26 +70,25 @@ var Instance = Backbone.Model.extend({
     },
     connect : function(instanceId) {
 
-        var self = this;
-        var coms = this.attributes.coms;
+        let coms = this.attributes.coms;
 
-        return coms.connect().then(function() {
+        return coms.connect().then(() => {
 
-            return self._beginInstance(instanceId);
+            return this._beginInstance(instanceId);
 
-        }).then(function(instanceId) {
+        }).then(instanceId => {
 
-            self._instanceId = instanceId;
+            this._instanceId = instanceId;
 
-        }).then(function() {
+        }).then(() => {
 
-            return self._retrieveInfo();
+            return this._retrieveInfo();
 
-        }).then(function() {
+        }).then(() => {
 
-            return self._instanceId;
+            return this._instanceId;
 
-        }).catch(function(err) {
+        }).catch(err => {
 
             console.log('error ' + err);
         });
@@ -90,53 +96,85 @@ var Instance = Backbone.Model.extend({
     },
     open : function(filePath) {
 
-        var self = this;
-        var coms = this.attributes.coms;
+        let promise;
+        let coms = this.attributes.coms;
 
-        var open = new coms.Messages.OpenRequest(filePath);
-        var request = new coms.Messages.ComsMessage();
-        request.payload = open.toArrayBuffer();
-        request.payloadType = "OpenRequest";
-        request.instanceId = this._instanceId;
+        if (this.attributes.hasDataSet) {
 
-        var onresolve = function(response) {
-            let ext = path.extname(filePath);
-            self.set('filePath', filePath);
-            self.set('fileName', path.basename(filePath, ext));
-            self._retrieveInfo();
-        };
+            let instance = new Instance({ coms : coms });
+            promise = instance.connect().then(function() {
+                return instance.open(filePath);
+            }).then(function() {
+                Host.openWindow(instance.instanceId());
+            });
+        }
+        else {
 
-        var onprogress = function(progress) {
-            console.log(progress);
-        };
+            let open = new coms.Messages.OpenRequest(filePath);
+            let request = new coms.Messages.ComsMessage();
+            request.payload = open.toArrayBuffer();
+            request.payloadType = "OpenRequest";
+            request.instanceId = this._instanceId;
 
-        var onreject = function(error) {
-            console.log("Error!");
-            console.log(error);
-        };
+            let onresolve = (response) => {
+                let ext = path.extname(filePath);
+                this.set('filePath', filePath);
+                this.set('fileName', path.basename(filePath, ext));
+                this._retrieveInfo();
+            };
 
-        let sent = coms.send(request);
-        sent.then(onresolve, onreject, onprogress);
+            let onprogress = (progress) => {
+                console.log(progress);
+            };
 
-        return sent;
+            let onreject = (error) => {
+                let notification = new Notify({
+                    title: error.message,
+                    message: error.cause,
+                });
+                this._notify(notification);
+            };
+
+            promise = coms.send(request);
+            promise.then(onresolve, onreject, onprogress);
+        }
+
+        return promise;
     },
     save : function(filePath) {
-        var self = this;
-        var coms = this.attributes.coms;
 
-        var save = new coms.Messages.SaveRequest(filePath);
-        var request = new coms.Messages.ComsMessage();
+        let coms = this.attributes.coms;
+
+        let save = new coms.Messages.SaveRequest(filePath);
+        let request = new coms.Messages.ComsMessage();
         request.payload = save.toArrayBuffer();
         request.payloadType = "SaveRequest";
         request.instanceId = this._instanceId;
 
-        var onSuccess = function() {
-            let ext = path.extname(filePath);
-            self.set('filePath', filePath);
-            self.set('fileName', path.basename(filePath, ext));
-        };
+        let prom = coms.send(request);
 
-        return coms.send(request).then(onSuccess);
+        prom.then(() => {
+            let ext = path.extname(filePath);
+            this.set('filePath', filePath);
+            this.set('fileName', path.basename(filePath, ext));
+        });
+
+        return prom;
+    },
+    browse : function(path) {
+
+        let coms = this.attributes.coms;
+
+        let fs = new coms.Messages.FSRequest();
+        fs.path = path;
+
+        let message = new coms.Messages.ComsMessage();
+        message.payload = fs.toArrayBuffer();
+        message.payloadType = "FSRequest";
+        message.instanceId = this.instanceId();
+
+        return coms.send(message)
+            .then(response => coms.Messages.FSResponse.decode(response.payload));
     },
     toggleResultsMode : function() {
 
@@ -147,12 +185,15 @@ var Instance = Backbone.Model.extend({
             mode = 'text';
         this.set('resultsMode', mode);
     },
+    _notify : function(notification) {
+        this.trigger('notification', notification);
+    },
     _beginInstance : function(instanceId) {
 
-        var coms = this.attributes.coms;
+        let coms = this.attributes.coms;
 
-        var instanceRequest = new coms.Messages.InstanceRequest();
-        var request = new coms.Messages.ComsMessage();
+        let instanceRequest = new coms.Messages.InstanceRequest();
+        let request = new coms.Messages.ComsMessage();
         request.payload = instanceRequest.toArrayBuffer();
         request.payloadType = "InstanceRequest";
 
@@ -165,22 +206,21 @@ var Instance = Backbone.Model.extend({
     },
     _retrieveInfo : function() {
 
-        var self = this;
-        var coms = this.attributes.coms;
+        let coms = this.attributes.coms;
 
-        var info = new coms.Messages.InfoRequest();
-        var request = new coms.Messages.ComsMessage();
+        let info = new coms.Messages.InfoRequest();
+        let request = new coms.Messages.ComsMessage();
         request.payload = info.toArrayBuffer();
         request.payloadType = "InfoRequest";
         request.instanceId = this._instanceId;
 
-        return coms.send(request).then(function(response) {
+        return coms.send(request).then(response => {
 
-            var info = coms.Messages.InfoResponse.decode(response.payload);
+            let info = coms.Messages.InfoResponse.decode(response.payload);
 
             if (info.hasDataSet) {
 
-                var columnInfo = Array(info.schema.fields.length);
+                let columnInfo = Array(info.schema.fields.length);
 
                 for (let i = 0; i < info.schema.fields.length; i++) {
 
@@ -196,24 +236,24 @@ var Instance = Backbone.Model.extend({
                     columnInfo[i] = {
                         name : field.name,
                         width: field.width,
-                        measureType : self._stringifyMeasureType(field.measureType),
+                        measureType : this._stringifyMeasureType(field.measureType),
                         levels: levels,
                         dps: field.dps,
                     };
                 }
 
-                self._dataSetModel.set('instanceId', self._instanceId);
-                self._dataSetModel.setNew({
+                this._dataSetModel.set('instanceId', this._instanceId);
+                this._dataSetModel.setNew({
                     rowCount : info.rowCount,
                     columnCount : info.columnCount,
                     columns : columnInfo
                 });
 
-                self.set('hasDataSet', true);
+                this.set('hasDataSet', true);
 
                 let ext = path.extname(info.filePath);
-                self.set('filePath', info.filePath);
-                self.set('fileName', path.basename(info.filePath, ext));
+                this.set('filePath', info.filePath);
+                this.set('fileName', path.basename(info.filePath, ext));
             }
 
             return response;
@@ -226,10 +266,9 @@ var Instance = Backbone.Model.extend({
     },
     _analysisOptionsChanged : function(analysis) {
 
-        var self = this;
-        var coms = this.attributes.coms;
+        let coms = this.attributes.coms;
 
-        var analysisRequest = new coms.Messages.AnalysisRequest();
+        let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
@@ -238,7 +277,7 @@ var Instance = Backbone.Model.extend({
         if (analysis.isSetup)
             analysisRequest.options = JSON.stringify(analysis.options);
 
-        var request = new coms.Messages.ComsMessage();
+        let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = "AnalysisRequest";
         request.instanceId = this._instanceId;
@@ -247,18 +286,18 @@ var Instance = Backbone.Model.extend({
     },
     _onReceive : function(message) {
 
-        var coms = this.attributes.coms;
+        let coms = this.attributes.coms;
 
         if (message.payloadType === 'AnalysisResponse') {
-            var response = coms.Messages.AnalysisResponse.decode(message.payload);
-            var ok = false;
+            let response = coms.Messages.AnalysisResponse.decode(message.payload);
+            let ok = false;
 
-            var id = response.analysisId;
-            var analysis = this._analyses.get(id);
+            let id = response.analysisId;
+            let analysis = this._analyses.get(id);
 
             if (analysis.isSetup === false && _.has(response, "options")) {
 
-                var options = JSON.parse(response.options);
+                let options = JSON.parse(response.options);
                 analysis.setup(options);
 
                 ok = true;
