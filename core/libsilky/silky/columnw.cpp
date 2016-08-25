@@ -50,3 +50,8 @@ void ColumnW::addLabel(int value, const char *label)
 
     s->labelsUsed++;
 }
+
+void ColumnW::clearLabels()
+{
+    struc()->labelsUsed = 0;
+}

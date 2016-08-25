@@ -33,6 +33,10 @@ Column::ColumnType Column::columnType() const
     return (Column::ColumnType) struc()->columnType;
 }
 
+int Column::rowCount() const {
+    return struc()->rowCount;
+}
+
 int Column::dps() const
 {
     return struc()->dps;

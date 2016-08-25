@@ -291,6 +291,34 @@ class Instance:
 
         response = silkycoms.InfoResponse()
 
+        if request.op == silkycoms.GetSet.SET:
+            self._on_set_info(request, response)
+        else:
+            self._on_get_info(request, response)
+
+        self._coms.send(response, self._instance_id, request)
+
+    def _on_set_info(self, request, response):
+        if self._dataset is None:
+            raise RuntimeError('Attempt to set info when no dataset loaded')
+
+        response.op = silkycoms.GetSet.SET
+
+        if 'schema' in request:
+            for i in range(len(request.schema.fields)):
+                field = request.schema.fields[i]
+                column = self._dataset[field.name]
+
+                levels = None
+                if len(field.levels) > 0:
+                    levels = [ ]
+                    for level in field.levels:
+                        levels.append((level.value, level.label))
+
+                column.change(field.measureType.value, levels)
+
+    def _on_get_info(self, request, response):
+
         hasDataSet = self._dataset is not None
         response.hasDataSet = hasDataSet
 
@@ -301,28 +329,25 @@ class Instance:
 
             for column in self._dataset:
 
-                field = silkycoms.InfoResponse.Schema.Field()
+                field = silkycoms.DataSetSchema.Field()
                 field.name = column.name
-                field.measureType = silkycoms.InfoResponse.Schema.Field.MeasureType(column.type)
+                field.measureType = silkycoms.DataSetSchema.Field.MeasureType(column.type.value)
                 field.width = 100
+                field.dps = column.dps
 
-                if column.type is MeasureType.CONTINUOUS:
-                    field.dps = column.dps
-                elif column.type is MeasureType.NOMINAL_TEXT:
-                    for level in column.labels:
+                if column.type is MeasureType.NOMINAL_TEXT:
+                    for level in column.levels:
                         levelEntry = silkycoms.VariableLevel()
                         levelEntry.label = level[1]
                         field.levels.append(levelEntry)
                 elif column.type is MeasureType.NOMINAL or column.type is MeasureType.ORDINAL:
-                    for level in column.labels:
+                    for level in column.levels:
                         levelEntry = silkycoms.VariableLevel()
                         levelEntry.value = level[0]
                         levelEntry.label = level[1]
                         field.levels.append(levelEntry)
 
                 response.schema.fields.append(field)
-
-        self._coms.send(response, self._instance_id, request)
 
     def _on_cells(self, request):
 

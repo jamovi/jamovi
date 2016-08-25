@@ -38,9 +38,18 @@ ColumnStruct *DataSet::strucC(int index) const
     return column;
 }
 
-Column DataSet::operator[](string name)
+Column DataSet::operator[](const string &name)
 {
-    throw runtime_error("not implemented yet");
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    for (int i = 0; i < columnCount(); i++)
+    {
+        Column column = (*this)[i];
+        if (column.name() == name)
+            return column;
+    }
+
+    throw runtime_error("no such column");
 }
 
 Column DataSet::operator[](int index)

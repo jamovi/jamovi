@@ -59,7 +59,7 @@ public:
 
     std::string name() const;
     const char *c_str() const;
-    const int rowCount() const;
+    int rowCount() const;
     int dps() const;
 
     enum ColumnType { Misc = 0, NominalText = 1, Nominal = 2, Ordinal = 3, Continuous = 4 };

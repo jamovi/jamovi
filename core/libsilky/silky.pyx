@@ -9,9 +9,9 @@ from libcpp.pair cimport pair
 
 from cython.operator cimport dereference as deref, postincrement as inc
 
-import json
-import os
-import subprocess
+import math
+
+from enum import Enum
 
 cdef extern from "datasetw.h":
     cdef cppclass CDataSet "DataSetW":
@@ -24,6 +24,7 @@ cdef extern from "datasetw.h":
         void appendColumn(string name) except +
         void appendRow() except +
         CColumn operator[](int index) except +
+        CColumn operator[](string name) except +
 
 class ColumnIterator:
     def __init__(self, dataset):
@@ -52,9 +53,19 @@ cdef class DataSet:
         ds._this = CDataSet.retrieve(memoryMap._this)
         return ds
 
-    def __getitem__(self, index):
+    def __getitem__(self, index_or_name):
+        cdef int index
+        cdef string name
+
         c = Column()
-        c._this = deref(self._this)[index]
+
+        if type(index_or_name) == int:
+            index = index_or_name
+            c._this = deref(self._this)[index]
+        else:
+            name = index_or_name.encode('utf-8')
+            c._this = deref(self._this)[name]
+
         return c
 
     def __iter__(self):
@@ -85,10 +96,12 @@ cdef extern from "columnw.h":
         double &doubleCell(int index)
         const char *getLabel(int value)
         void addLabel(int value, const char *label)
+        void clearLabels()
         int labelCount()
         map[int, string] labels()
         void setDPs(int dps)
         int dps() const
+        int rowCount() const;
 
 cdef extern from "column.h":
     ctypedef enum CColumnType  "Column::ColumnType":
@@ -97,6 +110,17 @@ cdef extern from "column.h":
         CColumnTypeNominal     "Column::Nominal"
         CColumnTypeOrdinal     "Column::Ordinal"
         CColumnTypeContinuous  "Column::Continuous"
+
+class CellIterator:
+    def __init__(self, column):
+        self._i = 0
+        self._column = column
+    def __next__(self):
+        if self._i >= self._column.row_count:
+            raise StopIteration
+        c = self._column[self._i]
+        self._i += 1
+        return c
 
 cdef class Column:
     cdef CColumn _this
@@ -107,10 +131,12 @@ cdef class Column:
 
     property type:
         def __get__(self):
-            return self._this.columnType()
+            return MeasureType(self._this.columnType())
 
-        def __set__(self, type):
-            self._this.setColumnType(type)
+        def __set__(self, measure_type):
+            if type(measure_type) is MeasureType:
+                measure_type = measure_type.value
+            self._this.setColumnType(measure_type)
 
     property dps:
         def __get__(self):
@@ -118,6 +144,34 @@ cdef class Column:
 
         def __set__(self, dps):
             self._this.setDPs(dps)
+
+    def determine_dps(self):
+        if self.type == MeasureType.CONTINUOUS:
+            ceiling_dps = 3
+            max_dps = 0
+            for value in self:
+                max_dps = max(max_dps, Column.how_many_dps(value, ceiling_dps))
+                if max_dps == ceiling_dps:
+                    break
+            self.dps = max_dps
+
+    @staticmethod
+    def how_many_dps(value, max_dp=3):
+        if math.isfinite(value) is False:
+            return 0
+
+        max_dp_required = 0
+        value %= 1
+        as_string = '{v:.{dp}f}'.format(v=value, dp=max_dp)
+        as_string = as_string[2:]
+
+        for dp in range(max_dp, 0, -1):
+            index = dp - 1
+            if as_string[index] != '0':
+                max_dp_required = dp
+                break
+
+        return max_dp_required
 
     def append(self, value):
         if type(value) is int:
@@ -127,22 +181,29 @@ cdef class Column:
         else:
             raise ValueError('must be either int or float')
 
-    def add_label(self, raw, label):
+    def add_level(self, raw, label):
         self._this.addLabel(raw, label.encode('utf-8'))
 
+    def clear_levels(self):
+        self._this.clearLabels()
+
     @property
-    def has_labels(self):
+    def has_levels(self):
         return self._this.labelCount() > 0
 
     @property
-    def labels(self):
-        if self.has_labels is False:
+    def levels(self):
+        if self.has_levels is False:
             return None
         arr = [ ]
-        labels = self._this.labels()
-        for label in labels:
-            arr.append([label.first, label.second.decode('utf-8')])
+        levels = self._this.labels()
+        for level in levels:
+            arr.append((level.first, level.second.decode('utf-8')))
         return arr
+
+    @property
+    def row_count(self):
+        return self._this.rowCount();
 
     def __setitem__(self, index, value):
         cdef int *v
@@ -158,19 +219,64 @@ cdef class Column:
             raise ValueError('must be either int or float')
 
     def __getitem__(self, index):
-        if self._this.columnType() == MeasureType.CONTINUOUS:
+        if self.type == MeasureType.CONTINUOUS:
             return self._this.doubleCell(index)
-        elif self._this.columnType() == MeasureType.NOMINAL_TEXT:
+        elif self.type == MeasureType.NOMINAL_TEXT:
             raw = self._this.intCell(index)
             return self._this.getLabel(raw).decode()
         else:
             return self._this.intCell(index)
 
+    def __iter__(self):
+        return CellIterator(self)
+
     def raw(self, index):
-        if self._this.columnType() == MeasureType.CONTINUOUS:
+        if self.type == MeasureType.CONTINUOUS:
             return self._this.doubleCell(index)
         else:
             return self._this.intCell(index)
+
+    def change(self, measure_type, levels=None, dps=None):
+        cdef int *v
+
+        if type(measure_type) is not MeasureType:
+            measure_type = MeasureType(measure_type)
+
+        values = list(self)
+
+        if measure_type == MeasureType.CONTINUOUS:
+            nan = float('nan')
+            for i in range(len(values)):
+                try:
+                    values[i] = float(values[i])
+                except:
+                    values[i] = nan
+
+            self.clear_levels()
+            self.type = MeasureType.CONTINUOUS
+            for i in range(len(values)):
+                self[i] = values[i]
+
+        elif measure_type == MeasureType.NOMINAL_TEXT and self.type == MeasureType.NOMINAL_TEXT:
+            if levels is not None:
+                old_levels = self.levels
+                recode = { }
+                for old_level in old_levels:
+                    for new_level in levels:
+                        if old_level[1] == new_level[1]:
+                            recode[old_level[0]] = new_level[0]
+                            break
+
+                for row_no in range(self.row_count):
+                    v = &self._this.intCell(row_no)
+                    v[0] = recode.get(v[0], -2147483648)
+
+                self.clear_levels()
+                for level in levels:
+                    self.add_level(level[0], level[1])
+
+        if dps is not None:
+            self.dps = dps
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":
@@ -232,7 +338,7 @@ cdef class MemoryMap:
 def decode(string str):
     return str.c_str().decode('utf-8')
 
-class MeasureType:
+class MeasureType(Enum):
     MISC         = CColumnTypeMisc
     NOMINAL_TEXT = CColumnTypeNominalText
     NOMINAL      = CColumnTypeNominal

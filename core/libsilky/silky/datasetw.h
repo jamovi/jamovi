@@ -24,7 +24,7 @@ public:
     void appendRow();
 
     ColumnW operator[](int index);
-    ColumnW operator[](std::string name);
+    ColumnW operator[](const std::string &name);
 
 protected:
 

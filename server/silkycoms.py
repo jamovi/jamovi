@@ -1,6 +1,6 @@
-from protobuf3.fields import BytesField, Int32Field, BoolField, EnumField, DoubleField, StringField, MessageField, UInt32Field
 from enum import Enum
 from protobuf3.message import Message
+from protobuf3.fields import Int32Field, EnumField, BytesField, StringField, UInt32Field, MessageField, DoubleField, BoolField
 
 
 class Error(Message):
@@ -68,22 +68,24 @@ class VariableLevel(Message):
     pass
 
 
+class DataSetSchema(Message):
+
+    class Field(Message):
+
+        class MeasureType(Enum):
+            MISC = 0
+            NOMINAL_TEXT = 1
+            NOMINAL = 2
+            ORDINAL = 3
+            CONTINUOUS = 4
+
+
 class InfoRequest(Message):
     pass
 
 
 class InfoResponse(Message):
-
-    class Schema(Message):
-
-        class Field(Message):
-
-            class MeasureType(Enum):
-                MISC = 0
-                NOMINAL_TEXT = 1
-                NOMINAL = 2
-                ORDINAL = 3
-                CONTINUOUS = 4
+    pass
 
 
 class CellsRequest(Message):
@@ -156,6 +158,11 @@ class Status(Enum):
     ERROR = 3
 
 
+class GetSet(Enum):
+    GET = 1
+    SET = 2
+
+
 class AnalysisStatus(Enum):
     ANALYSIS_NONE = 0
     ANALYSIS_INITED = 1
@@ -187,14 +194,17 @@ SettingsResponse.add_field('recents', MessageField(field_number=1, repeated=True
 SettingsResponse.add_field('localFSRecents', MessageField(field_number=2, repeated=True, message_cls=DataSetEntry))
 VariableLevel.add_field('label', StringField(field_number=1, optional=True))
 VariableLevel.add_field('value', Int32Field(field_number=2, optional=True))
-InfoResponse.Schema.Field.add_field('name', StringField(field_number=1, optional=True))
-InfoResponse.Schema.Field.add_field('measureType', EnumField(field_number=2, optional=True, enum_cls=InfoResponse.Schema.Field.MeasureType))
-InfoResponse.Schema.Field.add_field('width', Int32Field(field_number=3, optional=True))
-InfoResponse.Schema.Field.add_field('levels', MessageField(field_number=4, repeated=True, message_cls=VariableLevel))
-InfoResponse.Schema.Field.add_field('dps', Int32Field(field_number=5, optional=True))
-InfoResponse.Schema.add_field('fields', MessageField(field_number=1, repeated=True, message_cls=InfoResponse.Schema.Field))
+DataSetSchema.Field.add_field('id', Int32Field(field_number=1, optional=True))
+DataSetSchema.Field.add_field('name', StringField(field_number=2, optional=True))
+DataSetSchema.Field.add_field('measureType', EnumField(field_number=3, optional=True, enum_cls=DataSetSchema.Field.MeasureType))
+DataSetSchema.Field.add_field('width', Int32Field(field_number=4, optional=True))
+DataSetSchema.Field.add_field('levels', MessageField(field_number=5, repeated=True, message_cls=VariableLevel))
+DataSetSchema.Field.add_field('dps', Int32Field(field_number=6, optional=True))
+DataSetSchema.add_field('fields', MessageField(field_number=1, repeated=True, message_cls=DataSetSchema.Field))
+InfoRequest.add_field('op', EnumField(field_number=1, optional=True, enum_cls=GetSet, default=GetSet.GET))
+InfoRequest.add_field('schema', MessageField(field_number=2, optional=True, message_cls=DataSetSchema))
 InfoResponse.add_field('hasDataSet', BoolField(field_number=1, optional=True))
-InfoResponse.add_field('schema', MessageField(field_number=2, optional=True, message_cls=InfoResponse.Schema))
+InfoResponse.add_field('schema', MessageField(field_number=2, optional=True, message_cls=DataSetSchema))
 InfoResponse.add_field('rowCount', UInt32Field(field_number=3, optional=True))
 InfoResponse.add_field('columnCount', UInt32Field(field_number=4, optional=True))
 InfoResponse.add_field('filePath', StringField(field_number=5, optional=True))

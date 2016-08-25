@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2016 Jonathon Love
+ */
 
 .silky-tableview {
 
@@ -79,15 +82,15 @@
     opacity: 0 ;
 }
 
-.silky-column.continuous {
+.silky-column[data-measuretype="continuous"] {
     text-align: right ;
 }
 
-.silky-column.nominal {
+.silky-column[data-measuretype="nominal"] {
     text-align: right ;
 }
 
-.silky-column.nominaltext {
+.silky-column[data-measuretype="nominaltext"] {
     text-align: left ;
 }
 
@@ -148,21 +151,22 @@ input.silky-table-cell-selected {
     left: -100px ; /* overridden by code */
     border-bottom: 2px solid #5E8BC4 ;
     transition: left 0.1s, width 0.1s, height 0.1s ;
+    pointer-events: none ;
 }
 
-.silky-column-header.nominaltext {
+.silky-column-header[data-measuretype="nominaltext"] {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.silky-column-header.nominal {
+.silky-column-header[data-measuretype="nominal"] {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.silky-column-header.ordinal {
+.silky-column-header[data-measuretype="ordinal"] {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.silky-column-header.continuous {
+.silky-column-header[data-measuretype="continuous"] {
     background-image: url('assets/variable-continuous.svg');
 }
 

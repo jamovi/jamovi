@@ -20,6 +20,7 @@ public:
 
     void setColumnType(ColumnType columnType);
     void addLabel(int value, const char *label);
+    void clearLabels();
     void setDPs(int dps);
 
     template<typename T> void append(const T &value)

@@ -1,3 +1,7 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
+
 'use strict';
 
 var _ = require('underscore');
@@ -132,8 +136,8 @@ const VariableEditor = Backbone.View.extend({
 
 const VariableModel = Backbone.Model.extend({
 
-    initialize: function(instance) {
-        this.instance = instance;
+    initialize: function(dataset) {
+        this.dataset = dataset;
         this.original = { };
 
         this.on('change', event => {
@@ -159,12 +163,16 @@ const VariableModel = Backbone.Model.extend({
         this.set(dict);
     },
     apply : function() {
-        this.original = {
+        let values = {
             name: this.attributes.name,
             type: this.attributes.type,
             levels: this.attributes.levels,
             dp: this.attributes.dp,
         };
+
+        this.dataset.setColumn(this.attributes.name, values);
+
+        this.original = values;
         this.set(this.original);
         this.set('changes', false);
     },
@@ -183,11 +191,14 @@ const EditorWidget = Backbone.View.extend({
         this.$el.addClass('silky-variable-editor-widget');
 
         this.$title = $('<div class="silky-variable-editor-widget-title"></div>').appendTo(this.$el);
-        this.$types = $('<div class="silky-variable-editor-widget-types"></div>').appendTo(this.$el);
-        this.$levels = $('<div class="silky-variable-editor-levels"></div>').appendTo(this.$el);
+        this.$body = $('<div class="silky-variable-editor-widget-body"></div>').appendTo(this.$el);
+        this.$left = $('<div class="silky-variable-editor-widget-left"></div>').appendTo(this.$body);
+        this.$types = $('<div class="silky-variable-editor-widget-types"></div>').appendTo(this.$left);
+        this.$autoType = $('<div class="silky-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
+        this.$levels = $('<div class="silky-variable-editor-levels"></div>').appendTo(this.$body);
         this.$levelItems = $();
 
-        this.$move = $('<div class="silky-variable-editor-widget-move"></div>').appendTo(this.$el);
+        this.$move = $('<div class="silky-variable-editor-widget-move"></div>').appendTo(this.$body);
         this.$moveUp = $('<div class="silky-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></div>').appendTo(this.$move);
         this.$moveDown = $('<div class="silky-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></div>').appendTo(this.$move);
 
@@ -206,17 +217,21 @@ const EditorWidget = Backbone.View.extend({
 
         let unique = Math.random();
 
-        options.forEach(option => {
+        let optionClicked = (event) => {
+            this.model.set({ type: event.data });
+        };
+
+        for (let option of options) {
             let type = option.type;
             let $option = $('<div   data-type="' + type + '" class="silky-variable-editor-widget-option">').appendTo(this.$types);
             let $input  = $('<input data-type="' + type + '" name="' + unique + '" type="radio">').appendTo($option);
             let $icon   = $('<div   data-type="' + type + '" class="silky-variable-editor-variable-type"></div>').appendTo($option);
             let $label  = $('<span>' + option.label + '</span>').appendTo($option);
 
-            $option.on('click', event => this.model.set({ type: type }));
+            $option.on('click', null, type, optionClicked);
 
             this.resources[option.type] = { $option : $option, $input : $input };
-        });
+        }
 
         this.model.on('change:name', event => {
             if ( ! this.attached)

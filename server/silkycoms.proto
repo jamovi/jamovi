@@ -1,3 +1,6 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
 
 package silkycoms;
 
@@ -83,33 +86,40 @@ message VariableLevel {
     optional int32 value = 2;
 }
 
+message DataSetSchema {
+    message Field {
+        optional int32 id = 1;
+        optional string name = 2;
+
+        enum MeasureType {
+            MISC = 0;
+            NOMINAL_TEXT = 1;
+            NOMINAL = 2;
+            ORDINAL = 3;
+            CONTINUOUS = 4;
+        }
+
+        optional MeasureType measureType = 3;
+        optional int32 width = 4;
+        repeated VariableLevel levels = 5;
+        optional int32 dps = 6;
+    }
+    repeated Field fields = 1;
+}
+
+enum GetSet {
+    GET = 1;
+    SET = 2;
+}
+
 message InfoRequest {
+    optional GetSet op = 1 [default=GET];
+    optional DataSetSchema schema = 2;
 }
 
 message InfoResponse {
-
-    message Schema {
-        message Field {
-            optional string name = 1;
-
-            enum MeasureType {
-                MISC = 0;
-                NOMINAL_TEXT = 1;
-                NOMINAL = 2;
-                ORDINAL = 3;
-                CONTINUOUS = 4;
-            }
-
-            optional MeasureType measureType = 2;
-            optional int32 width = 3;
-            repeated VariableLevel levels = 4;
-            optional int32 dps = 5;
-        }
-        repeated Field fields = 1;
-    }
-
     optional bool hasDataSet = 1;
-    optional Schema schema = 2;
+    optional DataSetSchema schema = 2;
     optional uint32 rowCount = 3;
     optional uint32 columnCount = 4;
     optional string filePath = 5;

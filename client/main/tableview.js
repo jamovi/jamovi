@@ -1,14 +1,18 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
 
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var SilkyView = require('./view');
+const SilkyView = require('./view');
+const DataSetModel = require('./dataset').Model;
 
-var TableView = SilkyView.extend({
+const TableView = SilkyView.extend({
     className: "tableview",
     initialize: function() {
 
@@ -18,13 +22,14 @@ var TableView = SilkyView.extend({
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
         this.model.on('cellsChanged', this._cellsChanged, this);
+        this.model.on('columnChanged', event => this._columnChanged(event));
 
         this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
         this.$el.addClass("silky-tableview");
 
-        var html = '';
+        let html = '';
         html += '<div class="silky-table-header">';
         html += '    <div class="silky-column-header" style="width: 110%">&nbsp;</div>';
         html += '</div>';
@@ -42,20 +47,18 @@ var TableView = SilkyView.extend({
 
         this.$container.on("scroll", event => this.scrollHandler(event));
 
-        var self = this;
-
-        Promise.resolve().then(function() {
+        Promise.resolve().then(() => {
 
             return new Promise(function(resolve, reject) {
                 setTimeout(resolve, 0);
             });
 
-        }).then(function() {
+        }).then(() => {
 
-            self._rowHeight = self.$header.height();  // read and store the row height
-            self.$header.css('height', self._rowHeight);
-            self.$container.css('top', self._rowHeight);
-            self.$container.css('height', self.$el.height() - self._rowHeight);
+            this._rowHeight = this.$header.height();  // read and store the row height
+            this.$header.css('height', this._rowHeight);
+            this.$container.css('top', this._rowHeight);
+            this.$container.css('height', this.$el.height() - this._rowHeight);
         });
 
         this.selection = null;
@@ -63,29 +66,43 @@ var TableView = SilkyView.extend({
         this.$el.on('click', event => this._clickHandler(event));
         this.$el.on('dblclick', event => this._clickHandler(event));
     },
+    _columnChanged : function(event) {
+
+        let columns = this.model.get('columns');
+        for (let i = 0; i < columns.length; i++) {
+            let column = columns[i];
+            if (column.name === event.name) {
+                let $header = $(this.$headers[i]);
+                $header.attr('data-measuretype', column.measureType);
+                let $column = $(this.$columns[i]);
+                $column.attr('data-measuretype', column.measureType);
+                break;
+            }
+        }
+    },
     _dataSetLoaded : function() {
 
         this.$header.empty();  // clear the temporary cell
         this.$header.append('<div class="silky-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
 
-        var columns = this.model.get('columns');
-        var left = this.rowHeaderWidth;
+        let columns = this.model.get('columns');
+        let left = this.rowHeaderWidth;
 
         this._lefts = new Array(columns.length);  // store the left co-ordinate for each column
         this._widths = new Array(columns.length);
 
-        for (var colNo = 0; colNo < columns.length; colNo++) {
-            var column = columns[colNo];
-            var width  = column.width;
+        for (let colNo = 0; colNo < columns.length; colNo++) {
+            let column = columns[colNo];
+            let width  = column.width;
 
-            var html = '';
-            html += '<div data-name="' + column.name + '" data-index="' + colNo + '" class="silky-column-header ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+            let html = '';
+            html += '<div data-name="' + column.name + '" data-index="' + colNo + '" data-measuretype="' + column.measureType + '" class="silky-column-header" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
             html +=     column.name;
             html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
 
             this.$header.append(html);
-            this.$body.append('<div class="silky-column ' + column.measureType + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+            this.$body.append('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
 
             this._lefts[colNo] = left;
             this._widths[colNo] = width;
@@ -96,8 +113,8 @@ var TableView = SilkyView.extend({
         this.$columns = this.$body.children();
         this.$body.css('width',  left);
 
-        var rowCount = this.model.get('rowCount');
-        var totalHeight = rowCount * this._rowHeight;
+        let rowCount = this.model.get('rowCount');
+        let totalHeight = rowCount * this._rowHeight;
         this.$body.css('height', totalHeight);
 
         this.$rhColumn = $('<div class="silky-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
@@ -249,21 +266,21 @@ var TableView = SilkyView.extend({
     },
     _updateCells : function() {
 
-        var colOffset = this.model.get('viewport').left;
-        var cells = this.model.get('cells');
-        var columns = this.model.get('columns');
+        let colOffset = this.model.get('viewport').left;
+        let cells = this.model.get('cells');
+        let columns = this.model.get('columns');
 
-        for (var colNo = 0; colNo < cells.length; colNo++) {
+        for (let colNo = 0; colNo < cells.length; colNo++) {
 
-            var column = cells[colNo];
-            var $column = $(this.$columns[colOffset + colNo]);
-            var $cells  = $column.children();
+            let column = cells[colNo];
+            let $column = $(this.$columns[colOffset + colNo]);
+            let $cells  = $column.children();
 
-            var dps = columns[colOffset + colNo].dps;
+            let dps = columns[colOffset + colNo].dps;
 
-            for (var rowNo = 0; rowNo < column.length; rowNo++) {
-                var  cell = column[rowNo];
-                var $cell = $($cells[rowNo]);
+            for (let rowNo = 0; rowNo < column.length; rowNo++) {
+                let  cell = column[rowNo];
+                let $cell = $($cells[rowNo]);
 
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
@@ -277,28 +294,28 @@ var TableView = SilkyView.extend({
     },
     _cellsChanged : function(range) {
 
-        var viewport = this.viewport;
+        let viewport = this.viewport;
 
-        var colOffset = range.left - viewport.left;
-        var rowOffset = range.top - viewport.top;
-        var nCols = range.right - range.left + 1;
-        var nRows = range.bottom - range.top + 1;
+        let colOffset = range.left - viewport.left;
+        let rowOffset = range.top - viewport.top;
+        let nCols = range.right - range.left + 1;
+        let nRows = range.bottom - range.top + 1;
 
-        var cells = this.model.get('cells');
-        var columns = this.model.get('columns');
+        let cells = this.model.get('cells');
+        let columns = this.model.get('columns');
 
-        for (var colNo = 0; colNo < nCols; colNo++) {
+        for (let colNo = 0; colNo < nCols; colNo++) {
 
-            var column = cells[colOffset + colNo];
-            var $column = $(this.$columns[range.left + colNo]);
-            var $cells  = $column.children();
+            let column = cells[colOffset + colNo];
+            let $column = $(this.$columns[range.left + colNo]);
+            let $cells  = $column.children();
 
-            var dps = columns[range.left + colNo].dps;
+            let dps = columns[range.left + colNo].dps;
 
-            for (var rowNo = 0; rowNo < nRows; rowNo++) {
+            for (let rowNo = 0; rowNo < nRows; rowNo++) {
 
-                var $cell = $($cells[rowOffset + rowNo]);
-                var cell = column[rowOffset + rowNo];
+                let $cell = $($cells[rowOffset + rowNo]);
+                let cell = column[rowOffset + rowNo];
 
                 if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
                     cell = '';
@@ -314,11 +331,11 @@ var TableView = SilkyView.extend({
         if (this.model.get('hasDataSet') === false)
             return;
 
-        var currentViewRange = this.getViewRange();
+        let currentViewRange = this.getViewRange();
         if (this.encloses(this.viewOuterRange, currentViewRange) === false)
             this.updateViewRange();
 
-        var left = this.$container.scrollLeft();
+        let left = this.$container.scrollLeft();
         this.$rhColumn.css('left', left);
         this.$selectionRowHighlight.css('left', left);
         this.$header.css('left', -left);
@@ -329,29 +346,29 @@ var TableView = SilkyView.extend({
         if (this.model.get('hasDataSet') === false)
             return;
 
-        var currentViewRange = this.getViewRange();
+        let currentViewRange = this.getViewRange();
         if (this.encloses(this.viewOuterRange, currentViewRange) === false)
             this.updateViewRange();
 
-        var left = this.$container.scrollLeft();
+        let left = this.$container.scrollLeft();
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
         this.$container.css('height', this.$el.height() - this._rowHeight);
     },
     updateViewRange : function() {
 
-        var v = this.getViewRange();
+        let v = this.getViewRange();
 
-        var topRow = Math.floor(v.top / this._rowHeight) - 1;
-        var botRow = Math.ceil(v.bottom / this._rowHeight) - 1;
+        let topRow = Math.floor(v.top / this._rowHeight) - 1;
+        let botRow = Math.ceil(v.bottom / this._rowHeight) - 1;
 
-        var rowCount = this.model.get('rowCount');
-        var columnCount = this.model.get('columnCount');
+        let rowCount = this.model.get('rowCount');
+        let columnCount = this.model.get('columnCount');
 
-        var columns = this.model.get("columns");
+        let columns = this.model.get("columns");
 
-        var leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
-        var rightColumn = _.sortedIndex(this._lefts, v.right) - 1;
+        let leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
+        let rightColumn = _.sortedIndex(this._lefts, v.right) - 1;
 
         if (leftColumn > columnCount - 1)
             leftColumn = columnCount - 1;
@@ -362,11 +379,11 @@ var TableView = SilkyView.extend({
         if (rightColumn < 0)
             rightColumn = 0;
 
-        var oTop  = ((topRow + 1) * this._rowHeight);
-        var oBot  = ((botRow + 1) * this._rowHeight);
-        var oLeft = this._lefts[leftColumn];
+        let oTop  = ((topRow + 1) * this._rowHeight);
+        let oBot  = ((botRow + 1) * this._rowHeight);
+        let oLeft = this._lefts[leftColumn];
 
-        var oRight;
+        let oRight;
         if (rightColumn == columns.length - 1) // last column
             oRight = Infinity;
         else
@@ -381,7 +398,7 @@ var TableView = SilkyView.extend({
         if (topRow < 0)
             topRow = 0;
 
-        var oldViewport = this.viewport;
+        let oldViewport = this.viewport;
 
         this.viewRange      = v;
         this.viewOuterRange = { top : oTop,   bottom : oBot,   left : oLeft,      right : oRight };
@@ -413,26 +430,20 @@ var TableView = SilkyView.extend({
     },
     refreshCells : function(oldViewport, newViewport) {
 
-        var o = oldViewport;
-        var n = newViewport;
-        var i, j, count;
+        let o = oldViewport;
+        let n = newViewport;
 
-        var columns = this.model.get('columns');
-        var column;
-        var $column;
-        var $cell, $cells;
-        var rowNo, colNo, nRows, nCols;
-        var top, left, bottom, right;
+        let columns = this.model.get('columns');
 
         if (o === null || n.top !== o.top || n.bottom !== o.bottom) {
 
             this.$rhColumn.empty();
-            nRows = n.bottom - n.top + 1;
+            let nRows = n.bottom - n.top + 1;
 
-            for (j = 0; j < nRows; j++) {
-                rowNo = n.top + j;
-                top   = rowNo * this._rowHeight;
-                $cell = $(this._createRHCellHTML(top, this._rowHeight, '' + (n.top+j+1), rowNo));
+            for (let j = 0; j < nRows; j++) {
+                let rowNo = n.top + j;
+                let top   = rowNo * this._rowHeight;
+                let $cell = $(this._createRHCellHTML(top, this._rowHeight, '' + (n.top+j+1), rowNo));
                 this.$rhColumn.append($cell);
             }
         }
@@ -441,23 +452,23 @@ var TableView = SilkyView.extend({
 
             if (o !== null) {  // clear old cells
 
-                for (i = o.left; i <= o.right; i++) {
-                    $column = $(this.$columns[i]);
+                for (let i = o.left; i <= o.right; i++) {
+                    let $column = $(this.$columns[i]);
                     $column.empty();
                 }
             }
 
-            nRows = n.bottom - n.top + 1;
+            let nRows = n.bottom - n.top + 1;
 
-            for (i = n.left; i <= n.right; i++) {
+            for (let i = n.left; i <= n.right; i++) {
 
-                column  = columns[i];
-                $column = $(this.$columns[i]);
+                let column  = columns[i];
+                let $column = $(this.$columns[i]);
 
-                for (j = 0; j < nRows; j++) {
-                    rowNo = n.top + j;
-                    top   = rowNo * this._rowHeight;
-                    $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                for (let j = 0; j < nRows; j++) {
+                    let rowNo = n.top + j;
+                    let top   = rowNo * this._rowHeight;
+                    let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                     $column.append($cell);
                 }
             }
@@ -468,78 +479,78 @@ var TableView = SilkyView.extend({
 
             if (n.right > o.right) {  // add columns to the right
 
-                nCols = n.right - o.right;
-                nRows = n.bottom - n.top + 1;
+                let nCols = n.right - o.right;
+                let nRows = n.bottom - n.top + 1;
 
-                for (i = 0; i < nCols; i++) {
+                for (let i = 0; i < nCols; i++) {
 
-                    colNo = o.right + i + 1;
-                    left  = this._lefts[colNo];
-                    column = columns[colNo];
-                    $column = $(this.$columns[colNo]);
+                    let colNo = o.right + i + 1;
+                    let left  = this._lefts[colNo];
+                    let column = columns[colNo];
+                    let $column = $(this.$columns[colNo]);
 
-                    for (j = 0; j < nRows; j++) {
-                        rowNo = n.top + j;
-                        top = this._rowHeight * rowNo;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
+                    for (let j = 0; j < nRows; j++) {
+                        let rowNo = n.top + j;
+                        let top = this._rowHeight * rowNo;
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
                         $column.append($cell);
                     }
                 }
             }
             else if (n.right < o.right) {  // delete columns from the right
-                nCols = o.right - n.right;
-                count = this.$columns.length;
-                for (i = 0; i < nCols; i++) {
-                    $column = $(this.$columns[o.right - i]);
+                let nCols = o.right - n.right;
+                let count = this.$columns.length;
+                for (let i = 0; i < nCols; i++) {
+                    let $column = $(this.$columns[o.right - i]);
                     $column.empty();
                 }
             }
 
             if (n.left < o.left) {  // add columns to the left
 
-                nCols = o.left - n.left;
-                nRows = n.bottom - n.top + 1;
+                let nCols = o.left - n.left;
+                let nRows = n.bottom - n.top + 1;
 
-                for (i = 0; i < nCols; i++) {
+                for (let i = 0; i < nCols; i++) {
 
-                    colNo = n.left + i;
-                    left  = this._lefts[colNo];
-                    column = columns[colNo];
-                    $column = $(this.$columns[colNo]);
+                    let colNo = n.left + i;
+                    let left  = this._lefts[colNo];
+                    let column = columns[colNo];
+                    let $column = $(this.$columns[colNo]);
 
-                    for (j = 0; j < nRows; j++) {
-                        rowNo = n.top + j;
-                        top = this._rowHeight * rowNo;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
+                    for (let j = 0; j < nRows; j++) {
+                        let rowNo = n.top + j;
+                        let top = this._rowHeight * rowNo;
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
                         $column.append($cell);
                     }
                 }
             }
             else if (n.left > o.left) {  // delete columns from the left
-                nCols = n.left - o.left;
-                count = this.$columns.length;
-                for (i = 0; i < nCols; i++) {
-                    $column = $(this.$columns[o.left + i]);
+                let nCols = n.left - o.left;
+                let count = this.$columns.length;
+                for (let i = 0; i < nCols; i++) {
+                    let $column = $(this.$columns[o.left + i]);
                     $column.empty();
                 }
             }
 
             if (n.bottom > o.bottom) {
 
-                nRows = n.bottom - o.bottom;  // to add rows to the bottom
+                let nRows = n.bottom - o.bottom;  // to add rows to the bottom
 
-                left  = Math.max(o.left,  n.left);
-                right = Math.min(o.right, n.right);
+                let left  = Math.max(o.left,  n.left);
+                let right = Math.min(o.right, n.right);
 
-                for (i = left; i <= right; i++) {
+                for (let i = left; i <= right; i++) {
 
-                    column  = columns[i];
-                    $column = $(this.$columns[i]);
+                    let column  = columns[i];
+                    let $column = $(this.$columns[i]);
 
-                    for (j = 0; j < nRows; j++) {
-                        rowNo = o.bottom + j + 1;
-                        top   = rowNo * this._rowHeight;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                    for (let j = 0; j < nRows; j++) {
+                        let rowNo = o.bottom + j + 1;
+                        let top   = rowNo * this._rowHeight;
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                         $column.append($cell);
                     }
                 }
@@ -547,38 +558,38 @@ var TableView = SilkyView.extend({
 
             if (n.bottom < o.bottom) {
 
-                nRows = o.bottom - n.bottom;  // to remove from the bottom
+                let nRows = o.bottom - n.bottom;  // to remove from the bottom
 
-                left  = Math.max(o.left,  n.left);
-                right = Math.min(o.right, n.right);
+                let left  = Math.max(o.left,  n.left);
+                let right = Math.min(o.right, n.right);
 
-                for (i = left; i <= right; i++) {
+                for (let i = left; i <= right; i++) {
 
-                    $column = $(this.$columns[i]);
-                    $cells = $column.children();
-                    count = $cells.length;
+                    let $column = $(this.$columns[i]);
+                    let $cells = $column.children();
+                    let count = $cells.length;
 
-                    for (j = 0; j < nRows; j++)
+                    for (let j = 0; j < nRows; j++)
                         $($cells[count - j - 1]).remove();
                 }
             }
 
             if (n.top < o.top) {
 
-                nRows = o.top - n.top;  // add to top
+                let nRows = o.top - n.top;  // add to top
 
-                left  = Math.max(o.left,  n.left);
-                right = Math.min(o.right, n.right);
+                let left  = Math.max(o.left,  n.left);
+                let right = Math.min(o.right, n.right);
 
-                for (i = left; i <= right; i++) {
+                for (let i = left; i <= right; i++) {
 
-                    column  = columns[i];
-                    $column = $(this.$columns[i]);
+                    let column  = columns[i];
+                    let $column = $(this.$columns[i]);
 
-                    for (j = 0; j < nRows; j++) {
-                        rowNo = o.top - j - 1;
-                        top   = rowNo * this._rowHeight;
-                        $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                    for (let j = 0; j < nRows; j++) {
+                        let rowNo = o.top - j - 1;
+                        let top   = rowNo * this._rowHeight;
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
                         $column.prepend($cell);
                     }
                 }
@@ -586,32 +597,32 @@ var TableView = SilkyView.extend({
 
             if (n.top > o.top) {  // remove from the top
 
-                nRows = n.top - o.top;
+                let nRows = n.top - o.top;
 
-                left  = Math.max(o.left,  n.left);
-                right = Math.min(o.right, n.right);
+                let left  = Math.max(o.left,  n.left);
+                let right = Math.min(o.right, n.right);
 
-                for (var c = left; c <= right; c++) {
-                    $column = $(this.$columns[c]);
-                    $cells = $column.children();
-                    for (var r = 0; r < nRows; r++)
+                for (let c = left; c <= right; c++) {
+                    let $column = $(this.$columns[c]);
+                    let $cells = $column.children();
+                    for (let r = 0; r < nRows; r++)
                         $($cells[r]).remove();
                 }
             }
 
-            var deltaLeft   = o.left - n.left;
-            var deltaRight  = n.right - o.right;
-            var deltaTop    = o.top - n.top;
-            var deltaBottom = n.bottom - o.bottom;
+            let deltaLeft   = o.left - n.left;
+            let deltaRight  = n.right - o.right;
+            let deltaTop    = o.top - n.top;
+            let deltaBottom = n.bottom - o.bottom;
 
             this.model.reshape(deltaLeft, deltaTop, deltaRight, deltaBottom);
         }
     },
     getViewRange : function() {
-        var vTop   = this.$container.scrollTop();
-        var vBot   = vTop + this.$el.height() - this._rowHeight;
-        var vLeft  = this.$container.scrollLeft();
-        var vRight = vLeft + this.$el.width();
+        let vTop   = this.$container.scrollTop();
+        let vBot   = vTop + this.$el.height() - this._rowHeight;
+        let vLeft  = this.$container.scrollLeft();
+        let vRight = vLeft + this.$el.width();
 
         return { top : vTop, bottom : vBot, left : vLeft, right : vRight };
     },
@@ -622,8 +633,8 @@ var TableView = SilkyView.extend({
             && outer.bottom >= inner.bottom;
     },
     overlaps : function(one, two) {
-        var colOverlap = (one.left >= two.left && one.left <= two.right) || (one.right >= two.left && one.right <= two.right);
-        var rowOverlap = (one.top <= two.bottom && one.top >= two.top)  || (one.bottom <= two.bottom && one.bottom >= two.top);
+        let colOverlap = (one.left >= two.left && one.left <= two.right) || (one.right >= two.left && one.right <= two.right);
+        let rowOverlap = (one.top <= two.bottom && one.top >= two.top)  || (one.bottom <= two.bottom && one.bottom >= two.top);
         return rowOverlap && colOverlap;
     }
 });

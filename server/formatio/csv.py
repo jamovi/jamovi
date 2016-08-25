@@ -1,3 +1,6 @@
+#
+# Copyright (C) 2016 Jonathon Love
+#
 
 import csv
 from silky import MeasureType
@@ -98,20 +101,22 @@ class ColumnWriter:
         self._unique_values = set()
         self._many_uniques = False
         self._measure_type = None
-        self._examination_complete = False
+        self._ruminated = False
+        self._includes_na = False
         self._dps = 0
 
     def examine_row(self, row):
-
-        if self._examination_complete:
-            return
 
         if self._column_index >= len(row):
             return
 
         value = row[self._column_index]
 
-        if value == "" or value == " ":
+        if value == 'NA':
+            self._includes_na = True
+            return
+
+        if value == '' or value == ' ':
             return
         else:
             self._is_empty = False
@@ -126,52 +131,44 @@ class ColumnWriter:
         if self._only_integers:
             try:
                 i = int(value)
-                if i > 2147483647 or i < -2147483647:
+                if i > 2147483647 or i < -2147483648:
                     self._only_integers = False
             except ValueError:
                 self._only_integers = False
 
-        if self._only_floats:
-            try:
-                f = float(value)
-                self._dps = max(self._dps, calc_dps(f))
-            except ValueError:
-                self._only_floats = False
-
-        if self._many_uniques and self._only_floats is False and self._only_integers is False:
-            self._measure_type = MeasureType.MISC
-            self._unique_values = None
-            self._examination_complete = True
+        try:
+            f = float(value)
+            self._dps = max(self._dps, calc_dps(f))
+        except ValueError:
+            self._only_floats = False
 
     def _ruminate(self):
 
-        if self._measure_type is None:
-            if self._only_integers and self._many_uniques is False:
-                self._measure_type = MeasureType.NOMINAL
-                self._unique_values = list(self._unique_values)
-                self._unique_values.sort()
-                for label in self._unique_values:
-                    self._column.add_label(int(label), label)
+        if self._only_integers and self._many_uniques is False:
+            self._measure_type = MeasureType.NOMINAL
+            self._unique_values = list(self._unique_values)
+            self._unique_values.sort()
+            for label in self._unique_values:
+                self._column.add_level(int(label), label)
+        elif self._only_floats:
+            self._measure_type = MeasureType.CONTINUOUS
+        else:
+            self._measure_type = MeasureType.NOMINAL_TEXT
+            self._unique_values = list(self._unique_values)
+            if self._includes_na:
+                self._unique_values.append('NA')
+            self._unique_values.sort()
+            for i in range(0, len(self._unique_values)):
+                label = self._unique_values[i]
+                self._column.add_level(i, label)
 
-            elif self._only_floats:
-                self._measure_type = MeasureType.CONTINUOUS
-            elif self._many_uniques:
-                self._measure_type = MeasureType.MISC
-            else:
-                self._measure_type = MeasureType.NOMINAL_TEXT
-                self._unique_values = list(self._unique_values)
-                self._unique_values.sort()
-                for i in range(0, len(self._unique_values)):
-                    label = self._unique_values[i]
-                    self._column.add_label(i, label)
-
-        self._examination_complete = True
+        self._ruminated = True
         self._column.type = self._measure_type
         self._column.dps = self._dps
 
     def parse_row(self, row, row_no):
 
-        if self._examination_complete is False:
+        if self._ruminated is False:
             self._ruminate()
 
         if self._column_index >= len(row):
@@ -179,7 +176,12 @@ class ColumnWriter:
         else:
             value = row[self._column_index]
 
-            if value == '' or value == ' ':
+            # we treat NAs as missings, unless it's a text column
+            # NA could be an actual value so we play it safe
+
+            if value == 'NA' and self._measure_type != MeasureType.NOMINAL_TEXT:
+                value = None
+            elif value == '' or value == ' ':
                 value = None
 
         if self._measure_type == MeasureType.NOMINAL or self._measure_type == MeasureType.ORDINAL:
