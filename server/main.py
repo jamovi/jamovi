@@ -54,11 +54,11 @@ def _launch_electron(instance_id, ports):
 def _launch_electron_thread(instance_id, ports):
 
     if os.name == 'nt':
-        exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron.exe')
+        exe = os.path.join(tld, 'node_modules/electron/dist/electron.exe')
     elif os.uname()[0] == "Linux":
         exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/electron')
     else:
-        exe = os.path.join(tld, 'node_modules/electron-prebuilt/dist/Electron.app/Contents/MacOS/Electron')
+        exe = os.path.join(tld, 'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron')
 
     main = os.path.join(tld, 'silky/electron/main.js')
 

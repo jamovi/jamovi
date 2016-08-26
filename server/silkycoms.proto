@@ -2,6 +2,8 @@
 // Copyright (C) 2016 Jonathon Love
 //
 
+syntax = "proto2";
+
 package silkycoms;
 
 enum Status {
@@ -108,8 +110,8 @@ message DataSetSchema {
 }
 
 enum GetSet {
-    GET = 1;
-    SET = 2;
+    GET = 0;
+    SET = 1;
 }
 
 message InfoRequest {
@@ -123,6 +125,7 @@ message InfoResponse {
     optional uint32 rowCount = 3;
     optional uint32 columnCount = 4;
     optional string filePath = 5;
+    optional GetSet op = 6 [default=GET];
 }
 
 message CellsRequest {

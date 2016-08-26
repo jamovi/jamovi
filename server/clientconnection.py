@@ -4,7 +4,7 @@
 
 from tornado.websocket import WebSocketHandler
 
-import silkycoms
+import silkycoms_pb2 as silkycoms
 from instance import Instance
 
 
@@ -31,16 +31,18 @@ class ClientConnection(WebSocketHandler):
             listener()
 
     def on_message(self, m_bytes):
-        message = silkycoms.ComsMessage.create_from_bytes(m_bytes)
+        message = silkycoms.ComsMessage()
+        message.ParseFromString(m_bytes)
         clas = getattr(silkycoms, message.payloadType)
-        request = clas.create_from_bytes(message.payload)
+        request = clas()
+        request.ParseFromString(message.payload)
         self._transactions[message.id] = request
 
         if type(request) == silkycoms.InstanceRequest:
-            if 'instanceId' not in message:
-                instance = Instance(session_path=self._session_path)  # create new
-            else:
+            if message.HasField('instanceId'):
                 instance = Instance.instances[message.instanceId]
+            else:
+                instance = Instance(session_path=self._session_path)  # create new
             instance.set_coms(self)
             response = silkycoms.InstanceResponse()
             self.send(response, instance.id, request)
@@ -69,15 +71,15 @@ class ClientConnection(WebSocketHandler):
             m.id = 0
 
         if message is not None:
-            m.payload = message.encode_to_bytes()
+            m.payload = message.SerializeToString()
             m.payloadType = message.__class__.__name__
 
         if complete:
-            m.status = silkycoms.Status.COMPLETE
+            m.status = silkycoms.Status.Value('COMPLETE')
         else:
-            m.status = silkycoms.Status.IN_PROGRESS
+            m.status = silkycoms.Status.Value('IN_PROGRESS')
 
-        self.write_message(m.encode_to_bytes(), binary=True)
+        self.write_message(m.SerializeToString(), binary=True)
 
     def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
 
@@ -104,7 +106,7 @@ class ClientConnection(WebSocketHandler):
         if cause is not None:
             m.error.cause = cause
 
-        m.status = silkycoms.Status.ERROR
+        m.status = silkycoms.Status.Value('ERROR')
 
         self.write_message(m.encode_to_bytes(), binary=True)
 

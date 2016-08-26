@@ -12,7 +12,7 @@ from silky import DataSet
 
 from settings import Settings
 
-import silkycoms
+import silkycoms_pb2 as silkycoms
 
 from enginemanager import EngineManager
 from analyses import Analyses
@@ -129,7 +129,7 @@ class Instance:
             print(request.payloadType)
 
     def _on_results(self, results, request, complete):
-        complete = (results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE)
+        complete = (results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
         self._coms.send(results, self._instance_id, request, complete)
 
     def _on_fs_request(self, request):
@@ -141,33 +141,29 @@ class Instance:
         response = silkycoms.FSResponse()
         if path.startswith('{{Root}}'):
 
-            entry = silkycoms.FSEntry()
+            entry = response.contents.add()
             entry.name = 'Documents'
             entry.path = '{{Documents}}'
-            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
-            response.contents.append(entry)
+            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
-            entry = silkycoms.FSEntry()
+            entry = response.contents.add()
             entry.name = 'Desktop'
             entry.path = '{{Desktop}}'
-            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
-            response.contents.append(entry)
+            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
-            entry = silkycoms.FSEntry()
+            entry = response.contents.add()
             entry.name = 'Home'
             entry.path = '{{Home}}'
-            entry.type = silkycoms.FSEntry.Type.SPECIAL_FOLDER
-            response.contents.append(entry)
+            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             if platform.uname().system == 'Windows':
                 for drive_letter in range(ord('A'), ord('Z') + 1):
                     drive = chr(drive_letter) + ':'
                     if os.path.exists(drive):
-                        entry = silkycoms.FSEntry()
+                        entry = response.contents.add()
                         entry.name = drive
                         entry.path = drive
-                        entry.type = silkycoms.FSEntry.Type.DRIVE
-                        response.contents.append(entry)
+                        entry.type = silkycoms.FSEntry.Type.Value('DRIVE')
 
             self._coms.send(response, self._instance_id, request)
 
@@ -175,21 +171,20 @@ class Instance:
             try:
                 for direntry in os.scandir(path + '/'):  # add a / in case we get C:
                     if direntry.is_dir():
-                        entry_type = silkycoms.FSEntry.Type.FOLDER
+                        entry_type = silkycoms.FSEntry.Type.Value('FOLDER')
                         if utils.winjunclib.islink(direntry.path):
                             is_valid = False
                         else:
                             is_valid = True
                     else:
-                        entry_type = silkycoms.FSEntry.Type.FILE
+                        entry_type = silkycoms.FSEntry.Type.Value('FILE')
                         is_valid = formatio.is_supported(direntry.name)
 
                     if is_valid:
-                        entry = silkycoms.FSEntry()
+                        entry = response.contents.add()
                         entry.name = direntry.name
                         entry.type = entry_type
                         entry.path = posixpath.join(location, direntry.name)
-                        response.contents.append(entry)
 
                 self._coms.send(response, self._instance_id, request)
 
@@ -238,7 +233,7 @@ class Instance:
 
     def _open_callback(self, task, progress):
         response = silkycoms.ComsMessage()
-        response.open.status = silkycoms.Status.IN_PROGRESS
+        response.open.status = silkycoms.Status.Value('IN_PROGRESS')
         response.open.progress = progress
         response.open.progress_task = task
 
@@ -246,8 +241,17 @@ class Instance:
 
     def _on_analysis(self, request):
 
-        if 'options' not in request:
+        if request.HasField('options'):
 
+            analysisId = request.analysisId
+            options = request.options
+
+            request.datasetId = self._instance_id
+            request.analysisId = analysisId
+            request.options = options
+            self._em.send(request)
+
+        else:
             try:
                 analysis = self._analyses.create(request.analysisId, request.name, request.ns)
                 analysisId = request.analysisId
@@ -256,7 +260,7 @@ class Instance:
                 response = silkycoms.AnalysisResponse()
                 response.analysisId = analysisId
                 response.options = options
-                response.status = silkycoms.AnalysisStatus.ANALYSIS_NONE
+                response.status = silkycoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
                 self._coms.send(response, self._instance_id, request, False)
 
@@ -265,7 +269,7 @@ class Instance:
                 request.options = options
                 self._em.send(request)
 
-            except Exception as e:
+            except OSError as e:
 
                 print('Could not create analysis: ' + str(e))
                 self._coms.discard(request)
@@ -278,20 +282,11 @@ class Instance:
                 #
                 # self._coms.send(response, self._instance_id, request)
 
-        else:
-            analysisId = request.analysisId
-            options = request.options
-
-            request.datasetId = self._instance_id
-            request.analysisId = analysisId
-            request.options = options
-            self._em.send(request)
-
     def _on_info(self, request):
 
         response = silkycoms.InfoResponse()
 
-        if request.op == silkycoms.GetSet.SET:
+        if request.op == silkycoms.GetSet.Value('SET'):
             self._on_set_info(request, response)
         else:
             self._on_get_info(request, response)
@@ -302,9 +297,9 @@ class Instance:
         if self._dataset is None:
             raise RuntimeError('Attempt to set info when no dataset loaded')
 
-        response.op = silkycoms.GetSet.SET
+        response.op = silkycoms.GetSet.Value('SET')
 
-        if 'schema' in request:
+        if request.HasField('schema'):
             for i in range(len(request.schema.fields)):
                 field = request.schema.fields[i]
                 column = self._dataset[field.name]
@@ -315,7 +310,7 @@ class Instance:
                     for level in field.levels:
                         levels.append((level.value, level.label))
 
-                column.change(field.measureType.value, levels)
+                column.change(field.measureType, levels)
 
     def _on_get_info(self, request, response):
 
@@ -329,25 +324,21 @@ class Instance:
 
             for column in self._dataset:
 
-                field = silkycoms.DataSetSchema.Field()
+                field = response.schema.fields.add()
                 field.name = column.name
-                field.measureType = silkycoms.DataSetSchema.Field.MeasureType(column.type.value)
+                field.measureType = column.type.value
                 field.width = 100
                 field.dps = column.dps
 
                 if column.type is MeasureType.NOMINAL_TEXT:
                     for level in column.levels:
-                        levelEntry = silkycoms.VariableLevel()
+                        levelEntry = field.levels.add()
                         levelEntry.label = level[1]
-                        field.levels.append(levelEntry)
                 elif column.type is MeasureType.NOMINAL or column.type is MeasureType.ORDINAL:
                     for level in column.levels:
-                        levelEntry = silkycoms.VariableLevel()
+                        levelEntry = field.levels.add()
                         levelEntry.value = level[0]
                         levelEntry.label = level[1]
-                        field.levels.append(levelEntry)
-
-                response.schema.fields.append(field)
 
     def _on_cells(self, request):
 
@@ -373,7 +364,7 @@ class Instance:
         for c in range(colStart, colStart + colCount):
             column = dataset[c]
 
-            colRes = silkycoms.CellsResponse.Column()
+            colRes = response.columns.add()
 
             if column.type == MeasureType.CONTINUOUS:
                 for r in range(rowStart, rowStart + rowCount):
@@ -387,8 +378,6 @@ class Instance:
                 for r in range(rowStart, rowStart + rowCount):
                     value = column[r]
                     colRes.ints.values.append(value)
-
-            response.columns.append(colRes)
 
         self._coms.send(response, self._instance_id, request)
 
@@ -432,18 +421,14 @@ class Instance:
         response = silkycoms.SettingsResponse()
 
         for recent in recents:
-            recentEntry = silkycoms.DataSetEntry()
+            recentEntry = response.recents.add()
             recentEntry.name = recent['name']
             recentEntry.path = recent['path']
             recentEntry.location = recent['location']
 
-            response.recents.append(recentEntry)
-
         for localFSRecent in localFSRecents:
-            recent = silkycoms.DataSetEntry()
-            recent.name = localFSRecent['name']
-            recent.path = localFSRecent['path']
-
-            response.localFSRecents.append(recent)
+            recentEntry = response.localFSRecents.add()
+            recentEntry.name = localFSRecent['name']
+            recentEntry.path = localFSRecent['path']
 
         self._coms.send(response, self._instance_id, request)

@@ -10,7 +10,7 @@ from subprocess import Popen
 
 import nanomsg
 
-import silkycoms
+import silkycoms_pb2 as silkycoms
 
 
 class EngineManager:
@@ -74,26 +74,27 @@ class EngineManager:
 
         message = silkycoms.ComsMessage()
         message.id = self._nextId
-        message.payload = request.encode_to_bytes()
+        message.payload = request.SerializeToString()
         message.payloadType = "AnalysisRequest"
 
         self._requests_sent[message.id] = request
 
         self._nextId += 1
 
-        self._socket.send(message.encode_to_bytes())
+        self._socket.send(message.SerializeToString())
 
     def _receive(self, message):
 
         if message.id in self._requests_sent:
             request = self._requests_sent[message.id]
-            results = silkycoms.AnalysisResponse.create_from_bytes(message.payload)
+            results = silkycoms.AnalysisResponse()
+            results.ParseFromString(message.payload)
 
             complete = False
 
-            if results.status == silkycoms.AnalysisStatus.ANALYSIS_COMPLETE:
+            if results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'):
                 complete = True
-            elif results.status == silkycoms.AnalysisStatus.ANALYSIS_INITED and request.perform == silkycoms.AnalysisRequest.Perform.INIT:
+            elif results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_INITED') and request.perform == silkycoms.AnalysisRequest.Perform.Value('INIT'):
                 complete = True
 
             self._notify_results(results, request, complete)
@@ -117,7 +118,8 @@ class EngineManager:
         while parent.is_alive():
             try:
                 bytes = self._socket.recv()
-                message = silkycoms.ComsMessage.create_from_bytes(bytes)
+                message = silkycoms.ComsMessage()
+                message.ParseFromString(bytes)
                 self._receive(message)
 
             except nanomsg.NanoMsgAPIError as e:
