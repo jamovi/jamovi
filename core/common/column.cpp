@@ -47,41 +47,41 @@ ColumnStruct *Column::struc() const
     return _mm->resolve(_rel);
 }
 
-int Column::labelCount() const
+int Column::levelCount() const
 {
-    return struc()->labelsUsed;
+    return struc()->levelsUsed;
 }
 
-map<int, string> Column::labels() const
+map<int, string> Column::levels() const
 {
     map<int, string> m;
 
     ColumnStruct *s = struc();
-    Label *labels = _mm->resolve(s->labels);
+    Level *levels = _mm->resolve(s->levels);
 
-    for (int i = 0; i < s->labelsUsed; i++)
+    for (int i = 0; i < s->levelsUsed; i++)
     {
-        Label &l = labels[i];
+        Level &l = levels[i];
         m[l.value] = _mm->resolve(l.label);
     }
 
     return m;
 }
 
-const char *Column::getLabel(int value)
+const char *Column::getLevel(int value)
 {
     if (value == INT_MIN)
         return "";
 
     ColumnStruct *s = struc();
-    Label *labels = _mm->resolve(s->labels);
+    Level *levels = _mm->resolve(s->levels);
 
-    for (int i = 0; i < s->labelsUsed; i++)
+    for (int i = 0; i < s->levelsUsed; i++)
     {
-        Label &l = labels[i];
+        Level &l = levels[i];
         if (l.value == value)
             return _mm->resolve(l.label);
     }
 
-    throw runtime_error("label not found");
+    throw runtime_error("level not found");
 }

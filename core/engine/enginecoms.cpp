@@ -67,5 +67,8 @@ void EngineComs::parse(char *data, int len)
     if (analysisRequest.has_perform())
         analysis->perform = analysisRequest.perform();
 
+    if (analysisRequest.changed_size() > 0)
+        analysis->changed.assign(analysisRequest.changed().begin(), analysisRequest.changed().end());
+
     analysisRequested(request.id(), analysis);
 }

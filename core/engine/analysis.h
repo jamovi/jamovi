@@ -6,6 +6,7 @@
 #define ANALYSIS_H
 
 #include <string>
+#include <list>
 
 class Analysis
 {
@@ -23,6 +24,7 @@ public:
     std::string options;
     std::string nameAndId;
     int perform;
+    std::list<std::string> changed;
 
     bool requiresDataset;
     std::string datasetId;

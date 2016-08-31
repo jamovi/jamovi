@@ -326,15 +326,15 @@ class Instance:
 
                 field = response.schema.fields.add()
                 field.name = column.name
-                field.measureType = column.type.value
+                field.measureType = column.measure_type.value
                 field.width = 100
                 field.dps = column.dps
 
-                if column.type is MeasureType.NOMINAL_TEXT:
+                if column.measure_type is MeasureType.NOMINAL_TEXT:
                     for level in column.levels:
                         levelEntry = field.levels.add()
                         levelEntry.label = level[1]
-                elif column.type is MeasureType.NOMINAL or column.type is MeasureType.ORDINAL:
+                elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
                     for level in column.levels:
                         levelEntry = field.levels.add()
                         levelEntry.value = level[0]
@@ -366,11 +366,11 @@ class Instance:
 
             colRes = response.columns.add()
 
-            if column.type == MeasureType.CONTINUOUS:
+            if column.measure_type == MeasureType.CONTINUOUS:
                 for r in range(rowStart, rowStart + rowCount):
                     value = column[r]
                     colRes.doubles.values.append(value)
-            elif column.type == MeasureType.NOMINAL_TEXT:
+            elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for r in range(rowStart, rowStart + rowCount):
                     value = column[r]
                     colRes.strings.values.append(value)

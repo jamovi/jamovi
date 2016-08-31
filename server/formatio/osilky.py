@@ -27,8 +27,8 @@ def write(dataset, path):
         for column in dataset:
             field = { }
             field['name'] = column.name
-            field['measureType'] = MeasureType.stringify(column.type)
-            if column.type == MeasureType.CONTINUOUS:
+            field['measureType'] = MeasureType.stringify(column.measure_type)
+            if column.measure_type == MeasureType.CONTINUOUS:
                 field['type'] = 'number'
             else:
                 field['type'] = 'integer'
@@ -57,7 +57,7 @@ def write(dataset, path):
         row_count = dataset.row_count
         required_bytes = 0
         for column in dataset:
-            if column.type == MeasureType.CONTINUOUS:
+            if column.measure_type == MeasureType.CONTINUOUS:
                 required_bytes += (8 * row_count)
             else:
                 required_bytes += (4 * row_count)
@@ -66,7 +66,7 @@ def write(dataset, path):
         temp_file.truncate(required_bytes)
 
         for column in dataset:
-            if column.type == MeasureType.CONTINUOUS:
+            if column.measure_type == MeasureType.CONTINUOUS:
                 for i in range(0, row_count):
                     value = column.raw(i)
                     byts = struct.pack('<d', value)
@@ -96,7 +96,7 @@ def read(dataset, path):
             dataset.append_column(meta_column['name'])
             column = dataset[dataset.column_count - 1]
             measure_type = MeasureType.parse(meta_column['measureType'])
-            column.type = measure_type
+            column.measure_type = measure_type
 
         row_count = meta_dataset['rowCount']
 
@@ -111,7 +111,7 @@ def read(dataset, path):
             data_file = open(data_path, 'rb')
 
             for column in dataset:
-                if column.type == MeasureType.CONTINUOUS:
+                if column.measure_type == MeasureType.CONTINUOUS:
                     for i in range(row_count):
                         byts = data_file.read(8)
                         value = struct.unpack('<d', byts)

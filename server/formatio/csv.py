@@ -163,7 +163,7 @@ class ColumnWriter:
                 self._column.add_level(i, label)
 
         self._ruminated = True
-        self._column.type = self._measure_type
+        self._column.measure_type = self._measure_type
         self._column.dps = self._dps
 
     def parse_row(self, row, row_no):

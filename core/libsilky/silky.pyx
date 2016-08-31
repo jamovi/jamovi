@@ -94,11 +94,11 @@ cdef extern from "columnw.h":
         void append[T](const T &value)
         int &intCell(int index)
         double &doubleCell(int index)
-        const char *getLabel(int value)
-        void addLabel(int value, const char *label)
-        void clearLabels()
-        int labelCount()
-        map[int, string] labels()
+        const char *getLevel(int value)
+        void addLevel(int value, const char *label)
+        void clearLevels()
+        int levelCount()
+        map[int, string] levels()
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
@@ -129,7 +129,7 @@ cdef class Column:
     def name(self):
         return self._this.c_str().decode('utf-8')
 
-    property type:
+    property measure_type:
         def __get__(self):
             return MeasureType(self._this.columnType())
 
@@ -146,7 +146,7 @@ cdef class Column:
             self._this.setDPs(dps)
 
     def determine_dps(self):
-        if self.type == MeasureType.CONTINUOUS:
+        if self.measure_type == MeasureType.CONTINUOUS:
             ceiling_dps = 3
             max_dps = 0
             for value in self:
@@ -182,21 +182,21 @@ cdef class Column:
             raise ValueError('must be either int or float')
 
     def add_level(self, raw, label):
-        self._this.addLabel(raw, label.encode('utf-8'))
+        self._this.addLevel(raw, label.encode('utf-8'))
 
     def clear_levels(self):
-        self._this.clearLabels()
+        self._this.clearLevels()
 
     @property
     def has_levels(self):
-        return self._this.labelCount() > 0
+        return self.measure_type != MeasureType.CONTINUOUS
 
     @property
     def levels(self):
         if self.has_levels is False:
             return None
         arr = [ ]
-        levels = self._this.labels()
+        levels = self._this.levels()
         for level in levels:
             arr.append((level.first, level.second.decode('utf-8')))
         return arr
@@ -219,11 +219,11 @@ cdef class Column:
             raise ValueError('must be either int or float')
 
     def __getitem__(self, index):
-        if self.type == MeasureType.CONTINUOUS:
+        if self.measure_type == MeasureType.CONTINUOUS:
             return self._this.doubleCell(index)
-        elif self.type == MeasureType.NOMINAL_TEXT:
+        elif self.measure_type == MeasureType.NOMINAL_TEXT:
             raw = self._this.intCell(index)
-            return self._this.getLabel(raw).decode()
+            return self._this.getLevel(raw).decode()
         else:
             return self._this.intCell(index)
 
@@ -231,7 +231,7 @@ cdef class Column:
         return CellIterator(self)
 
     def raw(self, index):
-        if self.type == MeasureType.CONTINUOUS:
+        if self.measure_type == MeasureType.CONTINUOUS:
             return self._this.doubleCell(index)
         else:
             return self._this.intCell(index)
@@ -242,9 +242,11 @@ cdef class Column:
         if type(measure_type) is not MeasureType:
             measure_type = MeasureType(measure_type)
 
-        values = list(self)
+        new_type = measure_type
+        old_type = self.measure_type
 
-        if measure_type == MeasureType.CONTINUOUS:
+        if new_type == MeasureType.CONTINUOUS:
+            values = list(self)
             nan = float('nan')
             for i in range(len(values)):
                 try:
@@ -253,27 +255,96 @@ cdef class Column:
                     values[i] = nan
 
             self.clear_levels()
-            self.type = MeasureType.CONTINUOUS
+            self.measure_type = MeasureType.CONTINUOUS
             for i in range(len(values)):
                 self[i] = values[i]
 
-        elif measure_type == MeasureType.NOMINAL_TEXT and self.type == MeasureType.NOMINAL_TEXT:
-            if levels is not None:
-                old_levels = self.levels
-                recode = { }
-                for old_level in old_levels:
-                    for new_level in levels:
-                        if old_level[1] == new_level[1]:
-                            recode[old_level[0]] = new_level[0]
-                            break
-
-                for row_no in range(self.row_count):
-                    v = &self._this.intCell(row_no)
-                    v[0] = recode.get(v[0], -2147483648)
-
+        elif new_type == MeasureType.NOMINAL or new_type == MeasureType.ORDINAL:
+            if old_type == MeasureType.NOMINAL or old_type == MeasureType.ORDINAL:
+                self.measure_type = new_type
+            elif old_type == MeasureType.NOMINAL_TEXT or old_type == MeasureType.CONTINUOUS:
+                uniques = set()
+                for i in range(self.row_count):
+                    v = &self._this.intCell(i)
+                    try:
+                        v[0] = round(float(self[i]))
+                        uniques.add(v[0])
+                    except ValueError as e:
+                        v[0] = -2147483648
                 self.clear_levels()
-                for level in levels:
-                    self.add_level(level[0], level[1])
+                for value in uniques:
+                    self.add_level(value, str(value))
+                self.measure_type = new_type
+
+        elif new_type == MeasureType.NOMINAL_TEXT:
+            if old_type == MeasureType.NOMINAL_TEXT:
+                if levels is not None:
+                    old_levels = self.levels
+                    recode = { }
+                    for old_level in old_levels:
+                        for new_level in levels:
+                            if old_level[1] == new_level[1]:
+                                recode[old_level[0]] = new_level[0]
+                                break
+
+                    for row_no in range(self.row_count):
+                        v = &self._this.intCell(row_no)
+                        v[0] = recode.get(v[0], -2147483648)
+
+                    self.clear_levels()
+                    for level in levels:
+                        self.add_level(level[0], level[1])
+                self.measure_type = MeasureType.NOMINAL_TEXT
+
+            elif old_type == MeasureType.CONTINUOUS:
+                nan = float('nan')
+
+                uniques = set()
+                for value in self:
+                    if math.isnan(value) == False:
+                        uniques.add(value)
+                uniques = list(uniques)
+                uniques.sort()
+
+                v2i = { }
+                for i in range(len(uniques)):
+                    v2i[uniques[i]] = i
+                for i in range(self.row_count):
+                    value = self[i]
+                    v = &self._this.intCell(i)
+                    if math.isnan(value):
+                        v[0] = -2147483648
+                    else:
+                        v[0] = v2i[value]
+                self.clear_levels()
+                for i in range(len(uniques)):
+                    self.add_level(i, str(uniques[i]))
+
+                self.measure_type = MeasureType.NOMINAL_TEXT
+            else:
+                nan = -2147483648
+
+                uniques = set()
+                for value in self:
+                    if value != -2147483648:
+                        uniques.add(value)
+                uniques = list(uniques)
+                uniques.sort()
+
+                v2i = { }
+                for i in range(len(uniques)):
+                    v2i[uniques[i]] = i
+                for i in range(self.row_count):
+                    value = self[i]
+                    v = &self._this.intCell(i)
+                    if math.isnan(value):
+                        v[0] = -2147483648
+                    else:
+                        v[0] = v2i[value]
+                self.clear_levels()
+                for i in range(len(uniques)):
+                    self.add_level(i, str(uniques[i]))
+                self.measure_type = MeasureType.NOMINAL_TEXT
 
         if dps is not None:
             self.dps = dps

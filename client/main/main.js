@@ -2,11 +2,11 @@
 
 const $ = require('jquery');
 
-const Host = require('./host');
+const host = require('./host');
 
 let Coms = require('./coms');
 let coms = new Coms();
-coms.setBaseUrl(Host.baseUrl);
+coms.setBaseUrl(host.baseUrl);
 
 const TableView   = require('./tableview');
 const ResultsView = require('./results');
@@ -63,19 +63,19 @@ $(document).ready(function() {
     else
         $('body').addClass("other");
 
-    if (Host.isElectron)
+    if (host.isElectron)
         $('body').addClass('electron');
 
     $(window).on('keydown', function(event) {
         if (event.key === "F10" || event.keyCode === 121)
-            Host.toggleDevTools();
+            host.toggleDevTools();
     });
 
-    if (Host.isElectron && navigator.platform === "Win32") {
+    if (host.isElectron && navigator.platform === "Win32") {
 
-        $('#close-button').on('click', event => Host.closeWindow());
-        $('#min-button').on('click', event => Host.minimizeWindow());
-        $('#max-button').on('click', event => Host.maximizeWindow());
+        $('#close-button').on('click', event => host.closeWindow());
+        $('#min-button').on('click', event => host.minimizeWindow());
+        $('#max-button').on('click', event => host.maximizeWindow());
     }
 
     document.oncontextmenu = function() { return false; };
@@ -135,18 +135,18 @@ $(document).ready(function() {
     let mainTable   = new TableView({el : "#main-table", model : dataSetModel });
     let progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
 
-    let optionsUrl = 'http://localhost:' + Host.analysisUIPort + '/';
+    let optionsUrl = 'http://localhost:' + host.analysisUIPort + '/';
     let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : optionsUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
 
-    let resultsUrl = 'http://localhost:' + Host.resultsViewPort + '/';
+    let resultsUrl = 'http://localhost:' + host.resultsViewPort + '/';
     let resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
 
     Promise.resolve(function() {
 
-        return $.post('http://localhost:' + Host.mainPort + '/login');
+        return $.post('http://localhost:' + host.mainPort + '/login');
 
     }).then(function() {
 

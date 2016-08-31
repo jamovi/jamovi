@@ -30,7 +30,7 @@ typedef struct
     int capacity;
     char *label;
 
-} Label;
+} Level;
 
 typedef struct
 {
@@ -43,9 +43,9 @@ typedef struct
     int blockCapacity;
     Block **blocks;
 
-    int labelsUsed;
-    int labelsCapacity;
-    Label *labels;
+    int levelsUsed;
+    int levelsCapacity;
+    Level *levels;
 
     int dps;
 
@@ -65,9 +65,9 @@ public:
     enum ColumnType { Misc = 0, NominalText = 1, Nominal = 2, Ordinal = 3, Continuous = 4 };
 
     ColumnType columnType() const;
-    int labelCount() const;
-    std::map<int, std::string> labels() const;
-    const char *getLabel(int value);
+    int levelCount() const;
+    std::map<int, std::string> levels() const;
+    const char *getLevel(int value);
 
     template<typename T> T& cell(int rowIndex)
     {

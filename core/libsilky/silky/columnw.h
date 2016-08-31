@@ -19,8 +19,8 @@ public:
     ColumnW(DataSetW *parent = 0, MemoryMapW *mm = 0, ColumnStruct *rel = 0);
 
     void setColumnType(ColumnType columnType);
-    void addLabel(int value, const char *label);
-    void clearLabels();
+    void addLevel(int value, const char *label);
+    void clearLevels();
     void setDPs(int dps);
 
     template<typename T> void append(const T &value)

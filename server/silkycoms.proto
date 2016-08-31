@@ -175,6 +175,7 @@ message AnalysisRequest {
     optional Perform perform = 5;
     optional string options = 6;
     optional int32 ppi = 7 [default=72];
+    repeated string changed = 8;
 }
 
 enum AnalysisStatus {

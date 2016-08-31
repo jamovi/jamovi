@@ -92,9 +92,8 @@ void DataSetW::appendColumn(string name)
     column = strucC(columnCount);
     column->blocks = blocks;
 
-    column->labelsUsed = 0;
-    column->labelsCapacity = 50;
-    column->labels = _mm->allocateBase<Label>(50);
+    column->levelsUsed = 0;
+    column->levelsCapacity = 0;
 
     struc()->columnCount++;
 }

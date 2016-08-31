@@ -10,7 +10,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const path = require('path');
 
-const Host = require('./host');
+const host = require('./host');
 const Notify = require('./notification');
 
 const Analyses = require('./analyses');
@@ -33,6 +33,7 @@ const Instance = Backbone.Model.extend({
         this.seqNo = 0;
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
+        this._dataSetModel.on('columnChanged', event => this._columnChanged(event));
 
         this._progressModel = new ProgressModel();
 
@@ -105,7 +106,7 @@ const Instance = Backbone.Model.extend({
             promise = instance.connect().then(function() {
                 return instance.open(filePath);
             }).then(function() {
-                Host.openWindow(instance.instanceId());
+                host.openWindow(instance.instanceId());
             });
         }
         else {
@@ -264,7 +265,7 @@ const Instance = Backbone.Model.extend({
         this.set("selectedAnalysis", analysis);
         this._analysisOptionsChanged(analysis);
     },
-    _analysisOptionsChanged : function(analysis) {
+    _analysisOptionsChanged : function(analysis, changed) {
 
         let coms = this.attributes.coms;
 
@@ -274,7 +275,10 @@ const Instance = Backbone.Model.extend({
         analysisRequest.ns = analysis.ns;
         analysisRequest.ppi = 72 * (window.devicePixelRatio || 1);
 
-        if (analysis.isSetup)
+        if (changed)
+            analysisRequest.changed = changed;
+
+        if (analysis.isReady)
             analysisRequest.options = JSON.stringify(analysis.options);
 
         let request = new coms.Messages.ComsMessage();
@@ -295,15 +299,12 @@ const Instance = Backbone.Model.extend({
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
 
-            if (analysis.isSetup === false && _.has(response, "options")) {
-
-                let options = JSON.parse(response.options);
-                analysis.setup(options);
-
+            if (analysis.isReady === false && _.has(response, "options")) {
+                analysis.setup(JSON.parse(response.options));
                 ok = true;
             }
 
-            if (analysis.isSetup && _.has(response, "results") && response.results !== null) {
+            if (analysis.isReady && _.has(response, "results") && response.results !== null) {
                 analysis.setResults(response.results, response.incAsText, response.syntax);
                 ok = true;
             }
@@ -313,7 +314,14 @@ const Instance = Backbone.Model.extend({
                 console.log(response);
             }
         }
+    },
+    _columnChanged : function(event) {
 
+        for (let analysis of this._analyses) {
+            let using = analysis.getUsing();
+            if (using.includes(event.name))
+                this._analysisOptionsChanged(analysis, [ event.name ]);
+        }
     },
     _stringifyMeasureType : function(measureType) {
         switch (measureType) {

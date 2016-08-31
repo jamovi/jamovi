@@ -82,11 +82,9 @@
     opacity: 0 ;
 }
 
-.silky-column[data-measuretype="continuous"] {
-    text-align: right ;
-}
-
-.silky-column[data-measuretype="nominal"] {
+.silky-column[data-measuretype="continuous"],
+.silky-column[data-measuretype="nominal"],
+.silky-column[data-measuretype="ordinal"] {
     text-align: right ;
 }
 

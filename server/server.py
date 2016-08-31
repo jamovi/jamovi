@@ -83,8 +83,11 @@ class AnalysisDescriptor(RequestHandler):
     def initialize(self, path):
         self._path = path
 
-    def get(self, module_name, analysis_name):
-        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name.lower() + '.js')
+    def get(self, module_name, analysis_name, part):
+        if part == '':
+            part = 'js'
+
+        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name.lower() + '.' + part)
         analysis_path = os.path.realpath(analysis_path)
         try:
             with open(analysis_path, 'rb') as file:
@@ -161,7 +164,8 @@ class Server:
             (r'/coms', ClientConnection, { 'session_path': session_path }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
-            (r'/analyses/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
+            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
+            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
             (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
         ])

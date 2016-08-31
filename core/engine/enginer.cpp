@@ -75,7 +75,11 @@ void EngineR::run(Analysis *analysis)
 
     rInside.parseEvalQNT("rm(list=c('readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
-    rInside.parseEvalQNT("analysis$init();analysis$.load()\n");
+    rInside.parseEvalQNT("analysis$init()");
+
+    Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
+    rInside["changed"] = changed;
+    rInside.parseEvalQNT("analysis$.load(changed)");
 
     Rcpp::RawVector rawVec = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw(rawVec.begin(), rawVec.end());
@@ -167,11 +171,11 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
         {
             int MISSING = Rcpp::IntegerVector::get_na();
 
-            // populate labels
+            // populate levels
 
-            map<int, string> m = column.labels();
+            map<int, string> m = column.levels();
 
-            Rcpp::CharacterVector labels(m.size());
+            Rcpp::CharacterVector levels(m.size());
             Rcpp::IntegerVector values(m.size());
 
             map<int, int> indexes;
@@ -180,7 +184,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
             for (auto p : m)
             {
                 values[j] = p.first;
-                labels[j] = p.second;
+                levels[j] = p.second;
                 j++;
                 indexes[p.first] = j;
             }
@@ -196,9 +200,9 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
                     v[j] = indexes[value];
             }
 
-            // assign labels
+            // assign levels
 
-            v.attr("levels") = labels;
+            v.attr("levels") = levels;
 
             if (column.columnType() == Column::NominalText)
             {

@@ -10,7 +10,7 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
 
-var Host = require('./host');
+var host = require('./host');
 
 var FSEntryListModel = Backbone.Model.extend({
     defaults: {
@@ -546,7 +546,7 @@ var BackstagePlaces = SilkyView.extend({
     },
     _browseClicked : function() {
 
-        if (Host.isElectron) {
+        if (host.isElectron) {
 
             var remote = window.require('electron').remote;
             var dialog = remote.dialog;

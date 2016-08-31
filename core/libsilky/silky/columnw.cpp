@@ -27,12 +27,34 @@ void ColumnW::setDPs(int dps)
     struc()->dps = dps;
 }
 
-void ColumnW::addLabel(int value, const char *label)
+void ColumnW::addLevel(int value, const char *label)
 {
     ColumnStruct *s = struc();
 
-    if (s->labelsUsed + 1 >= s->labelsCapacity)
-        throw runtime_error("max labels reached");
+    if (s->levelsUsed + 1 >= s->levelsCapacity)
+    {
+        int oldCapacity = s->levelsCapacity;
+        int newCapacity = (oldCapacity == 0) ? 50 : 2 * oldCapacity;
+
+        Level *newLevels = _mm->allocate<Level>(newCapacity);
+        s = struc();
+
+        if (oldCapacity > 0)
+        {
+            Level *oldLevels = _mm->resolve(s->levels);
+
+            for (int i = 0; i < s->levelsUsed; i++)
+            {
+                Level &oldLevel = oldLevels[i];
+                Level &newLevel = newLevels[i];
+                newLevel.value = oldLevel.value;
+                newLevel.label = oldLevel.label;
+            }
+        }
+
+        s->levels = _mm->base(newLevels);
+        s->levelsCapacity = newCapacity;
+    }
 
     int length = strlen(label)+1;
     size_t allocated;
@@ -42,16 +64,16 @@ void ColumnW::addLabel(int value, const char *label)
     std::memcpy(chars, label, length);
 
     s = struc();
-    Label &l = _mm->resolve(s->labels)[s->labelsUsed];
+    Level &l = _mm->resolve(s->levels)[s->levelsUsed];
 
     l.value = value;
     l.capacity = allocated;
     l.label = _mm->base(chars);
 
-    s->labelsUsed++;
+    s->levelsUsed++;
 }
 
-void ColumnW::clearLabels()
+void ColumnW::clearLevels()
 {
-    struc()->labelsUsed = 0;
+    struc()->levelsUsed = 0;
 }

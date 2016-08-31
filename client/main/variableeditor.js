@@ -194,7 +194,7 @@ const EditorWidget = Backbone.View.extend({
         this.$body = $('<div class="silky-variable-editor-widget-body"></div>').appendTo(this.$el);
         this.$left = $('<div class="silky-variable-editor-widget-left"></div>').appendTo(this.$body);
         this.$types = $('<div class="silky-variable-editor-widget-types"></div>').appendTo(this.$left);
-        this.$autoType = $('<div class="silky-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
+        this.$autoType = $('<div class="silky-variable-editor-autotype" style="display: none ;">(auto adjusting)</div>').appendTo(this.$left);
         this.$levels = $('<div class="silky-variable-editor-levels"></div>').appendTo(this.$body);
         this.$levelItems = $();
 
