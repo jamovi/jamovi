@@ -87,6 +87,6 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 all: $(TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) silkycoms.pb.cc silkycoms.pc.h
 
 .PHONY:	clean all
