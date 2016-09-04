@@ -72,7 +72,7 @@ var RibbonView = Backbone.View.extend({
 
         var html = '';
         html += '<div class="silky-ribbon-header">';
-        html += '    <div class="silky-ribbon-menu-button"><span class="mif-menu"><span></div>';
+        html += '    <div class="silky-ribbon-menu-button"><span class="mif-more-vert"><span></div>';
         html += '</div>';
         html += '<div class="silky-ribbon-body">';
         html += '</div>';
