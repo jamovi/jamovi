@@ -49,8 +49,8 @@ def write(dataset, path):
 
         xdata = { }
         for column in dataset:
-            if column.has_labels:
-                xdata[column.name] = { 'labels': column.labels }
+            if column.has_levels:
+                xdata[column.name] = { 'labels': column.levels }
         zip.writestr('xdata.json', json.dumps(xdata), zipfile.ZIP_DEFLATED)
         xdata = None
 
@@ -130,4 +130,4 @@ def read(dataset, path):
             if column.name in xdata:
                 meta_labels = xdata[column.name]['labels']
                 for meta_label in meta_labels:
-                    column.add_label(meta_label[0], meta_label[1])
+                    column.append_level(meta_label[0], meta_label[1])

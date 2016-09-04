@@ -17,9 +17,12 @@ ColumnW::ColumnW(DataSetW *parent, MemoryMapW *mm, ColumnStruct *rel)
     _mm = mm;
 }
 
-void ColumnW::setColumnType(Column::ColumnType columnType)
+void ColumnW::setMeasureType(MeasureType::Type measureType)
 {
-    struc()->columnType = (char)columnType;
+    struc()->measureType = (char)measureType;
+
+    if (measureType == MeasureType::CONTINUOUS)
+        setRowCount<double>(rowCount());
 }
 
 void ColumnW::setDPs(int dps)
@@ -27,7 +30,7 @@ void ColumnW::setDPs(int dps)
     struc()->dps = dps;
 }
 
-void ColumnW::addLevel(int value, const char *label)
+void ColumnW::appendLevel(int value, const char *label)
 {
     ColumnStruct *s = struc();
 
@@ -71,6 +74,42 @@ void ColumnW::addLevel(int value, const char *label)
     l.label = _mm->base(chars);
 
     s->levelsUsed++;
+}
+
+void ColumnW::insertLevel(int value, const char *label)
+{
+    appendLevel(value, label); // add to end
+
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+    int lastIndex = s->levelsUsed - 1;
+    char *baseLabel = levels[lastIndex].label;
+
+    bool inserted = false;
+
+    for (int i = lastIndex - 1; i >= 0; i--)
+    {
+        Level &level = levels[i];
+        Level &nextLevel = levels[i+1];
+        if (level.value > value)
+        {
+            nextLevel = level;
+        }
+        else
+        {
+            nextLevel.value = value;
+            nextLevel.label = baseLabel;
+            inserted = true;
+            break;
+        }
+    }
+
+    if ( ! inserted)
+    {
+        Level &level = levels[0];
+        level.value = value;
+        level.label = baseLabel;
+    }
 }
 
 void ColumnW::clearLevels()

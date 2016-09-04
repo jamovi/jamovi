@@ -35,7 +35,7 @@ typedef struct
 typedef struct
 {
     char *name;
-    char columnType;
+    char measureType;
     int rowCount;
     int capacity;
 
@@ -51,30 +51,42 @@ typedef struct
 
 } ColumnStruct;
 
+namespace MeasureType
+{
+    enum Type
+    {
+        MISC = 0,
+        NOMINAL_TEXT = 1,
+        NOMINAL = 2,
+        ORDINAL = 3,
+        CONTINUOUS = 4
+    };
+}
+
 class Column
 {
 public:
 
     Column(DataSet *parent = 0, MemoryMap *mm = 0, ColumnStruct *rel = 0);
 
-    std::string name() const;
-    const char *c_str() const;
+    const char *name() const;
     int rowCount() const;
     int dps() const;
 
-    enum ColumnType { Misc = 0, NominalText = 1, Nominal = 2, Ordinal = 3, Continuous = 4 };
-
-    ColumnType columnType() const;
+    MeasureType::Type measureType() const;
     int levelCount() const;
     std::map<int, std::string> levels() const;
-    const char *getLevel(int value);
+    const char *getLabel(int value) const;
+    int getValue(const char *label) const;
+    bool hasLevel(const char *label) const;
+    bool hasLevel(int value) const;
 
     template<typename T> T& cell(int rowIndex)
     {
         ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
 
         if (rowIndex >= cs->rowCount)
-            throw "index out of bounds";
+            throw std::runtime_error("index out of bounds");
 
         int blockIndex = rowIndex * sizeof(T) / VALUES_SPACE;
         Block **blocks = _mm->resolve<Block*>(cs->blocks);

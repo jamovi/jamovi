@@ -118,7 +118,9 @@ input.silky-table-cell-selected {
     cursor: default ;
 }
 
-.silky-table-cell-selected[data-measuretype="continuous"] {
+.silky-table-cell-selected[data-measuretype="continuous"],
+.silky-table-cell-selected[data-measuretype="nominal"],
+.silky-table-cell-selected[data-measuretype="ordinal"] {
     text-align: right ;
 }
 

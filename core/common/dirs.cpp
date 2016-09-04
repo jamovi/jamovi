@@ -21,7 +21,7 @@
 #include <boost/nowide/convert.hpp>
 
 #include "appinfo.h"
-#include "utils2.h"
+#include "utils.h"
 
 using namespace std;
 using namespace boost;
@@ -148,7 +148,7 @@ string Dirs::exePath()
 
 #elif defined(__APPLE__)
 
-        unsigned long pid = Utils2::currentPID();
+        unsigned long pid = Utils::currentPID();
 
         char buf[PROC_PIDPATHINFO_MAXSIZE];
         int ret = proc_pidpath (pid, buf, sizeof(buf));
@@ -206,7 +206,7 @@ string Dirs::exeDir()
 
 #elif defined(__APPLE__)
 
-        unsigned long pid = Utils2::currentPID();
+        unsigned long pid = Utils::currentPID();
 
         char buf[PROC_PIDPATHINFO_MAXSIZE];
         int ret = proc_pidpath (pid, buf, sizeof(buf));

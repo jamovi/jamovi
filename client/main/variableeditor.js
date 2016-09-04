@@ -163,6 +163,10 @@ const VariableModel = Backbone.Model.extend({
         this.set(dict);
     },
     apply : function() {
+
+        if (this.attributes.changes === false)
+            return;
+
         let values = {
             name: this.attributes.name,
             type: this.attributes.type,
@@ -170,7 +174,7 @@ const VariableModel = Backbone.Model.extend({
             dp: this.attributes.dp,
         };
 
-        this.dataset.setColumn(this.attributes.name, values);
+        this.dataset.changeColumn(this.attributes.name, values);
 
         this.original = values;
         this.set(this.original);
@@ -244,6 +248,8 @@ const EditorWidget = Backbone.View.extend({
     _moveUp: function() {
         if (this.attached === false)
             return;
+        if (this.model.attributes.type !== 'nominaltext')
+            return;
         let index = this.selectedLevelIndex;
         if (index < 1)
             return;
@@ -257,6 +263,8 @@ const EditorWidget = Backbone.View.extend({
     _moveDown: function() {
         if (this.attached === false)
             return;
+        if (this.model.attributes.type !== 'nominaltext')
+            return;
         let index = this.selectedLevelIndex;
         let levels = this.model.get('levels');
         if (index === -1 || index >= levels.length - 1)
@@ -268,7 +276,7 @@ const EditorWidget = Backbone.View.extend({
         this.model.set('levels', clone);
     },
     _enableDisableMoveButtons: function() {
-        if (this.model.get('type') === 'nominaltext') {
+        if (this.model.attributes.type === 'nominaltext') {
             let levels = this.model.get('levels');
             let index  = this.selectedLevelIndex;
             this.$moveUp.toggleClass('disabled', index < 1);
@@ -328,6 +336,7 @@ const EditorWidget = Backbone.View.extend({
         });
     },
     detach : function() {
+        this.model.apply();
         this.attached = false;
     },
     attach : function() {

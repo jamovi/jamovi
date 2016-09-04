@@ -38,14 +38,14 @@ ColumnStruct *DataSet::strucC(int index) const
     return column;
 }
 
-Column DataSet::operator[](const string &name)
+Column DataSet::operator[](const char *name)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
 
     for (int i = 0; i < columnCount(); i++)
     {
         Column column = (*this)[i];
-        if (column.name() == name)
+        if (strcmp(column.name(), name) == 0)
             return column;
     }
 

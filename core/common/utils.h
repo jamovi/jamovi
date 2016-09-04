@@ -2,12 +2,12 @@
 // Copyright (C) 2016 Jonathon Love
 //
 
-#ifndef UTILS2_H
-#define UTILS2_H
+#ifndef Utils_H
+#define Utils_H
 
 #include <string>
 
-class Utils2
+class Utils
 {
 public:
     static unsigned long currentPID();
@@ -16,4 +16,4 @@ public:
     static std::string makeRelative(const std::string &from, const std::string &to);
 };
 
-#endif //UTILS2_H
+#endif //Utils_H

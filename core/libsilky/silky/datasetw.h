@@ -20,11 +20,12 @@ public:
     static DataSetW *create(MemoryMapW *mm);
     static DataSetW *retrieve(MemoryMapW *mm);
 
-    void appendColumn(std::string name);
+    void appendColumn(const char *name);
     void appendRow();
+    void setRowCount(size_t count);
 
     ColumnW operator[](int index);
-    ColumnW operator[](const std::string &name);
+    ColumnW operator[](const char *name);
 
 protected:
 

@@ -106,11 +106,10 @@ class Instance:
         return self._coms is not None
 
     def get_path_to_resource(self, resourceId):
-        resource_path = os.path.join(self._instance_path, resourceId)
-        return resource_path
+        return os.path.join(self._instance_path, resourceId)
 
     def on_request(self, request):
-        if type(request) == silkycoms.CellsRequest:
+        if type(request) == silkycoms.CellsRR:
             self._on_cells(request)
         elif type(request) == silkycoms.OpenRequest:
             self._on_open(request)
@@ -343,43 +342,82 @@ class Instance:
     def _on_cells(self, request):
 
         if self._dataset is None:
-            return None
+            return
 
-        rowStart = request.rowStart
-        colStart = request.columnStart
-        rowEnd   = request.rowEnd
-        colEnd   = request.columnEnd
-        rowCount = rowEnd - rowStart + 1
-        colCount = colEnd - colStart + 1
+        response = silkycoms.CellsRR()
 
-        response = silkycoms.CellsResponse()
+        response.op = request.op
+        response.rowStart    = request.rowStart
+        response.columnStart = request.columnStart
+        response.rowEnd      = request.rowEnd
+        response.columnEnd   = request.columnEnd
 
-        response.request.rowStart    = rowStart
-        response.request.columnStart = colStart
-        response.request.rowEnd      = rowEnd
-        response.request.columnEnd   = colEnd
-
-        dataset = self._dataset
-
-        for c in range(colStart, colStart + colCount):
-            column = dataset[c]
-
-            colRes = response.columns.add()
-
-            if column.measure_type == MeasureType.CONTINUOUS:
-                for r in range(rowStart, rowStart + rowCount):
-                    value = column[r]
-                    colRes.doubles.values.append(value)
-            elif column.measure_type == MeasureType.NOMINAL_TEXT:
-                for r in range(rowStart, rowStart + rowCount):
-                    value = column[r]
-                    colRes.strings.values.append(value)
-            else:
-                for r in range(rowStart, rowStart + rowCount):
-                    value = column[r]
-                    colRes.ints.values.append(value)
+        if request.op == silkycoms.GetSet.Value('SET'):
+            self._on_set_cells(request, response)
+        else:
+            self._on_get_cells(request, response)
 
         self._coms.send(response, self._instance_id, request)
+
+    def _on_set_cells(self, request, response):
+        row_start = request.rowStart
+        col_start = request.columnStart
+        row_end   = request.rowEnd
+        col_end   = request.columnEnd
+        row_count = row_end - row_start + 1
+        col_count = col_end - col_start + 1
+
+        for i in range(col_count):
+            column = self._dataset[col_start + i]
+            col_res = request.columns[i]
+
+            if column.measure_type == MeasureType.CONTINUOUS:
+                for j in range(row_count):
+                    column[row_start + j] = col_res.doubles.values[j]
+            elif column.measure_type == MeasureType.NOMINAL_TEXT:
+                for j in range(row_count):
+                    value = col_res.strings.values[j]
+                    if value == '':
+                        index = -2147483648
+                    elif not column.has_level(value):
+                        index = column.level_count
+                        column.insert_level(index, value)
+                    else:
+                        index = column.get_value(value)
+                    column[row_start + j] = index
+            else:
+                for j in range(row_count):
+                    value = col_res.ints.values[j]
+                    if not column.has_level(value) and value != -2147483648:
+                        column.insert_level(value, str(value))
+                    column[row_start + j] = value
+
+    def _on_get_cells(self, request, response):
+
+        row_start = request.rowStart
+        col_start = request.columnStart
+        row_end   = request.rowEnd
+        col_end   = request.columnEnd
+        row_count = row_end - row_start + 1
+        col_count = col_end - col_start + 1
+
+        for c in range(col_start, col_start + col_count):
+            column = self._dataset[c]
+
+            col_res = response.columns.add()
+
+            if column.measure_type == MeasureType.CONTINUOUS:
+                for r in range(row_start, row_start + row_count):
+                    value = column[r]
+                    col_res.doubles.values.append(value)
+            elif column.measure_type == MeasureType.NOMINAL_TEXT:
+                for r in range(row_start, row_start + row_count):
+                    value = column[r]
+                    col_res.strings.values.append(value)
+            else:
+                for r in range(row_start, row_start + row_count):
+                    value = column[r]
+                    col_res.ints.values.append(value)
 
     def _add_to_recents(self, path):
 

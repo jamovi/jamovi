@@ -6,6 +6,8 @@
 
 #include <stdexcept>
 #include <climits>
+#include <sstream>
+#include <cstring>
 
 #include "dataset.h"
 
@@ -18,19 +20,14 @@ Column::Column(DataSet *parent, MemoryMap *mm, ColumnStruct *rel)
     _rel = rel;
 }
 
-string Column::name() const
-{
-    return string(this->c_str());
-}
-
-const char *Column::c_str() const
+const char *Column::name() const
 {
     return _mm->resolve(struc()->name);
 }
 
-Column::ColumnType Column::columnType() const
+MeasureType::Type Column::measureType() const
 {
-    return (Column::ColumnType) struc()->columnType;
+    return (MeasureType::Type) struc()->measureType;
 }
 
 int Column::rowCount() const {
@@ -68,7 +65,7 @@ map<int, string> Column::levels() const
     return m;
 }
 
-const char *Column::getLevel(int value)
+const char *Column::getLabel(int value) const
 {
     if (value == INT_MIN)
         return "";
@@ -83,5 +80,56 @@ const char *Column::getLevel(int value)
             return _mm->resolve(l.label);
     }
 
-    throw runtime_error("level not found");
+    stringstream ss;
+    ss << "level " << value << " not found";
+    throw runtime_error(ss.str());
+}
+
+int Column::getValue(const char *label) const
+{
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &level = levels[i];
+        const char *l = _mm->resolve(level.label);
+        if (strcmp(l, label) == 0)
+            return level.value;
+    }
+
+    stringstream ss;
+    ss << "level '" << label << "' not found";
+    throw runtime_error(ss.str());
+}
+
+bool Column::hasLevel(const char *label) const
+{
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &level = levels[i];
+        const char *l = _mm->resolve(level.label);
+        if (strcmp(l, label) == 0)
+            return true;
+    }
+
+    return false;
+}
+
+bool Column::hasLevel(int value) const
+{
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &level = levels[i];
+        if (level.value == value)
+            return true;
+    }
+
+    return false;
 }

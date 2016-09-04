@@ -22,7 +22,7 @@ const DataSetModel = Backbone.Model.extend({
         instanceId : null,
         editingVar : null
     },
-    setNew : function(info) {
+    setup : function(info) {
 
         this.attributes.columns  = info.columns;
         this.attributes.rowCount = info.rowCount;
@@ -31,18 +31,40 @@ const DataSetModel = Backbone.Model.extend({
         this.set('hasDataSet', true);
         this.trigger('dataSetLoaded');
     },
-    setColumn : function(name, values) {
-        let column;
-        let found = false;
-        for (column of this.attributes.columns) {
-            if (column.name === name) {
-                found = true;
-                break;
+    getColumn : function(indexOrName) {
+        if (typeof(indexOfName) === 'number') {
+            return this.attributes.columns[indexOrName];
+        }
+        else {
+            for (let column of this.attributes.columns) {
+                if (column.name === indexOrName)
+                    return column;
+            }
+        }
+        return null;
+    },
+    indexOfColumn : function(columnOrName) {
+
+        let columns = this.attributes.columns;
+
+        if (typeof(columnOrName) === 'string') {
+            for (let i = 0; i < columns.length; i++) {
+                if (columns[i].name === columnOrName)
+                    return i;
+            }
+        }
+        else {
+            for (let i = 0; i < columns.length; i++) {
+                if (columns[i] === columnOrName)
+                    return i;
             }
         }
 
-        if ( ! found)
-            return;
+        return -1;
+    },
+    changeColumn : function(name, values) {
+
+        let column = this.getColumn(name);
 
         let coms = this.attributes.coms;
 
@@ -75,7 +97,12 @@ const DataSetModel = Backbone.Model.extend({
         coms.send(request).then(response => {
             column.measureType = values.type;
             column.levels = values.levels;
-            this.trigger('columnChanged', { name });
+            this.trigger('columnsChanged', {
+                columns: [ name ],
+                levelsChanged: true,
+                measureTypeChanged: true,
+                dataChanged: true,
+            });
         });
     },
 });
@@ -238,7 +265,7 @@ const DataSetViewModel = DataSetModel.extend({
 
         let coms = this.attributes.coms;
 
-        let cellsRequest = new coms.Messages.CellsRequest();
+        let cellsRequest = new coms.Messages.CellsRR();
         cellsRequest.rowStart    = viewport.top;
         cellsRequest.columnStart = viewport.left;
         cellsRequest.rowEnd      = viewport.bottom;
@@ -246,19 +273,19 @@ const DataSetViewModel = DataSetModel.extend({
 
         let request = new coms.Messages.ComsMessage();
         request.payload = cellsRequest.toArrayBuffer();
-        request.payloadType = "CellsRequest";
+        request.payloadType = "CellsRR";
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
 
-            let cellsResponse = coms.Messages.CellsResponse.decode(response.payload);
+            let cellsResponse = coms.Messages.CellsRR.decode(response.payload);
 
             let columns = cellsResponse.columns;
 
-            let rowStart    = cellsResponse.request.get('rowStart');
-            let columnStart = cellsResponse.request.get('columnStart');
-            let rowEnd      = cellsResponse.request.get('rowEnd');
-            let columnEnd   = cellsResponse.request.get('columnEnd');
+            let rowStart    = cellsResponse.rowStart;
+            let columnStart = cellsResponse.columnStart;
+            let rowEnd      = cellsResponse.rowEnd;
+            let columnEnd   = cellsResponse.columnEnd;
 
             let viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
 
@@ -283,6 +310,64 @@ const DataSetViewModel = DataSetModel.extend({
 
             console.log(err);
         });
+    },
+    changeCells : function(viewport, cells) {
+
+        let nRows = viewport.bottom - viewport.top + 1;
+        let nCols = viewport.right - viewport.left + 1;
+
+        let coms = this.attributes.coms;
+
+        let cellsRequest = new coms.Messages.CellsRR();
+        cellsRequest.op = coms.Messages.GetSet.SET;
+        cellsRequest.rowStart    = viewport.top;
+        cellsRequest.columnStart = viewport.left;
+        cellsRequest.rowEnd      = viewport.bottom;
+        cellsRequest.columnEnd   = viewport.right;
+
+        let filterFloat  = value => value !== null ? value : NaN;
+        let filterInt    = value => value !== null ? value : -2147483648;
+        let filterString = value => value !== null ? value : '';
+
+        for (let i = 0; i < nCols; i++) {
+
+            let columnType = this.attributes.columns[viewport.left + i].measureType;
+            let column = new coms.Messages.CellsRR.Column();
+
+            if (columnType === 'continuous') {
+                let doubles = new coms.Messages.CellsRR.Column.Doubles();
+                doubles.values = cells[i].map(filterFloat);
+                column.doubles = doubles;
+            }
+            else if (columnType === 'nominal' || columnType === 'ordinal') {
+                let ints = new coms.Messages.CellsRR.Column.Ints();
+                ints.values = cells[i].map(filterInt);
+                column.ints = ints;
+            }
+            else { // if (columnType === 'nominaltext') {
+                let strings = new coms.Messages.CellsRR.Column.Strings();
+                strings.values = cells[i].map(filterString);
+                column.strings = strings;
+            }
+            cellsRequest.columns.push(column);
+        }
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = cellsRequest.toArrayBuffer();
+        request.payloadType = "CellsRR";
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            this.setCells(viewport, cells);
+            let columns = Array(nCols);
+            for (let i = 0; i < nCols; i++)
+                columns[i] = this.attributes.columns[viewport.left + i].name;
+
+            this.trigger('columnsChanged', {
+                columns: columns,
+                dataChanged: true });
+        });
+
     },
     setCells : function(viewport, cells) {
 
@@ -311,8 +396,8 @@ const DataSetViewModel = DataSetModel.extend({
 
         this.trigger("cellsChanged", { left: left, top: top, right: right, bottom: bottom });
     },
-    setColumn : function(name, values) {
-        DataSetModel.prototype.setColumn.call(this, name, values);
+    changeColumn : function(name, values) {
+        DataSetModel.prototype.changeColumn.call(this, name, values);
 
         for (let i = 0; i < this.attributes.columns.length; i++) {
             let column = this.attributes.columns[i];

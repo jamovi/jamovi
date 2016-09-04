@@ -129,7 +129,10 @@ var ResultsPanel = Backbone.View.extend({
                 case "sizeChanged":
                     if ($iframe.height() === 0)
                         $iframe.width(eventData.width);
-                    this._scrollIntoView($container, eventData.height);
+
+                    let selected = this.model.get('selectedAnalysis');
+                    if (selected !== null && selected.id.toString() === id)
+                        this._scrollIntoView($container, eventData.height);
                     $iframe.width(eventData.width);
                     $iframe.height(eventData.height + 12);
                     $container.width(eventData.width);

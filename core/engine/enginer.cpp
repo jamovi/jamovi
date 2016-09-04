@@ -17,7 +17,7 @@
 #include "dirs.h"
 #include "memorymap.h"
 #include "dataset.h"
-#include "utils2.h"
+#include "utils.h"
 
 using namespace std;
 using namespace boost;
@@ -158,7 +158,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
         columnNames[index] = columnName;
 
-        if (column.columnType() == Column::Continuous)
+        if (column.measureType() == MeasureType::CONTINUOUS)
         {
             Rcpp::NumericVector v(rowCount, Rcpp::NumericVector::get_na());
 
@@ -204,7 +204,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             v.attr("levels") = levels;
 
-            if (column.columnType() == Column::NominalText)
+            if (column.measureType() == MeasureType::NOMINAL_TEXT)
             {
                 v.attr("class") = "factor";
             }
@@ -257,7 +257,7 @@ Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &an
         fullPath += "." + suffix;
 
     fullPath = filesystem::unique_path(fullPath).generic_string();
-    relPath = Utils2::makeRelative(rootPath, fullPath);
+    relPath = Utils::makeRelative(rootPath, fullPath);
 
     return Rcpp::List::create(
         Rcpp::Named("rootPath") = rootPath,

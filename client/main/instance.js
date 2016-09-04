@@ -33,7 +33,7 @@ const Instance = Backbone.Model.extend({
         this.seqNo = 0;
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
-        this._dataSetModel.on('columnChanged', event => this._columnChanged(event));
+        this._dataSetModel.on('columnsChanged', event => this._columnsChanged(event));
 
         this._progressModel = new ProgressModel();
 
@@ -244,7 +244,7 @@ const Instance = Backbone.Model.extend({
                 }
 
                 this._dataSetModel.set('instanceId', this._instanceId);
-                this._dataSetModel.setNew({
+                this._dataSetModel.setup({
                     rowCount : info.rowCount,
                     columnCount : info.columnCount,
                     columns : columnInfo
@@ -315,12 +315,18 @@ const Instance = Backbone.Model.extend({
             }
         }
     },
-    _columnChanged : function(event) {
+    _columnsChanged : function(event) {
+
+        if (event.dataChanged !== true)
+            return;
 
         for (let analysis of this._analyses) {
             let using = analysis.getUsing();
-            if (using.includes(event.name))
-                this._analysisOptionsChanged(analysis, [ event.name ]);
+
+            for (let columnName of event.columns) {
+                if (using.includes(columnName))
+                    this._analysisOptionsChanged(analysis, event.columns);
+            }
         }
     },
     _stringifyMeasureType : function(measureType) {

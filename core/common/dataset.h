@@ -29,7 +29,7 @@ public:
     int columnCount() const;
 
     Column operator[](int index);
-    Column operator[](const std::string &name);
+    Column operator[](const char *name);
 
 protected:
 

@@ -56,7 +56,7 @@ def read(dataset, path):
             column_writers.append(ColumnWriter(column, i))
             column_count += 1
 
-        rowCount = 0
+        row_count = 0
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)
@@ -66,12 +66,15 @@ def read(dataset, path):
             if first:
                 first = False
             else:
-                dataset.append_row()
-
                 for i in range(column_count):
                     column_writers[i].examine_row(row)
 
-                rowCount += 1
+                row_count += 1
+
+        for column_writer in column_writers:
+            column_writer.ruminate()
+
+        dataset.set_row_count(row_count)
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)
@@ -142,14 +145,14 @@ class ColumnWriter:
         except ValueError:
             self._only_floats = False
 
-    def _ruminate(self):
+    def ruminate(self):
 
         if self._only_integers and self._many_uniques is False:
             self._measure_type = MeasureType.NOMINAL
             self._unique_values = list(self._unique_values)
             self._unique_values.sort()
             for label in self._unique_values:
-                self._column.add_level(int(label), label)
+                self._column.append_level(int(label), label)
         elif self._only_floats:
             self._measure_type = MeasureType.CONTINUOUS
         else:
@@ -160,7 +163,7 @@ class ColumnWriter:
             self._unique_values.sort()
             for i in range(0, len(self._unique_values)):
                 label = self._unique_values[i]
-                self._column.add_level(i, label)
+                self._column.append_level(i, label)
 
         self._ruminated = True
         self._column.measure_type = self._measure_type
@@ -169,7 +172,7 @@ class ColumnWriter:
     def parse_row(self, row, row_no):
 
         if self._ruminated is False:
-            self._ruminate()
+            self.ruminate()
 
         if self._column_index >= len(row):
             value = None

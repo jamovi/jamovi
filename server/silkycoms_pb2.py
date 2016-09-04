@@ -19,8 +19,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='silkycoms.proto',
   package='silkycoms',
-  syntax='proto2',
-  serialized_pb=_b('\n\x0fsilkycoms.proto\x12\tsilkycoms\"\'\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\"\xa1\x01\n\x0b\x43omsMessage\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ninstanceId\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x13\n\x0bpayloadType\x18\x04 \x01(\t\x12+\n\x06status\x18\x05 \x01(\x0e\x32\x11.silkycoms.Status:\x08\x43OMPLETE\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\"\x11\n\x0fInstanceRequest\"\x12\n\x10InstanceResponse\"\x1f\n\x0bOpenRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cOpenProgress\"\x1f\n\x0bSaveRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cSaveProgress\"\x89\x01\n\x07\x46SEntry\x12\x0c\n\x04path\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.silkycoms.FSEntry.Type\x12\x0c\n\x04name\x18\x03 \x01(\t\";\n\x04Type\x12\x08\n\x04\x46ILE\x10\x01\x12\n\n\x06\x46OLDER\x10\x02\x12\t\n\x05\x44RIVE\x10\x03\x12\x12\n\x0eSPECIAL_FOLDER\x10\x04\"\x19\n\tFSRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"H\n\nFSResponse\x12$\n\x08\x63ontents\x18\x01 \x03(\x0b\x32\x12.silkycoms.FSEntry\x12\x14\n\x0c\x65rrorMessage\x18\x02 \x01(\t\"<\n\x0c\x44\x61taSetEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\"\x11\n\x0fSettingsRequest\"m\n\x10SettingsResponse\x12(\n\x07recents\x18\x01 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\x12/\n\x0elocalFSRecents\x18\x02 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\"-\n\rVariableLevel\x12\r\n\x05label\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\xbf\x02\n\rDataSetSchema\x12.\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1e.silkycoms.DataSetSchema.Field\x1a\xfd\x01\n\x05\x46ield\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12?\n\x0bmeasureType\x18\x03 \x01(\x0e\x32*.silkycoms.DataSetSchema.Field.MeasureType\x12\r\n\x05width\x18\x04 \x01(\x05\x12(\n\x06levels\x18\x05 \x03(\x0b\x32\x18.silkycoms.VariableLevel\x12\x0b\n\x03\x64ps\x18\x06 \x01(\x05\"S\n\x0bMeasureType\x12\x08\n\x04MISC\x10\x00\x12\x10\n\x0cNOMINAL_TEXT\x10\x01\x12\x0b\n\x07NOMINAL\x10\x02\x12\x0b\n\x07ORDINAL\x10\x03\x12\x0e\n\nCONTINUOUS\x10\x04\"[\n\x0bInfoRequest\x12\"\n\x02op\x18\x01 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\"\xa9\x01\n\x0cInfoResponse\x12\x12\n\nhasDataSet\x18\x01 \x01(\x08\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\x12\x10\n\x08rowCount\x18\x03 \x01(\r\x12\x13\n\x0b\x63olumnCount\x18\x04 \x01(\r\x12\x10\n\x08\x66ilePath\x18\x05 \x01(\t\x12\"\n\x02op\x18\x06 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\"X\n\x0c\x43\x65llsRequest\x12\x10\n\x08rowStart\x18\x01 \x01(\r\x12\x13\n\x0b\x63olumnStart\x18\x02 \x01(\r\x12\x0e\n\x06rowEnd\x18\x03 \x01(\r\x12\x11\n\tcolumnEnd\x18\x04 \x01(\r\"\xfb\x02\n\rCellsResponse\x12(\n\x07request\x18\x01 \x01(\x0b\x32\x17.silkycoms.CellsRequest\x12\x30\n\x07\x63olumns\x18\x02 \x03(\x0b\x32\x1f.silkycoms.CellsResponse.Column\x1a\x8d\x02\n\x06\x43olumn\x12\x34\n\x04ints\x18\x01 \x01(\x0b\x32$.silkycoms.CellsResponse.Column.IntsH\x00\x12:\n\x07\x64oubles\x18\x02 \x01(\x0b\x32\'.silkycoms.CellsResponse.Column.DoublesH\x00\x12:\n\x07strings\x18\x03 \x01(\x0b\x32\'.silkycoms.CellsResponse.Column.StringsH\x00\x1a\x16\n\x04Ints\x12\x0e\n\x06values\x18\x01 \x03(\x05\x1a\x19\n\x07\x44oubles\x12\x0e\n\x06values\x18\x01 \x03(\x01\x1a\x19\n\x07Strings\x12\x0e\n\x06values\x18\x01 \x03(\tB\x07\n\x05\x63\x65lls\"\xc7\x01\n\x0f\x41nalysisRequest\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\n\n\x02ns\x18\x04 \x01(\t\x12\x33\n\x07perform\x18\x05 \x01(\x0e\x32\".silkycoms.AnalysisRequest.Perform\x12\x0f\n\x07options\x18\x06 \x01(\t\x12\x0f\n\x03ppi\x18\x07 \x01(\x05:\x02\x37\x32\"\x1c\n\x07Perform\x12\x08\n\x04INIT\x10\x01\x12\x07\n\x03RUN\x10\x02\"\xd5\x01\n\x10\x41nalysisResponse\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0f\n\x07options\x18\x03 \x01(\t\x12*\n\x07results\x18\x04 \x01(\x0b\x32\x19.silkycoms.ResultsElement\x12)\n\x06status\x18\x05 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\x12\x11\n\tincAsText\x18\x07 \x01(\x08\"\xb6\x01\n\x0bResultsCell\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12)\n\x01o\x18\x04 \x01(\x0e\x32\x1c.silkycoms.ResultsCell.OtherH\x00\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\x05\x12\x11\n\tfootnotes\x18\x06 \x03(\t\"&\n\x05Other\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02\x42\n\n\x08\x63\x65llType\"q\n\rResultsColumn\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12%\n\x05\x63\x65lls\x18\x07 \x03(\x0b\x32\x16.silkycoms.ResultsCell\".\n\x10ResultsTableNote\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04note\x18\x02 \x01(\t\"\xa0\x01\n\x0cResultsTable\x12)\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\x18.silkycoms.ResultsColumn\x12\x10\n\x08rowNames\x18\x02 \x03(\t\x12\x17\n\x0fswapRowsColumns\x18\x03 \x01(\x08\x12*\n\x05notes\x18\x04 \x03(\x0b\x32\x1b.silkycoms.ResultsTableNote\x12\x0e\n\x06\x61sText\x18\x05 \x01(\t\";\n\x0cResultsImage\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05width\x18\x02 \x01(\x05\x12\x0e\n\x06height\x18\x03 \x01(\x05\";\n\x0cResultsArray\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\";\n\x0cResultsGroup\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\"\xcd\x02\n\x0eResultsElement\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12;\n\x06status\x18\x03 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus:\x10\x41NALYSIS_RUNNING\x12\x1f\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x10.silkycoms.Error\x12(\n\x05table\x18\x06 \x01(\x0b\x32\x17.silkycoms.ResultsTableH\x00\x12(\n\x05image\x18\x07 \x01(\x0b\x32\x17.silkycoms.ResultsImageH\x00\x12(\n\x05group\x18\x08 \x01(\x0b\x32\x17.silkycoms.ResultsGroupH\x00\x12(\n\x05\x61rray\x18\t \x01(\x0b\x32\x17.silkycoms.ResultsArrayH\x00\x12\x10\n\x06syntax\x18\x0b \x01(\tH\x00\x42\x06\n\x04type*2\n\x06Status\x12\x0c\n\x08\x43OMPLETE\x10\x01\x12\x0f\n\x0bIN_PROGRESS\x10\x02\x12\t\n\x05\x45RROR\x10\x03*\x1a\n\x06GetSet\x12\x07\n\x03GET\x10\x00\x12\x07\n\x03SET\x10\x01*\x8f\x01\n\x0e\x41nalysisStatus\x12\x11\n\rANALYSIS_NONE\x10\x00\x12\x13\n\x0f\x41NALYSIS_INITED\x10\x01\x12\x14\n\x10\x41NALYSIS_RUNNING\x10\x02\x12\x15\n\x11\x41NALYSIS_COMPLETE\x10\x03\x12\x12\n\x0e\x41NALYSIS_ERROR\x10\x04\x12\x14\n\x10\x41NALYSIS_ABORTED\x10\x05')
+  serialized_pb=_b('\n\x0fsilkycoms.proto\x12\tsilkycoms\"\'\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\"\xa1\x01\n\x0b\x43omsMessage\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ninstanceId\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x13\n\x0bpayloadType\x18\x04 \x01(\t\x12+\n\x06status\x18\x05 \x01(\x0e\x32\x11.silkycoms.Status:\x08\x43OMPLETE\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\"\x11\n\x0fInstanceRequest\"\x12\n\x10InstanceResponse\"\x1f\n\x0bOpenRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cOpenProgress\"\x1f\n\x0bSaveRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cSaveProgress\"\x89\x01\n\x07\x46SEntry\x12\x0c\n\x04path\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.silkycoms.FSEntry.Type\x12\x0c\n\x04name\x18\x03 \x01(\t\";\n\x04Type\x12\x08\n\x04\x46ILE\x10\x01\x12\n\n\x06\x46OLDER\x10\x02\x12\t\n\x05\x44RIVE\x10\x03\x12\x12\n\x0eSPECIAL_FOLDER\x10\x04\"\x19\n\tFSRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"H\n\nFSResponse\x12$\n\x08\x63ontents\x18\x01 \x03(\x0b\x32\x12.silkycoms.FSEntry\x12\x14\n\x0c\x65rrorMessage\x18\x02 \x01(\t\"<\n\x0c\x44\x61taSetEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\"\x11\n\x0fSettingsRequest\"m\n\x10SettingsResponse\x12(\n\x07recents\x18\x01 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\x12/\n\x0elocalFSRecents\x18\x02 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\"-\n\rVariableLevel\x12\r\n\x05label\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\xbf\x02\n\rDataSetSchema\x12.\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1e.silkycoms.DataSetSchema.Field\x1a\xfd\x01\n\x05\x46ield\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12?\n\x0bmeasureType\x18\x03 \x01(\x0e\x32*.silkycoms.DataSetSchema.Field.MeasureType\x12\r\n\x05width\x18\x04 \x01(\x05\x12(\n\x06levels\x18\x05 \x03(\x0b\x32\x18.silkycoms.VariableLevel\x12\x0b\n\x03\x64ps\x18\x06 \x01(\x05\"S\n\x0bMeasureType\x12\x08\n\x04MISC\x10\x00\x12\x10\n\x0cNOMINAL_TEXT\x10\x01\x12\x0b\n\x07NOMINAL\x10\x02\x12\x0b\n\x07ORDINAL\x10\x03\x12\x0e\n\nCONTINUOUS\x10\x04\"[\n\x0bInfoRequest\x12\"\n\x02op\x18\x01 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\"\xa9\x01\n\x0cInfoResponse\x12\x12\n\nhasDataSet\x18\x01 \x01(\x08\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\x12\x10\n\x08rowCount\x18\x03 \x01(\r\x12\x13\n\x0b\x63olumnCount\x18\x04 \x01(\r\x12\x10\n\x08\x66ilePath\x18\x05 \x01(\t\x12\"\n\x02op\x18\x06 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\"|\n\x0c\x43\x65llsRequest\x12\x10\n\x08rowStart\x18\x01 \x01(\r\x12\x13\n\x0b\x63olumnStart\x18\x02 \x01(\r\x12\x0e\n\x06rowEnd\x18\x03 \x01(\r\x12\x11\n\tcolumnEnd\x18\x04 \x01(\r\x12\"\n\x02op\x18\x05 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\"\xa1\x03\n\x07\x43\x65llsRR\x12\"\n\x02op\x18\x01 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\x12\x10\n\x08rowStart\x18\x02 \x01(\r\x12\x13\n\x0b\x63olumnStart\x18\x03 \x01(\r\x12\x0e\n\x06rowEnd\x18\x04 \x01(\r\x12\x11\n\tcolumnEnd\x18\x05 \x01(\r\x12*\n\x07\x63olumns\x18\x06 \x03(\x0b\x32\x19.silkycoms.CellsRR.Column\x1a\xfb\x01\n\x06\x43olumn\x12.\n\x04ints\x18\x01 \x01(\x0b\x32\x1e.silkycoms.CellsRR.Column.IntsH\x00\x12\x34\n\x07\x64oubles\x18\x02 \x01(\x0b\x32!.silkycoms.CellsRR.Column.DoublesH\x00\x12\x34\n\x07strings\x18\x03 \x01(\x0b\x32!.silkycoms.CellsRR.Column.StringsH\x00\x1a\x16\n\x04Ints\x12\x0e\n\x06values\x18\x01 \x03(\x05\x1a\x19\n\x07\x44oubles\x12\x0e\n\x06values\x18\x01 \x03(\x01\x1a\x19\n\x07Strings\x12\x0e\n\x06values\x18\x01 \x03(\tB\x07\n\x05\x63\x65lls\"\xd8\x01\n\x0f\x41nalysisRequest\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\n\n\x02ns\x18\x04 \x01(\t\x12\x33\n\x07perform\x18\x05 \x01(\x0e\x32\".silkycoms.AnalysisRequest.Perform\x12\x0f\n\x07options\x18\x06 \x01(\t\x12\x0f\n\x03ppi\x18\x07 \x01(\x05:\x02\x37\x32\x12\x0f\n\x07\x63hanged\x18\x08 \x03(\t\"\x1c\n\x07Perform\x12\x08\n\x04INIT\x10\x01\x12\x07\n\x03RUN\x10\x02\"\xd5\x01\n\x10\x41nalysisResponse\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0f\n\x07options\x18\x03 \x01(\t\x12*\n\x07results\x18\x04 \x01(\x0b\x32\x19.silkycoms.ResultsElement\x12)\n\x06status\x18\x05 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\x12\x11\n\tincAsText\x18\x07 \x01(\x08\"\xb6\x01\n\x0bResultsCell\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12)\n\x01o\x18\x04 \x01(\x0e\x32\x1c.silkycoms.ResultsCell.OtherH\x00\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\x05\x12\x11\n\tfootnotes\x18\x06 \x03(\t\"&\n\x05Other\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02\x42\n\n\x08\x63\x65llType\"q\n\rResultsColumn\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12%\n\x05\x63\x65lls\x18\x07 \x03(\x0b\x32\x16.silkycoms.ResultsCell\".\n\x10ResultsTableNote\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04note\x18\x02 \x01(\t\"\xa0\x01\n\x0cResultsTable\x12)\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\x18.silkycoms.ResultsColumn\x12\x10\n\x08rowNames\x18\x02 \x03(\t\x12\x17\n\x0fswapRowsColumns\x18\x03 \x01(\x08\x12*\n\x05notes\x18\x04 \x03(\x0b\x32\x1b.silkycoms.ResultsTableNote\x12\x0e\n\x06\x61sText\x18\x05 \x01(\t\";\n\x0cResultsImage\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05width\x18\x02 \x01(\x05\x12\x0e\n\x06height\x18\x03 \x01(\x05\";\n\x0cResultsArray\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\";\n\x0cResultsGroup\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\"\xcd\x02\n\x0eResultsElement\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12;\n\x06status\x18\x03 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus:\x10\x41NALYSIS_RUNNING\x12\x1f\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x10.silkycoms.Error\x12(\n\x05table\x18\x06 \x01(\x0b\x32\x17.silkycoms.ResultsTableH\x00\x12(\n\x05image\x18\x07 \x01(\x0b\x32\x17.silkycoms.ResultsImageH\x00\x12(\n\x05group\x18\x08 \x01(\x0b\x32\x17.silkycoms.ResultsGroupH\x00\x12(\n\x05\x61rray\x18\t \x01(\x0b\x32\x17.silkycoms.ResultsArrayH\x00\x12\x10\n\x06syntax\x18\x0b \x01(\tH\x00\x42\x06\n\x04type*2\n\x06Status\x12\x0c\n\x08\x43OMPLETE\x10\x01\x12\x0f\n\x0bIN_PROGRESS\x10\x02\x12\t\n\x05\x45RROR\x10\x03*\x1a\n\x06GetSet\x12\x07\n\x03GET\x10\x00\x12\x07\n\x03SET\x10\x01*\x8f\x01\n\x0e\x41nalysisStatus\x12\x11\n\rANALYSIS_NONE\x10\x00\x12\x13\n\x0f\x41NALYSIS_INITED\x10\x01\x12\x14\n\x10\x41NALYSIS_RUNNING\x10\x02\x12\x15\n\x11\x41NALYSIS_COMPLETE\x10\x03\x12\x12\n\x0e\x41NALYSIS_ERROR\x10\x04\x12\x14\n\x10\x41NALYSIS_ABORTED\x10\x05')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -45,8 +44,8 @@ _STATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3359,
-  serialized_end=3409,
+  serialized_start=3450,
+  serialized_end=3500,
 )
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
@@ -68,8 +67,8 @@ _GETSET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3411,
-  serialized_end=3437,
+  serialized_start=3502,
+  serialized_end=3528,
 )
 _sym_db.RegisterEnumDescriptor(_GETSET)
 
@@ -107,8 +106,8 @@ _ANALYSISSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3440,
-  serialized_end=3583,
+  serialized_start=3531,
+  serialized_end=3674,
 )
 _sym_db.RegisterEnumDescriptor(_ANALYSISSTATUS)
 
@@ -207,8 +206,8 @@ _ANALYSISREQUEST_PERFORM = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2083,
-  serialized_end=2111,
+  serialized_start=2174,
+  serialized_end=2202,
 )
 _sym_db.RegisterEnumDescriptor(_ANALYSISREQUEST_PERFORM)
 
@@ -229,8 +228,8 @@ _RESULTSCELL_OTHER = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2462,
-  serialized_end=2500,
+  serialized_start=2553,
+  serialized_end=2591,
 )
 _sym_db.RegisterEnumDescriptor(_RESULTSCELL_OTHER)
 
@@ -264,7 +263,6 @@ _ERROR = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -330,7 +328,6 @@ _COMSMESSAGE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -354,7 +351,6 @@ _INSTANCEREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -378,7 +374,6 @@ _INSTANCERESPONSE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -409,7 +404,6 @@ _OPENREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -433,7 +427,6 @@ _OPENPROGRESS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -464,7 +457,6 @@ _SAVEREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -488,7 +480,6 @@ _SAVEPROGRESS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -534,7 +525,6 @@ _FSENTRY = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -565,7 +555,6 @@ _FSREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -603,7 +592,6 @@ _FSRESPONSE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -648,7 +636,6 @@ _DATASETENTRY = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -672,7 +659,6 @@ _SETTINGSREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -710,7 +696,6 @@ _SETTINGSRESPONSE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -748,7 +733,6 @@ _VARIABLELEVEL = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -815,7 +799,6 @@ _DATASETSCHEMA_FIELD = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -845,7 +828,6 @@ _DATASETSCHEMA = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -883,7 +865,6 @@ _INFOREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -949,7 +930,6 @@ _INFORESPONSE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -993,6 +973,13 @@ _CELLSREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='op', full_name='silkycoms.CellsRequest.op', index=4,
+      number=5, type=14, cpp_type=8, label=1,
+      has_default_value=True, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -1001,24 +988,23 @@ _CELLSREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=1439,
-  serialized_end=1527,
+  serialized_end=1563,
 )
 
 
-_CELLSRESPONSE_COLUMN_INTS = _descriptor.Descriptor(
+_CELLSRR_COLUMN_INTS = _descriptor.Descriptor(
   name='Ints',
-  full_name='silkycoms.CellsResponse.Column.Ints',
+  full_name='silkycoms.CellsRR.Column.Ints',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='values', full_name='silkycoms.CellsResponse.Column.Ints.values', index=0,
+      name='values', full_name='silkycoms.CellsRR.Column.Ints.values', index=0,
       number=1, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1032,23 +1018,22 @@ _CELLSRESPONSE_COLUMN_INTS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1824,
-  serialized_end=1846,
+  serialized_start=1898,
+  serialized_end=1920,
 )
 
-_CELLSRESPONSE_COLUMN_DOUBLES = _descriptor.Descriptor(
+_CELLSRR_COLUMN_DOUBLES = _descriptor.Descriptor(
   name='Doubles',
-  full_name='silkycoms.CellsResponse.Column.Doubles',
+  full_name='silkycoms.CellsRR.Column.Doubles',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='values', full_name='silkycoms.CellsResponse.Column.Doubles.values', index=0,
+      name='values', full_name='silkycoms.CellsRR.Column.Doubles.values', index=0,
       number=1, type=1, cpp_type=5, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1062,23 +1047,22 @@ _CELLSRESPONSE_COLUMN_DOUBLES = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1848,
-  serialized_end=1873,
+  serialized_start=1922,
+  serialized_end=1947,
 )
 
-_CELLSRESPONSE_COLUMN_STRINGS = _descriptor.Descriptor(
+_CELLSRR_COLUMN_STRINGS = _descriptor.Descriptor(
   name='Strings',
-  full_name='silkycoms.CellsResponse.Column.Strings',
+  full_name='silkycoms.CellsRR.Column.Strings',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='values', full_name='silkycoms.CellsResponse.Column.Strings.values', index=0,
+      name='values', full_name='silkycoms.CellsRR.Column.Strings.values', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1092,37 +1076,36 @@ _CELLSRESPONSE_COLUMN_STRINGS = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1875,
-  serialized_end=1900,
+  serialized_start=1949,
+  serialized_end=1974,
 )
 
-_CELLSRESPONSE_COLUMN = _descriptor.Descriptor(
+_CELLSRR_COLUMN = _descriptor.Descriptor(
   name='Column',
-  full_name='silkycoms.CellsResponse.Column',
+  full_name='silkycoms.CellsRR.Column',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='ints', full_name='silkycoms.CellsResponse.Column.ints', index=0,
+      name='ints', full_name='silkycoms.CellsRR.Column.ints', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='doubles', full_name='silkycoms.CellsResponse.Column.doubles', index=1,
+      name='doubles', full_name='silkycoms.CellsRR.Column.doubles', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='strings', full_name='silkycoms.CellsResponse.Column.strings', index=2,
+      name='strings', full_name='silkycoms.CellsRR.Column.strings', index=2,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1131,39 +1114,66 @@ _CELLSRESPONSE_COLUMN = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_CELLSRESPONSE_COLUMN_INTS, _CELLSRESPONSE_COLUMN_DOUBLES, _CELLSRESPONSE_COLUMN_STRINGS, ],
+  nested_types=[_CELLSRR_COLUMN_INTS, _CELLSRR_COLUMN_DOUBLES, _CELLSRR_COLUMN_STRINGS, ],
   enum_types=[
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
-      name='cells', full_name='silkycoms.CellsResponse.Column.cells',
+      name='cells', full_name='silkycoms.CellsRR.Column.cells',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1640,
-  serialized_end=1909,
+  serialized_start=1732,
+  serialized_end=1983,
 )
 
-_CELLSRESPONSE = _descriptor.Descriptor(
-  name='CellsResponse',
-  full_name='silkycoms.CellsResponse',
+_CELLSRR = _descriptor.Descriptor(
+  name='CellsRR',
+  full_name='silkycoms.CellsRR',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='request', full_name='silkycoms.CellsResponse.request', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      name='op', full_name='silkycoms.CellsRR.op', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=True, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='columns', full_name='silkycoms.CellsResponse.columns', index=1,
-      number=2, type=11, cpp_type=10, label=3,
+      name='rowStart', full_name='silkycoms.CellsRR.rowStart', index=1,
+      number=2, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='columnStart', full_name='silkycoms.CellsRR.columnStart', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='rowEnd', full_name='silkycoms.CellsRR.rowEnd', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='columnEnd', full_name='silkycoms.CellsRR.columnEnd', index=4,
+      number=5, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='columns', full_name='silkycoms.CellsRR.columns', index=5,
+      number=6, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1171,17 +1181,16 @@ _CELLSRESPONSE = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_CELLSRESPONSE_COLUMN, ],
+  nested_types=[_CELLSRR_COLUMN, ],
   enum_types=[
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1530,
-  serialized_end=1909,
+  serialized_start=1566,
+  serialized_end=1983,
 )
 
 
@@ -1241,6 +1250,13 @@ _ANALYSISREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='changed', full_name='silkycoms.AnalysisRequest.changed', index=7,
+      number=8, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -1250,12 +1266,11 @@ _ANALYSISREQUEST = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1912,
-  serialized_end=2111,
+  serialized_start=1986,
+  serialized_end=2202,
 )
 
 
@@ -1323,12 +1338,11 @@ _ANALYSISRESPONSE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2114,
-  serialized_end=2327,
+  serialized_start=2205,
+  serialized_end=2418,
 )
 
 
@@ -1349,7 +1363,7 @@ _RESULTSCELL = _descriptor.Descriptor(
     _descriptor.FieldDescriptor(
       name='d', full_name='silkycoms.ResultsCell.d', index=1,
       number=2, type=1, cpp_type=5, label=1,
-      has_default_value=False, default_value=float(0),
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -1390,15 +1404,14 @@ _RESULTSCELL = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
       name='cellType', full_name='silkycoms.ResultsCell.cellType',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=2330,
-  serialized_end=2512,
+  serialized_start=2421,
+  serialized_end=2603,
 )
 
 
@@ -1452,12 +1465,11 @@ _RESULTSCOLUMN = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2514,
-  serialized_end=2627,
+  serialized_start=2605,
+  serialized_end=2718,
 )
 
 
@@ -1490,12 +1502,11 @@ _RESULTSTABLENOTE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2629,
-  serialized_end=2675,
+  serialized_start=2720,
+  serialized_end=2766,
 )
 
 
@@ -1549,12 +1560,11 @@ _RESULTSTABLE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2678,
-  serialized_end=2838,
+  serialized_start=2769,
+  serialized_end=2929,
 )
 
 
@@ -1594,12 +1604,11 @@ _RESULTSIMAGE = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2840,
-  serialized_end=2899,
+  serialized_start=2931,
+  serialized_end=2990,
 )
 
 
@@ -1625,12 +1634,11 @@ _RESULTSARRAY = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2901,
-  serialized_end=2960,
+  serialized_start=2992,
+  serialized_end=3051,
 )
 
 
@@ -1656,12 +1664,11 @@ _RESULTSGROUP = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2962,
-  serialized_end=3021,
+  serialized_start=3053,
+  serialized_end=3112,
 )
 
 
@@ -1743,15 +1750,14 @@ _RESULTSELEMENT = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
-  syntax='proto2',
   extension_ranges=[],
   oneofs=[
     _descriptor.OneofDescriptor(
       name='type', full_name='silkycoms.ResultsElement.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=3024,
-  serialized_end=3357,
+  serialized_start=3115,
+  serialized_end=3448,
 )
 
 _COMSMESSAGE.fields_by_name['status'].enum_type = _STATUS
@@ -1770,24 +1776,25 @@ _INFOREQUEST.fields_by_name['op'].enum_type = _GETSET
 _INFOREQUEST.fields_by_name['schema'].message_type = _DATASETSCHEMA
 _INFORESPONSE.fields_by_name['schema'].message_type = _DATASETSCHEMA
 _INFORESPONSE.fields_by_name['op'].enum_type = _GETSET
-_CELLSRESPONSE_COLUMN_INTS.containing_type = _CELLSRESPONSE_COLUMN
-_CELLSRESPONSE_COLUMN_DOUBLES.containing_type = _CELLSRESPONSE_COLUMN
-_CELLSRESPONSE_COLUMN_STRINGS.containing_type = _CELLSRESPONSE_COLUMN
-_CELLSRESPONSE_COLUMN.fields_by_name['ints'].message_type = _CELLSRESPONSE_COLUMN_INTS
-_CELLSRESPONSE_COLUMN.fields_by_name['doubles'].message_type = _CELLSRESPONSE_COLUMN_DOUBLES
-_CELLSRESPONSE_COLUMN.fields_by_name['strings'].message_type = _CELLSRESPONSE_COLUMN_STRINGS
-_CELLSRESPONSE_COLUMN.containing_type = _CELLSRESPONSE
-_CELLSRESPONSE_COLUMN.oneofs_by_name['cells'].fields.append(
-  _CELLSRESPONSE_COLUMN.fields_by_name['ints'])
-_CELLSRESPONSE_COLUMN.fields_by_name['ints'].containing_oneof = _CELLSRESPONSE_COLUMN.oneofs_by_name['cells']
-_CELLSRESPONSE_COLUMN.oneofs_by_name['cells'].fields.append(
-  _CELLSRESPONSE_COLUMN.fields_by_name['doubles'])
-_CELLSRESPONSE_COLUMN.fields_by_name['doubles'].containing_oneof = _CELLSRESPONSE_COLUMN.oneofs_by_name['cells']
-_CELLSRESPONSE_COLUMN.oneofs_by_name['cells'].fields.append(
-  _CELLSRESPONSE_COLUMN.fields_by_name['strings'])
-_CELLSRESPONSE_COLUMN.fields_by_name['strings'].containing_oneof = _CELLSRESPONSE_COLUMN.oneofs_by_name['cells']
-_CELLSRESPONSE.fields_by_name['request'].message_type = _CELLSREQUEST
-_CELLSRESPONSE.fields_by_name['columns'].message_type = _CELLSRESPONSE_COLUMN
+_CELLSREQUEST.fields_by_name['op'].enum_type = _GETSET
+_CELLSRR_COLUMN_INTS.containing_type = _CELLSRR_COLUMN
+_CELLSRR_COLUMN_DOUBLES.containing_type = _CELLSRR_COLUMN
+_CELLSRR_COLUMN_STRINGS.containing_type = _CELLSRR_COLUMN
+_CELLSRR_COLUMN.fields_by_name['ints'].message_type = _CELLSRR_COLUMN_INTS
+_CELLSRR_COLUMN.fields_by_name['doubles'].message_type = _CELLSRR_COLUMN_DOUBLES
+_CELLSRR_COLUMN.fields_by_name['strings'].message_type = _CELLSRR_COLUMN_STRINGS
+_CELLSRR_COLUMN.containing_type = _CELLSRR
+_CELLSRR_COLUMN.oneofs_by_name['cells'].fields.append(
+  _CELLSRR_COLUMN.fields_by_name['ints'])
+_CELLSRR_COLUMN.fields_by_name['ints'].containing_oneof = _CELLSRR_COLUMN.oneofs_by_name['cells']
+_CELLSRR_COLUMN.oneofs_by_name['cells'].fields.append(
+  _CELLSRR_COLUMN.fields_by_name['doubles'])
+_CELLSRR_COLUMN.fields_by_name['doubles'].containing_oneof = _CELLSRR_COLUMN.oneofs_by_name['cells']
+_CELLSRR_COLUMN.oneofs_by_name['cells'].fields.append(
+  _CELLSRR_COLUMN.fields_by_name['strings'])
+_CELLSRR_COLUMN.fields_by_name['strings'].containing_oneof = _CELLSRR_COLUMN.oneofs_by_name['cells']
+_CELLSRR.fields_by_name['op'].enum_type = _GETSET
+_CELLSRR.fields_by_name['columns'].message_type = _CELLSRR_COLUMN
 _ANALYSISREQUEST.fields_by_name['perform'].enum_type = _ANALYSISREQUEST_PERFORM
 _ANALYSISREQUEST_PERFORM.containing_type = _ANALYSISREQUEST
 _ANALYSISRESPONSE.fields_by_name['results'].message_type = _RESULTSELEMENT
@@ -1852,7 +1859,7 @@ DESCRIPTOR.message_types_by_name['DataSetSchema'] = _DATASETSCHEMA
 DESCRIPTOR.message_types_by_name['InfoRequest'] = _INFOREQUEST
 DESCRIPTOR.message_types_by_name['InfoResponse'] = _INFORESPONSE
 DESCRIPTOR.message_types_by_name['CellsRequest'] = _CELLSREQUEST
-DESCRIPTOR.message_types_by_name['CellsResponse'] = _CELLSRESPONSE
+DESCRIPTOR.message_types_by_name['CellsRR'] = _CELLSRR
 DESCRIPTOR.message_types_by_name['AnalysisRequest'] = _ANALYSISREQUEST
 DESCRIPTOR.message_types_by_name['AnalysisResponse'] = _ANALYSISRESPONSE
 DESCRIPTOR.message_types_by_name['ResultsCell'] = _RESULTSCELL
@@ -2008,44 +2015,44 @@ CellsRequest = _reflection.GeneratedProtocolMessageType('CellsRequest', (_messag
   ))
 _sym_db.RegisterMessage(CellsRequest)
 
-CellsResponse = _reflection.GeneratedProtocolMessageType('CellsResponse', (_message.Message,), dict(
+CellsRR = _reflection.GeneratedProtocolMessageType('CellsRR', (_message.Message,), dict(
 
   Column = _reflection.GeneratedProtocolMessageType('Column', (_message.Message,), dict(
 
     Ints = _reflection.GeneratedProtocolMessageType('Ints', (_message.Message,), dict(
-      DESCRIPTOR = _CELLSRESPONSE_COLUMN_INTS,
+      DESCRIPTOR = _CELLSRR_COLUMN_INTS,
       __module__ = 'silkycoms_pb2'
-      # @@protoc_insertion_point(class_scope:silkycoms.CellsResponse.Column.Ints)
+      # @@protoc_insertion_point(class_scope:silkycoms.CellsRR.Column.Ints)
       ))
     ,
 
     Doubles = _reflection.GeneratedProtocolMessageType('Doubles', (_message.Message,), dict(
-      DESCRIPTOR = _CELLSRESPONSE_COLUMN_DOUBLES,
+      DESCRIPTOR = _CELLSRR_COLUMN_DOUBLES,
       __module__ = 'silkycoms_pb2'
-      # @@protoc_insertion_point(class_scope:silkycoms.CellsResponse.Column.Doubles)
+      # @@protoc_insertion_point(class_scope:silkycoms.CellsRR.Column.Doubles)
       ))
     ,
 
     Strings = _reflection.GeneratedProtocolMessageType('Strings', (_message.Message,), dict(
-      DESCRIPTOR = _CELLSRESPONSE_COLUMN_STRINGS,
+      DESCRIPTOR = _CELLSRR_COLUMN_STRINGS,
       __module__ = 'silkycoms_pb2'
-      # @@protoc_insertion_point(class_scope:silkycoms.CellsResponse.Column.Strings)
+      # @@protoc_insertion_point(class_scope:silkycoms.CellsRR.Column.Strings)
       ))
     ,
-    DESCRIPTOR = _CELLSRESPONSE_COLUMN,
+    DESCRIPTOR = _CELLSRR_COLUMN,
     __module__ = 'silkycoms_pb2'
-    # @@protoc_insertion_point(class_scope:silkycoms.CellsResponse.Column)
+    # @@protoc_insertion_point(class_scope:silkycoms.CellsRR.Column)
     ))
   ,
-  DESCRIPTOR = _CELLSRESPONSE,
+  DESCRIPTOR = _CELLSRR,
   __module__ = 'silkycoms_pb2'
-  # @@protoc_insertion_point(class_scope:silkycoms.CellsResponse)
+  # @@protoc_insertion_point(class_scope:silkycoms.CellsRR)
   ))
-_sym_db.RegisterMessage(CellsResponse)
-_sym_db.RegisterMessage(CellsResponse.Column)
-_sym_db.RegisterMessage(CellsResponse.Column.Ints)
-_sym_db.RegisterMessage(CellsResponse.Column.Doubles)
-_sym_db.RegisterMessage(CellsResponse.Column.Strings)
+_sym_db.RegisterMessage(CellsRR)
+_sym_db.RegisterMessage(CellsRR.Column)
+_sym_db.RegisterMessage(CellsRR.Column.Ints)
+_sym_db.RegisterMessage(CellsRR.Column.Doubles)
+_sym_db.RegisterMessage(CellsRR.Column.Strings)
 
 AnalysisRequest = _reflection.GeneratedProtocolMessageType('AnalysisRequest', (_message.Message,), dict(
   DESCRIPTOR = _ANALYSISREQUEST,

@@ -7,6 +7,7 @@
 #include <cstring>
 #include <climits>
 #include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
@@ -41,14 +42,12 @@ DataSetW::DataSetW(MemoryMapW *mm)
     _mm = mm;
 }
 
-ColumnW DataSetW::operator[](const string &name)
+ColumnW DataSetW::operator[](const char *name)
 {
-    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-
     for (int i = 0; i < columnCount(); i++)
     {
         ColumnW column = (*this)[i];
-        if (column.name() == name)
+        if (strcmp(column.name(), name) == 0)
             return column;
     }
 
@@ -68,21 +67,23 @@ ColumnW DataSetW::operator[](int index)
     return ColumnW(this, _mm, rel);
 }
 
-void DataSetW::appendColumn(string name)
+void DataSetW::appendColumn(const char *name)
 {
     int columnCount = struc()->columnCount;
 
     if (columnCount >= struc()->capacity)
         throw runtime_error("Too many columns");
 
-    char *chars = _mm->allocate<char>(name.size() + 1);  // +1 for null terminator
-    memcpy(chars, name.c_str(), name.size() + 1);
+    int n = strlen(name);
+    char *chars = _mm->allocate<char>(n + 1);  // +1 for null terminator
+    memcpy(chars, name, n + 1);
 
     ColumnStruct *column;
 
     column = strucC(columnCount);
     column->name = _mm->base<char>(chars);
 
+    column->measureType = MeasureType::NOMINAL;
     column->rowCount = 0;
 
     column->blocksUsed = 0;
@@ -98,6 +99,28 @@ void DataSetW::appendColumn(string name)
     struc()->columnCount++;
 }
 
+void DataSetW::setRowCount(size_t count)
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
+
+    for (int i = 0; i < dss->columnCount; i++)
+    {
+        ColumnStruct *c = _mm->base(&columns[i]);
+        ColumnW column(this, _mm, c);
+
+        if (column.measureType() == MeasureType::CONTINUOUS)
+            column.setRowCount<double>(count);
+        else
+            column.setRowCount<int>(count);
+
+        dss     = _mm->resolve(_rel);
+        columns = _mm->resolve(dss->columns);
+    }
+
+    dss->rowCount = count;
+}
+
 void DataSetW::appendRow()
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
@@ -107,7 +130,11 @@ void DataSetW::appendRow()
     {
         ColumnStruct *c = _mm->base(&columns[i]);
         ColumnW column(this, _mm, c);
-        column.append<int>(INT_MIN);
+
+        if (column.measureType() == MeasureType::CONTINUOUS)
+            column.append<double>(NAN);
+        else
+            column.append<int>(INT_MIN);
 
         dss     = _mm->resolve(_rel);
         columns = _mm->resolve(dss->columns);

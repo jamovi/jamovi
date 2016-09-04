@@ -19,12 +19,13 @@ cdef extern from "datasetw.h":
         CDataSet *create(CMemoryMap *mm) except +
         @staticmethod
         CDataSet *retrieve(CMemoryMap *mm) except +
-        int rowCount()
-        int columnCount()
-        void appendColumn(string name) except +
+        int rowCount() const
+        int columnCount() const
+        void appendColumn(const char *name) except +
+        void setRowCount(size_t count) except +
         void appendRow() except +
         CColumn operator[](int index) except +
-        CColumn operator[](string name) except +
+        CColumn operator[](const char *name) except +
 
 class ColumnIterator:
     def __init__(self, dataset):
@@ -64,7 +65,7 @@ cdef class DataSet:
             c._this = deref(self._this)[index]
         else:
             name = index_or_name.encode('utf-8')
-            c._this = deref(self._this)[name]
+            c._this = deref(self._this)[name.c_str()]
 
         return c
 
@@ -73,6 +74,9 @@ cdef class DataSet:
 
     def append_column(self, name):
         self._this.appendColumn(name.encode('utf-8'))
+
+    def set_row_count(self, count):
+        self._this.setRowCount(count)
 
     def append_row(self):
         self._this.appendRow()
@@ -87,29 +91,32 @@ cdef class DataSet:
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
-        string name() const
-        void setColumnType(CColumnType columnType)
-        CColumnType columnType() const
-        const char *c_str() const
+        const char *name() const
+        void setMeasureType(CMeasureType measureType)
+        CMeasureType measureType() const
         void append[T](const T &value)
         int &intCell(int index)
         double &doubleCell(int index)
-        const char *getLevel(int value)
-        void addLevel(int value, const char *label)
+        const char *getLabel(int value) const
+        int getValue(const char *label) const
+        void appendLevel(int value, const char *label)
+        void insertLevel(int value, const char *label)
+        int levelCount() const
+        bool hasLevel(const char *label) const
+        bool hasLevel(int value) const
         void clearLevels()
-        int levelCount()
         map[int, string] levels()
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
 
 cdef extern from "column.h":
-    ctypedef enum CColumnType  "Column::ColumnType":
-        CColumnTypeMisc        "Column::Misc"
-        CColumnTypeNominalText "Column::NominalText"
-        CColumnTypeNominal     "Column::Nominal"
-        CColumnTypeOrdinal     "Column::Ordinal"
-        CColumnTypeContinuous  "Column::Continuous"
+    ctypedef enum CMeasureType  "MeasureType::Type":
+        CMeasureTypeMisc        "MeasureType::MISC"
+        CMeasureTypeNominalText "MeasureType::NOMINAL_TEXT"
+        CMeasureTypeNominal     "MeasureType::NOMINAL"
+        CMeasureTypeOrdinal     "MeasureType::ORDINAL"
+        CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
 
 class CellIterator:
     def __init__(self, column):
@@ -127,16 +134,16 @@ cdef class Column:
 
     @property
     def name(self):
-        return self._this.c_str().decode('utf-8')
+        return self._this.name().decode('utf-8')
 
     property measure_type:
         def __get__(self):
-            return MeasureType(self._this.columnType())
+            return MeasureType(self._this.measureType())
 
         def __set__(self, measure_type):
             if type(measure_type) is MeasureType:
                 measure_type = measure_type.value
-            self._this.setColumnType(measure_type)
+            self._this.setMeasureType(measure_type)
 
     property dps:
         def __get__(self):
@@ -174,15 +181,19 @@ cdef class Column:
         return max_dp_required
 
     def append(self, value):
-        if type(value) is int:
-            self._this.append[int](value)
-        elif type(value) is float:
+        if self.measure_type is MeasureType.CONTINUOUS:
             self._this.append[double](value)
         else:
-            raise ValueError('must be either int or float')
+            self._this.append[int](value)
 
-    def add_level(self, raw, label):
-        self._this.addLevel(raw, label.encode('utf-8'))
+    def append_level(self, raw, label):
+        self._this.appendLevel(raw, label.encode('utf-8'))
+
+    def insert_level(self, raw, label):
+        self._this.insertLevel(raw, label.encode('utf-8'))
+
+    def get_value(self, label):
+        return self._this.getValue(label.encode('utf-8'))
 
     def clear_levels(self):
         self._this.clearLevels()
@@ -190,6 +201,20 @@ cdef class Column:
     @property
     def has_levels(self):
         return self.measure_type != MeasureType.CONTINUOUS
+
+    @property
+    def level_count(self):
+        return self._this.levelCount();
+
+    def has_level(self, index_or_name):
+        cdef int i;
+        cdef string s;
+        if type(index_or_name) is int:
+            i = index_or_name
+            return self._this.hasLevel(i);
+        else:
+            s = index_or_name.encode('utf-8')
+            return self._this.hasLevel(s.c_str());
 
     @property
     def levels(self):
@@ -209,21 +234,19 @@ cdef class Column:
         cdef int *v
         cdef double *d
 
-        if type(value) is int:
-            v = &self._this.intCell(index)
-            v[0] = value
-        elif type(value) is float:
+        if self.measure_type is MeasureType.CONTINUOUS:
             d = &self._this.doubleCell(index)
             d[0] = value
         else:
-            raise ValueError('must be either int or float')
+            v = &self._this.intCell(index)
+            v[0] = value
 
     def __getitem__(self, index):
         if self.measure_type == MeasureType.CONTINUOUS:
             return self._this.doubleCell(index)
         elif self.measure_type == MeasureType.NOMINAL_TEXT:
             raw = self._this.intCell(index)
-            return self._this.getLevel(raw).decode()
+            return self._this.getLabel(raw).decode()
         else:
             return self._this.intCell(index)
 
@@ -273,7 +296,7 @@ cdef class Column:
                         v[0] = -2147483648
                 self.clear_levels()
                 for value in uniques:
-                    self.add_level(value, str(value))
+                    self.append_level(value, str(value))
                 self.measure_type = new_type
 
         elif new_type == MeasureType.NOMINAL_TEXT:
@@ -293,7 +316,7 @@ cdef class Column:
 
                     self.clear_levels()
                     for level in levels:
-                        self.add_level(level[0], level[1])
+                        self.append_level(level[0], level[1])
                 self.measure_type = MeasureType.NOMINAL_TEXT
 
             elif old_type == MeasureType.CONTINUOUS:
@@ -318,7 +341,7 @@ cdef class Column:
                         v[0] = v2i[value]
                 self.clear_levels()
                 for i in range(len(uniques)):
-                    self.add_level(i, str(uniques[i]))
+                    self.append_level(i, str(uniques[i]))
 
                 self.measure_type = MeasureType.NOMINAL_TEXT
             else:
@@ -343,7 +366,7 @@ cdef class Column:
                         v[0] = v2i[value]
                 self.clear_levels()
                 for i in range(len(uniques)):
-                    self.add_level(i, str(uniques[i]))
+                    self.append_level(i, str(uniques[i]))
                 self.measure_type = MeasureType.NOMINAL_TEXT
 
         if dps is not None:
@@ -410,11 +433,11 @@ def decode(string str):
     return str.c_str().decode('utf-8')
 
 class MeasureType(Enum):
-    MISC         = CColumnTypeMisc
-    NOMINAL_TEXT = CColumnTypeNominalText
-    NOMINAL      = CColumnTypeNominal
-    ORDINAL      = CColumnTypeOrdinal
-    CONTINUOUS   = CColumnTypeContinuous
+    MISC         = CMeasureTypeMisc
+    NOMINAL_TEXT = CMeasureTypeNominalText
+    NOMINAL      = CMeasureTypeNominal
+    ORDINAL      = CMeasureTypeOrdinal
+    CONTINUOUS   = CMeasureTypeContinuous
 
     @staticmethod
     def stringify(measure_type):

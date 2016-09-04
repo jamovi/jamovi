@@ -1,5 +1,5 @@
 
-#include "utils2.h"
+#include "Utils.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -12,7 +12,7 @@
 
 namespace fs = boost::filesystem;
 
-unsigned long Utils2::currentPID()
+unsigned long Utils::currentPID()
 {
 #ifdef _WIN32
 	return GetCurrentProcessId();
@@ -21,7 +21,7 @@ unsigned long Utils2::currentPID()
 #endif
 }
 
-unsigned long Utils2::parentPID()
+unsigned long Utils::parentPID()
 {
 #ifdef _WIN32
 	HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -55,7 +55,7 @@ unsigned long Utils2::parentPID()
 #endif
 }
 
-bool Utils2::isParentAlive()
+bool Utils::isParentAlive()
 {
 #ifdef _WIN32
 
@@ -84,7 +84,7 @@ bool Utils2::isParentAlive()
 #endif
 }
 
-std::string Utils2::makeRelative(const std::string &fromPath, const std::string &toPath)
+std::string Utils::makeRelative(const std::string &fromPath, const std::string &toPath)
 {
    // Start at the root path and while they are the same then do nothing then when they first
    // diverge take the remainder of the two path and replace the entire from path with ".."
