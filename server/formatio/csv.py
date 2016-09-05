@@ -37,7 +37,11 @@ def fix_names(names):
 def read(dataset, path):
 
     with open(path) as csvfile:
-        dialect = csv.Sniffer().sniff(csvfile.read(4096))
+        try:
+            dialect = csv.Sniffer().sniff(csvfile.read(4096))
+        except csv.Error as e:
+            dialect = 'excel'
+
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)
 

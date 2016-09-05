@@ -4,7 +4,7 @@ import formatio.osilky
 
 
 def read(dataset, path):
-    if path.endswith('.csv'):
+    if path.endswith('.csv') or path.endswith('.txt'):
         formatio.csv.read(dataset, path)
     elif path.endswith('.jasp'):
         formatio.osilky.read(dataset, path)
@@ -17,4 +17,4 @@ def write(dataset, path):
 
 
 def is_supported(filename):
-    return filename.endswith('.csv') or filename.endswith('.osilky') or filename.endswith('.jasp')
+    return filename.endswith('.csv') or filename.endswith('.txt') or filename.endswith('.osilky') or filename.endswith('.jasp')

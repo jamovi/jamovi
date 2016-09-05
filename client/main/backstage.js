@@ -556,9 +556,9 @@ var BackstagePlaces = SilkyView.extend({
             if (this.model.get('operation') === 'open') {
 
                 let filters = [
-                    { name: 'Data files', extensions: ['osilky', 'csv', 'jasp']},
+                    { name: 'Data files', extensions: ['osilky', 'csv', 'txt', 'jasp']},
                     { name: 'Silky', extensions: ['osilky'] },
-                    { name: 'CSV', extensions: ['csv'] },
+                    { name: 'CSV', extensions: ['csv', 'txt'] },
                     { name: 'JASP', extensions: ['jasp'] },
                 ];
 
