@@ -30,30 +30,60 @@ const NotificationView = SilkyView.extend({
 
         this.$ok = $('<div class="silky-notification-button-ok">OK</div>').appendTo(this.$buttons);
 
-        if (this.model.duration !== 0)
-            setTimeout(() => this.dismiss(), this.model.duration);
+        this._finished = () => {
+            this.trigger('finished');
+        };
+        this.dismiss = () => {
+            this.$el.one('transitionend', this._finished);
+            this.model.set('visible' , false);
+        };
+        this.reshow = () => {
+            this.$el.off('transitionend', this._finished);
+            clearTimeout(this.timeout);
+            this.model.attributes.visible = true;
+            if (this.model.duration !== 0)
+                this.timeout = setTimeout(this.dismiss, this.model.duration);
+            setTimeout(() => this._update(), 50);
+        };
 
-        setTimeout(() => this._update(), 50);
+        this.reshow();
     },
     _update: function() {
 
         this.$el.toggleClass('hidden', this.model.attributes.visible === false);
         this.$message.text(this.model.attributes.message);
-    },
-    dismiss: function() {
-        this.$el.one('transitionend', () => this.remove());
-        this.model.set('visible' , false);
     }
 });
 
 const Notifications = function($el) {
     this.$el = $el;
     this.$el.addClass('silky-notifications');
+    this.list = [ ];
 };
 
 Notifications.prototype.notify = function(notification) {
-    let $note = $('<div></div>').appendTo(this.$el);
-    new NotificationView({ el : $note, model : notification }); // notificationviews destroy themselves
+
+    let found = false;
+
+    for (let item of this.list) {
+        if (item.model === notification) {
+            found = true;
+            item.$view.reshow();
+            break;
+        }
+    }
+
+    if (found === false) {
+        let $el = $('<div></div>').appendTo(this.$el);
+        let $view = new NotificationView({ el : $el, model : notification });
+        let item = { model: notification, $view: $view };
+        this.list.push(item);
+
+        $view.on('finished', () => {
+            this.list = this.list.filter(v => v !== item);
+            $view.remove();
+        });
+    }
 };
 
 module.exports = Notifications;
