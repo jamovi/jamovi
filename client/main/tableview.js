@@ -13,6 +13,7 @@ const keyboardJS = require('keyboardjs');
 
 const SilkyView = require('./view');
 const DataSetModel = require('./dataset').Model;
+const Notify = require('./notification');
 
 const TableView = SilkyView.extend({
     className: "tableview",
@@ -136,7 +137,6 @@ const TableView = SilkyView.extend({
         this.$selectionColumnHighlight.appendTo(this.$header);
 
         this.$selection.on('focus', event => this._beginEditing());
-        this.$selection.on('blur', event => this._endEditing());
         this.$selection.on('keydown', event => this._editKeyPress(event));
         this.$selection.on('keypress', event => this._editKeyPress(event));
         this.$selection.on('keyup', event => this._editKeyPress(event));
@@ -164,7 +164,10 @@ const TableView = SilkyView.extend({
             if ($element.hasClass('silky-column-cell')) {
                 let rowNo = $element.data('row');
                 let colNo = $element.data('col');
-                this._setSelection(rowNo, colNo);
+                if (rowNo === this.selection.rowNo && colNo === this.selection.colNo)
+                    return;
+                if (this._endEditing())
+                    this._setSelection(rowNo, colNo);
             }
         }
         else if (event.type === 'dblclick') {
@@ -280,34 +283,63 @@ const TableView = SilkyView.extend({
     },
     _endEditing() {
         if (this._editing === false)
-            return;
+            return true;
+
+        if (this._edited) {
+
+            let value = this.$selection.val().trim();
+
+            if (this.currentColumnType === 'continuous') {
+                value = parseFloat(value);
+                if (isNaN(value)) {
+                    if (typeof(this.noteNumeric) === 'undefined')
+                        this.noteNumeric = new Notify({
+                            title: 'Numeric value required',
+                            message: 'Variables of type Continuous only accept numeric values',
+                            duration: 3000,
+                        });
+                    this.trigger('notification', this.noteNumeric);
+                    this.$selection.select();
+                    return false;
+                }
+            }
+            else if (this.currentColumnType === 'nominal' || this.currentColumnType === 'ordinal') {
+                value = parseInt(value);
+                if (isNaN(value)) {
+                    if (typeof(this.noteInteger) === 'undefined')
+                        this.noteInteger = new Notify({
+                            title: 'Integer value required',
+                            message: 'At present, Nominal and Ordinal variables only accept integer values',
+                            duration: 3000,
+                        });
+                    this.trigger('notification', this.noteInteger);
+                    this.$selection.select();
+                    return false;
+                }
+            }
+
+            if (value === '')
+                value = null;
+            else if (this.currentColumnType === 'continuous')
+                value = parseFloat(value);
+            else if (this.currentColumnType === 'nominal' || this.currentColumnType === 'ordinal')
+                value = parseInt(value);
+
+            let viewport = {
+                left:   this.selection.colNo,
+                right:  this.selection.colNo,
+                top:    this.selection.rowNo,
+                bottom: this.selection.rowNo
+            };
+
+            this.model.changeCells(viewport, [[ value ]]);
+        }
 
         this._editing = false;
-
         this.$selection.blur();
         this.$selection.removeClass('editing');
 
-        if (this._edited !== true)
-            return;
-
-        let value = this.$selection.val();
-        this.$selection.val('');
-
-        if (this.currentColumnType === 'continuous') {
-            value = parseFloat(value);
-        }
-        else if (this.currentColumnType === 'nominal') {
-            value = parseInt(value);
-        }
-
-        let viewport = {
-            left:   this.selection.colNo,
-            right:  this.selection.colNo,
-            top:    this.selection.rowNo,
-            bottom: this.selection.rowNo
-        };
-
-        this.model.changeCells(viewport, [[ value ]]);
+        return true;
     },
     _abortEditing() {
         if (this._editing === false)
@@ -324,8 +356,8 @@ const TableView = SilkyView.extend({
 
         if (event.type === 'keypress') {
             if (event.key === 'Enter') {
-                this._endEditing();
-                this._moveCursor('down');
+                if (this._endEditing())
+                    this._moveCursor('down');
             }
             else if (event.key.length === 1) {
                 this._edited = true;
@@ -335,8 +367,16 @@ const TableView = SilkyView.extend({
                 this._abortEditing();
             }
             else if (event.key === 'Tab') {
-                this._endEditing();
-                this._moveCursor('right');
+                if (this._endEditing()) {
+                    if (event.shiftKey)
+                        this._moveCursor('left');
+                    else
+                        this._moveCursor('right');
+                }
+                event.preventDefault();
+            }
+            else if (event.key === 'Delete' || event.key === 'Backspace') {
+                this._edited = true;
             }
         }
 
@@ -352,8 +392,14 @@ const TableView = SilkyView.extend({
             this._moveCursor('left');
             event.preventDefault();
             break;
-        case 'ArrowRight':
         case 'Tab':
+            if (event.shiftKey)
+                this._moveCursor('left');
+            else
+                this._moveCursor('right');
+            event.preventDefault();
+            break;
+        case 'ArrowRight':
             this._moveCursor('right');
             event.preventDefault();
             break;
@@ -367,6 +413,7 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         case 'Delete':
+        case 'Backspace':
             let viewport = {
                 left:  this.selection.colNo,
                 right: this.selection.colNo,

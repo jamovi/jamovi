@@ -83,9 +83,6 @@ $(document).ready(function() {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
-    let notifications = new Notifications($('#notifications'));
-    instance.on('notification', note => notifications.notify(note));
-
     ribbonModel.on('change:selectedIndex', function(event) {
         if (event.changed.selectedIndex === 0)
             backstage.activate();
@@ -143,6 +140,10 @@ $(document).ready(function() {
     let resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
+
+    let notifications = new Notifications($('#notifications'));
+    instance.on( 'notification', note => notifications.notify(note));
+    mainTable.on('notification', note => notifications.notify(note));
 
     Promise.resolve(function() {
 

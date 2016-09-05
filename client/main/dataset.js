@@ -294,10 +294,25 @@ const DataSetViewModel = DataSetModel.extend({
 
             let cells = new Array(columnCount);
 
+            let filterInt   = value => (value === -2147483648 ? '' : value);
+            let filterFloat = value => (isNaN(value) ? '' : value);
+
             for (let colNo = 0; colNo < columnCount; colNo++) {
 
                 let column = columns[colNo];
-                let values = column.get(column.cells).values;
+                let values;
+
+                switch (column.cells) {
+                    case 'ints':
+                        values = column.ints.values.map(filterInt);
+                        break;
+                    case 'doubles':
+                        values = column.doubles.values.map(filterFloat);
+                        break;
+                    case 'strings':
+                        values = column.strings.values;
+                        break;
+                }
 
                 cells[colNo] = values;
             }
