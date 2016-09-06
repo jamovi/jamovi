@@ -294,24 +294,17 @@ const DataSetViewModel = DataSetModel.extend({
 
             let cells = new Array(columnCount);
 
-            let filterInt   = value => (value === -2147483648 ? '' : value);
-            let filterFloat = value => (isNaN(value) ? '' : value);
-
             for (let colNo = 0; colNo < columnCount; colNo++) {
 
                 let column = columns[colNo];
-                let values;
+                let values = Array(column.values.length);
 
-                switch (column.cells) {
-                    case 'ints':
-                        values = column.ints.values.map(filterInt);
-                        break;
-                    case 'doubles':
-                        values = column.doubles.values.map(filterFloat);
-                        break;
-                    case 'strings':
-                        values = column.strings.values;
-                        break;
+                for (let i = 0; i < column.values.length; i++) {
+                    let inValue = column.values[i];
+                    let outValue = inValue[inValue.type];
+                    if (inValue.o !== null)
+                        outValue = null;
+                    values[i] = outValue;
                 }
 
                 cells[colNo] = values;
@@ -340,30 +333,26 @@ const DataSetViewModel = DataSetModel.extend({
         cellsRequest.rowEnd      = viewport.bottom;
         cellsRequest.columnEnd   = viewport.right;
 
-        let filterFloat  = value => value !== null ? value : NaN;
-        let filterInt    = value => value !== null ? value : -2147483648;
-        let filterString = value => value !== null ? value : '';
-
         for (let i = 0; i < nCols; i++) {
 
+            let inCells = cells[i];
             let columnType = this.attributes.columns[viewport.left + i].measureType;
             let column = new coms.Messages.CellsRR.Column();
 
-            if (columnType === 'continuous') {
-                let doubles = new coms.Messages.CellsRR.Column.Doubles();
-                doubles.values = cells[i].map(filterFloat);
-                column.doubles = doubles;
+            for (let j = 0; j < nRows; j++) {
+                let outValue = new coms.Messages.CellsRR.Column.CellValue();
+                let inValue = inCells[j];
+                if (inValue === null)
+                    outValue.o = coms.Messages.SpecialValues.MISSING;
+                else if (typeof(inValue) === 'string')
+                    outValue.s = inValue;
+                else if (Math.floor(inValue) === inValue)
+                    outValue.i = inValue;
+                else
+                    outValue.d = inValue;
+                column.values.push(outValue);
             }
-            else if (columnType === 'nominal' || columnType === 'ordinal') {
-                let ints = new coms.Messages.CellsRR.Column.Ints();
-                ints.values = cells[i].map(filterInt);
-                column.ints = ints;
-            }
-            else { // if (columnType === 'nominaltext') {
-                let strings = new coms.Messages.CellsRR.Column.Strings();
-                strings.values = cells[i].map(filterString);
-                column.strings = strings;
-            }
+
             cellsRequest.columns.push(column);
         }
 

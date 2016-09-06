@@ -21,6 +21,7 @@ import formatio
 import json
 import uuid
 import posixpath
+import math
 
 import utils.winjunclib
 
@@ -372,25 +373,43 @@ class Instance:
             col_res = request.columns[i]
 
             if column.measure_type == MeasureType.CONTINUOUS:
+                nan = float('nan')
                 for j in range(row_count):
-                    column[row_start + j] = col_res.doubles.values[j]
+                    cell = col_res.values[j]
+                    if cell.HasField('o'):
+                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                            column[row_start + j] = nan
+                    elif cell.HasField('d'):
+                        column[row_start + j] = cell.d
+                    elif cell.HasField('i'):
+                        column[row_start + j] = cell.i
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for j in range(row_count):
-                    value = col_res.strings.values[j]
-                    if value == '':
-                        index = -2147483648
-                    elif not column.has_level(value):
-                        index = column.level_count
-                        column.insert_level(index, value)
-                    else:
-                        index = column.get_value(value)
-                    column[row_start + j] = index
+                    cell = col_res.values[j]
+                    if cell.HasField('o'):
+                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                            column[row_start + j] = -2147483648
+                    elif cell.HasField('s'):
+                        value = cell.s
+                        if value == '':
+                            index = -2147483648
+                        elif not column.has_level(value):
+                            index = column.level_count
+                            column.insert_level(index, value)
+                        else:
+                            index = column.get_value(value)
+                        column[row_start + j] = index
             else:
                 for j in range(row_count):
-                    value = col_res.ints.values[j]
-                    if not column.has_level(value) and value != -2147483648:
-                        column.insert_level(value, str(value))
-                    column[row_start + j] = value
+                    cell = col_res.values[j]
+                    if cell.HasField('o'):
+                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                            column[row_start + j] = -2147483648
+                    elif cell.HasField('i'):
+                        value = cell.i
+                        if not column.has_level(value) and value != -2147483648:
+                            column.insert_level(value, str(value))
+                        column[row_start + j] = value
 
     def _on_get_cells(self, request, response):
 
@@ -408,16 +427,28 @@ class Instance:
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 for r in range(row_start, row_start + row_count):
+                    cell = col_res.values.add()
                     value = column[r]
-                    col_res.doubles.values.append(value)
+                    if math.isnan(value):
+                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                    else:
+                        cell.d = value
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for r in range(row_start, row_start + row_count):
+                    cell = col_res.values.add()
                     value = column[r]
-                    col_res.strings.values.append(value)
+                    if value == '':
+                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                    else:
+                        cell.s = value
             else:
                 for r in range(row_start, row_start + row_count):
+                    cell = col_res.values.add()
                     value = column[r]
-                    col_res.ints.values.append(value)
+                    if value == -2147483648:
+                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                    else:
+                        cell.i = value
 
     def _add_to_recents(self, path):
 

@@ -289,7 +289,10 @@ const TableView = SilkyView.extend({
 
             let value = this.$selection.val().trim();
 
-            if (this.currentColumnType === 'continuous') {
+            if (value === '') {
+                value = null;
+            }
+            else if (this.currentColumnType === 'continuous') {
                 value = parseFloat(value);
                 if (isNaN(value)) {
                     if (typeof(this.noteNumeric) === 'undefined')
@@ -317,13 +320,6 @@ const TableView = SilkyView.extend({
                     return false;
                 }
             }
-
-            if (value === '')
-                value = null;
-            else if (this.currentColumnType === 'continuous')
-                value = parseFloat(value);
-            else if (this.currentColumnType === 'nominal' || this.currentColumnType === 'ordinal')
-                value = parseInt(value);
 
             let viewport = {
                 left:   this.selection.colNo,
@@ -421,6 +417,9 @@ const TableView = SilkyView.extend({
                 bottom: this.selection.rowNo,
             };
             this.model.changeCells(viewport, [[ null ]]);
+            break;
+        case ' ':
+            event.preventDefault();
             break;
         default:
             if (event.key.length === 1)

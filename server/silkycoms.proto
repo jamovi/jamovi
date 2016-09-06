@@ -136,6 +136,11 @@ message CellsRequest {
     optional GetSet op = 5 [default=GET];
 }
 
+enum SpecialValues {
+    MISSING = 1;
+    NOT_A_NUMBER = 2;
+}
+
 message CellsRR {
 
     optional GetSet op = 1 [default=GET];
@@ -146,21 +151,16 @@ message CellsRR {
 
     message Column {
 
-        message Ints {
-            repeated int32 values = 1;
-        }
-        message Doubles {
-            repeated double values = 1;
-        }
-        message Strings {
-            repeated string values = 1;
+        message CellValue {
+            oneof type {
+                int32 i = 1;
+                double d = 2;
+                string s = 3;
+                SpecialValues o = 4;
+            }
         }
 
-        oneof cells {
-            Ints    ints = 1;
-            Doubles doubles = 2;
-            Strings strings = 3;
-        }
+        repeated CellValue values = 1;
     }
 
     repeated Column columns = 6;
