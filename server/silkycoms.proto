@@ -89,7 +89,7 @@ message VariableLevel {
 }
 
 message DataSetSchema {
-    message Field {
+    message ColumnSchema {
         optional int32 id = 1;
         optional string name = 2;
 
@@ -102,11 +102,13 @@ message DataSetSchema {
         }
 
         optional MeasureType measureType = 3;
-        optional int32 width = 4;
-        repeated VariableLevel levels = 5;
-        optional int32 dps = 6;
+        optional bool autoMeasure = 4;
+        optional int32 width = 5;
+        optional bool hasLevels = 6;
+        repeated VariableLevel levels = 7;
+        optional int32 dps = 8;
     }
-    repeated Field fields = 1;
+    repeated ColumnSchema columns = 1;
 }
 
 enum GetSet {
@@ -115,8 +117,6 @@ enum GetSet {
 }
 
 message InfoRequest {
-    optional GetSet op = 1 [default=GET];
-    optional DataSetSchema schema = 2;
 }
 
 message InfoResponse {
@@ -125,15 +125,6 @@ message InfoResponse {
     optional uint32 rowCount = 3;
     optional uint32 columnCount = 4;
     optional string filePath = 5;
-    optional GetSet op = 6 [default=GET];
-}
-
-message CellsRequest {
-    optional uint32 rowStart = 1;
-    optional uint32 columnStart = 2;
-    optional uint32 rowEnd = 3;
-    optional uint32 columnEnd = 4;
-    optional GetSet op = 5 [default=GET];
 }
 
 enum SpecialValues {
@@ -141,15 +132,19 @@ enum SpecialValues {
     NOT_A_NUMBER = 2;
 }
 
-message CellsRR {
+message DataSetRR {
 
     optional GetSet op = 1 [default=GET];
-    optional uint32 rowStart = 2;
-    optional uint32 columnStart = 3;
-    optional uint32 rowEnd = 4;
-    optional uint32 columnEnd = 5;
 
-    message Column {
+    optional bool incData = 2;
+    optional bool incSchema = 3;
+
+    optional uint32 rowStart = 4;
+    optional uint32 columnStart = 5;
+    optional uint32 rowEnd = 6;
+    optional uint32 columnEnd = 7;
+
+    message ColumnData {
 
         message CellValue {
             oneof type {
@@ -163,7 +158,8 @@ message CellsRR {
         repeated CellValue values = 1;
     }
 
-    repeated Column columns = 6;
+    repeated ColumnData data = 8;
+    repeated DataSetSchema.ColumnSchema schema = 9;
 }
 
 message AnalysisRequest {

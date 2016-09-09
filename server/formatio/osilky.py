@@ -100,10 +100,16 @@ def read(dataset, path):
 
         row_count = meta_dataset['rowCount']
 
-        for i in range(row_count):
-            dataset.append_row()
-            for column in dataset:
-                column[i] = 0
+        dataset.set_row_count(row_count)
+
+        xdata_content = zip.read('xdata.json').decode('utf-8')
+        xdata = json.loads(xdata_content)
+
+        for column in dataset:
+            if column.name in xdata:
+                meta_labels = xdata[column.name]['labels']
+                for meta_label in meta_labels:
+                    column.append_level(meta_label[0], meta_label[1])
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
@@ -122,12 +128,3 @@ def read(dataset, path):
                         value = struct.unpack('<i', byts)
                         column[i] = value[0]
             data_file.close()
-
-        xdata_content = zip.read('xdata.json').decode('utf-8')
-        xdata = json.loads(xdata_content)
-
-        for column in dataset:
-            if column.name in xdata:
-                meta_labels = xdata[column.name]['labels']
-                for meta_label in meta_labels:
-                    column.append_level(meta_label[0], meta_label[1])

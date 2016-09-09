@@ -20,7 +20,7 @@ public:
     static DataSetW *create(MemoryMapW *mm);
     static DataSetW *retrieve(MemoryMapW *mm);
 
-    void appendColumn(const char *name);
+    ColumnW appendColumn(const char *name);
     void appendRow();
     void setRowCount(size_t count);
 

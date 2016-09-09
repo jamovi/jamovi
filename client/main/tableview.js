@@ -19,8 +19,8 @@ const TableView = SilkyView.extend({
     className: "tableview",
     initialize() {
 
-        $(window).on('resize', event => this.resizeHandler(event));
-        this.$el.on('resized', event => this.resizeHandler(event));
+        $(window).on('resize', event => this._resizeHandler(event));
+        this.$el.on('resized', event => this._resizeHandler(event));
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
@@ -48,7 +48,7 @@ const TableView = SilkyView.extend({
 
         this.rowHeaderWidth = 32;
 
-        this.$container.on('scroll', event => this.scrollHandler(event));
+        this.$container.on('scroll', event => this._scrollHandler(event));
 
         setTimeout(() => {
             this._rowHeight = this.$header.height();  // read and store the row height
@@ -63,23 +63,11 @@ const TableView = SilkyView.extend({
         this.$el.on('dblclick', event => this._clickHandler(event));
 
         keyboardJS.setContext('spreadsheet');
-        keyboardJS.bind('', event => this._notEditKeyPress(event));
+        keyboardJS.bind('', event => this._notEditingKeyPress(event));
 
         this._edited = false;
         this._editing = false;
-    },
-    _columnsChanged(event) {
-
-        if (event.levelsChanged || event.measureTypeChanged) {
-            for (let name of event.columns) {
-                let column = this.model.getColumn(name);
-                let index = this.model.indexOfColumn(column);
-                let $header = $(this.$headers[index]);
-                $header.attr('data-measuretype', column.measureType);
-                let $column = $(this.$columns[index]);
-                $column.attr('data-measuretype', column.measureType);
-            }
-        }
+        this._editNote = new Notify({ duration: 3000 });
     },
     _dataSetLoaded() {
 
@@ -120,7 +108,7 @@ const TableView = SilkyView.extend({
 
         this.$rhColumn = $('<div class="silky-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
 
-        this.updateViewRange();
+        this._updateViewRange();
 
         let $resizers = this.$header.find('.silky-column-header-resizer');
         $resizers.on('drag', event => this._columnResizeHandler(event));
@@ -156,6 +144,19 @@ const TableView = SilkyView.extend({
 
         this._setSelection(0, 0);
     },
+    _columnsChanged(event) {
+
+        for (let changes of event.changes) {
+            if (changes.levelsChanged || changes.measureTypeChanged) {
+                let column = this.model.getColumn(changes.name);
+                let index = this.model.indexOfColumn(changes.name);
+                let $header = $(this.$headers[index]);
+                $header.attr('data-measuretype', column.measureType);
+                let $column = $(this.$columns[index]);
+                $column.attr('data-measuretype', column.measureType);
+            }
+        }
+    },
     _clickHandler(event) {
         let element = document.elementFromPoint(event.clientX, event.clientY);
         let $element = $(element);
@@ -166,8 +167,9 @@ const TableView = SilkyView.extend({
                 let colNo = $element.data('col');
                 if (rowNo === this.selection.rowNo && colNo === this.selection.colNo)
                     return;
-                if (this._endEditing())
+                this._endEditing().then(() => {
                     this._setSelection(rowNo, colNo);
+                }, () => {});
             }
         }
         else if (event.type === 'dblclick') {
@@ -212,7 +214,7 @@ const TableView = SilkyView.extend({
 
             if (colNo !== this.selection.colNo)
                 $(this.$headers[this.selection.colNo]).removeClass('highlighted');
-            if (rowNo !== this.selection.colNo && rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+            if (rowNo !== this.selection.rowNo && rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
                 let vRowNo = this.selection.rowNo - this.viewport.top;
                 let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
                 $cell.removeClass('highlighted');
@@ -224,7 +226,7 @@ const TableView = SilkyView.extend({
 
         this.selection.rowNo = rowNo;
         this.selection.colNo = colNo;
-        this.currentColumnType = this.model.attributes.columns[colNo].measureType;
+        this.currentColumn = this.model.attributes.columns[colNo];
 
         // add column header highlight
         $(this.$headers[colNo]).addClass('highlighted');
@@ -281,43 +283,43 @@ const TableView = SilkyView.extend({
             }
         }, 50);
     },
-    _endEditing() {
-        if (this._editing === false)
-            return true;
+    _applyEdit() {
+        if ( ! this._edited)
+            return Promise.resolve();
 
-        if (this._edited) {
+        return Promise.resolve().then(() => {
 
             let value = this.$selection.val().trim();
 
             if (value === '') {
-                value = null;
+                value = null; // missing value
             }
-            else if (this.currentColumnType === 'continuous') {
-                value = parseFloat(value);
-                if (isNaN(value)) {
-                    if (typeof(this.noteNumeric) === 'undefined')
-                        this.noteNumeric = new Notify({
-                            title: 'Numeric value required',
-                            message: 'Variables of type Continuous only accept numeric values',
-                            duration: 3000,
-                        });
-                    this.trigger('notification', this.noteNumeric);
-                    this.$selection.select();
-                    return false;
-                }
-            }
-            else if (this.currentColumnType === 'nominal' || this.currentColumnType === 'ordinal') {
-                value = parseInt(value);
-                if (isNaN(value)) {
-                    if (typeof(this.noteInteger) === 'undefined')
-                        this.noteInteger = new Notify({
-                            title: 'Integer value required',
-                            message: 'At present, Nominal and Ordinal variables only accept integer values',
-                            duration: 3000,
-                        });
-                    this.trigger('notification', this.noteInteger);
-                    this.$selection.select();
-                    return false;
+            else {
+                let number = Number(value);
+                switch (this.currentColumn.measureType) {
+                    case 'continuous':
+                        if ( ! Number.isNaN(number))
+                            value = number;
+                        else if ( ! this.currentColumn.autoMeasure)
+                            throw {
+                                title: 'Numeric value required',
+                                message: 'Variables of type Continuous only accept numeric values',
+                            };
+                        break;
+                    case 'nominal':
+                    case 'ordinal':
+                        if (Number.isInteger(number))
+                            value = number;
+                        else if ( ! this.currentColumn.autoMeasure)
+                            throw {
+                                title: 'Integer value required',
+                                message: 'Nominal and Ordinal variables only accept integer values',
+                            };
+                        else if ( ! Number.isNaN(number))
+                            value = number;
+                        break;
+                    case 'nominaltext':
+                        break;
                 }
             }
 
@@ -328,14 +330,29 @@ const TableView = SilkyView.extend({
                 bottom: this.selection.rowNo
             };
 
-            this.model.changeCells(viewport, [[ value ]]);
-        }
+            return this.model.changeCells(viewport, [[ value ]]);
+        });
+    },
+    _endEditing() {
+        if (this._editing === false)
+            return Promise.resolve();
 
-        this._editing = false;
-        this.$selection.blur();
-        this.$selection.removeClass('editing');
-
-        return true;
+        return Promise.resolve().then(() => {
+            return this._applyEdit();
+        }).then(() => {
+            this._editing = false;
+            this.$selection.blur();
+            this.$selection.removeClass('editing');
+        }).catch(err => {
+            this._notifyEditProblem(err);
+            this.$selection.select();
+            console.log(err);
+            throw 'cancelled';
+        });
+    },
+    _notifyEditProblem(details) {
+        this._editNote.set(details);
+        this.trigger('notification', this._editNote);
     },
     _abortEditing() {
         if (this._editing === false)
@@ -352,8 +369,9 @@ const TableView = SilkyView.extend({
 
         if (event.type === 'keypress') {
             if (event.key === 'Enter') {
-                if (this._endEditing())
+                this._endEditing().then(() => {
                     this._moveCursor('down');
+                }, () => {});
             }
             else if (event.key.length === 1) {
                 this._edited = true;
@@ -363,12 +381,12 @@ const TableView = SilkyView.extend({
                 this._abortEditing();
             }
             else if (event.key === 'Tab') {
-                if (this._endEditing()) {
+                this._endEditing().then(() => {
                     if (event.shiftKey)
                         this._moveCursor('left');
                     else
                         this._moveCursor('right');
-                }
+                }, () => {});
                 event.preventDefault();
             }
             else if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -378,7 +396,7 @@ const TableView = SilkyView.extend({
 
         event.stopPropagation();
     },
-    _notEditKeyPress(event) {
+    _notEditingKeyPress(event) {
 
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
@@ -417,6 +435,9 @@ const TableView = SilkyView.extend({
                 bottom: this.selection.rowNo,
             };
             this.model.changeCells(viewport, [[ null ]]);
+            break;
+        case 'F2':
+            this._beginEditing();
             break;
         case ' ':
             event.preventDefault();
@@ -472,7 +493,7 @@ const TableView = SilkyView.extend({
             this.$selectionColumnHighlight.css({ left: x, width: width, height: height });
         }
 
-        this.resizeHandler();
+        this._resizeHandler();
     },
     _updateCells() {
 
@@ -489,15 +510,10 @@ const TableView = SilkyView.extend({
             let dps = columns[colOffset + colNo].dps;
 
             for (let rowNo = 0; rowNo < column.length; rowNo++) {
-                let  cell = column[rowNo];
                 let $cell = $($cells[rowNo]);
+                let content = column[rowNo];
 
-                if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
-                    cell = '';
-                else if (typeof(cell) === 'number')
-                    cell = cell.toFixed(dps);
-
-                $cell.text(cell);
+                this._updateCell($cell, content, dps);
             }
         }
 
@@ -528,25 +544,43 @@ const TableView = SilkyView.extend({
             for (let rowNo = 0; rowNo < nRows; rowNo++) {
 
                 let $cell = $($cells[rowOffset + rowNo]);
-                let cell = column[rowOffset + rowNo];
-
-                if (cell === -2147483648 || (typeof(cell) === 'number' && isNaN(cell)))
-                    cell = '';
-                else if (typeof(cell) === 'number')
-                    cell = cell.toFixed(dps);
-
-                $cell.text(cell);
+                let content = column[rowOffset + rowNo];
+                this._updateCell($cell, content, dps);
             }
         }
     },
-    scrollHandler(event) {
+    _updateCell($cell, content, dps) {
+
+        let type;
+        let asNumber = Number(content);
+
+        if (content === null || content === '') {
+            content = '';
+            type = '';
+        }
+        else if (typeof(content) === 'number') {
+            content = asNumber.toFixed(dps);
+            type = 'number';
+        }
+        else if (Number.isNaN(asNumber)) {
+            type = 'string';
+        }
+        else {
+            type = 'number';
+        }
+
+
+        $cell.text(content);
+        $cell.attr('data-type', type);
+    },
+    _scrollHandler(event) {
 
         if (this.model.get('hasDataSet') === false)
             return;
 
-        let currentViewRange = this.getViewRange();
-        if (this.encloses(this.viewOuterRange, currentViewRange) === false)
-            this.updateViewRange();
+        let currentViewRange = this._getViewRange();
+        if (this._encloses(this.viewOuterRange, currentViewRange) === false)
+            this._updateViewRange();
 
         let left = this.$container.scrollLeft();
         this.$rhColumn.css('left', left);
@@ -554,23 +588,23 @@ const TableView = SilkyView.extend({
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
     },
-    resizeHandler(event) {
+    _resizeHandler(event) {
 
         if (this.model.get('hasDataSet') === false)
             return;
 
-        let currentViewRange = this.getViewRange();
-        if (this.encloses(this.viewOuterRange, currentViewRange) === false)
-            this.updateViewRange();
+        let currentViewRange = this._getViewRange();
+        if (this._encloses(this.viewOuterRange, currentViewRange) === false)
+            this._updateViewRange();
 
         let left = this.$container.scrollLeft();
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
         this.$container.css('height', this.$el.height() - this._rowHeight);
     },
-    updateViewRange() {
+    _updateViewRange() {
 
-        let v = this.getViewRange();
+        let v = this._getViewRange();
 
         let topRow = Math.floor(v.top / this._rowHeight) - 1;
         let botRow = Math.ceil(v.bottom / this._rowHeight) - 1;
@@ -624,13 +658,13 @@ const TableView = SilkyView.extend({
 
         this.refreshCells(oldViewport, this.viewport);
     },
-    _createCellHTML(top, height, content, rowNo, colNo) {
+    _createCellHTML(top, height, rowNo, colNo) {
+
         return '<div ' +
             ' class="silky-column-cell"' +
             ' data-row="' + rowNo + '"' +
             ' data-col="' + colNo + '"' +
             ' style="top : ' + top + 'px ; height : ' + height + 'px">' +
-            content +
             '</div>';
     },
     _createRHCellHTML(top, height, content, rowNo) {
@@ -661,7 +695,7 @@ const TableView = SilkyView.extend({
             }
         }
 
-        if (o === null || this.overlaps(o, n) === false) { // entirely new cells
+        if (o === null || this._overlaps(o, n) === false) { // entirely new cells
 
             if (o !== null) {  // clear old cells
 
@@ -681,7 +715,7 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = n.top + j;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                    let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
                     $column.append($cell);
                 }
             }
@@ -705,7 +739,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, colNo));
                         $column.append($cell);
                     }
                 }
@@ -734,7 +768,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, colNo));
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, colNo));
                         $column.append($cell);
                     }
                 }
@@ -763,7 +797,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.bottom + j + 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
                         $column.append($cell);
                     }
                 }
@@ -802,7 +836,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.top - j - 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, '', rowNo, i));
+                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
                         $column.prepend($cell);
                     }
                 }
@@ -831,7 +865,7 @@ const TableView = SilkyView.extend({
             this.model.reshape(deltaLeft, deltaTop, deltaRight, deltaBottom);
         }
     },
-    getViewRange() {
+    _getViewRange() {
         let vTop   = this.$container.scrollTop();
         let vBot   = vTop + this.$el.height() - this._rowHeight;
         let vLeft  = this.$container.scrollLeft();
@@ -839,13 +873,13 @@ const TableView = SilkyView.extend({
 
         return { top : vTop, bottom : vBot, left : vLeft, right : vRight };
     },
-    encloses(outer, inner) {
+    _encloses(outer, inner) {
         return outer.left   <= inner.left
             && outer.right  >= inner.right
             && outer.top    <= inner.top
             && outer.bottom >= inner.bottom;
     },
-    overlaps(one, two) {
+    _overlaps(one, two) {
         let colOverlap = (one.left >= two.left && one.left <= two.right) || (one.right >= two.left && one.right <= two.right);
         let rowOverlap = (one.top <= two.bottom && one.top >= two.top)  || (one.bottom <= two.bottom && one.bottom >= two.top);
         return rowOverlap && colOverlap;

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Jonathon Love
  */
- 
+
 .silky-variable-editor {
     background-color: #F8F8F8 ;
     width: 100% ;
@@ -144,6 +144,15 @@
     width: 150px ;
 }
 
+.silky-variable-editor-widget-types-highlight {
+    position: absolute ;
+    padding: 2px ;
+    width: 32px ;
+    height: 32px ;
+    background-color: #E8E8E8 ;
+    transition: all .2s ;
+}
+
 .silky-variable-editor-autotype {
     margin: 4px 0 0 24px ;
 }
@@ -151,13 +160,15 @@
 .silky-variable-editor-widget-option {
     padding: 2px ;
     vertical-align: middle;
+    position: relative ;
+    z-index: 1 ;
 }
 
 .silky-variable-editor-widget-option:hover {
     background-color: #F0F0F0 ;
 }
 
-.silky-variable-editor-widget-option.selected {
+.silky-variable-editor-widget-option.selected:hover {
     background-color: #E8E8E8 ;
 }
 

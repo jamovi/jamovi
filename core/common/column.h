@@ -17,6 +17,7 @@ typedef struct
     int start;
     int length;
     int capacity;
+
     char values[8];
 
 } Block;
@@ -28,6 +29,7 @@ typedef struct
 {
     int value;
     int capacity;
+    int count;
     char *label;
 
 } Level;
@@ -36,6 +38,7 @@ typedef struct
 {
     char *name;
     char measureType;
+    char autoMeasure;
     int rowCount;
     int capacity;
 
@@ -47,7 +50,9 @@ typedef struct
     int levelsCapacity;
     Level *levels;
 
-    int dps;
+    char dps;
+
+    char changes;
 
 } ColumnStruct;
 
@@ -74,14 +79,29 @@ public:
     int dps() const;
 
     MeasureType::Type measureType() const;
+    bool autoMeasure() const;
     int levelCount() const;
     std::map<int, std::string> levels() const;
     const char *getLabel(int value) const;
-    int getValue(const char *label) const;
+    int valueForLabel(const char *label) const;
     bool hasLevel(const char *label) const;
     bool hasLevel(int value) const;
 
-    template<typename T> T& cell(int rowIndex)
+    template<typename T> T value(int rowIndex)
+    {
+        return cellAt<T>(rowIndex);
+    }
+
+protected:
+
+    ColumnStruct *struc() const;
+
+    DataSet *_parent;
+    ColumnStruct *_rel;
+
+    Level *rawLevel(int value) const;
+
+    template<typename T> T& cellAt(int rowIndex)
     {
         ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
 
@@ -96,23 +116,6 @@ public:
 
         return *((T*) &currentBlock->values[index * sizeof(T)]);
     }
-
-    int& intCell(int rowIndex)
-    {
-        return cell<int>(rowIndex);
-    }
-
-    double& doubleCell(int rowIndex)
-    {
-        return cell<double>(rowIndex);
-    }
-
-protected:
-
-    ColumnStruct *struc() const;
-
-    DataSet *_parent;
-    ColumnStruct *_rel;
 
 private:
     MemoryMap *_mm;

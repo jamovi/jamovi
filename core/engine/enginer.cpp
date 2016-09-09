@@ -163,7 +163,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
             Rcpp::NumericVector v(rowCount, Rcpp::NumericVector::get_na());
 
             for (int j = 0; j < rowCount; j++)
-                v[j] = column.cell<double>(j);
+                v[j] = column.value<double>(j);
 
             columns[index] = v;
         }
@@ -195,7 +195,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             for (j = 0; j < rowCount; j++)
             {
-                int value = column.cell<int>(j);
+                int value = column.value<int>(j);
                 if (value != MISSING)
                     v[j] = indexes[value];
             }

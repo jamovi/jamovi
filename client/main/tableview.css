@@ -84,11 +84,12 @@
 
 .silky-column[data-measuretype="continuous"],
 .silky-column[data-measuretype="nominal"],
-.silky-column[data-measuretype="ordinal"] {
+.silky-column[data-measuretype="ordinal"],
+.silky-column[data-measuretype="nominaltext"] .silky-column-cell[data-type="number"] {
     text-align: right ;
 }
 
-.silky-column[data-measuretype="nominaltext"] {
+.silky-column[data-measuretype="nominaltext"] .silky-column-cell[data-type="string"] {
     text-align: left ;
 }
 

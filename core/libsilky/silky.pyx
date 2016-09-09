@@ -21,7 +21,7 @@ cdef extern from "datasetw.h":
         CDataSet *retrieve(CMemoryMap *mm) except +
         int rowCount() const
         int columnCount() const
-        void appendColumn(const char *name) except +
+        CColumn appendColumn(const char *name) except +
         void setRowCount(size_t count) except +
         void appendRow() except +
         CColumn operator[](int index) except +
@@ -73,7 +73,9 @@ cdef class DataSet:
         return ColumnIterator(self)
 
     def append_column(self, name):
-        self._this.appendColumn(name.encode('utf-8'))
+        c = Column()
+        c._this = self._this.appendColumn(name.encode('utf-8'))
+        return c
 
     def set_row_count(self, count):
         self._this.setRowCount(count)
@@ -94,11 +96,13 @@ cdef extern from "columnw.h":
         const char *name() const
         void setMeasureType(CMeasureType measureType)
         CMeasureType measureType() const
+        void setAutoMeasure(bool auto)
+        bool autoMeasure() const
         void append[T](const T &value)
-        int &intCell(int index)
-        double &doubleCell(int index)
+        void setValue[T](int index, T value)
+        T value[T](int index)
         const char *getLabel(int value) const
-        int getValue(const char *label) const
+        int valueForLabel(const char *label) const
         void appendLevel(int value, const char *label)
         void insertLevel(int value, const char *label)
         int levelCount() const
@@ -109,6 +113,7 @@ cdef extern from "columnw.h":
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
+        int changes() const;
 
 cdef extern from "column.h":
     ctypedef enum CMeasureType  "MeasureType::Type":
@@ -144,6 +149,13 @@ cdef class Column:
             if type(measure_type) is MeasureType:
                 measure_type = measure_type.value
             self._this.setMeasureType(measure_type)
+
+    property auto_measure:
+        def __get__(self):
+            return self._this.autoMeasure()
+
+        def __set__(self, auto):
+            self._this.setAutoMeasure(auto)
 
     property dps:
         def __get__(self):
@@ -192,8 +204,8 @@ cdef class Column:
     def insert_level(self, raw, label):
         self._this.insertLevel(raw, label.encode('utf-8'))
 
-    def get_value(self, label):
-        return self._this.getValue(label.encode('utf-8'))
+    def get_value_for_label(self, label):
+        return self._this.valueForLabel(label.encode('utf-8'))
 
     def clear_levels(self):
         self._this.clearLevels()
@@ -230,40 +242,50 @@ cdef class Column:
     def row_count(self):
         return self._this.rowCount();
 
-    def __setitem__(self, index, value):
-        cdef int *v
-        cdef double *d
+    @property
+    def changes(self):
+        return self._this.changes();
 
+    def clear_at(self, index):
         if self.measure_type is MeasureType.CONTINUOUS:
-            d = &self._this.doubleCell(index)
-            d[0] = value
+            self._this.setValue[double](index, float('nan'))
         else:
-            v = &self._this.intCell(index)
-            v[0] = value
+            self._this.setValue[int](index, -2147483648)
+
+    def __setitem__(self, index, value):
+        if self.measure_type is MeasureType.CONTINUOUS:
+            self._this.setValue[double](index, value)
+        else:
+            self._this.setValue[int](index, value)
 
     def __getitem__(self, index):
         if self.measure_type == MeasureType.CONTINUOUS:
-            return self._this.doubleCell(index)
+            return self._this.value[double](index)
         elif self.measure_type == MeasureType.NOMINAL_TEXT:
-            raw = self._this.intCell(index)
+            raw = self._this.value[int](index)
             return self._this.getLabel(raw).decode()
         else:
-            return self._this.intCell(index)
+            return self._this.value[int](index)
 
     def __iter__(self):
         return CellIterator(self)
 
     def raw(self, index):
         if self.measure_type == MeasureType.CONTINUOUS:
-            return self._this.doubleCell(index)
+            return self._this.value[double](index)
         else:
-            return self._this.intCell(index)
+            return self._this.value[int](index)
 
-    def change(self, measure_type, levels=None, dps=None):
-        cdef int *v
+    def change(self, measure_type, levels=None, dps=None, auto_measure=None):
 
         if type(measure_type) is not MeasureType:
             measure_type = MeasureType(measure_type)
+
+        if dps is not None:
+            self.dps = dps
+
+        if auto_measure is not None:
+            self.auto_measure = auto_measure
 
         new_type = measure_type
         old_type = self.measure_type
@@ -273,7 +295,10 @@ cdef class Column:
             nan = float('nan')
             for i in range(len(values)):
                 try:
-                    values[i] = float(values[i])
+                    if values[i] != -2147483648:
+                        values[i] = float(values[i])
+                    else:
+                        values[i] = nan
                 except:
                     values[i] = nan
 
@@ -282,22 +307,40 @@ cdef class Column:
             for i in range(len(values)):
                 self[i] = values[i]
 
+            if self.auto_measure:
+                self.determine_dps()
+
         elif new_type == MeasureType.NOMINAL or new_type == MeasureType.ORDINAL:
+
             if old_type == MeasureType.NOMINAL or old_type == MeasureType.ORDINAL:
                 self.measure_type = new_type
+
             elif old_type == MeasureType.NOMINAL_TEXT or old_type == MeasureType.CONTINUOUS:
-                uniques = set()
-                for i in range(self.row_count):
-                    v = &self._this.intCell(i)
-                    try:
-                        v[0] = round(float(self[i]))
-                        uniques.add(v[0])
-                    except ValueError as e:
-                        v[0] = -2147483648
+
+                if old_type == MeasureType.NOMINAL_TEXT:
+                    nan = ''
+                else:
+                    nan = float('nan')
+
+                values = list(self)
                 self.clear_levels()
-                for value in uniques:
-                    self.append_level(value, str(value))
+
                 self.measure_type = new_type
+
+                for i in range(len(values)):
+                    try:
+                        value = values[i]
+                        if value != nan:
+                            value = round(float(value))
+                            if not self.has_level(value):
+                                self.insert_level(value, str(value))
+                        else:
+                            value = -2147483648
+                        self._this.setValue[int](i, value, True)
+                    except ValueError:
+                        self._this.setValue[int](i, -2147483648, True)
+
+                self.dps = 0
 
         elif new_type == MeasureType.NOMINAL_TEXT:
             if old_type == MeasureType.NOMINAL_TEXT:
@@ -310,41 +353,50 @@ cdef class Column:
                                 recode[old_level[0]] = new_level[0]
                                 break
 
-                    for row_no in range(self.row_count):
-                        v = &self._this.intCell(row_no)
-                        v[0] = recode.get(v[0], -2147483648)
-
                     self.clear_levels()
                     for level in levels:
                         self.append_level(level[0], level[1])
+
+                    for row_no in range(self.row_count):
+                        value = self._this.value[int](row_no)
+                        value = recode.get(value, -2147483648)
+                        self._this.setValue[int](row_no, value, True)
+
                 self.measure_type = MeasureType.NOMINAL_TEXT
 
             elif old_type == MeasureType.CONTINUOUS:
                 nan = float('nan')
 
+                multip = math.pow(10, self.dps)
+
                 uniques = set()
                 for value in self:
                     if math.isnan(value) == False:
-                        uniques.add(value)
+                        uniques.add(int(value * multip))
                 uniques = list(uniques)
                 uniques.sort()
+
+                self.measure_type = MeasureType.NOMINAL_TEXT
+
+                self.clear_levels()
+                for i in range(len(uniques)):
+                    v = float(uniques[i]) / multip
+                    label = '{:.{}f}'.format(v, self.dps)
+                    self.append_level(i, label)
 
                 v2i = { }
                 for i in range(len(uniques)):
                     v2i[uniques[i]] = i
                 for i in range(self.row_count):
-                    value = self[i]
-                    v = &self._this.intCell(i)
+                    value = self._this.value[double](i)
                     if math.isnan(value):
-                        v[0] = -2147483648
+                        self._this.setValue[int](i, -2147483648, True)
                     else:
-                        v[0] = v2i[value]
-                self.clear_levels()
-                for i in range(len(uniques)):
-                    self.append_level(i, str(uniques[i]))
+                        self._this.setValue[int](i, v2i[int(value * multip)], True)
 
-                self.measure_type = MeasureType.NOMINAL_TEXT
-            else:
+                self.determine_dps()
+
+            else: # ordinal or nominal
                 nan = -2147483648
 
                 uniques = set()
@@ -354,23 +406,19 @@ cdef class Column:
                 uniques = list(uniques)
                 uniques.sort()
 
+                self.measure_type = MeasureType.NOMINAL_TEXT
+
+                self.clear_levels()
+                for i in range(len(uniques)):
+                    self.append_level(i, str(uniques[i]))
+
                 v2i = { }
                 for i in range(len(uniques)):
                     v2i[uniques[i]] = i
                 for i in range(self.row_count):
-                    value = self[i]
-                    v = &self._this.intCell(i)
-                    if math.isnan(value):
-                        v[0] = -2147483648
-                    else:
-                        v[0] = v2i[value]
-                self.clear_levels()
-                for i in range(len(uniques)):
-                    self.append_level(i, str(uniques[i]))
-                self.measure_type = MeasureType.NOMINAL_TEXT
-
-        if dps is not None:
-            self.dps = dps
+                    value = self._this.value[int](i)
+                    if value != nan:
+                        self._this.setValue[int](i, v2i[value], True)
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":

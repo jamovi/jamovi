@@ -19,7 +19,7 @@ const NotificationView = SilkyView.extend({
         this.model.on("change", () => this._update());
         this.handlers = [];
 
-        this.$title = $('<div class="silky-notification-title">' + this.model.title + '</div>').appendTo(this.$el);
+        this.$title = $('<div class="silky-notification-title"></div>').appendTo(this.$el);
         this.$body  = $('<div class="silky-notification-body"></div>').appendTo(this.$el);
 
         this.$content = $('<div class="silky-notification-content"></div>').appendTo(this.$body);
@@ -52,6 +52,7 @@ const NotificationView = SilkyView.extend({
 
         this.$el.toggleClass('hidden', this.model.attributes.visible === false);
         this.$message.text(this.model.attributes.message);
+        this.$title.text(this.model.attributes.title);
     }
 });
 

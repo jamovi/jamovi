@@ -39,7 +39,7 @@ def read(dataset, path):
     with open(path) as csvfile:
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(4096))
-        except csv.Error as e:
+        except csv.Error:
             dialect = 'excel'
 
         csvfile.seek(0)
@@ -93,8 +93,6 @@ def read(dataset, path):
                 for i in range(column_count):
                     column_writers[i].parse_row(row, row_no)
                 row_no += 1
-
-    return dataset
 
 
 class ColumnWriter:

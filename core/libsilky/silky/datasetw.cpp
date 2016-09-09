@@ -67,7 +67,7 @@ ColumnW DataSetW::operator[](int index)
     return ColumnW(this, _mm, rel);
 }
 
-void DataSetW::appendColumn(const char *name)
+ColumnW DataSetW::appendColumn(const char *name)
 {
     int columnCount = struc()->columnCount;
 
@@ -84,6 +84,7 @@ void DataSetW::appendColumn(const char *name)
     column->name = _mm->base<char>(chars);
 
     column->measureType = MeasureType::NOMINAL;
+    column->autoMeasure = false;
     column->rowCount = 0;
 
     column->blocksUsed = 0;
@@ -96,7 +97,12 @@ void DataSetW::appendColumn(const char *name)
     column->levelsUsed = 0;
     column->levelsCapacity = 0;
 
+    column->dps = 0;
+    column->changes = 0;
+
     struc()->columnCount++;
+
+    return ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
 }
 
 void DataSetW::setRowCount(size_t count)

@@ -78,7 +78,6 @@ class Instance:
             self._instance_id = instance_id
         else:
             self._instance_id = str(uuid.uuid4())
-            print("created " + self._instance_id)
 
         self._instance_path = os.path.join(self._session_path, self._instance_id)
         os.makedirs(self._instance_path, exist_ok=True)
@@ -110,8 +109,8 @@ class Instance:
         return os.path.join(self._instance_path, resourceId)
 
     def on_request(self, request):
-        if type(request) == silkycoms.CellsRR:
-            self._on_cells(request)
+        if type(request) == silkycoms.DataSetRR:
+            self._on_dataset(request)
         elif type(request) == silkycoms.OpenRequest:
             self._on_open(request)
         elif type(request) == silkycoms.SaveRequest:
@@ -196,8 +195,6 @@ class Instance:
                 self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save(self, request):
-        print('saving ' + request.filename)
-
         formatio.write(self._dataset, request.filename)
 
         self._filepath = request.filename
@@ -210,8 +207,6 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
 
-        print('opening ' + path)
-
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
@@ -222,7 +217,8 @@ class Instance:
 
             self._coms.send(None, self._instance_id, request)
 
-            self._add_to_recents(path)
+            if path != '':
+                self._add_to_recents(path)
 
         except OSError as e:
             base    = os.path.basename(path)
@@ -286,34 +282,6 @@ class Instance:
 
         response = silkycoms.InfoResponse()
 
-        if request.op == silkycoms.GetSet.Value('SET'):
-            self._on_set_info(request, response)
-        else:
-            self._on_get_info(request, response)
-
-        self._coms.send(response, self._instance_id, request)
-
-    def _on_set_info(self, request, response):
-        if self._dataset is None:
-            raise RuntimeError('Attempt to set info when no dataset loaded')
-
-        response.op = silkycoms.GetSet.Value('SET')
-
-        if request.HasField('schema'):
-            for i in range(len(request.schema.fields)):
-                field = request.schema.fields[i]
-                column = self._dataset[field.name]
-
-                levels = None
-                if len(field.levels) > 0:
-                    levels = [ ]
-                    for level in field.levels:
-                        levels.append((level.value, level.label))
-
-                column.change(field.measureType, levels)
-
-    def _on_get_info(self, request, response):
-
         hasDataSet = self._dataset is not None
         response.hasDataSet = hasDataSet
 
@@ -323,29 +291,17 @@ class Instance:
             response.columnCount = self._dataset.column_count
 
             for column in self._dataset:
+                column_schema = response.schema.columns.add()
+                self._populate_column_schema(column, column_schema)
 
-                field = response.schema.fields.add()
-                field.name = column.name
-                field.measureType = column.measure_type.value
-                field.width = 100
-                field.dps = column.dps
+        self._coms.send(response, self._instance_id, request)
 
-                if column.measure_type is MeasureType.NOMINAL_TEXT:
-                    for level in column.levels:
-                        levelEntry = field.levels.add()
-                        levelEntry.label = level[1]
-                elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
-                    for level in column.levels:
-                        levelEntry = field.levels.add()
-                        levelEntry.value = level[0]
-                        levelEntry.label = level[1]
-
-    def _on_cells(self, request):
+    def _on_dataset(self, request):
 
         if self._dataset is None:
             return
 
-        response = silkycoms.CellsRR()
+        response = silkycoms.DataSetRR()
 
         response.op = request.op
         response.rowStart    = request.rowStart
@@ -354,13 +310,42 @@ class Instance:
         response.columnEnd   = request.columnEnd
 
         if request.op == silkycoms.GetSet.Value('SET'):
-            self._on_set_cells(request, response)
+            self._on_dataset_set(request, response)
         else:
-            self._on_get_cells(request, response)
+            self._on_dataset_get(request, response)
 
         self._coms.send(response, self._instance_id, request)
 
-    def _on_set_cells(self, request, response):
+    def _on_dataset_set(self, request, response):
+        if request.incData:
+            self._apply_cells(request, response)
+        if request.incSchema:
+            self._apply_schema(request, response)
+
+    def _on_dataset_get(self, request, response):
+        if request.incSchema:
+            self._populate_schema(request, response)
+        if request.incData:
+            self._populate_cells(request, response)
+
+    def _apply_schema(self, request, response):
+        for i in range(len(request.schema)):
+            column_schema = request.schema[i]
+            column = self._dataset[column_schema.name]
+
+            levels = None
+            if column_schema.hasLevels:
+                levels = [ ]
+                for level in column_schema.levels:
+                    levels.append((level.value, level.label))
+
+            column.change(column_schema.measureType, levels, auto_measure=column_schema.autoMeasure)
+
+            response.incSchema = True
+            schema = response.schema.add()
+            self._populate_column_schema(column, schema)
+
+    def _apply_cells(self, request, response):
         row_start = request.rowStart
         col_start = request.columnStart
         row_end   = request.rowEnd
@@ -370,7 +355,9 @@ class Instance:
 
         for i in range(col_count):
             column = self._dataset[col_start + i]
-            col_res = request.columns[i]
+            col_res = request.data[i]
+
+            changes = column.changes
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 nan = float('nan')
@@ -383,21 +370,41 @@ class Instance:
                         column[row_start + j] = cell.d
                     elif cell.HasField('i'):
                         column[row_start + j] = cell.i
+                    elif cell.HasField('s') and column.auto_measure:
+                        column.change(MeasureType.NOMINAL_TEXT)
+                        index = column.level_count
+                        column.insert_level(index, cell.s)
+                        column[row_start + j] = index
+
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for j in range(row_count):
                     cell = col_res.values[j]
                     if cell.HasField('o'):
                         if cell.o == silkycoms.SpecialValues.Value('MISSING'):
                             column[row_start + j] = -2147483648
-                    elif cell.HasField('s'):
-                        value = cell.s
-                        if value == '':
+                    else:
+                        if cell.HasField('s'):
+                            value = cell.s
+                            if value == '':
+                                value = -2147483648
+                        elif cell.HasField('d'):
+                            value = cell.d
+                            if math.isnan(value):
+                                value = -2147483648
+                            else:
+                                value = str(value)
+                        else:
+                            value = cell.i
+
+                        column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
+
+                        if value == -2147483648:
                             index = -2147483648
                         elif not column.has_level(value):
                             index = column.level_count
                             column.insert_level(index, value)
                         else:
-                            index = column.get_value(value)
+                            index = column.get_value_for_label(value)
                         column[row_start + j] = index
             else:
                 for j in range(row_count):
@@ -410,8 +417,58 @@ class Instance:
                         if not column.has_level(value) and value != -2147483648:
                             column.insert_level(value, str(value))
                         column[row_start + j] = value
+                    elif cell.HasField('d') and column.auto_measure:
+                        column.change(MeasureType.CONTINUOUS)
+                        column[row_start + j] = cell.d
+                    elif cell.HasField('s') and column.auto_measure:
+                        column.change(MeasureType.NOMINAL_TEXT)
+                        column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
+                        value = cell.s
+                        index = column.level_count
+                        column.insert_level(index, value)
+                        column[row_start + j] = index
 
-    def _on_get_cells(self, request, response):
+            if column.auto_measure:
+                self._auto_adjust(column)
+
+            if changes != column.changes:
+                response.incSchema = True
+                schema = response.schema.add()
+                self._populate_column_schema(column, schema)
+
+    def _auto_adjust(self, column):
+        if column.measure_type == MeasureType.NOMINAL_TEXT:
+            for level in column.levels:
+                try:
+                    int(level[1])
+                except ValueError:
+                    break
+            else:
+                column.change(MeasureType.NOMINAL)
+                return
+
+            for level in column.levels:
+                try:
+                    float(level[1])
+                except ValueError:
+                    break
+            else:
+                column.change(MeasureType.CONTINUOUS)
+                return
+
+        elif column.measure_type == MeasureType.CONTINUOUS:
+            for value in column:
+                if math.isnan(value):
+                    continue
+                if round(value) != round(value, 6):
+                    break
+            else:
+                column.change(MeasureType.NOMINAL)
+                return
+
+            column.determine_dps()
+
+    def _populate_cells(self, request, response):
 
         row_start = request.rowStart
         col_start = request.columnStart
@@ -423,7 +480,7 @@ class Instance:
         for c in range(col_start, col_start + col_count):
             column = self._dataset[c]
 
-            col_res = response.columns.add()
+            col_res = response.data.add()
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 for r in range(row_start, row_start + row_count):
@@ -449,6 +506,31 @@ class Instance:
                         cell.o = silkycoms.SpecialValues.Value('MISSING')
                     else:
                         cell.i = value
+
+    def _populate_schema(self, request, response):
+        response.incSchema = True
+        for column in self._dataset:
+            column_schema = response.schema.add()
+            self._populate_column_schema(column, column_schema)
+
+    def _populate_column_schema(self, column, column_schema):
+        column_schema.name = column.name
+        column_schema.measureType = column.measure_type.value
+        column_schema.autoMeasure = column.auto_measure
+        column_schema.width = 100
+        column_schema.dps = column.dps
+
+        column_schema.hasLevels = True
+
+        if column.measure_type is MeasureType.NOMINAL_TEXT:
+            for level in column.levels:
+                levelEntry = column_schema.levels.add()
+                levelEntry.label = level[1]
+        elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
+            for level in column.levels:
+                levelEntry = column_schema.levels.add()
+                levelEntry.value = level[0]
+                levelEntry.label = level[1]
 
     def _add_to_recents(self, path):
 

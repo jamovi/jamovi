@@ -19,15 +19,26 @@ ColumnW::ColumnW(DataSetW *parent, MemoryMapW *mm, ColumnStruct *rel)
 
 void ColumnW::setMeasureType(MeasureType::Type measureType)
 {
-    struc()->measureType = (char)measureType;
+    ColumnStruct *s = struc();
+    s->measureType = (char)measureType;
+    s->changes++;
 
     if (measureType == MeasureType::CONTINUOUS)
-        setRowCount<double>(rowCount());
+        setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
+}
+
+void ColumnW::setAutoMeasure(bool yes)
+{
+    ColumnStruct *s = struc();
+    s->autoMeasure = yes;
+    s->changes++;
 }
 
 void ColumnW::setDPs(int dps)
 {
-    struc()->dps = dps;
+    ColumnStruct *s = struc();
+    s->dps = dps;
+    s->changes++;
 }
 
 void ColumnW::appendLevel(int value, const char *label)
@@ -50,8 +61,7 @@ void ColumnW::appendLevel(int value, const char *label)
             {
                 Level &oldLevel = oldLevels[i];
                 Level &newLevel = newLevels[i];
-                newLevel.value = oldLevel.value;
-                newLevel.label = oldLevel.label;
+                newLevel = oldLevel;
             }
         }
 
@@ -72,8 +82,10 @@ void ColumnW::appendLevel(int value, const char *label)
     l.value = value;
     l.capacity = allocated;
     l.label = _mm->base(chars);
+    l.count = 0;
 
     s->levelsUsed++;
+    s->changes++;
 }
 
 void ColumnW::insertLevel(int value, const char *label)
@@ -109,10 +121,59 @@ void ColumnW::insertLevel(int value, const char *label)
         Level &level = levels[0];
         level.value = value;
         level.label = baseLabel;
+        level.count = 0;
     }
+
+    s->changes++;
+}
+
+void ColumnW::removeLevel(int value)
+{
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    int i = 0;
+
+    for (; i < s->levelsUsed; i++)
+    {
+        if (levels[i].value == value)
+            break;
+    }
+
+    assert(i != s->levelsUsed); // level not found
+
+    int index = i;
+
+    for (; i < s->levelsUsed - 1; i++)
+        levels[i] = levels[i+1];
+
+    s->levelsUsed--;
+
+    if (measureType() == MeasureType::NOMINAL_TEXT)
+    {
+        // consolidate levels
+
+        for (int i = index; i < s->levelsUsed; i++)
+            levels[i].value--;
+
+        for (int i = 0; i < rowCount(); i++) {
+            int &v = this->cellAt<int>(i);
+            if (v > value)
+                v--;
+        }
+    }
+
+    s->changes++;
 }
 
 void ColumnW::clearLevels()
 {
-    struc()->levelsUsed = 0;
+    ColumnStruct *s = struc();
+    s->levelsUsed = 0;
+    s->changes++;
+}
+
+int ColumnW::changes() const
+{
+    return struc()->changes;
 }

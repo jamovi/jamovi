@@ -26,7 +26,7 @@ const ProgressModel = Backbone.Model.extend({
 
 const Instance = Backbone.Model.extend({
 
-    initialize: function() {
+    initialize() {
 
         this.transId = 0;
         this.command = '';
@@ -39,7 +39,7 @@ const Instance = Backbone.Model.extend({
 
         this._analyses = new Analyses();
         this._analyses.on('analysisCreated', this._analysisCreated, this);
-        this._analyses.on('analysisOptionsChanged', this._analysisOptionsChanged, this);
+        this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
         this._instanceId = null;
 
@@ -51,25 +51,25 @@ const Instance = Backbone.Model.extend({
         selectedAnalysis : null,
         hasDataSet : false,
         filePath : null,
-        fileName : null,
+        fileName : 'Untitled',
         resultsMode : 'rich'
     },
-    instanceId : function() {
+    instanceId() {
         return this._instanceId;
     },
-    progressModel : function() {
+    progressModel() {
 
         return this._progressModel;
     },
-    dataSetModel : function() {
+    dataSetModel() {
 
         return this._dataSetModel;
     },
-    analyses : function() {
+    analyses() {
 
         return this._analyses;
     },
-    connect : function(instanceId) {
+    connect(instanceId) {
 
         let coms = this.attributes.coms;
 
@@ -89,13 +89,10 @@ const Instance = Backbone.Model.extend({
 
             return this._instanceId;
 
-        }).catch(err => {
-
-            console.log('error ' + err);
         });
 
     },
-    open : function(filePath) {
+    open(filePath) {
 
         let promise;
         let coms = this.attributes.coms;
@@ -103,9 +100,9 @@ const Instance = Backbone.Model.extend({
         if (this.attributes.hasDataSet) {
 
             let instance = new Instance({ coms : coms });
-            promise = instance.connect().then(function() {
+            promise = instance.connect().then(() => {
                 return instance.open(filePath);
-            }).then(function() {
+            }).then(() => {
                 host.openWindow(instance.instanceId());
             });
         }
@@ -142,7 +139,7 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
-    save : function(filePath) {
+    save(filePath) {
 
         let coms = this.attributes.coms;
 
@@ -162,7 +159,7 @@ const Instance = Backbone.Model.extend({
 
         return prom;
     },
-    browse : function(path) {
+    browse(path) {
 
         let coms = this.attributes.coms;
 
@@ -177,7 +174,7 @@ const Instance = Backbone.Model.extend({
         return coms.send(message)
             .then(response => coms.Messages.FSResponse.decode(response.payload));
     },
-    toggleResultsMode : function() {
+    toggleResultsMode() {
 
         let mode = this.attributes.resultsMode;
         if (mode === 'text')
@@ -186,10 +183,10 @@ const Instance = Backbone.Model.extend({
             mode = 'text';
         this.set('resultsMode', mode);
     },
-    _notify : function(notification) {
+    _notify(notification) {
         this.trigger('notification', notification);
     },
-    _beginInstance : function(instanceId) {
+    _beginInstance(instanceId) {
 
         let coms = this.attributes.coms;
 
@@ -201,11 +198,11 @@ const Instance = Backbone.Model.extend({
         if (instanceId)
             request.instanceId = instanceId;
 
-        return coms.send(request).then(function(response) {
+        return coms.send(request).then(response => {
             return response.instanceId;
         });
     },
-    _retrieveInfo : function() {
+    _retrieveInfo() {
 
         let coms = this.attributes.coms;
 
@@ -219,37 +216,10 @@ const Instance = Backbone.Model.extend({
 
             let info = coms.Messages.InfoResponse.decode(response.payload);
 
+            this._dataSetModel.set('instanceId', this._instanceId);
+
             if (info.hasDataSet) {
-
-                let columnInfo = Array(info.schema.fields.length);
-
-                for (let i = 0; i < info.schema.fields.length; i++) {
-
-                    let field = info.schema.fields[i];
-
-                    let levels = new Array(field.levels.length);
-                    for (let j = 0; j < field.levels.length; j++)
-                        levels[j] = {
-                            value: field.levels[j].value,
-                            label: field.levels[j].label,
-                        };
-
-                    columnInfo[i] = {
-                        name : field.name,
-                        width: field.width,
-                        measureType : this._stringifyMeasureType(field.measureType),
-                        levels: levels,
-                        dps: field.dps,
-                    };
-                }
-
-                this._dataSetModel.set('instanceId', this._instanceId);
-                this._dataSetModel.setup({
-                    rowCount : info.rowCount,
-                    columnCount : info.columnCount,
-                    columns : columnInfo
-                });
-
+                this._dataSetModel.setup(info);
                 this.set('hasDataSet', true);
 
                 let ext = path.extname(info.filePath);
@@ -260,12 +230,12 @@ const Instance = Backbone.Model.extend({
             return response;
         });
     },
-    _analysisCreated : function(analysis) {
+    _analysisCreated(analysis) {
 
         this.set("selectedAnalysis", analysis);
-        this._analysisOptionsChanged(analysis);
+        this._runAnalysis(analysis);
     },
-    _analysisOptionsChanged : function(analysis, changed) {
+    _runAnalysis(analysis, changed) {
 
         let coms = this.attributes.coms;
 
@@ -288,7 +258,7 @@ const Instance = Backbone.Model.extend({
 
         return coms.sendP(request);
     },
-    _onReceive : function(message) {
+    _onReceive(message) {
 
         let coms = this.attributes.coms;
 
@@ -315,21 +285,17 @@ const Instance = Backbone.Model.extend({
             }
         }
     },
-    _columnsChanged : function(event) {
-
-        if (event.dataChanged !== true)
-            return;
-
+    _columnsChanged(event) {
         for (let analysis of this._analyses) {
             let using = analysis.getUsing();
 
-            for (let columnName of event.columns) {
-                if (using.includes(columnName))
-                    this._analysisOptionsChanged(analysis, event.columns);
+            for (let name of event.changed) {
+                if (using.includes(name))
+                    this._runAnalysis(analysis, event.changed);
             }
         }
     },
-    _stringifyMeasureType : function(measureType) {
+    _stringifyMeasureType(measureType) {
         switch (measureType) {
             case 1:
                 return 'nominaltext';

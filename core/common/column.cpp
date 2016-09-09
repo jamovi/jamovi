@@ -30,6 +30,10 @@ MeasureType::Type Column::measureType() const
     return (MeasureType::Type) struc()->measureType;
 }
 
+bool Column::autoMeasure() const {
+    return struc()->autoMeasure;
+}
+
 int Column::rowCount() const {
     return struc()->rowCount;
 }
@@ -85,7 +89,7 @@ const char *Column::getLabel(int value) const
     throw runtime_error(ss.str());
 }
 
-int Column::getValue(const char *label) const
+int Column::valueForLabel(const char *label) const
 {
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
@@ -121,6 +125,11 @@ bool Column::hasLevel(const char *label) const
 
 bool Column::hasLevel(int value) const
 {
+    return rawLevel(value) != NULL;
+}
+
+Level *Column::rawLevel(int value) const
+{
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
 
@@ -128,8 +137,8 @@ bool Column::hasLevel(int value) const
     {
         Level &level = levels[i];
         if (level.value == value)
-            return true;
+            return &level;
     }
 
-    return false;
+    return NULL;
 }

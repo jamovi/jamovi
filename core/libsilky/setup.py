@@ -40,12 +40,13 @@ else:
 
 extensions = [
     Extension("*",
-        source_files,    
+        source_files,
         include_dirs = include_dirs,
         libraries = libraries,
         library_dirs = library_dirs,
         extra_compile_args = extra_compile_args,
-        language="c++")
+        language = "c++",
+        undef_macros = [ "NDEBUG" ])
 ]
 
 setup(

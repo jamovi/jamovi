@@ -9,6 +9,10 @@
 #include "memorymapw.h"
 
 #include <string>
+#include <cmath>
+#include <climits>
+
+#include <cassert>
 
 class DataSetW;
 
@@ -19,10 +23,51 @@ public:
     ColumnW(DataSetW *parent = 0, MemoryMapW *mm = 0, ColumnStruct *rel = 0);
 
     void setMeasureType(MeasureType::Type measureType);
+    void setAutoMeasure(bool yes);
     void appendLevel(int value, const char *label);
     void insertLevel(int value, const char *label);
+    void removeLevel(int value);
     void clearLevels();
     void setDPs(int dps);
+
+    int changes() const;
+
+    template<typename T> void setValue(int rowIndex, T value, bool initing = false)
+    {
+        ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
+
+        if (measureType() != MeasureType::CONTINUOUS)
+        {
+            assert(sizeof(T) == 4);
+
+            int newValue = (int)value;
+
+            if (initing == false)
+            {
+                int oldValue = this->value<int>(rowIndex);
+                if (oldValue == newValue)
+                    return;
+
+                if (oldValue != INT_MIN)
+                {
+                    Level *level = rawLevel(oldValue);
+                    assert(level != NULL);
+                    level->count--;
+                    if (level->count == 0)
+                        removeLevel(oldValue);
+                }
+            }
+
+            if (newValue != INT_MIN)
+            {
+                Level *level = rawLevel(newValue);
+                assert(level != NULL);
+                level->count++;
+            }
+        }
+
+        cellAt<T>(rowIndex) = value;
+    }
 
     template<typename T> void setRowCount(size_t count)
     {
@@ -38,7 +83,15 @@ public:
             cs->blocksUsed++;
         }
 
+        int oldCount = cs->rowCount;
         cs->rowCount = count;
+
+        for (size_t i = oldCount; i < count; i++) {
+            if (sizeof(T) == 8)
+                cellAt<double>(i) = NAN;
+            else
+                cellAt<int>(i) = INT_MIN;
+        }
     }
 
     template<typename T> void append(const T &value)

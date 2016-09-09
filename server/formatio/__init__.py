@@ -1,10 +1,13 @@
 
 import formatio.csv
 import formatio.osilky
+import formatio.blank
 
 
 def read(dataset, path):
-    if path.endswith('.csv') or path.endswith('.txt'):
+    if path == '':
+        formatio.blank.read(dataset)
+    elif path.endswith('.csv') or path.endswith('.txt'):
         formatio.csv.read(dataset, path)
     elif path.endswith('.jasp'):
         formatio.osilky.read(dataset, path)

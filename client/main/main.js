@@ -54,7 +54,7 @@ coms.onBroadcast(function(broadcast) {
     }
 });
 
-$(document).ready(function() {
+$(document).ready(() => {
 
     if (navigator.platform === "Win32")
         $('body').addClass("windows");
@@ -107,14 +107,18 @@ $(document).ready(function() {
                 optionspanel.setAnalysis(analysis);
             });
         }
-        else
+        else {
             optionspanel.hideOptions();
+        }
     });
 
     let $fileName = $('.header-file-name');
     instance.on('change:fileName', function(event) {
-        $fileName.text(event.changed.fileName);
-        document.title = event.changed.fileName;
+        let fileName = event.changed.fileName;
+        if (fileName === '')
+            fileName = 'Untitled';
+        $fileName.text(fileName);
+        document.title = fileName;
     });
 
     let section = splitPanel.getSection("main-options");
@@ -145,15 +149,15 @@ $(document).ready(function() {
     instance.on( 'notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
 
-    Promise.resolve(function() {
+    Promise.resolve(() => {
 
         return $.post('http://localhost:' + host.mainPort + '/login');
 
-    }).then(function() {
+    }).then(() => {
 
         return coms.ready;
 
-    }).then(function() {
+    }).then(() => {
 
         let instanceId;
         if (window.location.search.indexOf('?id=') !== -1)
@@ -161,24 +165,29 @@ $(document).ready(function() {
 
         return instance.connect(instanceId);
 
-    }).then(function(instanceId) {
+    }).then(instanceId => {
 
         let newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
         history.replaceState({}, '', newUrl);
 
         return instanceId;
 
-    }).then(function(instanceId) {
+    }).then(() => {
+
+        if ( ! instance.get('hasDataSet'))
+            return instance.open(''); // blank
+
+    }).then(() => {
 
         let settings = new coms.Messages.SettingsRequest();
         let request = new coms.Messages.ComsMessage();
         request.payload = settings.toArrayBuffer();
         request.payloadType = "SettingsRequest";
-        request.instanceId = instanceId;
+        request.instanceId = instance.instanceId();
 
         return coms.send(request);
 
-    }).then(function(response) {
+    }).then(response => {
 
         let settings = coms.Messages.SettingsResponse.decode(response.payload);
         backstageModel.set('settings', settings);
