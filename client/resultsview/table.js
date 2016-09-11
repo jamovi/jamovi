@@ -51,7 +51,7 @@ var TableView = Element.View.extend({
             this.$table = $('<table class="silky-results-table-table"></table>').appendTo(this.$el);
             this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
             this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
-            this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="999999">').appendTo(this.$titleRow);
+            this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
             this.$titleText = $('<span class="silky-results-table-title-text"></span>').appendTo(this.$titleCell);
             this.$status = $('<div class="silky-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
@@ -289,13 +289,20 @@ var TableView = Element.View.extend({
         html = '';
 
 
-        if (table.columns.length === 0)
-            return;
-
-        if (table.columns[0].cells.length === 0) {
-            this.$tableBody.html('<tr><td colspan="999999">&nbsp;</td></tr>');
+        if (table.columns.length === 0) {
+            this.$titleCell.attr('colspan', 1);
             return;
         }
+        
+        let nPhysCols = 2 * cells.header.length;
+
+        if (table.columns[0].cells.length === 0) {
+            this.$titleCell.attr('colspan', 1);
+            this.$tableBody.html('<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>');
+            return;
+        }
+        
+        this.$titleCell.attr('colspan', nPhysCols);
 
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
@@ -315,18 +322,20 @@ var TableView = Element.View.extend({
 
             html += '</tr>';
         }
+        
+        html += '<tr class="last-row"><td colspan="' + nPhysCols + '"></td></tr>';
 
         this.$tableBody.html(html);
 
         html = '';
 
         for (let i = 0; i < table.notes.length; i++)
-            html += '<tr><td colspan="999999"><span style="font-style: italic ;">Note.</span> ' + table.notes[i].note + '</td></tr>';
+            html += '<tr><td colspan="' + nPhysCols + '"><span style="font-style: italic ;">Note.</span> ' + table.notes[i].note + '</td></tr>';
 
         for (let i = 0; i < footnotes.length; i++)
-            html += '<tr><td colspan="999999">' + SUPSCRIPTS[i] + ' ' + footnotes[i] + '</td></tr>';
+            html += '<tr><td colspan="' + nPhysCols + '">' + SUPSCRIPTS[i] + ' ' + footnotes[i] + '</td></tr>';
 
-        html += '<tr><td colspan="999999"></td></tr>';
+        html += '<tr><td colspan="' + nPhysCols + '"></td></tr>';
         this.$tableFooter.html(html);
     },
     makeFormatClasses : function(column) {

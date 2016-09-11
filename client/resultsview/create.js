@@ -21,8 +21,8 @@ const createItem = function(element, $el, level, parent, mode) {
     if (_.isUndefined(mode))
         mode = 'rich';
 
-    var model;
-    var view;
+    let model;
+    let view;
 
     if (element.table) {
         model = new TableModel({
@@ -31,7 +31,11 @@ const createItem = function(element, $el, level, parent, mode) {
             element: element.table,
             status: element.status,
             error: element.error });
-        view = new TableView({ el : $el, model : model, parent : parent, mode: mode });
+        view = new TableView({
+            el: $el,
+            model: model,
+            parent: parent,
+            mode: mode });
     }
     else if (element.group) {
 
@@ -42,7 +46,13 @@ const createItem = function(element, $el, level, parent, mode) {
                 element: element.group,
                 status: element.status,
                 error: element.error });
-            view = new GroupView({ el : $el, model : model, create : createItem, level : level, parent : parent, mode : mode });
+            view = new GroupView({
+                el: $el,
+                model: model,
+                create: createItem,
+                level: level,
+                parent: parent,
+                mode: mode });
         }
         else {
             view = null;
@@ -50,23 +60,33 @@ const createItem = function(element, $el, level, parent, mode) {
     }
     else if (element.image) {
         model = new ImageModel({
-            name : element.name,
-            title : element.title,
-            element : element.image,
+            name: element.name,
+            title: element.title,
+            element: element.image,
             status: element.status,
             error: element.error });
-        view = new ImageView({ el : $el, model : model, parent : parent, mode : mode });
+        view = new ImageView({
+            el: $el,
+            model: model,
+            parent: parent,
+            mode: mode });
     }
     else if (element.array) {
 
         if (element.array.elements.length > 0) {
             model = new ArrayModel({
-                name : element.name,
-                title : element.title,
-                element : element.array,
+                name: element.name,
+                title: element.title,
+                element: element.array,
                 status: element.status,
                 error: element.error });
-            view = new ArrayView({ el : $el, model : model, create : createItem, level : level, parent : parent, mode : mode });
+            view = new ArrayView({
+                el: $el,
+                model: model,
+                create: createItem,
+                level: level,
+                parent: parent,
+                mode: mode });
         }
         else {
             view = null;
@@ -79,7 +99,11 @@ const createItem = function(element, $el, level, parent, mode) {
             element : element.syntax,
             status: element.status,
             error: element.error });
-        view = new SyntaxView({ el : $el, model : model, parent : parent, mode : mode });
+        view = new SyntaxView({
+            el: $el,
+            model: model,
+            parent: parent,
+            mode: mode });
     }
     else if (element.text) {
         $el.append(element.text);

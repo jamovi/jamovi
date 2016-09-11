@@ -10,7 +10,7 @@ var Backbone = require('backbone');
 Backbone.$ = $;
 
 const VariableEditor = Backbone.View.extend({
-    className: "VariableEditor",
+    className: 'VariableEditor',
     initialize() {
         this.$el.empty();
         this.$el.addClass('silky-variable-editor');

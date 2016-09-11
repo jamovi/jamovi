@@ -1,24 +1,27 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var Menu = require('./menu');
+const clipboard = require('clipboard-js');
 
-var ResultsPanel = Backbone.View.extend({
-    className: "ResultsPanel",
-    initialize: function(args) {
+const Menu = require('./menu');
+const Notify = require('./notification');
+
+const ResultsPanel = Backbone.View.extend({
+    className: 'ResultsPanel',
+    initialize(args) {
 
         this.$el.empty();
         this.$el.addClass('silky-results-panel');
 
         this.$menu = $('<div></div>');
         this.menu = new Menu(this.$menu);
-        this.$el.append(this.$menu);
+        $('body').append(this.$menu);
 
-        this.menu.onActiveChanged(entry => this._activeMenuChanged(entry));
+        this.menu.onMenuEvent(entry => this._menuEvent(entry));
 
         this.resources = { };
 
@@ -28,20 +31,20 @@ var ResultsPanel = Backbone.View.extend({
         if (_.has(args, 'mode'))
             this.mode = args.mode;
 
-        this.model.analyses().on('analysisResultsChanged', this._onResults, this);
-        this.model.on('change:selectedAnalysis', this._onSelectedChanged, this);
+        this.model.analyses().on('analysisResultsChanged', this._resultsEvent, this);
+        this.model.on('change:selectedAnalysis', this._selectedChanged, this);
 
-        window.addEventListener('message', event => this._onMessage(event));
+        window.addEventListener('message', event => this._messageEvent(event));
 
         this.clickPos = null;
     },
-    _onResults : function(analysis) {
+    _resultsEvent(analysis) {
 
-        var resources = this.resources[analysis.id];
+        let resources = this.resources[analysis.id];
 
         if (_.isUndefined(resources)) {
 
-            var element = '<iframe \
+            let element = '<iframe \
                 scrolling="no" \
                 class="id' + analysis.id + '" \
                 src="' + this.iframeUrl + this.model.instanceId() + '/" \
@@ -50,10 +53,10 @@ var ResultsPanel = Backbone.View.extend({
                 data-selected \
                 ></iframe>';
 
-            var $container = $('<div class="silky-results-container"></div>').appendTo(this.$el);
-            var $cover = $('<div class="silky-results-cover"></div>').appendTo($container);
-            var $iframe = $(element).appendTo($container);
-            var iframe = $iframe[0];
+            let $container = $('<div class="silky-results-container"></div>').appendTo(this.$el);
+            let $cover = $('<div class="silky-results-cover"></div>').appendTo($container);
+            let $iframe = $(element).appendTo($container);
+            let iframe = $iframe[0];
 
             resources = {
                 iframe : iframe,
@@ -84,46 +87,46 @@ var ResultsPanel = Backbone.View.extend({
                 this._sendResults(resources);
         }
     },
-    _sendResults: function(resources) {
+    _sendResults(resources) {
 
         if (this.mode === 'rich' || resources.incAsText) {
-            var event = {
+            let event = {
                 type: 'results',
                 results: resources.results,
                 mode: this.mode };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
         }
     },
-    _resultsClicked : function(event, analysis) {
-        var current = this.model.get('selectedAnalysis');
+    _resultsClicked(event, analysis) {
+        let current = this.model.get('selectedAnalysis');
         if (current === null || current.id !== analysis.id)
             this.model.set('selectedAnalysis', analysis);
         else
             this.model.set('selectedAnalysis', null);
     },
-    _resultsRightClicked : function(event, analysis) {
-        var resources = this.resources[analysis.id];
-        var iframe = resources.iframe;
-        this.clickPos = { left: event.offsetX, top: event.offsetY };
-        var clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
+    _resultsRightClicked(event, analysis) {
+        let resources = this.resources[analysis.id];
+        let iframe = resources.iframe;
+        this.clickPos = { left: event.clientX, top: event.clientY };
+        let clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
         iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
     },
-    _onMessage : function(event) {
+    _messageEvent(event) {
 
-        var ids = _.keys(this.resources);
+        let ids = _.keys(this.resources);
 
-        for (var i = 0; i < ids.length; i++) {
+        for (let i = 0; i < ids.length; i++) {
 
-            var id = ids[i];
-            var resources = this.resources[id];
+            let id = ids[i];
+            let resources = this.resources[id];
 
             if (event.source !== resources.iframe.contentWindow)
                 continue;
 
-            var eventType = event.data.eventType;
-            var eventData = event.data.eventData;
-            var $iframe = resources.$iframe;
-            var $container = resources.$container;
+            let eventType = event.data.eventType;
+            let eventData = event.data.eventData;
+            let $iframe = resources.$iframe;
+            let $container = resources.$container;
 
             switch (eventType) {
                 case "sizeChanged":
@@ -141,45 +144,91 @@ var ResultsPanel = Backbone.View.extend({
                 case "menuRequest":
                     this._showMenu(id, eventData);
                     break;
+                case "clipboardCopy":
+                    this._copyToClipboard(eventData);
+                    break;
             }
         }
     },
-    _showMenu : function(id, data) {
+    _showMenu(id, data) {
 
         this._menuId = id;
 
-        var entries = [ ];
-        for (var i = 0; i < data.length; i++) {
-            var entry = data[i];
+        let entries = [ ];
+        for (let i = 0; i < data.length; i++) {
+            let entry = data[i];
             entries.push({ label: entry.type, address: entry.address, options: entry.options });
         }
 
         if (entries.length > 0) {
-            var lastEntry = entries[entries.length-1];
+            let lastEntry = entries[entries.length-1];
             lastEntry.active = true;
         }
 
         this.menu.setup(entries);
         this.menu.show({ clickPos: this.clickPos });
     },
-    _activeMenuChanged: function(entry) {
-        var address = null;
-        if (entry !== null)
-            address = entry.address;
+    _menuEvent(event) {
 
-        var message = { type: 'activeChanged', data: address };
-        this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
+        if (event.op === 'copy') {
+            let $results = $(this.resources[this._menuId].iframe.contentWindow.document).find('#results');
+            for (let i = 1; i < event.address.length; i++)
+                $results = $results.find('[data-name="' + btoa(event.address[i]) + '"]').first();
+
+            let html = $results[0].outerHTML;
+            let node = $(html)[0];
+            let nodes = this._flatten(node);
+            let nodesHtml = nodes.map(node => node.outerHTML);
+            html = nodesHtml.join('');
+
+            Promise.resolve($.get('resultsview.css', null, null, 'text')).then(css => {
+                html = '<!DOCTYPE html>\n<html><head><style>' + css + '</style></head><body>' + html + '</body></html>';
+                return clipboard.copy({ 'text/html': html });
+            }).then(() => {
+                let note = new Notify({
+                    title: 'Copied',
+                    message: 'The content has been copied to the clipboard',
+                    duration: 2000 });
+
+                this.model.trigger('notification', note);
+            });
+        }
+        else {
+            let message = { type: 'menuEvent', data: event };
+            this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
+        }
     },
-    _scrollIntoView : function($item, itemHeight) {
+    _flatten(node, out) {
+
+        if (typeof(out) === 'undefined')
+            out = [ ];
+
+        if (node.tagName === 'TABLE'
+            || node.tagName === 'H1'
+            || node.tagName === 'H2'
+            || node.tagName === 'H3'
+            || node.tagName === 'H4'
+            || node.tagName === 'H5') {
+
+            out.push(node);
+        }
+        else {
+            for (let child of $(node).children())
+                this._flatten(child, out);
+        }
+
+        return out;
+    },
+    _scrollIntoView($item, itemHeight) {
 
         itemHeight = itemHeight || $item.height();
 
-        var viewPad = parseInt(this.$el.css('padding-top'));
-        var viewTop = this.$el.scrollTop();
-        var viewHeight = this.$el.parent().height();
-        var viewBottom = viewTop + viewHeight;
-        var itemTop = viewTop + $item.position().top;
-        var itemBottom = itemTop + itemHeight;
+        let viewPad = parseInt(this.$el.css('padding-top'));
+        let viewTop = this.$el.scrollTop();
+        let viewHeight = this.$el.parent().height();
+        let viewBottom = viewTop + viewHeight;
+        let itemTop = viewTop + $item.position().top;
+        let itemBottom = itemTop + itemHeight;
 
         viewTop += viewPad;
 
@@ -197,20 +246,20 @@ var ResultsPanel = Backbone.View.extend({
                 this.$el.stop().animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
         }
     },
-    _onSelectedChanged : function(event) {
+    _selectedChanged(event) {
 
-        var oldSelected = this.model.previous('selectedAnalysis');
-        var newSelected = this.model.get('selectedAnalysis');
+        let oldSelected = this.model.previous('selectedAnalysis');
+        let newSelected = this.model.get('selectedAnalysis');
 
         if (oldSelected) {
-            var oldSelectedResults = this.resources[oldSelected.id];
+            let oldSelectedResults = this.resources[oldSelected.id];
             if (oldSelectedResults)
                 oldSelectedResults.$iframe.removeAttr('data-selected');
         }
 
         if (newSelected) {
             this.$el.attr('data-analysis-selected', '');
-            var newSelectedResults = this.resources[newSelected.id];
+            let newSelectedResults = this.resources[newSelected.id];
             if (newSelectedResults)
                 newSelectedResults.$iframe.attr('data-selected', '');
         }

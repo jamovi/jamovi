@@ -1,10 +1,10 @@
 
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
+const $ = require('jquery');
+const _ = require('underscore');
 
-var Menu = function($el, parent) {
+const Menu = function($el, parent) {
     this.$el = $el;
     this.parent = parent;
 
@@ -15,61 +15,70 @@ var Menu = function($el, parent) {
     this.entries = null;
     this.$entries = [ ];
 
-    this.active = -1; // index
+    this.active = null;
     this.$submenu = null;
     this.submenu = null;
 
-    if ( ! parent) {
-        this.$cover = $('<div class="silky-menu-cover"></div>');
-        $('body').append(this.$cover);
+    this.listeners = [ ];
+
+    if ( ! parent)
+        this.$cover = $('<div class="silky-menu-cover"></div>').appendTo('body');
+    else
+        this.$cover = $();
+
+    this.$cover.on('mousedown', event => this.hide());
+};
+
+Menu.prototype._entryClicked = function(event) {
+
+    let entry  = event.data.entry;
+    let $entry = event.data.$entry;
+
+    let nextEvent;
+    if (entry.op)
+        nextEvent = { type: 'selected', address: entry.address, op: entry.op };
+    else
+        nextEvent = { type: 'activated', address: entry.address };
+
+    if (this.parent) {
+        this._notifyMenuEvent(nextEvent);
     }
     else {
-        this.$cover = $();
+        this._notifyMenuEvent(nextEvent);
+        this.$entries.removeClass('active');
+        $entry.addClass('active');
+        this.active = entry;
+        this._showSubMenu();
     }
-
-    var self = this;
-    this.$cover.on('mousedown', function() {
-        self.hide();
-    });
 };
 
-Menu.prototype._entryClicked = function(entry, $entry) {
-    if (_.isUndefined(this.listeners))
-        return;
-
-    this.$entries.removeClass('active');
-    $entry.addClass('active');
-
-    this.listeners.forEach(function(listener) {
-        listener(entry);
-    });
+Menu.prototype._notifyMenuEvent = function(event) {
+    if (this.parent) {
+        this.parent._notifyMenuEvent(event);
+    }
+    else {
+        for (let listener of this.listeners)
+            listener(event);
+        if (event.type === 'selected')
+            this.hide();
+    }
 };
 
-Menu.prototype.onActiveChanged = function(listener) {
-    if (_.isUndefined(this.listeners))
-        this.listeners = [ listener ];
-    else
-        this.listeners.push(listener);
+Menu.prototype.onMenuEvent = function(listener) {
+    this.listeners.push(listener);
 };
 
 Menu.prototype.show = function(pos) {
 
-    var finalPos = { };
+    let finalPos = { };
 
     if (pos.clickPos) {
-        var height = this.$el.height();
-        var width = this.$el.width();
-        var entryHeight = height / this.entries.length;
+        let height = this.$el.height();
+        let width = this.$el.width();
+        let entryHeight = height / this.entries.length;
 
-        // if (this.active === -1) {
-            finalPos.top = pos.clickPos.top - height + (entryHeight / 3);
-            finalPos.left = pos.clickPos.left - width / 2;
-        // }
-        // else {
-        //    var subWidth = this.$submenu.width();
-        //    finalPos.top = pos.clickPos.top - height + (this.active * entryHeight) - (2 * entryHeight / 3);
-        //    finalPos.left = pos.clickPos.left - width - (subWidth / 2);
-        // }
+        finalPos.top = pos.clickPos.top - height + (entryHeight / 3);
+        finalPos.left = pos.clickPos.left - width / 2;
     }
     else {
         finalPos = pos.topLeft;
@@ -89,30 +98,25 @@ Menu.prototype.hide = function() {
     this.$el.hide();
     this.$cover.hide();
 
-    this.listeners.forEach(function(listener) {
-        listener(null);
-    });
+    for (let listener of this.listeners)
+        listener({ type: 'activated', address: null });
 };
 
 Menu.prototype.setup = function(entries) {
 
-    this.active = -1;
+    this.active = null;
     this.entries = entries;
 
     this.$el.empty();
 
-    var $list = $('<ul></ul>');
+    let $list = $('<ul></ul>');
     this.$el.append($list);
 
-    var i = 0;
-    var self = this;
-    var entry;
-    entries.forEach(function(entry) {
-        entry = entries[i];
+    for (let entry of this.entries) {
         if (entry.active)
-            self.active = i;
+            this.active = entry;
 
-        var html = '';
+        let html = '';
 
         if (entry.options) {  // has child menu
             html += '<li class="silky-menu-entry silky-menu-parent ' + (entry.active ? 'active' : '') + '">';
@@ -126,39 +130,43 @@ Menu.prototype.setup = function(entries) {
             html += '</li>';
         }
 
-        var $entry = $(html);
+        let $entry = $(html);
         $entry.appendTo($list);
 
-        $entry.click(function() {
-            self._entryClicked(entry, $entry);
-        });
-
-        i++;
-    });
+        $entry.on('click', null, { entry, $entry }, event => this._entryClicked(event));
+    }
 
     this.$entries = this.$el.find('.silky-menu-entry');
 
-    this._setupSubMenu();
+    this._createSubMenu();
 };
 
-Menu.prototype._setupSubMenu = function() {
-    if (this.active === -1)
-        return;
-
+Menu.prototype._createSubMenu = function() {
     this.$submenu = $('<div></div>');
     this.submenu = new Menu(this.$submenu, this);
     this.$el.append(this.$submenu);
-
-    this.submenu.setup([ { label: "Copy" }, { label: "Save" } ]);
 };
 
 Menu.prototype._showSubMenu = function() {
-    if (this.active === -1)
+    if (this.active === null)
         return;
 
-    var borderTopWidth = parseInt(this.$el.css('borderTopWidth'));
-    var borderRightWidth = parseInt(this.$el.css('borderRightWidth'));
-    var subPos = { left: this.$el.width() + 3, top: 0 - borderTopWidth };
+    this.submenu.setup([
+        {
+            label  : 'Copy',
+            op     : 'copy',
+            address: this.active.address
+        },
+        {
+            label  : 'Save',
+            op     : 'save',
+            address: this.active.address
+        },
+    ]);
+
+    let borderTopWidth = parseInt(this.$el.css('borderTopWidth'));
+    let borderRightWidth = parseInt(this.$el.css('borderRightWidth'));
+    let subPos = { left: this.$el.width() + 3, top: 0 - borderTopWidth };
     this.submenu.show({ topLeft: subPos });
 };
 

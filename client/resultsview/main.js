@@ -1,82 +1,121 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var createItem = require('./create').createItem;
+const createItem = require('./create').createItem;
 
-var mainWindow = null;
-var  results = null;
-var $results = null;
-var active = null;
+class Main {  // this is constructed at the bottom
 
-var _reallyNotifyResize = function() {
-    var width  = $results.width();
-    var height = $results.height();
+    constructor() {
+        this.mainWindow = null;
+        this.results = null;
+        this.$results = null;
+        this.active = null;
 
-    mainWindow.postMessage({ eventType : 'sizeChanged', eventData : { width: width, height: height }}, '*');
-};
+        window.addEventListener('message', event => this._messageEvent(event));
 
-var _sendMenuRequest = function(data) {
-    var entries = data.data;
-    entries[0].type = 'Analysis';
-    mainWindow.postMessage({ eventType : 'menuRequest', eventData : entries }, '*');
-
-    var lastEntry = entries[entries.length-1];
-    _activeChanged(lastEntry.address);
-};
-
-var _notifyResize = _.debounce(_reallyNotifyResize, 0);
-
-window.addEventListener('message', function(event) {
-
-    if (event.source === window)
-        return;
-
-    mainWindow = event.source;
-    var hostEvent = event.data;
-
-    if (hostEvent.type === 'results') {
-        var content = '';
-        var $body = $('body');
-        $body.attr('data-mode', hostEvent.mode);
-        $body.empty();
-
-        $results = $('<div id="results"></div>');
-        results = createItem(hostEvent.results, $results, 0, { _sendEvent: _sendMenuRequest }, hostEvent.mode);
-        $results.appendTo($body);
-
-        _notifyResize();
-    }
-    else if (hostEvent.type === 'click') {
-        var el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
-        if (el !== null)
-            $(el).trigger('click', hostEvent);
-    }
-    else if (hostEvent.type === 'activeChanged') {
-        _activeChanged(hostEvent.data);
-    }
-});
-
-var _activeChanged = function(address) {
-    if (active !== null) {
-        active.$el.removeClass('active');
-        active = null;
+        this._notifyResize = _.debounce(() => this._reallyNotifyResize(), 0);
     }
 
-    if (address === null)
-        return;
+    _reallyNotifyResize() {
+        let width  = this.$results.width();
+        let height = this.$results.height();
 
-    if (address.length === 1) {
-        active = results;
-        active.$el.addClass('active');
+        this.mainWindow.postMessage({
+            eventType : 'sizeChanged',
+            eventData : { width: width, height: height }}, '*');
     }
-    else {
-        address = _.clone(address);
-        address.shift();
-        active = results.get(address);
-        active.$el.addClass('active');
+
+    _sendMenuRequest(data) {
+        let entries = data.data;
+        entries[0].type = 'Analysis';
+
+        this.mainWindow.postMessage({
+            eventType : 'menuRequest',
+            eventData : entries }, '*');
+
+        let lastEntry = entries[entries.length-1];
+        let event = { type: 'activated', address: lastEntry.address };
+        this._menuEvent(event);
     }
-};
+
+    _sendClipboardContent(data) {
+        this.mainWindow.postMessage({
+            eventType : 'clipboardCopy',
+            eventData : data }, '*');
+    }
+
+    _messageEvent(event) {
+
+        if (event.source === window)
+            return;
+
+        this.mainWindow = event.source;
+        let hostEvent = event.data;
+
+        if (hostEvent.type === 'results') {
+            let content = '';
+            let $body = $('body');
+            $body.attr('data-mode', hostEvent.mode);
+            $body.empty();
+
+            this.$results = $('<div id="results"></div>');
+            this.results = createItem(
+                hostEvent.results,
+                this.$results,
+                0,
+                { _sendEvent: event => this._sendMenuRequest(event) },
+                hostEvent.mode);
+            this.$results.appendTo($body);
+
+            this._notifyResize();
+        }
+        else if (hostEvent.type === 'click') {
+            let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
+            if (el !== null)
+                $(el).trigger('click', hostEvent);
+        }
+        else if (hostEvent.type === 'menuEvent') {
+            this._menuEvent(hostEvent.data);
+        }
+    }
+
+    _menuEvent(event) {
+
+        if (this.active !== null) {
+            this.active.$el.removeClass('active');
+            this.active = null;
+        }
+
+        if (event.address === null)
+            return;
+
+        let address = event.address;
+
+        if (address.length === 1) {
+            this.active = this.results;
+        }
+        else {
+            address = _.clone(address);
+            address.shift();
+            this.active = this.results.get(address);
+        }
+
+        switch (event.type) {
+            case 'selected':
+                if (event.op === 'copy') {
+                    let clipboard = this.active.asClipboard();
+                    this._sendClipboardContent(clipboard);
+                }
+                break;
+            case 'activated':
+                this.active.$el.addClass('active');
+                break;
+        }
+    }
+}
+
+new Main();  // constructed down here!
