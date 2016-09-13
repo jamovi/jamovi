@@ -6,6 +6,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 
 const clipboard = require('clipboard-js');
+const formatIO = require('./utils/formatio');
 
 const Menu = require('./menu');
 const Notify = require('./notification');
@@ -175,16 +176,10 @@ const ResultsPanel = Backbone.View.extend({
             for (let i = 1; i < event.address.length; i++)
                 $results = $results.find('[data-name="' + btoa(event.address[i]) + '"]').first();
 
-            let html = $results[0].outerHTML;
-            let node = $(html)[0];
-            let nodes = this._flatten(node);
-            let nodesHtml = nodes.map(node => node.outerHTML);
-            html = nodesHtml.join('');
+            let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
+            let content = formatIO.exportElem($results, type);
 
-            Promise.resolve($.get('resultsview.css', null, null, 'text')).then(css => {
-                html = '<!DOCTYPE html>\n<html><head><style>' + css + '</style></head><body>' + html + '</body></html>';
-                return clipboard.copy({ 'text/html': html });
-            }).then(() => {
+            clipboard.copy({ [ type ]: content }).then(() => {
                 let note = new Notify({
                     title: 'Copied',
                     message: 'The content has been copied to the clipboard',
@@ -197,27 +192,6 @@ const ResultsPanel = Backbone.View.extend({
             let message = { type: 'menuEvent', data: event };
             this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
         }
-    },
-    _flatten(node, out) {
-
-        if (typeof(out) === 'undefined')
-            out = [ ];
-
-        if (node.tagName === 'TABLE'
-            || node.tagName === 'H1'
-            || node.tagName === 'H2'
-            || node.tagName === 'H3'
-            || node.tagName === 'H4'
-            || node.tagName === 'H5') {
-
-            out.push(node);
-        }
-        else {
-            for (let child of $(node).children())
-                this._flatten(child, out);
-        }
-
-        return out;
     },
     _scrollIntoView($item, itemHeight) {
 

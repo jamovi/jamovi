@@ -1,13 +1,13 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
-var determineFormatting = require('../common/formatting').determineFormatting;
-var format = require('../common/formatting').format;
+const determineFormatting = require('../common/formatting').determineFormatting;
+const format = require('../common/formatting').format;
 
-var Element = require('./element');
+const Elem = require('./element');
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -19,7 +19,7 @@ const Format = {
     NEGATIVE: 4
 };
 
-var TableModel = Backbone.Model.extend({
+const TableModel = Backbone.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -30,21 +30,21 @@ var TableModel = Backbone.Model.extend({
         status: 'complete',
         asText: null
     },
-    initialize: function() {
+    initialize() {
     }
 });
 
-var TableView = Element.View.extend({
-    initialize: function(data) {
+const TableView = Elem.View.extend({
+    initialize(data) {
 
-        Element.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('silky-results-table');
 
         if (this.model === null)
             this.model = new TableModel();
 
-        var table = this.model.attributes.element;
+        let table = this.model.attributes.element;
 
         if (data.mode === 'rich') {
 
@@ -64,24 +64,24 @@ var TableView = Element.View.extend({
             this.render();
         }
         else if (table.asText !== null) {
-            
-            var text = '#' + table.asText.split('\n').join('\n# ');
+
+            let text = '#' + table.asText.split('\n').join('\n# ');
             if (navigator.platform === "Win32")
                 text = text.replace(/\u273B/g, '*');
-            
-            var $pre = $('<pre class="silky-results-text silky-results-item"></pre>').appendTo(this.$el);
+
+            let $pre = $('<pre class="silky-results-text silky-results-item"></pre>').appendTo(this.$el);
             $pre.text(text);
         }
     },
-    type: function() {
+    type() {
         return "Table";
     },
-    render: function() {
+    render() {
 
-        var table = this.model.attributes.element;
-        var html;
-        var fnIndices = { };
-        var footnotes = [ ];
+        let table = this.model.attributes.element;
+        let html;
+        let fnIndices = { };
+        let footnotes = [ ];
 
         if (this.model.attributes.status === 2)
             this.$el.addClass('silky-results-status-running');
@@ -89,24 +89,24 @@ var TableView = Element.View.extend({
         if (this.model.attributes.title)
             this.$titleText.text(this.model.attributes.title);
 
-        var columnCount = table.columns.length;
-        var rowCount;
+        let columnCount = table.columns.length;
+        let rowCount;
 
         if (table.columns.length > 0)
             rowCount = table.columns[0].cells.length;
         else
             rowCount = 0;
 
-        var cells = {
+        let cells = {
             header : new Array(table.columns.length),
             body : new Array(rowCount)
         };
 
-        var formattings = new Array(table.columns.length);
+        let formattings = new Array(table.columns.length);
 
         for (let colNo = 0; colNo < table.columns.length; colNo++) {
             let column = table.columns[colNo];
-            var classes = this.makeFormatClasses(column);
+            let classes = this.makeFormatClasses(column);
             if (_.has(column, 'title'))
                 cells.header[colNo] = { value : column.title, classes : classes };
             else
@@ -185,9 +185,9 @@ var TableView = Element.View.extend({
             }
         }
 
-        var rowPlan = {};
-        var foldedNames = [];
-        var nFolds = 1;
+        let rowPlan = {};
+        let foldedNames = [];
+        let nFolds = 1;
 
         for (let i = 0; i < columnCount; i++) {
             let column = table.columns[i];
@@ -279,7 +279,7 @@ var TableView = Element.View.extend({
         html = '';
 
         for (let i = 0; i < cells.header.length; i++) {
-            var head = cells.header[i];
+            let head = cells.header[i];
             html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + head.value + '</th>';
         }
 
@@ -293,15 +293,15 @@ var TableView = Element.View.extend({
             this.$titleCell.attr('colspan', 1);
             return;
         }
-        
+
         let nPhysCols = 2 * cells.header.length;
 
         if (table.columns[0].cells.length === 0) {
-            this.$titleCell.attr('colspan', 1);
+            this.$titleCell.attr('colspan', nPhysCols);
             this.$tableBody.html('<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>');
             return;
         }
-        
+
         this.$titleCell.attr('colspan', nPhysCols);
 
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
@@ -310,7 +310,7 @@ var TableView = Element.View.extend({
 
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
-                var cell = cells.body[rowNo][colNo];
+                let cell = cells.body[rowNo][colNo];
                 if (cell) {
                     html += '<td class="silky-results-table-cell ' + cell.classes + '">' + cell.value + '</td>';
                     html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
@@ -322,8 +322,6 @@ var TableView = Element.View.extend({
 
             html += '</tr>';
         }
-        
-        html += '<tr class="last-row"><td colspan="' + nPhysCols + '"></td></tr>';
 
         this.$tableBody.html(html);
 
@@ -338,8 +336,8 @@ var TableView = Element.View.extend({
         html += '<tr><td colspan="' + nPhysCols + '"></td></tr>';
         this.$tableFooter.html(html);
     },
-    makeFormatClasses : function(column) {
-        var classes = '';
+    makeFormatClasses(column) {
+        let classes = '';
         if (column.format) {
             let formats = column.format.split(',');
             if (formats.length !== 1 || formats[0] !== '') {
