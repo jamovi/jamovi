@@ -430,6 +430,8 @@ class Instance:
 
             if column.auto_measure:
                 self._auto_adjust(column)
+            elif column.measure_type == MeasureType.CONTINUOUS:
+                column.determine_dps()
 
             if changes != column.changes:
                 response.incSchema = True
