@@ -8,7 +8,7 @@ const path = require('path');
 const ipc = electron.ipcMain;
 const _ = require('underscore');
 
-var instanceId = '';
+let instanceId = '';
 
 if (process.argv.length >= 3)
     instanceId = process.argv[2]
@@ -22,16 +22,15 @@ if (process.argv.length >= 6)
 
 let windows = [ ];
 
-var rootPath = path.join(__dirname, '..', 'client') + '/';
+let rootPath = path.join(__dirname, '..', 'client') + '/';
 
 // windows path adjustments
 if (rootPath.startsWith('/') === false)
     rootPath = '/' + rootPath;
 rootPath = rootPath.replace(/\\/g, '/');
 
-var rootUrl = 'file://' + rootPath;
-var serverPath = rootPath + 's/';
-var serverUrl = rootUrl + 's/';
+let rootUrl = encodeURI('file://' + rootPath);
+let serverUrl = rootUrl + 's/';
 
 app.on('window-all-closed', function() {
     app.quit();
@@ -45,15 +44,15 @@ app.on('ready', function() {
     ipc.on('request', function(event, arg) {
 
         // locate the sender
-        var wind = null;
-        for (var i = 0; i < windows.length; i++) {
+        let wind = null;
+        for (let i = 0; i < windows.length; i++) {
             wind = windows[i];
             if (wind.webContents === event.sender)
                 break;
         }
 
-        var eventType = arg.type;
-        var eventData = arg.data;
+        let eventType = arg.type;
+        let eventData = arg.data;
 
         switch (eventType) {
             case 'openDevTools':
@@ -78,24 +77,25 @@ app.on('ready', function() {
     });
 });
 
-var createWindow = function(instanceId) {
+const createWindow = function(instanceId) {
 
-    var wind = new BrowserWindow({ width: 1280, height: 800, frame: process.platform !== 'win32' });
+    let wind = new BrowserWindow({ width: 1280, height: 800, frame: process.platform !== 'win32' });
     windows.push(wind);
 
-    var url = rootUrl + 'index.html';
+    let url = rootUrl + 'index.html';
     if (instanceId)
         url += '?id=' + instanceId;
 
     wind.loadURL(url);
 
-    var requests = wind.webContents.session.webRequest;
-    requests.onBeforeRequest(function(details, callback) {
+    let requests = wind.webContents.session.webRequest;
+    requests.onBeforeRequest((details, callback) => {
         // redirect requests to the local tornado server when appropriate
-        var url = details.url;
+        let url = details.url;
+
         if (url.startsWith(serverUrl)) {
-            var relative = url.slice(serverUrl.length);
-            var newUrl = 'http://localhost:' + global.mainPort + '/' + relative;
+            let relative = url.slice(serverUrl.length);
+            let newUrl = 'http://localhost:' + global.mainPort + '/' + relative;
             callback({ redirectURL : newUrl });  // redirect
         }
         else {
