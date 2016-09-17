@@ -114,9 +114,17 @@ else:
 
 
     def is_hidden(path):
+    
         result = GetFileAttributesW(path)
+        
+        # there are files which can not be queried
+        # and alwaysr return INVALID_FILE_ATTRIBUTES
+        # they typically can't be accessed anyway,
+        # and it makes sense to hide them, so we return
+        # True here, rather than throwing an error
+        
         if result == INVALID_FILE_ATTRIBUTES:
-            raise WinError()
+            return True
         return bool(result & FILE_ATTRIBUTE_HIDDEN)
 
     def is_link(path):
