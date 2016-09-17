@@ -23,7 +23,7 @@ const Analysis = function(id, name, ns) {
     this._parent = null;
     this._defn = null;
 
-    let url = 'http://' + host.baseUrl + '/analyses/' + ns + '/' + name + '/a.yaml';
+    let url = host.baseUrl + 'analyses/' + ns + '/' + name + '/a.yaml';
 
     this.ready = Promise.all([
         Promise.resolve($.get(url, null, null, 'text')).then(response => {

@@ -12,12 +12,10 @@ var Coms = function() {
     this._transactions = [ ];
     this._broadcastListeners = [ ];
 
-    var self = this;
-
     this.connected = null;
 
-    this.ready = new Promise(function(resolve, reject) {
-        self._notifyReady = resolve;
+    this.ready = new Promise((resolve, reject) => {
+        this._notifyReady = resolve;
     });
 };
 
@@ -28,47 +26,46 @@ Coms.prototype.setBaseUrl = function(url) {
 
 Coms.prototype.connect = function(sessionId) {
 
-    var self = this;
-
     if ( ! this.connected) {
 
         this.connected = Promise.all([
 
-            new Promise(function(resolve, reject) {
+            new Promise((resolve, reject) => {
 
-                var protoUrl = 'http://' + self._baseUrl + '/proto/coms.proto';
+                var protoUrl = this._baseUrl + 'proto/coms.proto';
 
-                ProtoBuf.loadProtoFile(protoUrl, function(err, builder) {
+                ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
                     if (err) {
                         reject(err);
                     }
                     else {
-                        self.Messages = builder.build().silkycoms;
+                        this.Messages = builder.build().silkycoms;
                         resolve();
                     }
                 });
             }),
-            new Promise(function(resolve, reject) {
+            new Promise((resolve, reject) => {
 
-                var url = 'ws://' + self._baseUrl + '/coms';
+                let url = this._baseUrl + 'coms';
+                url = url.replace('http', 'ws'); // http -> ws, https -> wss
 
                 if (sessionId)
                     url += '/' + sessionId;
 
-                self._ws = new WebSocket(url);
-                self._ws.binaryType = 'arraybuffer';
+                this._ws = new WebSocket(url);
+                this._ws.binaryType = 'arraybuffer';
 
-                self._ws.onopen = function() {
+                this._ws.onopen = () => {
                     console.log('opened!');
                     resolve();
                 };
 
-                self._ws.onmessage = function(event) {
-                    self.receive(event);
+                this._ws.onmessage = (event) => {
+                    this.receive(event);
                 };
 
-                self._ws.onerror = reject;
-                self._ws.onclose = function(msg) {
+                this._ws.onerror = reject;
+                this._ws.onclose = (msg) => {
                     console.log('websocket closed!');
                     console.log(msg);
                 };

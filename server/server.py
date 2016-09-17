@@ -19,9 +19,10 @@ import tempfile
 
 class SingleFileHandler(RequestHandler):
 
-    def initialize(self, path, mime_type=None):
+    def initialize(self, path, mime_type=None, no_cache=False):
         self._path = path
         self._mime_type = mime_type
+        self._no_cache = no_cache
 
     def get(self):
         if self._mime_type is not None:
@@ -29,6 +30,10 @@ class SingleFileHandler(RequestHandler):
         with open(self._path, 'rb') as file:
             content = file.read()
             self.write(content)
+
+    def set_extra_headers(self, path):
+        if self._no_cache:
+            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
 
 
 class ResourceHandler(RequestHandler):
@@ -109,6 +114,18 @@ class LoginHandler(RequestHandler):
         self.set_status(204)
 
 
+class SFHandler(StaticFileHandler):
+    def initialize(self, **kwargs):
+        if 'no_cache' in kwargs:
+            self._no_cache = kwargs['no_cache']
+            del kwargs['no_cache']
+        StaticFileHandler.initialize(self, **kwargs)
+
+    def set_extra_headers(self, path):
+        if self._no_cache:
+            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+
+
 class Server:
 
     def __init__(self, port, shutdown_on_idle=False, debug=False):
@@ -163,11 +180,17 @@ class Server:
             (r'/login', LoginHandler),
             (r'/coms', ClientConnection, { 'session_path': session_path }),
             (r'/upload', UploadHandler),
-            (r'/proto/coms.proto',   SingleFileHandler, { 'path': coms_path, 'mime_type': 'text/plain' }),
+            (r'/proto/coms.proto',   SingleFileHandler, {
+                'path': coms_path,
+                'mime_type': 'text/plain',
+                'no_cache': self._debug }),
             (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)/(.*)()', AnalysisDescriptor, { 'path': analyses_path }),
             (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
-            (r'/(.*)',   StaticFileHandler, { 'path': client_path, 'default_filename': 'index.html' })
+            (r'/(.*)', SFHandler, {
+                'path': client_path,
+                'default_filename': 'index.html',
+                'no_cache': self._debug })
         ])
 
         analysisui_path = os.path.join(client_path,    'analysisui.html')
@@ -177,9 +200,17 @@ class Server:
 
         self._analysisui_app = tornado.web.Application([
             (r'/.*/', SingleFileHandler, { 'path': analysisui_path }),
-            (r'/.*/analysisui.js',  SingleFileHandler, { 'path': analysisuijs_path, 'mime_type': 'text/javascript' }),
-            (r'/.*/analysisui.css', SingleFileHandler, { 'path': analysisuicss_path, 'mime_type': 'text/css' }),
-            (r'/.*/assets/(.*)', StaticFileHandler, { 'path': assets_path }),
+            (r'/.*/analysisui.js',  SingleFileHandler, {
+                'path': analysisuijs_path,
+                'mime_type': 'text/javascript',
+                'no_cache': self._debug }),
+            (r'/.*/analysisui.css', SingleFileHandler, {
+                'path': analysisuicss_path,
+                'mime_type': 'text/css',
+                'no_cache': self._debug }),
+            (r'/.*/assets/(.*)', SFHandler, {
+                'path': assets_path,
+                'no_cache': self._debug }),
         ])
 
         resultsview_path    = os.path.join(client_path, 'resultsview.html')
@@ -190,7 +221,7 @@ class Server:
             (r'/.*/', SingleFileHandler, { 'path': resultsview_path }),
             (r'/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
             (r'/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
-            (r'/.*/assets/(.*)', StaticFileHandler, { 'path': assets_path }),
+            (r'/.*/assets/(.*)', SFHandler, { 'path': assets_path }),
             (r'/(.*)/res/(.*)', ResourceHandler),
         ])
 

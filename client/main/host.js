@@ -4,11 +4,10 @@
 
 'use strict';
 
-let mainPort;
-let analysisUIPort;
-let resultsViewPort;
-
 let baseUrl;
+let analysisUIUrl;
+let resultsViewUrl;
+
 let isElectron;
 
 let openWindow;
@@ -17,19 +16,16 @@ let minimizeWindow;
 let maximizeWindow;
 let closeWindow;
 
-if (window.location.protocol === 'file:') {
+if (window.require) {
 
     isElectron = true;
 
     const electron = window.require('electron');
-
     const remote = electron.remote;
-    mainPort = remote.getGlobal('mainPort');
-    analysisUIPort = remote.getGlobal('analysisUIPort');
-    resultsViewPort = remote.getGlobal('resultsViewPort');
 
-    if (typeof(mainPort) !== 'undefined')
-        baseUrl = 'localhost:' + mainPort;
+    baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
+    analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
+    resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
 
     const ipc = electron.ipcRenderer;
 
@@ -55,13 +51,21 @@ if (window.location.protocol === 'file:') {
 }
 else {
 
+    let mainPort = parseInt(window.location.port);
+
+    baseUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort) + '/';
+    analysisUIUrl  = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 1) + '/';
+    resultsViewUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 2) + '/';
+
+    openWindow = instanceId => {
+        window.location = window.location.origin + '/?id=' + instanceId;
+    };
 }
 
 const Host = {
     baseUrl,
-    mainPort,
-    analysisUIPort,
-    resultsViewPort,
+    analysisUIUrl,
+    resultsViewUrl,
     isElectron,
     minimizeWindow,
     maximizeWindow,

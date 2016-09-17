@@ -341,7 +341,7 @@ var BackstageModel = Backbone.Model.extend({
         var data = new FormData();
         data.append('file', file);
 
-        var url = this.get("hostBaseUrl") + "/upload";
+        var url = this.get("hostBaseUrl") + "upload";
 
         var self = this;
 

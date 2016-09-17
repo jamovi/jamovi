@@ -131,18 +131,15 @@ $(document).ready(() => {
     let mainTable   = new TableView({el : "#main-table", model : dataSetModel });
     let progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
 
-    let optionsUrl = 'http://localhost:' + host.analysisUIPort + '/';
     backstageModel.on('change:activated', function(event) {
         mainTable.setActive( ! event.changed.activated);
         if (event.changed.activated === false)
             ribbonModel.set('selectedIndex', 1);
     });
 
-    let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : optionsUrl, model : instance });
+    let resultsView = new ResultsView({ el : "#results", iframeUrl : host.resultsViewUrl, model : instance });
+    let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : host.analysisUIUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
-
-    let resultsUrl = 'http://localhost:' + host.resultsViewPort + '/';
-    let resultsView = new ResultsView({ el : "#results", iframeUrl : resultsUrl, model : instance });
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
 
@@ -152,7 +149,7 @@ $(document).ready(() => {
 
     Promise.resolve(() => {
 
-        return $.post('http://localhost:' + host.mainPort + '/login');
+        return $.post(host.baseUrl + 'login');
 
     }).then(() => {
 

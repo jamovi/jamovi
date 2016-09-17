@@ -30,7 +30,7 @@ if (rootPath.startsWith('/') === false)
 rootPath = rootPath.replace(/\\/g, '/');
 
 let rootUrl = encodeURI('file://' + rootPath);
-let serverUrl = rootUrl + 's/';
+let serverUrl = rootUrl + 'analyses/';
 
 app.on('window-all-closed', function() {
     app.quit();
@@ -95,7 +95,7 @@ const createWindow = function(instanceId) {
 
         if (url.startsWith(serverUrl)) {
             let relative = url.slice(serverUrl.length);
-            let newUrl = 'http://localhost:' + global.mainPort + '/' + relative;
+            let newUrl = 'http://localhost:' + global.mainPort + '/analyses/' + relative;
             callback({ redirectURL : newUrl });  // redirect
         }
         else {

@@ -61,7 +61,7 @@ var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
 
     this.ready = Promise.all([
         new Promise(function(resolve, reject) {
-            var url = 's/analyses/' + analysis.ns + '/' + analysis.name;
+            var url = 'analyses/' + analysis.ns + '/' + analysis.name;
             return $.get(url, function(script) {
                 self.def = script;
                 resolve(script);
