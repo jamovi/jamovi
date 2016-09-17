@@ -38,7 +38,7 @@ def _ports_opened(ports):
 
     print('Server listening on ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
 
-    port_lock_path = Dirs.app_data_dir() + '/' + str(ports[0]) + '.lock'
+    port_lock_path = Dirs.app_data_dir() + '/' + str(ports[0]) + ',' + str(ports[1]) + ',' + str(ports[2]) + '.lock'
     with open(port_lock_path, 'a'):
         pass
 
@@ -119,10 +119,12 @@ if __name__ == "__main__":
                 lock_files = glob.glob(app_data_path + '/*.lock')
                 for file in lock_files:
                     try:
-                        port_no = int(os.path.splitext(os.path.basename(file))[0])
-                        _launch_electron(port_no)
+                        ports = os.path.splitext(os.path.basename(file))[0]
+                        ports = ports.split(',')
+                        ports = tuple(map(lambda x: int(x), ports))
+                        _launch_electron('', ports)
                         server_found = True
                         break
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                 time.sleep(.2)
