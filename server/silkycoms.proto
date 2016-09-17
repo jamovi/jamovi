@@ -81,6 +81,7 @@ message SettingsRequest {
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
     repeated DataSetEntry localFSRecents = 2;
+    repeated DataSetEntry examples = 3;
 }
 
 message VariableLevel {

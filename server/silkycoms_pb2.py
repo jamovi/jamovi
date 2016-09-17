@@ -19,7 +19,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='silkycoms.proto',
   package='silkycoms',
-  serialized_pb=_b('\n\x0fsilkycoms.proto\x12\tsilkycoms\"\'\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\"\xa1\x01\n\x0b\x43omsMessage\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ninstanceId\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x13\n\x0bpayloadType\x18\x04 \x01(\t\x12+\n\x06status\x18\x05 \x01(\x0e\x32\x11.silkycoms.Status:\x08\x43OMPLETE\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\"\x11\n\x0fInstanceRequest\"\x12\n\x10InstanceResponse\"\x1f\n\x0bOpenRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cOpenProgress\"\x1f\n\x0bSaveRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cSaveProgress\"\x89\x01\n\x07\x46SEntry\x12\x0c\n\x04path\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.silkycoms.FSEntry.Type\x12\x0c\n\x04name\x18\x03 \x01(\t\";\n\x04Type\x12\x08\n\x04\x46ILE\x10\x01\x12\n\n\x06\x46OLDER\x10\x02\x12\t\n\x05\x44RIVE\x10\x03\x12\x12\n\x0eSPECIAL_FOLDER\x10\x04\"\x19\n\tFSRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"H\n\nFSResponse\x12$\n\x08\x63ontents\x18\x01 \x03(\x0b\x32\x12.silkycoms.FSEntry\x12\x14\n\x0c\x65rrorMessage\x18\x02 \x01(\t\"<\n\x0c\x44\x61taSetEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\"\x11\n\x0fSettingsRequest\"m\n\x10SettingsResponse\x12(\n\x07recents\x18\x01 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\x12/\n\x0elocalFSRecents\x18\x02 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\"-\n\rVariableLevel\x12\r\n\x05label\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\xfd\x02\n\rDataSetSchema\x12\x36\n\x07\x63olumns\x18\x01 \x03(\x0b\x32%.silkycoms.DataSetSchema.ColumnSchema\x1a\xb3\x02\n\x0c\x43olumnSchema\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x46\n\x0bmeasureType\x18\x03 \x01(\x0e\x32\x31.silkycoms.DataSetSchema.ColumnSchema.MeasureType\x12\x13\n\x0b\x61utoMeasure\x18\x04 \x01(\x08\x12\r\n\x05width\x18\x05 \x01(\x05\x12\x11\n\thasLevels\x18\x06 \x01(\x08\x12(\n\x06levels\x18\x07 \x03(\x0b\x32\x18.silkycoms.VariableLevel\x12\x0b\n\x03\x64ps\x18\x08 \x01(\x05\"S\n\x0bMeasureType\x12\x08\n\x04MISC\x10\x00\x12\x10\n\x0cNOMINAL_TEXT\x10\x01\x12\x0b\n\x07NOMINAL\x10\x02\x12\x0b\n\x07ORDINAL\x10\x03\x12\x0e\n\nCONTINUOUS\x10\x04\"\r\n\x0bInfoRequest\"\x85\x01\n\x0cInfoResponse\x12\x12\n\nhasDataSet\x18\x01 \x01(\x08\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\x12\x10\n\x08rowCount\x18\x03 \x01(\r\x12\x13\n\x0b\x63olumnCount\x18\x04 \x01(\r\x12\x10\n\x08\x66ilePath\x18\x05 \x01(\t\"\xb0\x03\n\tDataSetRR\x12\"\n\x02op\x18\x01 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\x12\x0f\n\x07incData\x18\x02 \x01(\x08\x12\x11\n\tincSchema\x18\x03 \x01(\x08\x12\x10\n\x08rowStart\x18\x04 \x01(\r\x12\x13\n\x0b\x63olumnStart\x18\x05 \x01(\r\x12\x0e\n\x06rowEnd\x18\x06 \x01(\r\x12\x11\n\tcolumnEnd\x18\x07 \x01(\r\x12-\n\x04\x64\x61ta\x18\x08 \x03(\x0b\x32\x1f.silkycoms.DataSetRR.ColumnData\x12\x35\n\x06schema\x18\t \x03(\x0b\x32%.silkycoms.DataSetSchema.ColumnSchema\x1a\xaa\x01\n\nColumnData\x12\x39\n\x06values\x18\x01 \x03(\x0b\x32).silkycoms.DataSetRR.ColumnData.CellValue\x1a\x61\n\tCellValue\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12%\n\x01o\x18\x04 \x01(\x0e\x32\x18.silkycoms.SpecialValuesH\x00\x42\x06\n\x04type\"\xd8\x01\n\x0f\x41nalysisRequest\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\n\n\x02ns\x18\x04 \x01(\t\x12\x33\n\x07perform\x18\x05 \x01(\x0e\x32\".silkycoms.AnalysisRequest.Perform\x12\x0f\n\x07options\x18\x06 \x01(\t\x12\x0f\n\x03ppi\x18\x07 \x01(\x05:\x02\x37\x32\x12\x0f\n\x07\x63hanged\x18\x08 \x03(\t\"\x1c\n\x07Perform\x12\x08\n\x04INIT\x10\x01\x12\x07\n\x03RUN\x10\x02\"\xd5\x01\n\x10\x41nalysisResponse\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0f\n\x07options\x18\x03 \x01(\t\x12*\n\x07results\x18\x04 \x01(\x0b\x32\x19.silkycoms.ResultsElement\x12)\n\x06status\x18\x05 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\x12\x11\n\tincAsText\x18\x07 \x01(\x08\"\xb6\x01\n\x0bResultsCell\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12)\n\x01o\x18\x04 \x01(\x0e\x32\x1c.silkycoms.ResultsCell.OtherH\x00\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\x05\x12\x11\n\tfootnotes\x18\x06 \x03(\t\"&\n\x05Other\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02\x42\n\n\x08\x63\x65llType\"q\n\rResultsColumn\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12%\n\x05\x63\x65lls\x18\x07 \x03(\x0b\x32\x16.silkycoms.ResultsCell\".\n\x10ResultsTableNote\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04note\x18\x02 \x01(\t\"\xa0\x01\n\x0cResultsTable\x12)\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\x18.silkycoms.ResultsColumn\x12\x10\n\x08rowNames\x18\x02 \x03(\t\x12\x17\n\x0fswapRowsColumns\x18\x03 \x01(\x08\x12*\n\x05notes\x18\x04 \x03(\x0b\x32\x1b.silkycoms.ResultsTableNote\x12\x0e\n\x06\x61sText\x18\x05 \x01(\t\";\n\x0cResultsImage\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05width\x18\x02 \x01(\x05\x12\x0e\n\x06height\x18\x03 \x01(\x05\";\n\x0cResultsArray\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\";\n\x0cResultsGroup\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\"\xcd\x02\n\x0eResultsElement\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12;\n\x06status\x18\x03 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus:\x10\x41NALYSIS_RUNNING\x12\x1f\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x10.silkycoms.Error\x12(\n\x05table\x18\x06 \x01(\x0b\x32\x17.silkycoms.ResultsTableH\x00\x12(\n\x05image\x18\x07 \x01(\x0b\x32\x17.silkycoms.ResultsImageH\x00\x12(\n\x05group\x18\x08 \x01(\x0b\x32\x17.silkycoms.ResultsGroupH\x00\x12(\n\x05\x61rray\x18\t \x01(\x0b\x32\x17.silkycoms.ResultsArrayH\x00\x12\x10\n\x06syntax\x18\x0b \x01(\tH\x00\x42\x06\n\x04type*2\n\x06Status\x12\x0c\n\x08\x43OMPLETE\x10\x01\x12\x0f\n\x0bIN_PROGRESS\x10\x02\x12\t\n\x05\x45RROR\x10\x03*\x1a\n\x06GetSet\x12\x07\n\x03GET\x10\x00\x12\x07\n\x03SET\x10\x01*.\n\rSpecialValues\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02*\x8f\x01\n\x0e\x41nalysisStatus\x12\x11\n\rANALYSIS_NONE\x10\x00\x12\x13\n\x0f\x41NALYSIS_INITED\x10\x01\x12\x14\n\x10\x41NALYSIS_RUNNING\x10\x02\x12\x15\n\x11\x41NALYSIS_COMPLETE\x10\x03\x12\x12\n\x0e\x41NALYSIS_ERROR\x10\x04\x12\x14\n\x10\x41NALYSIS_ABORTED\x10\x05')
+  serialized_pb=_b('\n\x0fsilkycoms.proto\x12\tsilkycoms\"\'\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\"\xa1\x01\n\x0b\x43omsMessage\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ninstanceId\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x13\n\x0bpayloadType\x18\x04 \x01(\t\x12+\n\x06status\x18\x05 \x01(\x0e\x32\x11.silkycoms.Status:\x08\x43OMPLETE\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\"\x11\n\x0fInstanceRequest\"\x12\n\x10InstanceResponse\"\x1f\n\x0bOpenRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cOpenProgress\"\x1f\n\x0bSaveRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\x0e\n\x0cSaveProgress\"\x89\x01\n\x07\x46SEntry\x12\x0c\n\x04path\x18\x01 \x01(\t\x12%\n\x04type\x18\x02 \x01(\x0e\x32\x17.silkycoms.FSEntry.Type\x12\x0c\n\x04name\x18\x03 \x01(\t\";\n\x04Type\x12\x08\n\x04\x46ILE\x10\x01\x12\n\n\x06\x46OLDER\x10\x02\x12\t\n\x05\x44RIVE\x10\x03\x12\x12\n\x0eSPECIAL_FOLDER\x10\x04\"\x19\n\tFSRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"H\n\nFSResponse\x12$\n\x08\x63ontents\x18\x01 \x03(\x0b\x32\x12.silkycoms.FSEntry\x12\x14\n\x0c\x65rrorMessage\x18\x02 \x01(\t\"<\n\x0c\x44\x61taSetEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x10\n\x08location\x18\x03 \x01(\t\"\x11\n\x0fSettingsRequest\"\x98\x01\n\x10SettingsResponse\x12(\n\x07recents\x18\x01 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\x12/\n\x0elocalFSRecents\x18\x02 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\x12)\n\x08\x65xamples\x18\x03 \x03(\x0b\x32\x17.silkycoms.DataSetEntry\"-\n\rVariableLevel\x12\r\n\x05label\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05\"\xfd\x02\n\rDataSetSchema\x12\x36\n\x07\x63olumns\x18\x01 \x03(\x0b\x32%.silkycoms.DataSetSchema.ColumnSchema\x1a\xb3\x02\n\x0c\x43olumnSchema\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x46\n\x0bmeasureType\x18\x03 \x01(\x0e\x32\x31.silkycoms.DataSetSchema.ColumnSchema.MeasureType\x12\x13\n\x0b\x61utoMeasure\x18\x04 \x01(\x08\x12\r\n\x05width\x18\x05 \x01(\x05\x12\x11\n\thasLevels\x18\x06 \x01(\x08\x12(\n\x06levels\x18\x07 \x03(\x0b\x32\x18.silkycoms.VariableLevel\x12\x0b\n\x03\x64ps\x18\x08 \x01(\x05\"S\n\x0bMeasureType\x12\x08\n\x04MISC\x10\x00\x12\x10\n\x0cNOMINAL_TEXT\x10\x01\x12\x0b\n\x07NOMINAL\x10\x02\x12\x0b\n\x07ORDINAL\x10\x03\x12\x0e\n\nCONTINUOUS\x10\x04\"\r\n\x0bInfoRequest\"\x85\x01\n\x0cInfoResponse\x12\x12\n\nhasDataSet\x18\x01 \x01(\x08\x12(\n\x06schema\x18\x02 \x01(\x0b\x32\x18.silkycoms.DataSetSchema\x12\x10\n\x08rowCount\x18\x03 \x01(\r\x12\x13\n\x0b\x63olumnCount\x18\x04 \x01(\r\x12\x10\n\x08\x66ilePath\x18\x05 \x01(\t\"\xb0\x03\n\tDataSetRR\x12\"\n\x02op\x18\x01 \x01(\x0e\x32\x11.silkycoms.GetSet:\x03GET\x12\x0f\n\x07incData\x18\x02 \x01(\x08\x12\x11\n\tincSchema\x18\x03 \x01(\x08\x12\x10\n\x08rowStart\x18\x04 \x01(\r\x12\x13\n\x0b\x63olumnStart\x18\x05 \x01(\r\x12\x0e\n\x06rowEnd\x18\x06 \x01(\r\x12\x11\n\tcolumnEnd\x18\x07 \x01(\r\x12-\n\x04\x64\x61ta\x18\x08 \x03(\x0b\x32\x1f.silkycoms.DataSetRR.ColumnData\x12\x35\n\x06schema\x18\t \x03(\x0b\x32%.silkycoms.DataSetSchema.ColumnSchema\x1a\xaa\x01\n\nColumnData\x12\x39\n\x06values\x18\x01 \x03(\x0b\x32).silkycoms.DataSetRR.ColumnData.CellValue\x1a\x61\n\tCellValue\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12%\n\x01o\x18\x04 \x01(\x0e\x32\x18.silkycoms.SpecialValuesH\x00\x42\x06\n\x04type\"\xd8\x01\n\x0f\x41nalysisRequest\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\n\n\x02ns\x18\x04 \x01(\t\x12\x33\n\x07perform\x18\x05 \x01(\x0e\x32\".silkycoms.AnalysisRequest.Perform\x12\x0f\n\x07options\x18\x06 \x01(\t\x12\x0f\n\x03ppi\x18\x07 \x01(\x05:\x02\x37\x32\x12\x0f\n\x07\x63hanged\x18\x08 \x03(\t\"\x1c\n\x07Perform\x12\x08\n\x04INIT\x10\x01\x12\x07\n\x03RUN\x10\x02\"\xd5\x01\n\x10\x41nalysisResponse\x12\x11\n\tdatasetId\x18\x01 \x01(\t\x12\x12\n\nanalysisId\x18\x02 \x01(\x05\x12\x0f\n\x07options\x18\x03 \x01(\t\x12*\n\x07results\x18\x04 \x01(\x0b\x32\x19.silkycoms.ResultsElement\x12)\n\x06status\x18\x05 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus\x12\x1f\n\x05\x65rror\x18\x06 \x01(\x0b\x32\x10.silkycoms.Error\x12\x11\n\tincAsText\x18\x07 \x01(\x08\"\xb6\x01\n\x0bResultsCell\x12\x0b\n\x01i\x18\x01 \x01(\x05H\x00\x12\x0b\n\x01\x64\x18\x02 \x01(\x01H\x00\x12\x0b\n\x01s\x18\x03 \x01(\tH\x00\x12)\n\x01o\x18\x04 \x01(\x0e\x32\x1c.silkycoms.ResultsCell.OtherH\x00\x12\x0e\n\x06\x66ormat\x18\x05 \x01(\x05\x12\x11\n\tfootnotes\x18\x06 \x03(\t\"&\n\x05Other\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02\x42\n\n\x08\x63\x65llType\"q\n\rResultsColumn\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0c\n\x04type\x18\x03 \x01(\t\x12\x0e\n\x06\x66ormat\x18\x04 \x01(\t\x12%\n\x05\x63\x65lls\x18\x07 \x03(\x0b\x32\x16.silkycoms.ResultsCell\".\n\x10ResultsTableNote\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04note\x18\x02 \x01(\t\"\xa0\x01\n\x0cResultsTable\x12)\n\x07\x63olumns\x18\x01 \x03(\x0b\x32\x18.silkycoms.ResultsColumn\x12\x10\n\x08rowNames\x18\x02 \x03(\t\x12\x17\n\x0fswapRowsColumns\x18\x03 \x01(\x08\x12*\n\x05notes\x18\x04 \x03(\x0b\x32\x1b.silkycoms.ResultsTableNote\x12\x0e\n\x06\x61sText\x18\x05 \x01(\t\";\n\x0cResultsImage\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\r\n\x05width\x18\x02 \x01(\x05\x12\x0e\n\x06height\x18\x03 \x01(\x05\";\n\x0cResultsArray\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\";\n\x0cResultsGroup\x12+\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x19.silkycoms.ResultsElement\"\xcd\x02\n\x0eResultsElement\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12;\n\x06status\x18\x03 \x01(\x0e\x32\x19.silkycoms.AnalysisStatus:\x10\x41NALYSIS_RUNNING\x12\x1f\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x10.silkycoms.Error\x12(\n\x05table\x18\x06 \x01(\x0b\x32\x17.silkycoms.ResultsTableH\x00\x12(\n\x05image\x18\x07 \x01(\x0b\x32\x17.silkycoms.ResultsImageH\x00\x12(\n\x05group\x18\x08 \x01(\x0b\x32\x17.silkycoms.ResultsGroupH\x00\x12(\n\x05\x61rray\x18\t \x01(\x0b\x32\x17.silkycoms.ResultsArrayH\x00\x12\x10\n\x06syntax\x18\x0b \x01(\tH\x00\x42\x06\n\x04type*2\n\x06Status\x12\x0c\n\x08\x43OMPLETE\x10\x01\x12\x0f\n\x0bIN_PROGRESS\x10\x02\x12\t\n\x05\x45RROR\x10\x03*\x1a\n\x06GetSet\x12\x07\n\x03GET\x10\x00\x12\x07\n\x03SET\x10\x01*.\n\rSpecialValues\x12\x0b\n\x07MISSING\x10\x01\x12\x10\n\x0cNOT_A_NUMBER\x10\x02*\x8f\x01\n\x0e\x41nalysisStatus\x12\x11\n\rANALYSIS_NONE\x10\x00\x12\x13\n\x0f\x41NALYSIS_INITED\x10\x01\x12\x14\n\x10\x41NALYSIS_RUNNING\x10\x02\x12\x15\n\x11\x41NALYSIS_COMPLETE\x10\x03\x12\x12\n\x0e\x41NALYSIS_ERROR\x10\x04\x12\x14\n\x10\x41NALYSIS_ABORTED\x10\x05')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -44,8 +44,8 @@ _STATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3287,
-  serialized_end=3337,
+  serialized_start=3331,
+  serialized_end=3381,
 )
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
@@ -67,8 +67,8 @@ _GETSET = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3339,
-  serialized_end=3365,
+  serialized_start=3383,
+  serialized_end=3409,
 )
 _sym_db.RegisterEnumDescriptor(_GETSET)
 
@@ -90,8 +90,8 @@ _SPECIALVALUES = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3367,
-  serialized_end=3413,
+  serialized_start=3411,
+  serialized_end=3457,
 )
 _sym_db.RegisterEnumDescriptor(_SPECIALVALUES)
 
@@ -129,8 +129,8 @@ _ANALYSISSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=3416,
-  serialized_end=3559,
+  serialized_start=3460,
+  serialized_end=3603,
 )
 _sym_db.RegisterEnumDescriptor(_ANALYSISSTATUS)
 
@@ -209,8 +209,8 @@ _DATASETSCHEMA_COLUMNSCHEMA_MEASURETYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1151,
-  serialized_end=1234,
+  serialized_start=1195,
+  serialized_end=1278,
 )
 _sym_db.RegisterEnumDescriptor(_DATASETSCHEMA_COLUMNSCHEMA_MEASURETYPE)
 
@@ -231,8 +231,8 @@ _ANALYSISREQUEST_PERFORM = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2011,
-  serialized_end=2039,
+  serialized_start=2055,
+  serialized_end=2083,
 )
 _sym_db.RegisterEnumDescriptor(_ANALYSISREQUEST_PERFORM)
 
@@ -253,8 +253,8 @@ _RESULTSCELL_OTHER = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2390,
-  serialized_end=2428,
+  serialized_start=2434,
+  serialized_end=2472,
 )
 _sym_db.RegisterEnumDescriptor(_RESULTSCELL_OTHER)
 
@@ -713,6 +713,13 @@ _SETTINGSRESPONSE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='examples', full_name='silkycoms.SettingsResponse.examples', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -724,8 +731,8 @@ _SETTINGSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=694,
-  serialized_end=803,
+  serialized_start=695,
+  serialized_end=847,
 )
 
 
@@ -761,8 +768,8 @@ _VARIABLELEVEL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=805,
-  serialized_end=850,
+  serialized_start=849,
+  serialized_end=894,
 )
 
 
@@ -841,8 +848,8 @@ _DATASETSCHEMA_COLUMNSCHEMA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=927,
-  serialized_end=1234,
+  serialized_start=971,
+  serialized_end=1278,
 )
 
 _DATASETSCHEMA = _descriptor.Descriptor(
@@ -870,8 +877,8 @@ _DATASETSCHEMA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=853,
-  serialized_end=1234,
+  serialized_start=897,
+  serialized_end=1278,
 )
 
 
@@ -893,8 +900,8 @@ _INFOREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1236,
-  serialized_end=1249,
+  serialized_start=1280,
+  serialized_end=1293,
 )
 
 
@@ -951,8 +958,8 @@ _INFORESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1252,
-  serialized_end=1385,
+  serialized_start=1296,
+  serialized_end=1429,
 )
 
 
@@ -1005,8 +1012,8 @@ _DATASETRR_COLUMNDATA_CELLVALUE = _descriptor.Descriptor(
       name='type', full_name='silkycoms.DataSetRR.ColumnData.CellValue.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1723,
-  serialized_end=1820,
+  serialized_start=1767,
+  serialized_end=1864,
 )
 
 _DATASETRR_COLUMNDATA = _descriptor.Descriptor(
@@ -1034,8 +1041,8 @@ _DATASETRR_COLUMNDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1650,
-  serialized_end=1820,
+  serialized_start=1694,
+  serialized_end=1864,
 )
 
 _DATASETRR = _descriptor.Descriptor(
@@ -1119,8 +1126,8 @@ _DATASETRR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1388,
-  serialized_end=1820,
+  serialized_start=1432,
+  serialized_end=1864,
 )
 
 
@@ -1199,8 +1206,8 @@ _ANALYSISREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1823,
-  serialized_end=2039,
+  serialized_start=1867,
+  serialized_end=2083,
 )
 
 
@@ -1271,8 +1278,8 @@ _ANALYSISRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2042,
-  serialized_end=2255,
+  serialized_start=2086,
+  serialized_end=2299,
 )
 
 
@@ -1340,8 +1347,8 @@ _RESULTSCELL = _descriptor.Descriptor(
       name='cellType', full_name='silkycoms.ResultsCell.cellType',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=2258,
-  serialized_end=2440,
+  serialized_start=2302,
+  serialized_end=2484,
 )
 
 
@@ -1398,8 +1405,8 @@ _RESULTSCOLUMN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2442,
-  serialized_end=2555,
+  serialized_start=2486,
+  serialized_end=2599,
 )
 
 
@@ -1435,8 +1442,8 @@ _RESULTSTABLENOTE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2557,
-  serialized_end=2603,
+  serialized_start=2601,
+  serialized_end=2647,
 )
 
 
@@ -1493,8 +1500,8 @@ _RESULTSTABLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2606,
-  serialized_end=2766,
+  serialized_start=2650,
+  serialized_end=2810,
 )
 
 
@@ -1537,8 +1544,8 @@ _RESULTSIMAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2768,
-  serialized_end=2827,
+  serialized_start=2812,
+  serialized_end=2871,
 )
 
 
@@ -1567,8 +1574,8 @@ _RESULTSARRAY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2829,
-  serialized_end=2888,
+  serialized_start=2873,
+  serialized_end=2932,
 )
 
 
@@ -1597,8 +1604,8 @@ _RESULTSGROUP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2890,
-  serialized_end=2949,
+  serialized_start=2934,
+  serialized_end=2993,
 )
 
 
@@ -1686,8 +1693,8 @@ _RESULTSELEMENT = _descriptor.Descriptor(
       name='type', full_name='silkycoms.ResultsElement.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=2952,
-  serialized_end=3285,
+  serialized_start=2996,
+  serialized_end=3329,
 )
 
 _COMSMESSAGE.fields_by_name['status'].enum_type = _STATUS
@@ -1697,6 +1704,7 @@ _FSENTRY_TYPE.containing_type = _FSENTRY
 _FSRESPONSE.fields_by_name['contents'].message_type = _FSENTRY
 _SETTINGSRESPONSE.fields_by_name['recents'].message_type = _DATASETENTRY
 _SETTINGSRESPONSE.fields_by_name['localFSRecents'].message_type = _DATASETENTRY
+_SETTINGSRESPONSE.fields_by_name['examples'].message_type = _DATASETENTRY
 _DATASETSCHEMA_COLUMNSCHEMA.fields_by_name['measureType'].enum_type = _DATASETSCHEMA_COLUMNSCHEMA_MEASURETYPE
 _DATASETSCHEMA_COLUMNSCHEMA.fields_by_name['levels'].message_type = _VARIABLELEVEL
 _DATASETSCHEMA_COLUMNSCHEMA.containing_type = _DATASETSCHEMA

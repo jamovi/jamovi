@@ -22,6 +22,7 @@ import json
 import uuid
 import posixpath
 import math
+import yaml
 
 import utils.winjunclib
 
@@ -42,6 +43,10 @@ class Instance:
             nor_path = path.replace('{{Desktop}}', Dirs.desktop_dir())
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
+        elif path.startswith('{{Examples}}'):
+            here = os.path.realpath(os.path.dirname(__file__))
+            root = os.path.join(here, '..', '..', 'examples')
+            nor_path = path.replace('{{Examples}}', root)
         return nor_path
 
     def _virtualise_path(path):
@@ -586,5 +591,16 @@ class Instance:
             recentEntry = response.localFSRecents.add()
             recentEntry.name = localFSRecent['name']
             recentEntry.path = localFSRecent['path']
+
+        try:
+            here = os.path.realpath(os.path.dirname(__file__))
+            path = os.path.join(here, '..', '..', 'examples', 'index.yaml')
+            with open(path) as index:
+                for example in yaml.load(index):
+                    exampleEntry = response.examples.add()
+                    exampleEntry.name = example['name']
+                    exampleEntry.path = '{{Examples}}/' + example['path']
+        except Exception as e:
+            print(e)
 
         self._coms.send(response, self._instance_id, request)
