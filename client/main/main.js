@@ -38,11 +38,6 @@ ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
 });
 
-backstageModel.on('change:activated', function(event) {
-    if (event.changed.activated === false)
-        ribbonModel.set('selectedIndex', 1);
-});
-
 instance.on('change:hasDataSet', function() {
     ribbonModel.set('dataAvailable', true);
 });
@@ -137,6 +132,12 @@ $(document).ready(() => {
     let progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
 
     let optionsUrl = 'http://localhost:' + host.analysisUIPort + '/';
+    backstageModel.on('change:activated', function(event) {
+        mainTable.setActive( ! event.changed.activated);
+        if (event.changed.activated === false)
+            ribbonModel.set('selectedIndex', 1);
+    });
+
     let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : optionsUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
 

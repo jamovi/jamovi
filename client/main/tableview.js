@@ -62,12 +62,20 @@ const TableView = SilkyView.extend({
         this.$el.on('click', event => this._clickHandler(event));
         this.$el.on('dblclick', event => this._clickHandler(event));
 
+        this._active = true;
         keyboardJS.setContext('spreadsheet');
         keyboardJS.bind('', event => this._notEditingKeyPress(event));
 
         this._edited = false;
         this._editing = false;
         this._editNote = new Notify({ duration: 3000 });
+    },
+    setActive(active) {
+        this._active = active;
+        if (this._active)
+            keyboardJS.setContext('spreadsheet');
+        else
+            keyboardJS.setContext('');
     },
     _dataSetLoaded() {
 
