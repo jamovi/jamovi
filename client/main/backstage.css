@@ -10,7 +10,7 @@
 }
 
 .silky-bs-op-panel {
-    width: 150px;
+    width: 100px;
     position: fixed ;
     left: 0;
     top: 0 ;
@@ -97,6 +97,15 @@
     padding-left: 40px ;
 }
 
+.silky-bs-place-separator {
+    box-sizing: border-box;
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #DDDDDD;
+    height: 6px;
+    margin-right: 20px;
+}
+
 .silky-bs-place:hover {
     background-color: #DBE4F3 ;
 }
@@ -122,9 +131,13 @@
     background-image: url('assets/place-osf.svg');
 }
 
+.silky-bs-place[data-place="examples"] {
+    background-image: url('assets/place-folder-favourite.svg');
+}
+
 .silky-bs-choices {
     position: absolute ;
-    left: 485px ;
+    left: 435px ;
     top: 136px ;
     bottom: 20px ;
     right: 200px ;
@@ -338,7 +351,7 @@
 }
 
 .silky-bs-fslist-browser-location {
-    font-size: 22px ;
+    font-size: 120% ;
     overflow: hidden;
     white-space: nowrap ;
 }

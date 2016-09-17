@@ -46,6 +46,8 @@ var FSEntryListView = SilkyView.extend({
             normPath = path.replace('{{Home}}', 'Home');
         else if (path.startsWith('{{Root}}'))
             normPath = path.replace('{{Root}}', 'This PC');
+        else if (path.startsWith('{{Examples}}'))
+            normPath = path.replace('{{Examples}}', 'Examples');
 
         normPath = normPath.replace(/\/$/, "");
         return normPath;
@@ -66,7 +68,7 @@ var FSEntryListView = SilkyView.extend({
 
             var name = item.name;
             var path = item.path;
-            var location = this._normalisePath(item.location);
+            var location = item.location ? this._normalisePath(item.location) : '';
             location = location.replace(/\//g, ' \uFE65 ');
 
             html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
@@ -114,6 +116,8 @@ var FSEntryBrowserView = SilkyView.extend({
             normPath = path.replace('{{Home}}', 'Home');
         else if (path.startsWith('{{Root}}'))
             normPath = path.replace('{{Root}}', 'This PC');
+        else if (path.startsWith('{{Examples}}'))
+            normPath = path.replace('{{Examples}}', 'Examples');
 
         normPath = normPath.replace(/\/$/, "");
         return normPath;
@@ -422,6 +426,9 @@ var BackstageModel = Backbone.Model.extend({
         this._recentsListModel = new FSEntryListModel();
         this._recentsListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
+        this._examplesListModel = new FSEntryListModel();
+        this._examplesListModel.on('dataSetOpenRequested', this.tryOpen, this);
+
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = "open";
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
@@ -433,25 +440,32 @@ var BackstageModel = Backbone.Model.extend({
 
         this.attributes.ops = [
             {
+                name: 'new',
+                title: 'New',
+                action: () => { this.requestOpen(''); }
+            },
+            {
                 name: 'open',
                 title: 'Open',
                 places: [
-                    { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView },
+                    { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
                     { name: 'osf',    title: 'OSF' },
-                    { name: 'browse', title: 'Browse' },
+                    { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryListView, separator: true },
+                    { name: 'browse', title: 'Browse' }
                 ]
             },
             /*{
                 name: 'save',
                 title: 'Save',
+                //action: () => { this.requestOpen(''); }
             },*/
             {
                 name: 'saveAs',
                 title: 'Save As',
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF' },
+                    { name: 'osf',    title: 'OSF', separator: true },
                     { name: 'browse', title: 'Browse' },
                 ]
             }
@@ -505,27 +519,33 @@ var BackstageModel = Backbone.Model.extend({
     _opChanged: function() {
 
         var op = this.getCurrentOp();
-        var names = _.pluck(op.places, 'name');
-        var index = names.indexOf(this.attributes.lastSelectedPlace);
 
-        if (index === -1)
-            index = names.indexOf(this.attributes.place);
+        if ('places' in op) {
+            var names = _.pluck(op.places, 'name');
+            var index = names.indexOf(this.attributes.lastSelectedPlace);
 
-        if (index === -1)
-            index = 0;
+            if (index === -1)
+                index = names.indexOf(this.attributes.place);
 
-        var place = op.places[index].name;
-        var old = this.attributes.place;
+            if (index === -1)
+                index = 0;
 
-        if (old) {
-            this.attributes.place = place;
-            var self = this;
-            setTimeout(function() {
-                //self.attributes.place = old;
-                //self.set('place', place);
-                self.trigger('change:place');
-            }, 0);
+            var place = op.places[index].name;
+            var old = this.attributes.place;
+
+            if (old) {
+                this.attributes.place = place;
+                var self = this;
+                setTimeout(function() {
+                    //self.attributes.place = old;
+                    //self.set('place', place);
+                    self.trigger('change:place');
+                }, 0);
+            }
         }
+
+        if ('action' in op)
+            op.action();
     },
     uploadFile: function(file) {
 
@@ -561,6 +581,7 @@ var BackstageModel = Backbone.Model.extend({
     _settingsChanged : function() {
         var settings = this.attributes.settings;
         this._recentsListModel.set('items', settings.recents);
+        this._examplesListModel.set('items', settings.examples);
     },
     recentsModel : function() {
         return this._recentsListModel;
@@ -599,9 +620,12 @@ var BackstageView = SilkyView.extend({
 
         $('<div class="silky-bs-main"></div>').appendTo(this.$el);
 
+        var currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
             let op = this.model.attributes.ops[i];
             let selected = (op.name === this.model.attributes.operation);
+            if (selected)
+                currentOp = op;
             let $op = $('<div class="silky-bs-op-button" data-op="' + op.name + '" ' + (selected ? 'data-selected' : '') + '">' + op.title + '</div>');
             op.$el = $op;
             $op.on('click', op, _.bind(this._opClicked, this));
@@ -613,7 +637,8 @@ var BackstageView = SilkyView.extend({
 
         this._opChanged();
 
-        this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
+        if ('places' in currentOp)
+            this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
     },
     activate : function() {
 
@@ -624,7 +649,8 @@ var BackstageView = SilkyView.extend({
         this.$opPanel.show();
         this.$opPanel.animate({left:0}, 200);
 
-        this.main.$el.css("margin-left", width + 32);
+        if (this.main)
+            this.main.$el.css("margin-left", width + 32);
 
         this.model.set('activated', true);
     },
@@ -640,8 +666,14 @@ var BackstageView = SilkyView.extend({
         var self = this;
         setTimeout(function () {
             var ops = self.model.attributes.ops;
-            self.model.set('operation', ops[0].name);
-            self.model.set('place', ops[0].places[0].name);
+            for (let i = 0; i < ops.length; i++) {
+                if ('places' in ops[i]) {
+                    self.model.set('operation', ops[i].name);
+                    self.model.set('place', ops[i].places[0].name);
+                    break;
+                }
+            }
+
         }, 100);
     },
     _activationChanged : function() {
@@ -683,6 +715,8 @@ var BackstagePlaces = SilkyView.extend({
         for (let i = 0; i < ops.length; i++) {
 
             let op = ops[i];
+            if (!('places' in op))
+                continue;
 
             let html = '';
 
@@ -700,6 +734,8 @@ var BackstagePlaces = SilkyView.extend({
                 let place = op.places[j];
                 var $place = $('<div class="silky-bs-place" data-place="' + place.name + '">' + place.title + '</div>');
                 $places.append($place);
+                if (place.separator)
+                    $places.append($('<div class="silky-bs-place-separator"></div>'));
                 $place.on('click', place, _.bind(this._placeClicked, this));
             }
         }
