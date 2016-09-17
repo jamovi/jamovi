@@ -124,12 +124,21 @@ var FSEntryBrowserView = SilkyView.extend({
         'click .silky-bs-fslist-browser-back-button' : '_backClicked',
         'click .silky-bs-fslist-browser-save-button' : '_saveClicked',
         'change .silky-bs-fslist-browser-save-filetype' : '_saveTypeChanged',
-        'focus .silky-bs-fslist-browser-save-name,.silky-bs-fslist-browser-save-filetype' : '_focusChanged'
+        'focus .silky-bs-fslist-browser-save-name' : '_nameGotFocus',
+        'focus .silky-bs-fslist-browser-save-filetype' : '_focusChanged'
     },
     _saveTypeChanged : function() {
         var selected = this.$el.find('option:selected');
         this.filterExtension = selected.data('extension');
         this._render();
+    },
+    _nameGotFocus: function(event) {
+        keyboardJS.setContext('save_name_textbox');
+        this._selected = false;
+        if (this._selectedIndex !== -1) {
+            this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
+            this._selectedIndex = -1;
+        }
     },
     _focusChanged: function(event) {
         keyboardJS.setContext('');
@@ -166,13 +175,15 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit"></div>';
         html += '   </div>';
         if (this.model.clickProcess === "save") {
-            html += '   <div style="display: flex; flex-flow: row nowrap;">';
+            html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
             html += '       <div style="flex: 1 1 auto;">';
-            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" />';
-            html += '           <select class="silky-bs-fslist-browser-save-filetype">';
-            html += '               <option data-extension="osilky" selected>Silky File (*.osilky)</option>';
-            //html += '               <option data-extension="jasp">Silky File2 (*.silky)</option>';
-            html += '           </select>';
+            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here" />';
+            html += '           <div class="silky-bs-fslist-browser-save-filetype">';
+            html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
+            html += '                   <option data-extension="osilky" selected>Silky File (*.osilky)</option>';
+            //html += '                 <option data-extension="jasp">Silky File2 (*.silky)</option>';
+            html += '               </select>';
+            html += '           </div>';
             html += '       </div>';
             html += '       <div class="silky-bs-fslist-browser-save-button" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
@@ -187,13 +198,27 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        if (this.model.clickProcess === "save")
+        if (this.model.clickProcess === "save") {
             this.filterExtension = "osilky";
+            var self = this;
+            setTimeout(function () {
+                self.$header.find('.silky-bs-fslist-browser-save-name').focus();
+                keyboardJS.setContext('save_name_textbox');
+                keyboardJS.bind('', event => self._nameBoxFocused(event));
+            }, 50);
+        }
+    },
+    _nameBoxFocused: function(event) {
 
-        var self = this;
-        setTimeout(function () {
-            self.$header.find('.silky-bs-fslist-browser-save-name').focus();
-        }, 50);
+        if (event.metaKey || event.ctrlKey || event.altKey)
+            return;
+
+        switch(event.key) {
+            case 'Enter':
+                this._saveClicked(event);
+                event.preventDefault();
+                break;
+        }
     },
     _render : function() {
 
@@ -278,7 +303,7 @@ var FSEntryBrowserView = SilkyView.extend({
             this._selected = true;
         }
     },
-    _focusKeyPress(event) {
+    _focusKeyPress: function(event) {
 
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
@@ -341,7 +366,7 @@ var FSEntryBrowserView = SilkyView.extend({
         if (_.isUndefined(dirInfo) === false) {
             var name = this.$header.find(".silky-bs-fslist-browser-save-name").val();
             if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
-                name = name + '.' + this.extension;
+                name = name + '.' + this.filterExtension;
             var path = dirInfo.path + '/' + name;
             this.model.requestSave(path, 1);
             var items = this.model.get('items');

@@ -10,7 +10,7 @@
 }
 
 .silky-bs-op-panel {
-
+    width: 150px;
     position: fixed ;
     left: 0;
     top: 0 ;
@@ -18,7 +18,7 @@
     z-index: 10 ;
     background-color: #3E6DA9 ;
     color: #FFFFFF ;
-    padding: 8px 0px;
+    padding: 20px 0px;
 }
 
 .silky-bs-back-button {
@@ -124,7 +124,7 @@
 
 .silky-bs-choices {
     position: absolute ;
-    left: 425px ;
+    left: 485px ;
     top: 136px ;
     bottom: 20px ;
     right: 200px ;
@@ -285,11 +285,23 @@
     border-style: solid;
     border-width: 1px;
     border-color: #AAAAAA;
+    background-color: #FFFFFF;
+    width: 100%;
+    margin-top: 2px;
+    box-sizing: border-box;
+}
+
+.silky-bs-fslist-browser-save-filetype-inner {
     width: 100%;
     font-size: 14px ;
-    margin-top: 2px;
-    padding: 3px 4px 3px 2px;
     box-sizing: border-box;
+    border: none;
+    padding: 3px 4px 3px 2px;
+    background-color: transparent;
+}
+
+.silky-bs-fslist-save-options {
+    margin-bottom: 7px;
 }
 
 .silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
@@ -301,7 +313,7 @@
     align-items: center;
     height: 30px;
     font-size: 15px ;
-    margin-left: 4px;
+    margin-left: 10px;
     border-style: solid;
     border-width: 1px;
     border-color: #AAAAAA;
@@ -367,4 +379,9 @@
     border-width: 1px;
     border-color: #B1C5DE ;
     background-color: #DBE4F3 ;
+}
+
+.silky-bs-fslist {
+    padding-left: 20px ;
+    box-sizing: border-box;
 }
