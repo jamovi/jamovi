@@ -227,7 +227,7 @@ class Instance:
 
             self._coms.send(None, self._instance_id, request)
 
-            if path != '':
+            if path != '' and not path.startwith('{{Examples}}'):
                 self._add_to_recents(path)
 
         except OSError as e:
