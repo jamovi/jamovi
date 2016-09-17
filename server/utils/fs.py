@@ -1,15 +1,19 @@
 
 # flake8: noqa
 
+import os.path
 import platform
 
 if platform.uname().system != 'Windows':
 
-    def islink(path):
+    def is_link(path):
         return False
 
-    def readlink(path):
+    def read_link(path):
         raise ValueError("not a link")
+
+    def is_hidden(path):
+        return os.path.basename(path).startswith('.')
 
 else:
 
@@ -26,6 +30,7 @@ else:
 
     INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
     FILE_ATTRIBUTE_REPARSE_POINT = 0x00400
+    FILE_ATTRIBUTE_HIDDEN = 0x2
 
     CreateFileW = kernel32.CreateFileW
     CreateFileW.restype = HANDLE
@@ -108,13 +113,19 @@ else:
         _anonymous_ = ('ReparseBuffer',)
 
 
-    def islink(path):
+    def is_hidden(path):
+        result = GetFileAttributesW(path)
+        if result == INVALID_FILE_ATTRIBUTES:
+            raise WinError()
+        return bool(result & FILE_ATTRIBUTE_HIDDEN)
+
+    def is_link(path):
         result = GetFileAttributesW(path)
         if result == INVALID_FILE_ATTRIBUTES:
             raise WinError()
         return bool(result & FILE_ATTRIBUTE_REPARSE_POINT)
 
-    def readlink(path):
+    def read_link(path):
         reparse_point_handle = CreateFileW(path,
                                            0,
                                            0,

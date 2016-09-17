@@ -24,7 +24,7 @@ import posixpath
 import math
 import yaml
 
-import utils.winjunclib
+from utils import fs
 
 
 class Instance:
@@ -174,17 +174,19 @@ class Instance:
         else:
             try:
                 for direntry in os.scandir(path + '/'):  # add a / in case we get C:
-                    if direntry.is_dir():
+                    if fs.is_hidden(direntry.path):
+                        show = False
+                    elif direntry.is_dir():
                         entry_type = silkycoms.FSEntry.Type.Value('FOLDER')
-                        if utils.winjunclib.islink(direntry.path):
-                            is_valid = False
+                        if fs.is_link(direntry.path):
+                            show = False
                         else:
-                            is_valid = True
+                            show = True
                     else:
                         entry_type = silkycoms.FSEntry.Type.Value('FILE')
-                        is_valid = formatio.is_supported(direntry.name)
+                        show = formatio.is_supported(direntry.name)
 
-                    if is_valid:
+                    if show:
                         entry = response.contents.add()
                         entry.name = direntry.name
                         entry.type = entry_type
