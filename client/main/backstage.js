@@ -5,6 +5,7 @@
 'use strict';
 
 var SilkyView = require('./view');
+const keyboardJS = require('keyboardjs');
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
@@ -14,10 +15,14 @@ var host = require('./host');
 
 var FSEntryListModel = Backbone.Model.extend({
     defaults: {
-        items : [ ]
+        items : [ ],
+        clickProcess : "open"
     },
     requestOpen : function(path, type) {
         this.trigger('dataSetOpenRequested', path, type);
+    },
+    requestSave : function(path, type) {
+        this.trigger('dataSetSaveRequested', path, type);
     }
 });
 
@@ -87,11 +92,16 @@ var FSEntryListView = SilkyView.extend({
 var FSEntryBrowserView = SilkyView.extend({
 
     initialize : function() {
+        this._selectedIndex = -1;
+
         if ( ! this.model)
             this.model = new FSEntryListModel();
 
         this.model.on('change:items', this._render, this);
         this.model.on('change:dirInfo', this._render, this);
+
+        this.$el.addClass('silky-bs-fslist');
+        this._createHeader();
         this._render();
     },
     _normalisePath: function(path) {
@@ -110,8 +120,24 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     events : {
         'click .silky-bs-fslist-item' : '_itemClicked',
+        'dblclick .silky-bs-fslist-item' : '_itemDoubleClicked',
         'click .silky-bs-fslist-browser-back-button' : '_backClicked',
-        'changed input' : '_manualChanged'
+        'click .silky-bs-fslist-browser-save-button' : '_saveClicked',
+        'change .silky-bs-fslist-browser-save-filetype' : '_saveTypeChanged',
+        'focus .silky-bs-fslist-browser-save-name,.silky-bs-fslist-browser-save-filetype' : '_focusChanged'
+    },
+    _saveTypeChanged : function() {
+        var selected = this.$el.find('option:selected');
+        this.filterExtension = selected.data('extension');
+        this._render();
+    },
+    _focusChanged: function(event) {
+        keyboardJS.setContext('');
+        this._selected = false;
+        if (this._selectedIndex !== -1) {
+            this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
+            this._selectedIndex = -1;
+        }
     },
     _orderItems: function(orderby, direction, items) {
 
@@ -131,9 +157,45 @@ var FSEntryBrowserView = SilkyView.extend({
             }
         }
     },
-    _render : function() {
+    _createHeader: function() {
+        var html = '';
+        html += '<div class="silky-bs-fslist-header">';
+        html += '   <div class="silky-bs-fslist-path-browser">';
+        html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
+        html += '       <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
+        html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit"></div>';
+        html += '   </div>';
+        if (this.model.clickProcess === "save") {
+            html += '   <div style="display: flex; flex-flow: row nowrap;">';
+            html += '       <div style="flex: 1 1 auto;">';
+            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" />';
+            html += '           <select class="silky-bs-fslist-browser-save-filetype">';
+            html += '               <option data-extension="osilky" selected>Silky File (*.osilky)</option>';
+            //html += '               <option data-extension="jasp">Silky File2 (*.silky)</option>';
+            html += '           </select>';
+            html += '       </div>';
+            html += '       <div class="silky-bs-fslist-browser-save-button" style="display: flex; flex: 0 0 auto;">';
+            html += '           <div class="silky-bs-flist-save-icon"></div>';
+            html += '           <span>Save</span>';
+            html += '       </div>';
+            html += '   </div>';
+        }
+        html += '</div>';
+        this.$header = $(html);
+        this.$el.append(this.$header);
 
-        this.$el.addClass('silky-bs-fslist');
+        this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
+        this.$el.append(this.$itemsList);
+
+        if (this.model.clickProcess === "save")
+            this.filterExtension = "osilky";
+
+        var self = this;
+        setTimeout(function () {
+            self.$header.find('.silky-bs-fslist-browser-save-name').focus();
+        }, 50);
+    },
+    _render : function() {
 
         var items = this.model.get('items');
         var dirInfo = this.model.get('dirInfo');
@@ -142,18 +204,13 @@ var FSEntryBrowserView = SilkyView.extend({
         if (_.isUndefined(dirInfo) === false)
             path = this._normalisePath(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
+        this.$header.find(".silky-bs-fslist-browser-location").text(path);
+
         var html = '';
-        html += '<div class="silky-bs-fslist-path-browser">';
-        html += '   <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
-        html += '   <div class="silky-bs-fslist-browser-location-icon"><span class="mif-folder-open"></span></div>';
-        html += '   <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit">' + path + '</div>';
-        html += '</div>';
-        this.$el.html(html);
-
-        var $items = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
-
         this._orderItems('type', 1, items);
         this.$items = [];
+        this.$itemsList.empty();
+
         for (var i = 0; i < items.length; i++) {
             html = '';
             var item = items[i];
@@ -162,41 +219,135 @@ var FSEntryBrowserView = SilkyView.extend({
             var itemPath = item.path;
             var itemType = item.type;
 
+            if (itemType === 1 && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
+                continue;
+
             html += '<div class="silky-bs-fslist-item">';
             html += '   <div class="silky-bs-flist-item-icon">';
             if (itemType === 1) { //file
                 if (name.endsWith(".csv"))
-                    html += '       <span class="mif-file-text"></span>';
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
                 else
                     html += '       <span class="mif-file-empty"></span>';
             }
             else if (itemType === 2) //folder
-                html += '       <span class="mif-folder"></span>';
+                html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
             else if (itemType === 4) //special folder
-                html += '       <span class="mif-folder-special"></span>';
+                html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
             else if (itemType === 3) //drive
                 html += '       <span class="mif-drive"></span>';
             html += '   </div>';
-            html += '   <div class="silky-bs-fslist-entry-group">';
-            html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-            html += '   </div>';
+            html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
             html += '</div>';
 
             var $item = $(html);
+            $item.data('name', name);
             $item.data('path', itemPath);
             $item.data('type', itemType);
-            $items.append($item);
+            $item.data('index', this.$items.length);
+            this.$itemsList.append($item);
             this.$items.push($item);
         }
 
-        this.$el.append($items);
-    },
-    _manualChanged : function(event) {
-        console.log("stuff");
+        if (this.$items.length === 0)
+            this.$itemsList.append("<span>No recognised data files were found.</span>");
     },
     _itemClicked : function(event) {
         var $target = $(event.currentTarget);
-        this.model.requestOpen($target.data('path'), $target.data('type'));
+        var itemType = $target.data('type');
+        var itemPath = $target.data('path');
+        if (itemType !== 1 || this.model.clickProcess === "open")
+            this.model.requestOpen(itemPath, itemType);
+        else {
+            if (!this._selected) {
+                keyboardJS.setContext('save_file_browser');
+                if (!this._keyboardSetup) {
+                    keyboardJS.bind('', event => this._focusKeyPress(event));
+                    this._keyboardSetup = true;
+                }
+            }
+
+            if (this._selectedIndex !== -1)
+                this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
+
+            this._selectedIndex = $target.data('index');
+            var name = $target.data('name');
+            $target.addClass("silky-bs-fslist-selected-item");
+
+            this.$header.find('.silky-bs-fslist-browser-save-name').val(name);
+            this._selected = true;
+        }
+    },
+    _focusKeyPress(event) {
+
+        if (event.metaKey || event.ctrlKey || event.altKey)
+            return;
+
+        switch(event.key) {
+            case 'ArrowUp':
+                this.decrementSelection();
+                event.preventDefault();
+                break;
+            case 'ArrowDown':
+                this.incrementSelection();
+                event.preventDefault();
+                break;
+            case 'Enter':
+                if (this._selectedIndex !== -1) {
+                    var $target = this.$items[this._selectedIndex];
+                    var itemType = $target.data('type');
+                    var itemPath = $target.data('path');
+                    if (itemType === 1 && this.model.clickProcess === "save")
+                        this.model.requestSave(itemPath, itemType);
+                }
+                event.preventDefault();
+                break;
+        }
+    },
+    incrementSelection: function() {
+        if (this._selectedIndex !== -1 && this._selectedIndex !== this.$items.length - 1){
+            this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
+            this._selectedIndex += 1;
+            this.$items[this._selectedIndex].addClass("silky-bs-fslist-selected-item");
+
+            var offset = this.$items[this._selectedIndex].position();
+            var height = this.$items[this._selectedIndex].height();
+            if (offset.top + height > this.$itemsList.height()) {
+                var r = this.$itemsList.scrollTop() + (offset.top + height - this.$itemsList.height() + 1);
+                this.$itemsList.animate({scrollTop: r}, 100);
+            }
+        }
+    },
+    decrementSelection: function() {
+        if (this._selectedIndex > 0){
+            this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
+            this._selectedIndex -= 1;
+            this.$items[this._selectedIndex].addClass("silky-bs-fslist-selected-item");
+
+            var offset = this.$items[this._selectedIndex].position();
+            if (offset.top < 0)
+                this.$itemsList.animate({scrollTop: this.$itemsList.scrollTop() + offset.top}, 100);
+        }
+    },
+    _itemDoubleClicked : function(event) {
+        var $target = $(event.currentTarget);
+        var itemType = $target.data('type');
+        var itemPath = $target.data('path');
+        if (itemType === 1 && this.model.clickProcess === "save")
+            this.model.requestSave(itemPath, itemType);
+    },
+    _saveClicked : function(event) {
+        var dirInfo = this.model.get('dirInfo');
+        if (_.isUndefined(dirInfo) === false) {
+            var name = this.$header.find(".silky-bs-fslist-browser-save-name").val();
+            if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
+                name = name + '.' + this.extension;
+            var path = dirInfo.path + '/' + name;
+            this.model.requestSave(path, 1);
+            var items = this.model.get('items');
+            items.push({ name: name, path: path, type: 1 });
+            this._render();
+        }
     },
     _backClicked : function(event) {
         var dirInfo = this.model.get('dirInfo');
@@ -247,7 +398,13 @@ var BackstageModel = Backbone.Model.extend({
         this._recentsListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this._pcListModel = new FSEntryListModel();
+        this._pcListModel.clickProcess = "open";
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
+
+        this._pcSaveListModel = new FSEntryListModel();
+        this._pcSaveListModel.clickProcess = "save";
+        this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
+        this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
 
         this.attributes.ops = [
             {
@@ -268,7 +425,7 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'saveAs',
                 title: 'Save As',
                 places: [
-                    { name: 'thispc', title: 'This PC' },
+                    { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
                     { name: 'osf',    title: 'OSF' },
                     { name: 'browse', title: 'Browse' },
                 ]
@@ -301,11 +458,19 @@ var BackstageModel = Backbone.Model.extend({
         else if (type === 2 || type === 3 || type === 4)
             this.setCurrentDirectory(path, type);
     },
+    trySave: function(path, type) {
+        this.requestSave(path);
+    },
     setCurrentDirectory: function(path, type) {
         this.instance.browse(path).then(response => {
             this._pcListModel.set('error', response.errorMessage);
             this._pcListModel.set('items', response.contents);
             this._pcListModel.set('dirInfo', { path: path, type: type } );
+
+            this._pcSaveListModel.set('error', response.errorMessage);
+            this._pcSaveListModel.set('items', response.contents);
+            this._pcSaveListModel.set('dirInfo', { path: path, type: type } );
+
             this._hasCurrentDirectory = true;
         });
     },
@@ -331,8 +496,9 @@ var BackstageModel = Backbone.Model.extend({
             this.attributes.place = place;
             var self = this;
             setTimeout(function() {
-                self.attributes.place = old;
-                self.set('place', place);
+                //self.attributes.place = old;
+                //self.set('place', place);
+                self.trigger('change:place');
             }, 0);
         }
     },
@@ -445,6 +611,13 @@ var BackstageView = SilkyView.extend({
         this.$opPanel.animate({left:-width}, 200);
 
         this.model.set('activated', false);
+
+        var self = this;
+        setTimeout(function () {
+            var ops = self.model.attributes.ops;
+            self.model.set('operation', ops[0].name);
+            self.model.set('place', ops[0].places[0].name);
+        }, 100);
     },
     _activationChanged : function() {
         if (this.model.get('activated'))

@@ -195,13 +195,16 @@ class Instance:
                 self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save(self, request):
-        formatio.write(self._dataset, request.filename)
+        path = request.filename
+        path = Instance._normalise_path(path)
 
-        self._filepath = request.filename
+        formatio.write(self._dataset, path)
+
+        self._filepath = path
         response = silkycoms.SaveProgress()
         self._coms.send(response, self._instance_id, request)
 
-        self._add_to_recents(request.filename)
+        self._add_to_recents(path)
 
     def _on_open(self, request):
         path = request.filename

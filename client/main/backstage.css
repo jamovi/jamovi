@@ -156,14 +156,78 @@
     background-color: #DBE4F3 ;
 }
 
-
 .silky-bs-fslist-entry-icon {
     width: 32px ;
     height: 32px ;
     background-image: url('assets/document-spreadsheet.svg');
+    background-repeat: no-repeat;
+    background-position: center;
     background-size: 100% ;
     margin-left: 6px ;
     margin-right: 6px ;
+}
+
+.silky-bs-fslist-item {
+    box-sizing: border-box;
+    height: 48px ;
+    display: flex ;
+    flex-flow: row nowrap;
+    box-sizing: border-box;
+    align-items: center;
+}
+
+.silky-bs-fslist-item > * {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.silky-bs-flist-icon {
+    width: 40px ;
+    height: 40px ;
+    background-size: 100% ;
+    /*display: inline-block ;
+    vertical-align: middle ;*/
+}
+
+.silky-bs-flist-item-csv-icon {
+    background-image: url('assets/document-spreadsheet.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
+.silky-bs-flist-item-folder-browse-icon {
+    background-image: url('assets/place-browse.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
+.silky-bs-flist-item-folder-icon {
+    background-image: url('assets/place-folder.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
+.silky-bs-flist-item-folder-special-icon {
+    background-image: url('assets/place-folder-favourite.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
+.silky-bs-flist-save-icon {
+    background-image: url('assets/action-save.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+    width: 22px ;
+    height: 22px ;
+}
+
+.silky-bs-fslist-items {
+    position: relative;
 }
 
 .silky-bs-fslist-entry-group,
@@ -176,14 +240,10 @@
 .silky-bs-flist-item-icon {
     font-size: 30px ;
     width: 40px ;
-    height: 45px ;
     box-sizing: border-box ;
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-top: 0px ;
-    margin-bottom: 0px ;
-    margin-left: 6px ;
 }
 
 .silky-bs-fslist-entry-location {
@@ -200,6 +260,9 @@
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
+}
+
+.silky-bs-fslist-header {
     padding-bottom: 5px;
     margin-bottom: 5px;
     border-bottom-style: solid;
@@ -207,6 +270,60 @@
     border-bottom-color: #DDDDDD ;
 }
 
+.silky-bs-fslist-browser-save-name {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #AAAAAA;
+    width: 100%;
+    font-size: 15px ;
+    margin-bottom: 2px;
+    padding: 4px 4px 4px 4px;
+    box-sizing: border-box;
+}
+
+.silky-bs-fslist-browser-save-filetype {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #AAAAAA;
+    width: 100%;
+    font-size: 14px ;
+    margin-top: 2px;
+    padding: 3px 4px 3px 2px;
+    box-sizing: border-box;
+}
+
+.silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
+    border-color: #B1C5DE ;
+}
+
+.silky-bs-fslist-browser-save-button {
+    flex-flow: row nowrap;
+    align-items: center;
+    height: 30px;
+    font-size: 15px ;
+    margin-left: 4px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #AAAAAA;
+    background-color: #FFFFFF ;
+    box-sizing: border-box;
+    padding: 3px 12px 3px 10px;
+}
+
+.silky-bs-fslist-selected-item {
+    background-color: #BACDE6 ;
+    border-style: dotted;
+    border-width: 1px;
+}
+
+.silky-bs-fslist-browser-save-button > * {
+    margin: 0px 3px 0px 3px;
+}
+
+.silky-bs-fslist-browser-save-button:hover {
+    border-color: #B1C5DE ;
+    background-color: #DBE4F3 ;
+}
 
 .silky-bs-fslist-browser-location {
     font-size: 22px ;
@@ -215,16 +332,15 @@
 }
 
 .silky-bs-fslist-browser-location-icon {
+    background-size: 100% ;
     font-size: 20px ;
-    width: 30px ;
-    height: 30px ;
+    width: 23px ;
+    height: 23px ;
     box-sizing: border-box ;
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-top: 6px ;
-    margin-bottom: 6px ;
-    margin-left: 0px ;
+    margin-right: 3px ;
 }
 
 .silky-bs-fslist-browser-back-button {
