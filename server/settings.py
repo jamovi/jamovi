@@ -27,7 +27,7 @@ class Settings:
 
         if path is not None:
             try:
-                with open(self._path, 'r') as file:
+                with open(self._path, 'r', encoding='utf-8') as file:
                     self._root = json.load(file)
                     if type(self._root) is not dict:
                         self._root = { }
@@ -52,5 +52,5 @@ class Settings:
         if self._parent is not None:
             self._parent.sync()
         else:
-            with open(self._path, 'w') as file:
+            with open(self._path, 'w', encoding='utf-8') as file:
                 json.dump(self._root, file)

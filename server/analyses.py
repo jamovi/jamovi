@@ -27,7 +27,7 @@ class Analyses:
         root = os.path.realpath(os.path.join(here, '..'))
         analysis_root = os.path.join(root, 'analyses', ns, 'silky', name.lower())
 
-        with open(analysis_root + '.a.yaml', 'r') as stream:
+        with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
             defn = yaml.load(stream)
             analysisName = defn['name']
             optionDefs = defn['options']

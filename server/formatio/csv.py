@@ -36,7 +36,7 @@ def fix_names(names):
 
 def read(dataset, path):
 
-    with open(path) as csvfile:
+    with open(path, encoding='utf-8') as csvfile:
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(4096))
         except csv.Error:
