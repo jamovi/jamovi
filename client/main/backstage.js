@@ -404,6 +404,16 @@ var FSEntryBrowserView = SilkyView.extend({
     }
 });
 
+var InDevelopmentView = SilkyView.extend({
+    initialize : function() {
+        this.render();
+    },
+    render: function() {
+        this.$el.addClass('silky-under-development');
+        this.$el.append('<div class="silky-development-title">' + this.model.title + '</div>');
+        this.$el.append('<div class="silky-development-msg">' + this.model.msg + "</div>");
+    }
+});
 
 var BackstageModel = Backbone.Model.extend({
     defaults: {
@@ -450,9 +460,9 @@ var BackstageModel = Backbone.Model.extend({
                 places: [
                     { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF' },
+                    { name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Being able to access your data on the OSF is coming soon!." }, view: InDevelopmentView },
                     { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryListView, separator: true },
-                    { name: 'browse', title: 'Browse' }
+                    { name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
             },
             /*{
@@ -465,11 +475,54 @@ var BackstageModel = Backbone.Model.extend({
                 title: 'Save As',
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF', separator: true },
-                    { name: 'browse', title: 'Browse' },
+                    { name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Being able to save your data to the OSF is coming soon!." }, view: InDevelopmentView },
+                    { name: 'browse', title: 'Browse', action: () => { this._browse('saveAs'); } },
                 ]
             }
         ];
+    },
+    _browse : function(type) {
+
+        if (host.isElectron) {
+
+            var remote = window.require('electron').remote;
+            var dialog = remote.dialog;
+
+            var self = this;
+
+            if (type === 'open') {
+
+                let filters = [
+                    { name: 'Data files', extensions: ['osilky', 'csv', 'txt', 'jasp']},
+                    { name: 'Silky', extensions: ['osilky'] },
+                    { name: 'CSV', extensions: ['csv', 'txt'] },
+                    { name: 'JASP', extensions: ['jasp'] },
+                ];
+
+                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, function(fileNames) {
+                    if (fileNames) {
+                        var path = fileNames[0].replace(/\\/g, '/');
+                        self.requestOpen(path);
+                    }
+                });
+            }
+            else if (type === 'saveAs') {
+
+                let filters = [
+                    { name: 'Silky', extensions: ['osilky'] },
+                ];
+
+                dialog.showSaveDialog({ filters : filters }, function(fileName) {
+                    if (fileName) {
+                        fileName = fileName.replace(/\\/g, '/');
+                        self.requestSave(fileName);
+                    }
+                });
+            }
+        }
+        else {
+            this.trigger("browse_invoker");
+        }
     },
     getCurrentOp: function() {
         var names = _.pluck(this.attributes.ops, 'name');
@@ -699,7 +752,6 @@ var BackstageView = SilkyView.extend({
 var BackstagePlaces = SilkyView.extend({
     className: "silky-bs-places",
     events: {
-        'click  .silky-bs-place[data-place="browse"]'  : '_browseClicked',
         'change .silky-bs-browse-invoker' : '_fileUpload',
     },
     initialize: function() {
@@ -707,6 +759,7 @@ var BackstagePlaces = SilkyView.extend({
 
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
+        this.model.on('browse_invoker',  this._browseInvoker, this);
 
         this.$el.addClass("silky-bs-mid");
 
@@ -775,60 +828,19 @@ var BackstagePlaces = SilkyView.extend({
     },
     _placeClicked: function(event) {
         var place = event.data;
-        this.model.set('lastSelectedPlace', place.name);
-        this.model.set('place', place.name);
-    },
-    _browseClicked : function() {
-
-        if (host.isElectron) {
-
-            var remote = window.require('electron').remote;
-            var dialog = remote.dialog;
-
-            var self = this;
-
-            if (this.model.get('operation') === 'open') {
-
-                let filters = [
-                    { name: 'Data files', extensions: ['osilky', 'csv', 'txt', 'jasp']},
-                    { name: 'Silky', extensions: ['osilky'] },
-                    { name: 'CSV', extensions: ['csv', 'txt'] },
-                    { name: 'JASP', extensions: ['jasp'] },
-                ];
-
-                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, function(fileNames) {
-                    if (fileNames)
-                        self._fileSelectedToOpen(fileNames[0]);
-                });
-            }
-            else if (this.model.get('operation') === 'saveAs') {
-
-                let filters = [
-                    { name: 'Silky', extensions: ['osilky'] },
-                ];
-
-                dialog.showSaveDialog({ filters : filters }, function(fileName) {
-                    if (fileName)
-                        self._fileSelectedToSave(fileName);
-                });
-            }
-        }
+        if ('action' in place)
+            place.action();
         else {
-
-            this.$browseInvoker.click();
+            this.model.set('lastSelectedPlace', place.name);
+            this.model.set('place', place.name);
         }
+    },
+    _browseInvoker : function() {
+        this.$browseInvoker.click();
     },
     _fileUpload : function(evt) {
         var file = evt.target.files[0];
         this.model.uploadFile(file);
-    },
-    _fileSelectedToOpen : function(path) {
-        path = path.replace(/\\/g, '/');
-        this.model.requestOpen(path);
-    },
-    _fileSelectedToSave : function(path) {
-        path = path.replace(/\\/g, '/');
-        this.model.requestSave(path);
     }
 });
 
