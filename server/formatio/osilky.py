@@ -102,14 +102,17 @@ def read(dataset, path):
 
         dataset.set_row_count(row_count)
 
-        xdata_content = zip.read('xdata.json').decode('utf-8')
-        xdata = json.loads(xdata_content)
+        try:
+            xdata_content = zip.read('xdata.json').decode('utf-8')
+            xdata = json.loads(xdata_content)
 
-        for column in dataset:
-            if column.name in xdata:
-                meta_labels = xdata[column.name]['labels']
-                for meta_label in meta_labels:
-                    column.append_level(meta_label[0], meta_label[1])
+            for column in dataset:
+                if column.name in xdata:
+                    meta_labels = xdata[column.name]['labels']
+                    for meta_label in meta_labels:
+                        column.append_level(meta_label[0], meta_label[1])
+        except:
+            pass
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
