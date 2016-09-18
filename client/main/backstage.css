@@ -398,3 +398,14 @@
     padding-left: 20px ;
     box-sizing: border-box;
 }
+
+.silky-development-title {
+    font-size: 140% ;
+    height: 40px ;
+    line-height: 40px ;
+    margin-bottom: 10px;
+}
+
+.silky-under-development {
+    margin-left: 40px;
+}
