@@ -461,7 +461,7 @@ var BackstageModel = Backbone.Model.extend({
                 places: [
                     { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Being able to access your data on the OSF is coming soon!." }, view: InDevelopmentView },
+                    { name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
                     { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryListView, separator: true },
                     { name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
@@ -482,8 +482,16 @@ var BackstageModel = Backbone.Model.extend({
                 title: 'Save As',
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Being able to save your data to the OSF is coming soon!." }, view: InDevelopmentView },
+                    { name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
                     { name: 'browse', title: 'Browse', action: () => { this._browse('saveAs'); } },
+                ]
+            },
+            {
+                name: 'export',
+                title: 'Export',
+                places: [
+                    { name: 'csvDoc',      title: 'As CSV file',   model: { title: "Exporting to a CSV file is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
+                    { name: 'excelDoc',    title: 'As Excel document', model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
                 ]
             }
         ];

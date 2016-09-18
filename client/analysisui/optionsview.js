@@ -21,38 +21,43 @@ var OptionsView = function(uiModel) {
         var options = this.model.options;
         var layoutDef = this.model.layoutDef;
 
-        this.layoutActionManager = this.model.actionManager;
+        if (layoutDef.stage <= this.model.currentStage) {
+            this.layoutActionManager = this.model.actionManager;
 
-        var layoutGrid = new ControlContainer(layoutDef);
-        layoutGrid.$el.addClass('top-level');
-        layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
-        layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
-        layoutGrid._animateCells = true;
+            var layoutGrid = new ControlContainer(layoutDef);
+            layoutGrid.$el.addClass('top-level');
+            layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+            layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+            layoutGrid._animateCells = true;
 
-        layoutGrid.renderContainer(this, 1);
+            layoutGrid.renderContainer(this, 1);
 
-        layoutGrid.render();
+            layoutGrid.render();
 
-        this.$el.append(layoutGrid.$el);
+            this.$el.append(layoutGrid.$el);
 
-        for (var i = 0; i < options._list.length; i++) {
-            var option = options._list[i];
-            var name = option.params.name;
-            if (this.layoutActionManager.exists(name) === false) {
-                var backgroundOption = new OptionControlBase( { name: name });
-                backgroundOption.setOption(this._getOption(name));
-                this.layoutActionManager.addResource(name, backgroundOption);
+            for (var i = 0; i < options._list.length; i++) {
+                var option = options._list[i];
+                var name = option.params.name;
+                if (this.layoutActionManager.exists(name) === false) {
+                    var backgroundOption = new OptionControlBase( { name: name });
+                    backgroundOption.setOption(this._getOption(name));
+                    this.layoutActionManager.addResource(name, backgroundOption);
+                }
             }
+
+            this.layoutActionManager.addResource("analysis", this);
+
+            var self = this;
+            window.setTimeout(function() {
+                self.model.options.beginEdit();
+                self.layoutActionManager.initialiseAll();
+                self.model.options.endEdit();
+            }, 0);
         }
-
-        this.layoutActionManager.addResource("analysis", this);
-
-        var self = this;
-        window.setTimeout(function() {
-            self.model.options.beginEdit();
-            self.layoutActionManager.initialiseAll();
-            self.model.options.endEdit();
-        }, 0);
+        else {
+            this.$el.append('<div class="silky-analysis-under-development">This analysis is currently in development and will be available very soon!</div>');
+        }
     };
 
     this._getOption = function(id) {
@@ -151,7 +156,7 @@ var OptionsView = function(uiModel) {
 
         var ctrl = this.model.controls.create(uiDef.type, uiDef);
 
-        if (ctrl.getPropertyValue("stage") !== "release")
+        if (ctrl.getPropertyValue("stage") > this.model.currentStage)
             return null;
 
         if (ctrl.setControlManager)
