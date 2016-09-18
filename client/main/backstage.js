@@ -423,6 +423,7 @@ var BackstageModel = Backbone.Model.extend({
         operation : 'open',
         place : 'recent',
         lastSelectedPlace : 'recent',
+        currentActivePath : null,
         settings : null,
         ops : [ ],
     },
@@ -465,11 +466,17 @@ var BackstageModel = Backbone.Model.extend({
                     { name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
             },
-            /*{
+            {
                 name: 'save',
                 title: 'Save',
-                //action: () => { this.requestOpen(''); }
-            },*/
+                action: () => {
+                    var activePath = this.get('currentActivePath');
+                    if (activePath !== null)
+                        this.requestSave(activePath);
+                    else
+                        this.set('operation', 'saveAs');
+                }
+            },
             {
                 name: 'saveAs',
                 title: 'Save As',
@@ -625,11 +632,23 @@ var BackstageModel = Backbone.Model.extend({
     },
     requestOpen: function(path) {
         this.instance.open(path)
-            .then(() => this.set('activated', false));
+        .then(() => {
+            this._updateSavePath(path);
+            this.set('activated', false);
+         });
     },
     requestSave: function(path) {
         this.instance.save(path)
-            .then(() => this.set('activated', false));
+            .then(() => {
+                this._updateSavePath(path);
+                this.set('activated', false);
+             });
+    },
+    _updateSavePath: function(path) {
+        if (path.endsWith(".osilky"))
+            this.set('currentActivePath', path);
+        else
+            this.set('currentActivePath', null);
     },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
