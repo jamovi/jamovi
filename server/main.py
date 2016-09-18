@@ -85,7 +85,10 @@ if __name__ == "__main__":
 
     port = 0
     if len(sys.argv) > 1:
-        port = sys.argv[1]
+        try:
+            port = int(sys.argv[1])
+        except:
+            pass
 
     for i in range(2, len(sys.argv)):
         if sys.argv[i] == '--shutdown_on_idle':
