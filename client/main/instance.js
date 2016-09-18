@@ -104,6 +104,8 @@ const Instance = Backbone.Model.extend({
                 return instance.open(filePath);
             }).then(() => {
                 host.openWindow(instance.instanceId());
+            }).catch(error => {
+                this._notify(error);
             });
         }
         else {
@@ -126,11 +128,7 @@ const Instance = Backbone.Model.extend({
             };
 
             let onreject = (error) => {
-                let notification = new Notify({
-                    title: error.message,
-                    message: error.cause,
-                });
-                this._notify(notification);
+                this._notify(error);
             };
 
             promise = coms.send(request);
@@ -183,7 +181,12 @@ const Instance = Backbone.Model.extend({
             mode = 'text';
         this.set('resultsMode', mode);
     },
-    _notify(notification) {
+    _notify(error) {
+        let notification = new Notify({
+            title: error.message,
+            message: error.cause,
+            duration: 3000,
+        });
         this.trigger('notification', notification);
     },
     _beginInstance(instanceId) {

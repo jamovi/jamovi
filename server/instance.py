@@ -198,7 +198,6 @@ class Instance:
                 base    = os.path.basename(path)
                 message = 'Unable to open {}'.format(base)
                 cause = e.strerror
-
                 self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save(self, request):
@@ -234,7 +233,12 @@ class Instance:
             base    = os.path.basename(path)
             message = 'Unable to open {}'.format(base)
             cause = e.strerror
+            self._coms.send_error(message, cause, self._instance_id, request)
 
+        except Exception as e:
+            base    = os.path.basename(path)
+            message = 'Unable to open {}'.format(base)
+            cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
     def _open_callback(self, task, progress):

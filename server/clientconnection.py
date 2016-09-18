@@ -108,7 +108,7 @@ class ClientConnection(WebSocketHandler):
 
         m.status = silkycoms.Status.Value('ERROR')
 
-        self.write_message(m.encode_to_bytes(), binary=True)
+        self.write_message(m.SerializeToString(), binary=True)
 
     def add_close_listener(self, listener):
         self._close_listeners.append(listener)
