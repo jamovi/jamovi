@@ -214,13 +214,13 @@ class Instance:
 
     def _on_open(self, request):
         path = request.filename
-        path = Instance._normalise_path(path)
+        nor_path = Instance._normalise_path(path)
 
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
         try:
-            formatio.read(dataset, path)
+            formatio.read(dataset, nor_path)
             self._dataset = dataset
             self._filepath = path
 
