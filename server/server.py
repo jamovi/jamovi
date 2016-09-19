@@ -15,6 +15,9 @@ import uuid
 import threading
 import time
 import tempfile
+import logging
+
+log = logging.getLogger('silky')
 
 
 class SingleFileHandler(RequestHandler):
@@ -78,7 +81,7 @@ class ModuleDescriptor(RequestHandler):
                 self.set_header('Content-Type', 'text/plain')
                 self.write(content)
         except Exception as e:
-            print(e)
+            log.info(e)
             self.set_status(404)
             self.write('<h1>404</h1>')
             self.write(str(e))
@@ -100,7 +103,7 @@ class AnalysisDescriptor(RequestHandler):
                 self.set_header('Content-Type', 'text/plain')
                 self.write(content)
         except Exception as e:
-            print(e)
+            log.info(e)
             self.set_status(404)
             self.write('<h1>404</h1>')
             self.write(str(e))
@@ -159,7 +162,7 @@ class Server:
                 if time_without_listeners is None:
                     time_without_listeners = now
                 elif now - time_without_listeners > 1:
-                    print('Server shutting down due to inactivity')
+                    log.info('Server shutting down due to inactivity')
                     tornado.ioloop.IOLoop.instance().stop()
                     break
             else:

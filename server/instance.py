@@ -23,8 +23,11 @@ import uuid
 import posixpath
 import math
 import yaml
+import logging
 
 from utils import fs
+
+log = logging.getLogger('silky')
 
 
 class Instance:
@@ -129,8 +132,8 @@ class Instance:
         elif type(request) == silkycoms.FSRequest:
             self._on_fs_request(request)
         else:
-            print('unrecognised request')
-            print(request.payloadType)
+            log.info('unrecognised request')
+            log.info(request.payloadType)
 
     def _on_results(self, results, request, complete):
         complete = (results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
@@ -281,7 +284,7 @@ class Instance:
 
             except OSError as e:
 
-                print('Could not create analysis: ' + str(e))
+                log.info('Could not create analysis: ' + str(e))
                 self._coms.discard(request)
 
                 # We should handle this properly at some point, something like:
@@ -607,6 +610,6 @@ class Instance:
                     exampleEntry.name = example['name']
                     exampleEntry.path = '{{Examples}}/' + example['path']
         except Exception as e:
-            print(e)
+            log.info(e)
 
         self._coms.send(response, self._instance_id, request)

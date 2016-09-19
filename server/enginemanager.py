@@ -12,6 +12,10 @@ import nanomsg
 
 import silkycoms_pb2 as silkycoms
 
+import logging
+
+log = logging.getLogger('silky')
+
 
 class EngineManager:
 
@@ -106,7 +110,7 @@ class EngineManager:
             self._notify_results(results, request, complete)
 
         else:
-            print('id : {} not found in waiting requests'.format(message.id))
+            log.info('id : {} not found in waiting requests'.format(message.id))
 
     def _notify_results(self, results, request, complete):
         for listener in self._results_listeners:

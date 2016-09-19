@@ -17,6 +17,12 @@ import glob
 import subprocess
 import threading
 import time
+import logging
+
+log = logging.getLogger('silky')
+if not sys.executable.endswith('pythonw.exe'):
+    log.setLevel(logging.INFO)
+    log.addHandler(logging.StreamHandler(sys.stdout))
 
 global shutdown_on_idle
 global launch_client
@@ -36,7 +42,7 @@ class Unbuffered(object):
 
 def _ports_opened(ports):
 
-    print('Server listening on ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
+    log.info('Server listening on ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
 
     port_lock_path = Dirs.app_data_dir() + '/' + str(ports[0]) + ',' + str(ports[1]) + ',' + str(ports[2]) + '.lock'
     with open(port_lock_path, 'a'):
@@ -114,7 +120,7 @@ if __name__ == "__main__":
 
     else:
 
-        print('Server already running')
+        log.info('Server already running')
 
         if launch_client:
             server_found = False
@@ -129,5 +135,5 @@ if __name__ == "__main__":
                         server_found = True
                         break
                     except Exception as e:
-                        print(e)
+                        log.exception(str(e))
                 time.sleep(.2)
