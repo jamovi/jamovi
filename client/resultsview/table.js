@@ -280,7 +280,10 @@ const TableView = Elem.View.extend({
 
         for (let i = 0; i < cells.header.length; i++) {
             let head = cells.header[i];
-            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + head.value + '</th>';
+            let content = head.value;
+            if (content === '')
+                content = '&nbsp;';
+            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + content + '</th>';
         }
 
         this.$columnHeaderRowSuper.empty();
@@ -311,8 +314,12 @@ const TableView = Elem.View.extend({
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
                 let cell = cells.body[rowNo][colNo];
+                let content = cell.value;
+                if (content === '')
+                    content = '&nbsp;';
+
                 if (cell) {
-                    html += '<td class="silky-results-table-cell ' + cell.classes + '">' + cell.value + '</td>';
+                    html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + '</td>';
                     html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
                 }
                 else {
