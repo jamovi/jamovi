@@ -213,8 +213,8 @@ class Instance:
         self._add_to_recents(path)
 
     def _on_open(self, request):
-        path = request.filename
-        path = Instance._normalise_path(path)
+        virtualpath = request.filename
+        path = Instance._normalise_path(virtualpath)
 
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
@@ -226,8 +226,8 @@ class Instance:
 
             self._coms.send(None, self._instance_id, request)
 
-            if path != '' and not path.startswith('{{Examples}}'):
-                self._add_to_recents(path)
+            if virtualpath != '' and not virtualpath.startswith('{{Examples}}'):
+                self._add_to_recents(virtualpath)
 
         except OSError as e:
             base    = os.path.basename(path)
