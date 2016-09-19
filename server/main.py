@@ -5,7 +5,7 @@ import os
 tld = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(tld, 'lib', 'python3.5', 'site-packages'))
 sys.path.append(os.path.join(tld, 'lib', 'python3.5', 'lib-dynload'))
-os.environ['PATH'] = os.path.join(tld, 'lib') + ';' + os.environ['PATH']
+os.environ['PATH'] = os.path.join(tld, '../bin') + ';' + os.path.join(tld, 'lib') + ';' + os.environ['PATH']
 
 from server import Server
 from clientconnection import ClientConnection
