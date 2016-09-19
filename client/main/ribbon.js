@@ -34,11 +34,11 @@ var RibbonModel = Backbone.Model.extend({
                         { name : 'Kruskal', title : 'One Way ANOVA', subtitle : 'Kruskal-Wallis', ns : 'silkyR' },
                         { name : 'Friedman', title : 'Repeated Measures ANOVA', subtitle : 'Friedman', ns : 'silkyR' },
                     ]},
-                    { name : 'Bayesian', type : 'group', title : 'Bayesian', items : [
+                    /*{ name : 'Bayesian', type : 'group', title : 'Bayesian', items : [
                         { name : 'BAnova', title : 'Bayesian ANOVA', ns : 'silkyR' },
                         { name : 'BRMAnova', title : 'B. Repeated Measures ANOVA', ns : 'silkyR' },
                         { name : 'BAncova', title : 'Bayesian ANCOVA', ns : 'silkyR' },
-                    ]}
+                    ]},*/
                 ]},
                 { name : 'Regression', type : 'menu', title : 'Regression', requiresData: true, items : [
                     { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'silkyR' },
