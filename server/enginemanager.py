@@ -6,7 +6,7 @@ import platform
 
 import threading
 import tempfile
-from subprocess import Popen
+import subprocess
 
 import nanomsg
 
@@ -57,7 +57,13 @@ class EngineManager:
 
         con = '--con={}'.format(self._address)
         pth = '--path={}'.format(self._session_path)
-        self._process = Popen([exe_path, con, pth], env=env)
+
+        si = None
+        if platform.uname().system == 'Windows':
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        self._process = subprocess.Popen([exe_path, con, pth], env=env, startupinfo=si)
 
         self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)
