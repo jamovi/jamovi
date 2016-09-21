@@ -71,11 +71,7 @@ class EngineManager:
 
         self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)
-
-        if platform.uname().system == 'Windows':
-            self._socket.bind(self._address.encode('utf-8'))
-        else:
-            self._socket.bind(self._address)
+        self._socket.bind(self._address)
 
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
