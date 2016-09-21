@@ -4,8 +4,8 @@
 
 from tornado.websocket import WebSocketHandler
 
-import silkycoms_pb2 as silkycoms
-from instance import Instance
+from . import silkycoms_pb2 as silkycoms
+from .instance import Instance
 
 
 class ClientConnection(WebSocketHandler):

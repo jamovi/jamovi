@@ -10,7 +10,7 @@ import subprocess
 
 import nanomsg
 
-import silkycoms_pb2 as silkycoms
+from . import silkycoms_pb2 as silkycoms
 
 import logging
 

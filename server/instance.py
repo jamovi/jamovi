@@ -10,13 +10,13 @@ from silky import Dirs
 from silky import MemoryMap
 from silky import DataSet
 
-from settings import Settings
+from .settings import Settings
 
-import silkycoms_pb2 as silkycoms
+from . import silkycoms_pb2 as silkycoms
 
-from enginemanager import EngineManager
-from analyses import Analyses
-import formatio
+from .enginemanager import EngineManager
+from .analyses import Analyses
+from . import formatio
 
 import json
 import uuid
@@ -25,7 +25,7 @@ import math
 import yaml
 import logging
 
-from utils import fs
+from .utils import fs
 
 log = logging.getLogger('silky')
 

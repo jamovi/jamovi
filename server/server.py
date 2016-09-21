@@ -6,8 +6,8 @@ import tornado.httpserver
 from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
 
-from clientconnection import ClientConnection
-from instance import Instance
+from .clientconnection import ClientConnection
+from .instance import Instance
 
 import os.path
 import uuid

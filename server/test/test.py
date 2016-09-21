@@ -8,9 +8,9 @@ import tempfile
 
 from silky import MemoryMap
 from silky import DataSet
-import formatio.csv
-import silkycoms_pb2 as silkycoms
-from enginemanager import EngineManager
+from server.formatio import csv
+from server import silkycoms_pb2 as silkycoms
+from server.enginemanager import EngineManager
 
 
 class TestEngine(unittest.TestCase):
@@ -41,7 +41,7 @@ class TestEngine(unittest.TestCase):
         mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(mm)
 
-        formatio.csv.read(dataset, data_path)
+        csv.read(dataset, data_path)
 
     def _wait_for_results(self, timeout=3000):
         startTime = time.time()

@@ -1,23 +1,26 @@
 
-import formatio.csv
-import formatio.osilky
-import formatio.blank
+from . import csv
+from . import osilky
+from . import blank
 
 
 def read(dataset, path):
     if path == '':
-        formatio.blank.read(dataset)
+        blank.read(dataset)
     elif path.endswith('.csv') or path.endswith('.txt'):
-        formatio.csv.read(dataset, path)
+        csv.read(dataset, path)
     elif path.endswith('.jasp'):
-        formatio.osilky.read(dataset, path)
+        osilky.read(dataset, path)
     else:
-        formatio.osilky.read(dataset, path)
+        osilky.read(dataset, path)
 
 
 def write(dataset, path):
-    formatio.osilky.write(dataset, path)
+    osilky.write(dataset, path)
 
 
 def is_supported(filename):
-    return filename.endswith('.csv') or filename.endswith('.txt') or filename.endswith('.osilky') or filename.endswith('.jasp')
+    return (filename.endswith('.csv') or
+            filename.endswith('.txt') or
+            filename.endswith('.osilky') or
+            filename.endswith('.jasp'))
