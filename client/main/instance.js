@@ -246,7 +246,7 @@ const Instance = Backbone.Model.extend({
         analysisRequest.analysisId = analysis.id;
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
-        analysisRequest.ppi = 72 * (window.devicePixelRatio || 1);
+        analysisRequest.ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
         if (changed)
             analysisRequest.changed = changed;
