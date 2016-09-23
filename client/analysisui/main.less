@@ -1,5 +1,12 @@
 
 @import (inline) "../lib/metro-icons.css";
+@import (inline) "layoutgroupview.css";
+@import (inline) "layoutvariablesview.css";
+@import (inline) "layoutcollapseview.css";
+@import (inline) "gridcheckbox.css";
+@import (inline) "gridradiobutton.css";
+@import (inline) "gridtextbox.css";
+@import (inline) "rmanovafactorscontrol.css";
 
 * {
     user-select: none ;
@@ -110,79 +117,8 @@ h1 {
     background-repeat: no-repeat;
 }
 
-
-.silky-layout-cell:not(.first-cell) > .silky-option-checkbox, .silky-layout-cell:not(.first-cell) > .silky-option-radio {
-    margin-left: 7px;
-}
-
-.silky-layout-cell:not(.first-cell) > .silky-control-container {
-    margin-left: 7px;
-}
-
 .silky-control-container {
     margin-right: 7px;
-}
-
-.silky-layout-cell:not(.first-row) > .silky-options-group:not(.silky-options-level-1) {
-    margin-top: 7px;
-}
-
-.silky-options-group {
-    margin-right: 7px;
-    margin-bottom: 7px;
-    overflow: hidden;
-}
-
-.silky-options-group.silky-options-level-1 {
-    margin-right: 0px;
-}
-
-.silky-options-group.silky-gridlayout-collapsed {
-    margin-bottom: 0px;
-}
-
-/*Adding a space after a header if the grid is inline*/
-.silky-options-group.silky-options-group-style-inline .silky-options-group-header {
-    margin-right: 1ex;
-}
-
-.silky-options-group-header1 {
-    margin-bottom: 20px;
-}
-
-.silky-gridlayout-collapsed .silky-options-group-header1 {
-    margin-bottom: 8px;
-}
-
-.silky-options-group-header2 {
-    margin-bottom: 5px;
-}
-
-.silky-option-checkbox, .silky-option-radio {
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-right: 7px;
-}
-
-.silky-options-h1 {
-    font-size: 100% ;
-    border: 1px solid #B0B0B0;
-    background-color: #D8D8D8;
-    padding: 5px;
-    vertical-align: middle ;
-    color: #555555 ;
-}
-
-.silky-options-h2 {
-    font-size: 100% ;
-    font-weight: bold;
-}
-
-.silky-options-h3 {
-    font-size: 100% ;
-    padding-top: 5px;
-    padding-bottom: 3px;
-    vertical-align: middle ;
 }
 
 .silky-list-item.silky-format-string {
@@ -211,117 +147,15 @@ h1 {
     vertical-align: middle ;
 }
 
-.silky-list-item .silky-variable-type-img.silky-variable-type-continuous {
-    background-image: url('assets/variable-continuous.svg');
-}
-
-.silky-list-item .silky-variable-type-img.silky-variable-type-nominaltext {
-    background-image: url('assets/variable-nominal-text.svg');
-}
-
-.silky-list-item .silky-variable-type-img.silky-variable-type-nominal {
-    background-image: url('assets/variable-nominal.svg');
-}
-
-.silky-list-item .silky-variable-type-img.silky-variable-type-ordinal {
-    background-image: url('assets/variable-ordinal.svg');
-}
-
-.silky-options-group-header .silky-option-checkbox {
-    margin-bottom: 0px;
-}
-
-.silky-options-group-header .silky-options-h1 {
-    margin-bottom: 0px;
-}
-
-.silky-options-group-header .silky-options-h2 {
-    margin-bottom: 0px;
-}
-
-/*Checkbox tick square*/
-input[type="radio"] {
-    position: relative;
-    vertical-align: middle;
-    width: 18px;
-    height: 18px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
-}
-
-/*Checkbox tick square*/
-input[type="checkbox"] {
-    position: relative;
-    vertical-align: middle;
-    width: 18px;
-    height: 18px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
-}
-
-label.silky-option-checkbox span, label.silky-option-radio span, {
-    vertical-align: middle;
-}
-
-/*textbox input*/
-.silky-option-text-label, input[type="text"].silky-option-input, .silky-option-suffix {
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-.silky-option-text-label  {
-    margin-right: 1ex;
-}
-
-/*textbox sizing*/
-input[type="text"].silky-option-short-text {
-    width: 50px;
-}
-
-/*textbox sizing*/
-input[type="text"].silky-option-Medium-text {
-    width: 100px;
-}
-
-/*textbox sizing*/
-input[type="text"].silky-option-long-text {
-    width: 150px;
-}
-
-.silky-option-suffix {
-    margin-left: 1ex;
-}
-
-.silky-options-collapse-icon {
-    border-right: 1px solid rgb(130, 130, 130) ;
-    padding-right: 23px;
-    margin-right: 5px;
-    box-sizing: border-box ;
-    cursor: default ;
-}
-
 .silky-dropdown-toggle {
   position: relative;
   top: -4px ;
   left: 6px ;
 }
 
-.silky-variable-supplier {
-    border: 1px solid rgb(130, 130, 130);
-    background-color: rgb(255, 255, 255);
-}
-
 .silky-option-list {
     border: 1px solid rgb(130, 130, 130);
     background-color: rgb(255, 255, 255);
-}
-
-.silky-gridlayout-collapsed .silky-options-group-header1 .silky-dropdown-toggle {
-  top: -3px ;
 }
 
 .silky-dropdown-toggle:before {
@@ -340,11 +174,6 @@ input[type="text"].silky-option-long-text {
   top: 50%;
   left: 100%;
   z-index: 2;
-}
-
-.silky-gridlayout-collapsed .silky-options-group-header1 .silky-dropdown-toggle:before {
-  -webkit-transform: rotate(-135deg);
-          transform: rotate(-135deg);
 }
 
 .silky-dropdown-toggle:before {
@@ -407,10 +236,6 @@ input[type="text"].silky-option-long-text {
 }
 
 
-.silky-layout-grid.silky-variable-supplier {
-    height: 200px;
-}
-
 .silky-list-item.silky-format-rma_cell {
     font-size: 100% ;
     padding-left: 5px;
@@ -450,13 +275,6 @@ select.silky-option-input, select option {
     transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, opacity 0.2s;
 }
 
-.rmanova-factors-control {
-    border: 1px solid rgb(130, 130, 130);
-    background-color: rgb(255, 255, 255);
-    height: 150px;
-    overflow-x: hidden;
-}
-
 
 input[type=text].silky-option-listitem {
   -webkit-transition: all 0.30s ease-in-out;
@@ -482,42 +300,8 @@ input[type=text].silky-option-listitem:focus {
   z-index: 99;
 }
 
-.rma-factor-label {
-    margin: 5px 1px 5px 0px;
-    font-weight: bold;
-}
-
-.rma-new-factor-level {
-    color: #AAAAAA ;
-}
-
-.rma-new-factor {
-    color: #AAAAAA ;
-}
-
 .centre-text {
     text-align: center
-}
-
-.rma-delete-button {
-    font-size: 11px ;
-    width: 15px ;
-    height: 15px ;
-    color: #555555 ;
-    /*float: right;*/
-    box-sizing: border-box ;
-    /*border: 3px solid #555555 ;
-    border-radius: 50% ;*/
-    text-align: center ;
-    vertical-align: middle ;
-    cursor: default ;
-    margin-right: 4px ;
-    margin-left: 4px ;
-    /*margin-top: 6px ;
-    margin-bottom: 6px ;
-
-
-    display: inline-block;*/
 }
 
 .silky-analysis-under-development {

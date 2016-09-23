@@ -60,7 +60,7 @@ var Analysis = function(def, resources, baseControls) {
             optionsManager.endEdit();
     };
 
-    this.model = { options: optionsManager, layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 0 };
+    this.model = { options: optionsManager, layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 2 };
 
     this.View = new OptionsView( this.model);
 };

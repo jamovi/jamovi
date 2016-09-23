@@ -1,0 +1,33 @@
+
+.rma-delete-button {
+    font-size: 11px ;
+    width: 15px ;
+    height: 15px ;
+    color: #555555 ;
+    box-sizing: border-box ;
+    text-align: center ;
+    vertical-align: middle ;
+    cursor: default ;
+    margin-right: 4px ;
+    margin-left: 4px ;
+}
+
+.rma-factor-label {
+    margin: 5px 1px 5px 0px;
+    font-weight: bold;
+}
+
+.rma-new-factor-level {
+    color: #AAAAAA ;
+}
+
+.rma-new-factor {
+    color: #AAAAAA ;
+}
+
+.rmanova-factors-control {
+    border: 1px solid rgb(130, 130, 130);
+    background-color: rgb(255, 255, 255);
+    height: 150px;
+    overflow-x: hidden;
+}

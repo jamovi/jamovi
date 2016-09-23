@@ -1,7 +1,6 @@
 'use strict';
 
 var $ = require('jquery');
-var LayoutGrid = require('./layoutgrid').Grid;
 var GridOptionControl = require('./gridoptioncontrol');
 
 var GridCombobox = function(params) {

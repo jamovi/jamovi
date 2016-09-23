@@ -52,12 +52,11 @@ var LayoutVariablesView = function(params) {
     this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
     this.registerSimpleProperty("persistentItems", false);
     this.registerSimpleProperty("useVariables", false);
-    this.registerSimpleProperty("style", "list");
     this.registerSimpleProperty("label", null);
 
     this._persistentItems = this.getPropertyValue('persistentItems');
 
-    this.$el.addClass("silky-options-group silky-options-level-" + this.getPropertyValue('level') + " silky-options-group-style-" + this.getPropertyValue('style'));
+    this.$el.addClass("silky-options-supplier-group"); 
 
     this._items = [];
     this._targets = [];

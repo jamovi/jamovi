@@ -1,0 +1,26 @@
+
+.silky-options-label-group {
+    margin-right: 7px;
+    margin-bottom: 7px;
+    overflow: hidden;
+}
+
+.silky-layout-cell:not(.first-row) > .silky-options-label-group {
+    margin-top: 7px;
+}
+
+.silky-layout-cell:not(.first-cell) > .silky-options-label-group {
+    margin-left: 7px;
+}
+
+/*Adding a space after a header if the grid is inline*/
+.silky-options-group-style-inline .silky-options-label-group-header {
+    margin-right: 1ex;
+}
+
+.silky-options-label-group-header {
+    font-size: 100% ;
+    font-weight: bold;
+    margin-bottom: 5px;
+    white-space: nowrap;
+}

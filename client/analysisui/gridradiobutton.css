@@ -1,0 +1,26 @@
+
+.silky-layout-cell:not(.first-cell) > .silky-option-radio {
+    margin-left: 7px;
+}
+
+.silky-option-radio {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-right: 7px;
+}
+
+/*radio check circle*/
+input[type="radio"] {
+    position: relative;
+    vertical-align: middle;
+    width: 18px;
+    height: 18px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-right: 5px;
+}
+
+label.silky-option-radio span, {
+    vertical-align: middle;
+}

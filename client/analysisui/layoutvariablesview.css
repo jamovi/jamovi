@@ -1,0 +1,34 @@
+
+
+.silky-layout-cell:not(.first-row) > .silky-options-supplier-group {
+    margin-top: 7px;
+}
+
+.silky-options-supplier-group {
+    margin-right: 7px;
+    margin-bottom: 7px;
+    overflow: hidden;
+}
+
+.silky-variable-supplier {
+    height: 200px;
+    border: 1px solid rgb(130, 130, 130);
+    background-color: rgb(255, 255, 255);
+}
+
+
+.silky-list-item .silky-variable-type-img.silky-variable-type-continuous {
+    background-image: url('assets/variable-continuous.svg');
+}
+
+.silky-list-item .silky-variable-type-img.silky-variable-type-nominaltext {
+    background-image: url('assets/variable-nominal-text.svg');
+}
+
+.silky-list-item .silky-variable-type-img.silky-variable-type-nominal {
+    background-image: url('assets/variable-nominal.svg');
+}
+
+.silky-list-item .silky-variable-type-img.silky-variable-type-ordinal {
+    background-image: url('assets/variable-ordinal.svg');
+}

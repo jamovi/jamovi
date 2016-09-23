@@ -95,12 +95,7 @@ var LayoutCell = function() {
         if (this.$content !== null)
             this.$content.on("contentchanged", this.onContentChangedEvent);
 
-        this._preferredWidth = -1;
-        this._preferredHeight = -1;
-        this._contentWidth = -1;
-        this._contentHeight = -1;
-        this._width = -1;
-        this._height = -1;
+        this.invalidateContentSize();
 
         if (this.$previousContent !== null) {
             this.data.hasNewContent = true;
@@ -110,14 +105,18 @@ var LayoutCell = function() {
         return this.$previousContent;
     };
 
+    this.invalidateContentSize = function() {
+        this._preferredWidth = -1;
+        this._preferredHeight = -1;
+        this._contentWidth = -1;
+        this._contentHeight = -1;
+        this._width = -1;
+        this._height = -1;
+    };
+
     this.onContentSizeChanged = function(data) {
 
-        self._preferredWidth = -1;
-        self._preferredHeight = -1;
-        self._contentWidth = -1;
-        self._contentHeight = -1;
-        self._width = -1;
-        self._height = -1;
+        self.invalidateContentSize();
 
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
