@@ -491,7 +491,9 @@ var BackstageModel = Backbone.Model.extend({
                 title: 'Export',
                 places: [
                     { name: 'csvDoc',      title: 'As CSV file',   model: { title: "Exporting to a CSV file is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
-                    { name: 'excelDoc',    title: 'As Excel document', model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
+                    { name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
+                    { name: 'htmlDoc',      title: 'As HTML file',   model: { title: "Exporting to a HTML file is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView },
+                    { name: 'pdfDoc',      title: 'As PDF document',   model: { title: "Exporting to a PDF document is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView }
                 ]
             }
         ];

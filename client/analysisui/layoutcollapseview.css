@@ -1,0 +1,41 @@
+
+.silky-options-collapse-group {
+    margin-right: 0px;
+    margin-bottom: 4px;
+    margin-top: 4px
+}
+
+.silky-options-collapse-group-header {
+    margin-bottom: 8px;
+    white-space: nowrap;
+}
+
+.silky-gridlayout-collapsed .silky-options-collapse-group-header {
+    margin-bottom: 0px;
+}
+
+.silky-options-collapse-group-header {
+    font-size: 100% ;
+    border: 1px solid #B0B0B0;
+    background-color: #D8D8D8;
+    padding: 5px;
+    vertical-align: middle ;
+    color: #555555 ;
+}
+
+.silky-options-collapse-icon {
+    border-right: 1px solid rgb(130, 130, 130) ;
+    padding-right: 23px;
+    margin-right: 5px;
+    box-sizing: border-box ;
+    cursor: default ;
+}
+
+.silky-gridlayout-collapsed .silky-options-collapse-group-header .silky-dropdown-toggle {
+  top: -3px ;
+}
+
+.silky-gridlayout-collapsed .silky-options-collapse-group-header .silky-dropdown-toggle:before {
+  -webkit-transform: rotate(-135deg);
+          transform: rotate(-135deg);
+}

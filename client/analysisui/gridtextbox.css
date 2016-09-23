@@ -1,0 +1,28 @@
+/*textbox sizing*/
+input[type="text"].silky-option-short-text {
+    width: 50px;
+}
+
+/*textbox sizing*/
+input[type="text"].silky-option-Medium-text {
+    width: 100px;
+}
+
+/*textbox sizing*/
+input[type="text"].silky-option-long-text {
+    width: 150px;
+}
+
+.silky-option-suffix {
+    margin-left: 1ex;
+}
+
+/*textbox input*/
+.silky-option-text-label, input[type="text"].silky-option-input, .silky-option-suffix {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.silky-option-text-label  {
+    margin-right: 1ex;
+}
