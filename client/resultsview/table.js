@@ -314,16 +314,16 @@ const TableView = Elem.View.extend({
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
                 let cell = cells.body[rowNo][colNo];
-                let content = cell.value;
-                if (content === '')
-                    content = '&nbsp;';
 
                 if (cell) {
+                    let content = cell.value;
+                    if (content === '')
+                        content = '&nbsp;';
                     html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + '</td>';
                     html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
                 }
                 else {
-                    html += '<td colspan="2"></td>';
+                    html += '<td colspan="2">&nbsp;</td>';
                 }
             }
 
