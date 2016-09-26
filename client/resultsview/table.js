@@ -106,11 +106,10 @@ const TableView = Elem.View.extend({
 
         for (let colNo = 0; colNo < table.columns.length; colNo++) {
             let column = table.columns[colNo];
-            let classes = this.makeFormatClasses(column);
             if (_.has(column, 'title'))
-                cells.header[colNo] = { value : column.title, classes : classes };
+                cells.header[colNo] = { value : column.title, classes : '' };
             else
-                cells.header[colNo] = { value : column.name, classes : classes };
+                cells.header[colNo] = { value : column.name, classes : '' };
 
             let values = _.pluck(column.cells, 'd');
             formattings[colNo] = determineFormatting(values, column.type, column.format);
@@ -133,10 +132,13 @@ const TableView = Elem.View.extend({
                 if (sourceCell.format & Format.END_GROUP)
                     rowFormat += ' silky-results-table-cell-group-end';
 
-                let cell = { value : null, classes : rowFormat };
+                let cell = { value : null, classes : rowFormat, sups : '' };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' silky-results-table-cell-negative';
+
+                for (let symbol of sourceCell.symbols)
+                    cell.sups += symbol;
 
                 for (let i = 0; i < sourceCell.footnotes.length; i++) {
                     let footnote = sourceCell.footnotes[i];
@@ -146,36 +148,26 @@ const TableView = Elem.View.extend({
                         fnIndices[footnote] = index;
                         footnotes[index] = footnote;
                     }
-                    if (i === 0)
-                        cell.sups = SUPSCRIPTS[index];
-                    else
-                        cell.sups += SUPSCRIPTS[index];
+                    cell.sups += SUPSCRIPTS[index];
                 }
 
                 switch (sourceCell.cellType) {
                 case 'i':
                     cell.value = sourceCell.i;
-                    cell.classes += " silky-results-table-cell-integer";
                     break;
                 case 'd':
                     let value = format(sourceCell.d, formattings[colNo]);
                     value = value.replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
                     cell.value = value;
-                    cell.classes += " silky-results-table-cell-number";
                     break;
                 case 's':
                     cell.value = sourceCell.s;
-                    cell.classes += " silky-results-table-cell-text";
                     break;
                 case 'o':
-                    if (sourceCell.o == 2) {
+                    if (sourceCell.o == 2)
                         cell.value = 'NaN';
-                        cell.classes += " silky-results-table-cell-number";
-                    }
-                    else {
+                    else
                         cell.value = '.';
-                        cell.classes += " silky-results-table-cell-missing";
-                    }
                     break;
                 }
 
@@ -344,13 +336,15 @@ const TableView = Elem.View.extend({
         this.$tableFooter.html(html);
     },
     makeFormatClasses(column) {
-        let classes = '';
+
+        let classes = ' silky-results-table-cell-' + (column.type ? column.type : 'number');
+
         if (column.format) {
             let formats = column.format.split(',');
             if (formats.length !== 1 || formats[0] !== '') {
                 for (let i = 0; i < formats.length; i++)
                     formats[i] = 'silky-results-table-cell-format-' + formats[i];
-                classes = ' ' + formats.join(' ');
+                classes += ' ' + formats.join(' ');
             }
         }
         return classes;

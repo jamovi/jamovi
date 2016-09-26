@@ -221,6 +221,7 @@ message ResultsCell {
     // 4 = negative (red highlight)
 
     repeated string footnotes = 6;
+    repeated string symbols = 7;
 }
 
 message ResultsColumn {

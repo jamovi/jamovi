@@ -50,6 +50,8 @@ var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
     }
     else if (formats.indexOf('zto') !== -1) {
         dp = sf;
+        maxNS = Infinity;
+        minNS = -Infinity;
     }
     else if ( ! isFinite(minAbsNS)) {
         dp = sf - 1;
@@ -66,16 +68,10 @@ var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
 
     expw = parseInt(Math.log10(maxAbsExpnt)+1);
 
-    return { dp: dp, expw: expw, format: format };
+    return { dp, expw, format, sf, maxNS, minNS };
 };
 
-var format = function(value, format, sf, maxNS, minNS) {
-    if (_.isUndefined(minNS))
-        minNS = 1e-3;
-    if (_.isUndefined(maxNS))
-        maxNS = 1e6;
-    if (_.isUndefined(sf))
-        sf = 3;
+var format = function(value, format) {
 
     if (isNaN(value)) {
         return 'NaN';
@@ -89,15 +85,14 @@ var format = function(value, format, sf, maxNS, minNS) {
     else if (format.format.indexOf('pvalue') !== -1 && value < 0.001) {
         return '<\u2009.001';
     }
-    else if (Math.abs(value) >= minNS && Math.abs(value) <= maxNS) {
+    else if (Math.abs(value) >= format.minNS && Math.abs(value) <= format.maxNS) {
         return value.toFixed(format.dp);
     }
     else {
         var exponent = Math.floor(Math.log10(Math.abs(value)));
         var mantissa = value/Math.pow(10, exponent);
-        if (value === 0){
+        if (value === 0)
             return value.toFixed(format.dp);
-        }
         var expntSpan = Math.log10(exponent);
         var sign = '+';
         if (value < 1) {
@@ -106,7 +101,7 @@ var format = function(value, format, sf, maxNS, minNS) {
         var spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
         var gap = Array(spaces).join(" ");
-        return mantissa.toFixed(sf-1)+'e'+gap+sign+Math.abs(exponent);
+        return mantissa.toFixed(format.sf-1)+'e'+gap+sign+Math.abs(exponent);
     }
 
 };
