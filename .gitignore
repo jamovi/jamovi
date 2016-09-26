@@ -18,3 +18,5 @@ client/*.css
 # protocol buffers
 *.pb.cc
 *.pb.h
+*_pb2.py
+
