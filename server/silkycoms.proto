@@ -230,6 +230,7 @@ message ResultsColumn {
     optional string title = 2;
     optional string type = 3;
     optional string format = 4;
+    optional string superTitle = 5;
 
     repeated ResultsCell cells = 7;
 }

@@ -97,8 +97,17 @@ const TableView = Elem.View.extend({
         else
             rowCount = 0;
 
+        let hasSuperHeader = false;
+        for (let i = 0; i < columnCount; i++) {
+            if (table.columns[i].superTitle) {
+                hasSuperHeader = true;
+                break;
+            }
+        }
+
         let cells = {
-            header : new Array(table.columns.length),
+            header  : new Array(table.columns.length),
+            superHeader : new Array(table.columns.length),
             body : new Array(rowCount)
         };
 
@@ -106,12 +115,15 @@ const TableView = Elem.View.extend({
 
         for (let colNo = 0; colNo < table.columns.length; colNo++) {
             let column = table.columns[colNo];
-            if (_.has(column, 'title'))
+            if ('title' in column)
                 cells.header[colNo] = { value : column.title, classes : '' };
             else
                 cells.header[colNo] = { value : column.name, classes : '' };
 
-            let values = _.pluck(column.cells, 'd');
+            if (column.superTitle)
+                cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
+
+            let values = column.cells.map(v => v.d);
             formattings[colNo] = determineFormatting(values, column.type, column.format);
         }
 
@@ -207,6 +219,7 @@ const TableView = Elem.View.extend({
 
             let folded = {
                 header : new Array(newColumnCount),
+                superHeader: new Array(newColumnCount),
                 body   : new Array(newRowCount)
             };
 
@@ -215,6 +228,7 @@ const TableView = Elem.View.extend({
                 let foldedIndices = rowPlan[foldedName];
                 let index = foldedIndices[0];
                 folded.header[colNo] = cells.header[index];
+                folded.superHeader[colNo] = cells.superHeader[index];
             }
 
             for (let rowNo = 0; rowNo < newRowCount; rowNo++)
@@ -238,6 +252,7 @@ const TableView = Elem.View.extend({
             }
 
             cells.header = folded.header;
+            cells.superHeader = folded.superHeader;
             cells.body = folded.body;
         }
 
@@ -270,15 +285,47 @@ const TableView = Elem.View.extend({
 
         html = '';
 
+        if (hasSuperHeader) {
+            let span = 1;
+            for (let i = 0; i < cells.superHeader.length; i++) {
+                let head = cells.superHeader[i];
+
+                let nextHead = null;
+                let nextContent = null;
+                if (i < cells.superHeader.length - 1) {
+                    nextHead = cells.superHeader[i+1];
+                    nextContent = '';
+                    if (typeof(nextHead) !== 'undefined')
+                        nextContent = nextHead.value;
+                }
+
+                let content = '';
+                if (typeof(head) !== 'undefined')
+                    content = head.value;
+
+                if (content == nextContent) {
+                    span++;
+                }
+                else {
+                    html += '<th class="silky-results-table-cell" colspan="' + (2 * span) + '">' + content + '</th>';
+                    span = 1;
+                }
+            }
+        }
+
+        this.$columnHeaderRowSuper.html(html);
+
+
+        html = '';
+
         for (let i = 0; i < cells.header.length; i++) {
             let head = cells.header[i];
             let content = head.value;
             if (content === '')
                 content = '&nbsp;';
-            html += '<th class="silky-results-table-cell ' + head.classes + '" colspan="2">' + content + '</th>';
+            html += '<th class="silky-results-table-cell" colspan="2">' + content + '</th>';
         }
 
-        this.$columnHeaderRowSuper.empty();
         this.$columnHeaderRow.html(html);
 
         html = '';
