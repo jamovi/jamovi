@@ -1,15 +1,17 @@
-.silky-layout-cell:not(.first-cell) > .silky-option-checkbox {
-    margin-left: 7px;
+.silky-option-checkbox.silky-control-margin-small {
+    margin: 2px;
 }
 
-.silky-option-checkbox {
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-right: 7px;
+.silky-option-checkbox.silky-control-margin-normal {
+    margin: 5px;
 }
 
-.silky-options-group-header .silky-option-checkbox {
-    margin-bottom: 0px;
+.silky-option-checkbox.silky-control-margin-large {
+    margin: 8px;
+}
+
+.first-cell > .silky-option-checkbox {
+    margin-left: 0px;
 }
 
 /*Checkbox tick square*/

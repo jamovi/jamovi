@@ -27,24 +27,25 @@ var GridTextbox = function(params) {
         if (label === null)
             label = this.getPropertyValue('name');
 
-        var columnUsed = 0;
         var cell = null;
-        if (label !== "") {
-            this.$label = $('<div class="silky-option-text-label" style="display: inline; white-space: nowrap;" >' + label + '</div>');
-            cell = grid.addCell(column, row, true, this.$label);
-            cell.setAlignment("left", "centre");
-            columnUsed += 1;
-        }
+        var startClass = label === "" ? "" : 'silky-option-text-start';
+        this.$label = $('<div class="silky-option-text-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+        cell = grid.addCell(column, row, true, this.$label);
+        cell.blockInsert("right");
+        cell.setAlignment("left", "centre");
+
 
         var suffix = this.getPropertyValue('suffix');
-        if (suffix !== null) {
-            var subgrid = new LayoutGrid();
-            subgrid.$el.addClass("silky-layout-grid");
-            grid.addLayout(column + 1, row, true, subgrid);
-            grid = subgrid;
-        }
+        if (suffix === null)
+            suffix = "";
 
-        var t = '<input id="' + id + '" class="silky-option-input silky-option-value silky-option-short-text" style="display: inline;" type="text" value="' + this.option.getValueAsString() + '"';
+        var subgrid = new LayoutGrid();
+        subgrid.$el.addClass('silky-layout-grid');
+        cell = grid.addLayout(column + 1, row, true, subgrid);
+        cell.blockInsert("left");
+        startClass = label === "" ? 'silky-option-text-start' : "";
+        startClass = startClass + " " + (suffix === "" ? 'silky-option-text-end' : "");
+        var t = '<input id="' + id + '" class="silky-option-input silky-option-text-input silky-option-value silky-option-short-text silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.option.getValueAsString() + '"';
         var inputPattern = this.getPropertyValue("inputPattern");
         if (inputPattern !== null)
             t += ' pattern="'+ inputPattern +'"';
@@ -64,19 +65,17 @@ var GridTextbox = function(params) {
             self.option.setValue(value);
         });
 
-        cell = grid.addCell((suffix !== null ? 0 : column + 1), row, true, this.$input);
+        cell = subgrid.addCell(0, 0, true, this.$input);
+        cell.blockInsert("left");
         cell.setAlignment("left", "centre");
 
-        if (suffix !== null) {
-            this.$suffix = $('<div class="silky-option-suffix" style="display: inline; white-space: nowrap;" >' + suffix + '</div>');
-            cell = grid.addCell(1, row, true, this.$suffix);
-            cell.setAlignment("left", "centre");
-        }
+        startClass = suffix === "" ? "" : 'silky-option-text-end';
 
-        columnUsed += 1;
+        this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue("margin") + " " + startClass + '" style="display: inline; white-space: nowrap;" >' + suffix + '</div>');
+        cell = subgrid.addCell(1, 0, true, this.$suffix);
+        cell.setAlignment("left", "centre");
 
-
-        return { height: 1, width: columnUsed };
+        return { height: 1, width: 3 };
     };
 
     this.onOptionValueChanged = function(keys, data) {

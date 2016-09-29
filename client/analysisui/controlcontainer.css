@@ -1,0 +1,19 @@
+.silky-control-container.silky-control-margin-small {
+    margin: 2px;
+}
+
+.silky-control-container.silky-control-margin-normal {
+    margin: 5px;
+}
+
+.silky-control-container.silky-control-margin-large {
+    margin: 8px;
+}
+
+.first-cell > .silky-control-container {
+    margin-left: 0px;
+}
+
+.first-row > .silky-control-container {
+    margin-top: 0px;
+}

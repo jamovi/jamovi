@@ -3,6 +3,7 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var GridOptionControl = require('./gridoptioncontrol');
+var ChildLayoutSupport = require('./childlayoutsupport');
 
 var GridCheckbox = function(params) {
 
@@ -17,7 +18,7 @@ var GridCheckbox = function(params) {
         if (label === null)
             label = this.getPropertyValue('name');
 
-        this.$el = $('<label class="silky-option-checkbox" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + label + '</span></label>');
+        this.$el = $('<label class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><input id="' + id + '" class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' ><span>' + label + '</span></label>');
 
         var self = this;
         this.$input = this.$el.find('input');
@@ -46,6 +47,8 @@ var GridCheckbox = function(params) {
                 this.$el.removeClass("disabled-text");
         }
     };
+
+    ChildLayoutSupport.extend(this);
 };
 
 module.exports = GridCheckbox;

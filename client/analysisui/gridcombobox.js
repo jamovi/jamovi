@@ -21,7 +21,7 @@ var GridCombobox = function(params) {
         var columnUsed = 0;
         var cell = null;
         if (label !== "") {
-            this.$label = $('<div class="silky-option-text-label" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+            this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
             cell = grid.addCell(column, row, true, this.$label);
             cell.setAlignment("left", "centre");
             columnUsed += 1;
@@ -29,7 +29,7 @@ var GridCombobox = function(params) {
 
         var options = this.getPropertyValue('options');
 
-        var t = '<select class="silky-option-input">';
+        var t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
         for (var i = 0; i < options.length; i++)
             t += '<option>' + options[i].label + '</option>';
         t += '</select>';

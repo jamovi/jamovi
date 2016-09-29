@@ -6,13 +6,16 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 var Overridable = require('./overridable');
 
-var LayoutCell = function() {
+var LayoutCell = function(parent) {
 
     Overridable.extendTo(this);
 
     this.$el = $('<div style="opacity: 0" class="not-rendered"></div>');
     this.$el.css("position", "absolute");
     this.$el.css("box-sizing", "border-box");
+
+    //if (parent.editable)
+    //    this.$el.css("border", "1px dotted red");
 
     _.extend(this, Backbone.Events);
 
@@ -34,9 +37,15 @@ var LayoutCell = function() {
     this._height = -1;
     this._left = -1;
     this._top = -1;
-    this._parentLayout = null;
+    this._parentLayout = parent;
 
     var self = this;
+
+    this.blockInsert = function(direction) {
+        if (parent.editable)
+            this.$el.css("border-" + direction + "-style", "none");
+    };
+
     this.onMouseDown = function(event) {
         var ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
@@ -577,6 +586,11 @@ var LayoutCell = function() {
         this.horizontalStretchFactor = factor;
 
         this.dockContentWidth = this.horizontalStretchFactor > 0 && this.hAlign === "left";
+
+        if (factor === 0)
+            this.$el.css("border-color", "red");
+        else
+            this.$el.css("border-color", "blue");
 
         if (this.horizontalStretchFactor > 0)
             this.fitToGrid = false;

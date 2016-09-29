@@ -1,28 +1,67 @@
 /*textbox sizing*/
-input[type="text"].silky-option-short-text {
+.silky-option-text-input.silky-option-short-text {
     width: 50px;
 }
 
 /*textbox sizing*/
-input[type="text"].silky-option-Medium-text {
+.silky-option-text-input.silky-option-Medium-text {
     width: 100px;
 }
 
 /*textbox sizing*/
-input[type="text"].silky-option-long-text {
+.silky-option-text-input.silky-option-long-text {
     width: 150px;
 }
 
-.silky-option-suffix {
+
+
+.silky-option-text-input:not(.silky-option-text-start)  {
     margin-left: 1ex;
 }
 
-/*textbox input*/
-.silky-option-text-label, input[type="text"].silky-option-input, .silky-option-suffix {
+.silky-option-text-input:not(.silky-option-text-end)  {
+    margin-right: 1ex;
+}
+
+.silky-option-text-start.silky-control-margin-small {
+    margin-left: 2px;
+}
+
+.silky-option-text-end.silky-control-margin-small {
+    margin-right: 2px;
+}
+
+.silky-option-text-input.silky-control-margin-small {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.silky-option-text-start.silky-control-margin-normal {
+    margin-left: 5px;
+}
+
+.silky-option-text-end.silky-control-margin-normal {
+    margin-right: 5px;
+}
+
+.silky-option-text-input.silky-control-margin-normal {
     margin-top: 5px;
     margin-bottom: 5px;
 }
 
-.silky-option-text-label  {
-    margin-right: 1ex;
+.silky-option-text-start.silky-control-margin-large {
+    margin-left: 8px;
+}
+
+.silky-option-text-end.silky-control-margin-large {
+    margin-right: 8px;
+}
+
+.silky-option-text-input.silky-control-margin-large {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.first-cell > .silky-option-text-start {
+    margin-left: 0px;
 }

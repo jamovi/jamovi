@@ -3,6 +3,7 @@
 var $ = require('jquery');
 var GridOptionControl = require('./gridoptioncontrol');
 var Overridable = require('./overridable');
+var ChildLayoutSupport = require('./childlayoutsupport');
 
 var GridRadioButton = function(params) {
 
@@ -21,7 +22,7 @@ var GridRadioButton = function(params) {
         var name = this.getPropertyValue('name');
         if (label === null)
             label = name;
-        this.$el = $('<label class="silky-option-radio" style="white-space: nowrap;"><input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' ><span>' + label + '</span></label>');
+        this.$el = $('<label class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' ><span>' + label + '</span></label>');
 
         var self = this;
         this.$input = this.$el.find('input');
@@ -61,6 +62,8 @@ var GridRadioButton = function(params) {
     this._override('setValue', function(baseFunction, value, keys) {
         return baseFunction.call(self, value ? self.checkedValue : self.otherValue, keys);
     });
+
+    ChildLayoutSupport.extend(this);
 };
 
 module.exports = GridRadioButton;
