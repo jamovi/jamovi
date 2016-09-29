@@ -6,6 +6,7 @@ var LayoutGrid = require('./layoutgrid').Grid;
 var GridControl = require('./gridcontrol');
 var ControlBase = require('./controlbase');
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
+var EnumPropertyFilter = require('./enumpropertyfilter');
 
 var ControlContainer = function(params) {
 
@@ -14,14 +15,18 @@ var ControlContainer = function(params) {
     GridControl.extend(this);
     LayoutGridBorderSupport.extendTo(this);
 
+    this.editable = true;
+
     this.registerSimpleProperty("stretchFactor", 0);
-    this.registerSimpleProperty("style", "list");
+    this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
     this.registerSimpleProperty("name", null);
+    this.registerSimpleProperty("margin", "none", new EnumPropertyFilter(["small", "normal", "large", "none"], "none"));
 
 
     this.onRenderToGrid = function(grid, row, column) {
 
         this.$el.addClass("silky-control-container");
+        this.$el.addClass("silky-control-margin-" + this.getPropertyValue("margin"));
 
         var stretchFactor = this.getPropertyValue("stretchFactor");
 
@@ -29,7 +34,7 @@ var ControlContainer = function(params) {
 
         cell.setStretchFactor(stretchFactor);
 
-        return { height: 1, width: 1 };
+        return { height: 1, width: 1, cell: cell };
     };
 
     this.renderContainer = function(context, level) {
@@ -67,21 +72,29 @@ var ControlContainer = function(params) {
             }
             else if (_.isUndefined(ctrlDef.controls) === false) {
                 ctrlDef.style = _.isUndefined(ctrlDef.style) ? "list" : ctrlDef.style;
-                bodyContainer = new ControlContainer( { name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: ctrlDef.style });
-                bodyContainer.$el.addClass("silky-options-indented-" + ctrlDef.style);
+                var childStyle = ctrlDef.style.split('-');
+                childStyle = childStyle[childStyle.length - 1];
+
+                bodyContainer = new ControlContainer( { name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: childStyle });
                 bodyContainer.renderContainer(context, itemLevel);
             }
 
             var cr2 = ctrl.renderToGrid(this, _nextCell.row, _nextCell.column);
             if (bodyContainer !== null) {
-                if (ctrlDef.style === 'inline')
-                    _nextCell.column += cr2.width;
-                else
-                    _nextCell.row += cr2.height;
-                cr2 = bodyContainer.renderToGrid(this, _nextCell.row, _nextCell.column);
+                if (ctrl.setBody)
+                    ctrl.setBody(bodyContainer);
+                else {
+                    throw "this control does not yet support child controls";
+                    /*bodyContainer.$el.addClass("silky-options-indented-" + ctrlDef.style);
+                    if (ctrlDef.style.startsWith('inline'))
+                        _nextCell.column += cr2.width;
+                    else
+                        _nextCell.row += cr2.height;
+                    cr2 = bodyContainer.renderToGrid(this, _nextCell.row, _nextCell.column);*/
+                }
             }
 
-            if (currentStyle === 'inline') {
+            if (currentStyle.startsWith('inline')) {
                 _nextCell.row = 0;
                 _nextCell.column = _nextCell.column + cr2.width;
             }

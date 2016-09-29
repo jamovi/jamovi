@@ -30,8 +30,9 @@ var SilkyControlManager = function() {
     this.registerControl("targetlistbox", GridVariablesTargetList);
     this.registerControl("supplier", LayoutVariablesView);
     this.registerControl("collapsebox", LayoutCollapseView);
-    this.registerControl("groupbox", LayoutGroupView);
+    this.registerControl("label", LayoutGroupView);
     this.registerControl("collection", ControlContainer);
+    this.registerControl("layoutbox", ControlContainer);
     this.registerControl("listitem.variablelabel", ListItemVariableLabel);
     this.registerControl("listitem.combobox", ListItemCombobox);
     this.registerControl("listitem.label",ListItemLabel);

@@ -1,14 +1,3 @@
-
-.silky-layout-cell:not(.first-cell) > .silky-option-radio {
-    margin-left: 7px;
-}
-
-.silky-option-radio {
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-right: 7px;
-}
-
 /*radio check circle*/
 input[type="radio"] {
     position: relative;
@@ -23,4 +12,20 @@ input[type="radio"] {
 
 label.silky-option-radio span, {
     vertical-align: middle;
+}
+
+.silky-option-radio.silky-control-margin-small {
+    margin: 2px;
+}
+
+.silky-option-radio.silky-control-margin-normal {
+    margin: 5px;
+}
+
+.silky-option-radio.silky-control-margin-large {
+    margin: 8px;
+}
+
+.first-cell > .silky-option-radio {
+    margin-left: 0px;
 }

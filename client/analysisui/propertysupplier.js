@@ -77,6 +77,10 @@ var PropertySupplier = function(properties) {
         }
     };
 
+    this.hasProperty = function(property) {
+            return property in this.properties;
+    };
+
     this.getTrigger = function(property) {
         return this.properties[property].trigger;
     };

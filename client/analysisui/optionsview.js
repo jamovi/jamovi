@@ -162,6 +162,9 @@ var OptionsView = function(uiModel) {
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
 
+        if (ctrl.hasProperty("name") === false)
+            return ctrl;
+            
         var name = ctrl.getPropertyValue("name");
         if (ctrl.setOption) {
             var id = ctrl.getPropertyValue("optionId");

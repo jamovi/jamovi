@@ -14,6 +14,8 @@ var LayoutGrid = function() {
     this.$el = $('<div class="silky-layout-grid"></div>');
     this.$el.css("position", "relative");
 
+    this.editable = false;
+
     _.extend(this, Backbone.Events);
 
     this._parentCell = null;
@@ -495,7 +497,6 @@ var LayoutGrid = function() {
     };
 
     this._add = function(column, row, cell) {
-        cell._parentLayout = this;
         cell._id = this._currentId++;
         row = this.getTranformedRow(row, column);
         column = this.getTranformedColumn(row, column);
@@ -556,8 +557,7 @@ var LayoutGrid = function() {
     };
 
     this.addCell = function(column, row, fitToGrid, $content) {
-
-        var cell = new LayoutCell();
+        var cell = new LayoutCell(this);
         cell.$el.addClass('silky-layout-cell');
         cell.setContent($content);
         if (this._addCellEventListeners)

@@ -6,7 +6,10 @@
 @import (inline) "gridcheckbox.css";
 @import (inline) "gridradiobutton.css";
 @import (inline) "gridtextbox.css";
+@import (inline) "gridcombobox.css";
 @import (inline) "rmanovafactorscontrol.css";
+@import (inline) "controlcontainer.css";
+
 
 * {
     user-select: none ;
@@ -117,9 +120,6 @@ h1 {
     background-repeat: no-repeat;
 }
 
-.silky-control-container {
-    margin-right: 7px;
-}
 
 .silky-list-item.silky-format-string {
     font-size: 100% ;
@@ -252,18 +252,12 @@ h1 {
     pointer-events: none;
 }
 
-select.silky-option-input, select option {
-    padding-top: 3px;
-    padding-bottom: 2px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-}
-
-.silky-options-indented-list {
+.silky-control-body-style-list {
     margin-left: 15px;
+    margin-top: 0px;
 }
 
-.silky-options-indented-inline {
+.silky-control-body-style-inline {
     margin-left: 1ex;
 }
 
