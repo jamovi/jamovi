@@ -1,13 +1,34 @@
 
-
-.silky-layout-cell:not(.first-row) > .silky-options-supplier-group {
-    margin-top: 7px;
+.silky-options-supplier-group {
+    overflow: hidden;
 }
 
-.silky-options-supplier-group {
-    margin-right: 7px;
-    margin-bottom: 7px;
-    overflow: hidden;
+.silky-options-supplier-group.silky-control-margin-small {
+    margin: 2px;
+}
+
+.silky-options-supplier-group.silky-control-margin-normal {
+    margin: 5px;
+}
+
+.silky-options-supplier-group.silky-control-margin-large {
+    margin: 10px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-options-supplier-group {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .first-cell > .silky-options-supplier-group {
+    margin-left: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-options-supplier-group {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-supplier-group {
+    margin-bottom: 0px;
 }
 
 .silky-variable-supplier {

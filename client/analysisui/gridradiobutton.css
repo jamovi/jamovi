@@ -10,8 +10,9 @@ input[type="radio"] {
     margin-right: 5px;
 }
 
-label.silky-option-radio span, {
+label.silky-option-radio span {
     vertical-align: middle;
+    line-height: 18px;
 }
 
 .silky-option-radio.silky-control-margin-small {
@@ -23,9 +24,21 @@ label.silky-option-radio span, {
 }
 
 .silky-option-radio.silky-control-margin-large {
-    margin: 8px;
+    margin: 10px;
 }
 
-.first-cell > .silky-option-radio {
+.silky-control-container .first-cell > .silky-option-radio {
     margin-left: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-radio {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-option-radio {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-radio {
+    margin-bottom: 0px;
 }

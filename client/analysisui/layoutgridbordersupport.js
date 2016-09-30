@@ -12,17 +12,23 @@ var LayoutGridBorderSupport = function() {
 
     this._firstColumnIndex = -1;
     this._firstRowIndex = -1;
+    this._lastColumnIndex = -1;
+    this._lastRowIndex = -1;
 
     this._override('_add', function(baseFunction, column, row, cell) {
+        var columnCells = null;
+        var rowCells = null;
         if (cell.isVirtual === false) {
             if (self._firstColumnIndex === -1 || column === self._firstColumnIndex) {
                 cell.$el.addClass("first-cell");
                 self._firstColumnIndex = column;
             }
             else if (column < self._firstColumnIndex) {
-                var columnCells = self._orderedColumns[self._firstColumnIndex];
-                for (var i = 0; i < columnCells.length; i++)
-                    columnCells[i].$el.removeClass("first-cell");
+                columnCells = self._orderedColumns[self._firstColumnIndex];
+                for (let i = 0; i < columnCells.length; i++) {
+                    if (this._checkCellValidity(columnCells[i]))
+                        columnCells[i].$el.removeClass("first-cell");
+                }
 
                 cell.$el.addClass("first-cell");
                 self._firstColumnIndex = column;
@@ -33,12 +39,44 @@ var LayoutGridBorderSupport = function() {
                 self._firstRowIndex = row;
             }
             else if (row < self._firstRowIndex) {
-                var rowCells = self._orderedCells[self._firstRowIndex];
-                for (var j = 0; j < rowCells.length; j++)
-                    rowCells[j].$el.removeClass("first-row");
+                rowCells = self._orderedCells[self._firstRowIndex];
+                for (let j = 0; j < rowCells.length; j++) {
+                    if (this._checkCellValidity(rowCells[j]))
+                        rowCells[j].$el.removeClass("first-row");
+                }
 
                 cell.$el.addClass("first-row");
                 self._firstRowIndex = row;
+            }
+
+            if (self._lastColumnIndex === -1 || column === self._lastColumnIndex) {
+                cell.$el.addClass("last-cell");
+                self._lastColumnIndex = column;
+            }
+            else if (column > self._lastColumnIndex) {
+                columnCells = self._orderedColumns[self._lastColumnIndex];
+                for (let i = 0; i < columnCells.length; i++) {
+                    if (this._checkCellValidity(columnCells[i]))
+                        columnCells[i].$el.removeClass("last-cell");
+                }
+
+                cell.$el.addClass("last-cell");
+                self._lastColumnIndex = column;
+            }
+
+            if (self._lastRowIndex === -1 || row === self._lastRowIndex) {
+                cell.$el.addClass("last-row");
+                self._lastRowIndex = row;
+            }
+            else if (row > self._lastRowIndex) {
+                rowCells = self._orderedCells[self._lastRowIndex];
+                for (let j = 0; j < rowCells.length; j++) {
+                    if (this._checkCellValidity(rowCells[j]))
+                        rowCells[j].$el.removeClass("last-row");
+                }
+
+                cell.$el.addClass("last-row");
+                self._lastRowIndex = row;
             }
 
             if (self._cellBorders)
@@ -53,13 +91,19 @@ var LayoutGridBorderSupport = function() {
         baseFunction.call(self, cell);
 
         var cellData = cell.data;
+        var rowCells = null;
+        var columnCells = null;
 
         self._firstRowIndex = -1;
         if (cellData.row === self._firstRowIndex && self._orderedCells[cellData.row].length === 0) {
-            for (var r = self._firstRowIndex + 1; r < self._orderedCells.length; r++) {
-                var rowCells = self._orderedCells[r];
+            for (let r = self._firstRowIndex + 1; r < self._orderedCells.length; r++) {
+                rowCells = self._orderedCells[r];
                 if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
                     self._firstRowIndex = r;
+                    for (let j = 0; j < rowCells.length; j++) {
+                        if (this._checkCellValidity(rowCells[j]))
+                            rowCells[j].$el.addClass("first-row");
+                    }
                     break;
                 }
             }
@@ -67,15 +111,53 @@ var LayoutGridBorderSupport = function() {
 
         self._firstColumnIndex = -1;
         if (cellData.column === self._firstColumnIndex && self._orderedColumns[cellData.column].length === 0) {
-            for (var c = self._firstColumnIndex + 1; c < self._orderedColumns.length; c++) {
-                var columnCells = self._orderedColumns[c];
+            for (let c = self._firstColumnIndex + 1; c < self._orderedColumns.length; c++) {
+                columnCells = self._orderedColumns[c];
                 if (columnCells !== null && _.isUndefined(columnCells) === false && columnCells.length > 0) {
                     self._firstColumnIndex = c;
+                    for (let i = 0; i < columnCells.length; i++) {
+                        if (this._checkCellValidity(columnCells[i]))
+                            columnCells[i].$el.addClass("last-cell");
+                    }
+                    break;
+                }
+            }
+        }
+
+        self._lastRowIndex = -1;
+        if (cellData.row === self._lastRowIndex && self._orderedCells[cellData.row].length === 0) {
+            for (let r = self._lastRowIndex - 1; r >= 0; r--) {
+                rowCells = self._orderedCells[r];
+                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
+                    self._lastRowIndex = r;
+                    for (let j = 0; j < rowCells.length; j++) {
+                        if (this._checkCellValidity(rowCells[j]))
+                            rowCells[j].$el.addClass("last-row");
+                    }
+                    break;
+                }
+            }
+        }
+
+        self._lastColumnIndex = -1;
+        if (cellData.column === self._lastColumnIndex && self._orderedColumns[cellData.column].length === 0) {
+            for (let c = self._lastColumnIndex - 1; c >= 0; c--) {
+                columnCells = self._orderedColumns[c];
+                if (columnCells !== null && _.isUndefined(columnCells) === false && columnCells.length > 0) {
+                    self._lastColumnIndex = c;
+                    for (let i = 0; i < columnCells.length; i++) {
+                        if (this._checkCellValidity(columnCells[i]))
+                            columnCells[i].$el.addClass("last-cell");
+                    }
                     break;
                 }
             }
         }
     });
+
+    this._checkCellValidity = function(cell) {
+        return _.isUndefined(cell) === false && cell.isVirtual === false;
+    };
 
     this.setCellBorders = function() {
         this._cellBorders = true;

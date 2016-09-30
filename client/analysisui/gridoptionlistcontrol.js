@@ -14,7 +14,6 @@ var GridOptionListControl = function(option, params) {
         this.setAutoSizeHeight(false);
         var cell = grid.addLayout(column, row, false, this);
         cell.setStretchFactor(0.5);
-        //cell.dockContentWidth = true;
         cell.dockContentHeight = true;
 
         return { height: 1, width: 1 };

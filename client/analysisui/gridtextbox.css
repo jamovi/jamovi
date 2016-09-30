@@ -50,18 +50,22 @@
 }
 
 .silky-option-text-start.silky-control-margin-large {
-    margin-left: 8px;
+    margin-left: 10px;
 }
 
 .silky-option-text-end.silky-control-margin-large {
-    margin-right: 8px;
+    margin-right: 10px;
 }
 
 .silky-option-text-input.silky-control-margin-large {
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-.first-cell > .silky-option-text-start {
+.silky-layout-container > .first-cell > .silky-option-text-start {
     margin-left: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-option-text-end {
+    margin-right: 0px;
 }

@@ -8,6 +8,7 @@ var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var DragNDrop = require('./dragndrop');
 var ControlContainer = require('./controlcontainer');
 var LayoutGrid = require('./layoutgrid').Grid;
+var EnumPropertyFilter = require('./enumpropertyfilter');
 
 var LayoutVariablesView = function(params) {
 
@@ -53,10 +54,12 @@ var LayoutVariablesView = function(params) {
     this.registerSimpleProperty("persistentItems", false);
     this.registerSimpleProperty("useVariables", false);
     this.registerSimpleProperty("label", null);
+    this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
 
     this._persistentItems = this.getPropertyValue('persistentItems');
 
-    this.$el.addClass("silky-options-supplier-group"); 
+    this.$el.addClass("silky-options-supplier-group");
+    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
 
     this._items = [];
     this._targets = [];

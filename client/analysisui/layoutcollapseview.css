@@ -1,20 +1,44 @@
 
-.silky-options-collapse-group {
+/*.silky-options-collapse-group {
     margin-right: 0px;
     margin-bottom: 4px;
     margin-top: 4px
-}
+}*/
 
-.silky-options-collapse-group-header {
-    margin-bottom: 4px;
+.silky-options-collapse-button {
+    /*margin-bottom: 4px;*/
     white-space: nowrap;
 }
 
-.silky-gridlayout-collapsed .silky-options-collapse-group-header {
+.silky-options-collapse-button.silky-control-margin-small {
+    margin: 2px;
+}
+
+.silky-options-collapse-button.silky-control-margin-normal {
+    margin: 4px;
+}
+
+.silky-options-collapse-button.silky-control-margin-large {
+    margin: 8px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-options-collapse-button {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .first-cell > .silky-options-collapse-button {
+    margin-left: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-options-collapse-button {
+    margin-right: 0px;
+}
+
+.silky-options-collapse-button.silky-gridlayout-collapsed, .silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-collapse-button {
     margin-bottom: 0px;
 }
 
-.silky-options-collapse-group-header {
+.silky-options-collapse-button {
     font-size: 100% ;
     border: 1px solid #B0B0B0;
     background-color: #D8D8D8;
@@ -31,11 +55,11 @@
     cursor: default ;
 }
 
-.silky-gridlayout-collapsed .silky-options-collapse-group-header .silky-dropdown-toggle {
+.silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle {
   top: -3px ;
 }
 
-.silky-gridlayout-collapsed .silky-options-collapse-group-header .silky-dropdown-toggle:before {
+.silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle:before {
   -webkit-transform: rotate(-135deg);
           transform: rotate(-135deg);
 }

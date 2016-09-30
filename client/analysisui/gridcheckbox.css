@@ -7,11 +7,23 @@
 }
 
 .silky-option-checkbox.silky-control-margin-large {
-    margin: 8px;
+    margin: 10px;
 }
 
-.first-cell > .silky-option-checkbox {
+.silky-layout-container > .first-cell > .silky-option-checkbox {
     margin-left: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-checkbox {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-option-checkbox {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-checkbox {
+    margin-bottom: 0px;
 }
 
 /*Checkbox tick square*/
@@ -28,4 +40,5 @@ input[type="checkbox"] {
 
 label.silky-option-checkbox span {
     vertical-align: middle;
+    line-height: 18px;
 }

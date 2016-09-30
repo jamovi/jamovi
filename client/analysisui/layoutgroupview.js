@@ -16,6 +16,7 @@ var LayoutGroupView = function(params) {
 
     this.registerSimpleProperty("label", "");
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
+    this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
 
     this.style = this.getPropertyValue('style');
 

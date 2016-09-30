@@ -22,10 +22,11 @@ var ControlContainer = function(params) {
     this.registerSimpleProperty("name", null);
     this.registerSimpleProperty("margin", "none", new EnumPropertyFilter(["small", "normal", "large", "none"], "none"));
 
+    this.$el.addClass("silky-control-container silky-layout-container");
+    //this.$el.css("border", "1px dotted red");
 
     this.onRenderToGrid = function(grid, row, column) {
 
-        this.$el.addClass("silky-control-container");
         this.$el.addClass("silky-control-margin-" + this.getPropertyValue("margin"));
 
         var stretchFactor = this.getPropertyValue("stretchFactor");
@@ -83,15 +84,8 @@ var ControlContainer = function(params) {
             if (bodyContainer !== null) {
                 if (ctrl.setBody)
                     ctrl.setBody(bodyContainer);
-                else {
+                else
                     throw "this control does not yet support child controls";
-                    /*bodyContainer.$el.addClass("silky-options-indented-" + ctrlDef.style);
-                    if (ctrlDef.style.startsWith('inline'))
-                        _nextCell.column += cr2.width;
-                    else
-                        _nextCell.row += cr2.height;
-                    cr2 = bodyContainer.renderToGrid(this, _nextCell.row, _nextCell.column);*/
-                }
             }
 
             if (currentStyle.startsWith('inline')) {
