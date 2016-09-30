@@ -26,6 +26,7 @@ var OptionListControl = function(params) {
     this.removeAction = this.getPropertyValue('removeAction');
 
     this.$el.addClass(this.getPropertyValue('height') + "-size");
+    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
 
     this.isSingleItem = this.maxItemCount === 1;
 

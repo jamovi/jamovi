@@ -203,7 +203,6 @@ var LayoutCell = function(parent) {
             if (this.cssProperties === null)
                 this.refreshCSSProperties();
 
-            var contentSpace = this.dockContentHeight ? 0 : this.contentHeight();
             this._preferredHeight = this.contentHeight() + this.cssProperties["padding-top"] + this.cssProperties["padding-bottom"] + this.cssProperties["border-top-width"] + this.cssProperties["border-bottom-width"];
         }
 
@@ -357,9 +356,9 @@ var LayoutCell = function(parent) {
         if (this.dockContentWidth) {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
 
-            var contentProperties = this.$content.css(["padding-left", "padding-right", "border-left-width", "border-right-width"]);
+            var contentProperties = this.$content.css(["padding-left", "padding-right", "margin-left", "margin-right", "border-left-width", "border-right-width"]);
             left = this.cssProperties["padding-left"];
-            width = innerWidth - parseFloat(contentProperties["padding-left"]) - parseFloat(contentProperties["padding-right"]) - parseFloat(contentProperties["border-left-width"]) - parseFloat(contentProperties["border-right-width"]);
+            width = innerWidth - parseFloat(contentProperties["margin-left"]) - parseFloat(contentProperties["margin-right"]) - parseFloat(contentProperties["padding-left"]) - parseFloat(contentProperties["padding-right"]) - parseFloat(contentProperties["border-left-width"]) - parseFloat(contentProperties["border-right-width"]);
         }
         else if (this.hAlign === "left")
             left = this.cssProperties["padding-left"];
@@ -405,9 +404,9 @@ var LayoutCell = function(parent) {
         if (this.dockContentHeight) {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
 
-            var contentProperties = this.$content.css(["padding-top", "padding-bottom", "border-top-width", "border-bottom-width"]);
+            var contentProperties = this.$content.css(["padding-top", "padding-bottom", "margin-top", "margin-bottom", "border-top-width", "border-bottom-width"]);
             top = this.cssProperties["padding-top"];
-            height = innerHeight - parseFloat(contentProperties["padding-top"]) - parseFloat(contentProperties["padding-bottom"]) - parseFloat(contentProperties["border-top-width"]) - parseFloat(contentProperties["border-bottom-width"]);
+            height = innerHeight - parseFloat(contentProperties["margin-top"]) - parseFloat(contentProperties["margin-bottom"]) - parseFloat(contentProperties["padding-top"]) - parseFloat(contentProperties["padding-bottom"]) - parseFloat(contentProperties["border-top-width"]) - parseFloat(contentProperties["border-bottom-width"]);
         }
         else if (this.vAlign === "top")
             top = this.cssProperties["padding-top"];

@@ -10,13 +10,24 @@
 }
 
 .silky-control-label.silky-control-margin-large {
-    margin: 8px;
+    margin: 10px;
 }
 
-.first-cell > .silky-control-label {
+.silky-layout-container > .first-row > .silky-control-label {
+    margin-top: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-cell > .silky-control-label {
     margin-left: 0px;
 }
 
+.silky-layout-container > .last-cell > .silky-control-label {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-control-label {
+    margin-bottom: 0px;
+}
 
 /*Adding a space after a header if the grid is inline*/
 .silky-options-group-style-inline {
@@ -31,23 +42,29 @@
 
 
 .silky-options-group.silky-control-margin-small {
-    margin-right: 2px;
-    margin-bottom: 2px;
-    margin-left: 2px;
+    margin: 2px;
 }
 
 .silky-options-group.silky-control-margin-normal {
-    margin-right: 5px;
-    margin-bottom: 5px;
-    margin-left: 5px;
+    margin: 5px;
 }
 
 .silky-options-group.silky-control-margin-large {
-    margin-right: 8px;
-    margin-bottom: 8px;
-    margin-left: 8px;
+    margin: 10px;
 }
 
-.first-cell > .silky-options-group {
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-options-group {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .first-cell > .silky-options-group {
     margin-left: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-options-group {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-group {
+    margin-bottom: 0px;
 }

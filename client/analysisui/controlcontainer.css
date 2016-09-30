@@ -1,19 +1,27 @@
-.silky-control-container.silky-control-margin-small {
+.silky-control-container.silky-control-margin-small:not(.silky-control-body) {
     margin: 2px;
 }
 
-.silky-control-container.silky-control-margin-normal {
+.silky-control-container.silky-control-margin-normal:not(.silky-control-body) {
     margin: 5px;
 }
 
-.silky-control-container.silky-control-margin-large {
-    margin: 8px;
+.silky-control-container.silky-control-margin-large:not(.silky-control-body) {
+    margin: 10px;
 }
 
-.first-cell > .silky-control-container {
+.silky-layout-container > .first-cell > .silky-control-container:not(.silky-control-body) {
     margin-left: 0px;
 }
 
-.first-row > .silky-control-container {
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-control-container:not(.silky-control-body) {
     margin-top: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-control-container:not(.silky-control-body) {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-control-container:not(.silky-control-body) {
+    margin-bottom: 0px;
 }

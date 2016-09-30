@@ -1,0 +1,27 @@
+.silky-option-list.silky-control-margin-small {
+    margin: 2px;
+}
+
+.silky-option-list.silky-control-margin-normal {
+    margin: 5px;
+}
+
+.silky-option-list.silky-control-margin-large {
+    margin: 10px;
+}
+
+.silky-layout-container > .first-cell > .silky-option-list {
+    margin-left: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-list {
+    margin-top: 0px;
+}
+
+.silky-layout-container > .last-cell > .silky-option-list {
+    margin-right: 0px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-list {
+    margin-bottom: 0px;
+}

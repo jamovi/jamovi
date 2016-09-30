@@ -20,7 +20,7 @@ var ChildLayoutSupport = function(params) {
         if (self.hasProperty('controls')) {
             self._baseLayout = new LayoutGrid();
             LayoutGridBorderSupport.extendTo(self._baseLayout);
-            self._baseLayout.$el.addClass("silky-options-group silky-options-group-style-" + self._parentStyle + " silky-control-margin-" + self.getPropertyValue("margin"));
+            self._baseLayout.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-" + self._parentStyle + " silky-control-margin-" + self.getPropertyValue("margin"));
             var cell = grid.addLayout(column, row, true, self._baseLayout);
             self._contentsPosition = baseFunction.call(self, self._baseLayout, 0, 0);
 
@@ -33,10 +33,11 @@ var ChildLayoutSupport = function(params) {
     this.setBody = function(body) {
         this._body = body;
         body.$el.addClass("silky-control-body silky-control-body-style-"  + this._parentStyle);
+
         if (this._style.startsWith('list'))
-            this._bodyCell = this._baseLayout.addLayout(0, this._contentsPosition.height, false, body);
+            body.renderToGrid(this._baseLayout, this._contentsPosition.height, 0);
         else
-            this._bodyCell = this._baseLayout.addLayout(this._contentsPosition.width, 0, false, body);
+            body.renderToGrid(this._baseLayout, 0, this._contentsPosition.width);
     };
 
 };
