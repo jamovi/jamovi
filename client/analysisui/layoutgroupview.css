@@ -13,6 +13,10 @@
     margin: 10px;
 }
 
+.silky-control-label.silky-control-label-empty {
+    margin: 0px;
+}
+
 .silky-layout-container > .first-row > .silky-control-label {
     margin-top: 0px;
 }
