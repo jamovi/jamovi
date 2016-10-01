@@ -231,6 +231,7 @@ message ResultsColumn {
     optional string type = 3;
     optional string format = 4;
     optional string superTitle = 5;
+    optional bool   combineBelow = 6;
 
     repeated ResultsCell cells = 7;
 }

@@ -189,6 +189,24 @@ const TableView = Elem.View.extend({
             }
         }
 
+        for (let colNo = 0; colNo < table.columns.length; colNo++) {
+            let sourceColumn = table.columns[colNo];
+            if (sourceColumn.combineBelow !== true)
+                continue;
+            if (rowCount < 2)
+                continue;
+
+            let lastValue = cells.body[0][colNo].value;
+
+            for (let rowNo = 1; rowNo < rowCount; rowNo++) {
+                let nowValue = cells.body[rowNo][colNo].value;
+                if (nowValue === lastValue)
+                    cells.body[rowNo][colNo].value = '';
+                else
+                    lastValue = nowValue;
+            }
+        }
+
         let rowPlan = {};
         let foldedNames = [];
         let nFolds = 1;

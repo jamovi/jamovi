@@ -39,6 +39,7 @@ const DataSetModel = Backbone.Model.extend({
                 column.autoMeasure = columnPB.autoMeasure;
                 column.dps = columnPB.dps;
                 column.width = columnPB.width;
+                column.combineBelow = columnPB.combineBelow;
 
                 let levels = null;
                 if (columnPB.hasLevels) {
