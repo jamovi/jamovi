@@ -55,9 +55,21 @@ var DragNDrop = function() {
             if (this._stillOverTarget(pageX, pageY)) {
                 var target = this._dropTargets[this._currentTarget.index];
                 var itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged);
-                if (this.onItemsDropping)
-                    this.onItemsDropping(itemsToDrop);
-                target.catchDroppedItems(this, itemsToDrop);
+                if (itemsToDrop !== null && itemsToDrop.length !== 0) {
+                    if (target.onDragDropStart)
+                        target.onDragDropStart();
+                    if (this.onDragDropStart)
+                        this.onDragDropStart();
+
+                    if (this.onItemsDropping)
+                        this.onItemsDropping(itemsToDrop);
+                    target.catchDroppedItems(this, itemsToDrop);
+
+                    if (target.onDragDropEnd)
+                        target.onDragDropEnd();
+                    if (this.onDragDropEnd)
+                        this.onDragDropEnd();
+                }
             }
             this._$el.remove();
             this._isDragging = false;
