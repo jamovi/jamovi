@@ -22,7 +22,8 @@ var LayoutGroupView = function(params) {
 
     this.onRenderToGrid = function(grid, row, column) {
         var groupText = this.getPropertyValue('label');
-        var $header = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + groupText + '</div>');
+        var classes = groupText === "" ? "silky-control-label-empty" : "";
+        var $header = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;">' + groupText + '</div>');
         this.headerCell = grid.addCell(column, row, false, $header);
         this.hasHeader = true;
         return { height: 1, width: 1 };
