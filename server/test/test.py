@@ -58,7 +58,7 @@ class TestEngine(unittest.TestCase):
         self._open()
 
         request = silkycoms.AnalysisRequest()
-        request.ns = 'silkyR'
+        request.ns = 'jmv'
         request.name = 'Descriptives'
         request.datasetId = 'instance'
         request.analysisId = 1

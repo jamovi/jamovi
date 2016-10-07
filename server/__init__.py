@@ -19,7 +19,7 @@ import threading
 import time
 import logging
 
-log = logging.getLogger('silky')
+log = logging.getLogger('jamovi')
 if not sys.executable.endswith('pythonw.exe'):
     log.setLevel(logging.INFO)
     log.addHandler(logging.StreamHandler(sys.stdout))
@@ -66,7 +66,7 @@ def _launch_electron_thread(instance_id, ports):
     else:
         exe = os.path.join(tld, 'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron')
 
-    main = os.path.join(tld, 'silky/electron/main.js')
+    main = os.path.join(tld, 'jamovi/electron/main.js')
 
     process = subprocess.Popen([exe, main, instance_id, str(ports[0]), str(ports[1]), str(ports[2])], close_fds=True)
 

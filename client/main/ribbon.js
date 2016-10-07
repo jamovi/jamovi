@@ -18,35 +18,35 @@ var RibbonModel = Backbone.Model.extend({
             { title : "File" },
             { title : "Analyse", items : [
                 { name : 'Descriptives', type : 'menu', title : 'Exploration', requiresData: true, items : [
-                    { name : 'Descriptives', type: 'analysis', title : 'Descriptives', ns : 'silkyR' },
+                    { name : 'Descriptives', type: 'analysis', title : 'Descriptives', ns : 'jmv' },
                 ]},
                 { name : 'TTest', type : 'menu', title : 'T-Test', requiresData: true, items : [
-                    { name : 'TTestIS',   type: 'analysis', title : 'Independent Samples T-Test', ns : 'silkyR' },
-                    { name : 'TTestPS',   type: 'analysis', title : 'Paired Samples T-Test', ns : 'silkyR' },
-                    { name : 'TTestOneS', type: 'analysis', title : 'One Sample T-Test', ns : 'silkyR' },
+                    { name : 'TTestIS',   type: 'analysis', title : 'Independent Samples T-Test', ns : 'jmv' },
+                    { name : 'TTestPS',   type: 'analysis', title : 'Paired Samples T-Test', ns : 'jmv' },
+                    { name : 'TTestOneS', type: 'analysis', title : 'One Sample T-Test', ns : 'jmv' },
                 ]},
                 { name : 'Anova', type : 'menu', title : 'ANOVA', requiresData: true, items : [
-                    { name : 'Anova',   title : 'ANOVA', ns : 'silkyR' },
-                    { name : 'AnovaRM', title : 'Repeated Measures ANOVA', ns : 'silkyR' },
-                    { name : 'Ancova',  title : 'ANCOVA', ns : 'silkyR' },
-                    { name : 'Mancova', title : 'MANCOVA', ns : 'silkyR' },
+                    { name : 'Anova',   title : 'ANOVA', ns : 'jmv' },
+                    { name : 'AnovaRM', title : 'Repeated Measures ANOVA', ns : 'jmv' },
+                    { name : 'Ancova',  title : 'ANCOVA', ns : 'jmv' },
+                    { name : 'Mancova', title : 'MANCOVA', ns : 'jmv' },
                     { name : 'Non-param', type : 'group', title : 'Non-Parametric', items : [
-                        { name : 'Kruskal', title : 'One Way ANOVA', subtitle : 'Kruskal-Wallis', ns : 'silkyR' },
-                        { name : 'Friedman', title : 'Repeated Measures ANOVA', subtitle : 'Friedman', ns : 'silkyR' },
+                        { name : 'Kruskal', title : 'One Way ANOVA', subtitle : 'Kruskal-Wallis', ns : 'jmv' },
+                        { name : 'Friedman', title : 'Repeated Measures ANOVA', subtitle : 'Friedman', ns : 'jmv' },
                     ]},
                     /*{ name : 'Bayesian', type : 'group', title : 'Bayesian', items : [
-                        { name : 'BAnova', title : 'Bayesian ANOVA', ns : 'silkyR' },
-                        { name : 'BRMAnova', title : 'B. Repeated Measures ANOVA', ns : 'silkyR' },
-                        { name : 'BAncova', title : 'Bayesian ANCOVA', ns : 'silkyR' },
+                        { name : 'BAnova', title : 'Bayesian ANOVA', ns : 'jmv' },
+                        { name : 'BRMAnova', title : 'B. Repeated Measures ANOVA', ns : 'jmv' },
+                        { name : 'BAncova', title : 'Bayesian ANCOVA', ns : 'jmv' },
                     ]},*/
                 ]},
                 { name : 'Regression', type : 'menu', title : 'Regression', requiresData: true, items : [
-                    { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'silkyR' },
-                    { name : 'LinReg',     title : 'Linear Regression', ns : 'silkyR' },
+                    { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'jmv' },
+                    { name : 'LinReg',     title : 'Linear Regression', ns : 'jmv' },
                 ]},
                 { name : 'Frequencies', type : 'menu', title : 'Frequencies', requiresData: true, items : [
-                    { name : 'ContTable', title : 'Contingency Table', ns : 'silkyR' },
-                    { name : 'BinomialTest', title : 'Binomial Test', ns : 'silkyR' },
+                    { name : 'ContTable', title : 'Contingency Table', ns : 'jmv' },
+                    { name : 'BinomialTest', title : 'Binomial Test', ns : 'jmv' },
                 ]},
             ]}
         ],

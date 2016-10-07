@@ -44,8 +44,9 @@ void EngineR::run(Analysis *analysis)
     stringstream ss;
 
     ss << "{\n";
-    ss << "  options <- silkycore::Options$new(package='" << analysis->ns << "', name='" << analysis->name << "', json='" << analysis->options << "')\n";
-    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ", options=options)\n";
+    ss << "  options <- " << analysis->ns << "::" << analysis->name << "Options$new()\n";
+    ss << "  options$fromJSON('" << analysis->options << "')\n";
+    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', options=options, datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ")\n";
     ss << "}\n";
 
     rInside.parseEvalQNT(ss.str());
@@ -300,8 +301,8 @@ void EngineR::initR()
 
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('stats'))");
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('RProtoBuf'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('silkycore'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('silkyR'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('jmvcore'))");
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('jmv'))");
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('rjson'))");
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('yaml'))");
 

@@ -95,7 +95,7 @@ class AnalysisDescriptor(RequestHandler):
         if part == '':
             part = 'js'
 
-        analysis_path = os.path.join(self._path, module_name, 'silky', analysis_name.lower() + '.' + part)
+        analysis_path = os.path.join(self._path, module_name, 'jamovi', analysis_name.lower() + '.' + part)
         analysis_path = os.path.realpath(analysis_path)
         try:
             with open(analysis_path, 'rb') as file:

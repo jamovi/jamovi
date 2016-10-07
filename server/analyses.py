@@ -25,7 +25,7 @@ class Analyses:
 
         here = os.path.realpath(os.path.dirname(__file__))
         root = os.path.realpath(os.path.join(here, '..'))
-        analysis_root = os.path.join(root, 'analyses', ns, 'silky', name.lower())
+        analysis_root = os.path.join(root, 'analyses', ns, 'jamovi', name.lower())
 
         with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
             defn = yaml.load(stream)
