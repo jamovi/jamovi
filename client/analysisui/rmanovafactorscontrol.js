@@ -15,13 +15,13 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     this.$items = [];
     this.levelButtons = [];
 
-    this.render = function() {
+    this.render = function(index) {
 
         this.$closeButton = $('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
         this.listenForCompleteRemove(this.$closeButton);
 
         var levels = [];
-        var label = "RM Factor ?";
+        var label = "RM Factor " + (index + 1);
         var isEmpty = true;
         if (_.isUndefined(this.data) === false && this.data !== null) {
             label = this.data.label;
@@ -217,7 +217,7 @@ var RMAnovaFactorsControl = function(params) {
         var item = this.items[index];
         if (item === null || _.isUndefined(item)) {
             item = new rmafcItem(this, data, index === 0, isVirtual);
-            item.render();
+            item.render(index);
 
             var cell = this.addLayout(0, index, false, item);
             cell.setStretchFactor(1);
@@ -235,7 +235,7 @@ var RMAnovaFactorsControl = function(params) {
 
         var label = this.getPropertyValue("label");
         if (label !== null)
-            grid.addCell(column + 1, row, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
+            grid.addCell(column + 1, row, true, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
 
         var cell = grid.addLayout(column + 1, row + 1, true, this);
         cell.setStretchFactor(0.5);

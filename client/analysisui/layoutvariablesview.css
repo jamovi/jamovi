@@ -53,3 +53,7 @@
 .silky-list-item .silky-variable-type-img.silky-variable-type-ordinal {
     background-image: url('assets/variable-ordinal.svg');
 }
+
+.silky-options-supplier-group-header {
+    margin-bottom: 2px;
+}
