@@ -12,6 +12,14 @@
     margin-left: 4px ;
 }
 
+.silky-option-listitem, .rma-factor-label {
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    font-size: inherit;
+    /*line-height: 1.1;*/
+    font-weight: 400;
+    font-style: normal;
+}
+
 .rma-factor-label {
     margin: 5px 1px 5px 0px;
     font-weight: bold;
@@ -30,4 +38,24 @@
     background-color: rgb(255, 255, 255);
     height: 150px;
     overflow-x: hidden;
+}
+
+.silky-rmanova-factors-header {
+    margin-bottom: 2px;
+}
+
+.silky-rmanova-factors-header.silky-control-margin-small {
+    margin-top: 3px;
+}
+
+.silky-rmanova-factors-header.silky-control-margin-normal {
+    margin-top: 5px;
+}
+
+.silky-rmanova-factors-header.silky-control-margin-large {
+    margin-top: 10px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-rmanova-factors-header {
+    margin-top: 0px;
 }

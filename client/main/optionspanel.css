@@ -148,11 +148,6 @@ input[type="text"].silky-option-long-text {
     background-color: rgb(255, 255, 255);
 }
 
-.silky-variable-target {
-    border: 1px solid rgb(130, 130, 130);
-    background-color: rgb(255, 255, 255);
-}
-
 .silky-gridlayout-collapsed .silky-options-group-header1 .silky-dropdown-toggle {
   top: -3px ;
 }

@@ -100,6 +100,7 @@ var Opt = function(type, initialValue, params) {
         if (value !== null && _.isUndefined(value.raw) === false) //To handle typed values
             fValue = value.raw;
 
+        force = force | !this._initialised;
         this._initialised = true;
 
         if (keys.length === 0) {

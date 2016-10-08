@@ -10,6 +10,7 @@ var GridRadioButton = require('./gridradiobutton');
 var GridTextbox = require('./gridtextbox');
 var GridCombobox = require('./gridcombobox');
 var GridVariablesTargetList =  require('./gridvariablestargetlist');
+var GridTargetList =  require('./gridtargetlist');
 var GridOptionListControl = require('./gridoptionlistcontrol');
 var ControlContainer = require('./controlcontainer');
 var RMAnovaFactorsControl = require('./rmanovafactorscontrol');
@@ -27,7 +28,8 @@ var SilkyControlManager = function() {
     this.registerControl("combobox", GridCombobox);
     this.registerControl("textbox", GridTextbox);
     this.registerControl("listbox", GridOptionListControl);
-    this.registerControl("targetlistbox", GridVariablesTargetList);
+    this.registerControl("targetlistbox", GridTargetList);
+    this.registerControl("variabletargetlistbox", GridVariablesTargetList);
     this.registerControl("supplier", LayoutVariablesView);
     this.registerControl("collapsebox", LayoutCollapseView);
     this.registerControl("label", LayoutGroupView);

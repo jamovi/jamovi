@@ -71,7 +71,7 @@ var LayoutVariablesView = function(params) {
         var baseLayout = new LayoutGrid();
         var label = this.getPropertyValue('label');
         if (label !== null)
-            baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-h3">' + label + '</div>'));
+            baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");

@@ -1,0 +1,29 @@
+
+.silky-target-list-header {
+    margin-bottom: 2px;
+}
+
+.silky-target-list-header.silky-control-margin-small {
+    margin-top: 3px;
+}
+
+.silky-target-list-header.silky-control-margin-normal {
+    margin-top: 5px;
+}
+
+.silky-target-list-header.silky-control-margin-large {
+    margin-top: 10px;
+}
+
+.silky-layout-container:not(.silky-control-body) > .first-row > .silky-target-list-header {
+    margin-top: 0px;
+}
+
+.silky-target-list {
+    border: 1px solid rgb(130, 130, 130);
+    background-color: rgb(255, 255, 255);
+}
+
+.silky-option-list.silky-target-list {
+    margin: 0px;
+}
