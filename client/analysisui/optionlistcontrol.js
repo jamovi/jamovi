@@ -31,7 +31,7 @@ var OptionListControl = function(params) {
     this.isSingleItem = this.maxItemCount === 1;
 
     this.$el.addClass("silky-option-list");
-    this.stretchEndCells = false;
+    this.stretchEndCells = true;
     this._animateCells = true;
     this.allocateSpaceForScrollbars = false;
 
@@ -41,6 +41,12 @@ var OptionListControl = function(params) {
         this.$el.addClass('multi-item');
 
     this._localData = [];
+
+    this.onPropertyChanged = function(name) {
+        if (name === "maxItemCount") {
+            this.maxItemCount = this.getPropertyValue('maxItemCount');
+        }
+    };
 
     this.initialise = function() {
 
@@ -67,13 +73,19 @@ var OptionListControl = function(params) {
                 this._columnInfo[name] = columnInfo;
                 this._columnInfo._list.push(columnInfo);
 
+                var row = 0;
                 if (this.showHeaders) {
-                    var hCell = this.addCell(i, 0, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
+                    var hCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.hAlign = 'centre';
+                    hCell.vAlign = 'top';
+                    row += 1;
                 }
+                var fillerCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-filler"> </div>'));
+                fillerCell.setStretchFactor(columnInfo.stretchFactor);
             }
         }
+
     };
 
     this._context = null;
@@ -83,6 +95,8 @@ var OptionListControl = function(params) {
 
     this.updateValueCell = function(columnInfo, dispRow, value) {
         var dispColumn = columnInfo.index;
+        if (dispRow === this._rowCount - 1)
+            this.insertRow(dispRow, 1);
         var cell = this.getCell(dispColumn, dispRow);
 
         if (cell === null) {
@@ -315,24 +329,29 @@ var OptionListControl = function(params) {
 
         this.suspendLayout();
 
-        this._localData = [];
+
 
         if (list !== null) {
+            var oldLocalCount = this._localData.length;
+            this._localData = [];
             if (Array.isArray(list)) {
                 for (var i = 0; i < list.length; i++) {
                     this.updateDisplayRow(this.rowIndexToDisplayIndex(i), list[i]);
                     this._localData.push(this.clone(list[i]));
                 }
-                var countToRemove = this.displayRowToRowIndex(this._rowCount) - this._localData.length;
-                this.removeRow(this.rowIndexToDisplayIndex(this._localData.length), countToRemove);
+                var countToRemove = this.displayRowToRowIndex(oldLocalCount) - this._localData.length;
+                if (countToRemove > 0)
+                    this.removeRow(this.rowIndexToDisplayIndex(this._localData.length), countToRemove);
             }
             else if (this.isSingleItem) {
                 this._localData[0] = this.clone(list);
                 this.updateDisplayRow(this.rowIndexToDisplayIndex(0), list);
             }
         }
-        else
-            this.removeRow(this.rowIndexToDisplayIndex(0), this._rowCount);
+        else if (this._localData.length > 0) {
+            this.removeRow(this.rowIndexToDisplayIndex(0), this._localData.length);
+            this._localData = [];
+        }
 
         this.resumeLayout();
 

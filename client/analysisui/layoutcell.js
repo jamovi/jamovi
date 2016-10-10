@@ -586,10 +586,10 @@ var LayoutCell = function(parent) {
 
         this.dockContentWidth = this.horizontalStretchFactor > 0 && this.hAlign === "left";
 
-        if (factor === 0)
-            this.$el.css("border-color", "red");
-        else
-            this.$el.css("border-color", "blue");
+        //if (factor === 0)
+        //    this.$el.css("border-color", "red");
+        //else
+        //    this.$el.css("border-color", "blue");
 
         if (this.horizontalStretchFactor > 0)
             this.fitToGrid = false;
