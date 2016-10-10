@@ -130,7 +130,7 @@ var GridTargetList = function(params) {
             var self = event.data;
             if (self._supplier.isMultiTarget())
                 return;
-            
+
             self._supplierDoubleClickDetect += 1;
             if (self._supplierDoubleClickDetect === 1) {
                 setTimeout(function () {
@@ -170,6 +170,8 @@ var GridTargetList = function(params) {
     this.onRenderToGrid = function(grid, row, column) {
 
         this.targetGrid.setOption(this.option);
+
+        this.targetGrid.setCellBorders(this.targetGrid._columnInfo._list.length > 1 ? "columns" : null);
 
         if (grid.addTarget) {
             this.setSupplier(grid);
