@@ -382,4 +382,8 @@ var GridTargetList = function(params) {
 
 };
 
+GridTargetList.extendTo = function(target, params) {
+    GridTargetList.call(target, params);
+};
+
 module.exports = GridTargetList;

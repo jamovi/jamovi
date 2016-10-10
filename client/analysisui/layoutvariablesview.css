@@ -38,19 +38,19 @@
 }
 
 
-.silky-list-item .silky-variable-type-img.silky-variable-type-continuous {
+.silky-variable-type-img.silky-variable-type-continuous {
     background-image: url('assets/variable-continuous.svg');
 }
 
-.silky-list-item .silky-variable-type-img.silky-variable-type-nominaltext {
+.silky-variable-type-img.silky-variable-type-nominaltext {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.silky-list-item .silky-variable-type-img.silky-variable-type-nominal {
+.silky-variable-type-img.silky-variable-type-nominal {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.silky-list-item .silky-variable-type-img.silky-variable-type-ordinal {
+.silky-variable-type-img.silky-variable-type-ordinal {
     background-image: url('assets/variable-ordinal.svg');
 }
 
