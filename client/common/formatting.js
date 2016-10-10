@@ -48,7 +48,7 @@ var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
     if (type === 'integer') {
         dp = 0;
     }
-    else if (formats.indexOf('zto') !== -1) {
+    else if (formats.includes('zto') || formats.includes('pc')) {
         dp = sf;
         maxNS = Infinity;
         minNS = -Infinity;
@@ -82,8 +82,11 @@ var format = function(value, format) {
         else
             return '-Inf';
     }
-    else if (format.format.indexOf('pvalue') !== -1 && value < 0.001) {
+    else if (format.format.includes('pvalue') && value < 0.001) {
         return '<\u2009.001';
+    }
+    else if (format.format.includes('pc')) {
+        return '' + (100 * value).toFixed(format.dp - 2) + '\u2009%';
     }
     else if (Math.abs(value) >= format.minNS && Math.abs(value) <= format.maxNS) {
         return value.toFixed(format.dp);
