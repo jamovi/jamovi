@@ -68,7 +68,7 @@
 
 .silky-ribbon-menu-item-sub {
     font-size: 85% ;
-    padding-top: 1px ;
+    padding-top: 3px ;
     padding-left: 60px ;
     pointer-events: none ;
 }
@@ -80,6 +80,10 @@
     color: #555555 ;
     font-size: 75% ;
     padding: 6px 8px ;
+}
+
+.silky-ribbon-menu-heading:empty {
+    padding: 4px 8px ;
 }
 
 .silky-ribbon-menu-item:hover {

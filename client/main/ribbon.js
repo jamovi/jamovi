@@ -45,8 +45,16 @@ var RibbonModel = Backbone.Model.extend({
                     { name : 'LinReg',     title : 'Linear Regression', ns : 'jmv' },
                 ]},
                 { name : 'Frequencies', type : 'menu', title : 'Frequencies', requiresData: true, items : [
-                    { name : 'ContTable', title : 'Contingency Table', ns : 'jmv' },
-                    { name : 'BinomialTest', title : 'Binomial Test', ns : 'jmv' },
+                    { name : 'OSPT', type : 'group', title : 'One Sample Proportion Tests', items : [
+                        { name : 'Binomial', title : '2 Outcomes', subtitle : 'Binomial test', ns : 'jmv' },
+                        { name : 'GoFit',   title : 'N Outcomes', subtitle : 'χ² Goodness of Fit', ns : 'jmv' },
+                    ]},
+                    { name : 'ContTables', type : 'group', title : 'Contingency Tables', items : [
+                        { name : 'ContTables', title : 'Independent Samples', subtitle: 'χ² Test of Association', ns : 'jmv' },
+                        { name : 'ContTablesPaired', title : 'Paired Samples', subtitle: 'McNemar test', ns : 'jmv' },
+                    ]},
+                    { name : 'Empty', type : 'group', title : '', items : [ ] },
+                    { name : 'LogLinear', title : 'Log-Linear Regression', ns : 'jmv' },
                 ]},
             ]}
         ],
