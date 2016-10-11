@@ -9,7 +9,7 @@ Backbone.$ = $;
 
 var Options = require('./options');
 var OptionsView = require('./optionsview');
-var LayoutDef = require('./layoutdef');
+var ui = require('./layoutdef');
 var FormatDef = require('./formatdef');
 var ControlManager = require('./controlmanager');
 var SilkyControlManager = require('./silkycontrolmanager');
@@ -50,7 +50,7 @@ var Analysis = function(def, resources, baseControls) {
         controls.setBaseControls(baseControls);
     }
 
-    var layoutDef = new module.exports.LayoutDef();
+    var layoutDef = new module.exports.ui();
     var actionManager = new LayoutActionManager(layoutDef);
     var optionsManager = new Options(options);
     actionManager.onExecutingStateChanged = function(state) {
@@ -60,7 +60,7 @@ var Analysis = function(def, resources, baseControls) {
             optionsManager.endEdit();
     };
 
-    this.model = { options: optionsManager, layoutDef: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 2 };
+    this.model = { options: optionsManager, ui: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 2 };
 
     this.View = new OptionsView( this.model);
 };
@@ -99,7 +99,7 @@ function loadAnalysisDef(def) {
 function loadAnalysis(def, resources) {
     analysis = new Analysis(def, resources, _controlManager);
 
-    var title = analysis.model.layoutDef.getTitle();
+    var title = analysis.model.ui.getTitle();
     console.log("loading - " + title + "...");
     var $title = $('.silky-options-title');
     $title.empty();
