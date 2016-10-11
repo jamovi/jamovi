@@ -19,7 +19,7 @@ var OptionsView = function(uiModel) {
 
     this.render = function() {
         var options = this.model.options;
-        var layoutDef = this.model.layoutDef;
+        var layoutDef = this.model.ui;
 
         if (layoutDef.stage <= this.model.currentStage) {
             this.layoutActionManager = this.model.actionManager;
@@ -164,7 +164,7 @@ var OptionsView = function(uiModel) {
 
         if (ctrl.hasProperty("name") === false)
             return ctrl;
-            
+
         var name = ctrl.getPropertyValue("name");
         if (ctrl.setOption) {
             var id = ctrl.getPropertyValue("optionId");
