@@ -169,6 +169,15 @@ var LayoutVariablesView = function(params) {
         }
     };
 
+    this.getItemFromValue = function(formattedValue) {
+        for (var i = 0; i < this._items.length; i++) {
+            var item = this._items[i];
+            if (item.value.equalTo(formattedValue))
+                return item;
+        }
+        return null;
+    };
+
     this.addTarget = function(target) {
 
         this.registerDropTargets(target);

@@ -58,7 +58,15 @@ var GridTargetList = function(params) {
         for (var i = 0; i < this.targetGrid.selectedCellCount(); i++) {
             var cell = this.targetGrid.getSelectedCell(i);
             var cellInfo = this.targetGrid.getCellInfo(cell);
-            items.push({ value: new FormatDef.constructor(cellInfo.value, cellInfo.format), cellInfo: cellInfo, $el: cell.$el });
+            var formattedValue = new FormatDef.constructor(cellInfo.value, cellInfo.format);
+
+            var pickupItem = { value: formattedValue, cellInfo: cellInfo, $el: cell.$el };
+
+            var item = this._supplier.getItemFromValue(formattedValue);
+            if (item !== null)
+                pickupItem.properties = item.properties;
+
+                items.push(pickupItem);
         }
         return items;
     };
@@ -94,7 +102,7 @@ var GridTargetList = function(params) {
         var finalItems = this.checkForMultiSelectionActions(items);
         for (var i = 0; i < finalItems.length; i++) {
             if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), finalItems[i].value))
-                this.targetGrid.addRawToOption(finalItems[i].value.raw, [this.option.getLength()], finalItems[i].value.format);
+                this.addRawToOption(finalItems[i], [this.option.getLength()]);
         }
     };
 
@@ -253,6 +261,10 @@ var GridTargetList = function(params) {
     };
 
 
+    this.addRawToOption = function(item, key) {
+        return this.targetGrid.addRawToOption(item.value.raw, key, item.value.format);
+    };
+
     this.onAddButtonClick = function() {
         this._supplier.blockFilterProcess = true;
         this.targetGrid.suspendLayout();
@@ -274,10 +286,8 @@ var GridTargetList = function(params) {
                             if (this._supplier.getPropertyValue("persistentItems"))
                                 postProcessSelectionIndex += 1;
                         }
-                        var selectedValue = selectedItem.value;
                         var key = [this.option.getLength()];
-                        var data = selectedValue.raw;
-                        if (this.targetGrid.addRawToOption(data, key, selectedValue.format) === false)
+                        if (this.addRawToOption(selectedItem, key) === false)
                             break;
                     }
                 }
