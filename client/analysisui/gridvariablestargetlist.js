@@ -14,21 +14,57 @@ var GridVariablesTargetList = function(params) {
     this.registerSimpleProperty("suggestedVariableTypes", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
     this.registerSimpleProperty("permittedVariableTypes", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
 
-    this._suggestedVariableTypes = this.getPropertyValue("suggestedVariableTypes");
-    this._permittedVariableTypes = this.getPropertyValue("permittedVariableTypes");
+    this._suggestedVariableTypes = [];
+    this._permittedVariableTypes = [];
+
+    this.searchForVariableProperties = function(properties) {
+        var optType = properties.type;
+        if (optType === "Array")
+            return this.searchForVariableProperties(properties.template);
+        else if (optType === "Group") {
+            for (let i = 0; i < properties.elements.length; i++) {
+                var props = this.searchForVariableProperties(properties.elements[i]);
+                if (props !== null)
+                    return props;
+            }
+        }
+        else if (optType === "Variable" || optType === "Variables")
+            return properties;
+
+        return null;
+    };
+
+    this.onOptionSet = function(option) {
+        var properties = this.searchForVariableProperties(option.getProperties());
+
+        this._suggestedVariableTypes = properties.suggested;
+        if (_.isUndefined(this._suggestedVariableTypes))
+            this._suggestedVariableTypes = [];
+        this._permittedVariableTypes = properties.permitted;
+        if (_.isUndefined(this._permittedVariableTypes))
+            this._permittedVariableTypes = [];
+
+        if (this._rendered)
+            self._renderSuggestedIcons();
+    };
+
+    this._renderSuggestedIcons = function() {
+        if (this._suggestedVariableTypes.length > 0) {
+            var $icons = $('<div class="silky-variablelist-icons"></div>');
+            for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
+                $icons.append('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + self._suggestedVariableTypes[i] + '"></div>');
+            }
+            this.targetGrid.$el.append($icons);
+        }
+    };
 
     var self = this;
     this._override('onRenderToGrid', function(baseFunction, grid, row, column) {
         var returnValue = baseFunction.call(self, grid, row, column);
         self.targetGrid.$el.addClass("silky-variable-target");
-
-        if (self._suggestedVariableTypes.length > 0) {
-            var $icons = $('<div class="silky-variablelist-icons"></div>');
-            for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
-                $icons.append('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + self._suggestedVariableTypes[i] + '"></div>');
-            }
-            self.targetGrid.$el.append($icons);
-        }
+        if (self.option !== null)
+            self._renderSuggestedIcons();
+        self._rendered = true;
         return returnValue;
     });
 

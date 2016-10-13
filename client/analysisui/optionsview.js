@@ -76,6 +76,10 @@ var OptionsView = function(uiModel) {
 
                 source: option,
 
+                getProperties: function() {
+                    return option.params;
+                },
+
                 beginEdit: function() {
                     options.beginEdit();
                 },
