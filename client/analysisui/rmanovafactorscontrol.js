@@ -30,6 +30,13 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         }
 
         this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" value="' + label + '">');
+        this.$label.focus(function() { $(this).select(); } );
+        this.$label.keydown(function (event) {
+            var keypressed = event.keyCode || event.which;
+            if (keypressed == 13) {
+                $(this).blur();
+            }
+        });
         this.listenForLabelChange(this.$label);
         if (isEmpty)
             this.$label.addClass("rma-new-factor");
@@ -75,6 +82,13 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         }
         else {
             $t = $('<input class="silky-option-listitem" type="text" value="' + text + '">');
+            $t.focus(function() { $(this).select(); } );
+            $t.keydown(function (event) {
+                var keypressed = event.keyCode || event.which;
+                if (keypressed == 13) {
+                    $(this).blur();
+                }
+            });
             this.listenForChange($t);
             this.$items[index] = $t;
 

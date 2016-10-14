@@ -91,15 +91,6 @@ var GridVariablesTargetList = function(params) {
                 }
             }
         }
-        if (!allowItem) {
-            for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
-                if (type === this._suggestedVariableTypes[i]) {
-                    allowItem = true;
-                    break;
-                }
-            }
-        }
-
         return allowItem;
     };
 
