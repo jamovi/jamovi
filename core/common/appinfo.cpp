@@ -19,7 +19,7 @@
 
 
 const Version AppInfo::version = Version(0, 1, 0, 0);
-const std::string AppInfo::name = "Silky";
+const std::string AppInfo::name = "jamovi";
 
 std::string AppInfo::getShortDesc()
 {

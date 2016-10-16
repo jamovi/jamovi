@@ -10,6 +10,9 @@ from libcpp.pair cimport pair
 from cython.operator cimport dereference as deref, postincrement as inc
 
 import math
+import platform
+import os
+import os.path
 
 from enum import Enum
 
@@ -442,7 +445,17 @@ cdef extern from "dirs.h":
 cdef class Dirs:
     @staticmethod
     def app_data_dir():
-        return decode(CDirs.appDataDir())
+
+        # CDirs.appDataDir() seems to have stopped working under macOS sierra,
+        # hence, us handling it here.
+
+        if platform.uname().system == 'Darwin':
+            path = os.path.expanduser('~/Library/Application Support/jamovi')
+            os.makedirs(path, exist_ok=True)
+            return path
+        else:
+            return decode(CDirs.appDataDir())
+
     @staticmethod
     def temp_dir():
         return decode(CDirs.tempDir())

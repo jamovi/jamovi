@@ -59,6 +59,10 @@ string Dirs::appDataDir()
 
 #elif defined(__APPLE__)
 
+        // this appears to have stopped working in macOS sierra, so we no longer
+        // use this. i think it might be a bug in boost, but it doesn't seem to
+        // be able to create directories to this path
+
         path = dir = homeDir() + "/Library/Application Support/" + AppInfo::name + "/" + AppInfo::getShortDesc();
 
 #else
