@@ -7,11 +7,11 @@
 #include <streambuf>
 #include <iostream>
 
-#include "silkycoms.pb.h"
+#include "jamovi.pb.h"
 #include "analysis.h"
 
 using namespace std;
-using namespace silkycoms;
+using namespace jamovi::coms;
 
 class MemoryBuffer : public std::streambuf
 {
@@ -63,9 +63,7 @@ void EngineComs::parse(char *data, int len)
         analysisRequest.ppi());
 
     analysis->datasetId = analysisRequest.datasetid();
-
-    if (analysisRequest.has_perform())
-        analysis->perform = analysisRequest.perform();
+    analysis->perform = analysisRequest.perform();
 
     if (analysisRequest.changed_size() > 0)
         analysis->changed.assign(analysisRequest.changed().begin(), analysisRequest.changed().end());

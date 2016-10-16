@@ -39,7 +39,6 @@ const DataSetModel = Backbone.Model.extend({
                 column.autoMeasure = columnPB.autoMeasure;
                 column.dps = columnPB.dps;
                 column.width = columnPB.width;
-                column.combineBelow = columnPB.combineBelow;
 
                 let levels = null;
                 if (columnPB.hasLevels) {
@@ -377,9 +376,11 @@ const DataSetViewModel = DataSetModel.extend({
 
                 for (let i = 0; i < column.values.length; i++) {
                     let inValue = column.values[i];
-                    let outValue = inValue[inValue.type];
-                    if (inValue.o !== null)
+                    let outValue;
+                    if (inValue.type === 'o')
                         outValue = null;
+                    else
+                        outValue = inValue[inValue.type];
                     values[i] = outValue;
                 }
 

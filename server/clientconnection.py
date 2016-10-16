@@ -4,7 +4,7 @@
 
 from tornado.websocket import WebSocketHandler
 
-from . import silkycoms_pb2 as silkycoms
+from . import jamovi_pb2 as jcoms
 from .instance import Instance
 
 
@@ -31,20 +31,20 @@ class ClientConnection(WebSocketHandler):
             listener()
 
     def on_message(self, m_bytes):
-        message = silkycoms.ComsMessage()
+        message = jcoms.ComsMessage()
         message.ParseFromString(m_bytes)
-        clas = getattr(silkycoms, message.payloadType)
+        clas = getattr(jcoms, message.payloadType)
         request = clas()
         request.ParseFromString(message.payload)
         self._transactions[message.id] = request
 
-        if type(request) == silkycoms.InstanceRequest:
-            if message.HasField('instanceId'):
+        if type(request) == jcoms.InstanceRequest:
+            if message.instanceId != '':
                 instance = Instance.instances[message.instanceId]
             else:
                 instance = Instance(session_path=self._session_path)  # create new
             instance.set_coms(self)
-            response = silkycoms.InstanceResponse()
+            response = jcoms.InstanceResponse()
             self.send(response, instance.id, request)
         else:
             instance = Instance.instances[message.instanceId]
@@ -55,7 +55,7 @@ class ClientConnection(WebSocketHandler):
         if message is None and response_to is None:
             return
 
-        m = silkycoms.ComsMessage()
+        m = jcoms.ComsMessage()
 
         if instance_id is not None:
             m.instanceId = instance_id
@@ -75,9 +75,9 @@ class ClientConnection(WebSocketHandler):
             m.payloadType = message.__class__.__name__
 
         if complete:
-            m.status = silkycoms.Status.Value('COMPLETE')
+            m.status = jcoms.Status.Value('COMPLETE')
         else:
-            m.status = silkycoms.Status.Value('IN_PROGRESS')
+            m.status = jcoms.Status.Value('IN_PROGRESS')
 
         self.write_message(m.SerializeToString(), binary=True)
 
@@ -86,7 +86,7 @@ class ClientConnection(WebSocketHandler):
         if message is None and response_to is None:
             return
 
-        m = silkycoms.ComsMessage()
+        m = jcoms.ComsMessage()
 
         if instance_id is not None:
             m.instanceId = instance_id
@@ -106,7 +106,7 @@ class ClientConnection(WebSocketHandler):
         if cause is not None:
             m.error.cause = cause
 
-        m.status = silkycoms.Status.Value('ERROR')
+        m.status = jcoms.Status.Value('ERROR')
 
         self.write_message(m.SerializeToString(), binary=True)
 

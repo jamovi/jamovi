@@ -39,7 +39,7 @@ Coms.prototype.connect = function(sessionId) {
                         reject(err);
                     }
                     else {
-                        this.Messages = builder.build().silkycoms;
+                        this.Messages = builder.build().jamovi.coms;
                         resolve();
                     }
                 });

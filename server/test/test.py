@@ -9,7 +9,7 @@ import tempfile
 from silky import MemoryMap
 from silky import DataSet
 from server.formatio import csv
-from server import silkycoms_pb2 as silkycoms
+from server import jamovi_pb2 as jcoms
 from server.enginemanager import EngineManager
 
 
@@ -57,24 +57,24 @@ class TestEngine(unittest.TestCase):
     def test_desc(self):
         self._open()
 
-        request = silkycoms.AnalysisRequest()
+        request = jcoms.AnalysisRequest()
         request.ns = 'jmv'
         request.name = 'Descriptives'
         request.datasetId = 'instance'
         request.analysisId = 1
         request.options = '{ "vars": [ "a", "b", "f" ]}'
-        request.perform = silkycoms.AnalysisRequest.Perform.Value('RUN')
+        request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')
 
         self._em.send(request)
         results = self._wait_for_results()
 
         request.options = '{ "vars": [ "a", "b", "f" ], "freq": true}'
-        request.perform = silkycoms.AnalysisRequest.Perform.Value('INIT')
+        request.perform = jcoms.AnalysisRequest.Perform.Value('INIT')
 
         self._em.send(request)
         results = self._wait_for_results()
 
-        request.perform = silkycoms.AnalysisRequest.Perform.Value('RUN')
+        request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')
 
         self._em.send(request)
         results = self._wait_for_results()

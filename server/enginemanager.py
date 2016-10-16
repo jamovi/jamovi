@@ -10,7 +10,7 @@ import subprocess
 
 import nanomsg
 
-from . import silkycoms_pb2 as silkycoms
+from . import jamovi_pb2 as jcoms
 
 import logging
 
@@ -43,7 +43,7 @@ class EngineManager:
         self._session_path = session_path
 
         root = path.realpath(path.join(path.dirname(__file__), '../../..'))
-        exe_path = path.join(root, 'bin/engine')
+        exe_path = path.join(root, 'bin/jamovi-engine')
 
         if platform.uname().system == 'Windows':
             r_home = path.join(root, 'Frameworks', 'R')
@@ -78,7 +78,7 @@ class EngineManager:
 
     def send(self, request):
 
-        message = silkycoms.ComsMessage()
+        message = jcoms.ComsMessage()
         message.id = self._nextId
         message.payload = request.SerializeToString()
         message.payloadType = "AnalysisRequest"
@@ -93,14 +93,14 @@ class EngineManager:
 
         if message.id in self._requests_sent:
             request = self._requests_sent[message.id]
-            results = silkycoms.AnalysisResponse()
+            results = jcoms.AnalysisResponse()
             results.ParseFromString(message.payload)
 
             complete = False
 
-            if results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'):
+            if results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'):
                 complete = True
-            elif results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_INITED') and request.perform == silkycoms.AnalysisRequest.Perform.Value('INIT'):
+            elif results.status == jcoms.AnalysisStatus.Value('ANALYSIS_INITED') and request.perform == jcoms.AnalysisRequest.Perform.Value('INIT'):
                 complete = True
 
             self._notify_results(results, request, complete)
@@ -124,7 +124,7 @@ class EngineManager:
         while parent.is_alive():
             try:
                 bytes = self._socket.recv()
-                message = silkycoms.ComsMessage()
+                message = jcoms.ComsMessage()
                 message.ParseFromString(bytes)
                 self._receive(message)
 

@@ -18,10 +18,11 @@
 #include "enginer.h"
 #include "analysis.h"
 
-#include "silkycoms.pb.h"
+#include "jamovi.pb.h"
 
 using namespace std;
 using namespace boost;
+using namespace jamovi::coms;
 
 Engine::Engine()
 {
@@ -100,7 +101,7 @@ void Engine::analysisRequested(int requestId, Analysis *analysis)
 
 void Engine::resultsReceived(const string &results)
 {
-    silkycoms::ComsMessage message;
+    ComsMessage message;
 
     message.set_id(_currentRequestId);
     message.set_payload(results);

@@ -174,7 +174,7 @@ class Server:
 
         client_path = os.path.join(here, '..', 'client')
         analyses_path = os.path.join(here, '..', 'analyses')
-        coms_path  = os.path.join(here, 'silkycoms.proto')
+        coms_path  = os.path.join(here, 'jamovi.proto')
 
         session_dir = tempfile.TemporaryDirectory()
         session_path = session_dir.name

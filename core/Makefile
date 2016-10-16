@@ -1,4 +1,6 @@
 
+# This Makefile would like Make 2.8 or above
+
 ifeq ($(OS),Windows_NT)
 	os = Windows
 else
@@ -15,16 +17,16 @@ ifeq ($(os),OSX)
 	CXX = clang++
 endif
 
-BUILD_DIR = ../../../../build/engine/engine
-TARGET = ../../../../bin/engine
-
+SRCDIR ?= $(dir $(firstword $(MAKEFILE_LIST)))
+TARGET = jamovi-engine
 CFLAGS = -std=c++11 -DUNICODE
+INCLUDES += -I.
 
 ifeq ($(os),OSX)
 
-	R_HOME = ../../../../Frameworks/R.framework/Versions/3.3/Resources
-	LIBS =	-L../../../../Frameworks \
-			-L../../../lib \
+	R_HOME = $(SRCDIR)../../../Frameworks/R.framework/Versions/3.3/Resources
+	LIBS =	-L$(SRCDIR)../../../Frameworks \
+			-L$(SRCDIR)../../lib \
 			-L$(R_HOME)/lib \
 			-L$(R_HOME)/library/RInside/lib \
 			-lboost_filesystem-mt \
@@ -41,9 +43,9 @@ ifeq ($(os),Linux)
 			-lpthread \
             -Wl,-R$(R_HOME)/site-library/RInside/lib
 else
-	R_HOME = ../../../../Frameworks/R
-	LIBS =	-L../../../lib \
-			-L../../../lib/libgcc \
+	R_HOME = $(SRCDIR)../../../Frameworks/R
+	LIBS =	-L$(SRCDIR)../../lib \
+			-L$(SRCDIR)../../lib/libgcc \
 			-L$(R_HOME)/bin/x64 \
 			-L$(R_HOME)/library/RInside/lib/x64 \
 			-lboost_filesystem-mgw49-mt-1_60 \
@@ -51,42 +53,52 @@ else
 endif
 endif
 
-INCLUDES += -I../libsilky/silky \
-	-I../../../include \
-	-I../common \
+INCLUDES += \
+	-I$(SRCDIR)../../include \
+	-I$(SRCDIR)../../../include \
+	-I$(SRCDIR)common \
 	-I$(R_HOME)/include \
 	-I$(R_HOME)/library/RInside/include -I$(R_HOME)/site-library/RInside/include \
 	-I$(R_HOME)/library/Rcpp/include	-I$(R_HOME)/site-library/Rcpp/include
 
 LIBS += -lR -lnanomsg -lprotobuf -lRInside
 
-SRCS  = $(wildcard *.cpp)
-SRCS += $(wildcard **/*.cpp)
-SRCS += $(wildcard ../common/*.cpp)
-SRCS += $(wildcard ../common/**/*.cpp)
+ABS_SRCS  = $(wildcard $(SRCDIR)engine/*.cpp)
+ABS_SRCS += $(wildcard $(SRCDIR)engine/**/*.cpp)
+ABS_SRCS += $(wildcard $(SRCDIR)common/*.cpp)
+ABS_SRCS += $(wildcard $(SRCDIR)common/**/*.cpp)
+SRCS  = $(subst $(SRCDIR),,$(ABS_SRCS))
 
-OBJS += $(BUILD_DIR)/silkycoms.pb.cc.o
-OBJS += $(addprefix $(BUILD_DIR)/,$(SRCS:.cpp=.cpp.o))
+OBJS += jamovi.pb.cc.o
+OBJS += $(SRCS:.cpp=.cpp.o)
 
 $(TARGET): $(OBJS)
 	mkdir -p $(@D)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS)
 	$(INT)
 
-silkycoms.pb.cc: ../../server/silkycoms.proto
-	protoc --cpp_out=. --proto_path=../../server ../../server/silkycoms.proto
+jamovi.pb.cc: $(SRCDIR)../server/jamovi.proto
+	protoc --cpp_out=. --proto_path=$(SRCDIR)../server $(SRCDIR)../server/jamovi.proto
 
-$(BUILD_DIR)/silkycoms.pb.cc.o: silkycoms.pb.cc
+jamovi.pb.cc.o: jamovi.pb.cc
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
 
-$(BUILD_DIR)/%.cpp.o: %.cpp
+common/%.cpp.o: $(SRCDIR)common/%.cpp
+	mkdir -p $(@D)
+	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
+
+engine/%.cpp.o: $(SRCDIR)engine/%.cpp
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
 
 all: $(TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS) silkycoms.pb.cc silkycoms.pc.h
+	rm -f $(TARGET) $(OBJS) jamovi.pb.cc jamovi.pc.h
 
-.PHONY:	clean all
+install:
+	mkdir -p $(DESTDIR)/bin
+	cp $(TARGET) $(DESTDIR)/bin
+
+.PHONY:	clean all install

@@ -1,0 +1,285 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
+
+syntax = "proto3";
+
+package jamovi.coms;
+
+// ANALYSIS
+
+enum Status {
+    COMPLETE = 0;
+    IN_PROGRESS = 1;
+    ERROR = 2;
+}
+
+message Error {
+    string message = 1;
+    string cause = 2;
+}
+
+message ComsMessage {
+    int32 id = 1;
+    string instanceId = 2;
+    bytes payload = 3;
+    string payloadType = 4;
+    Status status = 5;
+    Error error = 6;
+}
+
+message AnalysisRequest {
+    string datasetId = 1;
+    int32 analysisId = 2;
+    string name = 3;
+    string ns = 4;
+
+    enum Perform {
+        INIT = 0;
+        RUN = 1;
+    }
+
+    Perform perform = 5;
+    string options = 6;
+    int32 ppi = 7;
+    repeated string changed = 8;
+}
+
+enum AnalysisStatus {
+    ANALYSIS_NONE = 0;
+    ANALYSIS_INITED = 1;
+    ANALYSIS_RUNNING = 2;
+    ANALYSIS_COMPLETE = 3;
+    ANALYSIS_ERROR = 4;
+    ANALYSIS_ABORTED = 5;
+}
+
+message AnalysisResponse {
+
+    string datasetId = 1;
+    int32 analysisId = 2;
+    string options = 3;
+    bool hasResults = 4;
+    ResultsElement results = 5;
+    AnalysisStatus status = 6;
+    Error error = 7;
+    bool incAsText = 8;
+}
+
+message ResultsCell {
+
+    enum Other {
+        MISSING = 0;
+        NOT_A_NUMBER = 1;
+    }
+
+    oneof cellType {
+        int32  i = 1;
+        double d = 2;
+        string s = 3;
+        Other  o = 4;
+    }
+
+    int32 format = 5; // bit field
+
+    // 1 = begin group
+    // 2 = end group
+    // 4 = negative (red highlight)
+
+    repeated string footnotes = 6;
+    repeated string symbols = 7;
+}
+
+message ResultsColumn {
+
+    string name = 1;
+    string title = 2;
+    string type = 3;
+    string format = 4;
+    string superTitle = 5;
+    bool   combineBelow = 6;
+
+    repeated ResultsCell cells = 7;
+}
+
+message ResultsTableNote {
+    string name = 1;
+    string note = 2;
+}
+
+message ResultsTable {
+    repeated ResultsColumn columns = 1;
+    repeated string rowNames = 2;
+    bool swapRowsColumns = 3;
+    repeated ResultsTableNote notes = 4;
+    string asText = 5;
+}
+
+message ResultsImage {
+    string path = 1;
+    int32 width = 2;
+    int32 height = 3;
+}
+
+message ResultsArray {
+    repeated ResultsElement elements = 1;
+}
+
+message ResultsGroup {
+    repeated ResultsElement elements = 1;
+}
+
+message ResultsElement {
+    string name = 1;
+    string title = 2;
+    AnalysisStatus status = 3;
+    Error error = 4;
+
+    oneof type {
+        ResultsTable table = 6;
+        ResultsImage image = 7;
+        ResultsGroup group = 8;
+        ResultsArray array = 9;
+        string syntax = 11;
+    }
+}
+
+
+// CLIENT
+
+message InstanceRequest {
+}
+
+message InstanceResponse {
+}
+
+message OpenRequest {
+    string filename = 1;
+}
+
+message OpenProgress {
+}
+
+message SaveRequest {
+    string filename = 1;
+}
+
+message SaveProgress {
+}
+
+message FSEntry {
+    string path = 1;
+
+    enum Type {
+        FILE = 0;
+        FOLDER = 1;
+        DRIVE = 2;
+        SPECIAL_FOLDER = 3;
+    }
+
+    Type type = 2;
+    string name = 3;
+}
+
+message FSRequest {
+    string path = 1;
+}
+
+message FSResponse {
+    repeated FSEntry contents = 1;
+    string errorMessage = 2;
+}
+
+message DataSetEntry {
+    string name = 1;
+    string path = 2;
+    string location = 3;
+}
+
+message SettingsRequest {
+}
+
+message SettingsResponse {
+    repeated DataSetEntry recents = 1;
+    repeated DataSetEntry localFSRecents = 2;
+    repeated DataSetEntry examples = 3;
+}
+
+message VariableLevel {
+    string label = 1;
+    int32 value = 2;
+}
+
+message DataSetSchema {
+    message ColumnSchema {
+        int32 id = 1;
+        string name = 2;
+
+        enum MeasureType {
+            MISC = 0;
+            NOMINAL_TEXT = 1;
+            NOMINAL = 2;
+            ORDINAL = 3;
+            CONTINUOUS = 4;
+        }
+
+        MeasureType measureType = 3;
+        bool autoMeasure = 4;
+        int32 width = 5;
+        bool hasLevels = 6;
+        repeated VariableLevel levels = 7;
+        int32 dps = 8;
+    }
+    repeated ColumnSchema columns = 1;
+}
+
+enum GetSet {
+    GET = 0;
+    SET = 1;
+}
+
+message InfoRequest {
+}
+
+message InfoResponse {
+    bool hasDataSet = 1;
+    DataSetSchema schema = 2;
+    uint32 rowCount = 3;
+    uint32 columnCount = 4;
+    string filePath = 5;
+}
+
+enum SpecialValues {
+    MISSING = 0;
+    NOT_A_NUMBER = 1;
+}
+
+message DataSetRR {
+
+    GetSet op = 1;
+
+    bool incData = 2;
+    bool incSchema = 3;
+
+    uint32 rowStart = 4;
+    uint32 columnStart = 5;
+    uint32 rowEnd = 6;
+    uint32 columnEnd = 7;
+
+    message ColumnData {
+
+        message CellValue {
+            oneof type {
+                int32 i = 1;
+                double d = 2;
+                string s = 3;
+                SpecialValues o = 4;
+            }
+        }
+
+        repeated CellValue values = 1;
+    }
+
+    repeated ColumnData data = 8;
+    repeated DataSetSchema.ColumnSchema schema = 9;
+}

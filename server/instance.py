@@ -12,7 +12,7 @@ from silky import DataSet
 
 from .settings import Settings
 
-from . import silkycoms_pb2 as silkycoms
+from . import jamovi_pb2 as jcoms
 
 from .enginemanager import EngineManager
 from .analyses import Analyses
@@ -117,26 +117,26 @@ class Instance:
         return os.path.join(self._instance_path, resourceId)
 
     def on_request(self, request):
-        if type(request) == silkycoms.DataSetRR:
+        if type(request) == jcoms.DataSetRR:
             self._on_dataset(request)
-        elif type(request) == silkycoms.OpenRequest:
+        elif type(request) == jcoms.OpenRequest:
             self._on_open(request)
-        elif type(request) == silkycoms.SaveRequest:
+        elif type(request) == jcoms.SaveRequest:
             self._on_save(request)
-        elif type(request) == silkycoms.InfoRequest:
+        elif type(request) == jcoms.InfoRequest:
             self._on_info(request)
-        elif type(request) == silkycoms.SettingsRequest:
+        elif type(request) == jcoms.SettingsRequest:
             self._on_settings(request)
-        elif type(request) == silkycoms.AnalysisRequest:
+        elif type(request) == jcoms.AnalysisRequest:
             self._on_analysis(request)
-        elif type(request) == silkycoms.FSRequest:
+        elif type(request) == jcoms.FSRequest:
             self._on_fs_request(request)
         else:
             log.info('unrecognised request')
             log.info(request.payloadType)
 
     def _on_results(self, results, request, complete):
-        complete = (results.status == silkycoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
+        complete = (results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
         self._coms.send(results, self._instance_id, request, complete)
 
     def _on_fs_request(self, request):
@@ -145,23 +145,23 @@ class Instance:
 
         path = Instance._normalise_path(path)
 
-        response = silkycoms.FSResponse()
+        response = jcoms.FSResponse()
         if path.startswith('{{Root}}'):
 
             entry = response.contents.add()
             entry.name = 'Documents'
             entry.path = '{{Documents}}'
-            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             entry = response.contents.add()
             entry.name = 'Desktop'
             entry.path = '{{Desktop}}'
-            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             entry = response.contents.add()
             entry.name = 'Home'
             entry.path = '{{Home}}'
-            entry.type = silkycoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             if platform.uname().system == 'Windows':
                 for drive_letter in range(ord('A'), ord('Z') + 1):
@@ -170,7 +170,7 @@ class Instance:
                         entry = response.contents.add()
                         entry.name = drive
                         entry.path = drive
-                        entry.type = silkycoms.FSEntry.Type.Value('DRIVE')
+                        entry.type = jcoms.FSEntry.Type.Value('DRIVE')
 
             self._coms.send(response, self._instance_id, request)
 
@@ -180,13 +180,13 @@ class Instance:
                     if fs.is_hidden(direntry.path):
                         show = False
                     elif direntry.is_dir():
-                        entry_type = silkycoms.FSEntry.Type.Value('FOLDER')
+                        entry_type = jcoms.FSEntry.Type.Value('FOLDER')
                         if fs.is_link(direntry.path):
                             show = False
                         else:
                             show = True
                     else:
-                        entry_type = silkycoms.FSEntry.Type.Value('FILE')
+                        entry_type = jcoms.FSEntry.Type.Value('FILE')
                         show = formatio.is_supported(direntry.name)
 
                     if show:
@@ -210,7 +210,7 @@ class Instance:
         formatio.write(self._dataset, path)
 
         self._filepath = path
-        response = silkycoms.SaveProgress()
+        response = jcoms.SaveProgress()
         self._coms.send(response, self._instance_id, request)
 
         self._add_to_recents(path)
@@ -245,8 +245,8 @@ class Instance:
             self._coms.send_error(message, cause, self._instance_id, request)
 
     def _open_callback(self, task, progress):
-        response = silkycoms.ComsMessage()
-        response.open.status = silkycoms.Status.Value('IN_PROGRESS')
+        response = jcoms.ComsMessage()
+        response.open.status = jcoms.Status.Value('IN_PROGRESS')
         response.open.progress = progress
         response.open.progress_task = task
 
@@ -254,7 +254,7 @@ class Instance:
 
     def _on_analysis(self, request):
 
-        if request.HasField('options'):
+        if request.options != '':
 
             analysisId = request.analysisId
             options = request.options
@@ -270,10 +270,10 @@ class Instance:
                 analysisId = request.analysisId
                 options = json.dumps(analysis.options)
 
-                response = silkycoms.AnalysisResponse()
+                response = jcoms.AnalysisResponse()
                 response.analysisId = analysisId
                 response.options = options
-                response.status = silkycoms.AnalysisStatus.Value('ANALYSIS_NONE')
+                response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
                 self._coms.send(response, self._instance_id, request, False)
 
@@ -289,15 +289,15 @@ class Instance:
 
                 # We should handle this properly at some point, something like:
                 #
-                # response = silkycoms.AnalysisResponse()
-                # response.status = silkycoms.AnalysisStatus.ANALYSIS_ERROR
+                # response = jcoms.AnalysisResponse()
+                # response.status = jcoms.AnalysisStatus.ANALYSIS_ERROR
                 # response.error.message = 'Could not create analysis: ' + str(e)
                 #
                 # self._coms.send(response, self._instance_id, request)
 
     def _on_info(self, request):
 
-        response = silkycoms.InfoResponse()
+        response = jcoms.InfoResponse()
 
         hasDataSet = self._dataset is not None
         response.hasDataSet = hasDataSet
@@ -318,7 +318,7 @@ class Instance:
         if self._dataset is None:
             return
 
-        response = silkycoms.DataSetRR()
+        response = jcoms.DataSetRR()
 
         response.op = request.op
         response.rowStart    = request.rowStart
@@ -326,7 +326,7 @@ class Instance:
         response.rowEnd      = request.rowEnd
         response.columnEnd   = request.columnEnd
 
-        if request.op == silkycoms.GetSet.Value('SET'):
+        if request.op == jcoms.GetSet.Value('SET'):
             self._on_dataset_set(request, response)
         else:
             self._on_dataset_get(request, response)
@@ -381,7 +381,7 @@ class Instance:
                 for j in range(row_count):
                     cell = col_res.values[j]
                     if cell.HasField('o'):
-                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
                             column[row_start + j] = nan
                     elif cell.HasField('d'):
                         column[row_start + j] = cell.d
@@ -397,7 +397,7 @@ class Instance:
                 for j in range(row_count):
                     cell = col_res.values[j]
                     if cell.HasField('o'):
-                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
                             column[row_start + j] = -2147483648
                     else:
                         if cell.HasField('s'):
@@ -427,7 +427,7 @@ class Instance:
                 for j in range(row_count):
                     cell = col_res.values[j]
                     if cell.HasField('o'):
-                        if cell.o == silkycoms.SpecialValues.Value('MISSING'):
+                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
                             column[row_start + j] = -2147483648
                     elif cell.HasField('i'):
                         value = cell.i
@@ -506,7 +506,7 @@ class Instance:
                     cell = col_res.values.add()
                     value = column[r]
                     if math.isnan(value):
-                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                        cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
                         cell.d = value
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
@@ -514,7 +514,7 @@ class Instance:
                     cell = col_res.values.add()
                     value = column[r]
                     if value == '':
-                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                        cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
                         cell.s = value
             else:
@@ -522,7 +522,7 @@ class Instance:
                     cell = col_res.values.add()
                     value = column[r]
                     if value == -2147483648:
-                        cell.o = silkycoms.SpecialValues.Value('MISSING')
+                        cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
                         cell.i = value
 
@@ -588,7 +588,7 @@ class Instance:
 
         recents = settings.get('recents', [ ])
 
-        response = silkycoms.SettingsResponse()
+        response = jcoms.SettingsResponse()
 
         for recent in recents:
             recentEntry = response.recents.add()
