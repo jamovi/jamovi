@@ -101,21 +101,24 @@ var GridTargetList = function(params) {
         }
     };
 
-    // Catching methods
-    this.catchDroppedItems = function(source, items) {
-        var finalItems = this.checkForMultiSelectionActions(items);
-        for (var i = 0; i < finalItems.length; i++) {
-            if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), finalItems[i].value))
-                this.addRawToOption(finalItems[i], [this.option.getLength()]);
-        }
+    this.testValue = function(item, rowIndex, columnName) {
     };
 
-    this.filterItemsForDrop = function(items) {
+    // Catching methods
+    this.catchDroppedItems = function(source, items, xpos, ypos) {
+        var finalItems = this.checkForMultiSelectionActions(items);
+        for (var i = 0; i < finalItems.length; i++)
+            this.addRawToOption(finalItems[i], [this.option.getLength()]);
+    };
+
+    this.filterItemsForDrop = function(items, xpos, ypos) {
         var itemsToDrop = [];
         for (var i = 0; i < items.length; i++) {
-            itemsToDrop.push(items[i]);
-            if (this.targetGrid.isSingleItem)
-                break;
+            if (this.testValue(items[i])) {
+                itemsToDrop.push(items[i]);
+                if (this.targetGrid.isSingleItem)
+                    break;
+            }
         }
         return itemsToDrop;
     };
@@ -283,7 +286,7 @@ var GridTargetList = function(params) {
             if (selectedCount > 0) {
                 for (var i = 0; i < selectedCount; i++) {
                     var selectedItem = selectedItems[i];
-                    if (this._listFilter.testValue(this.getPropertyValue("valueFilter"), selectedItem.value)) {
+                    if (this.testValue(selectedItem)) {
 
                         if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
                             postProcessSelectionIndex = selectedItem.index;

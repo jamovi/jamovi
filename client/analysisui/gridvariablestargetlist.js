@@ -16,6 +16,7 @@ var GridVariablesTargetList = function(params) {
 
     this._suggestedVariableTypes = [];
     this._permittedVariableTypes = [];
+    this.$icons = null;
 
     this.searchForVariableProperties = function(properties) {
         var optType = properties.type;
@@ -50,11 +51,11 @@ var GridVariablesTargetList = function(params) {
 
     this._renderSuggestedIcons = function() {
         if (this._suggestedVariableTypes.length > 0) {
-            var $icons = $('<div class="silky-variablelist-icons"></div>');
+            this.$icons = $('<div class="silky-variablelist-icons"></div>');
             for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
-                $icons.append('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + self._suggestedVariableTypes[i] + '"></div>');
+                this.$icons.append('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + this._suggestedVariableTypes[i] + '"></div>');
             }
-            this.targetGrid.$el.append($icons);
+            this.targetGrid.$el.append(this.$icons);
         }
     };
 
@@ -68,16 +69,22 @@ var GridVariablesTargetList = function(params) {
         return returnValue;
     });
 
-    this._override('addRawToOption', function(baseFunction, item, key) {
+    this._override('testValue', function(baseFunction, item, rowIndex, columnName) {
         var allowItem = true;
+        if (baseFunction !== null) {
+            allowItem = baseFunction.call(self, item, rowIndex, columnName);
+            if (!allowItem)
+                return allowItem;
+        }
+
         var itemValue = item.value;
         if (itemValue.format.name === 'variable')
             allowItem = this._checkIfVariableTypeAllowed(item.properties.type);
 
-        if (allowItem)
-            return baseFunction.call(self, item, key);
-        else
-            return false;
+        if (!allowItem)
+            this._flashIcons();
+
+        return allowItem;
     });
 
     this._checkIfVariableTypeAllowed = function(type) {
@@ -94,16 +101,15 @@ var GridVariablesTargetList = function(params) {
         return allowItem;
     };
 
-    this._override('filterItemsForDrop', function(baseFunction, items) {
-        var list = baseFunction.call(self, items);
+    this._flashIcons = function() {
+        if (this.$icons === null)
+            return;
 
-        var itemsToDrop = [];
-        for (var i = 0; i < list.length; i++) {
-            if (this._checkIfVariableTypeAllowed(list[i].properties.type))
-                itemsToDrop.push(items[i]);
-        }
-        return itemsToDrop;
-    });
+        this.$icons.addClass('silky-variable-flash');
+        setTimeout(() => {
+            this.$icons.removeClass('silky-variable-flash');
+        }, 500);
+    };
 
     this._override('updateContext', function(baseFunction, context) {
         if (baseFunction !== null)
