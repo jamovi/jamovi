@@ -42,7 +42,7 @@ var LayoutVariablesView = function(params) {
         var columns = this.resources.columns;
         for (var i = 0; i < columns.length; i++) {
             var column = columns[i];
-            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: { type: column.measureType } };
+            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: { type: column.measureType, permitted: true } };
 
             if (suggested && this._contains(column.measureType, suggested)) {
                 items.splice(suggestedCount, 0, item);
@@ -52,8 +52,10 @@ var LayoutVariablesView = function(params) {
                 items.splice(suggestedCount + permittedCount, 0, item);
                 permittedCount += 1;
             }
-            else
+            else {
                 items.push(item);
+                item.properties.permitted = permitted.length === 0;
+            }
         }
         this.setList(items);
     };

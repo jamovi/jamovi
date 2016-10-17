@@ -239,6 +239,9 @@ var LayoutSupplierView = function(params) {
 
         var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
+        if (!item.properties.permitted)
+            $item.addClass("silky-grayed-out");
+
         var variableType = 'none';
         if (_.isUndefined(item.properties.type) === false)
             variableType = item.properties.type;
