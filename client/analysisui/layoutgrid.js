@@ -556,10 +556,10 @@ var LayoutGrid = function() {
         }
     };
 
-    this.addCell = function(column, row, fitToGrid, $content) {
+    this.addCell = function(column, row, fitToGrid, item) {
         var cell = new LayoutCell(this);
         cell.$el.addClass('silky-layout-cell');
-        cell.setContent($content);
+        cell.setContent(item);
         if (this._addCellEventListeners)
             this._addCellEventListeners(cell);
         cell.fitToGrid = fitToGrid;

@@ -63,6 +63,11 @@ var Analysis = function(def, resources, baseControls) {
     this.model = { options: optionsManager, ui: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 2 };
 
     this.View = new OptionsView( this.model);
+
+    this.setResources = function(resources) {
+        this.model.resources = resources;
+        this.View.updateResources();
+    };
 };
 
 var analysis = null;
@@ -132,7 +137,7 @@ function setResources(resources) {
             loadAnalysis(_def, _analysisResources);
     }
     else
-        analysis.model.resources = resources;
+        analysis.setResources(resources);
 }
 
 function setOptionsValues(data) {

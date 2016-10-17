@@ -56,6 +56,11 @@ var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
         this.sendMsg("options.changed", this.options);
     };
 
+    this.updateContext = function(context) {
+        this.context = context;
+        this.sendMsg("analysis.context", this.context);
+    };
+
     var notifyDocumentReady;
     var notifyAborted;
 
@@ -137,8 +142,26 @@ var OptionsPanel = SilkyView.extend({
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
     },
 
+    applyContextChange: function(resource, context) {
+        resource.ready.then(function() {
+            resource.updateContext(context);
+        });
+    },
+
     setDataSetModel: function(dataSetModel) {
         this.dataSetModel = dataSetModel;
+
+        var self = this;
+        this.dataSetModel.on('columnsChanged', event => {
+            for (let changes of event.changes) {
+                if (changes.measureTypeChanged) {
+                    var context = { columns: self.dataSetModel.get('columns') };
+                    for (let name in self._analysesResources)
+                        self.applyContextChange(self._analysesResources[name], context);
+                    break;
+                }
+            }
+        });
     },
 
     render: function() {

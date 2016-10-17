@@ -22,6 +22,7 @@ var LayoutVariablesView = function(params) {
             var item = value[i];
             for (var j = 0; j < this._items.length; j++) {
                 if (this._items[j].value.equalTo(item.value)) {
+                    this._items[j].properties = item.properties;
                     item = this._items[j];
                     break;
                 }
@@ -96,6 +97,13 @@ var LayoutVariablesView = function(params) {
 
         if (this.getPropertyValue('useVariables'))
             this.populateItemList();
+    };
+
+    this.updateContext = function(context) {
+        this.resources = context.resources;
+        if (this._usingColumnNames)
+            this.populateItemList();
+
     };
 
     this.rowTransform = function(row, column) {
@@ -219,6 +227,7 @@ var LayoutVariablesView = function(params) {
             items.push(item);
         }
         this.setList(items);
+        this._usingColumnNames = true;
     };
 
     this.selectNextAvaliableItem = function(from) {

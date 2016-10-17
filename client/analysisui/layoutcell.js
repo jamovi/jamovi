@@ -24,6 +24,7 @@ var LayoutCell = function(parent) {
     this._manipulating = 0;
     this.hAlign = "left";
     this.vAlign = "top";
+    this.item = null;
     this.$content = null;
     this.$previousContent = null;
     this._clickable = false;
@@ -91,7 +92,7 @@ var LayoutCell = function(parent) {
         self.onContentSizeChanged({type: "both"});
     };
 
-    this.setContent = function($content) {
+    this.setContent = function(item) {
 
         if (this.$previousContent !== null)
             this.$previousContent.off("contentchanged", this.onContentChangedEvent);
@@ -99,7 +100,11 @@ var LayoutCell = function(parent) {
         if (this.$content !== null)
             this.$previousContent = this.$content;
 
-        this.$content = $content;
+        this.item = item;
+        if (item !== null && item.$el)
+            this.$content = item.$el;
+        else
+            this.$content = item;
 
         if (this.$content !== null)
             this.$content.on("contentchanged", this.onContentChangedEvent);
