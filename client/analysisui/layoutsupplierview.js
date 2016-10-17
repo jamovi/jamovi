@@ -9,6 +9,7 @@ var DragNDrop = require('./dragndrop');
 var ControlContainer = require('./controlcontainer');
 var LayoutGrid = require('./layoutgrid').Grid;
 var EnumPropertyFilter = require('./enumpropertyfilter');
+var SuperClass = require('./superclass');
 
 var LayoutSupplierView = function(params) {
 
@@ -239,7 +240,7 @@ var LayoutSupplierView = function(params) {
 
         var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
-        if (!item.properties.permitted)
+        if (item.properties.permitted === false)
             $item.addClass("silky-grayed-out");
 
         var variableType = 'none';
@@ -248,7 +249,6 @@ var LayoutSupplierView = function(params) {
 
         $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + '"></div>');
         $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
-
 
         var c1 = this.supplierGrid.getCell(0, row);
 
@@ -288,8 +288,6 @@ var LayoutSupplierView = function(params) {
 
 };
 
-LayoutSupplierView.extendTo = function(target, params) {
-    LayoutSupplierView.call(target, params);
-};
+SuperClass.create(LayoutSupplierView);
 
 module.exports = LayoutSupplierView;

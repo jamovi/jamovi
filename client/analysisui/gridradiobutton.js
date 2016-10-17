@@ -7,7 +7,7 @@ var ChildLayoutSupport = require('./childlayoutsupport');
 
 var GridRadioButton = function(params) {
 
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
     Overridable.extendTo(this);
 
     this.registerSimpleProperty("checkedValue", null);
@@ -63,7 +63,7 @@ var GridRadioButton = function(params) {
         return baseFunction.call(self, value ? self.checkedValue : self.otherValue, keys);
     });
 
-    ChildLayoutSupport.extend(this);
+    ChildLayoutSupport.extendTo(this);
 };
 
 module.exports = GridRadioButton;

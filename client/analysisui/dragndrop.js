@@ -2,6 +2,7 @@
 
 var $ = require('jquery');
 var _ = require('underscore');
+var SuperClass = require('./superclass');
 
 var DragNDrop = function() {
 
@@ -142,9 +143,6 @@ var DragNDrop = function() {
     $(document).mousemove(this, this._ddMouseMove);
 };
 
-
-DragNDrop.extendTo = function(target) {
-    DragNDrop.call(target);
-};
+SuperClass.create(DragNDrop);
 
 module.exports = DragNDrop;

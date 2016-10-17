@@ -5,6 +5,7 @@ var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
 var Overridable = require('./overridable');
+var SuperClass = require('./superclass');
 
 var LayoutCell = function(parent) {
 
@@ -620,9 +621,7 @@ var LayoutCell = function(parent) {
     this.isVirtual = false;
 };
 
-LayoutCell.extendTo = function(target) {
-    LayoutCell.call(target);
-};
+SuperClass.create(LayoutCell);
 
 var SpacerCell = function(width, height, fitToGrid) {
 

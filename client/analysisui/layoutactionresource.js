@@ -1,11 +1,12 @@
 'use strict';
 
 var _ = require('underscore');
+var SuperClass = require('./superclass');
 
 var LayoutActionResource = function(supplier) {
 
     this._supplier = supplier;
-    
+
     this.get = function(property) {
         return this._supplier.getPropertyValue(property);
     };
@@ -15,8 +16,6 @@ var LayoutActionResource = function(supplier) {
     };
 };
 
-LayoutActionResource.extendTo = function(target, supplier) {
-    LayoutActionResource.call(target, supplier);
-};
+SuperClass.create(LayoutActionResource);
 
 module.exports = LayoutActionResource;

@@ -7,6 +7,7 @@ var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
 var Overridable = require('./overridable');
 var EnumPropertyFilter = require('./enumpropertyfilter');
+var SuperClass = require('./superclass');
 
 var OptionListControl = function(params) {
     OptionControl.extendTo(this, params);
@@ -372,8 +373,6 @@ var OptionListControl = function(params) {
     this.initialise();
 };
 
-OptionListControl.extendTo = function(target, params) {
-    OptionListControl.call(target, params);
-};
+SuperClass.create(OptionListControl);
 
 module.exports = OptionListControl;

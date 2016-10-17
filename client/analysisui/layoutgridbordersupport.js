@@ -4,6 +4,7 @@
 
 var Overridable = require('./overridable');
 var _ = require('underscore');
+var SuperClass = require('./superclass');
 
 var LayoutGridBorderSupport = function() {
     Overridable.extendTo(this);
@@ -259,8 +260,6 @@ var LayoutGridBorderSupport = function() {
     };
 };
 
-LayoutGridBorderSupport.extendTo = function(target) {
-    LayoutGridBorderSupport.call(target);
-};
+SuperClass.create(LayoutGridBorderSupport);
 
 module.exports = LayoutGridBorderSupport;

@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var OptionControlBase = require('./optioncontrolbase');
 var EnumPropertyFilter = require('./enumpropertyfilter');
+var SuperClass = require('./superclass');
 
 var OptionControl = function(params) {
 
@@ -15,8 +16,6 @@ var OptionControl = function(params) {
 
 };
 
-OptionControl.extendTo = function(target, params) {
-    OptionControl.call(target, params);
-};
+SuperClass.create(OptionControl);
 
 module.exports = OptionControl;

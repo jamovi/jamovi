@@ -4,6 +4,7 @@
 var LayoutGrid = require('./layoutgrid').Grid;
 var Overridable = require('./overridable');
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
+var SuperClass = require('./superclass');
 
 var ChildLayoutSupport = function(params) {
 
@@ -42,8 +43,6 @@ var ChildLayoutSupport = function(params) {
 
 };
 
-ChildLayoutSupport.extend = function(target) {
-    ChildLayoutSupport.call(target);
-};
+SuperClass.create(ChildLayoutSupport);
 
 module.exports = ChildLayoutSupport;

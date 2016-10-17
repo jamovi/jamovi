@@ -6,7 +6,7 @@ var GridControl = require('./gridcontrol');
 var OptionListControl = require('./optionlistcontrol');
 
 var GridOptionListControl = function(option, params) {
-    GridControl.extend(this);
+    GridControl.extendTo(this);
     OptionListControl.extendTo(this, option, params);
 
     this.onRenderToGrid = function(grid, row, column) {

@@ -2,16 +2,15 @@
 
 var GridControl = require('./gridcontrol');
 var OptionControl = require('./optioncontrol');
+var SuperClass = require('./superclass');
 
 var GridOptionControl = function(params) {
 
-    GridControl.extend(this);
+    GridControl.extendTo(this);
     OptionControl.extendTo(this, params);
 
 };
 
-GridOptionControl.extend = function(target, params) {
-    GridOptionControl.call(target, params);
-};
+SuperClass.create(GridOptionControl);
 
 module.exports = GridOptionControl;

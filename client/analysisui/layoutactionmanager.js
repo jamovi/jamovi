@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var backbone = require('backbone');
 var LayoutAction = require('./layoutaction');
+var SuperClass = require('./superclass');
 
 var LayoutActionManager = function(layoutDef) {
 
@@ -77,8 +78,6 @@ var LayoutActionManager = function(layoutDef) {
 
 };
 
-LayoutActionManager.extendTo = function(target, actions) {
-    LayoutActionManager.call(target, actions);
-};
+SuperClass.create(LayoutActionManager);
 
 module.exports = LayoutActionManager;

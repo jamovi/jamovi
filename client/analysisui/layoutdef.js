@@ -3,6 +3,7 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
+var SuperClass = require('./superclass');
 
 function LayoutDef() {
 
@@ -13,9 +14,7 @@ function LayoutDef() {
     };
 }
 
-LayoutDef.extendTo = function(target) {
-    LayoutDef.call(target);
-};
+SuperClass.create(LayoutDef);
 
 LayoutDef.extend = function(params) {
     return function() {

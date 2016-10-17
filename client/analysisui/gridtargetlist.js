@@ -8,9 +8,10 @@ var FormatDef = require('./formatdef');
 var DragNDrop = require('./dragndrop');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var TargetListValueFilter = require('./targetlistvaluefilter');
+var SuperClass = require('./superclass');
 
 var GridTargetList = function(params) {
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
     DragNDrop.extendTo(this);
 
     this.registerSimpleProperty("maxItemCount", -1);
@@ -400,8 +401,6 @@ var GridTargetList = function(params) {
 
 };
 
-GridTargetList.extendTo = function(target, params) {
-    GridTargetList.call(target, params);
-};
+SuperClass.create(GridTargetList);
 
 module.exports = GridTargetList;

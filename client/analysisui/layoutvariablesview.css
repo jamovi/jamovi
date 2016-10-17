@@ -59,5 +59,8 @@
 }
 
 .silky-list-item.silky-grayed-out {
+    -webkit-filter: grayscale(100%);
     filter: grayscale(100%);
+    opacity: 0.6;
+    filter: alpha(opacity = 60);
 }

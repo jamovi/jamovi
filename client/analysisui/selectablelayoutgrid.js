@@ -4,6 +4,7 @@
 
 var LayoutGrid = require('./layoutgrid').Grid;
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
+var SuperClass = require('./superclass');
 
 var SelectableLayoutGrid = function() {
     LayoutGrid.extendTo(this);
@@ -214,8 +215,6 @@ var SelectableLayoutGrid = function() {
     };
 };
 
-SelectableLayoutGrid.extendTo = function(target) {
-    SelectableLayoutGrid.call(target);
-};
+SuperClass.create(SelectableLayoutGrid);
 
 module.exports = SelectableLayoutGrid;

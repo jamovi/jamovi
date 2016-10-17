@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var LayoutActionResource = require('./layoutactionresource');
+var SuperClass = require('./superclass');
 
 var LayoutAction = function(manager, params) {
 
@@ -138,8 +139,6 @@ var LayoutAction = function(manager, params) {
 
 };
 
-LayoutAction.extendTo = function(target, manager, params) {
-    LayoutAction.call(target, manager, params);
-};
+SuperClass.create(LayoutAction);
 
 module.exports = LayoutAction;

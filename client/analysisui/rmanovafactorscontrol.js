@@ -216,7 +216,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
 };
 
 var RMAnovaFactorsControl = function(params) {
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
     LayoutGrid.extendTo(this);
 
     this.$el.addClass('rmanova-factors-control');

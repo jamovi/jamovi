@@ -1,5 +1,6 @@
 'use strict';
 
+var SuperClass = require('./superclass');
 var PropertySupplier = require('./propertysupplier');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 
@@ -14,8 +15,6 @@ var ControlBase = function(params) {
 
 };
 
-ControlBase.extendTo = function(target, params) {
-    ControlBase.call(target, params);
-};
+SuperClass.create(ControlBase);
 
 module.exports = ControlBase;
