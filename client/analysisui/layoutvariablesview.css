@@ -57,3 +57,7 @@
 .silky-options-supplier-group-header {
     margin-bottom: 2px;
 }
+
+.silky-list-item.silky-grayed-out {
+    filter: grayscale(100%);
+}
