@@ -1,7 +1,7 @@
 'use strict';
 
 var _ = require('underscore');
-
+var SuperClass = require('./superclass');
 
 var ControlManager = function() {
 
@@ -30,8 +30,6 @@ var ControlManager = function() {
     };
 };
 
-ControlManager.extendTo = function(target) {
-    ControlManager.call(target);
-};
+SuperClass.create(ControlManager);
 
 module.exports = ControlManager;

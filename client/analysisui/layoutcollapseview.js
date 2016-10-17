@@ -13,7 +13,7 @@ var LayoutGridBorderSupport = require('./layoutgridbordersupport');
 var LayoutCollapseView = function(params) {
 
     ControlBase.extendTo(this, params);
-    GridControl.extend(this);
+    GridControl.extendTo(this);
 
     this.registerSimpleProperty("collapsed", false);
     this.registerSimpleProperty("label", null);

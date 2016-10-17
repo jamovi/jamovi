@@ -12,7 +12,7 @@ var EnumPropertyFilter = require('./enumpropertyfilter');
 var LayoutGroupView = function(params) {
 
     ControlBase.extendTo(this, params);
-    GridControl.extend(this);
+    GridControl.extendTo(this);
 
     this.registerSimpleProperty("label", "");
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
@@ -29,7 +29,7 @@ var LayoutGroupView = function(params) {
         return { height: 1, width: 1 };
     };
 
-    ChildLayoutSupport.extend(this);
+    ChildLayoutSupport.extendTo(this);
 };
 
 module.exports = LayoutGroupView;

@@ -1,6 +1,8 @@
 
 'use strict';
 
+var SuperClass = require('./superclass');
+
 var Overridable = function() {
 
     this._override = function(functionName, callback) {
@@ -16,8 +18,6 @@ var Overridable = function() {
 
 };
 
-Overridable.extendTo = function(target) {
-    Overridable.call(target);
-};
+SuperClass.create(Overridable);
 
 module.exports = Overridable;

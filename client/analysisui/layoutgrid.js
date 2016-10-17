@@ -7,6 +7,7 @@ var Backbone = require('backbone');
 var LayoutCell = require('./layoutcell').LayoutCell;
 var SpacerCell = require('./layoutcell').SpacerCell;
 var Overridable = require('./overridable');
+var SuperClass = require('./superclass');
 
 var LayoutGrid = function() {
     Overridable.extendTo(this);
@@ -896,9 +897,7 @@ var LayoutGrid = function() {
 
 };
 
-LayoutGrid.extendTo = function(target) {
-    LayoutGrid.call(target);
-};
+SuperClass.create(LayoutGrid);
 
 module.exports.Grid = LayoutGrid;
 //module.exports.prototype = LayoutGrid.prototype;

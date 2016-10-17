@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var ControlBase = require('./controlbase');
+var SuperClass = require('./superclass');
 
 var OptionControlBase = function(params) {
 
@@ -51,8 +52,6 @@ var OptionControlBase = function(params) {
     };
 };
 
-OptionControlBase.extendTo = function(target, params) {
-    OptionControlBase.call(target, params);
-};
+SuperClass.create(OptionControlBase);
 
 module.exports = OptionControlBase;

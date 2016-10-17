@@ -5,7 +5,7 @@ var GridOptionControl = require('./gridoptioncontrol');
 
 var GridCombobox = function(params) {
 
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
 
     this.registerSimpleProperty("options", []);
 

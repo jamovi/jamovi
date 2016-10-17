@@ -1,5 +1,7 @@
 'use strict';
 
+var SuperClass = require('./superclass');
+
 var GridControl = function() {
 
     this.renderToGrid = function(grid, row, column) {
@@ -12,8 +14,6 @@ var GridControl = function() {
     };
 };
 
-GridControl.extend = function(target) {
-    GridControl.call(target);
-};
+SuperClass.create(GridControl);
 
 module.exports = GridControl;

@@ -12,7 +12,7 @@ var GridTextbox = function(params) {
 
     };
 
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
     this.registerSimpleProperty("format", null);
     this.registerSimpleProperty("suffix", null);
     this.registerSimpleProperty("inputPattern", null);

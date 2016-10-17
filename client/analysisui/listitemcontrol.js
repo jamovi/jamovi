@@ -3,6 +3,7 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var PropertySupplier = require('./propertysupplier');
+var SuperClass = require('./superclass');
 
 var ListItemControl = function(params) {
 
@@ -153,8 +154,6 @@ var ListItemControl = function(params) {
     };
 };
 
-ListItemControl.extendTo = function(target, params) {
-    ListItemControl.call(target, params);
-};
+SuperClass.create(ListItemControl);
 
 module.exports = ListItemControl;

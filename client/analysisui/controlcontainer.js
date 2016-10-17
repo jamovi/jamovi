@@ -2,6 +2,7 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
+var SuperClass = require('./superclass');
 var LayoutGrid = require('./layoutgrid').Grid;
 var GridControl = require('./gridcontrol');
 var ControlBase = require('./controlbase');
@@ -12,7 +13,7 @@ var ControlContainer = function(params) {
 
     ControlBase.extendTo(this, params);
     LayoutGrid.extendTo(this);
-    GridControl.extend(this);
+    GridControl.extendTo(this);
     LayoutGridBorderSupport.extendTo(this);
 
     this.editable = true;
@@ -102,8 +103,6 @@ var ControlContainer = function(params) {
     };
 };
 
-ControlContainer.extendTo = function(target, params) {
-    ControlContainer.call(target, params);
-};
+SuperClass.create(ControlContainer);
 
 module.exports = ControlContainer;

@@ -3,6 +3,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
+var SuperClass = require('./superclass');
 
 var PropertySupplier = function(properties) {
 
@@ -124,8 +125,6 @@ var PropertySupplier = function(properties) {
     }
 };
 
-PropertySupplier.extendTo = function(target, properties) {
-    PropertySupplier.call(target, properties);
-};
+SuperClass.create(PropertySupplier);
 
 module.exports = PropertySupplier;

@@ -7,7 +7,7 @@ var ChildLayoutSupport = require('./childlayoutsupport');
 
 var GridCheckbox = function(params) {
 
-    GridOptionControl.extend(this, params);
+    GridOptionControl.extendTo(this, params);
 
     this.onRenderToGrid = function(grid, row, column) {
         var id = this.option.getName();
@@ -48,7 +48,7 @@ var GridCheckbox = function(params) {
         }
     };
 
-    ChildLayoutSupport.extend(this);
+    ChildLayoutSupport.extendTo(this);
 };
 
 module.exports = GridCheckbox;
