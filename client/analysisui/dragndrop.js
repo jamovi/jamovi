@@ -54,7 +54,7 @@ var DragNDrop = function() {
         if (this._isDragging) {
             if (this._stillOverTarget(pageX, pageY)) {
                 var target = this._dropTargets[this._currentTarget.index];
-                var itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged);
+                var itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged, pageX - this._currentTarget.x.min, pageY - this._currentTarget.y.min);
                 if (itemsToDrop !== null && itemsToDrop.length !== 0) {
                     if (target.onDragDropStart)
                         target.onDragDropStart();
@@ -63,7 +63,7 @@ var DragNDrop = function() {
 
                     if (this.onItemsDropping)
                         this.onItemsDropping(itemsToDrop);
-                    target.catchDroppedItems(this, itemsToDrop);
+                    target.catchDroppedItems(this, itemsToDrop, pageX - this._currentTarget.x.min, pageY - this._currentTarget.y.min);
 
                     if (target.onDragDropEnd)
                         target.onDragDropEnd();

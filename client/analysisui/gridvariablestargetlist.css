@@ -2,3 +2,46 @@
 .silky-option-list.silky-variable-target {
     margin: 0px;
 }
+
+.silky-variablelist-icons {
+    z-index: 100;
+    bottom: 2px;
+    right: 2px;
+    position:absolute;
+    opacity: 0.5;
+    border-radius: 3px;
+}
+
+.silky-variable-flash {
+    -webkit-animation-name: variable-flash-animation;
+    -webkit-animation-duration: 0.4s;
+
+    animation-name: variable-flash-animation;
+    animation-duration: 0.4s;
+}
+
+@-webkit-keyframes variable-flash-animation {
+    0% { opacity:0.5;
+    background-color:transparent;}
+    25% { opacity:1;
+    background-color: rgba(150, 10, 10, 0.5); }
+    50% { opacity:0.5;
+    background-color:transparent; }
+    75% { opacity:1;
+    background-color: rgba(150, 10, 10, 0.5); }
+    100% { opacity:0.5;
+    background-color:transparent; }
+}
+
+@keyframes variable-flash-animation {
+    0% { opacity:0.5;
+    background-color:transparent;}
+    25% { opacity:1;
+    background-color: rgba(200, 10, 10, 0.5); }
+    50% { opacity:0.5;
+    background-color:transparent; }
+    75% { opacity:1;
+    background-color: rgba(200, 10, 10, 0.5); }
+    100% { opacity:0.5;
+    background-color:transparent; }
+}
