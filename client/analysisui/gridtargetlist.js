@@ -102,6 +102,7 @@ var GridTargetList = function(params) {
     };
 
     this.testValue = function(item, rowIndex, columnName) {
+        return this._listFilter.testValue(this.getPropertyValue("valueFilter"), item.value, rowIndex, columnName);
     };
 
     // Catching methods

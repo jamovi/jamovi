@@ -3,16 +3,12 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var FormatDef = require('./formatdef');
-var EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
 var GridTargetList = require('./gridtargetlist');
 var Overridable = require('./overridable');
 
 var GridVariablesTargetList = function(params) {
     GridTargetList.extendTo(this, params);
     Overridable.extendTo(this);
-
-    this.registerSimpleProperty("suggestedVariableTypes", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
-    this.registerSimpleProperty("permittedVariableTypes", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
 
     this._suggestedVariableTypes = [];
     this._permittedVariableTypes = [];

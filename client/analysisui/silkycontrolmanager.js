@@ -4,6 +4,7 @@ var _ = require('underscore');
 var ControlManager = require('./controlmanager');
 var LayoutGroupView = require('./layoutgroupview');
 var LayoutCollapseView = require('./layoutcollapseview');
+var LayoutSupplierView = require('./layoutsupplierview');
 var LayoutVariablesView = require('./layoutvariablesview');
 var GridCheckbox = require('./gridcheckbox');
 var GridRadioButton = require('./gridradiobutton');
@@ -30,7 +31,8 @@ var SilkyControlManager = function() {
     this.registerControl("listbox", GridOptionListControl);
     this.registerControl("targetlistbox", GridTargetList);
     this.registerControl("variabletargetlistbox", GridVariablesTargetList);
-    this.registerControl("supplier", LayoutVariablesView);
+    this.registerControl("supplier", LayoutSupplierView);
+    this.registerControl("variablesupplier", LayoutVariablesView);
     this.registerControl("collapsebox", LayoutCollapseView);
     this.registerControl("label", LayoutGroupView);
     this.registerControl("collection", ControlContainer);
