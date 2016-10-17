@@ -50,6 +50,10 @@ var GridTargetList = function(params) {
         }
     };
 
+    this.refreshListItems = function() {
+        this.targetGrid.refreshItems();
+    };
+
     // Drag/Drop methods
     this.setPickupSourceElement(this.targetGrid.$el);
 

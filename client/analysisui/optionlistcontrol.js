@@ -93,6 +93,14 @@ var OptionListControl = function(params) {
         this._context = context;
     };
 
+    this.refreshItems = function() {
+        for (let i = 0; i < this._cells.length; i++) {
+            var item = this._cells[i].item;
+            if (item !== null && item.render)
+                item.render();
+        }
+    };
+
     this.updateValueCell = function(columnInfo, dispRow, value) {
         var dispColumn = columnInfo.index;
         if (dispRow === this._rowCount - 1)
@@ -108,7 +116,7 @@ var OptionListControl = function(params) {
             params.format = columnInfo.format;
             var ctrl =  this.createItem(value, params);
 
-            cell = this.addCell(dispColumn, dispRow, false, ctrl.$el);
+            cell = this.addCell(dispColumn, dispRow, false, ctrl);
             cell.clickable(columnInfo.selectable);
 
             cell.setStretchFactor(columnInfo.stretchFactor);

@@ -104,6 +104,13 @@ var GridVariablesTargetList = function(params) {
         }
         return itemsToDrop;
     });
+
+    this._override('updateContext', function(baseFunction, context) {
+        if (baseFunction !== null)
+            baseFunction.call(this, context);
+
+        this.refreshListItems();
+    });
 };
 
 module.exports = GridVariablesTargetList;

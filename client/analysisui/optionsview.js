@@ -16,6 +16,7 @@ var OptionsView = function(uiModel) {
 
     this.model = uiModel;
     this.resources = this.model.resources;
+    this._contextDependentCtrls = [];
 
     this.render = function() {
         var options = this.model.options;
@@ -58,6 +59,12 @@ var OptionsView = function(uiModel) {
         else {
             this.$el.append('<div class="silky-analysis-under-development">This analysis is currently in development and will be available very soon!</div>');
         }
+    };
+
+    this.updateResources = function() {
+        this.resources = this.model.resources;
+        for (let i = 0; i < this._contextDependentCtrls.length; i++)
+            this._contextDependentCtrls[i].updateContext(this);
     };
 
     this._getOption = function(id) {
@@ -144,6 +151,9 @@ var OptionsView = function(uiModel) {
 
         var ctrl = this.model.controls.create(uiDef.type, uiDef);
 
+        if (ctrl.updateContext)
+            this._contextDependentCtrls.push(ctrl);
+
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
 
@@ -162,6 +172,9 @@ var OptionsView = function(uiModel) {
 
         if (ctrl.getPropertyValue("stage") > this.model.currentStage)
             return null;
+
+        if (ctrl.updateContext)
+            this._contextDependentCtrls.push(ctrl);
 
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
