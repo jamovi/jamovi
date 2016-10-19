@@ -12,7 +12,50 @@ var FormatDef = {
         default: '',
 
         toString: function(raw) {
-            return FormatDef.variable._itemToString(raw, 0);
+            return raw;
+        },
+
+        parse: function(value) {
+            return value;
+        },
+
+        isValid: function(raw) {
+            return (typeof raw === 'string');
+        },
+
+        isEqual: function(raw1, raw2) {
+            return raw1 === raw2;
+        },
+
+        interactions: function(variables) {
+            var list = [];
+            for (let i = 0; i < variables.length; i++) {
+                var listLength = list.length;
+                var rawVar = variables[i];
+                if (variables[i].raw)
+                    rawVar = variables[i].raw;
+
+                for (let j = 0; j < listLength; j++) {
+                    var newVar = JSON.parse(JSON.stringify(list[j]));
+
+                    newVar.push(rawVar);
+                    list.push(FormatDef.constructor(newVar, FormatDef.term));
+                }
+                list.push(FormatDef.constructor([rawVar], FormatDef.term));
+            }
+
+            return list;
+        }
+    },
+
+    term: {
+
+        name: 'term',
+
+        default: '',
+
+        toString: function(raw) {
+            return FormatDef.term._itemToString(raw, 0);
         },
 
         parse: function(value) {
@@ -20,11 +63,11 @@ var FormatDef = {
         },
 
         isValid: function(raw) {
-            return FormatDef.variable._validateItem(raw, 0);
+            return FormatDef.term._validateItem(raw, 0);
         },
 
         isEqual: function(raw1, raw2) {
-            return FormatDef.variable._areItemsEqual(raw1, raw2);
+            return FormatDef.term._areItemsEqual(raw1, raw2);
         },
 
         contains: function(raw, value) {
@@ -39,7 +82,7 @@ var FormatDef = {
 
             for (var j = 0; j < raw.length; j++) {
 
-                if (FormatDef.variable.contains(raw[j], value))
+                if (FormatDef.term.contains(raw[j], value))
                     return true;
             }
 
@@ -50,7 +93,7 @@ var FormatDef = {
             for (var i = 0; i < value.length; i++) {
                 var found = false;
                 for (var k = jStart; k < raw.length; k++) {
-                    if (FormatDef.variable._areItemsEqual(value[i], raw[k])) {
+                    if (FormatDef.term._areItemsEqual(value[i], raw[k])) {
                         if (jStart === k)
                             jStart = k + 1;
                         found = true;
@@ -85,7 +128,7 @@ var FormatDef = {
             for (var i = 0; i < item1.length; i++) {
                 var found = false;
                 for (var j = jStart; j < item2.length; j++) {
-                    if (FormatDef.variable._areItemsEqual(item1[i], item2[j])) {
+                    if (FormatDef.term._areItemsEqual(item1[i], item2[j])) {
                         if (j === jStart)
                             jStart = j + 1;
                         found = true;
@@ -110,46 +153,26 @@ var FormatDef = {
             if (typeof item === 'string')
                 return item;
 
-            var joiner = FormatDef.variable._getJoiner(level);
-            var combined = FormatDef.variable._itemToString(item[0], level + 1);
+            var joiner = FormatDef.term._getJoiner(level);
+            var combined = FormatDef.term._itemToString(item[0], level + 1);
             for (var i = 1; i < item.length; i++)
-                combined = combined + " " + joiner + " " + FormatDef.variable._itemToString(item[i], level + 1);
+                combined = combined + " " + joiner + " " + FormatDef.term._itemToString(item[i], level + 1);
 
             return combined;
         },
 
         _validateItem: function(item, level) {
-            if (typeof item === 'string')
+            if (level > 0 && typeof item === 'string')
                 return true;
-
-            if (level > 2 || Array.isArray(item) === false || item.length === 0)
+            else if (level > 2 || Array.isArray(item) === false || item.length === 0)
                 return false;
 
             for (var i = 0; i < item.length; i++) {
-                if (FormatDef.variable._validateItem(item[i], level + 1) === false)
+                if (FormatDef.term._validateItem(item[i], level + 1) === false)
                     return false;
             }
 
             return true;
-        },
-
-        interactions: function(variables) {
-            var list = [];
-            for (let i = 0; i < variables.length; i++) {
-                var listLength = list.length;
-                for (let j = 0; j < listLength; j++) {
-                    var newVar = list[j];
-                    if (Array.isArray(newVar))
-                        newVar = JSON.parse(JSON.stringify(newVar));
-                    else
-                        newVar = [newVar];
-                    newVar.push(variables[i]);
-                    list.push(newVar);
-                }
-                list.push(variables[i]);
-            }
-
-            return list;
         }
     },
 

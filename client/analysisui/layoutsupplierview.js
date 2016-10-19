@@ -236,6 +236,26 @@ var LayoutSupplierView = function(params) {
         this.supplierGrid.resumeLayout();
     };
 
+    this.render_term = function(item, row) {
+        var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>');
+        $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+
+        var c1 = this.supplierGrid.getCell(0, row);
+
+        if (c1 === null) {
+            c1 = this.supplierGrid.addCell(0, row, false,  $item);
+            c1.clickable(true);
+        }
+        else {
+            c1.$content.remove();
+            c1.setContent($item);
+        }
+
+        c1.setStretchFactor(1);
+
+        item.$el = c1.$el;
+    };
+
     this.render_variable = function(item, row) {
 
         var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');

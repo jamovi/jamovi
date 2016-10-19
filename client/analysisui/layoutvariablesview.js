@@ -2,14 +2,12 @@
 'use strict';
 
 var LayoutSupplierView = require('./layoutsupplierview');
-var Overridable = require('./overridable');
 var FormatDef = require('./formatdef');
 var EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
 
 var LayoutVariablesView = function(params) {
 
     LayoutSupplierView.extendTo(this, params);
-    Overridable.extendTo(this);
 
     this.$el.addClass("silky-options-variable-supplier-group");
 

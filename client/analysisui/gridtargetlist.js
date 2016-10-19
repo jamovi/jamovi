@@ -9,14 +9,15 @@ var DragNDrop = require('./dragndrop');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var TargetListValueFilter = require('./targetlistvaluefilter');
 var SuperClass = require('./superclass');
+var Backbone = require('backbone');
 
 var GridTargetList = function(params) {
     GridOptionControl.extendTo(this, params);
     DragNDrop.extendTo(this);
+    _.extend(this, Backbone.Events);
 
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "unique_per_row", "unique_per_column"], "none"));
-    this.registerSimpleProperty("multipleSelectionAction", null);
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -108,21 +109,12 @@ var GridTargetList = function(params) {
 
     // Catching methods
     this.catchDroppedItems = function(source, items, xpos, ypos) {
-        var finalItems = this.checkForMultiSelectionActions(items);
-        for (var i = 0; i < finalItems.length; i++)
-            this.addRawToOption(finalItems[i], [this.option.getLength()]);
+        for (var i = 0; i < items.length; i++)
+            this.addRawToOption(items[i], [this.option.getLength()]);
     };
 
     this.filterItemsForDrop = function(items, xpos, ypos) {
-        var itemsToDrop = [];
-        for (var i = 0; i < items.length; i++) {
-            if (this.testValue(items[i])) {
-                itemsToDrop.push(items[i]);
-                if (this.targetGrid.isSingleItem)
-                    break;
-            }
-        }
-        return itemsToDrop;
+        return this.preprocessItems(items);
     };
 
     this.inspectDraggedItems = function(source, items) {
@@ -232,43 +224,25 @@ var GridTargetList = function(params) {
         return self._supplier.pullItem(localItem, false);
     };
 
-    this.checkForMultiSelectionActions = function(items) {
-        var msAction = this.getPropertyValue("multipleSelectionAction");
-        if (msAction !== null && items.length > 1)
-            return this.multipleSelectionAction(msAction, items);
-
-        return items;
-    };
-
     this.getSupplierItems = function() {
         var items = this._supplier.getSelectedItems();
-        return this.checkForMultiSelectionActions(items);
+        return this.preprocessItems(items);
     };
 
-    this.multipleSelectionAction = function(action, items) {
-        var newItems = [];
-        var joined = [];
-        var format = null;
-        for (let i = 0; i < items.length; i++) {
-            var item = items[i];
-            if (i === 0)
-                format = item.value.format;
-            else if (format.name !== item.value.format.name) {
-                format = null;
-                break;
+    this.preprocessItems = function(items) {
+        var data = { items: items };
+        this.trigger("preprocess", data);
+
+        var testedItems = [];
+        for (var i = 0; i < data.items.length; i++) {
+            if (this.testValue(data.items[i])) {
+                testedItems.push(data.items[i]);
+                if (this.targetGrid.isSingleItem)
+                    break;
             }
-            joined.push(item.value.raw);
         }
-
-        if (format !== null && _.isUndefined(format[action]) === false) {
-            var values = format[action](joined);
-            for (let i = 0; i < values.length; i++)
-                newItems.push({ value: new FormatDef.constructor(values[i], format) });
-        }
-
-        return newItems;
+        return testedItems;
     };
-
 
     this.addRawToOption = function(item, key) {
         return this.targetGrid.addRawToOption(item.value.raw, key, item.value.format);
@@ -288,17 +262,14 @@ var GridTargetList = function(params) {
             if (selectedCount > 0) {
                 for (var i = 0; i < selectedCount; i++) {
                     var selectedItem = selectedItems[i];
-                    if (this.testValue(selectedItem)) {
-
-                        if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
-                            postProcessSelectionIndex = selectedItem.index;
-                            if (this._supplier.getPropertyValue("persistentItems"))
-                                postProcessSelectionIndex += 1;
-                        }
-                        var key = [this.option.getLength()];
-                        if (this.addRawToOption(selectedItem, key) === false)
-                            break;
+                    if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
+                        postProcessSelectionIndex = selectedItem.index;
+                        if (this._supplier.getPropertyValue("persistentItems"))
+                            postProcessSelectionIndex += 1;
                     }
+                    var key = [this.option.getLength()];
+                    if (this.addRawToOption(selectedItem, key) === false)
+                        break;
                 }
                 postProcessList = this._supplier;
             }

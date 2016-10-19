@@ -2,12 +2,10 @@
 'use strict';
 
 
-var Overridable = require('./overridable');
 var _ = require('underscore');
 var SuperClass = require('./superclass');
 
 var LayoutGridBorderSupport = function() {
-    Overridable.extendTo(this);
 
     var self = this;
 

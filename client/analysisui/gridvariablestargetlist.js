@@ -4,11 +4,9 @@ var $ = require('jquery');
 var _ = require('underscore');
 var FormatDef = require('./formatdef');
 var GridTargetList = require('./gridtargetlist');
-var Overridable = require('./overridable');
 
 var GridVariablesTargetList = function(params) {
     GridTargetList.extendTo(this, params);
-    Overridable.extendTo(this);
 
     this._suggestedVariableTypes = [];
     this._permittedVariableTypes = [];

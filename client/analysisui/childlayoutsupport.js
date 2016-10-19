@@ -2,13 +2,11 @@
 'use strict';
 
 var LayoutGrid = require('./layoutgrid').Grid;
-var Overridable = require('./overridable');
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
 var SuperClass = require('./superclass');
 
 var ChildLayoutSupport = function(params) {
 
-    Overridable.extendTo(this);
 
     var self = this;
     this._style = this.getPropertyValue('style');

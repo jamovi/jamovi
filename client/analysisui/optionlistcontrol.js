@@ -5,14 +5,12 @@ var _ = require('underscore');
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
-var Overridable = require('./overridable');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var SuperClass = require('./superclass');
 
 var OptionListControl = function(params) {
     OptionControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
-    Overridable.extendTo(this);
 
     this.registerSimpleProperty("columns", null);
     this.registerSimpleProperty("maxItemCount", -1);
