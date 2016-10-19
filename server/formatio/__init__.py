@@ -1,26 +1,27 @@
 
 from . import csv
-from . import osilky
+from . import omv
 from . import blank
+from . import jasp
 
 
-def read(dataset, path):
+def read(data, path):
     if path == '':
-        blank.read(dataset)
+        blank.read(data)
     elif path.endswith('.csv') or path.endswith('.txt'):
-        csv.read(dataset, path)
+        csv.read(data, path)
     elif path.endswith('.jasp'):
-        osilky.read(dataset, path)
+        jasp.read(data, path)
     else:
-        osilky.read(dataset, path)
+        omv.read(data, path)
 
 
-def write(dataset, path):
-    osilky.write(dataset, path)
+def write(data, path):
+    omv.write(data, path)
 
 
 def is_supported(filename):
     return (filename.endswith('.csv') or
             filename.endswith('.txt') or
-            filename.endswith('.osilky') or
+            filename.endswith('.omv') or
             filename.endswith('.jasp'))

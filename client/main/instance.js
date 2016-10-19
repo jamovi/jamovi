@@ -15,6 +15,7 @@ const Notify = require('./notification');
 
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset').DataSetViewModel;
+const Options = require('./options');
 
 const ProgressModel = Backbone.Model.extend({
     defaults : {
@@ -212,7 +213,7 @@ const Instance = Backbone.Model.extend({
         let info = new coms.Messages.InfoRequest();
         let request = new coms.Messages.ComsMessage();
         request.payload = info.toArrayBuffer();
-        request.payloadType = "InfoRequest";
+        request.payloadType = 'InfoRequest';
         request.instanceId = this._instanceId;
 
         return coms.send(request).then(response => {
@@ -230,13 +231,18 @@ const Instance = Backbone.Model.extend({
                 this.set('fileName', path.basename(info.filePath, ext));
             }
 
+            for (let analysis of info.analyses)
+                this._analyses.addAnalysis(analysis);
+
             return response;
         });
     },
     _analysisCreated(analysis) {
 
-        this.set("selectedAnalysis", analysis);
-        this._runAnalysis(analysis);
+        if (analysis.results === null) {
+            this.set('selectedAnalysis', analysis);
+            this._runAnalysis(analysis);
+        }
     },
     _runAnalysis(analysis, changed) {
 
@@ -252,7 +258,7 @@ const Instance = Backbone.Model.extend({
             analysisRequest.changed = changed;
 
         if (analysis.isReady)
-            analysisRequest.options = JSON.stringify(analysis.options);
+            analysisRequest.setOptions(Options.toPB(analysis.options, coms.Messages).c);
 
         let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
@@ -273,7 +279,7 @@ const Instance = Backbone.Model.extend({
             let analysis = this._analyses.get(id);
 
             if (analysis.isReady === false && _.has(response, "options")) {
-                analysis.setup(JSON.parse(response.options));
+                analysis.setup(Options.fromPB(response.options, coms.Messages));
                 ok = true;
             }
 

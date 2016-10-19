@@ -28,6 +28,12 @@ message ComsMessage {
     Error error = 6;
 }
 
+message Version {
+    int32 major = 1;
+    int32 minor = 2;
+    int32 revision = 3;
+}
+
 message AnalysisRequest {
     string datasetId = 1;
     int32 analysisId = 2;
@@ -40,7 +46,7 @@ message AnalysisRequest {
     }
 
     Perform perform = 5;
-    string options = 6;
+    AnalysisOptions options = 6;
     int32 ppi = 7;
     repeated string changed = 8;
 }
@@ -58,12 +64,37 @@ message AnalysisResponse {
 
     string datasetId = 1;
     int32 analysisId = 2;
-    string options = 3;
-    bool hasResults = 4;
-    ResultsElement results = 5;
-    AnalysisStatus status = 6;
-    Error error = 7;
-    bool incAsText = 8;
+    string name = 3;
+    string ns = 4;
+    Version version = 5;
+    AnalysisOptions options = 6;
+    ResultsElement results = 7;
+    AnalysisStatus status = 8;
+    Error error = 9;
+    bool incAsText = 10;
+}
+
+message AnalysisOption {
+
+    enum Other {
+        FALSE = 0;
+        TRUE  = 1;
+        NULL  = 2;
+    }
+
+    oneof type {
+        int32 i = 1;
+        double d = 2;
+        string s = 3;
+        Other o = 4;
+        AnalysisOptions c = 5;
+    }
+}
+
+message AnalysisOptions {
+    repeated AnalysisOption options = 1;
+    bool hasNames = 2;
+    repeated string names = 3;
 }
 
 message ResultsCell {
@@ -247,6 +278,7 @@ message InfoResponse {
     uint32 rowCount = 3;
     uint32 columnCount = 4;
     string filePath = 5;
+    repeated AnalysisResponse analyses = 6;
 }
 
 enum SpecialValues {

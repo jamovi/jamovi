@@ -18,7 +18,6 @@ from .enginemanager import EngineManager
 from .analyses import Analyses
 from . import formatio
 
-import json
 import uuid
 import posixpath
 import math
@@ -28,6 +27,13 @@ import logging
 from .utils import fs
 
 log = logging.getLogger('silky')
+
+
+class InstanceData:
+    def __init__(self):
+        self.analyses = None
+        self.dataset = None
+        self.path = None
 
 
 class Instance:
@@ -69,10 +75,12 @@ class Instance:
 
     def __init__(self, session_path, instance_id=None):
 
+        self._data = InstanceData()
+        self._data.dataset = None
+        self._data.analyses = Analyses()
+
         self._coms = None
-        self._dataset = None
         self._filepath = None
-        self._analyses = Analyses()
         self._em = EngineManager()
 
         self._session_path = session_path
@@ -87,9 +95,9 @@ class Instance:
         else:
             self._instance_id = str(uuid.uuid4())
 
-        self._instance_path = os.path.join(self._session_path, self._instance_id)
-        os.makedirs(self._instance_path, exist_ok=True)
-        self._buffer_path = os.path.join(self._instance_path, 'buffer')
+        self._data.instance_path = os.path.join(self._session_path, self._instance_id)
+        os.makedirs(self._data.instance_path, exist_ok=True)
+        self._buffer_path = os.path.join(self._data.instance_path, 'buffer')
 
         self._em.start(self._session_path)
 
@@ -114,7 +122,7 @@ class Instance:
         return self._coms is not None
 
     def get_path_to_resource(self, resourceId):
-        return os.path.join(self._instance_path, resourceId)
+        return os.path.join(self._data.instance_path, resourceId)
 
     def on_request(self, request):
         if type(request) == jcoms.DataSetRR:
@@ -136,6 +144,8 @@ class Instance:
             log.info(request.payloadType)
 
     def _on_results(self, results, request, complete):
+        analysis = self._data.analyses[results.analysisId]
+        analysis.results = results
         complete = (results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
         self._coms.send(results, self._instance_id, request, complete)
 
@@ -207,7 +217,7 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
 
-        formatio.write(self._dataset, path)
+        formatio.write(self._data, path)
 
         self._filepath = path
         response = jcoms.SaveProgress()
@@ -223,9 +233,10 @@ class Instance:
         dataset = DataSet.create(mm)
 
         try:
-            formatio.read(dataset, nor_path)
-            self._dataset = dataset
+            self._data.dataset = dataset
             self._filepath = path
+
+            formatio.read(self._data, nor_path)
 
             self._coms.send(None, self._instance_id, request)
 
@@ -254,32 +265,31 @@ class Instance:
 
     def _on_analysis(self, request):
 
-        if request.options != '':
+        if request.HasField('options'):
 
             analysisId = request.analysisId
             options = request.options
 
             request.datasetId = self._instance_id
             request.analysisId = analysisId
-            request.options = options
+            request.options.CopyFrom(options)
             self._em.send(request)
 
         else:
             try:
-                analysis = self._analyses.create(request.analysisId, request.name, request.ns)
+                analysis = self._data.analyses.create(request.analysisId, request.name, request.ns)
                 analysisId = request.analysisId
-                options = json.dumps(analysis.options)
 
                 response = jcoms.AnalysisResponse()
                 response.analysisId = analysisId
-                response.options = options
+                response.options.ParseFromString(analysis.options.asBytes())
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
                 self._coms.send(response, self._instance_id, request, False)
 
                 request.datasetId = self._instance_id
                 request.analysisId = analysisId
-                request.options = options
+                request.options.ParseFromString(analysis.options.asBytes())
                 self._em.send(request)
 
             except OSError as e:
@@ -299,23 +309,28 @@ class Instance:
 
         response = jcoms.InfoResponse()
 
-        hasDataSet = self._dataset is not None
+        hasDataSet = self._data.dataset is not None
         response.hasDataSet = hasDataSet
 
         if hasDataSet:
             response.filePath = self._filepath
-            response.rowCount = self._dataset.row_count
-            response.columnCount = self._dataset.column_count
+            response.rowCount = self._data.dataset.row_count
+            response.columnCount = self._data.dataset.column_count
 
-            for column in self._dataset:
+            for column in self._data.dataset:
                 column_schema = response.schema.columns.add()
                 self._populate_column_schema(column, column_schema)
+
+        for analysis in self._data.analyses:
+            if analysis.has_results:
+                analysis_pb = response.analyses.add()
+                analysis_pb.CopyFrom(analysis.results)
 
         self._coms.send(response, self._instance_id, request)
 
     def _on_dataset(self, request):
 
-        if self._dataset is None:
+        if self._data.dataset is None:
             return
 
         response = jcoms.DataSetRR()
@@ -348,7 +363,7 @@ class Instance:
     def _apply_schema(self, request, response):
         for i in range(len(request.schema)):
             column_schema = request.schema[i]
-            column = self._dataset[column_schema.name]
+            column = self._data.dataset[column_schema.name]
 
             levels = None
             if column_schema.hasLevels:
@@ -371,7 +386,7 @@ class Instance:
         col_count = col_end - col_start + 1
 
         for i in range(col_count):
-            column = self._dataset[col_start + i]
+            column = self._data.dataset[col_start + i]
             col_res = request.data[i]
 
             changes = column.changes
@@ -497,7 +512,7 @@ class Instance:
         col_count = col_end - col_start + 1
 
         for c in range(col_start, col_start + col_count):
-            column = self._dataset[c]
+            column = self._data.dataset[c]
 
             col_res = response.data.add()
 
@@ -528,7 +543,7 @@ class Instance:
 
     def _populate_schema(self, request, response):
         response.incSchema = True
-        for column in self._dataset:
+        for column in self._data.dataset:
             column_schema = response.schema.add()
             self._populate_column_schema(column, column_schema)
 

@@ -34,7 +34,7 @@ def fix_names(names):
     return names
 
 
-def read(dataset, path):
+def read(data, path):
 
     with open(path, encoding='utf-8-sig') as csvfile:
         try:
@@ -55,8 +55,8 @@ def read(dataset, path):
 
         for i in range(len(column_names)):
             column_name = column_names[i]
-            dataset.append_column(column_name)
-            column = dataset[i]
+            data.dataset.append_column(column_name)
+            column = data.dataset[i]
             column_writers.append(ColumnWriter(column, i))
             column_count += 1
 
@@ -78,7 +78,7 @@ def read(dataset, path):
         for column_writer in column_writers:
             column_writer.ruminate()
 
-        dataset.set_row_count(row_count)
+        data.dataset.set_row_count(row_count)
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)

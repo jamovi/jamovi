@@ -41,11 +41,16 @@ void EngineR::run(Analysis *analysis)
 
     RInside &rInside = *_rInside;
 
+    Rcpp::RawVector optionsVec(analysis->options.size());
+    std::copy(analysis->options.begin(), analysis->options.end(), optionsVec.begin());
+
+    rInside["optionsPB"] = optionsVec;
+
     stringstream ss;
 
     ss << "{\n";
     ss << "  options <- " << analysis->ns << "::" << analysis->name << "Options$new()\n";
-    ss << "  options$fromJSON('" << analysis->options << "')\n";
+    ss << "  options$read(optionsPB)\n";
     ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', options=options, datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ")\n";
     ss << "}\n";
 
@@ -74,7 +79,7 @@ void EngineR::run(Analysis *analysis)
     rInside["checkpoint"] = Rcpp::InternalFunction(check);
     rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
 
-    rInside.parseEvalQNT("rm(list=c('readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
+    rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
     rInside.parseEvalQNT("analysis$init()");
 
@@ -97,7 +102,7 @@ void EngineR::run(Analysis *analysis)
     std::string raw2(rawVec2.begin(), rawVec2.end());
     resultsReceived(raw2);
 
-    Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incAsText=TRUE), NULL)\n");
+    Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
     std::string raw3(rawVec3.begin(), rawVec3.end());
     resultsReceived(raw3);
 }

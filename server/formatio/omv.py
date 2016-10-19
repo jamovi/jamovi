@@ -7,24 +7,25 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import struct
 import os
 import os.path
+import re
 
 from silky import MeasureType
 
 
-def write(dataset, path):
+def write(data, path):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
-        content.write('Created-By: JASP 0.7.5 Beta 2\n')
+        content.write('Created-By: jamovi\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('JASP-Archive-Version: 2.0\n')
+        content.write('jamovi-Archive-Version: 1.0\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
         content = None
 
         fields = [ ]
-        for column in dataset:
+        for column in data.dataset:
             field = { }
             field['name'] = column.name
             field['measureType'] = MeasureType.stringify(column.measure_type)
@@ -37,8 +38,8 @@ def write(dataset, path):
         metadata = { }
 
         metadataset = { }
-        metadataset['rowCount'] = dataset.row_count
-        metadataset['columnCount'] = dataset.column_count
+        metadataset['rowCount'] = data.dataset.row_count
+        metadataset['columnCount'] = data.dataset.column_count
         metadataset['fields'] = fields
 
         metadata['dataSet'] = metadataset
@@ -48,15 +49,15 @@ def write(dataset, path):
         metadata = None
 
         xdata = { }
-        for column in dataset:
+        for column in data.dataset:
             if column.has_levels:
                 xdata[column.name] = { 'labels': column.levels }
         zip.writestr('xdata.json', json.dumps(xdata), zipfile.ZIP_DEFLATED)
         xdata = None
 
-        row_count = dataset.row_count
+        row_count = data.dataset.row_count
         required_bytes = 0
-        for column in dataset:
+        for column in data.dataset:
             if column.measure_type == MeasureType.CONTINUOUS:
                 required_bytes += (8 * row_count)
             else:
@@ -65,7 +66,7 @@ def write(dataset, path):
         temp_file = NamedTemporaryFile(delete=False)
         temp_file.truncate(required_bytes)
 
-        for column in dataset:
+        for column in data.dataset:
             if column.measure_type == MeasureType.CONTINUOUS:
                 for i in range(0, row_count):
                     value = column.raw(i)
@@ -82,8 +83,19 @@ def write(dataset, path):
         zip.write(temp_file.name, 'data.bin')
         os.remove(temp_file.name)
 
+        resources = [ ]
 
-def read(dataset, path):
+        for analysis in data.analyses:
+            analysis_dir = '{:02} {}/analysis'.format(analysis.id, analysis.name)
+            zip.writestr(analysis_dir, analysis.serialize(), zipfile.ZIP_DEFLATED)
+            resources += analysis.resources
+
+        for rel_path in resources:
+            abs_path = os.path.join(data.instance_path, rel_path)
+            zip.write(abs_path, rel_path)
+
+
+def read(data, path):
 
     with ZipFile(path, 'r') as zip:
         # manifest = zip.read('META-INF/MANIFEST.MF')
@@ -93,20 +105,20 @@ def read(dataset, path):
         meta_dataset = metadata['dataSet']
 
         for meta_column in meta_dataset['fields']:
-            dataset.append_column(meta_column['name'])
-            column = dataset[dataset.column_count - 1]
+            data.dataset.append_column(meta_column['name'])
+            column = data.dataset[data.dataset.column_count - 1]
             measure_type = MeasureType.parse(meta_column['measureType'])
             column.measure_type = measure_type
 
         row_count = meta_dataset['rowCount']
 
-        dataset.set_row_count(row_count)
+        data.dataset.set_row_count(row_count)
 
         try:
             xdata_content = zip.read('xdata.json').decode('utf-8')
             xdata = json.loads(xdata_content)
 
-            for column in dataset:
+            for column in data.dataset:
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
@@ -119,7 +131,7 @@ def read(dataset, path):
             data_path = os.path.join(dir, 'data.bin')
             data_file = open(data_path, 'rb')
 
-            for column in dataset:
+            for column in data.dataset:
                 if column.measure_type == MeasureType.CONTINUOUS:
                     for i in range(row_count):
                         byts = data_file.read(8)
@@ -131,3 +143,13 @@ def read(dataset, path):
                         value = struct.unpack('<i', byts)
                         column[i] = value[0]
             data_file.close()
+
+        is_analysis = re.compile('^[0-9][0-9]+ .+/analysis$')
+        is_resource = re.compile('^[0-9][0-9]+ .+/resources/.+')
+
+        for entry in zip.infolist():
+            if is_analysis.match(entry.filename) is not None:
+                serial = zip.read(entry.filename)
+                data.analyses.create_from_serial(serial)
+            elif is_resource.match(entry.filename) is not None:
+                zip.extract(entry, data.instance_path)

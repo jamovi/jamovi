@@ -51,13 +51,16 @@ const ResultsPanel = Backbone.View.extend({
                 src="' + this.iframeUrl + this.model.instanceId() + '/" \
                 sandbox="allow-scripts allow-same-origin" \
                 style="border: 0 ; height : 0 ;" \
-                data-selected \
                 ></iframe>';
 
             let $container = $('<div class="silky-results-container"></div>').appendTo(this.$el);
             let $cover = $('<div class="silky-results-cover"></div>').appendTo($container);
             let $iframe = $(element).appendTo($container);
             let iframe = $iframe[0];
+
+            let selected = this.model.get('selectedAnalysis');
+            if (selected !== null && analysis.id === selected.id)
+                $iframe.attr('data-selected', '');
 
             resources = {
                 iframe : iframe,

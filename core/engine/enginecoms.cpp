@@ -55,11 +55,14 @@ void EngineComs::parse(char *data, int len)
         return;
     }
 
+    std::string options;
+    analysisRequest.options().SerializeToString(&options);
+
     Analysis *analysis = new Analysis(
         analysisRequest.analysisid(),
         analysisRequest.name(),
         analysisRequest.ns(),
-        analysisRequest.options(),
+        options,
         analysisRequest.ppi());
 
     analysis->datasetId = analysisRequest.datasetid();

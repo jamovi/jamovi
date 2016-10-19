@@ -184,7 +184,7 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here" />';
             html += '           <div class="silky-bs-fslist-browser-save-filetype">';
             html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
-            html += '                   <option data-extension="osilky" selected>Silky File (*.osilky)</option>';
+            html += '                   <option data-extension="omv" selected>jamovi file (*.omv)</option>';
             //html += '                 <option data-extension="jasp">Silky File2 (*.silky)</option>';
             html += '               </select>';
             html += '           </div>';
@@ -203,7 +203,7 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$el.append(this.$itemsList);
 
         if (this.model.clickProcess === "save") {
-            this.filterExtension = "osilky";
+            this.filterExtension = "omv";
             var self = this;
             setTimeout(function () {
                 self.$header.find('.silky-bs-fslist-browser-save-name').focus();
@@ -510,8 +510,8 @@ var BackstageModel = Backbone.Model.extend({
             if (type === 'open') {
 
                 let filters = [
-                    { name: 'Data files', extensions: ['osilky', 'csv', 'txt', 'jasp']},
-                    { name: 'Silky', extensions: ['osilky'] },
+                    { name: 'Data files', extensions: ['omv', 'csv', 'txt', 'jasp']},
+                    { name: 'jamovi', extensions: ['omv'] },
                     { name: 'CSV', extensions: ['csv', 'txt'] },
                     { name: 'JASP', extensions: ['jasp'] },
                 ];
@@ -526,7 +526,7 @@ var BackstageModel = Backbone.Model.extend({
             else if (type === 'saveAs') {
 
                 let filters = [
-                    { name: 'Silky', extensions: ['osilky'] },
+                    { name: 'jamovi', extensions: ['omv'] },
                 ];
 
                 dialog.showSaveDialog({ filters : filters }, function(fileName) {
@@ -655,7 +655,7 @@ var BackstageModel = Backbone.Model.extend({
              });
     },
     _updateSavePath: function(path) {
-        if (path.endsWith(".osilky"))
+        if (path.endsWith(".omv"))
             this.set('currentActivePath', path);
         else
             this.set('currentActivePath', null);

@@ -108,6 +108,18 @@ const Analyses = Backbone.Model.extend({
         this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
     },
+    addAnalysis : function(analysisPB) {
+        let analysis = new Analysis(analysisPB.analysisId, analysisPB.name, analysisPB.ns);
+        analysis._parent = this;
+        this._analyses.push(analysis);
+        analysis.setup(analysisPB.options);
+        analysis.setResults(analysisPB.results);
+
+        if (this._nextId <= analysisPB.analysisId)
+            this._nextId = analysisPB.analysisId + 1;
+
+        this.trigger('analysisCreated', analysis);
+    },
     get : function(id) {
         for (let i = 0; i < this._analyses.length; i++) {
             let analysis = this._analyses[i];
