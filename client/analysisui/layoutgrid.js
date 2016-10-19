@@ -6,11 +6,9 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 var LayoutCell = require('./layoutcell').LayoutCell;
 var SpacerCell = require('./layoutcell').SpacerCell;
-var Overridable = require('./overridable');
 var SuperClass = require('./superclass');
 
 var LayoutGrid = function() {
-    Overridable.extendTo(this);
 
     this.$el = $('<div class="silky-layout-grid"></div>');
     this.$el.css("position", "relative");

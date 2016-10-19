@@ -2,13 +2,11 @@
 
 var $ = require('jquery');
 var GridOptionControl = require('./gridoptioncontrol');
-var Overridable = require('./overridable');
 var ChildLayoutSupport = require('./childlayoutsupport');
 
 var GridRadioButton = function(params) {
 
     GridOptionControl.extendTo(this, params);
-    Overridable.extendTo(this);
 
     this.registerSimpleProperty("checkedValue", null);
 

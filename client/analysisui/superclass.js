@@ -5,6 +5,19 @@ var SuperClass = { };
 
 SuperClass.superClasses = { };
 
+SuperClass._addOverrideAbility = function(target) {
+    target._override = function(functionName, callback) {
+        var baseFunction = this[functionName];
+        if (!baseFunction)
+            baseFunction = null;
+
+        var self = this;
+        this[functionName] = function(_param1, _param2, _param3, _param4, _param5, _param6, _param7) {
+            return callback.call(self, baseFunction, _param1, _param2, _param3, _param4, _param5, _param6, _param7);
+        };
+    };
+};
+
 SuperClass.create = function(_class) {
 
     if (_class.name in SuperClass.superClasses)
@@ -12,8 +25,10 @@ SuperClass.create = function(_class) {
 
     _class.extendTo = function(target, param1, param2, param3, param4, param5, param6, param7) {
 
-        if (!target._inheritedClasses)
+        if (!target._inheritedClasses) {
             target._inheritedClasses = [];
+            SuperClass._addOverrideAbility(target);
+        }
         else {
             for (let i = 0; i < target._inheritedClasses.length; i++) {
                 var scid = target._inheritedClasses[i];

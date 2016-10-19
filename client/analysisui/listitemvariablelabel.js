@@ -16,6 +16,8 @@ var ListItemVariableLabel = function(params) {
         var imageClasses = 'silky-variable-type-img';
         if (properties !== null && _.isUndefined(properties.type) === false)
             imageClasses = imageClasses + ' silky-variable-type-' + properties.type;
+        else
+            imageClasses = imageClasses + ' silky-variable-type-none';
 
         this.$el.find(".silky-variable-type-img").removeClass().addClass(imageClasses);
         var $label = this.$el.find(".silky-list-item-value");
@@ -28,6 +30,8 @@ var ListItemVariableLabel = function(params) {
         var imageClasses = 'silky-variable-type-img';
         if (properties !== null && _.isUndefined(properties.type) === false)
             imageClasses = imageClasses + ' silky-variable-type-' + properties.type;
+        else
+            imageClasses = imageClasses + ' silky-variable-type-none';
 
         var $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
         $item.append('<div style="display: inline-block; overflow: hidden;" class="' + imageClasses + '"></div>');

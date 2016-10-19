@@ -18,6 +18,7 @@ var RMAnovaFactorsControl = require('./rmanovafactorscontrol');
 var ListItemVariableLabel = require('./listitemvariablelabel');
 var ListItemCombobox = require('./listitemcombobox');
 var ListItemLabel = require('./listitemlabel');
+var ListItemTermLabel = require('./listitemtermlabel');
 
 var SilkyControlManager = function() {
 
@@ -39,7 +40,8 @@ var SilkyControlManager = function() {
     this.registerControl("layoutbox", ControlContainer);
     this.registerControl("listitem.variablelabel", ListItemVariableLabel);
     this.registerControl("listitem.combobox", ListItemCombobox);
-    this.registerControl("listitem.label",ListItemLabel);
+    this.registerControl("listitem.label", ListItemLabel);
+    this.registerControl("listitem.termlabel", ListItemTermLabel);
 };
 
 

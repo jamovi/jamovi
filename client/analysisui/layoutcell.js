@@ -4,12 +4,10 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
-var Overridable = require('./overridable');
 var SuperClass = require('./superclass');
 
 var LayoutCell = function(parent) {
 
-    Overridable.extendTo(this);
 
     this.$el = $('<div style="opacity: 0" class="not-rendered"></div>');
     this.$el.css("position", "absolute");
