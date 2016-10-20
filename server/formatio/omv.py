@@ -86,6 +86,8 @@ def write(data, path):
         resources = [ ]
 
         for analysis in data.analyses:
+            if analysis.has_results is False:
+                continue
             analysis_dir = '{:02} {}/analysis'.format(analysis.id, analysis.name)
             zip.writestr(analysis_dir, analysis.serialize(), zipfile.ZIP_DEFLATED)
             resources += analysis.resources

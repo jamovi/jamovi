@@ -6,7 +6,24 @@ const Options = function() {
 
 };
 
-Options.toPB = function(value, Messages) {
+Options.toPB = function(options, Messages) {
+    let names = [ ];
+    let optionsPB = [ ];
+
+    for (let name in options) {
+        names.push(name);
+        optionsPB.push(_toPB(options[name], Messages));
+    }
+
+    let child = new Messages.AnalysisOptions();
+    child.setOptions(optionsPB);
+    child.setNames(names);
+    child.setHasNames(true);
+
+    return child;
+};
+
+const _toPB = function(value, Messages) {
 
     if (value === true) {
         let option = new Messages.AnalysisOption();
@@ -60,7 +77,7 @@ Options.toPB = function(value, Messages) {
             let option = value[i];
             if (arrayify && ! Array.isArray(option))
                 option = [ option ];
-            options[i] = Options.toPB(option, Messages);
+            options[i] = _toPB(option, Messages);
         }
 
         let child = new Messages.AnalysisOptions();
@@ -79,7 +96,7 @@ Options.toPB = function(value, Messages) {
 
         for (let name in value) {
             names.push(name);
-            options.push(Options.toPB(value[name], Messages));
+            options.push(_toPB(value[name], Messages));
         }
 
         let child = new Messages.AnalysisOptions();
@@ -97,51 +114,54 @@ Options.toPB = function(value, Messages) {
     }
 };
 
-Options.fromPB = function(m, Messages) {
+const _fromPB = function(option, Messages) {
 
-    let obj = {};
+    let value;
 
-    for (let i = 0; i < m.names.length; i++) {
-        let name = m.names[i];
-        let option = m.options[i];
-        let value;
-
-        if (option.type === 'o') {
-            if (option.o === Messages.AnalysisOption.Other.TRUE)
-                value = true;
-            else if (option.o === Messages.AnalysisOption.Other.FALSE)
-                value = false;
-            else
-                value = null;
-        }
-        else if (option.type === 'c') {
-
-            let options = option.c;
-            if (options.hasNames) {
-                value = { };
-                for (let j = 0; j < options.names.length; j++) {
-                    let name = options.names[j];
-                    let option = options.options[j];
-                    value[name] = Options.fromPB(option);
-                }
+    if (option.type === 'c') {
+        let options = option.c;
+        if (options.hasNames) {
+            value = { };
+            for (let j = 0; j < options.names.length; j++) {
+                let name = options.names[j];
+                let option = options.options[j];
+                value[name] = _fromPB(option, Messages);
             }
-            else {
-                value = new Array(options.options.length);
-                for (let j = 0; j < options.options.length; j++) {
-                    let option = options.options[j];
-                    value[j] = Options.fromPB(option);
-                }
-            }
-
         }
         else {
-            value = option[option.type];
+            value = new Array(options.options.length);
+            for (let j = 0; j < options.options.length; j++) {
+                let option = options.options[j];
+                value[j] = _fromPB(option, Messages);
+            }
         }
-
-        obj[name] = value;
+    }
+    else if (option.type === 'o') {
+        if (option.o === Messages.AnalysisOption.Other.TRUE)
+            value = true;
+        else if (option.o === Messages.AnalysisOption.Other.FALSE)
+            value = false;
+        else
+            value = null;
+    }
+    else {
+        value = option[option.type];
     }
 
-    return obj;
+    return value;
+};
+
+Options.fromPB = function(optionsPB, Messages) {
+
+    let value = { };
+
+    for (let j = 0; j < optionsPB.names.length; j++) {
+        let name = optionsPB.names[j];
+        let option = optionsPB.options[j];
+        value[name] = _fromPB(option, Messages);
+    }
+
+    return value;
 };
 
 module.exports = Options;

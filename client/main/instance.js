@@ -231,8 +231,10 @@ const Instance = Backbone.Model.extend({
                 this.set('fileName', path.basename(info.filePath, ext));
             }
 
-            for (let analysis of info.analyses)
-                this._analyses.addAnalysis(analysis);
+            for (let analysis of info.analyses) {
+                let options = Options.fromPB(analysis.options, coms.Messages);
+                this._analyses.addAnalysis(analysis.name, analysis.ns, analysis.analysisId, options, analysis.results);
+            }
 
             return response;
         });
@@ -258,7 +260,7 @@ const Instance = Backbone.Model.extend({
             analysisRequest.changed = changed;
 
         if (analysis.isReady)
-            analysisRequest.setOptions(Options.toPB(analysis.options, coms.Messages).c);
+            analysisRequest.setOptions(Options.toPB(analysis.options, coms.Messages));
 
         let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();

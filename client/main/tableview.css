@@ -50,6 +50,7 @@
     background-color: #E6E6E6 ;
     border-image-slice: 1 ;
     box-sizing: border-box ;
+    overflow: hidden;
 
     background-repeat: no-repeat ;
     background-size: auto 80% ;
