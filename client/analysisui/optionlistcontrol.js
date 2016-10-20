@@ -18,11 +18,13 @@ var OptionListControl = function(params) {
     this.registerSimpleProperty("fullRowSelect", false);
     this.registerSimpleProperty("removeAction", "delete_row", new EnumPropertyFilter(["delete_row", "clear_cell"], "delete_row"));
     this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest"], "normal"));
+    this.registerSimpleProperty("rowDataAsArray", false);
 
     this.maxItemCount = this.getPropertyValue('maxItemCount');
     this.showHeaders = this.getPropertyValue('showColumnHeaders');
     this.fullRowSelect = this.getPropertyValue('fullRowSelect');
     this.removeAction = this.getPropertyValue('removeAction');
+    this.rowDataAsArray = this.getPropertyValue('rowDataAsArray');
 
     this.$el.addClass(this.getPropertyValue('height') + "-size");
     this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
@@ -110,7 +112,7 @@ var OptionListControl = function(params) {
             var params = JSON.parse(JSON.stringify(columnInfo));
             params.valuekey = [this.displayRowToRowIndex(dispRow)];
             if (this._columnInfo._list.length > 1)
-                params.valuekey.push(columnInfo.name);
+                params.valuekey.push(this.rowDataAsArray ? columnInfo.index : columnInfo.name);
 
             params.format = columnInfo.format;
             var ctrl =  this.createItem(value, params);
@@ -153,11 +155,21 @@ var OptionListControl = function(params) {
          }
         else {
             var self = this;
-            _.each(value, function(value, key, list) {
-                columnInfo = self._columnInfo[key];
-                if (_.isUndefined(columnInfo) === false)
-                    self.updateValueCell(columnInfo, dispRow, value);
-            });
+            if (this.rowDataAsArray) {
+                var columnInfoList = self._columnInfo._list;
+                for (let i = 0; i < value.length; i++) {
+                    if (i >= columnInfoList.length)
+                        break;
+                    self.updateValueCell(columnInfoList[i], dispRow, value[i]);
+                }
+            }
+            else {
+                _.each(value, function(value, key, list) {
+                    columnInfo = self._columnInfo[key];
+                    if (_.isUndefined(columnInfo) === false)
+                        self.updateValueCell(columnInfo, dispRow, value);
+                });
+            }
         }
     };
 
@@ -194,9 +206,9 @@ var OptionListControl = function(params) {
 
         info.value = this._localData[rowIndex];
         if (typeof info.value === 'object' && Array.isArray(info.value) === false) {
-            info.value = info.value[info.columnInfo.name];
+            info.value = info.value[this.rowDataAsArray ? info.columnInfo.index : info.columnInfo.name];
             info.rowForm = "object";
-            info.valueIndex.push(info.columnInfo.name);
+            info.valueIndex.push(this.rowDataAsArray ? info.columnInfo.index : info.columnInfo.name);
         }
         else
             info.rowForm = "primitive";
@@ -213,16 +225,21 @@ var OptionListControl = function(params) {
 
     this.findEmptyProperty = function(item, formatName, value) {
 
+        if (typeof item !== 'object')
+            return null;
+
         var columns = this._columnInfo._list;
 
         for (var i = 0; i < columns.length; i++) {
 
-            var name = columns[i].name;
+            var key = columns[i].name;
+            if (this.rowDataAsArray)
+                key = columns[i].index;
 
-            if (columns[i].format.name === formatName && item[name] === null) {
+            if (columns[i].format.name === formatName && (item[key] === null || _.isUndefined(item[key]))) {
                 if (_.isUndefined(value) === false)
-                    item[name] = value;
-                return name;
+                    item[key] = value;
+                return key;
             }
         }
 
@@ -231,14 +248,21 @@ var OptionListControl = function(params) {
 
     this.createEmptyItem = function() {
         var itemPrototype = {};
+        if (this.rowDataAsArray)
+            itemPrototype = [];
+
         var columns = this._columnInfo._list;
 
         if (columns.length === 1)
             return null;
 
         for (var i = 0; i < columns.length; i++) {
-            var name = columns[i].name;
-            itemPrototype[name] = null;
+            var key = null;
+            if (this.rowDataAsArray)
+                key = columns[i].index;
+            else
+                key = columns[i].name;
+            itemPrototype[key] = null;
         }
 
         return itemPrototype;
@@ -251,7 +275,7 @@ var OptionListControl = function(params) {
         else if (cellInfo.rowForm === "primitive")
             this.option.setValue(null, [cellInfo.listIndex]);
         else
-            this.option.setValue(null, [cellInfo.listIndex, cellInfo.columnInfo.name]);
+            this.option.setValue(null, [cellInfo.listIndex, this.rowDataAsArray ? cellInfo.columnInfo.index : cellInfo.columnInfo.name]);
     };
 
     this.removeFromOption = function(cellInfo) {
@@ -273,6 +297,7 @@ var OptionListControl = function(params) {
     this.addRawToOption = function(data, key, format) {
         var hasMaxItemCount = this.maxItemCount >= 0;
         var currentCount = this.option.getLength();
+        var emptyPropertyFound = false;
         if (typeof data !== 'object') {
             var lastRow = this.option.getLength() - 1;
             var emptyProperty = null;
@@ -295,16 +320,21 @@ var OptionListControl = function(params) {
                     data = newItem;
                 }
             }
-            else
+            else {
                 key = [entryRow, emptyProperty];
+                emptyPropertyFound = true;
+            }
         }
         else if (hasMaxItemCount && currentCount >= this.maxItemCount)
             return false;
 
+
         if (this.option.valueInited() === false || this.isSingleItem)
             this.option.setValue(this.isSingleItem ? data : [data]);
+        else if (emptyPropertyFound)
+            this.option.setValue( data, this._columnInfo._list.length > 1 ? key : [key[0]] );
         else
-            this.option.insertValueAt( data, key );
+            this.option.insertValueAt( data, this._columnInfo._list.length > 1 ? key : [key[0]] );
 
         return true;
     };
@@ -315,7 +345,7 @@ var OptionListControl = function(params) {
         this.suspendLayout();
         var dispRow = this.rowIndexToDisplayIndex(keys[0]);
         this.insertRow(dispRow, 1);
-        var rowData = this.option.getValue(keys);
+        var rowData = this.option.getValue(keys[0]);
 
         this._localData.splice(keys[0], 0, this.clone(rowData));
         this.updateDisplayRow(dispRow, rowData);
