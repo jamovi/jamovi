@@ -417,14 +417,22 @@ const DataSetViewModel = DataSetModel.extend({
             for (let j = 0; j < nRows; j++) {
                 let outValue = new coms.Messages.DataSetRR.ColumnData.CellValue();
                 let inValue = inCells[j];
-                if (inValue === null)
+                if (inValue === null) {
                     outValue.o = coms.Messages.SpecialValues.MISSING;
-                else if (typeof(inValue) === 'string')
+                    outValue.type = 'o';
+                }
+                else if (typeof(inValue) === 'string') {
                     outValue.s = inValue;
-                else if (Math.floor(inValue) === inValue)
+                    outValue.type = 's';
+                }
+                else if (Math.floor(inValue) === inValue) {
                     outValue.i = inValue;
-                else
+                    outValue.type = 'i';
+                }
+                else {
                     outValue.d = inValue;
+                    outValue.type = 'd';
+                }
                 columnPB.values.push(outValue);
             }
 
