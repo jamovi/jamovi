@@ -87,7 +87,7 @@ var FSEntryListView = SilkyView.extend({
         var target = event.currentTarget;
         var path = $(target).attr('data-path');
         console.log(path);
-        this.model.requestOpen(path, 1);
+        this.model.requestOpen(path, 0);
     }
 });
 
@@ -248,22 +248,22 @@ var FSEntryBrowserView = SilkyView.extend({
             var itemPath = item.path;
             var itemType = item.type;
 
-            if (itemType === 1 && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
+            if (itemType === 0 && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 continue;
 
             html += '<div class="silky-bs-fslist-item">';
             html += '   <div class="silky-bs-flist-item-icon">';
-            if (itemType === 1) { //file
+            if (itemType === 0) { //file
                 if (name.endsWith(".csv"))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
                 else
                     html += '       <span class="mif-file-empty"></span>';
             }
-            else if (itemType === 2) //folder
+            else if (itemType === 1) //folder
                 html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
-            else if (itemType === 4) //special folder
+            else if (itemType === 3) //special folder
                 html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
-            else if (itemType === 3) //drive
+            else if (itemType === 2) //drive
                 html += '       <span class="mif-drive"></span>';
             html += '   </div>';
             html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
@@ -285,7 +285,7 @@ var FSEntryBrowserView = SilkyView.extend({
         var $target = $(event.currentTarget);
         var itemType = $target.data('type');
         var itemPath = $target.data('path');
-        if (itemType !== 1 || this.model.clickProcess === "open")
+        if (itemType !== 0 || this.model.clickProcess === "open")
             this.model.requestOpen(itemPath, itemType);
         else {
             if (!this._selected) {
@@ -326,7 +326,7 @@ var FSEntryBrowserView = SilkyView.extend({
                     var $target = this.$items[this._selectedIndex];
                     var itemType = $target.data('type');
                     var itemPath = $target.data('path');
-                    if (itemType === 1 && this.model.clickProcess === "save")
+                    if (itemType === 0 && this.model.clickProcess === "save")
                         this.model.requestSave(itemPath, itemType);
                 }
                 event.preventDefault();
@@ -362,7 +362,7 @@ var FSEntryBrowserView = SilkyView.extend({
         var $target = $(event.currentTarget);
         var itemType = $target.data('type');
         var itemPath = $target.data('path');
-        if (itemType === 1 && this.model.clickProcess === "save")
+        if (itemType === 0 && this.model.clickProcess === "save")
             this.model.requestSave(itemPath, itemType);
     },
     _saveClicked : function(event) {
@@ -372,7 +372,7 @@ var FSEntryBrowserView = SilkyView.extend({
             if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 name = name + '.' + this.filterExtension;
             var path = dirInfo.path + '/' + name;
-            this.model.requestSave(path, 1);
+            this.model.requestSave(path, 0);
             var items = this.model.get('items');
             items.push({ name: name, path: path, type: 1 });
             this._render();
@@ -387,7 +387,7 @@ var FSEntryBrowserView = SilkyView.extend({
         }
     },
     _goToFolder: function(path) {
-        this.model.requestOpen(path, 2);
+        this.model.requestOpen(path, 1);
     },
     _calcBackDirectory: function(path, type) {
         var index = -1;
@@ -562,9 +562,9 @@ var BackstageModel = Backbone.Model.extend({
         return op.places[index];
     },
     tryOpen: function(path, type) {
-        if (type === 1)
+        if (type === 0)
             this.requestOpen(path);
-        else if (type === 2 || type === 3 || type === 4)
+        else if (type === 1 || type === 2 || type === 3)
             this.setCurrentDirectory(path, type);
     },
     trySave: function(path, type) {
