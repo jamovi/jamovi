@@ -34,7 +34,7 @@ const Instance = Backbone.Model.extend({
         this.seqNo = 0;
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
-        this._dataSetModel.on('columnsChanged', event => this._columnsChanged(event));
+        this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
 
         this._progressModel = new ProgressModel();
 
@@ -44,8 +44,15 @@ const Instance = Backbone.Model.extend({
 
         this._instanceId = null;
 
-        this.attributes.coms.onBroadcast(bc => this._onReceive(bc));
+        this._onBC = (bc => this._onReceive(bc));
+        this.attributes.coms.onBroadcast(this._onBC);
 
+    },
+    destroy() {
+        this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
+        this._analyses.off('analysisCreated', this._analysisCreated, this);
+        this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
+        this.attributes.coms.offBroadcast(this._onBC);
     },
     defaults : {
         coms : null,
@@ -105,8 +112,10 @@ const Instance = Backbone.Model.extend({
                 return instance.open(filePath);
             }).then(() => {
                 host.openWindow(instance.instanceId());
+                instance.destroy();
             }).catch(error => {
                 this._notify(error);
+                instance.destroy();
             });
         }
         else {

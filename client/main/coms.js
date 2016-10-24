@@ -141,4 +141,8 @@ Coms.prototype.onBroadcast = function(callback) {
     this._broadcastListeners.push(callback);
 };
 
+Coms.prototype.offBroadcast = function(callback) {
+    this._broadcastListeners = this._broadcastListeners.filter(v => v !== callback);
+};
+
 module.exports = Coms;
