@@ -141,15 +141,24 @@ function setResources(resources) {
 }
 
 function setOptionsValues(data) {
+
+    if (analysis.View.isLoaded() === false) {
+        setTimeout(() => {
+            setOptionsValues(data);
+        }, 0);
+        return;
+    }
+
     var model = analysis.model;
     model.options.beginEdit();
-    analysis.View.beginDataInitialisation();
-    var params = Options.getDefaultEventParams("changed");
-    params.silent = true;
-    _.each(data, function(value, key, list) {
-        model.options.setOptionValue(key, value, params);
-    });
-    analysis.View.endDataInitialisation();
+    if (analysis.View.beginDataInitialisation()) {
+        var params = Options.getDefaultEventParams("changed");
+        params.silent = true;
+        _.each(data, function(value, key, list) {
+            model.options.setOptionValue(key, value, params);
+        });
+        analysis.View.endDataInitialisation();
+    }
     model.options.endEdit();
 }
 

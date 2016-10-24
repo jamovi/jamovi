@@ -17,6 +17,8 @@ var OptionsView = function(uiModel) {
     this.model = uiModel;
     this.resources = this.model.resources;
     this._contextDependentCtrls = [];
+    this._loaded = false;
+    this._initialisingData = 0;
 
     this.render = function() {
         var options = this.model.options;
@@ -47,13 +49,17 @@ var OptionsView = function(uiModel) {
                 }
             }
 
-            this.layoutActionManager.addResource("analysis", this);
+            this.layoutActionManager.addResource("view", this);
 
             var self = this;
             window.setTimeout(function() {
+                self._loaded = true;
                 self.model.options.beginEdit();
+                self.beginDataInitialisation();
                 self.layoutActionManager.initialiseAll();
+                self.endDataInitialisation();
                 self.model.options.endEdit();
+                self.trigger('loaded');
             }, 0);
         }
         else {
@@ -203,11 +209,27 @@ var OptionsView = function(uiModel) {
     };
 
     this.beginDataInitialisation = function() {
-        this.trigger("initialising");
+        if (this._loaded === false)
+            return false;
+
+        this._initialisingData += 1;
+        this.trigger("data-initialising");
+
+        return true;
     };
 
     this.endDataInitialisation = function() {
-        this.trigger("initialised");
+        if (this._loaded === false || this._initialisingData === 0)
+            return false;
+
+        this._initialisingData -= 1;
+        this.trigger("data-initialised");
+
+        return true;
+    };
+
+    this.isLoaded = function() {
+        return this._loaded;
     };
 };
 
