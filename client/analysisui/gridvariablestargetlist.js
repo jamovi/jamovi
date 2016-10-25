@@ -23,7 +23,7 @@ var GridVariablesTargetList = function(params) {
                     return props;
             }
         }
-        else if (optType === "Variable" || optType === "Variables")
+        else if (optType === "Variable" || optType === "Variables" || optType === "Pair" || optType === "Pairs")
             return properties;
 
         return null;
