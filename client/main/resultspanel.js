@@ -205,7 +205,7 @@ const ResultsPanel = Backbone.View.extend({
         let viewHeight = this.$el.parent().height();
         let viewBottom = viewTop + viewHeight;
         let itemTop = viewTop + $item.position().top;
-        let itemBottom = itemTop + itemHeight;
+        let itemBottom = itemTop + itemHeight + 24;
 
         viewTop += viewPad;
 
@@ -214,13 +214,13 @@ const ResultsPanel = Backbone.View.extend({
             if (itemTop < viewTop)
                 this.$el.stop().animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
             else if (itemBottom > viewBottom)
-                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight }, { duration: 'slow', easing: 'swing' });
         }
         else {
             if (itemTop > viewTop)
                 this.$el.stop().animate({ scrollTop: itemTop }, { duration: 'slow', easing: 'swing' });
             else if (itemBottom < viewBottom)
-                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight + 10 }, { duration: 'slow', easing: 'swing' });
+                this.$el.stop().animate({ scrollTop: itemBottom - viewHeight }, { duration: 'slow', easing: 'swing' });
         }
     },
     _selectedChanged(event) {
