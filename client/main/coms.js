@@ -10,7 +10,7 @@ var Coms = function() {
     this._baseUrl = null;
     this._transId = 0;
     this._transactions = [ ];
-    this._broadcastListeners = [ ];
+    this._listeners = [ ];
 
     this.connected = null;
 
@@ -68,6 +68,7 @@ Coms.prototype.connect = function(sessionId) {
                 this._ws.onclose = (msg) => {
                     console.log('websocket closed!');
                     console.log(msg);
+                    this._notifyEvent('close');
                 };
             })
         ]);
@@ -106,7 +107,7 @@ Coms.prototype.receive = function(event) {
     var response = this.Messages.ComsMessage.decode(event.data);
 
     if (response.id === 0) {
-        this._notifyBroadcast(response);
+        this._notifyEvent('broadcast', response);
         return;
     }
 
@@ -128,21 +129,23 @@ Coms.prototype.receive = function(event) {
     }
 
     if ( ! found)
-        this._notifyBroadcast(response);
+        this._notifyEvent('broadcast', response);
 
 };
 
-Coms.prototype._notifyBroadcast = function(broadcast) {
-    for (var i = 0; i < this._broadcastListeners.length; i++)
-        this._broadcastListeners[i](broadcast);
+Coms.prototype.on = function(eventName, callback) {
+    this._listeners.push({ eventName, callback });
 };
 
-Coms.prototype.onBroadcast = function(callback) {
-    this._broadcastListeners.push(callback);
+Coms.prototype.off = function(eventName, callback) {
+    this._listeners = this._listeners.filter(v => v.eventName !== eventName && v.callback !== callback);
 };
 
-Coms.prototype.offBroadcast = function(callback) {
-    this._broadcastListeners = this._broadcastListeners.filter(v => v !== callback);
+Coms.prototype._notifyEvent = function(eventName, event) {
+    for (let listener of this._listeners) {
+        if (listener.eventName === eventName)
+            listener.callback(event);
+    }
 };
 
 module.exports = Coms;

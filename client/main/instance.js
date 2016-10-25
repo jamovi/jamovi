@@ -45,14 +45,14 @@ const Instance = Backbone.Model.extend({
         this._instanceId = null;
 
         this._onBC = (bc => this._onReceive(bc));
-        this.attributes.coms.onBroadcast(this._onBC);
+        this.attributes.coms.on('broadcast', this._onBC);
 
     },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
         this._analyses.off('analysisCreated', this._analysisCreated, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
-        this.attributes.coms.offBroadcast(this._onBC);
+        this.attributes.coms.off('broadcast', this._onBC);
     },
     defaults : {
         coms : null,

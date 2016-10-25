@@ -86,6 +86,7 @@ class Instance:
         self._session_path = session_path
 
         self._em.add_results_listener(self._on_results)
+        self._em.add_engine_listener(self._on_engine_event)
 
         settings = Settings.retrieve()
         settings.sync()
@@ -628,3 +629,7 @@ class Instance:
             log.info(e)
 
         self._coms.send(response, self._instance_id, request)
+
+    def _on_engine_event(self, event):
+        if event['type'] == 'terminated' and self._coms is not None:
+            self._coms.close()

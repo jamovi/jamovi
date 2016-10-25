@@ -1,5 +1,4 @@
 
-import sys
 import os
 import os.path as path
 import platform
@@ -33,6 +32,7 @@ class EngineManager:
         self._requests_sent = { }
         self._nextId = 1
         self._results_listeners = [ ]
+        self._engine_listeners  = [ ]
         self._session_path = None
 
     def __del__(self):
@@ -75,6 +75,13 @@ class EngineManager:
 
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
+
+    def add_engine_listener(self, listener):
+        self._engine_listeners.append(listener)
+
+    def _notify_engine_event(self, event):
+        for listener in self._engine_listeners:
+            listener(event)
 
     def send(self, request):
 
@@ -134,7 +141,8 @@ class EngineManager:
 
             self._process.poll()
             if self._process.returncode is not None:
-                sys.stderr.write("Engine process terminated with exit code {}\n".format(self._process.returncode))
+                log.error("Engine process terminated with exit code {}\n".format(self._process.returncode))
                 break
 
         self._socket.close()
+        self._notify_engine_event({ 'type': 'terminated' })
