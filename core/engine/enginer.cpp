@@ -51,7 +51,7 @@ void EngineR::run(Analysis *analysis)
     ss << "{\n";
     ss << "  options <- " << analysis->ns << "::" << analysis->name << "Options$new()\n";
     ss << "  options$read(optionsPB)\n";
-    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(package='" << analysis->ns << "', name='" << analysis->name << "', options=options, datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ")\n";
+    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(options=options, datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ")\n";
     ss << "}\n";
 
     rInside.parseEvalQNT(ss.str());
