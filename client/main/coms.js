@@ -138,7 +138,7 @@ Coms.prototype.on = function(eventName, callback) {
 };
 
 Coms.prototype.off = function(eventName, callback) {
-    this._listeners = this._listeners.filter(v => v.eventName !== eventName && v.callback !== callback);
+    this._listeners = this._listeners.filter(v => v.eventName !== eventName || v.callback !== callback);
 };
 
 Coms.prototype._notifyEvent = function(eventName, event) {
