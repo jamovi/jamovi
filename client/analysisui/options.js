@@ -176,11 +176,16 @@ var Options = function(def) {
         else
             option = this.getOption(name);
 
+        if (option === null || !option.setValue)
+            return false;
+
         var eOpt = Opt.getDefaultEventParams();
         eOpt.force = eventParams.force;
 
         if (option.setValue(value, keys, eOpt) && eventParams.silent === false)
             this.onValueChanged(option, value, keys, "change");
+
+        return true;
     };
 
     this.insertOptionValue = function(name, value, keys, eventParams) {
