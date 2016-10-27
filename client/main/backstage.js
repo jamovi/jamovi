@@ -68,8 +68,15 @@ var FSEntryListView = SilkyView.extend({
 
             var name = item.name;
             var path = item.path;
-            var location = item.location ? this._normalisePath(item.location) : '';
-            location = location.replace(/\//g, ' \uFE65 ');
+            var location = '';
+
+            if (item.location) {
+                location = this._normalisePath(item.location);
+                location = location.replace(/\//g, ' \uFE65 ');
+            }
+            else if (item.description) {
+                location = item.description;
+            }
 
             html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
             html += '   <div class="silky-bs-fslist-entry-icon"></div>';

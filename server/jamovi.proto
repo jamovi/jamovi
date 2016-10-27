@@ -225,6 +225,7 @@ message DataSetEntry {
     string name = 1;
     string path = 2;
     string location = 3;
+    string description = 4;
 }
 
 message SettingsRequest {
@@ -232,8 +233,7 @@ message SettingsRequest {
 
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
-    repeated DataSetEntry localFSRecents = 2;
-    repeated DataSetEntry examples = 3;
+    repeated DataSetEntry examples = 2;
 }
 
 message VariableLevel {
