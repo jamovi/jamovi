@@ -596,12 +596,6 @@ class Instance:
 
         settings = Settings.retrieve('backstage')
 
-        localFSRecents = settings.get('localFSRecents')
-        if localFSRecents is None:
-            localFSRecents = [
-                { 'name': '{{Documents}}', 'path': '{{Documents}}' },
-                { 'name': '{{Desktop}}',   'path': '{{Desktop}}' } ]
-
         recents = settings.get('recents', [ ])
 
         response = jcoms.SettingsResponse()
@@ -612,11 +606,6 @@ class Instance:
             recentEntry.path = recent['path']
             recentEntry.location = recent['location']
 
-        for localFSRecent in localFSRecents:
-            recentEntry = response.localFSRecents.add()
-            recentEntry.name = localFSRecent['name']
-            recentEntry.path = localFSRecent['path']
-
         try:
             here = os.path.realpath(os.path.dirname(__file__))
             path = os.path.join(here, '..', '..', 'examples', 'index.yaml')
@@ -625,6 +614,7 @@ class Instance:
                     exampleEntry = response.examples.add()
                     exampleEntry.name = example['name']
                     exampleEntry.path = '{{Examples}}/' + example['path']
+                    exampleEntry.description = example['description']
         except Exception as e:
             log.info(e)
 
