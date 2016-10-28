@@ -9,6 +9,7 @@ const keyboardJS = require('keyboardjs');
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
+const Path = require('path');
 Backbone.$ = $;
 
 var host = require('./host');
@@ -16,7 +17,6 @@ var host = require('./host');
 var FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ],
-        clickProcess : "open"
     },
     requestOpen : function(path, type) {
         this.trigger('dataSetOpenRequested', path, type);
@@ -94,9 +94,16 @@ var FSEntryListView = SilkyView.extend({
         var target = event.currentTarget;
         var path = $(target).attr('data-path');
         console.log(path);
-        this.model.requestOpen(path, 0);
+        this.model.requestOpen(path, FSItemType.File);
     }
 });
+
+var FSItemType = {
+    File: 0,
+    Folder: 1,
+    Drive: 2,
+    SpecialFolder: 3
+};
 
 var FSEntryBrowserView = SilkyView.extend({
 
@@ -185,14 +192,22 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '       <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit"></div>';
         html += '   </div>';
+        var extension = null;
         if (this.model.clickProcess === "save") {
+            var path = this.model.currentActivePath;
+            var insert = "";
+            if (path) {
+                extension = Path.extname(path);
+                insert = ' value="' + Path.basename(path) + '"';
+            }
+
             html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
             html += '       <div style="flex: 1 1 auto;">';
-            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here" />';
+            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here"' + insert + ' />';
             html += '           <div class="silky-bs-fslist-browser-save-filetype">';
             html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
-            html += '                   <option data-extension="omv" selected>jamovi file (*.omv)</option>';
-            //html += '                 <option data-extension="jasp">Silky File2 (*.silky)</option>';
+            html += '                   <option data-extension="omv" value=".omv" selected>jamovi file (*.omv)</option>';
+            //html += '                   <option data-extension="jasp" value=".jasp">JASP File (*.jasp)</option>';
             html += '               </select>';
             html += '           </div>';
             html += '       </div>';
@@ -204,6 +219,9 @@ var FSEntryBrowserView = SilkyView.extend({
         }
         html += '</div>';
         this.$header = $(html);
+        this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
+        if (extension !== null)
+            this.$header.find('.silky-bs-fslist-browser-save-filetype-inner').val(extension);
         this.$el.append(this.$header);
 
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
@@ -255,22 +273,22 @@ var FSEntryBrowserView = SilkyView.extend({
             var itemPath = item.path;
             var itemType = item.type;
 
-            if (itemType === 0 && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
+            if (itemType === FSItemType.File && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 continue;
 
             html += '<div class="silky-bs-fslist-item">';
             html += '   <div class="silky-bs-flist-item-icon">';
-            if (itemType === 0) { //file
+            if (itemType === FSItemType.File) { //file
                 if (name.endsWith(".csv"))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
                 else
                     html += '       <span class="mif-file-empty"></span>';
             }
-            else if (itemType === 1) //folder
+            else if (itemType === FSItemType.Folder) //folder
                 html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
-            else if (itemType === 3) //special folder
+            else if (itemType === FSItemType.SpecialFolder) //special folder
                 html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
-            else if (itemType === 2) //drive
+            else if (itemType === FSItemType.Drive) //drive
                 html += '       <span class="mif-drive"></span>';
             html += '   </div>';
             html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
@@ -292,7 +310,7 @@ var FSEntryBrowserView = SilkyView.extend({
         var $target = $(event.currentTarget);
         var itemType = $target.data('type');
         var itemPath = $target.data('path');
-        if (itemType !== 0 || this.model.clickProcess === "open")
+        if (itemType !== FSItemType.File || this.model.clickProcess === "open")
             this.model.requestOpen(itemPath, itemType);
         else {
             if (!this._selected) {
@@ -333,7 +351,7 @@ var FSEntryBrowserView = SilkyView.extend({
                     var $target = this.$items[this._selectedIndex];
                     var itemType = $target.data('type');
                     var itemPath = $target.data('path');
-                    if (itemType === 0 && this.model.clickProcess === "save")
+                    if (itemType === FSItemType.File && this.model.clickProcess === "save")
                         this.model.requestSave(itemPath, itemType);
                 }
                 event.preventDefault();
@@ -369,7 +387,7 @@ var FSEntryBrowserView = SilkyView.extend({
         var $target = $(event.currentTarget);
         var itemType = $target.data('type');
         var itemPath = $target.data('path');
-        if (itemType === 0 && this.model.clickProcess === "save")
+        if (itemType === FSItemType.File && this.model.clickProcess === "save")
             this.model.requestSave(itemPath, itemType);
     },
     _saveClicked : function(event) {
@@ -379,9 +397,9 @@ var FSEntryBrowserView = SilkyView.extend({
             if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 name = name + '.' + this.filterExtension;
             var path = dirInfo.path + '/' + name;
-            this.model.requestSave(path, 0);
+            this.model.requestSave(path, FSItemType.File);
             var items = this.model.get('items');
-            items.push({ name: name, path: path, type: 1 });
+            items.push({ name: name, path: path, type: FSItemType.File });
             this._render();
         }
     },
@@ -394,7 +412,7 @@ var FSEntryBrowserView = SilkyView.extend({
         }
     },
     _goToFolder: function(path) {
-        this.model.requestOpen(path, 1);
+        this.model.requestOpen(path, FSItemType.Folder);
     },
     _calcBackDirectory: function(path, type) {
         var index = -1;
@@ -430,7 +448,6 @@ var BackstageModel = Backbone.Model.extend({
         operation : 'open',
         place : 'recent',
         lastSelectedPlace : 'recent',
-        currentActivePath : null,
         settings : null,
         ops : [ ],
     },
@@ -453,6 +470,7 @@ var BackstageModel = Backbone.Model.extend({
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = "save";
+        this._pcSaveListModel.currentActivePath = null;
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
 
@@ -477,7 +495,7 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    var activePath = this.get('currentActivePath');
+                    var activePath = this._pcSaveListModel.currentActivePath;
                     if (activePath !== null)
                         this.requestSave(activePath);
                     else
@@ -487,6 +505,9 @@ var BackstageModel = Backbone.Model.extend({
             {
                 name: 'saveAs',
                 title: 'Save As',
+                action: () => {
+                    this._pcSaveListModel.currentActivePath = this.instance.get('filePath');
+                },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
                     { name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
@@ -569,9 +590,9 @@ var BackstageModel = Backbone.Model.extend({
         return op.places[index];
     },
     tryOpen: function(path, type) {
-        if (type === 0)
+        if (type === FSItemType.File)
             this.requestOpen(path);
-        else if (type === 1 || type === 2 || type === 3)
+        else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder)
             this.setCurrentDirectory(path, type);
     },
     trySave: function(path, type) {
@@ -597,6 +618,9 @@ var BackstageModel = Backbone.Model.extend({
 
         var op = this.getCurrentOp();
 
+        if ('action' in op)
+            op.action();
+
         if ('places' in op) {
             var names = _.pluck(op.places, 'name');
             var index = names.indexOf(this.attributes.lastSelectedPlace);
@@ -620,9 +644,6 @@ var BackstageModel = Backbone.Model.extend({
                 }, 0);
             }
         }
-
-        if ('action' in op)
-            op.action();
     },
     uploadFile: function(file) {
 
@@ -663,9 +684,9 @@ var BackstageModel = Backbone.Model.extend({
     },
     _updateSavePath: function(path) {
         if (path.endsWith(".omv"))
-            this.set('currentActivePath', path);
+            this._pcSaveListModel.currentActivePath = path;
         else
-            this.set('currentActivePath', null);
+            this._pcSaveListModel.currentActivePath = null;
     },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
@@ -866,7 +887,8 @@ var BackstagePlaces = SilkyView.extend({
         var place = event.data;
         if ('action' in place)
             place.action();
-        else {
+
+        if ('view' in place) {
             this.model.set('lastSelectedPlace', place.name);
             this.model.set('place', place.name);
         }
