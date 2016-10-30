@@ -174,7 +174,7 @@ class Server:
 
         here = os.path.dirname(os.path.realpath(__file__))
 
-        client_path = os.path.join(here, '..', 'client')
+        client_path = os.path.join(here, 'client')
         analyses_path = os.path.join(here, '..', 'analyses')
         coms_path  = os.path.join(here, 'jamovi.proto')
 

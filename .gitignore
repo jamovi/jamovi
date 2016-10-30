@@ -12,8 +12,8 @@ core/libsilky/silky.cpp
 
 **/__pycache__/
 
-client/*.js
-client/*.css
+server/client/*.js
+server/client/*.css
 
 # protocol buffers
 *.pb.cc

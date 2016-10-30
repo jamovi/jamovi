@@ -22,7 +22,7 @@ if (process.argv.length >= 6)
 
 let windows = [ ];
 
-let rootPath = path.join(__dirname, '..', 'client') + '/';
+let rootPath = path.join(__dirname, '..', 'server', 'client') + '/';
 
 // windows path adjustments
 if (rootPath.startsWith('/') === false)
