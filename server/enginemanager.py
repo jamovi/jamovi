@@ -138,7 +138,7 @@ class Engine:
         request.analysisId = analysis.id
         request.name = analysis.name
         request.ns = analysis.ns
-        request.options.CopyFrom(analysis.options.asPB)
+        request.options.CopyFrom(analysis.options.as_pb())
         request.changed.extend(analysis.changes)
         request.revision = analysis.revision
         request.clearState = analysis.clear_state

@@ -282,7 +282,7 @@ class Instance:
 
                 response = jcoms.AnalysisResponse()
                 response.analysisId = request.analysisId
-                response.options.ParseFromString(analysis.options.asBytes)
+                response.options.ParseFromString(analysis.options.as_bytes())
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
                 self._coms.send(response, self._instance_id, request, False)

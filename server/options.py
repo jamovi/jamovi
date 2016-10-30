@@ -60,10 +60,11 @@ class Options:
     def set(self, pb):
         self._pb.CopyFrom(pb)
 
-    @property
-    def asPB(self):
+    def read(self, bin):
+        self._pb.ParseFromString(bin)
+
+    def as_pb(self):
         return self._pb
 
-    @property
-    def asBytes(self):
+    def as_bytes(self):
         return self._pb.SerializeToString()
