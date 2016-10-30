@@ -6,7 +6,7 @@ var $ = require('jquery');
 var Backbone = require('backbone');
 var LayoutCell = require('./layoutcell').LayoutCell;
 var SpacerCell = require('./layoutcell').SpacerCell;
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var LayoutGrid = function() {
 

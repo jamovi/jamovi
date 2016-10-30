@@ -20,7 +20,9 @@ SuperClass._addOverrideAbility = function(target) {
 
 SuperClass.create = function(_class) {
 
-    if (_class.name in SuperClass.superClasses)
+    var className = _class.name.replace(".", "#");
+
+    if (className in SuperClass.superClasses)
         throw "This name is already used for a superclass.";
 
     _class.extendTo = function(target, param1, param2, param3, param4, param5, param6, param7) {
@@ -32,18 +34,18 @@ SuperClass.create = function(_class) {
         else {
             for (let i = 0; i < target._inheritedClasses.length; i++) {
                 var scid = target._inheritedClasses[i];
-                if (scid === _class.name)
+                if (scid === className)
                     return false;
             }
         }
 
         _class.call(target, param1, param2, param3, param4, param5, param6, param7);
-        target._inheritedClasses.push(_class.name);
+        target._inheritedClasses.push(className);
 
         return true;
     };
 
-    SuperClass.superClasses[_class.name] = _class;
+    //SuperClass.superClasses[_class.name] = _class;
 };
 
 module.exports = SuperClass;

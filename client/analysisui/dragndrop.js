@@ -2,7 +2,7 @@
 
 var $ = require('jquery');
 var _ = require('underscore');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var DragNDrop = function() {
 

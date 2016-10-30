@@ -3,7 +3,7 @@
 var _ = require('underscore');
 var OptionControlBase = require('./optioncontrolbase');
 var EnumPropertyFilter = require('./enumpropertyfilter');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var OptionControl = function(params) {
 

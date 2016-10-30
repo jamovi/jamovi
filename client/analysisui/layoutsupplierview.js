@@ -9,7 +9,7 @@ var DragNDrop = require('./dragndrop');
 var ControlContainer = require('./controlcontainer');
 var LayoutGrid = require('./layoutgrid').Grid;
 var EnumPropertyFilter = require('./enumpropertyfilter');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var LayoutSupplierView = function(params) {
 

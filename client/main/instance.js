@@ -15,7 +15,7 @@ const Notify = require('./notification');
 
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset').DataSetViewModel;
-const Options = require('./options');
+const OptionsPB = require('./optionspb');
 
 const ProgressModel = Backbone.Model.extend({
     defaults : {
@@ -255,7 +255,7 @@ const Instance = Backbone.Model.extend({
             }
 
             for (let analysis of info.analyses) {
-                let options = Options.fromPB(analysis.options, coms.Messages);
+                let options = OptionsPB.fromPB(analysis.options, coms.Messages);
                 this._analyses.addAnalysis(analysis.name, analysis.ns, analysis.analysisId, options, analysis.results);
             }
 
@@ -285,7 +285,7 @@ const Instance = Backbone.Model.extend({
         if (analysis.isReady) {
             let options = analysis.options;
             options['.ppi'] = parseInt(72 * (window.devicePixelRatio || 1));
-            analysisRequest.setOptions(Options.toPB(options, coms.Messages));
+            analysisRequest.setOptions(OptionsPB.toPB(analysis.options, coms.Messages));
         }
 
         let request = new coms.Messages.ComsMessage();
@@ -307,7 +307,7 @@ const Instance = Backbone.Model.extend({
             let analysis = this._analyses.get(id);
 
             if (analysis.isReady === false && _.has(response, "options")) {
-                analysis.setup(Options.fromPB(response.options, coms.Messages));
+                analysis.setup(OptionsPB.fromPB(response.options, coms.Messages));
                 ok = true;
             }
 

@@ -31,10 +31,11 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
 
         this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" value="' + label + '">');
         this.$label.focus(function() { $(this).select(); } );
-        this.$label.keydown(function (event) {
+        this.$label.keydown((event) => {
             var keypressed = event.keyCode || event.which;
             if (keypressed == 13) {
-                $(this).blur();
+                this.labelChange(this.$label);
+                this.$label.blur();
             }
         });
         this.listenForLabelChange(this.$label);
@@ -83,10 +84,11 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         else {
             $t = $('<input class="silky-option-listitem" type="text" value="' + text + '">');
             $t.focus(function() { $(this).select(); } );
-            $t.keydown(function (event) {
+            $t.keydown((event) => {
                 var keypressed = event.keyCode || event.which;
                 if (keypressed == 13) {
-                    $(this).blur();
+                    this.onChange($t);
+                    $t.blur();
                 }
             });
             this.listenForChange($t);
@@ -192,26 +194,33 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
 
     this.listenForChange = function($item) {
         var self = this;
-        $item.change(function(event) {
-            var value = $item.val();
-            var index = $item.data("index");
-            self.data.levels[index] = value;
-            self.parent.onItemChanged();
+        $item.change((event) => {
+            this.onChange($item);
         });
     };
 
+    this.onChange = function($item) {
+        var value = $item.val();
+        var index = $item.data("index");
+        this.data.levels[index] = value;
+        this.parent.onItemChanged();
+    };
+
     this.listenForLabelChange = function($item) {
-        var self = this;
-        $item.change(function(event) {
-            var value = $item.val();
-            if (_.isUndefined(self.data) || self.data === null) {
-                self.parent.onItemAdded({label: value, levels: ["Level 1", "Level 2"]});
-            }
-            else {
-                self.data.label = value;
-                self.parent.onItemChanged();
-            }
+        $item.change((event) => {
+            this.labelChange($item);
         });
+    };
+
+    this.labelChange = function($item) {
+        var value = $item.val();
+        if (_.isUndefined(this.data) || this.data === null) {
+            this.parent.onItemAdded({label: value, levels: ["Level 1", "Level 2"]});
+        }
+        else {
+            this.data.label = value;
+            this.parent.onItemChanged();
+        }
     };
 };
 

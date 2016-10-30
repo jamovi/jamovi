@@ -8,7 +8,7 @@ var FormatDef = require('./formatdef');
 var DragNDrop = require('./dragndrop');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var TargetListValueFilter = require('./targetlistvaluefilter');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 var Backbone = require('backbone');
 
 var GridTargetList = function(params) {

@@ -3,7 +3,7 @@
 
 var LayoutGrid = require('./layoutgrid').Grid;
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var ChildLayoutSupport = function(params) {
 

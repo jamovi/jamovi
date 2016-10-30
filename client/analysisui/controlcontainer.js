@@ -2,7 +2,7 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 var LayoutGrid = require('./layoutgrid').Grid;
 var GridControl = require('./gridcontrol');
 var ControlBase = require('./controlbase');

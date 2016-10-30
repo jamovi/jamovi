@@ -2,166 +2,174 @@
 
 'use strict';
 
-const Options = function() {
+const SuperClass = require('../common/superclass');
+const _ = require('underscore');
 
-};
+const OptionTypes = {
 
-Options.toPB = function(options, Messages) {
-    let names = [ ];
-    let optionsPB = [ ];
+    create: function(template, value) {
+        var constructor = OptionTypes[template.type];
+        if ( ! constructor)
+            constructor = OptionTypes.Option;
 
-    for (let name in options) {
-        names.push(name);
-        optionsPB.push(_toPB(options[name], Messages));
-    }
-
-    let child = new Messages.AnalysisOptions();
-    child.setOptions(optionsPB);
-    child.setNames(names);
-    child.setHasNames(true);
-
-    return child;
-};
-
-const _toPB = function(value, Messages) {
-
-    if (value === true) {
-        let option = new Messages.AnalysisOption();
-        option.setO(Messages.AnalysisOption.Other.TRUE);
-        option.type = 'o';
-        return option;
-    }
-    else if (value === false) {
-        let option = new Messages.AnalysisOption();
-        option.setO(Messages.AnalysisOption.Other.FALSE);
-        option.type = 'o';
-        return option;
-    }
-    else if (value === null) {
-        let option = new Messages.AnalysisOption();
-        option.setO(Messages.AnalysisOption.Other.NULL);
-        option.type = 'o';
-        return option;
-    }
-    else if (Number.isInteger(value)) {
-        let option = new Messages.AnalysisOption();
-        option.setI(value);
-        option.type = 'i';
-        return option;
-    }
-    else if (typeof value === 'number') {
-        let option = new Messages.AnalysisOption();
-        option.setD(value);
-        option.type = 'd';
-        return option;
-    }
-    else if (typeof value === 'string') {
-        let option = new Messages.AnalysisOption();
-        option.setS(value);
-        option.type = 's';
-        return option;
-    }
-    else if (Array.isArray(value)) {
-
-        let options = new Array(value.length);
-
-        let arrayify = false;
-        for (let i = 0; i < value.length; i++) {
-            if (Array.isArray(value[i])) {
-                arrayify = true;
-                break;
-            }
-        }
-
-        for (let i = 0; i < value.length; i++) {
-            let option = value[i];
-            if (arrayify && ! Array.isArray(option))
-                option = [ option ];
-            options[i] = _toPB(option, Messages);
-        }
-
-        let child = new Messages.AnalysisOptions();
-        child.setOptions(options);
-        child.setHasNames(false);
-
-        let option = new Messages.AnalysisOption();
-        option.setC(child);
-        option.type = 'c';
-        return option;
-    }
-    else if (typeof(value) === 'object') {
-
-        let names = [ ];
-        let options = [ ];
-
-        for (let name in value) {
-            names.push(name);
-            options.push(_toPB(value[name], Messages));
-        }
-
-        let child = new Messages.AnalysisOptions();
-        child.setOptions(options);
-        child.setNames(names);
-        child.setHasNames(true);
-
-        let option = new Messages.AnalysisOption();
-        option.setC(child);
-        option.type = 'c';
-        return option;
-    }
-    else {
-        throw "shouldn't get here";
+        return new constructor(template, value);
     }
 };
 
-const _fromPB = function(option, Messages) {
+OptionTypes.Option = function(template, value) {
+    this._template = template;
 
-    let value;
+    this.setValue = function(value) {
+        this._value = value;
+    };
 
-    if (option.type === 'c') {
-        let options = option.c;
-        if (options.hasNames) {
-            value = { };
-            for (let j = 0; j < options.names.length; j++) {
-                let name = options.names[j];
-                let option = options.options[j];
-                value[name] = _fromPB(option, Messages);
-            }
-        }
-        else {
-            value = new Array(options.options.length);
-            for (let j = 0; j < options.options.length; j++) {
-                let option = options.options[j];
-                value[j] = _fromPB(option, Messages);
-            }
-        }
-    }
-    else if (option.type === 'o') {
-        if (option.o === Messages.AnalysisOption.Other.TRUE)
-            value = true;
-        else if (option.o === Messages.AnalysisOption.Other.FALSE)
-            value = false;
+    this.getUsedColumns = function() {
+        return [];
+    };
+
+    this.setValue(value);
+};
+SuperClass.create(OptionTypes.Option);
+
+OptionTypes.Variable = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value);
+
+    this._override('getUsedColumns', (baseFunction) => {
+        if (this._value !== null)
+            return [ this._value ];
         else
-            value = null;
-    }
-    else {
-        value = option[option.type];
-    }
-
-    return value;
+            return [];
+    });
 };
+SuperClass.create(OptionTypes.Variable);
 
-Options.fromPB = function(optionsPB, Messages) {
+OptionTypes.Variables = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value);
 
-    let value = { };
+    this._override('getUsedColumns', (baseFunction) => {
+        if (this._value !== null)
+            return this._value;
+        else
+            return [];
+    });
+};
+SuperClass.create(OptionTypes.Variables);
 
-    for (let j = 0; j < optionsPB.names.length; j++) {
-        let name = optionsPB.names[j];
-        let option = optionsPB.options[j];
-        value[name] = _fromPB(option, Messages);
+OptionTypes.Terms = function(template, value) {
+    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Variables" } }, value);
+};
+SuperClass.create(OptionTypes.Terms);
+
+OptionTypes.Term = function(template, value) {
+    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Variable" } }, value);
+};
+SuperClass.create(OptionTypes.Term);
+
+OptionTypes.Pairs = function(template, value) {
+    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Pair" } }, value);
+};
+SuperClass.create(OptionTypes.Pairs);
+
+OptionTypes.Pair = function(template, value) {
+    OptionTypes.Group.extendTo(this, { type: "Group", elements: [{ type: "variable", name: "i1" }, { type: "variable", name: "i2" }] }, value);
+};
+SuperClass.create(OptionTypes.Pair);
+
+OptionTypes.Array = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value);
+
+    this._override('setValue', (baseFunction, value) => {
+        baseFunction.call(this, value);
+        this.children = [];
+        if (value === null)
+            return;
+        for (let i = 0; i < value.length; i++)
+            this.children.push(OptionTypes.create(this._template.template, value[i]));
+    });
+
+    this._override('getUsedColumns', (baseFunction) => {
+        let r = [];
+        if (this.children) {
+            for (let i = 0; i < this.children.length; i++) {
+                let child = this.children[i];
+                r = r.concat(child.getUsedColumns());
+            }
+        }
+        return r;
+    });
+};
+SuperClass.create(OptionTypes.Array);
+
+OptionTypes.Group = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value);
+
+    this._override('setValue', (baseFunction, value) => {
+        baseFunction.call(this, value);
+        this.children = [];
+        if (value === null)
+            return;
+        for (let i = 0; i < template.elements.length; i++) {
+            let element = template.elements[i];
+            this.children.push(OptionTypes.create(element, value[element.name]));
+        }
+    });
+
+    this._override('getUsedColumns', (baseFunction) => {
+        let r = [];
+        if (this.children) {
+            for (let i = 0; i < this.children.length; i++) {
+                let child = this.children[i];
+                r = r.concat(child.getUsedColumns());
+            }
+        }
+        return r;
+    });
+};
+SuperClass.create(OptionTypes.Group);
+
+
+const Options = function(def) {
+
+    this._options = {};
+
+    for (var i = 0; i < def.length; i++) {
+        var template = def[i];
+        var option = OptionTypes.create(template, template.default);
+        this._options[template.name] = option;
     }
 
-    return value;
+    this.getUsedColumns = function() {
+        let r = [];
+        for (let name in this._options) {
+            let option = this._options[name];
+            r = r.concat(option.getUsedColumns());
+        }
+        r = _.uniq(r);
+        return r;
+    };
+
+    this.getOption = function(name) {
+        return this._options[name];
+    };
+
+    this.setValues = function(values) {
+        for (let name in values) {
+            if (name in this._options) {
+                if (values[name] !== undefined)
+                    this._options[name].setValue(values[name]);
+            }
+        }
+    };
+
+    this.getValues = function() {
+        var values = { };
+        for (let name in this._options) {
+            if (this._options[name]._value !== undefined)
+                values[name] = this._options[name]._value;
+        }
+
+        return values;
+    };
 };
 
 module.exports = Options;
