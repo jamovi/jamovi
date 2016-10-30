@@ -4,7 +4,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var LayoutCell = function(parent) {
 

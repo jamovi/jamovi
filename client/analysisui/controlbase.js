@@ -1,6 +1,6 @@
 'use strict';
 
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 var PropertySupplier = require('./propertysupplier');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 

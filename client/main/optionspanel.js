@@ -127,7 +127,7 @@ var OptionsPanel = SilkyView.extend({
 
         var context = { columns: this.dataSetModel.get('columns') };
         resources.ready.then(function() {
-            resources.updateData(analysis.options, context);
+            resources.updateData(analysis.options.getValues(), context);
         });
 
         resources.analysis = analysis;

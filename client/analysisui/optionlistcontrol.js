@@ -6,7 +6,7 @@ var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
 var EnumPropertyFilter = require('./enumpropertyfilter');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var OptionListControl = function(params) {
     OptionControl.extendTo(this, params);

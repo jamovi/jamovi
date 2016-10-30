@@ -3,7 +3,7 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var PropertySupplier = require('./propertysupplier');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var ListItemControl = function(params) {
 

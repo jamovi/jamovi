@@ -3,7 +3,7 @@
 var _ = require('underscore');
 var backbone = require('backbone');
 var LayoutAction = require('./layoutaction');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var LayoutActionManager = function(layoutDef) {
 

@@ -3,7 +3,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var ControlBase = require('./controlbase');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var OptionControlBase = function(params) {
 

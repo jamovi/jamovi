@@ -3,7 +3,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var LayoutActionResource = require('./layoutactionresource');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var LayoutAction = function(manager, params) {
 

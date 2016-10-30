@@ -2,7 +2,7 @@
 
 var GridControl = require('./gridcontrol');
 var OptionControl = require('./optioncontrol');
-var SuperClass = require('./superclass');
+var SuperClass = require('../common/superclass');
 
 var GridOptionControl = function(params) {
 
