@@ -26,7 +26,7 @@ import logging
 
 from .utils import fs
 
-log = logging.getLogger('silky')
+log = logging.getLogger('jamovi')
 
 
 class InstanceData:
@@ -75,32 +75,30 @@ class Instance:
 
     def __init__(self, session_path, instance_id=None):
 
+        self._session_path = session_path
+        if instance_id is None:
+            instance_id = str(uuid.uuid4())
+        self._instance_id = instance_id
+
         self._data = InstanceData()
         self._data.dataset = None
         self._data.analyses = Analyses()
 
         self._coms = None
         self._filepath = None
-        self._em = EngineManager()
+        self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
 
-        self._session_path = session_path
-
-        self._em.add_results_listener(self._on_results)
+        self._data.analyses.add_results_changed_listener(self._on_results)
         self._em.add_engine_listener(self._on_engine_event)
 
         settings = Settings.retrieve()
         settings.sync()
 
-        if instance_id is not None:
-            self._instance_id = instance_id
-        else:
-            self._instance_id = str(uuid.uuid4())
-
         self._data.instance_path = os.path.join(self._session_path, self._instance_id)
         os.makedirs(self._data.instance_path, exist_ok=True)
         self._buffer_path = os.path.join(self._data.instance_path, 'buffer')
 
-        self._em.start(self._session_path)
+        self._em.start()
 
         Instance.instances[self._instance_id] = self
 
@@ -144,11 +142,9 @@ class Instance:
             log.info('unrecognised request')
             log.info(request.payloadType)
 
-    def _on_results(self, results, request, complete):
-        analysis = self._data.analyses[results.analysisId]
-        analysis.results = results
-        complete = (results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'))
-        self._coms.send(results, self._instance_id, request, complete)
+    def _on_results(self, analysis):
+        if self._coms is not None:
+            self._coms.send(analysis.results, self._instance_id)
 
     def _on_fs_request(self, request):
         path = request.path
@@ -266,45 +262,41 @@ class Instance:
 
     def _on_analysis(self, request):
 
-        if request.HasField('options'):
+        if request.restartEngines:
 
-            analysisId = request.analysisId
-            options = request.options
+            self._em.restart_engines()
 
-            request.datasetId = self._instance_id
-            request.analysisId = analysisId
-            request.options.CopyFrom(options)
-            self._em.send(request)
+        elif request.HasField('options'):
+
+            analysis = self._data.analyses.get(request.analysisId)
+            if analysis is not None:
+                analysis.set_options(request.options, request.changed)
+            else:
+                log.error('Instance._on_analysis(): Analysis ' + analysis.id + ' could not be found')
+
+            self._coms.discard(request)
 
         else:
             try:
                 analysis = self._data.analyses.create(request.analysisId, request.name, request.ns)
-                analysisId = request.analysisId
 
                 response = jcoms.AnalysisResponse()
-                response.analysisId = analysisId
-                response.options.ParseFromString(analysis.options.asBytes())
+                response.analysisId = request.analysisId
+                response.options.ParseFromString(analysis.options.asBytes)
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
                 self._coms.send(response, self._instance_id, request, False)
 
-                request.datasetId = self._instance_id
-                request.analysisId = analysisId
-                request.options.ParseFromString(analysis.options.asBytes())
-                self._em.send(request)
-
             except OSError as e:
 
-                log.info('Could not create analysis: ' + str(e))
-                self._coms.discard(request)
+                log.error('Could not create analysis: ' + str(e))
 
-                # We should handle this properly at some point, something like:
-                #
-                # response = jcoms.AnalysisResponse()
-                # response.status = jcoms.AnalysisStatus.ANALYSIS_ERROR
-                # response.error.message = 'Could not create analysis: ' + str(e)
-                #
-                # self._coms.send(response, self._instance_id, request)
+                response = jcoms.AnalysisResponse()
+                response.analysisId = request.analysisId
+                response.status = jcoms.AnalysisStatus.ANALYSIS_ERROR
+                response.error.message = 'Could not create analysis: ' + str(e)
+
+                self._coms.send(response, self._instance_id, request, True)
 
     def _on_info(self, request):
 

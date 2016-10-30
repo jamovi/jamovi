@@ -67,8 +67,10 @@ $(document).ready(() => {
         $('body').addClass('electron');
 
     $(window).on('keydown', function(event) {
-        if (event.key === "F10" || event.keyCode === 121)
+        if (event.key === 'F10' || event.keyCode === 121)
             host.toggleDevTools();
+        else if (event.key === 'F9' || event.keyCode === 120)
+            instance.restartEngines();
     });
 
     if (host.isElectron && navigator.platform === "Win32") {

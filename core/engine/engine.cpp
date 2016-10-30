@@ -34,6 +34,7 @@ Engine::Engine()
     _R = new EngineR();
 
     _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
+    _coms.restartRequested.connect(bind(&Engine::terminate, this));
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1));
 }
 
@@ -73,21 +74,33 @@ void Engine::start()
 
     thread t(&Engine::messageLoop, this);
 
-    unique_lock<mutex> lock(_mutex);
+    unique_lock<mutex> lock(_mutex, std::defer_lock);
 
     while (true)
     {
+        lock.lock(); // lock to access _waiting
+
         while (_waiting == NULL)
             _condition.wait(lock);
 
         _running = _waiting;
         _waiting = NULL;
+
+        lock.unlock();
+
         _R->run(_running);
         delete _running;
         _running = NULL;
     }
 
     t.join();
+}
+
+void Engine::terminate()
+{
+    std::cout << "exiting\n";
+    std::cout.flush();
+    std::exit(0);
 }
 
 void Engine::analysisRequested(int requestId, Analysis *analysis)

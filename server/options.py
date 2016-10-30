@@ -7,8 +7,8 @@ class Options:
 
     def create(defn):
 
-        opts_pb = AnalysisOptions()
-        opts_pb.hasNames = True
+        options = Options()
+        options._pb.hasNames = True
 
         for opt_defn in defn:
 
@@ -21,8 +21,8 @@ class Options:
             if o_type == "Data":
                 continue
 
-            opts_pb.names.append(o_name)
-            opt_pb = opts_pb.options.add()
+            options._pb.names.append(o_name)
+            opt_pb = options._pb.options.add()
 
             if 'default' in opt_defn:
                 o_default = opt_defn['default']
@@ -52,16 +52,18 @@ class Options:
             else:
                 opt_pb.o = AnalysisOption.Other.Value('NULL')
 
-        options = Options()
-        options.read(opts_pb.SerializeToString())
-
         return options
 
     def __init__(self):
-        self._bytes = None
+        self._pb = AnalysisOptions()
 
-    def read(self, byts):
-        self._bytes = byts
+    def set(self, pb):
+        self._pb.CopyFrom(pb)
 
+    @property
+    def asPB(self):
+        return self._pb
+
+    @property
     def asBytes(self):
-        return self._bytes
+        return self._pb.SerializeToString()

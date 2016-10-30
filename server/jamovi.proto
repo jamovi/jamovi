@@ -47,8 +47,11 @@ message AnalysisRequest {
 
     Perform perform = 5;
     AnalysisOptions options = 6;
-    int32 ppi = 7;
+    // int32 ppi = 7;
     repeated string changed = 8;
+    int32 revision = 9;
+    bool restartEngines = 10;
+    bool clearState = 11;
 }
 
 enum AnalysisStatus {
@@ -72,6 +75,8 @@ message AnalysisResponse {
     AnalysisStatus status = 8;
     Error error = 9;
     bool incAsText = 10;
+    int32 revision = 11;
+    bool restartEngines = 12;
 }
 
 message AnalysisOption {

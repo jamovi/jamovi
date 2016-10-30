@@ -19,6 +19,7 @@ const Analysis = function(id, name, ns) {
     this.results = null;
     this.isReady = false;
     this.incAsText = false;
+    this.revision = 0;
 
     this._parent = null;
     this._defn = null;
@@ -53,6 +54,7 @@ Analysis.prototype.setResults = function(results, incAsText, syntax) {
 
 Analysis.prototype.setOptions = function(options) {
     this.options = _.extend(this.options, options);
+    this.revision++;
     if (this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };

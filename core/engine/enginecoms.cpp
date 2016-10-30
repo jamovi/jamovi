@@ -6,6 +6,7 @@
 
 #include <streambuf>
 #include <iostream>
+#include <cstdlib>
 
 #include "jamovi.pb.h"
 #include "analysis.h"
@@ -35,7 +36,7 @@ void EngineComs::parse(char *data, int len)
 
     if ( ! request.ParseFromIstream(&is1))
     {
-        std::cout << "failed to parse message";
+        std::cout << "EngineComs::parse(); failed to parse message";
         std::cout << "\n";
         std::cout.flush();
         return;
@@ -55,6 +56,12 @@ void EngineComs::parse(char *data, int len)
         return;
     }
 
+    if (analysisRequest.restartengines())
+    {
+        restartRequested();
+        return;
+    }
+
     std::string options;
     analysisRequest.options().SerializeToString(&options);
 
@@ -63,10 +70,11 @@ void EngineComs::parse(char *data, int len)
         analysisRequest.name(),
         analysisRequest.ns(),
         options,
-        analysisRequest.ppi());
+        analysisRequest.revision());
 
     analysis->datasetId = analysisRequest.datasetid();
     analysis->perform = analysisRequest.perform();
+    analysis->clearState = analysisRequest.clearstate();
 
     if (analysisRequest.changed_size() > 0)
         analysis->changed.assign(analysisRequest.changed().begin(), analysisRequest.changed().end());

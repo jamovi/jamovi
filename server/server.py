@@ -17,7 +17,7 @@ import time
 import tempfile
 import logging
 
-log = logging.getLogger('silky')
+log = logging.getLogger('jamovi')
 
 
 class SingleFileHandler(RequestHandler):
@@ -122,6 +122,8 @@ class SFHandler(StaticFileHandler):
         if 'no_cache' in kwargs:
             self._no_cache = kwargs['no_cache']
             del kwargs['no_cache']
+        else:
+            self._no_cache = False
         StaticFileHandler.initialize(self, **kwargs)
 
     def set_extra_headers(self, path):

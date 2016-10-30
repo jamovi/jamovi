@@ -27,28 +27,29 @@ public:
     void setConnection(const std::string &conn);
     void setPath(const std::string &path);
     void start();
-	
+
 private:
     void messageLoop();
     void analysisRequested(int requestId, Analysis *analysis);
     void resultsReceived(const std::string &results);
-    
+    void terminate();
+
     EngineComs _coms;
 
     EngineR *_R;
-    
+
     bool _slave;
     std::string _conString;
     std::string _path;
     int _socket;
     int _conId;
     bool _exiting;
-    
+
     int _currentRequestId;
-    
+
     std::mutex _mutex;
     std::condition_variable _condition;
-    
+
     Analysis *_waiting;
     Analysis *_running;
 };

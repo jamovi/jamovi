@@ -191,6 +191,20 @@ const Instance = Backbone.Model.extend({
             mode = 'text';
         this.set('resultsMode', mode);
     },
+    restartEngines() {
+
+        let coms = this.attributes.coms;
+
+        let analysisRequest = new coms.Messages.AnalysisRequest();
+        analysisRequest.restartEngines = true;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = analysisRequest.toArrayBuffer();
+        request.payloadType = 'AnalysisRequest';
+        request.instanceId = this._instanceId;
+
+        return coms.sendP(request);
+    },
     _notify(error) {
         let notification = new Notify({
             title: error.message,
@@ -263,17 +277,20 @@ const Instance = Backbone.Model.extend({
         analysisRequest.analysisId = analysis.id;
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
-        analysisRequest.ppi = parseInt(72 * (window.devicePixelRatio || 1));
+        analysisRequest.revision = analysis.revision;
 
         if (changed)
             analysisRequest.changed = changed;
 
-        if (analysis.isReady)
-            analysisRequest.setOptions(Options.toPB(analysis.options, coms.Messages));
+        if (analysis.isReady) {
+            let options = analysis.options;
+            options['.ppi'] = parseInt(72 * (window.devicePixelRatio || 1));
+            analysisRequest.setOptions(Options.toPB(options, coms.Messages));
+        }
 
         let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
-        request.payloadType = "AnalysisRequest";
+        request.payloadType = 'AnalysisRequest';
         request.instanceId = this._instanceId;
 
         return coms.sendP(request);

@@ -51,7 +51,11 @@ void EngineR::run(Analysis *analysis)
     ss << "{\n";
     ss << "  options <- " << analysis->ns << "::" << analysis->name << "Options$new()\n";
     ss << "  options$read(optionsPB)\n";
-    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(options=options, datasetId='" << analysis->datasetId << "', analysisId=" << analysis->id << ")\n";
+    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(";
+    ss << "    options=options,";
+    ss << "    datasetId='" << analysis->datasetId << "',";
+    ss << "    analysisId=" << analysis->id << ", ";
+    ss << "    revision=" << analysis->revision << ")\n";
     ss << "}\n";
 
     rInside.parseEvalQNT(ss.str());
@@ -83,28 +87,41 @@ void EngineR::run(Analysis *analysis)
 
     rInside.parseEvalQNT("analysis$init()");
 
-    Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
-    rInside["changed"] = changed;
-    rInside.parseEvalQNT("analysis$.load(changed)");
+    if ( ! analysis->clearState)
+    {
+        Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
+        rInside["changed"] = changed;
+        rInside.parseEvalQNT("analysis$.load(changed)");
+    }
 
     Rcpp::RawVector rawVec = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw);
 
-    ss.str("");
-    ss << "analysis$run(silent=TRUE);";
-    ss << "analysis$render(ppi=" << analysis->ppi << ");";
-    ss << "analysis$.save();";
+    if (analysis->perform == 0) // INIT
+    {
+        rInside.parseEvalQNT("analysis$.save();");
+    }
+    else
+    {
+        rInside.parseEvalQNT("analysis$run(silent=TRUE);");
 
-    rInside.parseEvalQNT(ss.str());
+        Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+        std::string raw2(rawVec2.begin(), rawVec2.end());
+        resultsReceived(raw2);
 
-    Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
-    std::string raw2(rawVec2.begin(), rawVec2.end());
-    resultsReceived(raw2);
+        rInside.parseEvalQNT("analysis$render();");
 
-    Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
-    std::string raw3(rawVec3.begin(), rawVec3.end());
-    resultsReceived(raw3);
+        Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+        std::string raw3(rawVec3.begin(), rawVec3.end());
+        resultsReceived(raw3);
+
+        Rcpp::RawVector rawVec4 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
+        std::string raw4(rawVec4.begin(), rawVec4.end());
+        resultsReceived(raw4);
+
+        rInside.parseEvalQNT("analysis$.save();");
+    }
 }
 
 void EngineR::checkpoint(SEXP results)

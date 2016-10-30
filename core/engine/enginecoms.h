@@ -14,9 +14,10 @@ class EngineComs
 {
 public:
     EngineComs();
-    
+
     boost::signals2::signal<void (int requestId, Analysis *analysis)> analysisRequested;
-    
+    boost::signals2::signal<void ()> restartRequested;
+
     void parse(char *data, int len);
 
 };
