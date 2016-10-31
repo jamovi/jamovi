@@ -115,13 +115,19 @@ const DataSetModel = Backbone.Model.extend({
         else
             columnPB.dps = column.dps;
 
-        if (values.measureType === 'nominaltext' && values.levels) {
+        if (values.measureType !== 'continuous' && values.levels) {
             columnPB.hasLevels = true;
             for (let i = 0; i < values.levels.length; i++) {
                 let level = values.levels[i];
                 let levelPB = new coms.Messages.VariableLevel();
-                levelPB.value = i;
-                levelPB.label = level.label;
+                if (values.measureType === 'nominal' || values.measureType === 'ordinal') {
+                    levelPB.value = parseInt(level.label);
+                    levelPB.label = level.label;
+                }
+                else {
+                    levelPB.value = i;
+                    levelPB.label = level.label;
+                }
                 columnPB.levels.push(levelPB);
             }
         }

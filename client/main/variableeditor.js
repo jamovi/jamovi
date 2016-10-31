@@ -275,7 +275,7 @@ const EditorWidget = Backbone.View.extend({
     _moveUp() {
         if (this.attached === false)
             return;
-        if (this.model.attributes.measureType !== 'nominaltext')
+        if (this.model.attributes.measureType === 'continuous')
             return;
         let index = this.selectedLevelIndex;
         if (index < 1)
@@ -290,7 +290,7 @@ const EditorWidget = Backbone.View.extend({
     _moveDown() {
         if (this.attached === false)
             return;
-        if (this.model.attributes.measureType !== 'nominaltext')
+        if (this.model.attributes.measureType === 'continuous')
             return;
         let index = this.selectedLevelIndex;
         let levels = this.model.get('levels');
@@ -303,7 +303,7 @@ const EditorWidget = Backbone.View.extend({
         this.model.set('levels', clone);
     },
     _enableDisableMoveButtons() {
-        if (this.model.attributes.measureType === 'nominaltext') {
+        if (this.model.attributes.measureType !== 'continuous') {
             let levels = this.model.get('levels');
             let index  = this.selectedLevelIndex;
             this.$moveUp.toggleClass('disabled', index < 1);

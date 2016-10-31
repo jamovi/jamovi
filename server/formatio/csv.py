@@ -152,9 +152,10 @@ class ColumnWriter:
         if self._only_integers and self._many_uniques is False:
             self._measure_type = MeasureType.NOMINAL
             self._unique_values = list(self._unique_values)
+            self._unique_values = list(map(lambda x: int(x), self._unique_values))
             self._unique_values.sort()
-            for label in self._unique_values:
-                self._column.append_level(int(label), label)
+            for level in self._unique_values:
+                self._column.append_level(level, str(level))
         elif self._only_floats:
             self._measure_type = MeasureType.CONTINUOUS
         else:

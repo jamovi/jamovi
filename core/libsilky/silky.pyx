@@ -4,7 +4,7 @@
 
 from libcpp cimport bool
 from libcpp.string cimport string
-from libcpp.map cimport map
+from libcpp.vector cimport vector
 from libcpp.pair cimport pair
 
 from cython.operator cimport dereference as deref, postincrement as inc
@@ -112,7 +112,7 @@ cdef extern from "columnw.h":
         bool hasLevel(const char *label) const
         bool hasLevel(int value) const
         void clearLevels()
-        map[int, string] levels()
+        vector[pair[int, string]] levels()
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
@@ -317,6 +317,24 @@ cdef class Column:
 
             if old_type == MeasureType.NOMINAL or old_type == MeasureType.ORDINAL:
                 self.measure_type = new_type
+
+                if levels is not None:
+                    old_levels = self.levels
+                    recode = { }
+                    for old_level in old_levels:
+                        for new_level in levels:
+                            if old_level[1] == new_level[1]:
+                                recode[old_level[0]] = new_level[0]
+                                break
+
+                    self.clear_levels()
+                    for level in levels:
+                        self.append_level(level[0], level[1])
+
+                    for row_no in range(self.row_count):
+                        value = self._this.value[int](row_no)
+                        value = recode.get(value, -2147483648)
+                        self._this.setValue[int](row_no, value, True)
 
             elif old_type == MeasureType.NOMINAL_TEXT or old_type == MeasureType.CONTINUOUS:
 

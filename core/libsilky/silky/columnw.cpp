@@ -97,31 +97,59 @@ void ColumnW::insertLevel(int value, const char *label)
     int lastIndex = s->levelsUsed - 1;
     char *baseLabel = levels[lastIndex].label;
 
-    bool inserted = false;
-
-    for (int i = lastIndex - 1; i >= 0; i--)
-    {
+    bool ascending = true;
+    bool descending = true;
+    for (int i = 0; i < lastIndex - 1; i++) {
         Level &level = levels[i];
         Level &nextLevel = levels[i+1];
-        if (level.value > value)
-        {
-            nextLevel = level;
-        }
-        else
-        {
-            nextLevel.value = value;
-            nextLevel.label = baseLabel;
-            inserted = true;
-            break;
-        }
+        if (ascending && level.value > nextLevel.value)
+            ascending = false;
+        if (descending && level.value < nextLevel.value)
+            descending = false;
     }
 
-    if ( ! inserted)
+    if (ascending == false && descending == false)
     {
-        Level &level = levels[0];
+        // if the levels are neither ascending nor descending
+        // then just add the level to the end
+
+        Level &level = levels[lastIndex];
         level.value = value;
         level.label = baseLabel;
         level.count = 0;
+    }
+    else
+    {
+        bool inserted = false;
+
+        for (int i = lastIndex - 1; i >= 0; i--)
+        {
+            Level &level = levels[i];
+            Level &nextLevel = levels[i+1];
+            if (ascending && level.value > value)
+            {
+                nextLevel = level;
+            }
+            else if (descending && level.value < value)
+            {
+                nextLevel = level;
+            }
+            else
+            {
+                nextLevel.value = value;
+                nextLevel.label = baseLabel;
+                inserted = true;
+                break;
+            }
+        }
+
+        if ( ! inserted)
+        {
+            Level &level = levels[0];
+            level.value = value;
+            level.label = baseLabel;
+            level.count = 0;
+        }
     }
 
     s->changes++;

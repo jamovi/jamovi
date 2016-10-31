@@ -53,9 +53,9 @@ int Column::levelCount() const
     return struc()->levelsUsed;
 }
 
-map<int, string> Column::levels() const
+vector<pair<int, string> > Column::levels() const
 {
-    map<int, string> m;
+    vector<pair<int, string> > m;
 
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
@@ -63,7 +63,8 @@ map<int, string> Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        m[l.value] = _mm->resolve(l.label);
+        pair<int, string> v(l.value, _mm->resolve(l.label));
+        m.push_back(v);
     }
 
     return m;

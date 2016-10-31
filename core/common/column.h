@@ -8,7 +8,8 @@
 #include "memorymap.h"
 
 #include <string>
-#include <map>
+#include <vector>
+#include <utility>
 
 class DataSet;
 
@@ -81,7 +82,7 @@ public:
     MeasureType::Type measureType() const;
     bool autoMeasure() const;
     int levelCount() const;
-    std::map<int, std::string> levels() const;
+    std::vector<std::pair<int, std::string> > levels() const;
     const char *getLabel(int value) const;
     int valueForLabel(const char *label) const;
     bool hasLevel(const char *label) const;
