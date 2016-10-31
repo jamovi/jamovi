@@ -49,13 +49,26 @@ var GridVariablesTargetList = function(params) {
             for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
                 this.$icons.append('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + this._suggestedVariableTypes[i] + '"></div>');
             }
-            this.targetGrid.$el.append(this.$icons);
+
+            this.checkScrollBars();
+            this.targetGrid._parentCell.$el.append(this.$icons);
+        }
+    };
+
+    this.checkScrollBars = function() {
+        if (this.$icons) {
+            var rightValue = 2;
+            if (this.targetGrid.hasVScrollbar())
+                rightValue += this.targetGrid.getScrollbarWidth();
+            this.$icons.css("right", rightValue);
         }
     };
 
     var self = this;
     this._override('onRenderToGrid', function(baseFunction, grid, row, column) {
         var returnValue = baseFunction.call(self, grid, row, column);
+
+        self.targetGrid.on('layoutgrid.validated', () => { this.checkScrollBars(); } );
         self.targetGrid.$el.addClass("silky-variable-target");
         if (self.option !== null)
             self._renderSuggestedIcons();
