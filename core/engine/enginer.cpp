@@ -196,7 +196,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             // populate levels
 
-            map<int, string> m = column.levels();
+            vector<pair<int, string> > m = column.levels();
 
             Rcpp::CharacterVector levels(m.size());
             Rcpp::IntegerVector values(m.size());
