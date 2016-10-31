@@ -10,6 +10,7 @@
     position:absolute;
     opacity: 0.5;
     border-radius: 3px;
+    pointer-events: none;
 }
 
 .silky-variable-flash {

@@ -170,6 +170,14 @@ var LayoutGrid = function() {
         }
     };
 
+    this.hasVScrollbar = function() {
+        return this._hasVScrollbars;
+    };
+
+    this.hasHScrollbar = function() {
+        return this._hasHScrollbars;
+    };
+
     this._postProcessCells = function() {
 
         if (this._requiresPostProccessing) {
@@ -251,6 +259,8 @@ var LayoutGrid = function() {
 
 
         this._layoutValid = true;
+
+        this.trigger('layoutgrid.validated');
     };
 
     this._onCellRightEdgeMove = function(cell) {
