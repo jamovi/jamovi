@@ -100,12 +100,12 @@ const Analyses = Backbone.Model.extend({
         this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
     },
-    addAnalysis : function(name, ns, id, values, results) {
+    addAnalysis : function(name, ns, id, values, results, incAsText, syntax) {
         let analysis = new Analysis(id, name, ns);
         analysis._parent = this;
         this._analyses.push(analysis);
         analysis.setup(values);
-        analysis.setResults(results);
+        analysis.setResults(results, incAsText, syntax);
 
         if (this._nextId <= id)
             this._nextId = id + 1;

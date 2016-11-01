@@ -256,7 +256,14 @@ const Instance = Backbone.Model.extend({
 
             for (let analysis of info.analyses) {
                 let options = OptionsPB.fromPB(analysis.options, coms.Messages);
-                this._analyses.addAnalysis(analysis.name, analysis.ns, analysis.analysisId, options, analysis.results);
+                this._analyses.addAnalysis(
+                    analysis.name,
+                    analysis.ns,
+                    analysis.analysisId,
+                    options,
+                    analysis.results,
+                    analysis.incAsText,
+                    analysis.syntax);
             }
 
             return response;
