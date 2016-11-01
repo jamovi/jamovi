@@ -76,7 +76,7 @@ cdef class DataSet:
     def __iter__(self):
         return ColumnIterator(self)
 
-    def getColumnById(self, id):
+    def get_column_by_id(self, id):
         cdef int _id
 
         c = Column()
@@ -87,7 +87,7 @@ cdef class DataSet:
     def append_column(self, name, import_name=None):
         c = Column()
         if import_name is None:
-            import_name=name
+            import_name = name
         c._this = self._this.appendColumn(name.encode('utf-8'), import_name.encode('utf-8'))
         return c
 

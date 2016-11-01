@@ -356,7 +356,7 @@ class Instance:
     def _apply_schema(self, request, response):
         for i in range(len(request.schema)):
             column_schema = request.schema[i]
-            column = self._data.dataset.getColumnById(column_schema.id)
+            column = self._data.dataset.get_column_by_id(column_schema.id)
 
             levels = None
             if column_schema.hasLevels:
