@@ -16,6 +16,7 @@ typedef struct
     int rowCount;
     ColumnStruct *columns;
     int capacity;
+    int nextColumnId;
 
 } DataSetStruct;
 
@@ -30,6 +31,7 @@ public:
 
     Column operator[](int index);
     Column operator[](const char *name);
+    Column getColumnById(int id);
 
 protected:
 

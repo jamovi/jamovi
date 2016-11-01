@@ -154,7 +154,7 @@ var OptionsPanel = SilkyView.extend({
         var self = this;
         this.dataSetModel.on('columnsChanged', event => {
             for (let changes of event.changes) {
-                if (changes.measureTypeChanged) {
+                if (changes.measureTypeChanged || changes.nameChanged) {
                     var context = { columns: self.dataSetModel.get('columns') };
                     for (let name in self._analysesResources)
                         self.applyContextChange(self._analysesResources[name], context);

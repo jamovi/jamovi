@@ -33,6 +33,7 @@ def write(data, path):
                 field['type'] = 'number'
             else:
                 field['type'] = 'integer'
+            field['importName'] = column.import_name
             fields.append(field)
 
         metadata = { }
@@ -107,7 +108,9 @@ def read(data, path):
         meta_dataset = metadata['dataSet']
 
         for meta_column in meta_dataset['fields']:
-            data.dataset.append_column(meta_column['name'])
+            name = meta_column['name']
+            import_name = meta_column.get('importName', name)
+            data.dataset.append_column(name, import_name)
             column = data.dataset[data.dataset.column_count - 1]
             measure_type = MeasureType.parse(meta_column['measureType'])
             column.measure_type = measure_type

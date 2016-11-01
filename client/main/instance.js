@@ -332,9 +332,27 @@ const Instance = Backbone.Model.extend({
         for (let analysis of this._analyses) {
             let using = analysis.getUsing();
 
-            for (let name of event.changed) {
-                if (using.includes(name))
-                    this._runAnalysis(analysis, event.changed);
+            let changeFound = false;
+            let columnRenames = [];
+            for (let changes of event.changes) {
+                let column = this._dataSetModel.getColumnById(changes.id);
+                let name = column.name;
+                if (changes.nameChanged)
+                    name = changes.oldName;
+                if (using.includes(name)) {
+                    if (changes.nameChanged)
+                        columnRenames.push({ oldName: changes.oldName, newName: column.name });
+                    changeFound = true;
+                }
+            }
+            if (changeFound) {
+                if (columnRenames.length > 0) {
+                    analysis.renameColumns(columnRenames);
+                    let selectedAnalysis = this.get('selectedAnalysis');
+                    if (selectedAnalysis.id === analysis.id)
+                        this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
+                }
+                this._runAnalysis(analysis, event.changed);
             }
         }
     },

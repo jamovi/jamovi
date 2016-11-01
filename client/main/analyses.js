@@ -63,6 +63,14 @@ Analysis.prototype.setOptions = function(values) {
         this._parent._notifyOptionsChanged(this);
 };
 
+Analysis.prototype.renameColumns = function(columnRenames) {
+    for (let i = 0; i < columnRenames.length; i++)
+        this.options.renameColumn(columnRenames[i].oldName, columnRenames[i].newName);
+    this.revision++;
+    if (this._parent !== null)
+        this._parent._notifyOptionsChanged(this);
+};
+
 Analysis.prototype.getUsing = function() {
     return this.options.getUsedColumns();
 };

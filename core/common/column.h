@@ -37,7 +37,9 @@ typedef struct
 
 typedef struct
 {
+    int id;
     char *name;
+    char *importName;
     char measureType;
     char autoMeasure;
     int rowCount;
@@ -75,7 +77,9 @@ public:
 
     Column(DataSet *parent = 0, MemoryMap *mm = 0, ColumnStruct *rel = 0);
 
+    int id() const;
     const char *name() const;
+    const char *importName() const;
     int rowCount() const;
     int dps() const;
 

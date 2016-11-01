@@ -35,6 +35,7 @@ const DataSetModel = Backbone.Model.extend({
                 let column = { };
 
                 column.name = columnPB.name;
+                column.id = columnPB.id;
                 column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
                 column.autoMeasure = columnPB.autoMeasure;
                 column.dps = columnPB.dps;
@@ -64,6 +65,12 @@ const DataSetModel = Backbone.Model.extend({
             this.trigger('dataSetLoaded');
         }
     },
+    getColumnById(id) {
+        for (let column of this.attributes.columns) {
+            if (column.id === id)
+                return column;
+        }
+    },
     getColumn(indexOrName) {
         if (typeof(indexOfName) === 'number') {
             return this.attributes.columns[indexOrName];
@@ -75,6 +82,14 @@ const DataSetModel = Backbone.Model.extend({
             }
         }
         return null;
+    },
+    indexOfColumnById(id) {
+        let columns = this.attributes.columns;
+        for (let i = 0; i < columns.length; i++) {
+            if (columns[i].id === id)
+                return i;
+        }
+        return -1;
     },
     indexOfColumn(columnOrName) {
 
@@ -95,15 +110,19 @@ const DataSetModel = Backbone.Model.extend({
 
         return -1;
     },
-    changeColumn(name, values) {
+    changeColumn(id, values) {
 
-        let column = this.getColumn(name);
+        let column = this.getColumnById(id);
 
         let coms = this.attributes.coms;
 
         let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
-        columnPB.name = column.name;
+        columnPB.id = id;
+        columnPB.name = values.name;
         columnPB.measureType = DataSetModel.parseMeasureType(values.measureType);
+
+        let nameChanged = values.name !== column.name;
+        let oldName = column.name;
 
         if ('autoMeasure' in values)
             columnPB.autoMeasure = values.autoMeasure;
@@ -151,14 +170,16 @@ const DataSetModel = Backbone.Model.extend({
 
                 for (let i = 0; i < datasetPB.schema.length; i++) {
                     let columnPB = datasetPB.schema[i];
-                    let name = columnPB.name;
-                    let column = this.getColumn(name);
+                    let id = columnPB.id;
+                    let column = this.getColumnById(id);
                     this._readColumnPB(columnPB, column);
-                    changed[i] = name;
+                    changed[i] = columnPB.name;
                     changes[i] = {
-                        name: name,
+                        id: id,
+                        oldName: oldName,
                         levelsChanged: true,
                         measureTypeChanged: true,
+                        nameChanged: nameChanged,
                         dataChanged: true
                     };
                 }
@@ -170,6 +191,7 @@ const DataSetModel = Backbone.Model.extend({
     _readColumnPB(columnPB, column) {
         column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
         column.autoMeasure = columnPB.autoMeasure;
+        column.name = columnPB.name;
         column.dps = columnPB.dps;
         let levels = null;
         if (columnPB.hasLevels) {
@@ -461,14 +483,16 @@ const DataSetViewModel = DataSetModel.extend({
                 changed = Array(datasetPB.schema.length);
                 for (let i = 0; i < datasetPB.schema.length; i++) {
                     let columnPB = datasetPB.schema[i];
-                    let name = columnPB.name;
-                    let column = this.getColumn(name);
+                    let id = columnPB.id;
+                    let column = this.getColumnById(name);
                     this._readColumnPB(columnPB, column);
-                    changed[i] = name;
+                    changed[i] = columnPB.name;
                     changes[i] = {
-                        name: name,
+                        id: id,
+                        oldName: columnPB.name,
                         levelsChanged: true,
                         measureTypeChanged: true,
+                        nameChanged: false,
                         dataChanged: true
                     };
                 }
@@ -521,7 +545,7 @@ const DataSetViewModel = DataSetModel.extend({
             if (changes.dataChanged === false)
                 continue;
 
-            let index = this.indexOfColumn(changes.name);
+            let index = this.indexOfColumnById(changes.id);
             let viewport = {
                 left: index,
                 top: this.attributes.viewport.top,

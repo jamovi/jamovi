@@ -11,7 +11,7 @@ optionPB.toPB = function(options, ppi, Messages) {
     let optionsPB = [ ];
 
     for (let name in options._options) {
-        let value = options.getOption(name)._value;
+        let value = options.getOption(name).getValue();
         if (value !== undefined) {
             names.push(name);
             optionsPB.push(_toPB(value, Messages));

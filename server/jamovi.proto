@@ -265,6 +265,7 @@ message DataSetSchema {
         bool hasLevels = 6;
         repeated VariableLevel levels = 7;
         int32 dps = 8;
+        string importName = 9;
     }
     repeated ColumnSchema columns = 1;
 }

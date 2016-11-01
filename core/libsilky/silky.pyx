@@ -24,11 +24,12 @@ cdef extern from "datasetw.h":
         CDataSet *retrieve(CMemoryMap *mm) except +
         int rowCount() const
         int columnCount() const
-        CColumn appendColumn(const char *name) except +
+        CColumn appendColumn(const char *name, const char *importName) except +
         void setRowCount(size_t count) except +
         void appendRow() except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
+        CColumn getColumnById(int id) except +
 
 class ColumnIterator:
     def __init__(self, dataset):
@@ -75,9 +76,19 @@ cdef class DataSet:
     def __iter__(self):
         return ColumnIterator(self)
 
-    def append_column(self, name):
+    def getColumnById(self, id):
+        cdef int _id
+
         c = Column()
-        c._this = self._this.appendColumn(name.encode('utf-8'))
+        _id = id
+        c._this = deref(self._this).getColumnById(_id)
+        return c
+
+    def append_column(self, name, import_name=None):
+        c = Column()
+        if import_name is None:
+            import_name=name
+        c._this = self._this.appendColumn(name.encode('utf-8'), import_name.encode('utf-8'))
         return c
 
     def set_row_count(self, count):
@@ -97,6 +108,9 @@ cdef class DataSet:
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
         const char *name() const
+        void setName(const char *name)
+        const char *importName() const
+        int id() const
         void setMeasureType(CMeasureType measureType)
         CMeasureType measureType() const
         void setAutoMeasure(bool auto)
@@ -140,9 +154,20 @@ class CellIterator:
 cdef class Column:
     cdef CColumn _this
 
-    @property
-    def name(self):
-        return self._this.name().decode('utf-8')
+    property id:
+        def __get__(self):
+            return self._this.id()
+
+    property name:
+        def __get__(self):
+            return self._this.name().decode('utf-8')
+
+        def __set__(self, name):
+            self._this.setName(name.encode('utf-8'))
+
+    property import_name:
+        def __get__(self):
+            return self._this.importName().decode('utf-8')
 
     property measure_type:
         def __get__(self):
@@ -279,7 +304,10 @@ cdef class Column:
         else:
             return self._this.value[int](index)
 
-    def change(self, measure_type, levels=None, dps=None, auto_measure=None):
+    def change(self, measure_type, name=None, levels=None, dps=None, auto_measure=None):
+
+        if name is not None:
+            self.name = name
 
         if type(measure_type) is not MeasureType:
             measure_type = MeasureType(measure_type)

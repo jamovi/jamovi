@@ -93,7 +93,7 @@ const TableView = SilkyView.extend({
             let width  = column.width;
 
             let html = '';
-            html += '<div data-name="' + column.name + '" data-index="' + colNo + '" data-measuretype="' + column.measureType + '" class="silky-column-header" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+            html += '<div data-id="' + column.id + '" data-index="' + colNo + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
             html +=     column.name;
             html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
@@ -155,13 +155,20 @@ const TableView = SilkyView.extend({
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
-            if (changes.levelsChanged || changes.measureTypeChanged) {
-                let column = this.model.getColumn(changes.name);
-                let index = this.model.indexOfColumn(changes.name);
-                let $header = $(this.$headers[index]);
-                $header.attr('data-measuretype', column.measureType);
-                let $column = $(this.$columns[index]);
-                $column.attr('data-measuretype', column.measureType);
+            let column = this.model.getColumnById(changes.id);
+            let index = this.model.indexOfColumnById(changes.id);
+            if (index !== -1) {
+                if (changes.levelsChanged || changes.measureTypeChanged) {
+                    let $header = $(this.$headers[index]);
+                    $header.attr('data-measuretype', column.measureType);
+                    let $column = $(this.$columns[index]);
+                    $column.attr('data-measuretype', column.measureType);
+                }
+
+                if (changes.nameChanged) {
+                    let header = this.$headers[index];
+                    header.innerText = column.name;
+                }
             }
         }
     },

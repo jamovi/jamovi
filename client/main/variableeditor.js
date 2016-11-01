@@ -8,6 +8,7 @@ var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
 Backbone.$ = $;
+const keyboardJS = require('keyboardjs');
 
 const VariableEditor = Backbone.View.extend({
     className: 'VariableEditor',
@@ -29,8 +30,8 @@ const VariableEditor = Backbone.View.extend({
                 return;
             let column = this.model.attributes.columns[this.model.attributes.editingVar];
             for (let changes of event.changes) {
-                if (changes.name === column.name) {
-                    if (changes.measureTypeChanged || changes.levelsChanged)
+                if (changes.id === column.id) {
+                    if (changes.measureTypeChanged || changes.levelsChanged || changes.nameChanged)
                         this._update();
                     break;
                 }
@@ -85,6 +86,7 @@ const VariableEditor = Backbone.View.extend({
         let column = this.model.attributes.columns[columnName];
         this.editorModel.setup({
             name : column.name,
+            id : column.id,
             measureType : column.measureType,
             autoMeasure : column.autoMeasure,
             levels : column.levels,
@@ -175,6 +177,7 @@ const VariableModel = Backbone.Model.extend({
     },
     defaults : {
         name : null,
+        id: null,
         measureType : null,
         autoMeasure : false,
         levels : null,
@@ -198,7 +201,7 @@ const VariableModel = Backbone.Model.extend({
             dps: this.attributes.dps,
         };
 
-        this.dataset.changeColumn(this.attributes.name, values);
+        this.dataset.changeColumn(this.attributes.id, values);
 
         this.original = values;
         this.set(this.original);
@@ -218,7 +221,29 @@ const EditorWidget = Backbone.View.extend({
         this.$el.empty();
         this.$el.addClass('silky-variable-editor-widget');
 
-        this.$title = $('<div class="silky-variable-editor-widget-title"></div>').appendTo(this.$el);
+        this.$title = $('<input class="silky-variable-editor-widget-title" type="text">').appendTo(this.$el);
+        this._currentKeyboardContext = '';
+        this.$title.focus(() => {
+            this._currentKeyboardContext = keyboardJS.getContext();
+            keyboardJS.setContext('');
+            this.$title.select();
+        } );
+        this.$title.on("change keyup paste", () => {
+            this.model.set({ name: this.$title.val() });
+        } );
+        this.$title.blur(() => {
+            keyboardJS.setContext(this._currentKeyboardContext);
+        } );
+
+        this.$title.keydown((event) => {
+            var keypressed = event.keyCode || event.which;
+            if (keypressed == 13) {
+                this.$title.blur();
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+        //this.$title = $('<div class="silky-variable-editor-widget-title"></div>').appendTo(this.$el);
         this.$body = $('<div class="silky-variable-editor-widget-body"></div>').appendTo(this.$el);
         this.$left = $('<div class="silky-variable-editor-widget-left"></div>').appendTo(this.$body);
         this.$types = $('<div class="silky-variable-editor-widget-types"></div>').appendTo(this.$left);
@@ -266,7 +291,7 @@ const EditorWidget = Backbone.View.extend({
         this.model.on('change:name', event => {
             if ( ! this.attached)
                 return;
-            this.$title.text(event.changed.name);
+            this.$title.val(event.changed.name);
         });
         this.model.on('change:measureType', event => this._setType(event.changed.measureType));
         this.model.on('change:levels',      event => this._setLevels(event.changed.levels));
@@ -383,7 +408,7 @@ const EditorWidget = Backbone.View.extend({
     attach() {
         this.attached = true;
         this.selectedLevelIndex = -1;
-        this.$title.text(this.model.get('name'));
+        this.$title.val(this.model.get('name'));
         this._setType(this.model.get('measureType'));
         this._setAutoMeasure(this.model.get('autoMeasure'));
         this._setLevels(this.model.get('levels'));

@@ -22,6 +22,7 @@ public:
 
     ColumnW(DataSetW *parent = 0, MemoryMapW *mm = 0, ColumnStruct *rel = 0);
 
+    void setName(const char *name);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
     void appendLevel(int value, const char *label);
