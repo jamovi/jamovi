@@ -110,6 +110,7 @@ class Analyses:
 
         analysis = Analysis(analysis_pb.analysisId, analysis_pb.name, analysis_pb.ns, options, self)
         analysis.results = analysis_pb
+        analysis.status = Analysis.Status.COMPLETE
         self._analyses.append(analysis)
 
         return analysis
