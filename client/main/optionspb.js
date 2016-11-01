@@ -6,7 +6,7 @@
 
 const optionPB = { };
 
-optionPB.toPB = function(options, Messages) {
+optionPB.toPB = function(options, ppi, Messages) {
     let names = [ ];
     let optionsPB = [ ];
 
@@ -17,6 +17,9 @@ optionPB.toPB = function(options, Messages) {
             optionsPB.push(_toPB(value, Messages));
         }
     }
+
+    names.push('.ppi');
+    optionsPB.push(_toPB(ppi, Messages));
 
     let child = new Messages.AnalysisOptions();
     child.setOptions(optionsPB);

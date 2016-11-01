@@ -290,9 +290,8 @@ const Instance = Backbone.Model.extend({
             analysisRequest.changed = changed;
 
         if (analysis.isReady) {
-            let options = analysis.options;
-            options['.ppi'] = parseInt(72 * (window.devicePixelRatio || 1));
-            analysisRequest.setOptions(OptionsPB.toPB(analysis.options, coms.Messages));
+            let ppi = parseInt(72 * (window.devicePixelRatio || 1));
+            analysisRequest.setOptions(OptionsPB.toPB(analysis.options, ppi, coms.Messages));
         }
 
         let request = new coms.Messages.ComsMessage();
