@@ -38,6 +38,18 @@ ColumnStruct *DataSet::strucC(int index) const
     return column;
 }
 
+Column DataSet::getColumnById(int id)
+{
+    for (int i = 0; i < columnCount(); i++)
+    {
+        Column column = (*this)[i];
+        if (column.id() == id)
+            return column;
+    }
+
+    throw runtime_error("no such column");
+}
+
 Column DataSet::operator[](const char *name)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);

@@ -23,6 +23,7 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->columns = columns;
     dss->capacity = 1024;
     dss->columnCount = 0;
+    dss->nextColumnId = 0;
 
     return ds;
 }
@@ -67,8 +68,24 @@ ColumnW DataSetW::operator[](int index)
     return ColumnW(this, _mm, rel);
 }
 
-ColumnW DataSetW::appendColumn(const char *name)
+ColumnW DataSetW::getColumnById(int id)
 {
+    for (int i = 0; i < columnCount(); i++)
+    {
+        ColumnW column = (*this)[i];
+        if (column.id() == id)
+            return column;
+    }
+
+    throw runtime_error("no such column");
+}
+
+ColumnW DataSetW::appendColumn(const char *name, const char *importName)
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    int columnId = dss->nextColumnId;
+    dss->nextColumnId += 1;
+
     int columnCount = struc()->columnCount;
 
     if (columnCount >= struc()->capacity)
@@ -78,10 +95,16 @@ ColumnW DataSetW::appendColumn(const char *name)
     char *chars = _mm->allocate<char>(n + 1);  // +1 for null terminator
     memcpy(chars, name, n + 1);
 
+    int n2 = strlen(importName);
+    char *chars2 = _mm->allocate<char>(n + 1);  // +1 for null terminator
+    memcpy(chars2, importName, n2 + 1);
+
     ColumnStruct *column;
 
     column = strucC(columnCount);
     column->name = _mm->base<char>(chars);
+    column->importName = _mm->base<char>(chars2);
+    column->id = columnId;
 
     column->measureType = MeasureType::NOMINAL;
     column->autoMeasure = false;

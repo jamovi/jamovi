@@ -10,51 +10,90 @@ const OptionTypes = {
     create: function(template, value) {
         var constructor = OptionTypes[template.type];
         if ( ! constructor)
-            constructor = OptionTypes.Option;
+            return new OptionTypes.Option(template, value, true);
 
         return new constructor(template, value);
     }
 };
 
-OptionTypes.Option = function(template, value) {
+OptionTypes.Option = function(template, value, isLeaf) {
     this._template = template;
+    this._isLeaf = isLeaf;
+
+    this.getValue = function() {
+        if (this._isLeaf)
+            return this._value;
+        else
+            return this._onGetValue();
+    };
 
     this.setValue = function(value) {
-        this._value = value;
+        if (this._isLeaf)
+            this._value = value;
+        else {
+            this.children = [];
+            if (value === null)
+                return;
+
+            if (this._createChildren)
+                this._createChildren(value);
+        }
     };
 
     this.getUsedColumns = function() {
-        return [];
+        if (this._isLeaf)
+            return this._onGetUsedColumns();
+        else {
+            let r = [];
+            for (let i = 0; i < this.children.length; i++) {
+                let child = this.children[i];
+                r = r.concat(child.getUsedColumns());
+            }
+            r = _.uniq(r);
+            return r;
+        }
     };
 
-    this.renameColumn = function(oldName, newName) { };
+    this.renameColumn = function(oldName, newName) {
+        if (this._isLeaf)
+            this._onRenameColumn(oldName, newName);
+        else {
+            for (let i = 0; i < this.children.length; i++)
+                this.children[i].renameColumn(oldName, newName);
+        }
+     };
+
+     this._onGetUsedColumns = function() {
+         return [];
+     };
+
+     this._onRenameColumn = function() {  };
 
     this.setValue(value);
 };
 SuperClass.create(OptionTypes.Option);
 
 OptionTypes.Variable = function(template, value) {
-    OptionTypes.Option.extendTo(this, template, value);
+    OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('getUsedColumns', (baseFunction) => {
+    this._override('_onGetUsedColumns', (baseFunction) => {
         if (this._value !== null)
             return [ this._value ];
         else
             return [];
     });
 
-    this._override('renameColumn', (baseFunction, oldName, newName) => {
+    this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
         if (this._value === oldName)
             this._value = newName;
     });
-
 };
 SuperClass.create(OptionTypes.Variable);
 
 OptionTypes.Variables = function(template, value) {
-    OptionTypes.Option.extendTo(this, template, value);
+    OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('getUsedColumns', (baseFunction) => {
+    this._override('_onGetUsedColumns', (baseFunction) => {
         let r = [];
         if (this._value !== null)
             r = this._value;
@@ -63,10 +102,12 @@ OptionTypes.Variables = function(template, value) {
         return r;
     });
 
-    this._override('renameColumn', (baseFunction, oldName, newName) => {
-        for (let i = 0; i < this._value.length; i++) {
-            if (this._value[i] === oldName)
-                this._value[i] = newName;
+    this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] === oldName)
+                    this._value[i] = newName;
+            }
         }
     });
 };
@@ -92,57 +133,48 @@ OptionTypes.Pair = function(template, value) {
 };
 SuperClass.create(OptionTypes.Pair);
 
-OptionTypes.ParentOption = function(template, value) {
-    this.children = [];
 
-    OptionTypes.Option.extendTo(this, template, value);
+OptionTypes.Array = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value, false);
 
-    this._override('setValue', (baseFunction, value) => {
-        baseFunction.call(this, value);
-        this.children = [];
-        if (value === null)
-            return;
-
-        if (this.createChildren)
-            this.createChildren(value);
-    });
-
-    this._override('getUsedColumns', (baseFunction) => {
-        let r = [];
-        for (let i = 0; i < this.children.length; i++) {
-            let child = this.children[i];
-            r = r.concat(child.getUsedColumns());
-        }
-        r = _.uniq(r);
+    this._override('_onGetValue', (baseFunction) => {
+        var r = [];
+        for (let i = 0; i < this.children.length; i++)
+            r.push(this.children[i].getValue());
         return r;
     });
 
-    this._override('renameColumn', (baseFunction, oldName, newName) => {
-        for (let i = 0; i < this.children.length; i++)
-            this.children[i].renameColumn(oldName, newName);
-    });
-};
-SuperClass.create(OptionTypes.ParentOption);
-
-OptionTypes.Array = function(template, value) {
-    OptionTypes.ParentOption.extendTo(this, template, value);
-
-    this._override('createChildren', (baseFunction, value) => {
+    this._override('_createChildren', (baseFunction, value) => {
         for (let i = 0; i < value.length; i++)
             this.children.push(OptionTypes.create(this._template.template, value[i]));
     });
+
+    if (value !== null)
+        this._createChildren(value);
 };
 SuperClass.create(OptionTypes.Array);
 
 OptionTypes.Group = function(template, value) {
-    OptionTypes.ParentOption.extendTo(this, template, value);
+    OptionTypes.Option.extendTo(this, template, value, false);
 
-    this._override('createChildren', (baseFunction, value) => {
+    this._override('_onGetValue', (baseFunction) => {
+        var r = { };
+        for (let i = 0; i < this._template.elements.length; i++) {
+            let element = this._template.elements[i];
+            r[element.name] = this.children[i].getValue();
+        }
+        return r;
+    });
+
+    this._override('_createChildren', (baseFunction, value) => {
         for (let i = 0; i < this._template.elements.length; i++) {
             let element = this._template.elements[i];
             this.children.push(OptionTypes.create(element, value[element.name]));
         }
     });
+
+    if (value !== null)
+        this._createChildren(value);
 };
 SuperClass.create(OptionTypes.Group);
 
@@ -190,8 +222,9 @@ const Options = function(def) {
     this.getValues = function() {
         var values = { };
         for (let name in this._options) {
-            if (this._options[name]._value !== undefined)
-                values[name] = this._options[name]._value;
+            let value = this._options[name].getValue();
+            if (value !== undefined)
+                values[name] = value;
         }
 
         return values;

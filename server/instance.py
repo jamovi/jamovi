@@ -356,7 +356,7 @@ class Instance:
     def _apply_schema(self, request, response):
         for i in range(len(request.schema)):
             column_schema = request.schema[i]
-            column = self._data.dataset[column_schema.name]
+            column = self._data.dataset.get_column_by_id(column_schema.id)
 
             levels = None
             if column_schema.hasLevels:
@@ -364,7 +364,7 @@ class Instance:
                 for level in column_schema.levels:
                     levels.append((level.value, level.label))
 
-            column.change(column_schema.measureType, levels, auto_measure=column_schema.autoMeasure)
+            column.change(column_schema.measureType, column_schema.name, levels, auto_measure=column_schema.autoMeasure)
 
             response.incSchema = True
             schema = response.schema.add()
@@ -542,6 +542,9 @@ class Instance:
 
     def _populate_column_schema(self, column, column_schema):
         column_schema.name = column.name
+        column_schema.importName = column.import_name
+        column_schema.id = column.id
+
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
         column_schema.width = 100

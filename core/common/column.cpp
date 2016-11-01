@@ -20,9 +20,18 @@ Column::Column(DataSet *parent, MemoryMap *mm, ColumnStruct *rel)
     _rel = rel;
 }
 
+int Column::id() const {
+    return struc()->id;
+}
+
 const char *Column::name() const
 {
     return _mm->resolve(struc()->name);
+}
+
+const char *Column::importName() const
+{
+    return _mm->resolve(struc()->importName);
 }
 
 MeasureType::Type Column::measureType() const
