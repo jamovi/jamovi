@@ -121,19 +121,16 @@ const DataSetModel = Backbone.Model.extend({
         columnPB.measureType = DataSetModel.parseMeasureType(values.measureType);
 
         let nameChanged = values.name !== column.name;
-        let newName = values.name;
-        let testName = newName;
-        let collision = 0;
         let oldName = column.name;
-        let columns = this.attributes.columns;
-        for (let i = 0; i < columns.length; i++) {
-            if (columns[i].name === testName) {
-                testName = newName + "(" + (collision + 2)  + ")";
-                collision += 1;
-                i = -1;
-            }
+
+        let testName = values.name;
+        if (nameChanged) {
+            let names = this.attributes.columns.map((column) => { return column.name; } );
+            let i = 2;
+            while (names.includes(testName) && testName !== oldName)
+                testName = values.name + ' (' + i++ + ')';
         }
-        newName = testName;
+        let newName = testName;
 
         columnPB.name = newName;
 
@@ -514,10 +511,11 @@ const DataSetViewModel = DataSetModel.extend({
             this.setCells(viewport, cells);
 
             for (let i = 0; i < nCols; i++) {
-                let name = this.attributes.columns[viewport.left + i].name;
+                let column = this.attributes.columns[viewport.left + i];
+                let name = column.name;
                 if ( ! changed.includes(name)) {
                     changed.push(name);
-                    changes.push({ name: name, dataChanged: true });
+                    changes.push({ id: column.id, oldName: name, dataChanged: true });
                 }
             }
 

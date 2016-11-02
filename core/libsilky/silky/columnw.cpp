@@ -19,14 +19,14 @@ ColumnW::ColumnW(DataSetW *parent, MemoryMapW *mm, ColumnStruct *rel)
 
 void ColumnW::setName(const char *name)
 {
-    ColumnStruct *s = struc();
     int length = strlen(name)+1;
+
     char *chars = _mm->allocate<char>(length);
 
     std::memcpy(chars, name, length);
 
-    s = struc();
-    
+    ColumnStruct *s = struc();
+
     s->name = _mm->base(chars);
     s->changes++;
 }
