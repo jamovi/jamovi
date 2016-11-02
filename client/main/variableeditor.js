@@ -261,7 +261,7 @@ const EditorWidget = Backbone.View.extend({
         this.$el.empty();
         this.$el.addClass('silky-variable-editor-widget');
 
-        this.$title = $('<input class="silky-variable-editor-widget-title" type="text" maxlength="50">').appendTo(this.$el);
+        this.$title = $('<input class="silky-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$el);
         this._currentKeyboardContext = '';
         this.$title.focus(() => {
             this._currentKeyboardContext = keyboardJS.getContext();
