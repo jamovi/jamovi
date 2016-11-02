@@ -484,7 +484,7 @@ const DataSetViewModel = DataSetModel.extend({
                 for (let i = 0; i < datasetPB.schema.length; i++) {
                     let columnPB = datasetPB.schema[i];
                     let id = columnPB.id;
-                    let column = this.getColumnById(name);
+                    let column = this.getColumnById(id);
                     this._readColumnPB(columnPB, column);
                     changed[i] = columnPB.name;
                     changes[i] = {
