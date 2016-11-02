@@ -163,6 +163,7 @@ cdef class Column:
             return self._this.name().decode('utf-8')
 
         def __set__(self, name):
+            name = name[:63]
             self._this.setName(name.encode('utf-8'))
 
     property import_name:

@@ -349,7 +349,7 @@ const Instance = Backbone.Model.extend({
                 if (columnRenames.length > 0) {
                     analysis.renameColumns(columnRenames);
                     let selectedAnalysis = this.get('selectedAnalysis');
-                    if (selectedAnalysis.id === analysis.id)
+                    if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
                         this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
                 }
                 this._runAnalysis(analysis, event.changed);
