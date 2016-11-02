@@ -229,7 +229,8 @@ const EditorWidget = Backbone.View.extend({
             this.$title.select();
         } );
         this.$title.on("change keyup paste", () => {
-            this.model.set({ name: this.$title.val() });
+            let newName = this.$title.val().trim();
+            this.model.set({ name: newName });
         } );
         this.$title.blur(() => {
             keyboardJS.setContext(this._currentKeyboardContext);
