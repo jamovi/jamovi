@@ -118,11 +118,24 @@ const DataSetModel = Backbone.Model.extend({
 
         let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
         columnPB.id = id;
-        columnPB.name = values.name;
         columnPB.measureType = DataSetModel.parseMeasureType(values.measureType);
 
         let nameChanged = values.name !== column.name;
+        let newName = values.name;
+        let testName = newName;
+        let collision = 0;
         let oldName = column.name;
+        let columns = this.attributes.columns;
+        for (let i = 0; i < columns.length; i++) {
+            if (columns[i].name === testName) {
+                testName = newName + "(" + (collision + 2)  + ")";
+                collision += 1;
+                i = -1;
+            }
+        }
+        newName = testName;
+
+        columnPB.name = newName;
 
         if ('autoMeasure' in values)
             columnPB.autoMeasure = values.autoMeasure;
