@@ -26,7 +26,6 @@ void ColumnW::setName(const char *name)
     std::memcpy(chars, name, length);
 
     ColumnStruct *s = struc();
-
     s->name = _mm->base(chars);
     s->changes++;
 }
@@ -121,6 +120,9 @@ void ColumnW::insertLevel(int value, const char *label)
         if (descending && level.value < nextLevel.value)
             descending = false;
     }
+
+    if (ascending && descending)
+        descending = false;
 
     if (ascending == false && descending == false)
     {
