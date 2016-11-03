@@ -334,7 +334,9 @@ const EditorWidget = Backbone.View.extend({
         this.model.on('change:name', event => {
             if ( ! this.attached)
                 return;
-            this.$title.val(event.changed.name);
+            let name = event.changed.name;
+            if (name !== this.$title.val())
+                this.$title.val(name);
         });
         this.model.on('change:measureType', event => this._setType(event.changed.measureType));
         this.model.on('change:levels',      event => this._setLevels(event.changed.levels));
@@ -451,7 +453,9 @@ const EditorWidget = Backbone.View.extend({
     attach() {
         this.attached = true;
         this.selectedLevelIndex = -1;
-        this.$title.val(this.model.get('name'));
+        let name = this.model.get('name');
+        if (name !== this.$title.val())
+            this.$title.val(name);
         this._setType(this.model.get('measureType'));
         this._setAutoMeasure(this.model.get('autoMeasure'));
         this._setLevels(this.model.get('levels'));
