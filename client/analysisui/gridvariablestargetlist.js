@@ -56,12 +56,20 @@ var GridVariablesTargetList = function(params) {
     };
 
     this.checkScrollBars = function() {
-        if (this.$icons) {
-            var rightValue = 2;
-            if (this.targetGrid.hasVScrollbar())
-                rightValue += this.targetGrid.getScrollbarWidth();
-            this.$icons.css("right", rightValue);
-        }
+        setTimeout(() => {
+            if (this.$icons) {
+                var rightValue = 3;
+                if (this.targetGrid.hasVScrollbar())
+                    rightValue += this.targetGrid.getScrollbarWidth();
+
+                var bottomValue = parseFloat(this.targetGrid.$el.css("bottom")) + 3;
+                if (this.targetGrid.hasHScrollbar())
+                    bottomValue += this.targetGrid.getScrollbarHeight();
+
+                this.$icons.css("bottom", bottomValue);
+                this.$icons.css("right", rightValue);
+            }
+        }, 0);
     };
 
     var self = this;
