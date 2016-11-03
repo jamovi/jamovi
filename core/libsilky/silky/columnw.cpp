@@ -122,6 +122,9 @@ void ColumnW::insertLevel(int value, const char *label)
             descending = false;
     }
 
+    if (ascending && descending)
+        descending = false;
+
     if (ascending == false && descending == false)
     {
         // if the levels are neither ascending nor descending
