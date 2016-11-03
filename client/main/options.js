@@ -185,7 +185,10 @@ const Options = function(def) {
 
     for (var i = 0; i < def.length; i++) {
         var template = def[i];
-        var option = OptionTypes.create(template, template.default);
+        let defaultValue = template.default;
+        if (defaultValue === undefined)
+            defaultValue = null;
+        var option = OptionTypes.create(template, defaultValue);
         this._options[template.name] = option;
     }
 
