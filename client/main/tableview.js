@@ -63,6 +63,9 @@ const TableView = SilkyView.extend({
         this.$el.on('dblclick', event => this._clickHandler(event));
 
         this._active = true;
+
+        keyboardJS.setContext('spreadsheet-editing');
+        keyboardJS.bind('', event => this._editingKeyPress(event));
         keyboardJS.setContext('spreadsheet');
         keyboardJS.bind('', event => this._notEditingKeyPress(event));
 
@@ -133,9 +136,10 @@ const TableView = SilkyView.extend({
         this.$selectionColumnHighlight.appendTo(this.$header);
 
         this.$selection.on('focus', event => this._beginEditing());
-        this.$selection.on('keydown', event => this._editKeyPress(event));
-        this.$selection.on('keypress', event => this._editKeyPress(event));
-        this.$selection.on('keyup', event => this._editKeyPress(event));
+        this.$selection.on('blur', event => {
+            if (this._editing)
+                this._endEditing();
+        });
 
         this.model.on('change:editingVar', event => {
             let prev = this.model.previous('editingVar');
@@ -277,6 +281,7 @@ const TableView = SilkyView.extend({
         if (this._editing)
             return;
         this._editing = true;
+        keyboardJS.setContext('spreadsheet-editing');
 
         let rowNo = this.selection.rowNo;
         let colNo = this.selection.colNo;
@@ -356,6 +361,8 @@ const TableView = SilkyView.extend({
             return this._applyEdit();
         }).then(() => {
             this._editing = false;
+            keyboardJS.setContext('spreadsheet');
+            this.$selection.val('');
             this.$selection.blur();
             this.$selection.removeClass('editing');
         }).catch(err => {
@@ -374,28 +381,25 @@ const TableView = SilkyView.extend({
             return;
 
         this._editing = false;
+        keyboardJS.setContext('spreadsheet');
         this._edited = false;
 
         this.$selection.blur();
         this.$selection.val('');
         this.$selection.removeClass('editing');
     },
-    _editKeyPress(event) {
+    _editingKeyPress(event) {
 
-        if (event.type === 'keypress') {
-            if (event.key === 'Enter') {
+        switch(event.key) {
+            case 'Enter':
                 this._endEditing().then(() => {
                     this._moveCursor('down');
                 }, () => {});
-            }
-            else if (event.key.length === 1) {
-                this._edited = true;
-            }
-        } else if (event.type === 'keydown') {
-            if (event.key === 'Escape') {
+                break;
+            case 'Escape':
                 this._abortEditing();
-            }
-            else if (event.key === 'Tab') {
+                break;
+            case 'Tab':
                 this._endEditing().then(() => {
                     if (event.shiftKey)
                         this._moveCursor('left');
@@ -403,12 +407,16 @@ const TableView = SilkyView.extend({
                         this._moveCursor('right');
                 }, () => {});
                 event.preventDefault();
-            }
-            else if (event.key === 'Delete' || event.key === 'Backspace') {
+                break;
+            case 'Delete':
+            case 'Backspace':
                 this._edited = true;
-            }
+                break;
+            default:
+                if (event.key.length === 1)
+                    this._edited = true;
+                break;
         }
-
         event.stopPropagation();
     },
     _notEditingKeyPress(event) {

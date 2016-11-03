@@ -19,14 +19,14 @@ ColumnW::ColumnW(DataSetW *parent, MemoryMapW *mm, ColumnStruct *rel)
 
 void ColumnW::setName(const char *name)
 {
-    ColumnStruct *s = struc();
     int length = strlen(name)+1;
+
     char *chars = _mm->allocate<char>(length);
 
     std::memcpy(chars, name, length);
 
-    s = struc();
-    
+    ColumnStruct *s = struc();
+
     s->name = _mm->base(chars);
     s->changes++;
 }
@@ -121,6 +121,9 @@ void ColumnW::insertLevel(int value, const char *label)
         if (descending && level.value < nextLevel.value)
             descending = false;
     }
+
+    if (ascending && descending)
+        descending = false;
 
     if (ascending == false && descending == false)
     {
