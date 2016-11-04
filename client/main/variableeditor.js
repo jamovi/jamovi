@@ -30,26 +30,23 @@ const VariableEditor = Backbone.View.extend({
                 return;
 
             switch(event.key) {
-                case 'ArrowLeft':
-                    this._moveLeft();
-                    event.preventDefault();
-                    break;
-                case 'ArrowRight':
-                    this._moveRight();
-                    event.preventDefault();
-                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
                 case 'Enter':
                     if (this.editorModel.get('changes'))
                         this.editorModel.apply();
-                    else
-                        this.model.set('editingVar', null);
                     event.preventDefault();
                     break;
+                case 'Escape':
+                    if (this.editorModel.get('changes'))
+                        this.editorModel.revert();
+                    event.preventDefault();
+                break;
             }
         };
 
         this._previousKeyboardContext = keyboardJS.getContext();
-        keyboardJS.setContext('variable_editor');
+        keyboardJS.setContext('spreadsheet');
         keyboardJS.bind('', event => this._keyboardListener(event));
         keyboardJS.setContext(this._previousKeyboardContext);
 
@@ -133,12 +130,15 @@ const VariableEditor = Backbone.View.extend({
         let prev = this.model.previous('editingVar');
         let now  = event.changed.editingVar;
 
+        if ((prev === null || now === null) && prev !== now)
+            this.trigger("visibility-changing", prev === null && now !== null);
+
         if (now !== null) {
             this.$el.removeClass('hidden');
             this.$left.toggleClass('hidden', now <= 0);
             this.$right.toggleClass('hidden', now >= this.model.attributes.columnCount - 1);
             this._previousKeyboardContext = keyboardJS.getContext();
-            keyboardJS.setContext('variable_editor');
+            keyboardJS.setContext('spreadsheet');
         }
         else {
             keyboardJS.setContext(this._previousKeyboardContext);
@@ -213,6 +213,7 @@ const VariableModel = Backbone.Model.extend({
                 }
             }
             this.set('changes', changes);
+            this.dataset.set('varEdited', changes);
         });
     },
     defaults : {
@@ -246,6 +247,7 @@ const VariableModel = Backbone.Model.extend({
         this.original = values;
         this.set(this.original);
         this.set('changes', false);
+        this.dataset.set('varEdited', false);
     },
     revert() {
         this.setup(this.original);
@@ -278,10 +280,17 @@ const EditorWidget = Backbone.View.extend({
 
         this.$title.keydown((event) => {
             var keypressed = event.keyCode || event.which;
-            if (keypressed == 13) {
+            if (keypressed === 13) { // enter key
                 this.$title.blur();
                 if (this.model.get('changes'))
                     this.model.apply();
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (keypressed === 27) { // escape key
+                this.$title.blur();
+                if (this.model.get('changes'))
+                    this.model.revert();
                 event.preventDefault();
                 event.stopPropagation();
             }
