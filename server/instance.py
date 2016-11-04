@@ -293,7 +293,7 @@ class Instance:
 
                 response = jcoms.AnalysisResponse()
                 response.analysisId = request.analysisId
-                response.status = jcoms.AnalysisStatus.ANALYSIS_ERROR
+                response.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
                 response.error.message = 'Could not create analysis: ' + str(e)
 
                 self._coms.send(response, self._instance_id, request, True)

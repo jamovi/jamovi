@@ -37,6 +37,7 @@ private:
     Rcpp::List resourcesPath(const std::string &datasetId, const std::string &analysisId, const std::string &elementId, const std::string &suffix);
 
     static void createDirectories(const std::string &path);
+    static void setLibPaths(const std::string &moduleName);
     static std::string makeAbsolute(const std::string &path);
     static RInside *_rInside;
 

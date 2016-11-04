@@ -46,6 +46,8 @@ void EngineR::run(Analysis *analysis)
 
     rInside["optionsPB"] = optionsVec;
 
+    setLibPaths(analysis->ns);
+
     stringstream ss;
 
     ss << "{\n";
@@ -122,6 +124,41 @@ void EngineR::run(Analysis *analysis)
 
         rInside.parseEvalQNT("analysis$.save();");
     }
+}
+
+void EngineR::setLibPaths(const std::string &moduleName)
+{
+    stringstream ss;
+
+    string path;
+    vector<string> sysR;
+    vector<string> moduleR;
+
+    path = Settings::get("ENV.R_LIBS", "");
+    algorithm::split(sysR, path, algorithm::is_any_of(";:"), token_compress_on);
+
+    path = Settings::get("JAMOVI.MODULE_PATH", "");
+    algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
+
+    string sep = "";
+    ss << "base::.libPaths(c(";
+
+    for (auto path : moduleR)
+    {
+        ss << sep << "'" << makeAbsolute(path) << "/base/R'";
+        ss << ", '" << makeAbsolute(path) << "/" << moduleName << "/R'";
+        sep = ",";
+    }
+
+    for (auto path : sysR)
+    {
+        ss << sep << "'" << makeAbsolute(path) << "'";
+        sep = ",";
+    }
+
+    ss << "))\n";
+
+    _rInside->parseEvalQNT(ss.str());
 }
 
 void EngineR::checkpoint(SEXP results)
@@ -317,6 +354,8 @@ void EngineR::initR()
     nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
 
     _rInside = new RInside();
+
+    setLibPaths("jmv");
 
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");

@@ -95,8 +95,12 @@ class AnalysisDescriptor(RequestHandler):
         if part == '':
             part = 'js'
 
-        analysis_path = os.path.join(self._path, module_name, 'jamovi', analysis_name.lower() + '.' + part)
+        if part == 'js':
+            analysis_path = os.path.join(self._path, module_name, 'ui', analysis_name.lower() + '.' + part)
+        else:
+            analysis_path = os.path.join(self._path, module_name, 'analyses', analysis_name.lower() + '.' + part)
         analysis_path = os.path.realpath(analysis_path)
+
         try:
             with open(analysis_path, 'rb') as file:
                 content = file.read()
@@ -174,9 +178,9 @@ class Server:
 
         here = os.path.dirname(os.path.realpath(__file__))
 
-        client_path = os.path.join(here, 'client')
-        analyses_path = os.path.join(here, '..', 'analyses')
-        coms_path  = os.path.join(here, 'jamovi.proto')
+        client_path  = os.path.join(here, 'resources', 'client')
+        modules_path = os.path.join(here, 'resources', 'modules')
+        coms_path = os.path.join(here, 'jamovi.proto')
 
         session_dir = tempfile.TemporaryDirectory()
         session_path = session_dir.name
@@ -189,9 +193,9 @@ class Server:
                 'path': coms_path,
                 'mime_type': 'text/plain',
                 'no_cache': self._debug }),
-            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor, { 'path': analyses_path }),
-            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor, { 'path': analyses_path }),
-            (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': analyses_path }),
+            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor, { 'path': modules_path }),
+            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor, { 'path': modules_path }),
+            (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': modules_path }),
             (r'/(.*)', SFHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',
