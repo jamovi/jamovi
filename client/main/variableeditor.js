@@ -280,14 +280,14 @@ const EditorWidget = Backbone.View.extend({
 
         this.$title.keydown((event) => {
             var keypressed = event.keyCode || event.which;
-            if (keypressed == 13) {
+            if (keypressed === 13) { // enter key
                 this.$title.blur();
                 if (this.model.get('changes'))
                     this.model.apply();
                 event.preventDefault();
                 event.stopPropagation();
             }
-            else if (keypressed == 27) {
+            else if (keypressed === 27) { // escape key
                 this.$title.blur();
                 if (this.model.get('changes'))
                     this.model.revert();

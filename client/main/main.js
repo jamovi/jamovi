@@ -147,9 +147,10 @@ $(document).ready(() => {
     let resultsView = new ResultsView({ el : "#results", iframeUrl : host.resultsViewUrl, model : instance });
     let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : host.analysisUIUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
+    optionspanel.$el.on('splitpanel-hide', () =>  window.focus() );
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
-    editor.$el[0].addEventListener("transitionend", () => { splitPanel.resized(); }, false);
+    editor.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
     editor.on('visibility-changing', value => {
         if (value === false) {
             let height = parseFloat(splitPanel.$el.css('height'));
