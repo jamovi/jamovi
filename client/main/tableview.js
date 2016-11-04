@@ -152,6 +152,15 @@ const TableView = SilkyView.extend({
                 let $header = $(this.$headers[now]);
                 $header.addClass('editing');
             }
+
+            if (now !== null) {
+                if (this.selection !== null && now !== this.selection.colNo) {
+                    this._endEditing().then(() => {
+                        let rowNo = this.selection === null ? 0 : this.selection.rowNo;
+                        this._setSelection(rowNo, now);
+                    }, () => {});
+                }
+            }
         });
 
         this._setSelection(0, 0);
@@ -194,7 +203,12 @@ const TableView = SilkyView.extend({
         else if (event.type === 'dblclick') {
             if ($element.hasClass('silky-column-header')) {
                 let colNo = $element.data('index');
-                this.model.set('editingVar', colNo);
+                this._endEditing().then(() => {
+                    let rowNo = this.selection === null ? 0 : this.selection.rowNo;
+                    this._setSelection(rowNo, colNo);
+                }, () => {});
+                if (this.model.get('editingVar') === null)
+                    this.model.set('editingVar', colNo);
             }
         }
     },
@@ -246,6 +260,8 @@ const TableView = SilkyView.extend({
         this.selection.rowNo = rowNo;
         this.selection.colNo = colNo;
         this.currentColumn = this.model.attributes.columns[colNo];
+        if (this.model.get('editingVar') !== null)
+            this.model.set('editingVar', colNo);
 
         // add column header highlight
         $(this.$headers[colNo]).addClass('highlighted');
@@ -445,8 +461,12 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         case 'ArrowDown':
-        case 'Enter':
             this._moveCursor('down');
+            event.preventDefault();
+            break;
+        case 'Enter':
+            if (this.model.get('varEdited') === false)
+                this._moveCursor('down');
             event.preventDefault();
             break;
         case 'Delete':
@@ -461,6 +481,13 @@ const TableView = SilkyView.extend({
             break;
         case 'F2':
             this._beginEditing();
+            break;
+        case 'F3':
+            if (this.model.get('editingVar') === null)
+                this.model.set('editingVar', this.selection.colNo);
+            else
+                this.model.set('editingVar', null);
+            event.preventDefault();
             break;
         case ' ':
             event.preventDefault();

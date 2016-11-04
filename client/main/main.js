@@ -149,6 +149,13 @@ $(document).ready(() => {
     optionspanel.setDataSetModel(dataSetModel);
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
+    editor.$el[0].addEventListener("transitionend", () => { splitPanel.resized(); }, false);
+    editor.on('visibility-changing', value => {
+        if (value === false) {
+            let height = parseFloat(splitPanel.$el.css('height'));
+            splitPanel.resized({ height: height + 200 });
+        }
+    });
 
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));

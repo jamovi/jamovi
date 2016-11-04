@@ -24,7 +24,7 @@ var SplitPanel = SilkyView.extend({
         this._createSections();
 
         _.bindAll(this, "resized");
-        $(window).on("resize", this.resized);
+        $(window).on("resize", () => { this.resized(); } );
         $(document).mouseup(this, this._mouseUpGeneral);
         $(document).mousemove(this, this._mouseMoveGeneral);
     },
@@ -360,10 +360,19 @@ var SplitPanel = SilkyView.extend({
         self.updateDisplay();
     },
 
-    resized: function() {
+    resized: function(size) {
 
-        var totalHeight = this.$el.height();
-        var newNetWidth = this.$el.width();
+        if (size === undefined)
+            size = { height: this.$el.height(), width: this.$el.width() };
+
+        var totalHeight = size.height;
+        if (totalHeight === undefined)
+            totalHeight = this.$el.height();
+
+        var newNetWidth = size.width;
+        if (newNetWidth === undefined)
+            newNetWidth = this.$el.width();
+
         var oldNetWidth = 0;
 
         this.totalWidth = this.$el.width();
