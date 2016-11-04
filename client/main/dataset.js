@@ -150,14 +150,18 @@ const DataSetModel = Backbone.Model.extend({
                 let level = values.levels[i];
                 let levelPB = new coms.Messages.VariableLevel();
                 if (values.measureType === 'nominal' || values.measureType === 'ordinal') {
-                    levelPB.value = parseInt(level.label);
-                    levelPB.label = level.label;
+                    let value = parseInt(level.label);
+                    if ( ! isNaN(value)) {
+                        levelPB.value = value;
+                        levelPB.label = level.label;
+                        columnPB.levels.push(levelPB);
+                    }
                 }
                 else {
                     levelPB.value = i;
                     levelPB.label = level.label;
+                    columnPB.levels.push(levelPB);
                 }
-                columnPB.levels.push(levelPB);
             }
         }
 
