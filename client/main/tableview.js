@@ -144,15 +144,6 @@ const TableView = SilkyView.extend({
         this.model.on('change:editingVar', event => {
             let prev = this.model.previous('editingVar');
             let now  = event.changed.editingVar;
-
-            if (prev !== null)
-                $(this.$headers[prev]).removeClass('editing');
-
-            if (now !== null) {
-                let $header = $(this.$headers[now]);
-                $header.addClass('editing');
-            }
-
             if (now !== null) {
                 if (this.selection !== null && now !== this.selection.colNo) {
                     this._endEditing().then(() => {
@@ -283,6 +274,29 @@ const TableView = SilkyView.extend({
         this.$selection.blur();
         this.$selection.removeClass('editing');
         this.$selection.val('');
+
+        let selRight = x + width;
+        let scrollX = this.$container.scrollLeft();
+        let diffX = 0;
+        let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
+        if (selRight > containerRight)
+            diffX = selRight - containerRight;
+        else if (x - this.rowHeaderWidth < scrollX)
+            diffX = (x - this.rowHeaderWidth) - scrollX;
+
+        let selBottom = y + height;
+        let scrollY = this.$container.scrollTop();
+        let diffY = 0;
+        let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
+        if (selBottom > containerBottom)
+            diffY = selBottom - containerBottom;
+        else if (y < scrollY)
+            diffY = y - scrollY;
+
+        if (diffX)
+            this.$container.scrollLeft(scrollX + diffX);
+        if (diffY)
+            this.$container.scrollTop(scrollY + diffY);
 
         // slide row/column highlight *lines* into position
         this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
@@ -935,5 +949,35 @@ const TableView = SilkyView.extend({
         return rowOverlap && colOverlap;
     }
 });
+
+TableView.prototype._scrollbarWidth = null;
+TableView.getScrollbarWidth = function() {
+    if (TableView.prototype._scrollbarWidth === null) {
+        var outer = document.createElement("div");
+        outer.style.visibility = "hidden";
+        outer.style.width = "100px";
+        outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
+
+        document.body.appendChild(outer);
+
+        var widthNoScroll = outer.offsetWidth;
+        // force scrollbars
+        outer.style.overflow = "scroll";
+
+        // add innerdiv
+        var inner = document.createElement("div");
+        inner.style.width = "100%";
+        outer.appendChild(inner);
+
+        var widthWithScroll = inner.offsetWidth;
+
+        // remove divs
+        outer.parentNode.removeChild(outer);
+
+        TableView.prototype._scrollbarWidth = widthNoScroll - widthWithScroll;
+    }
+    return TableView.prototype._scrollbarWidth;
+};
+
 
 module.exports = TableView;

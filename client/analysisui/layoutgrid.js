@@ -40,8 +40,6 @@ var LayoutGrid = function() {
     this.autoSizeWidth = true;
     this.autoSizeHeight = true;
     this._resizeSuspended = 0;
-    LayoutGrid.prototype._scrollbarWidth = null;
-    LayoutGrid.prototype._scrollbarHeight = null;
     this.allocateSpaceForScrollbars = true;
     this.stretchEndCells = true;
     this._parentLayout = null;
@@ -49,6 +47,7 @@ var LayoutGrid = function() {
     this._waitingForValidation = false;
     this._postProcessCellList = [];
 
+    LayoutGrid.prototype._scrollbarWidth = null;
     this.getScrollbarWidth = function() {
         if (LayoutGrid.prototype._scrollbarWidth === null) {
             var outer = document.createElement("div");
@@ -75,34 +74,6 @@ var LayoutGrid = function() {
             LayoutGrid.prototype._scrollbarWidth = widthNoScroll - widthWithScroll;
         }
         return LayoutGrid.prototype._scrollbarWidth;
-    };
-
-    this.getScrollbarHeight = function() {
-        if (LayoutGrid.prototype._scrollbarHeight === null) {
-            var outer = document.createElement("div");
-            outer.style.visibility = "hidden";
-            outer.style.height = "100px";
-            outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
-
-            document.body.appendChild(outer);
-
-            var heightNoScroll = outer.offsetHeight;
-            // force scrollbars
-            outer.style.overflow = "scroll";
-
-            // add innerdiv
-            var inner = document.createElement("div");
-            inner.style.height = "100%";
-            outer.appendChild(inner);
-
-            var heightWithScroll = inner.offsetHeight;
-
-            // remove divs
-            outer.parentNode.removeChild(outer);
-
-            LayoutGrid.prototype._scrollbarHeight = heightNoScroll - heightWithScroll;
-        }
-        return LayoutGrid.prototype._scrollbarHeight;
     };
 
     this._setAsPrepared = function() {
@@ -187,7 +158,7 @@ var LayoutGrid = function() {
                 var maxFlexRow = null;
 
                 var vScrollSpace = (this._hasVScrollbars && this.autoSizeWidth === false) ? this.getScrollbarWidth() : 0;
-                var hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarHeight() : 0;
+                var hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarWidth() : 0;
 
                 var r;
                 for (var i = 0; i < this._postProcessCellList.length; i++) {
@@ -430,7 +401,7 @@ var LayoutGrid = function() {
         var makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
         if (this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll) {
             if (makeSpaceForHScroll)
-                properties["padding-bottom"] = this.getScrollbarHeight();
+                properties["padding-bottom"] = this.getScrollbarWidth();
             else
                 properties["padding-bottom"] = 0;
 
