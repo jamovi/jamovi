@@ -64,7 +64,7 @@ var GridVariablesTargetList = function(params) {
 
                 var bottomValue = parseFloat(this.targetGrid.$el.css("bottom")) + 3;
                 if (this.targetGrid.hasHScrollbar())
-                    bottomValue += this.targetGrid.getScrollbarHeight();
+                    bottomValue += this.targetGrid.getScrollbarWidth();
 
                 this.$icons.css("bottom", bottomValue);
                 this.$icons.css("right", rightValue);
