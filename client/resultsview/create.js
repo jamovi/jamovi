@@ -105,8 +105,18 @@ const createItem = function(element, $el, level, parent, mode) {
             parent: parent,
             mode: mode });
     }
-    else if (element.text) {
-        $el.append(element.text);
+    else if (element.preformatted) {
+        model = new SyntaxModel({
+            name : element.name,
+            title : element.title,
+            element : element.preformatted,
+            status: element.status,
+            error: element.error });
+        view = new SyntaxView({
+            el: $el,
+            model: model,
+            parent: parent,
+            mode: mode });
     }
 
     return view;

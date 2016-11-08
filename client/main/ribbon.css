@@ -49,13 +49,18 @@ body.windows .silky-ribbon-menu-button {
     height: 50px ;
     padding: 6px 6px ;
     -webkit-app-region: no-drag;
+    display: flex ;
 }
 
-.silky-ribbon-button[data-name=descriptives] .silky-ribbon-button-icon {
+.silky-ribbon-button-separator {
+    flex: 1 1 auto ;
+}
+
+.silky-ribbon-button[data-name=exploration] .silky-ribbon-button-icon {
     background-image: url('assets/analysis-descriptives.svg');
 }
 
-.silky-ribbon-button[data-name=ttest] .silky-ribbon-button-icon {
+.silky-ribbon-button[data-name=t-tests] .silky-ribbon-button-icon {
     background-image: url('assets/analysis-ttest.svg');
 }
 
@@ -69,4 +74,8 @@ body.windows .silky-ribbon-menu-button {
 
 .silky-ribbon-button[data-name=frequencies] .silky-ribbon-button-icon {
     background-image: url('assets/analysis-frequencies.svg');
+}
+
+.silky-ribbon-button[data-name=modules] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-more.svg');
 }

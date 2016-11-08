@@ -156,6 +156,9 @@ void EngineR::setLibPaths(const std::string &moduleName)
         sep = ",";
     }
 
+    sep = ",";
+    ss << sep << "'" << Dirs::appDataDir() << "/modules/" << moduleName << "/R'";
+
     ss << "))\n";
 
     _rInside->parseEvalQNT(ss.str());

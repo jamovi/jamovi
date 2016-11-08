@@ -176,6 +176,7 @@ message ResultsElement {
         ResultsImage image = 7;
         ResultsGroup group = 8;
         ResultsArray array = 9;
+        string preformatted = 10;
         string syntax = 11;
     }
 }
@@ -233,12 +234,33 @@ message DataSetEntry {
     string description = 4;
 }
 
+message AnalysisMeta {
+    string name = 1;
+    string ns = 2;
+    string title = 3;
+    string subtitle = 4;
+    string group = 5;
+    string subgroup = 6;
+}
+
+message ModuleMeta {
+    string name = 1;
+    string title = 2;
+    Version version = 3;
+    string description = 4;
+    repeated string authors = 5;
+    repeated AnalysisMeta analyses = 6;
+    string path = 10;
+    bool isSystem = 11;
+}
+
 message SettingsRequest {
 }
 
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
     repeated DataSetEntry examples = 2;
+    repeated ModuleMeta modules = 3;
 }
 
 message VariableLevel {
@@ -320,4 +342,16 @@ message DataSetRR {
 
     repeated ColumnData data = 8;
     repeated DataSetSchema.ColumnSchema schema = 9;
+}
+
+message ModuleRequest {
+
+    enum ModuleCommand {
+        INSTALL = 0;
+        UNINSTALL = 1;
+    }
+
+    ModuleCommand command = 1;
+    string name = 2;
+    string path = 3;
 }

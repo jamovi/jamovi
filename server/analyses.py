@@ -3,6 +3,7 @@ import os.path
 import yaml
 from enum import Enum
 
+from .modules import Modules
 from .options import Options
 from . import jamovi_pb2 as jcoms
 
@@ -117,9 +118,8 @@ class Analyses:
 
     def create(self, id, name, ns):
 
-        here = os.path.realpath(os.path.dirname(__file__))
-        module_root = os.path.join(here, 'resources', 'modules')
-        analysis_root = os.path.join(module_root, ns, 'analyses', name.lower())
+        module = Modules.instance().get(ns)
+        analysis_root = os.path.join(module.path, 'analyses', name.lower())
 
         with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
             defn = yaml.load(stream)

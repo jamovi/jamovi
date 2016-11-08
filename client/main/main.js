@@ -11,7 +11,6 @@ coms.setBaseUrl(host.baseUrl);
 const TableView   = require('./tableview');
 const ResultsView = require('./results');
 const SplitPanel  = require('./splitpanel');
-const ProgressBar = require('./progressbar');
 const Backstage   = require('./backstage').View;
 const BackstageModel = require('./backstage').Model;
 const Ribbon      = require('./ribbon').View;
@@ -22,30 +21,27 @@ const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
 
 const Instance = require('./instance');
+const Modules = require('./modules');
 const Notify = require('./notification');
 
 let instance = new Instance({ coms : coms });
-let backstageModel = new BackstageModel({ instance: instance });
 
 let dataSetModel = instance.dataSetModel();
-
 let analyses = instance.analyses();
-analyses.set('dataSetModel', dataSetModel);
 
-let ribbonModel = new RibbonModel();
+let backstageModel = new BackstageModel({ instance: instance });
+let modules = new Modules({ instance: instance });
+let ribbonModel = new RibbonModel({ modules: modules });
 
 ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
-});
-
-instance.on('change:hasDataSet', function() {
-    ribbonModel.set('dataAvailable', true);
 });
 
 coms.on('broadcast', function(broadcast) {
     if (broadcast.payloadType === 'SettingsResponse') {
         let settings = coms.Messages.SettingsResponse.decode(broadcast.payload);
         backstageModel.set('settings', settings);
+        modules.setup(settings.modules);
     }
 });
 
@@ -136,7 +132,6 @@ $(document).ready(() => {
     splitPanel.render();
 
     let mainTable   = new TableView({el : "#main-table", model : dataSetModel });
-    let progressBar = new ProgressBar({el : "#progress-bar", model : instance.progressModel() });
 
     backstageModel.on('change:activated', function(event) {
         mainTable.setActive( ! event.changed.activated);
@@ -161,6 +156,7 @@ $(document).ready(() => {
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
+    ribbon.on('notification', note => notifications.notify(note));
 
     Promise.resolve(() => {
 
@@ -204,5 +200,6 @@ $(document).ready(() => {
 
         let settings = coms.Messages.SettingsResponse.decode(response.payload);
         backstageModel.set('settings', settings);
+        modules.setup(settings.modules);
     });
 });

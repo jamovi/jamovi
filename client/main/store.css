@@ -1,0 +1,111 @@
+
+.jmv-store {
+    position: absolute ;
+    display: flex ;
+    flex-direction: column;
+    height: 0 ;
+    left: 50% ;
+    margin-left: -400px ;
+    width: 800px ;
+    overflow: hidden ;
+    transition: all .3s ;
+    background-color: #F0F0F0 ;
+    border: 1px solid #D0D0D0 ;
+    border-top: 1px solid #F0F0F0 ;
+    box-sizing: border-box;
+    z-index: 80 ;
+}
+
+.jmv-store.visible {
+    height: 500px ;
+    box-shadow: 0px 2px 1px 1px rgba(172, 172, 172, 0.5);
+}
+
+.jmv-store-button-close {
+    position: absolute ;
+    right: 12px ;
+    top: 12px ;
+    width: 40px ;
+    height: 40px ;
+    color: #BBBBBB ;
+    border: 4px solid #BBBBBB ;
+    border-radius: 20px ;
+    box-sizing: border-box;
+    font-size: 24px ;
+    text-align: center;
+    z-index: 1 ;
+}
+
+.jmv-store-button-close:hover {
+    color: #999999 ;
+    border-color: #999999 ;
+}
+
+.jmv-store-tab-container {
+    margin-top: 10px ;
+    margin-bottom: 10px ;
+    display: flex ;
+    justify-content: center;
+}
+
+.jmv-store-tab {
+    z-index: 10 ;
+}
+
+.jmv-store-tab.selected {
+    color: #5E8BC4 ;
+}
+
+.jmv-store-tab-inner {
+    padding: 10px 20px ;
+}
+
+.jmv-store-tab-highlight {
+    position: absolute ;
+    background-color: #E0E0E0 ;
+    box-sizing: border-box ;
+    border-bottom: 2px solid #5E8BC4 ;
+    transition: all .2s ;
+    z-index: 5 ;
+}
+
+.jmv-store-page-container {
+    flex-grow: 1 ;
+    position: relative ;
+}
+
+.jmv-store-page {
+    position: absolute ;
+    box-sizing: border-box ;
+    width: 100% ;
+    top: 0 ;
+    bottom: 0 ;
+    transition: all .2s ;
+    left: 0 ;
+    padding: 20px ;
+}
+
+.jmv-store-page h2 {
+    color: #5E8BC4 ;
+    margin-top: 0 ;
+}
+
+.jmv-store-page.left {
+    left: -100% ;
+}
+
+.jmv-store-page.right {
+    left: 100% ;
+}
+
+/*.jmv-store-page-installed {
+    background-color: green ;
+}
+
+.jmv-store-page-store {
+    background-color: red ;
+}
+
+.jmv-store-page-sideload {
+    background-color: blue ;
+}*/

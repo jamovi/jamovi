@@ -16,6 +16,7 @@ from . import jamovi_pb2 as jcoms
 
 from .enginemanager import EngineManager
 from .analyses import Analyses
+from .modules import Modules
 from . import formatio
 
 import uuid
@@ -138,6 +139,8 @@ class Instance:
             self._on_analysis(request)
         elif type(request) == jcoms.FSRequest:
             self._on_fs_request(request)
+        elif type(request) == jcoms.ModuleRequest:
+            self._on_module(request)
         else:
             log.info('unrecognised request')
             log.info(request.payloadType)
@@ -340,6 +343,32 @@ class Instance:
             self._on_dataset_get(request, response)
 
         self._coms.send(response, self._instance_id, request)
+
+    def _on_module(self, request):
+
+        modules = Modules.instance()
+
+        if request.command == jcoms.ModuleRequest.ModuleCommand.Value('INSTALL'):
+            try:
+                modules.install(request.path)
+                self._coms.send(None, self._instance_id, request)
+                self._notify_modules_changed()
+            except Exception as e:
+                log.exception(e)
+                self._coms.send_error(str(e), None, self._instance_id, request)
+        elif request.command == jcoms.ModuleRequest.ModuleCommand.Value('UNINSTALL'):
+            try:
+                modules.uninstall(request.name)
+                self._coms.send(None, self._instance_id, request)
+                self._notify_modules_changed()
+            except Exception as e:
+                log.exception(e)
+                self._coms.send_error(str(e), None, self._instance_id, request)
+
+    def _notify_modules_changed(self):
+        for instanceId, instance in Instance.instances.items():
+            if instance.is_active:
+                instance._on_settings()
 
     def _on_dataset_set(self, request, response):
         if request.incData:
@@ -554,13 +583,13 @@ class Instance:
 
         if column.measure_type is MeasureType.NOMINAL_TEXT:
             for level in column.levels:
-                levelEntry = column_schema.levels.add()
-                levelEntry.label = level[1]
+                level_pb = column_schema.levels.add()
+                level_pb.label = level[1]
         elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
             for level in column.levels:
-                levelEntry = column_schema.levels.add()
-                levelEntry.value = level[0]
-                levelEntry.label = level[1]
+                level_pb = column_schema.levels.add()
+                level_pb.value = level[0]
+                level_pb.label = level[1]
 
     def _add_to_recents(self, path):
 
@@ -596,22 +625,43 @@ class Instance:
         response = jcoms.SettingsResponse()
 
         for recent in recents:
-            recentEntry = response.recents.add()
-            recentEntry.name = recent['name']
-            recentEntry.path = recent['path']
-            recentEntry.location = recent['location']
+            recent_pb = response.recents.add()
+            recent_pb.name = recent['name']
+            recent_pb.path = recent['path']
+            recent_pb.location = recent['location']
 
         try:
             here = os.path.realpath(os.path.dirname(__file__))
             path = os.path.join(here, '..', '..', 'examples', 'index.yaml')
             with open(path) as index:
-                for example in yaml.load(index):
-                    exampleEntry = response.examples.add()
-                    exampleEntry.name = example['name']
-                    exampleEntry.path = '{{Examples}}/' + example['path']
-                    exampleEntry.description = example['description']
+                for example in yaml.safe_load(index):
+                    example_pb = response.examples.add()
+                    example_pb.name = example['name']
+                    example_pb.path = '{{Examples}}/' + example['path']
+                    example_pb.description = example['description']
         except Exception as e:
-            log.info(e)
+            log.exception(e)
+
+        for module in Modules.instance():
+            module_pb = response.modules.add()
+            module_pb.name = module.name
+            module_pb.title = module.title
+            module_pb.version.major = module.version[0]
+            module_pb.version.minor = module.version[1]
+            module_pb.version.revision = module.version[2]
+            module_pb.description = module.description
+            module_pb.authors.extend(module.authors)
+            module_pb.path = module.path
+            module_pb.isSystem = module.is_sys
+
+            for analysis in module.analyses:
+                analysis_pb = module_pb.analyses.add()
+                analysis_pb.name = analysis.name
+                analysis_pb.ns = analysis.ns
+                analysis_pb.title = analysis.title
+                analysis_pb.subtitle = analysis.subtitle
+                analysis_pb.group = analysis.group
+                analysis_pb.subgroup = analysis.subgroup
 
         self._coms.send(response, self._instance_id, request)
 

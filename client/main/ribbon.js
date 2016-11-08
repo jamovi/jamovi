@@ -1,88 +1,57 @@
 
 'use strict';
 
-var $ = require('jquery');
-var Backbone = require('backbone');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var RibbonButton = require('./ribbonbutton');
+const RibbonButton = require('./ribbonbutton');
+const Store = require('./store');
+const Modules = require('./modules');
 
-var RibbonModel = Backbone.Model.extend({
+const RibbonModel = Backbone.Model.extend({
 
-    toggleResultsMode : function() {
+    initialize(args) {
+        this._modules = args.modules;
+    },
+    modules() {
+        return this._modules;
+    },
+    toggleResultsMode() {
         this.trigger('toggleResultsMode');
     },
     defaults : {
-        dataAvailable : false,
         tabs : [
             { title : "File" },
-            { title : "Analyse", items : [
-                { name : 'Descriptives', type : 'menu', title : 'Exploration', requiresData: true, items : [
-                    { name : 'Descriptives', type: 'analysis', title : 'Descriptives', ns : 'jmv' },
-                ]},
-                { name : 'TTest', type : 'menu', title : 'T-Test', requiresData: true, items : [
-                    { name : 'TTestIS',   type: 'analysis', title : 'Independent Samples T-Test', ns : 'jmv' },
-                    { name : 'TTestPS',   type: 'analysis', title : 'Paired Samples T-Test', ns : 'jmv' },
-                    { name : 'TTestOneS', type: 'analysis', title : 'One Sample T-Test', ns : 'jmv' },
-                ]},
-                { name : 'Anova', type : 'menu', title : 'ANOVA', requiresData: true, items : [
-                    { name : 'Anova',   title : 'ANOVA', ns : 'jmv' },
-                    { name : 'AnovaRM', title : 'Repeated Measures ANOVA', ns : 'jmv' },
-                    { name : 'Ancova',  title : 'ANCOVA', ns : 'jmv' },
-                    { name : 'Mancova', title : 'MANCOVA', ns : 'jmv' },
-                    { name : 'Non-param', type : 'group', title : 'Non-Parametric', items : [
-                        { name : 'Kruskal', title : 'One Way ANOVA', subtitle : 'Kruskal-Wallis', ns : 'jmv' },
-                        { name : 'Friedman', title : 'Repeated Measures ANOVA', subtitle : 'Friedman', ns : 'jmv' },
-                    ]},
-                    /*{ name : 'Bayesian', type : 'group', title : 'Bayesian', items : [
-                        { name : 'BAnova', title : 'Bayesian ANOVA', ns : 'jmv' },
-                        { name : 'BRMAnova', title : 'B. Repeated Measures ANOVA', ns : 'jmv' },
-                        { name : 'BAncova', title : 'Bayesian ANCOVA', ns : 'jmv' },
-                    ]},*/
-                ]},
-                { name : 'Regression', type : 'menu', title : 'Regression', requiresData: true, items : [
-                    { name : 'CorrMatrix', title : 'Correlation Matrix', ns : 'jmv' },
-                    { name : 'LinReg',     title : 'Linear Regression', ns : 'jmv' },
-                ]},
-                { name : 'Frequencies', type : 'menu', title : 'Frequencies', requiresData: true, items : [
-                    { name : 'OSPT', type : 'group', title : 'One Sample Proportion Tests', items : [
-                        { name : 'Binomial', title : '2 Outcomes', subtitle : 'Binomial test', ns : 'jmv' },
-                        { name : 'GoFit',   title : 'N Outcomes', subtitle : 'χ² Goodness of Fit', ns : 'jmv' },
-                    ]},
-                    { name : 'ContTables', type : 'group', title : 'Contingency Tables', items : [
-                        { name : 'ContTables', title : 'Independent Samples', subtitle: 'χ² Test of Association', ns : 'jmv' },
-                        { name : 'ContTablesPaired', title : 'Paired Samples', subtitle: 'McNemar test', ns : 'jmv' },
-                    ]},
-                    { name : 'Empty', type : 'group', title : '', items : [ ] },
-                    { name : 'LogLinear', title : 'Log-Linear Regression', ns : 'jmv' },
-                ]},
-            ]}
+            { title : "Analyse" },
         ],
         selectedIndex : 1
     },
-    _activateAnalysis : function(ns, name) {
+    _activateAnalysis(ns, name) {
         this.trigger('analysisSelected', { name : name, ns : ns } );
-    }
-
+    },
 });
 
-var RibbonView = Backbone.View.extend({
+const RibbonView = Backbone.View.extend({
     events : {
-        'click .silky-ribbon-tab'    : '_ribbonClicked'
+        'click .silky-ribbon-tab': '_ribbonClicked'
     },
     initialize: function() {
-        if (typeof(this.model) === "undefined")
+
+        if (this.model === undefined)
             this.model = new RibbonModel();
 
-        this.model.on('change:dataAvailable', this._dataAvailableChanged, this);
+        this.model.modules().on('change:modules', this._refresh, this);
 
         this.$el.addClass('silky-ribbon');
 
-        var html = '';
+        let html = '';
         html += '<div class="silky-ribbon-header">';
         html += '    <div class="silky-ribbon-menu-button"><span class="mif-more-vert"><span></div>';
         html += '</div>';
         html += '<div class="silky-ribbon-body">';
+        html += '</div>';
+        html += '<div class="jmv-store">';
         html += '</div>';
 
         this.$el.append(html);
@@ -90,28 +59,15 @@ var RibbonView = Backbone.View.extend({
         this.$header = this.$el.find('.silky-ribbon-header');
         this.$body   = this.$el.find('.silky-ribbon-body');
         this.$menu   = this.$el.find('.silky-ribbon-menu-button');
+        this.$store = this.$el.find('.jmv-store');
 
-        var currentTabIndex = this.model.get('selectedIndex');
-        var currentTab = this.model.get('tabs')[currentTabIndex];
-        var items = currentTab.items;
+        let currentTabIndex = this.model.get('selectedIndex');
+        let currentTab = this.model.get('tabs')[currentTabIndex];
 
-        this.buttons = { };
+        let tabs = this.model.get('tabs');
 
-        var self = this;
-
-        items.forEach(function(item) {
-
-            var $button = $('<div style="display: inline-block ; "></div>').appendTo(self.$body);
-            var  button = new RibbonButton($button, item);
-            self.buttons[item.name] = button;
-
-            button.onAnalysisSelected(function(analysis) { self._analysisSelected(analysis); });
-        });
-
-        var tabs = this.model.get('tabs');
-
-        for (var i = 0; i < tabs.length; i++) {
-            var tab = tabs[i];
+        for (let i = 0; i < tabs.length; i++) {
+            let tab = tabs[i];
             this.$header.append('<div class="silky-ribbon-tab">' + tab.title + '</div>');
         }
 
@@ -119,25 +75,79 @@ var RibbonView = Backbone.View.extend({
         $(this.$tabs[1]).addClass('selected');
 
         this.$menu.on('click', () => this.model.toggleResultsMode());
+
+        this._refresh();
+
+        this.store = new Store({ el : this.$store, model : this.model.modules() });
+        this.store.on('notification', note => this.trigger('notification', note));
+    },
+    _refresh() {
+
+        this.$body.empty();
+        this.$separator = $('<div class="silky-ribbon-button-separator"></div>').appendTo(this.$body);
+
+        let $button = $('<div></div>').insertAfter(this.$separator);
+        let  button = new RibbonButton($button, this, 'Modules …', 'modules', [
+            { name : 'modules', title : 'jamovi store …', ns : 'app' }
+        ], true);
+
+        let menus = { };
+        let lastSub = null;
+
+        for (let module of this.model.modules()) {
+            for (let analysis of module.analyses) {
+                let group = analysis.group;
+                let subgroup = analysis.subgroup ? analysis.subgroup : '';
+                let menu = group in menus ? menus[group] : { };
+                let submenu = { name };
+                if (subgroup in menu)
+                    submenu = menu[subgroup];
+                else
+                    submenu = { name: subgroup, title: subgroup, items: [ ] };
+                let item = {
+                    name: analysis.name,
+                    ns: analysis.ns,
+                    title: analysis.title,
+                    subtitle: analysis.subtitle,
+                };
+                submenu.items.push(item);
+                menu[subgroup] = submenu;
+                menus[group] = menu;
+            }
+        }
+
+        for (let group in menus) {
+            let menu = menus[group];
+            let flattened = [ ];
+            for (let subgroup in menu)
+                flattened.push({
+                    name: subgroup,
+                    title: subgroup,
+                    type: 'group',
+                    items: menu[subgroup].items });
+
+            if (flattened.length > 0 && flattened[0].name === '') {
+                let items = flattened.shift().items;
+                flattened = items.concat(flattened);
+            }
+
+            let $button = $('<div></div>').insertBefore(this.$separator);
+            let  button = new RibbonButton($button, this, group, group, flattened);
+        }
     },
     _ribbonClicked : function(event) {
-        var index = this.$tabs.index(event.target);
+        let index = this.$tabs.index(event.target);
         this.model.set('selectedIndex', index);
     },
     _analysisSelected : function(analysis) {
-        this.model._activateAnalysis(analysis.ns, analysis.name);
+        if (analysis.name === 'modules' && analysis.ns === 'app')
+            this._storeSelected();
+        else
+            this.model._activateAnalysis(analysis.ns, analysis.name);
     },
-    _dataAvailableChanged : function(source, available) {
-        var currentTab = this.model.get('tabs')[1];
-        var items = currentTab.items;
-
-        var self = this;
-
-        items.forEach(function(item) {
-            if (item.requiresData)
-                self.buttons[item.name].setEnabled(available);
-        });
-    }
+    _storeSelected() {
+        this.store.show();
+    },
 });
 
 module.exports = { View : RibbonView, Model : RibbonModel };

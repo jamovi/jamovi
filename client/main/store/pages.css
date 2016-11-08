@@ -1,0 +1,46 @@
+
+.jmv-store-page-installed-drop {
+    text-align: center ;
+    font-size: 180px ;
+    color: #BBBBBB ;
+}
+
+.jmv-store-page-installed-drop > span:hover {
+    color: #999999 ;
+}
+
+.jmv-store-page-installed-module {
+    box-sizing: border-box;
+    position: relative ;
+    overflow: hidden;
+    transition: all .3s ;
+}
+
+.jmv-store-page-installed-module > * {
+    margin: 12px ;
+}
+
+.jmv-store-page-installed-module button.uninstall {
+    position: absolute ;
+    right: 6px ;
+    bottom: 6px ;
+    display: none;
+}
+
+.jmv-store-page-installed-module.selected button.uninstall {
+    display: block ;
+}
+
+.jmv-store-page-installed-module.selected {
+    background-color: #FFFFFF ;
+}
+
+.jmv-store-page-installed-module.uninstalled {
+    height: 0 ;
+}
+
+.jmv-store-page-store .content {
+    font-size: 32px ;
+    margin: 32px auto ;
+    text-align: center ;
+}

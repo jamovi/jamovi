@@ -17,14 +17,6 @@ const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset').DataSetViewModel;
 const OptionsPB = require('./optionspb');
 
-const ProgressModel = Backbone.Model.extend({
-    defaults : {
-        task     : '',
-        progress : 0,
-        complete : true
-    }
-});
-
 const Instance = Backbone.Model.extend({
 
     initialize() {
@@ -36,9 +28,8 @@ const Instance = Backbone.Model.extend({
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
         this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
 
-        this._progressModel = new ProgressModel();
-
         this._analyses = new Analyses();
+        this._analyses.set('dataSetModel', this._dataSetModel);
         this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
@@ -64,10 +55,6 @@ const Instance = Backbone.Model.extend({
     },
     instanceId() {
         return this._instanceId;
-    },
-    progressModel() {
-
-        return this._progressModel;
     },
     dataSetModel() {
 
@@ -204,6 +191,36 @@ const Instance = Backbone.Model.extend({
         request.instanceId = this._instanceId;
 
         return coms.sendP(request);
+    },
+    installModule(path) {
+
+        let coms = this.attributes.coms;
+
+        let moduleRequest = new coms.Messages.ModuleRequest();
+        moduleRequest.command = coms.Messages.ModuleRequest.ModuleCommand.INSTALL;
+        moduleRequest.path = path;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = moduleRequest.toArrayBuffer();
+        request.payloadType = 'ModuleRequest';
+        request.instanceId = this._instanceId;
+
+        return coms.send(request);
+    },
+    uninstallModule(name) {
+
+        let coms = this.attributes.coms;
+
+        let moduleRequest = new coms.Messages.ModuleRequest();
+        moduleRequest.command = coms.Messages.ModuleRequest.ModuleCommand.UNINSTALL;
+        moduleRequest.name = name;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = moduleRequest.toArrayBuffer();
+        request.payloadType = 'ModuleRequest';
+        request.instanceId = this._instanceId;
+
+        return coms.send(request);
     },
     _notify(error) {
         let notification = new Notify({

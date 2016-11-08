@@ -20,7 +20,6 @@
 #include <boost/system/error_code.hpp>
 #include <boost/nowide/convert.hpp>
 
-#include "appinfo.h"
 #include "utils.h"
 
 using namespace std;
@@ -31,7 +30,6 @@ string Dirs::_tempDir = "";
 string Dirs::_exePath = "";
 string Dirs::_exeDir = "";
 string Dirs::_rHomeDir = "";
-string Dirs::_libraryDir = "";
 string Dirs::_documentsDir = "";
 string Dirs::_homeDir = "";
 string Dirs::_desktopDir = "";
@@ -53,7 +51,7 @@ string Dirs::appDataDir()
             "Could not retrieve app data directory";
 
 		dir = nowide::narrow(buffer);
-		dir += "/" + AppInfo::name + "/" + AppInfo::getShortDesc();
+		dir += "/jamovi";
 
 		path = nowide::widen(dir);
 
@@ -63,11 +61,11 @@ string Dirs::appDataDir()
         // use this. i think it might be a bug in boost, but it doesn't seem to
         // be able to create directories to this path
 
-        path = dir = homeDir() + "/Library/Application Support/" + AppInfo::name + "/" + AppInfo::getShortDesc();
+        path = dir = homeDir() + "/Library/Application Support/jamovi";
 
 #else
 
-		path = dir = homeDir() + "/." + AppInfo::name + "/" + AppInfo::getShortDesc();
+		path = dir = homeDir() + "/.jamovi";
 
 #endif
 
@@ -104,17 +102,17 @@ string Dirs::tempDir()
             "Could not retrieve app data directory";
 
 		dir = nowide::narrow(buffer);
-		dir += "/" + AppInfo::name + "/temp";
+		dir += "/jamovi/temp";
 
 		path = nowide::widen(dir);
 
 #elif defined(__APPLE__)
 
-        path = dir = homeDir() + "/Library/Application Support/" + AppInfo::name + "/temp";
+        path = dir = homeDir() + "/Library/Application Support/jamovi/temp";
 
 #else
 
-		path = dir = homeDir() + "/." + AppInfo::name + "/temp";
+		path = dir = homeDir() + "/.jamovi/temp";
 
 #endif
 
@@ -256,12 +254,6 @@ string Dirs::exeDir()
 }
 
 string Dirs::rHomeDir()
-{
-    // TODO
-    return "";
-}
-
-string Dirs::libraryDir()
 {
     // TODO
     return "";

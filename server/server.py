@@ -8,6 +8,7 @@ from tornado.web import StaticFileHandler
 
 from .clientconnection import ClientConnection
 from .instance import Instance
+from .modules import Modules
 
 import os.path
 import uuid
@@ -68,37 +69,18 @@ class UploadHandler(RequestHandler):
             file.write(content)
 
 
-class ModuleDescriptor(RequestHandler):
-    def initialize(self, path):
-        self._path = path
-
-    def get(self, module_name):
-        module_json_path = os.path.join(self._path, module_name, 'module.json')
-        module_json_path = os.path.realpath(module_json_path)
-        try:
-            with open(module_json_path, 'rb') as file:
-                content = file.read()
-                self.set_header('Content-Type', 'text/plain')
-                self.write(content)
-        except Exception as e:
-            log.info(e)
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write(str(e))
-
-
 class AnalysisDescriptor(RequestHandler):
-    def initialize(self, path):
-        self._path = path
 
     def get(self, module_name, analysis_name, part):
         if part == '':
             part = 'js'
 
+        module_path = Modules.instance().get(module_name).path
+
         if part == 'js':
-            analysis_path = os.path.join(self._path, module_name, 'ui', analysis_name.lower() + '.' + part)
+            analysis_path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
         else:
-            analysis_path = os.path.join(self._path, module_name, 'analyses', analysis_name.lower() + '.' + part)
+            analysis_path = os.path.join(module_path, 'analyses', analysis_name.lower() + '.' + part)
         analysis_path = os.path.realpath(analysis_path)
 
         try:
@@ -179,7 +161,6 @@ class Server:
         here = os.path.dirname(os.path.realpath(__file__))
 
         client_path  = os.path.join(here, 'resources', 'client')
-        modules_path = os.path.join(here, 'resources', 'modules')
         coms_path = os.path.join(here, 'jamovi.proto')
 
         session_dir = tempfile.TemporaryDirectory()
@@ -193,9 +174,8 @@ class Server:
                 'path': coms_path,
                 'mime_type': 'text/plain',
                 'no_cache': self._debug }),
-            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor, { 'path': modules_path }),
-            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor, { 'path': modules_path }),
-            (r'/analyses/(.*)',      ModuleDescriptor,   { 'path': modules_path }),
+            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
+            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor),
             (r'/(.*)', SFHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',
