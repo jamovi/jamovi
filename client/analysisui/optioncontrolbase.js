@@ -21,6 +21,10 @@ var OptionControlBase = function(params) {
         return this.option.getValue(keys);
     };
 
+    this.value = function() {
+        return this.option.getValue();
+    };
+
     this.registerComplexProperty("value", this.getValue, this.setValue, "value_changed");
     this.registerSimpleProperty("name", null);
 

@@ -14,6 +14,10 @@ var OptionControl = function(params) {
     this.registerSimpleProperty("label", null);
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
 
+    this.setEnabled = function(value) {
+        this.setPropertyValue("disabled", !value);
+    };
+
 };
 
 SuperClass.create(OptionControl);
