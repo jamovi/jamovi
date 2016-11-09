@@ -52,6 +52,14 @@ var LayoutSupplierView = function(params) {
         return this._items;
     };
 
+    this.value = function() {
+        return this.getList();
+    };
+
+    this.setValue = function(value) {
+        this.setList(value);
+    };
+
     this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
     this.registerSimpleProperty("persistentItems", false);
     this.registerSimpleProperty("label", null);
