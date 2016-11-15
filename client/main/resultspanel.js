@@ -133,22 +133,29 @@ const ResultsPanel = Backbone.View.extend({
             let $container = resources.$container;
 
             switch (eventType) {
-                case "sizeChanged":
+                case 'sizeChanged':
+                    let height = eventData.height + 12;
+                    let width = eventData.width;
+                    if (height < 100)
+                        height = 100;
+                    if (width < 300)
+                        width = 300;
+
                     if ($iframe.height() === 0)
-                        $iframe.width(eventData.width);
+                        $iframe.width(width);
 
                     let selected = this.model.get('selectedAnalysis');
                     if (selected !== null && selected.id.toString() === id)
-                        this._scrollIntoView($container, eventData.height);
-                    $iframe.width(eventData.width);
-                    $iframe.height(eventData.height + 12);
-                    $container.width(eventData.width);
-                    $container.height(eventData.height + 12);
+                        this._scrollIntoView($container, height);
+                    $iframe.width(width);
+                    $iframe.height(height);
+                    $container.width(width);
+                    $container.height(height);
                     break;
-                case "menuRequest":
+                case 'menuRequest':
                     this._showMenu(id, eventData);
                     break;
-                case "clipboardCopy":
+                case 'clipboardCopy':
                     this._copyToClipboard(eventData);
                     break;
             }
