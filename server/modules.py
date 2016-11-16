@@ -112,7 +112,7 @@ class Modules:
     def _read_module(self, path, is_sys):
         try:
             meta_path = os.path.join(path, 'jamovi.yaml')
-            with open(meta_path) as stream:
+            with open(meta_path, encoding='utf-8') as stream:
                 defn = yaml.safe_load(stream)
 
                 module = ModuleMeta()

@@ -633,7 +633,7 @@ class Instance:
         try:
             here = os.path.realpath(os.path.dirname(__file__))
             path = os.path.join(here, '..', '..', 'examples', 'index.yaml')
-            with open(path) as index:
+            with open(path, encoding='utf-8') as index:
                 for example in yaml.safe_load(index):
                     example_pb = response.examples.add()
                     example_pb.name = example['name']
