@@ -5,6 +5,7 @@ from .jamovi_pb2 import AnalysisOptions
 
 class Options:
 
+    @staticmethod
     def create(defn):
 
         options = Options()
@@ -15,44 +16,58 @@ class Options:
             if 'name' not in opt_defn or 'type' not in opt_defn:
                 continue
 
-            o_name = opt_defn['name']
-            o_type = opt_defn['type']
+            name = opt_defn['name']
+            typ  = opt_defn['type']
 
-            if o_type == "Data":
+            if typ == 'Data':
                 continue
 
-            options._pb.names.append(o_name)
+            options._pb.names.append(name)
             opt_pb = options._pb.options.add()
 
             if 'default' in opt_defn:
-                o_default = opt_defn['default']
-            elif o_type == "Bool":
-                o_default = False
-            elif o_type == "Variables":
-                o_default = []
-            elif o_type == "Int":
-                o_default = 0
-            elif o_type == "Number":
-                o_default = 0.0
+                default = opt_defn['default']
+            elif typ == 'Bool':
+                default = False
+            elif typ == 'Variables':
+                default = []
+            elif typ == 'Int':
+                default = 0
+            elif typ == 'Number':
+                default = 0.0
             else:
-                o_default = None
+                default = None
 
-            if o_default is True:
-                opt_pb.o = AnalysisOption.Other.Value('TRUE')
-            elif o_default is False:
-                opt_pb.o = AnalysisOption.Other.Value('FALSE')
-            elif type(o_default) == str:
-                opt_pb.s = o_default
-            elif type(o_default) == int:
-                opt_pb.i = o_default
-            elif type(o_default) == float:
-                opt_pb.d = o_default
-            elif type(o_default) == list:
-                opt_pb.c.hasNames = False
-            else:
-                opt_pb.o = AnalysisOption.Other.Value('NULL')
+            Options._populate_pb(opt_pb, default)
 
         return options
+
+    @staticmethod
+    def _populate_pb(dest_pb, value):
+        if value is True:
+            dest_pb.o = AnalysisOption.Other.Value('TRUE')
+        elif value is False:
+            dest_pb.o = AnalysisOption.Other.Value('FALSE')
+        elif type(value) == str:
+            dest_pb.s = value
+        elif type(value) == int:
+            dest_pb.i = value
+        elif type(value) == float:
+            dest_pb.d = value
+        elif type(value) == list:
+            dest_pb.c.hasNames = False
+            for v in value:
+                child_pb = dest_pb.c.options.add()
+                Options._populate_pb(child_pb, v)
+        elif type(value) == dict:
+            dest_pb.c.hasNames = True
+            print(value)
+            for k, v in value.items():
+                dest_pb.c.names.append(k)
+                child_pb = dest_pb.c.options.add()
+                Options._populate_pb(child_pb, v)
+        else:
+            dest_pb.o = AnalysisOption.Other.Value('NULL')
 
     def __init__(self):
         self._pb = AnalysisOptions()
