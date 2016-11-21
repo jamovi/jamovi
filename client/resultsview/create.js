@@ -34,6 +34,7 @@ const createItem = function(element, $el, level, parent, mode) {
         view = new TableView({
             el: $el,
             model: model,
+            level: level,
             parent: parent,
             mode: mode });
     }
@@ -68,6 +69,7 @@ const createItem = function(element, $el, level, parent, mode) {
         view = new ImageView({
             el: $el,
             model: model,
+            level: level,
             parent: parent,
             mode: mode });
     }
@@ -102,6 +104,7 @@ const createItem = function(element, $el, level, parent, mode) {
         view = new SyntaxView({
             el: $el,
             model: model,
+            level: level,
             parent: parent,
             mode: mode });
     }
@@ -115,6 +118,7 @@ const createItem = function(element, $el, level, parent, mode) {
         view = new SyntaxView({
             el: $el,
             model: model,
+            level: level,
             parent: parent,
             mode: mode });
     }

@@ -27,7 +27,6 @@ var GroupView = Element.View.extend({
         Element.View.prototype.initialize.call(this, data);
 
         this.create = data.create;
-        this.level = data.level;
         this.children = [ ];
         this.mode = data.mode;
 

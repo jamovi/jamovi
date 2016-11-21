@@ -1,13 +1,13 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var Element = require('./element');
+const ResultsElement = require('./element');
 
-var ImageModel = Backbone.Model.extend({
+const ImageModel = Backbone.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -23,12 +23,15 @@ var ImageModel = Backbone.Model.extend({
     }
 });
 
-var ImageView = Element.View.extend({
+const ImageView = ResultsElement.View.extend({
     initialize: function(data) {
 
-        Element.View.prototype.initialize.call(this, data);
+        ResultsElement.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('silky-results-image');
+
+        this.$title = $('<h' + (this.level+1) + ' class="silky-results-image-title"></h' + (this.level+1) + '>');
+        this.$title.appendTo(this.$el);
 
         if (this.model === null)
             this.model = new ImageModel();
@@ -40,11 +43,13 @@ var ImageView = Element.View.extend({
     },
     render: function() {
 
-        var element = this.model.attributes.element;
+        this.$title.text(this.model.attributes.title);
 
-        var backgroundImage = 'none';
+        let element = this.model.attributes.element;
+
+        let backgroundImage = 'none';
         if (element.path !== null) {
-            var url = 'res/' + element.path;
+            let url = 'res/' + element.path;
             url = url.replace(/\"/g, '&quot;');
             backgroundImage = "url('" + url + "')";
         }

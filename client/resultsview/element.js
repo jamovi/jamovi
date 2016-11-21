@@ -9,6 +9,7 @@ const ElementView = Backbone.View.extend({
     initialize(data) {
 
         this.parent = data.parent;
+        this.level = ('level' in data) ? data.level : 0;
 
         this.$el.addClass('silky-results-item');
         this.$el.attr('data-name', btoa(this.model.attributes.name));
