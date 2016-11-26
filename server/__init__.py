@@ -135,5 +135,5 @@ def start():
                         server_found = True
                         break
                     except Exception as e:
-                        log.exception(str(e))
+                        log.exception(e)
                 time.sleep(.2)

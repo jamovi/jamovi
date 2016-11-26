@@ -362,15 +362,6 @@ void EngineR::initR()
 
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
-
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('stats'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('RProtoBuf'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('jmvcore'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('jmv'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('rjson'))");
-    _rInside->parseEvalQNT("suppressPackageStartupMessages(library('yaml'))");
-
-    _rInside->parseEvalQNT("try(car::Anova(), silent=TRUE)");
 }
 
 string EngineR::makeAbsolute(const string &paths)

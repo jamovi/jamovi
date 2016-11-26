@@ -98,8 +98,6 @@ void Engine::start()
 
 void Engine::terminate()
 {
-    std::cout << "exiting\n";
-    std::cout.flush();
     std::exit(0);
 }
 

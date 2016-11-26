@@ -14,6 +14,7 @@ public:
     
     void enlarge(int percent = 50);
     void flush();
+    void close();
     
     template<class T> T *allocateSize(size_t size, size_t *allocated = 0)
     {   

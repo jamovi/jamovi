@@ -523,6 +523,7 @@ cdef extern from "memorymapw.h":
     cdef cppclass CMemoryMap "MemoryMapW":
         @staticmethod
         CMemoryMap *create(string path, unsigned long long size) except +
+        void close() except +
 
 cdef class MemoryMap:
     cdef CMemoryMap *_this
@@ -535,6 +536,9 @@ cdef class MemoryMap:
 
     def __init__(self):
         pass
+       
+    def close(self):
+        self._this.close()
 
 
 def decode(string str):

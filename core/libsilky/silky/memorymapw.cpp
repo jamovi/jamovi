@@ -70,3 +70,9 @@ void MemoryMapW::flush()
     _region->flush(0, _region->get_size(), false);
 }
 
+void MemoryMapW::close()
+{
+    delete _region;
+    delete _file;
+}
+

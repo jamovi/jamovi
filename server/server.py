@@ -136,25 +136,36 @@ class Server:
 
     def check_for_shutdown(self):
 
-        parent = threading.main_thread()
-        time_without_listeners = None
+        try:
+            parent = threading.main_thread()
+            time_without_listeners = None
 
-        while True:
-            time.sleep(.2)
-            if parent.is_alive() is False:
-                break
-
-            now = time.time()
-
-            if ClientConnection.number_of_connections == 0:
-                if time_without_listeners is None:
-                    time_without_listeners = now
-                elif now - time_without_listeners > 1:
-                    log.info('Server shutting down due to inactivity')
-                    tornado.ioloop.IOLoop.instance().stop()
+            while True:
+                time.sleep(.2)
+                if parent.is_alive() is False:
                     break
-            else:
-                time_without_listeners = None
+
+                now = time.time()
+
+                if ClientConnection.number_of_connections == 0:
+                    if time_without_listeners is None:
+                        time_without_listeners = now
+                    elif now - time_without_listeners > 1:
+                        log.info('Server shutting down due to inactivity')
+                        break
+                else:
+                    time_without_listeners = None
+
+        except Exception as e:
+            log.exception(e)
+
+        try:
+            for id, instance in Instance.instances.items():
+                instance.close()
+        except Exception as e:
+            log.exception(e)
+
+        tornado.ioloop.IOLoop.instance().stop()
 
     def start(self):
 

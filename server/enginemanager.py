@@ -40,6 +40,8 @@ class Engine:
         self._thread = None
         self._message_id = 0
         self._restarting = False
+        self._stopping = False
+        self._stopped = False
 
     @property
     def is_waiting(self):
@@ -80,9 +82,12 @@ class Engine:
         self._thread = threading.Thread(target=self._run)
         self._thread.start()
 
-    def restart(self):
+    def stop(self):
+        if self._stopped:
+            return
+
+        self._stopping = True
         self._message_id += 1
-        self._restarting = True
 
         request = jcoms.AnalysisRequest()
         request.restartEngines = True
@@ -93,6 +98,10 @@ class Engine:
         message.payloadType = 'AnalysisRequest'
 
         self._socket.send(message.SerializeToString())
+
+    def restart(self):
+        self._restarting = True
+        self.stop()
 
     def _run(self):
         parent = threading.main_thread()
@@ -114,13 +123,18 @@ class Engine:
 
             self._process.poll()
             if self._process.returncode is not None:
-                log.error("Engine process terminated with exit code {}\n".format(self._process.returncode))
+                if self._restarting is False and self._stopping is False:
+                    log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
                 break
 
         self._socket.close()
         if self._restarting:
+            log.info('Restarting engine')
+            self._restarting = False
+            self._stopping = False
             self.start()
         else:
+            self._stopped = True
             self._parent._notify_engine_event({ 'type': 'terminated' })
 
     def __del__(self):
@@ -189,7 +203,7 @@ class EngineManager:
         self._analyses.add_options_changed_listener(self._send_next)
 
         if platform.uname().system == 'Windows':
-            self._conn_root = "ipc://{}".format(os.getpid())
+            self._conn_root = "ipc://{}".format(instance_id)
         else:
             self._dir = tempfile.TemporaryDirectory()  # assigned to self so it doesn't get cleaned up
             self._conn_root = "ipc://{}/conn".format(self._dir.name)
@@ -209,6 +223,10 @@ class EngineManager:
     def start(self):
         for index in range(len(self._engines)):
             self._engines[index].start()
+
+    def stop(self):
+        for index in range(len(self._engines)):
+            self._engines[index].stop()
 
     def restart_engines(self):
         self._engines_restarted = 0

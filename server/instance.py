@@ -24,6 +24,10 @@ import posixpath
 import math
 import yaml
 import logging
+import time
+
+import threading
+from threading import Thread
 
 from .utils import fs
 
@@ -40,10 +44,37 @@ class InstanceData:
 class Instance:
 
     instances = { }
+    _garbage_collector = None
 
     @staticmethod
     def get(instance_id):
         return Instance.instances.get(instance_id)
+
+    class GarbageCollector:
+
+        def __init__(self):
+            self._stopped = False
+            self._thread = Thread(target=self.run)
+            self._thread.start()
+
+        def run(self):
+            parent = threading.main_thread()
+
+            while True:
+                time.sleep(.3)
+                if self._stopped is True:
+                    break
+                if parent.is_alive() is False:
+                    break
+                for id, instance in Instance.instances.items():
+                    if instance.inactive_for > 2:
+                        log.info('cleaning up: ' + str(id))
+                        instance.close()
+                        del Instance.instances[id]
+                        break
+
+        def stop(self):
+            self._stopped = True
 
     def _normalise_path(path):
         nor_path = path
@@ -76,11 +107,15 @@ class Instance:
 
     def __init__(self, session_path, instance_id=None):
 
+        if Instance._garbage_collector is None:
+            Instance._garbage_collector = Instance.GarbageCollector()
+
         self._session_path = session_path
         if instance_id is None:
             instance_id = str(uuid.uuid4())
         self._instance_id = instance_id
 
+        self._mm = None
         self._data = InstanceData()
         self._data.dataset = None
         self._data.analyses = Analyses()
@@ -88,6 +123,7 @@ class Instance:
         self._coms = None
         self._filepath = None
         self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
+        self._inactive_since = None
 
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._em.add_engine_listener(self._on_engine_event)
@@ -112,14 +148,27 @@ class Instance:
             self._coms.remove_close_listener(self._close)
         self._coms = coms
         self._coms.add_close_listener(self._close)
+        self._inactive_since = None
+
+    def close(self):
+        self._mm.close()
+        self._em.stop()
 
     def _close(self):
         self._coms.remove_close_listener(self._close)
         self._coms = None
+        self._inactive_since = time.time()
 
     @property
     def is_active(self):
         return self._coms is not None
+
+    @property
+    def inactive_for(self):
+        if self._inactive_since is None:
+            return 0
+        else:
+            return time.time() - self._inactive_since
 
     def get_path_to_resource(self, resourceId):
         return os.path.join(self._data.instance_path, resourceId)
@@ -229,8 +278,8 @@ class Instance:
         path = request.filename
         nor_path = Instance._normalise_path(path)
 
-        mm = MemoryMap.create(self._buffer_path, 65536)
-        dataset = DataSet.create(mm)
+        self._mm = MemoryMap.create(self._buffer_path, 65536)
+        dataset = DataSet.create(self._mm)
 
         try:
             self._data.dataset = dataset
