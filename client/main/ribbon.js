@@ -87,8 +87,8 @@ const RibbonView = Backbone.View.extend({
         this.$separator = $('<div class="silky-ribbon-button-separator"></div>').appendTo(this.$body);
 
         let $button = $('<div></div>').insertAfter(this.$separator);
-        let  button = new RibbonButton($button, this, 'Modules …', 'modules', [
-            { name : 'modules', title : 'jamovi store …', ns : 'app' }
+        let  button = new RibbonButton($button, this, 'Modules', 'modules', [
+            { name : 'modules', title : 'jamovi store', ns : 'app' }
         ], true);
 
         let menus = { };
@@ -96,8 +96,8 @@ const RibbonView = Backbone.View.extend({
 
         for (let module of this.model.modules()) {
             for (let analysis of module.analyses) {
-                let group = analysis.group;
-                let subgroup = analysis.subgroup ? analysis.subgroup : '';
+                let group = analysis.menuGroup;
+                let subgroup = analysis.menuSubgroup;
                 let menu = group in menus ? menus[group] : { };
                 let submenu = { name };
                 if (subgroup in menu)
@@ -107,8 +107,8 @@ const RibbonView = Backbone.View.extend({
                 let item = {
                     name: analysis.name,
                     ns: analysis.ns,
-                    title: analysis.title,
-                    subtitle: analysis.subtitle,
+                    title: analysis.menuTitle,
+                    subtitle: analysis.menuSubtitle,
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;

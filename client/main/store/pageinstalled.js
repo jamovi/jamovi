@@ -38,7 +38,7 @@ const PageInstalled = Backbone.View.extend({
             html += '    <h3>' + module.title + '</h3>';
             html += '    <div class="version">' + module.version.major + '.' + module.version.minor + '.' + module.version.revision + '</div>';
             html += '    <div class="description">' + module.description + '</div>';
-            html += '    <div class="authors">' + module.authors.join(',') + '</div>';
+            html += '    <div class="authors">' + module.authors.join(', ') + '</div>';
 
             if ( ! module.isSystem)
                 html += '<button class="uninstall" data-name="' + module.name + '">Uninstall</button>';

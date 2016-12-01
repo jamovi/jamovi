@@ -25,11 +25,12 @@ class ModuleMeta:
 class AnalysisMeta:
     def __init__(self):
         self.name = None
-        self.title = None
-        self.subtitle = ''
         self.ns = None
-        self.group = None
-        self.subgroup = ''
+        self.title = None
+        self.menuGroup = ''
+        self.menuSubgroup = ''
+        self.menuTitle = ''
+        self.menuSubtitle = ''
 
 
 class Modules:
@@ -134,19 +135,21 @@ class Modules:
                 module.version = version
 
                 module.authors = [ ]
-                module.authors.append(defn['author'])
+                module.authors.extend(defn['authors'])
 
                 for analysis_defn in defn['analyses']:
                     analysis = AnalysisMeta()
                     analysis.name = analysis_defn['name']
                     analysis.ns = analysis_defn['ns']
                     analysis.title = analysis_defn['title']
-                    analysis.group = analysis_defn['group']
 
-                    if 'subtitle' in analysis_defn:
-                        analysis.subtitle = analysis_defn['subtitle']
-                    if 'subgroup' in analysis_defn:
-                        analysis.subgroup = analysis_defn['subgroup']
+                    analysis.menuGroup = analysis_defn['menuGroup']
+                    analysis.menuTitle = analysis_defn['menuTitle']
+
+                    if 'menuSubgroup' in analysis_defn and analysis_defn['menuSubgroup'] is not None:
+                        analysis.menuSubgroup = analysis_defn['menuSubgroup']
+                    if 'menuSubtitle' in analysis_defn and analysis_defn['menuSubtitle'] is not None:
+                        analysis.menuSubtitle = analysis_defn['menuSubtitle']
 
                     module.analyses.append(analysis)
 

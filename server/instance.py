@@ -708,9 +708,10 @@ class Instance:
                 analysis_pb.name = analysis.name
                 analysis_pb.ns = analysis.ns
                 analysis_pb.title = analysis.title
-                analysis_pb.subtitle = analysis.subtitle
-                analysis_pb.group = analysis.group
-                analysis_pb.subgroup = analysis.subgroup
+                analysis_pb.menuGroup = analysis.menuGroup
+                analysis_pb.menuSubgroup = analysis.menuSubgroup
+                analysis_pb.menuTitle = analysis.menuTitle
+                analysis_pb.menuSubtitle = analysis.menuSubtitle
 
         self._coms.send(response, self._instance_id, request)
 

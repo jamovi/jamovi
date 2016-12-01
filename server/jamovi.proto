@@ -238,9 +238,11 @@ message AnalysisMeta {
     string name = 1;
     string ns = 2;
     string title = 3;
-    string subtitle = 4;
-    string group = 5;
-    string subgroup = 6;
+
+    string menuGroup = 4;
+    string menuSubgroup = 5;
+    string menuTitle = 6;
+    string menuSubtitle = 7;
 }
 
 message ModuleMeta {
