@@ -56,6 +56,10 @@ body.windows .silky-ribbon-menu-button {
     flex: 1 1 auto ;
 }
 
+.silky-ribbon-button .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-other.svg');
+}
+
 .silky-ribbon-button[data-name=exploration] .silky-ribbon-button-icon {
     background-image: url('assets/analysis-descriptives.svg');
 }
@@ -74,6 +78,10 @@ body.windows .silky-ribbon-menu-button {
 
 .silky-ribbon-button[data-name=frequencies] .silky-ribbon-button-icon {
     background-image: url('assets/analysis-frequencies.svg');
+}
+
+.silky-ribbon-button[data-name="base r"] .silky-ribbon-button-icon {
+    background-image: url('assets/analysis-r.svg');
 }
 
 .silky-ribbon-button[data-name=modules] .silky-ribbon-button-icon {
