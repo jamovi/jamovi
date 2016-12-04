@@ -100,7 +100,8 @@ const createItem = function(element, $el, level, parent, mode) {
             title : element.title,
             element : element.syntax,
             status: element.status,
-            error: element.error });
+            error: element.error,
+            stale: element.stale });
         view = new SyntaxView({
             el: $el,
             model: model,
@@ -114,7 +115,8 @@ const createItem = function(element, $el, level, parent, mode) {
             title : element.title,
             element : element.preformatted,
             status: element.status,
-            error: element.error });
+            error: element.error,
+            stale: element.stale });
         view = new SyntaxView({
             el: $el,
             model: model,

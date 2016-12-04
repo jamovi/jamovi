@@ -1,11 +1,10 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var Element = require('./element');
+const Elem = require('./element');
 
 var SyntaxModel = Backbone.Model.extend({
     defaults : {
@@ -13,14 +12,15 @@ var SyntaxModel = Backbone.Model.extend({
         title: "(no title)",
         element: '(no syntax)',
         error: null,
-        status: 'complete'
+        status: 'complete',
+        stale: false,
     }
 });
 
-var SyntaxView = Element.View.extend({
+var SyntaxView = Elem.View.extend({
     initialize: function(data) {
 
-        Element.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('silky-results-syntax');
 
@@ -30,13 +30,16 @@ var SyntaxView = Element.View.extend({
         this.render();
     },
     type: function() {
-        return "Syntax";
+        return 'Syntax';
     },
     render: function() {
 
-        var syntax = this.model.attributes.element;
-        var $syntax = $('<pre style="silky-results-syntax-text"></pre>').appendTo(this.$el);
+        let syntax = this.model.attributes.element;
+        let $syntax = $('<pre class="silky-results-syntax-text"></pre>').appendTo(this.$el);
         $syntax.text(syntax);
+
+        if (this.model.attributes.stale)
+            $syntax.addClass('stale');
     }
 });
 

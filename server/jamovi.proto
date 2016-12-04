@@ -170,6 +170,7 @@ message ResultsElement {
     string title = 2;
     AnalysisStatus status = 3;
     Error error = 4;
+    bool stale = 5;
 
     oneof type {
         ResultsTable table = 6;
