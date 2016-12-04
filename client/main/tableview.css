@@ -94,6 +94,7 @@
     padding-left: 10px ;
     padding-right: 10px ;
     overflow: hidden ;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 input.silky-table-cell-selected {
