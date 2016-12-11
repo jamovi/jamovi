@@ -349,14 +349,14 @@ const TableView = Elem.View.extend({
         html = '';
 
 
-        if (table.columns.length === 0) {
+        if (cells.header.length === 0) {
             this.$titleCell.attr('colspan', 1);
             return;
         }
 
         let nPhysCols = 2 * cells.header.length;
 
-        if (table.columns[0].cells.length === 0) {
+        if (cells.body.length === 0 || cells.body[0].length === 0) {
             this.$titleCell.attr('colspan', nPhysCols);
             this.$tableBody.html('<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>');
             return;
