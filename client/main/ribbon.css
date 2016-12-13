@@ -1,11 +1,11 @@
 
-.silky-ribbon {
+.jmv-ribbon {
     width: 100% ;
     color: #777777 ;
     -webkit-app-region: drag ;
 }
 
-.silky-ribbon-tab {
+.jmv-ribbon-tab {
     display: inline-block ;
     background-color : inherit ;
     color: white ;
@@ -13,7 +13,7 @@
     -webkit-app-region: no-drag;
 }
 
-.silky-ribbon-menu-button {
+.jmv-ribbon-appmenu {
     position: absolute ;
     right: 6px ;
     top: 8px ;
@@ -27,24 +27,24 @@
     -webkit-app-region: no-drag;
 }
 
-body.windows .silky-ribbon-menu-button {
+body.windows .jmv-ribbon-appmenu {
     top: 36px ;
 }
 
-.silky-ribbon-menu-button:hover {
+.jmv-ribbon-appmenu:hover {
     color: #999999 ;
 }
 
-.silky-ribbon-tab:hover {
+.jmv-ribbon-tab:hover {
     color: #EEEEEE ;
 }
 
-.silky-ribbon-tab.selected {
+.jmv-ribbon-tab.selected {
     background-color : #EDEDED ;
     color: #3E6DA9 ;
 }
 
-.silky-ribbon-body {
+.jmv-ribbon-body {
     background-color : #F0F0F0 ;
     height: 50px ;
     padding: 6px 6px ;
@@ -52,38 +52,38 @@ body.windows .silky-ribbon-menu-button {
     display: flex ;
 }
 
-.silky-ribbon-button-separator {
+.jmv-ribbon-button-separator {
     flex: 1 1 auto ;
 }
 
-.silky-ribbon-button .silky-ribbon-button-icon {
+.jmv-ribbon-button .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-other.svg');
 }
 
-.silky-ribbon-button[data-name=exploration] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=exploration] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-descriptives.svg');
 }
 
-.silky-ribbon-button[data-name=t-tests] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=t-tests] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-ttest.svg');
 }
 
-.silky-ribbon-button[data-name=anova] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=anova] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-anova.svg');
 }
 
-.silky-ribbon-button[data-name=regression] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=regression] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-regression.svg');
 }
 
-.silky-ribbon-button[data-name=frequencies] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=frequencies] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-frequencies.svg');
 }
 
-.silky-ribbon-button[data-name="base r"] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name="base r"] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-r.svg');
 }
 
-.silky-ribbon-button[data-name=modules] .silky-ribbon-button-icon {
+.jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-more.svg');
 }

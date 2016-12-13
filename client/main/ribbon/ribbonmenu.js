@@ -4,10 +4,10 @@
 const $ = require('jquery');
 const _ = require('underscore');
 
-const RibbonButton = function($el, parent, title, name, items, right) {
+const RibbonMenu = function($el, parent, title, name, items, right) {
 
     this.$el = $el;
-    this.$el.addClass('silky-ribbon-button');
+    this.$el.addClass('jmv-ribbon-button');
 
     this.parent = parent;
     this.title = title;
@@ -36,57 +36,57 @@ const RibbonButton = function($el, parent, title, name, items, right) {
     this._refresh();
 };
 
-RibbonButton.prototype.setEnabled = function(enabled) {
+RibbonMenu.prototype.setEnabled = function(enabled) {
     this.$el.prop('disabled', ! enabled);
 };
 
-RibbonButton.prototype._notifySelected = function(name, ns) {
+RibbonMenu.prototype._notifySelected = function(name, ns) {
     let analysis = { name: name, ns: ns };
     this.parent._analysisSelected(analysis);
     this._hideMenu();
 };
 
-RibbonButton.prototype._hideMenu = function() {
+RibbonMenu.prototype._hideMenu = function() {
     this.$menu.hide();
     this.menuVisible = false;
 };
 
-RibbonButton.prototype._showMenu = function() {
+RibbonMenu.prototype._showMenu = function() {
     this.$menu.show();
     this.menuVisible = true;
 };
 
-RibbonButton.prototype._toggleMenu = function() {
+RibbonMenu.prototype._toggleMenu = function() {
     if (this.menuVisible)
         this._hideMenu();
     else
         this._showMenu();
 };
 
-RibbonButton.prototype._clicked = function(event) {
+RibbonMenu.prototype._clicked = function(event) {
     let $target = $(event.target);
     if ($target.closest(this.$menu).length !== 0)
         return;
     this._toggleMenu();
 };
 
-RibbonButton.prototype._itemClicked = function(event) {
+RibbonMenu.prototype._itemClicked = function(event) {
     let source = event.target;
     this._notifySelected(source.dataset.name, source.dataset.ns);
 };
 
-RibbonButton.prototype._createMenuItem = function(item) {
+RibbonMenu.prototype._createMenuItem = function(item) {
     if (item.subtitle)
-        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="silky-ribbon-menu-item">' + item.title + '<div class="silky-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
-    return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="silky-ribbon-menu-item">' + item.title + '</div>';
+        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item">' + item.title + '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
+    return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item">' + item.title + '</div>';
 };
 
-RibbonButton.prototype._createMenuGroup = function(group) {
+RibbonMenu.prototype._createMenuGroup = function(group) {
 
     let html = '';
 
-    html += '<div class="silky-ribbon-menu-group">';
-    html += '<div class="silky-ribbon-menu-heading">' + group.title + '</div>';
+    html += '<div class="jmv-ribbon-menu-group">';
+    html += '<div class="jmv-ribbon-menu-heading">' + group.title + '</div>';
 
     for (let i = 0; i < group.items.length; i++)
         html += this._createMenuItem(group.items[i]);
@@ -96,13 +96,13 @@ RibbonButton.prototype._createMenuGroup = function(group) {
     return html;
 };
 
-RibbonButton.prototype._refresh = function() {
+RibbonMenu.prototype._refresh = function() {
 
     let html = '';
-    html += '   <div class="silky-ribbon-button-icon"></div>';
-    html += '   <div class="silky-ribbon-button-label">' + this.title + '</div>';
+    html += '   <div class="jmv-ribbon-button-icon"></div>';
+    html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
 
-    html += '   <div class="silky-ribbon-button-menu" style="display: none ;">';
+    html += '   <div class="jmv-ribbon-button-menu" style="display: none ;">';
 
     for (let i = 0; i < this.items.length; i++) {
         let item = this.items[i];
@@ -116,10 +116,10 @@ RibbonButton.prototype._refresh = function() {
 
     this.$el.html(html);
 
-    this.$menu   = this.$el.find('.silky-ribbon-button-menu');
-    this.$menuItems = this.$el.find('.silky-ribbon-menu-item');
+    this.$menu   = this.$el.find('.jmv-ribbon-button-menu');
+    this.$menuItems = this.$el.find('.jmv-ribbon-menu-item');
 
     this.$menuItems.click(event => this._itemClicked(event));
 };
 
-module.exports = RibbonButton;
+module.exports = RibbonMenu;

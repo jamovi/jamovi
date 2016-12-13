@@ -4,6 +4,8 @@
 
 'use strict';
 
+const events = new require('events');
+
 let baseUrl;
 let analysisUIUrl;
 let resultsViewUrl;
@@ -18,6 +20,12 @@ let closeWindow;
 let zoom;
 let zoomIn;
 let zoomOut;
+let currentZoom;
+
+let emitter = new events.EventEmitter();
+
+let on = (name, args) => emitter.on(name, args);
+let _notify = (name, args) => emitter.emit(name, args);
 
 if (window.require) {
 
@@ -53,22 +61,31 @@ if (window.require) {
         ipc.send('request', { type: 'openDevTools' });
     };
 
-    let zoomLevel = 0;
+    const zoomLevels = [ 0.3, 0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.2, 1.33, 1.5, 1.7, 2.0, 2.4, 3.0 ];
+    let zoomLevel = 5;
 
     zoomIn = function() {
-        if (zoomLevel < 6)
+        if (zoomLevel < zoomLevels.length - 1)
             zoom(zoomLevel + 1);
     };
 
     zoomOut = function() {
-        if (zoomLevel > -4)
+        if (zoomLevel > 0)
             zoom(zoomLevel - 1);
     };
 
-    zoom = function(amount) {
-        zoomLevel = amount;
-        webFrame.setLayoutZoomLevelLimits(amount, amount);
-        webFrame.setZoomLevel(amount);
+    zoom = function(level) {
+        zoomLevel = level;
+        let zoom = zoomLevels[level];
+        webFrame.setLayoutZoomLevelLimits(-999999, 999999);
+        webFrame.setZoomFactor(zoom);
+        let ezl = webFrame.getZoomLevel();
+        webFrame.setLayoutZoomLevelLimits(ezl, ezl);
+        emitter.emit('zoom', { zoom: zoom });
+    };
+
+    currentZoom = function() {
+        return webFrame.getZoomFactor();
     };
 
     window.onkeydown = function(event) {
@@ -120,6 +137,8 @@ const Host = {
     zoom,
     zoomIn,
     zoomOut,
+    currentZoom,
+    on,
 };
 
 module.exports = Host;

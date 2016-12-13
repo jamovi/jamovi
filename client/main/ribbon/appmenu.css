@@ -1,0 +1,55 @@
+
+.jmv-ribbon-appmenu-positioner {
+    position: relative ;
+    height: 0 ;
+    z-index: 101 ;
+}
+
+.jmv-ribbon-appmenu-menu {
+    position: absolute ;
+    display: none ;
+    right: 0px ;
+    top: 3px ;
+    background-color: #F4F4F4 ;
+    color: #555555 ;
+    margin: 0 ;
+    box-shadow: 0px 1px 1px 1px rgba(172, 172, 172, 1);
+    margin-top: 2px ;
+    font-size: 70% ;
+    border-radius: 1px ;
+}
+
+.jmv-ribbon-appmenu-menu > * {
+    padding: 12px 6px ;
+}
+
+.jmv-ribbon-appmenu-syntaxmode {
+    display: block ;
+}
+
+.jmv-ribbon-appmenu-zoom {
+    display: flex ;
+    justify-content: center;
+    border-bottom: 1px solid #ACACAC ;
+    margin: 0 ;
+}
+
+.jmv-ribbon-appmenu-zoom > * {
+    margin-left: 4px ;
+    margin-right: 4px ;
+    height: 24px ;
+    line-height: 24px ;
+}
+
+.jmv-ribbon-appmenu-zoomin,
+.jmv-ribbon-appmenu-zoomout {
+    border: 1px solid #ACACAC ;
+    width: 30px ;
+    border-radius: 1px ;
+}
+
+.jmv-ribbon-appmenu-zoomin:hover,
+.jmv-ribbon-appmenu-zoomout:hover,
+.jmv-ribbon-appmenu-syntaxmode:hover {
+    background-color: #E0E0E0 ;
+}

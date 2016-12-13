@@ -5,7 +5,8 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const RibbonButton = require('./ribbonbutton');
+const RibbonMenu = require('./ribbon/ribbonmenu');
+const AppMenu = require('./ribbon/appmenu');
 const Store = require('./store');
 const Modules = require('./modules');
 
@@ -34,31 +35,31 @@ const RibbonModel = Backbone.Model.extend({
 
 const RibbonView = Backbone.View.extend({
     events : {
-        'click .silky-ribbon-tab': '_ribbonClicked'
+        'click .jmv-ribbon-tab': '_ribbonClicked'
     },
-    initialize: function() {
+    initialize() {
 
         if (this.model === undefined)
             this.model = new RibbonModel();
 
         this.model.modules().on('change:modules', this._refresh, this);
 
-        this.$el.addClass('silky-ribbon');
+        this.$el.addClass('jmv-ribbon');
 
         let html = '';
-        html += '<div class="silky-ribbon-header">';
-        html += '    <div class="silky-ribbon-menu-button"><span class="mif-more-vert"><span></div>';
+        html += '<div class="jmv-ribbon-header">';
+        html += '    <div class="jmv-ribbon-appmenu"></div>';
         html += '</div>';
-        html += '<div class="silky-ribbon-body">';
+        html += '<div class="jmv-ribbon-body">';
         html += '</div>';
         html += '<div class="jmv-store">';
         html += '</div>';
 
         this.$el.append(html);
 
-        this.$header = this.$el.find('.silky-ribbon-header');
-        this.$body   = this.$el.find('.silky-ribbon-body');
-        this.$menu   = this.$el.find('.silky-ribbon-menu-button');
+        this.$header = this.$el.find('.jmv-ribbon-header');
+        this.$body   = this.$el.find('.jmv-ribbon-body');
+        this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
         this.$store = this.$el.find('.jmv-store');
 
         let currentTabIndex = this.model.get('selectedIndex');
@@ -68,13 +69,13 @@ const RibbonView = Backbone.View.extend({
 
         for (let i = 0; i < tabs.length; i++) {
             let tab = tabs[i];
-            this.$header.append('<div class="silky-ribbon-tab">' + tab.title + '</div>');
+            this.$header.append('<div class="jmv-ribbon-tab">' + tab.title + '</div>');
         }
 
-        this.$tabs = this.$header.find('.silky-ribbon-tab');
+        this.$tabs = this.$header.find('.jmv-ribbon-tab');
         $(this.$tabs[1]).addClass('selected');
 
-        this.$menu.on('click', () => this.model.toggleResultsMode());
+        this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
 
         this._refresh();
 
@@ -84,10 +85,10 @@ const RibbonView = Backbone.View.extend({
     _refresh() {
 
         this.$body.empty();
-        this.$separator = $('<div class="silky-ribbon-button-separator"></div>').appendTo(this.$body);
+        this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
 
         let $button = $('<div></div>').insertAfter(this.$separator);
-        let  button = new RibbonButton($button, this, 'Modules', 'modules', [
+        let  button = new RibbonMenu($button, this, 'Modules', 'modules', [
             { name : 'modules', title : 'jamovi store', ns : 'app' }
         ], true);
 
@@ -132,7 +133,7 @@ const RibbonView = Backbone.View.extend({
             }
 
             let $button = $('<div></div>').insertBefore(this.$separator);
-            let  button = new RibbonButton($button, this, group, group, flattened);
+            let  button = new RibbonMenu($button, this, group, group, flattened);
         }
     },
     _ribbonClicked : function(event) {

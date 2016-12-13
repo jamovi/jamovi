@@ -1,6 +1,6 @@
 
 
-.silky-ribbon-button {
+.jmv-ribbon-button {
     display: inline-block ;
     position: relative ;
     background-color: #F0F0F0 ;
@@ -12,24 +12,24 @@
     color: #555555 ;
 }
 
-.silky-ribbon-button[disabled] {
+.jmv-ribbon-button[disabled] {
     -webkit-filter: grayscale(100%) opacity(50%);
     filter: grayscale(100%) opacity(50%);
 }
 
-.silky-ribbon-button:not([disabled]):hover {
+.jmv-ribbon-button:not([disabled]):hover {
     background-color: #DDDDDD ;
 }
 
-.silky-ribbon-button:not([disabled]):active {
+.jmv-ribbon-button:not([disabled]):active {
     background-color: #CCCCCC ;
 }
 
-.silky-ribbon-button:focus {
+.jmv-ribbon-button:focus {
     outline: none ;
 }
 
-.silky-ribbon-button-icon {
+.jmv-ribbon-button-icon {
     width: 100% ;
     height: 20px ;
     padding: 4px ;
@@ -38,12 +38,12 @@
     background-size: contain;
 }
 
-.silky-ribbon-button-label {
+.jmv-ribbon-button-label {
     margin-top: 5px ;
     margin-bottom: 0px ;
 }
 
-.silky-ribbon-button-menu {
+.jmv-ribbon-button-menu {
     position: absolute;
     white-space: nowrap;
     text-align: left ;
@@ -59,32 +59,32 @@
     left: 0px ;
 }
 
-.silky-ribbon-button.right .silky-ribbon-button-menu {
+.jmv-ribbon-button.right .jmv-ribbon-button-menu {
     left: unset ;
     right: 0px ;
 }
 
-.silky-ribbon-menu-item {
+.jmv-ribbon-menu-item {
     font-size: 110% ;
     padding: 8px 18px 8px 18px ;
 }
 
-.silky-ribbon-menu-item:first-child {
+.jmv-ribbon-menu-item:first-child {
     margin-top: 6px ;
 }
 
-.silky-ribbon-menu-item:last-child {
+.jmv-ribbon-menu-item:last-child {
     margin-bottom: 6px ;
 }
 
-.silky-ribbon-menu-item-sub {
+.jmv-ribbon-menu-item-sub {
     font-size: 85% ;
     padding-top: 3px ;
     padding-left: 60px ;
     pointer-events: none ;
 }
 
-.silky-ribbon-menu-heading {
+.jmv-ribbon-menu-heading {
     margin-top: 6px ;
     margin-bottom: 6px ;
     background-color: #E8E8E8 ;
@@ -93,10 +93,10 @@
     padding: 6px 8px ;
 }
 
-.silky-ribbon-menu-heading:empty {
+.jmv-ribbon-menu-heading:empty {
     padding: 4px 8px ;
 }
 
-.silky-ribbon-menu-item:hover {
+.jmv-ribbon-menu-item:hover {
     background-color: #F2F2F2 ;
 }
