@@ -151,7 +151,8 @@ class Instance:
         self._inactive_since = None
 
     def close(self):
-        self._mm.close()
+        if self._mm is not None:
+            self._mm.close()
         self._em.stop()
 
     def _close(self):

@@ -7,6 +7,10 @@ from tornado.websocket import WebSocketHandler
 from . import jamovi_pb2 as jcoms
 from .instance import Instance
 
+import logging
+
+log = logging.getLogger('jamovi')
+
 
 class ClientConnection(WebSocketHandler):
 
@@ -31,24 +35,28 @@ class ClientConnection(WebSocketHandler):
             listener()
 
     def on_message(self, m_bytes):
-        message = jcoms.ComsMessage()
-        message.ParseFromString(m_bytes)
-        clas = getattr(jcoms, message.payloadType)
-        request = clas()
-        request.ParseFromString(message.payload)
-        self._transactions[message.id] = request
+        try:
+            message = jcoms.ComsMessage()
+            message.ParseFromString(m_bytes)
+            clas = getattr(jcoms, message.payloadType)
+            request = clas()
+            request.ParseFromString(message.payload)
+            self._transactions[message.id] = request
 
-        if type(request) == jcoms.InstanceRequest:
-            if message.instanceId != '':
-                instance = Instance.instances[message.instanceId]
+            if type(request) == jcoms.InstanceRequest:
+                if message.instanceId != '':
+                    instance = Instance.instances[message.instanceId]
+                else:
+                    instance = Instance(session_path=self._session_path)  # create new
+                instance.set_coms(self)
+                response = jcoms.InstanceResponse()
+                self.send(response, instance.id, request)
             else:
-                instance = Instance(session_path=self._session_path)  # create new
-            instance.set_coms(self)
-            response = jcoms.InstanceResponse()
-            self.send(response, instance.id, request)
-        else:
-            instance = Instance.instances[message.instanceId]
-            instance.on_request(request)
+                instance = Instance.instances[message.instanceId]
+                instance.on_request(request)
+        except Exception as e:
+            # would be nice to send_error()
+            log.exception(e)
 
     def send(self, message=None, instance_id=None, response_to=None, complete=True):
 
