@@ -29,12 +29,10 @@ var PropertySupplier = function(properties) {
 
         var self = this;
         this.properties[name] = {
-            get: function()
-            {
+            get: function() {
                 return self.properties[name].value;
             },
-            set: function(value)
-            {
+            set: function(value) {
                 var v = value;
                 if (filter !== null && _.isUndefined(filter) === false)
                     v = filter.check(value);
@@ -79,7 +77,7 @@ var PropertySupplier = function(properties) {
     };
 
     this.hasProperty = function(property) {
-            return property in this.properties;
+        return property in this.properties;
     };
 
     this.getTrigger = function(property) {

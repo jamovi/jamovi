@@ -9,20 +9,35 @@ var OptionControlBase = function(params) {
 
     ControlBase.extendTo(this, params);
 
-    this.setValue = function(value, keys) {
-        this.option.beginEdit();
-        this.beginPropertyEdit();
-        this.option.setValue(value);
-        this.endPropertyEdit();
-        this.option.endEdit();
-    };
-
     this.getValue = function(keys) {
         return this.option.getValue(keys);
     };
 
-    this.value = function() {
-        return this.option.getValue();
+    this.value = function(key) {
+        return this.option.getValue(key);
+    };
+
+    this.setValue = function(value, key, insert) {
+        if (key === undefined)
+            key = [];
+
+        if (insert === undefined)
+            insert = false;
+
+        var event = { value: value, key: key, insert: insert, cancel: false };
+
+        this.trigger("changing", event);
+
+        if (event.cancel === false) {
+            this.option.beginEdit();
+            this.beginPropertyEdit();
+            if (event.insert)
+                this.option.insertValueAt(event.value, event.key);
+            else
+                this.option.setValue(event.value, event.key);
+            this.endPropertyEdit();
+            this.option.endEdit();
+        }
     };
 
     this.registerComplexProperty("value", this.getValue, this.setValue, "value_changed");

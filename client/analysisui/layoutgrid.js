@@ -476,6 +476,17 @@ var LayoutGrid = function() {
         return this.columnTransform ? this.columnTransform(row, column) : column;
     };
 
+    this.cellFromPosition = function(x, y) {
+        let sx = x + this.$el.scrollLeft();
+        let sy = y + this.$el.scrollTop();
+        for (var i = 0; i < this._cells.length; i++) {
+            let cell = this._cells[i];
+            if (sx >= cell.left() && sx <= cell.right() && sy >= cell.top() && sy <= cell.bottom())
+                return cell;
+        }
+        return null;
+    };
+
     this._add = function(column, row, cell) {
         cell._id = this._currentId++;
         row = this.getTranformedRow(row, column);

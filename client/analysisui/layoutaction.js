@@ -19,7 +19,7 @@ var LayoutAction = function(manager, params) {
     var self = this;
     this.execute = function(param1, param2, param3, param4, param5, param6, param7) {
         self._manager._executeStarted(self);
-        self._callback.call(self._manager._layoutDef, self._manager._resources, param1, param2, param3, param4, param5, param6, param7);
+        self._callback.call(self._manager._actionsSource, self._manager._resources, param1, param2, param3, param4, param5, param6, param7);
         self._manager._executeEnded(self);
     };
 

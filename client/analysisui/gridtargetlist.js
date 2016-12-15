@@ -18,6 +18,7 @@ var GridTargetList = function(params) {
 
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "unique_per_row", "unique_per_column"], "none"));
+    this.registerSimpleProperty("itemDropBehaviour", "insert", new EnumPropertyFilter(["overwrite", "insert", "empty_space"], "insert"));
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -27,6 +28,9 @@ var GridTargetList = function(params) {
 
     this.targetGrid = new OptionListControl(params);
     this.targetGrid.$el.addClass("silky-target-list");
+    this.targetGrid.on('changing', (event) => {
+        this.trigger('changing', event);
+    });
 
     this._targetDoubleClickDetect = 0;
     this.targetGrid.$el.on('click', null, this, function(event) {
@@ -64,15 +68,14 @@ var GridTargetList = function(params) {
         for (var i = 0; i < this.targetGrid.selectedCellCount(); i++) {
             var cell = this.targetGrid.getSelectedCell(i);
             var cellInfo = this.targetGrid.getCellInfo(cell);
-            var formattedValue = new FormatDef.constructor(cellInfo.value, cellInfo.format);
-
-            var pickupItem = { value: formattedValue, cellInfo: cellInfo, $el: cell.$el };
-
-            var item = this._supplier.getItemFromValue(formattedValue);
-            if (item !== null)
-                pickupItem.properties = item.properties;
-
+            if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                let formattedValue = new FormatDef.constructor(cellInfo.value, cellInfo.format);
+                let pickupItem = { value: formattedValue, cellInfo: cellInfo, $el: cell.$el };
+                let item = this._supplier.getItemFromValue(formattedValue);
+                if (item !== null)
+                    pickupItem.properties = item.properties;
                 items.push(pickupItem);
+            }
         }
         return items;
     };
@@ -87,16 +90,35 @@ var GridTargetList = function(params) {
         this.option.endEdit();
     };
 
-    this.onItemsDropping = function(items) {
-        for (var i = 0; i < items.length; i++) {
-            var cellInfo = items[i].cellInfo;
-            if (this.targetGrid.removeFromOption(cellInfo)) {
-                for (var j = i + 1; j < items.length; j++) {
-                    if (items[j].cellInfo.listIndex > cellInfo.listIndex)
-                        items[j].cellInfo.listIndex -= 1;
-                    else if (items[j].cellInfo.listIndex === cellInfo.listIndex) {
-                        items.splice(j, 1);
-                        j -= 1;
+    this.onItemsDropping = function(items, intoSelf) {
+        var list = [];
+        while (items.length > 0)
+            list.push(items.shift());
+
+        for (var i = 0; i < list.length; i++) {
+            var cellInfo = list[i].cellInfo;
+            if (cellInfo.removed === false) {
+
+                if (this.targetGrid.removeFromOption(cellInfo)) {
+                    for (var j = i + 1; j < list.length; j++) {
+                        if (list[j].cellInfo.listIndex > cellInfo.listIndex)
+                            list[j].cellInfo.listIndex -= 1;
+                        else if (list[j].cellInfo.listIndex === cellInfo.listIndex) {
+                            list.splice(j, 1);
+                            j -= 1;
+                        }
+                    }
+                }
+
+                //only drop the compatible formats
+                let formats = cellInfo.format.allFormats();
+                for (let sf = 0; sf < formats.length; sf++) {
+                    let formattedValue = new FormatDef.constructor(self._findValueWithKey(cellInfo.value, formats[sf].key), formats[sf].format);
+                    let pickupItem = { value: formattedValue, cellInfo: cellInfo, $el: cellInfo.cell.$el };
+                    let item = this._supplier.getItemFromValue(formattedValue);
+                    if (item !== null) {
+                        pickupItem.properties = item.properties;
+                        items.push(pickupItem);
                     }
                 }
             }
@@ -109,12 +131,91 @@ var GridTargetList = function(params) {
 
     // Catching methods
     this.catchDroppedItems = function(source, items, xpos, ypos) {
-        for (var i = 0; i < items.length; i++)
-            this.addRawToOption(items[i], [this.option.getLength()]);
+        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+        var cell = this.targetGrid.cellFromPosition(xpos, ypos);
+        var pos = null;
+        var destFormat = null;
+        var onCell = false;
+        if (dropBehaviour !== "empty_space" && cell !== null) {
+            var cellInfo = this.targetGrid.getCellInfo(cell);
+            pos = cellInfo.valueIndex;
+            destFormat = cellInfo.format;
+            onCell = cellInfo.isValueCell;
+        }
+        let insert = dropBehaviour === "insert";
+
+        for (var i = 0; i < items.length; i++) {
+            if (onCell) {
+                let subkeys = destFormat.allFormats(items[i].value.format);
+                for (let x = 0; x < subkeys.length; x++) {
+                    let key = pos.concat(subkeys[x].key);
+                    this.addRawToOption(items[i++], key, insert);
+                    insert = false;
+                    if (i >= items.length)
+                        break;
+                }
+            }
+            else
+                this.addRawToOption(items[i], null, false);
+            pos = null;
+            destFormat = null;
+            insert = false;
+            onCell = false;
+        }
     };
 
-    this.filterItemsForDrop = function(items, xpos, ypos) {
-        return this.preprocessItems(items);
+    this.filterItemsForDrop = function(items, intoSelf, xpos, ypos) {
+        return this.preprocessItems(items, intoSelf);
+    };
+
+    var _$hoverCell = null;
+
+    this.onDraggingLeave = function() {
+        if (_$hoverCell !== null) {
+            _$hoverCell.removeClass("item-hovering");
+            _$hoverCell.removeClass("item-overwrite-on-drop");
+            _$hoverCell.removeClass("item-insert-on-drop");
+            _$hoverCell.removeClass("item-empty_space-on-drop");
+            _$hoverCell = null;
+        }
+    };
+
+    this.hasSubDropTarget = function(xpos, ypos) {
+        let cell =  this.targetGrid.cellFromPosition(xpos, ypos);
+        var subDroppable = null;
+        if (cell.item !== null && cell.item._dropId !== undefined)
+            subDroppable = cell.item;
+        return subDroppable;
+    };
+
+    this.onDraggingOver = function(xpos, ypos) {
+        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+        if (_$hoverCell !== null) {
+            _$hoverCell.removeClass("item-hovering");
+            _$hoverCell.removeClass("item-overwrite-on-drop");
+            _$hoverCell.removeClass("item-insert-on-drop");
+            _$hoverCell.removeClass("item-empty_space-on-drop");
+            _$hoverCell = null;
+        }
+
+        let cell =  this.targetGrid.cellFromPosition(xpos, ypos);
+        let cellInfo = null;
+        if (cell !== null)
+            cellInfo = this.targetGrid.getCellInfo(cell);
+
+        if (cellInfo !== null) {
+
+            var hasMaxItemCount = this.targetGrid.maxItemCount >= 0;
+            if (cellInfo.isValueCell === false && hasMaxItemCount && this.option.getLength() >= this.targetGrid.maxItemCount)
+                return;
+
+            if (cellInfo.isValueCell === false)
+                dropBehaviour = 'insert';
+
+            _$hoverCell = cell.$content;
+            _$hoverCell.addClass("item-hovering");
+            _$hoverCell.addClass("item-" + dropBehaviour + "-on-drop");
+        }
     };
 
     this.inspectDraggedItems = function(source, items) {
@@ -185,6 +286,7 @@ var GridTargetList = function(params) {
         if (grid.addTarget) {
             this.setSupplier(grid);
             grid.addTarget(this);
+            this.registerDropTargets(this);
         }
 
         var self = this;
@@ -221,16 +323,32 @@ var GridTargetList = function(params) {
 
     var self = this;
     this.targetGrid.getSupplierItem = function(localItem) {
-        return self._supplier.pullItem(localItem, false);
+        var properties = { root: null, sub: null };
+        var supplierItem = self._supplier.pullItem(localItem, false);
+        if (supplierItem !== null)
+            properties.root = supplierItem.properties;
+
+        if (localItem.format.children && localItem.raw !== null && localItem.raw !== undefined) {
+            let subProperties = { };
+            let subFormatInfo = localItem.format.allFormats();
+            for (let sf = 0; sf < subFormatInfo.length; sf++) {
+                supplierItem = self._supplier.pullItem(new FormatDef.constructor(self._findValueWithKey(localItem.raw, subFormatInfo[sf].key), subFormatInfo[sf].format), false);
+                if (supplierItem !== null)
+                    subProperties[subFormatInfo[sf].key.join("-")] = supplierItem.properties;
+            }
+            properties.sub = subProperties;
+        }
+
+        return properties;
     };
 
     this.getSupplierItems = function() {
         var items = this._supplier.getSelectedItems();
-        return this.preprocessItems(items);
+        return this.preprocessItems(items, false);
     };
 
-    this.preprocessItems = function(items) {
-        var data = { items: items };
+    this.preprocessItems = function(items, intoSelf) {
+        var data = { items: items, intoSelf: intoSelf };
         this.trigger("preprocess", data);
 
         var testedItems = [];
@@ -244,8 +362,8 @@ var GridTargetList = function(params) {
         return testedItems;
     };
 
-    this.addRawToOption = function(item, key) {
-        return this.targetGrid.addRawToOption(item.value.raw, key, item.value.format);
+    this.addRawToOption = function(item, key, insert) {
+        return this.targetGrid.addRawToOption(item.value.raw, key, insert, item.value.format);
     };
 
     this.onAddButtonClick = function() {
@@ -267,8 +385,8 @@ var GridTargetList = function(params) {
                         if (this._supplier.getPropertyValue("persistentItems"))
                             postProcessSelectionIndex += 1;
                     }
-                    var key = [this.option.getLength()];
-                    if (this.addRawToOption(selectedItem, key) === false)
+
+                    if (this.addRawToOption(selectedItem, null, false) === false)
                         break;
                 }
                 postProcessList = this._supplier;
@@ -311,10 +429,21 @@ var GridTargetList = function(params) {
                 var rowCell = rowCells[c];
                 var columnInfo = this.targetGrid._columnInfo._list[rowCell.data.column];
                 var cellInfo = this.targetGrid.getCellInfo(rowCell);
-                var formattedValue = new FormatDef.constructor(cellInfo.value, cellInfo.format);
-                this._supplier.pushItem(formattedValue);
+                if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                    let subFormatInfo = cellInfo.format.allFormats();
+                    for (let sf = 0; sf < subFormatInfo.length; sf++)
+                        self._supplier.pushItem(new FormatDef.constructor(self._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format));
+                }
             }
         }
+    };
+
+    this._findValueWithKey = function(data, key) {
+        let value = data;
+        for (let i = 0; i < key.length; i++)
+            value = value[key[i]];
+
+        return value;
     };
 
     this.targetGrid._override('updateValueCell', function(baseFunction, columnInfo, dispRow, value) {
@@ -332,7 +461,11 @@ var GridTargetList = function(params) {
 
         for (var i = 0; i < self.targetGrid._cells.length; i++) {
             var cellInfo = this.getCellInfo(self.targetGrid._cells[i]);
-            self._supplier.pullItem(new FormatDef.constructor(cellInfo.value, cellInfo.format));
+            if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                let subFormatInfo = cellInfo.format.allFormats();
+                for (let sf = 0; sf < subFormatInfo.length; sf++)
+                    self._supplier.pullItem(new FormatDef.constructor(self._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format));
+            }
         }
 
         if (self._supplier !== null)
@@ -363,7 +496,11 @@ var GridTargetList = function(params) {
 
         for (var i = 0; i < self.targetGrid._cells.length; i++) {
             var cellInfo = this.getCellInfo(self.targetGrid._cells[i]);
-            self._supplier.pullItem(new FormatDef.constructor(cellInfo.value, cellInfo.format));
+            if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                let subFormatInfo = cellInfo.format.allFormats();
+                for (let sf = 0; sf < subFormatInfo.length; sf++)
+                    self._supplier.pullItem(new FormatDef.constructor(self._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format));
+            }
         }
 
         if (self._supplier !== null)

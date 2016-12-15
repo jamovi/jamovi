@@ -159,6 +159,7 @@ var LayoutSupplierView = function(params) {
                 return item;
             }
         }
+        return null;
     };
 
     this.pushItem = function(formatted) {

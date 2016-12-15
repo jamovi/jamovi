@@ -3,11 +3,14 @@
 var $ = require('jquery');
 var _ = require('underscore');
 var ListItemControl = require('./listitemcontrol');
+var FormatDef = require('./formatdef');
 
 
 var ListItemCombobox = function(params) {
 
     ListItemControl.extendTo(this, params);
+
+    this.registerSimpleProperty("format", FormatDef.string);
 
     this.onEmptyingView = function() {
         var $item = this.$el.find(".silky-option-input");

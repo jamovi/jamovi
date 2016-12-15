@@ -9,7 +9,7 @@ var ListItemControl = function(params) {
 
     PropertySupplier.extendTo(this, params);
 
-    this.$el = $('<div></div>');
+    this.$el = $('<div class="list-item-ctrl"></div>');
 
     this.registerSimpleProperty("format", null);
     this.registerSimpleProperty("valuekey", null);
