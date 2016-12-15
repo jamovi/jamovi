@@ -61,7 +61,6 @@ class Options:
                 Options._populate_pb(child_pb, v)
         elif type(value) == dict:
             dest_pb.c.hasNames = True
-            print(value)
             for k, v in value.items():
                 dest_pb.c.names.append(k)
                 child_pb = dest_pb.c.options.add()
