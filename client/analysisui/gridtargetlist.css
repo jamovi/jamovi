@@ -27,3 +27,26 @@
 .silky-option-list.silky-target-list {
     margin: 0px;
 }
+
+.list-item-ctrl {
+    box-sizing: border-box;
+    border: 1px solid transparent;
+}
+
+.list-item-ctrl.rma-cell-measure-ctrl {
+    border-bottom: 1px solid #eaeaea;
+}
+
+.list-item-ctrl.item-overwrite-on-drop {
+    border: 1px dotted rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.item-insert-on-drop {
+    border: 1px solid transparent;
+    border-top: 1px dotted rgba(0, 0, 0, 0.4);
+}
+
+.silky-option-list-filler {
+    min-height: 5px;
+}

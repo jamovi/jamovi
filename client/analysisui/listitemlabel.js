@@ -10,6 +10,8 @@ var ListItemLabel = function(params) {
 
     ListItemControl.extendTo(this, params);
 
+    this.registerSimpleProperty("format", FormatDef.string);
+
     this.onUpdateView = function(data, format, properties) {
         var $label = this.$el.find(".silky-list-item-value");
         $label.empty();

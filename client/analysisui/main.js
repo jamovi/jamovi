@@ -10,7 +10,10 @@ Backbone.$ = $;
 var Options = require('./options');
 var OptionsView = require('./optionsview');
 var ui = require('./layoutdef');
+var Format = require('./format.js');
 var FormatDef = require('./formatdef');
+var Actions = require('./actions');
+var ListItemControl = require('./listitemcontrol');
 var ControlManager = require('./controlmanager');
 var SilkyControlManager = require('./silkycontrolmanager');
 var LayoutActionManager = require('./layoutactionmanager');
@@ -51,7 +54,8 @@ var Analysis = function(def, resources, baseControls) {
     }
 
     var layoutDef = new module.exports.ui();
-    var actionManager = new LayoutActionManager(layoutDef);
+    var actions = new module.exports.actions();
+    var actionManager = new LayoutActionManager(actions);
     var optionsManager = new Options(options);
     actionManager.onExecutingStateChanged = function(state) {
         if (state)

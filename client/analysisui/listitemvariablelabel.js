@@ -1,7 +1,6 @@
 'use strict';
 
 var $ = require('jquery');
-var _ = require('underscore');
 var ListItemControl = require('./listitemcontrol');
 var FormatDef = require('./formatdef');
 
@@ -14,8 +13,8 @@ var ListItemVariableLabel = function(params) {
 
     this.onUpdateView = function(data, format, properties) {
         var imageClasses = 'silky-variable-type-img';
-        if (properties !== null && _.isUndefined(properties.type) === false)
-            imageClasses = imageClasses + ' silky-variable-type-' + properties.type;
+        if (properties.root !== null && properties.root.type !== undefined)
+            imageClasses = imageClasses + ' silky-variable-type-' + properties.root.type;
         else
             imageClasses = imageClasses + ' silky-variable-type-none';
 
@@ -28,8 +27,8 @@ var ListItemVariableLabel = function(params) {
 
     this.onRender = function(data, format, properties) {
         var imageClasses = 'silky-variable-type-img';
-        if (properties !== null && _.isUndefined(properties.type) === false)
-            imageClasses = imageClasses + ' silky-variable-type-' + properties.type;
+        if (properties.root !== null && properties.root.type !== undefined)
+            imageClasses = imageClasses + ' silky-variable-type-' + properties.root.type;
         else
             imageClasses = imageClasses + ' silky-variable-type-none';
 

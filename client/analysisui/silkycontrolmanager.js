@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('underscore');
 var ControlManager = require('./controlmanager');
 var LayoutGroupView = require('./layoutgroupview');
 var LayoutCollapseView = require('./layoutcollapseview');

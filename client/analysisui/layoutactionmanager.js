@@ -5,9 +5,9 @@ var backbone = require('backbone');
 var LayoutAction = require('./layoutaction');
 var SuperClass = require('../common/superclass');
 
-var LayoutActionManager = function(layoutDef) {
+var LayoutActionManager = function(actions) {
 
-    this._layoutDef = layoutDef;
+    this._actionsSource = actions;
     this._actions = [];
     this._resources = { };
     this._executingActions = 0;
@@ -62,9 +62,9 @@ var LayoutActionManager = function(layoutDef) {
     };
 
 
-    if (Array.isArray(this._layoutDef.actions)) {
-        for (var i = 0; i < this._layoutDef.actions.length; i++) {
-            var action = this._layoutDef.actions[i];
+    if (Array.isArray(this._actionsSource.events)) {
+        for (var i = 0; i < this._actionsSource.events.length; i++) {
+            var action = this._actionsSource.events[i];
             if (_.isFunction(action.execute) === false)
                 throw "An action must contain an execute function.";
 
