@@ -108,12 +108,13 @@ var OptionsPanel = SilkyView.extend({
 
     setAnalysis: function(analysis) {
 
-        var resources = this._analysesResources[analysis.name];
+        let analysesKey = analysis.ns + "-" + analysis.name;
+        var resources = this._analysesResources[analysesKey];
         var createdNew = false;
 
         if (_.isUndefined(resources)) {
             resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') }, this.iframeUrl, this.model.instanceId());
-            this._analysesResources[analysis.name] = resources;
+            this._analysesResources[analysesKey] = resources;
             createdNew = true;
         }
 
@@ -156,8 +157,8 @@ var OptionsPanel = SilkyView.extend({
             for (let changes of event.changes) {
                 if (changes.measureTypeChanged || changes.nameChanged) {
                     var context = { columns: self.dataSetModel.get('columns') };
-                    for (let name in self._analysesResources)
-                        self.applyContextChange(self._analysesResources[name], context);
+                    for (let analysesKey in self._analysesResources)
+                        self.applyContextChange(self._analysesResources[analysesKey], context);
                     break;
                 }
             }

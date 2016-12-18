@@ -36,6 +36,12 @@
     margin-left: 18px ;
 }
 
+.disabled-div {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+    pointer-events: none;
+}
+
 .silky-bs-back-button:hover {
 
     border-color: #DDDDDD ;
@@ -209,6 +215,13 @@
     background-size: 100% ;
 }
 
+.silky-bs-flist-item-omv-icon {
+    background-image: url('assets/jamovi-document.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
 .silky-bs-flist-item-folder-browse-icon {
     background-image: url('assets/place-browse.svg');
     background-repeat: no-repeat;
@@ -345,7 +358,7 @@
     margin: 0px 3px 0px 3px;
 }
 
-.silky-bs-fslist-browser-save-button:hover {
+.silky-bs-fslist-browser-save-button:not(.disabled-div):hover {
     border-color: #B1C5DE ;
     background-color: #DBE4F3 ;
 }

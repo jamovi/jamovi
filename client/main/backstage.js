@@ -142,6 +142,9 @@ var FSEntryBrowserView = SilkyView.extend({
         'click .silky-bs-fslist-browser-back-button' : '_backClicked',
         'click .silky-bs-fslist-browser-save-button' : '_saveClicked',
         'change .silky-bs-fslist-browser-save-filetype' : '_saveTypeChanged',
+        'change .silky-bs-fslist-browser-save-name' : '_nameChanged',
+        'keyup .silky-bs-fslist-browser-save-name' : '_nameChanged',
+        'paste .silky-bs-fslist-browser-save-name' : '_nameChanged',
         'focus .silky-bs-fslist-browser-save-name' : '_nameGotFocus',
         'focus .silky-bs-fslist-browser-save-filetype' : '_focusChanged'
     },
@@ -149,6 +152,14 @@ var FSEntryBrowserView = SilkyView.extend({
         var selected = this.$el.find('option:selected');
         this.filterExtension = selected.data('extension');
         this._render();
+    },
+    _validExtension : function(ext) {
+        var extOptions = this.$header.find('.silky-bs-fslist-browser-save-filetype option');
+        for (let i = 0; i < extOptions.length; i++) {
+            if (extOptions[i].value === ext)
+                return true;
+        }
+        return false;
     },
     _nameGotFocus: function(event) {
         keyboardJS.setContext('save_name_textbox');
@@ -198,7 +209,7 @@ var FSEntryBrowserView = SilkyView.extend({
             var insert = "";
             if (path) {
                 extension = Path.extname(path);
-                insert = ' value="' + Path.basename(path) + '"';
+                insert = ' value="' + Path.basename(path, extension) + '"';
             }
 
             html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
@@ -211,7 +222,7 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '               </select>';
             html += '           </div>';
             html += '       </div>';
-            html += '       <div class="silky-bs-fslist-browser-save-button" style="display: flex; flex: 0 0 auto;">';
+            html += '       <div class="silky-bs-fslist-browser-save-button' + (path ? "" : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
             html += '           <span>Save</span>';
             html += '       </div>';
@@ -220,7 +231,7 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '</div>';
         this.$header = $(html);
         this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
-        if (extension !== null)
+        if (this._validExtension(extension))
             this.$header.find('.silky-bs-fslist-browser-save-filetype-inner').val(extension);
         this.$el.append(this.$header);
 
@@ -281,6 +292,8 @@ var FSEntryBrowserView = SilkyView.extend({
             if (itemType === FSItemType.File) { //file
                 if (name.endsWith(".csv"))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                else if (name.endsWith(".omv"))
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
                 else
                     html += '       <span class="mif-file-empty"></span>';
             }
@@ -390,10 +403,22 @@ var FSEntryBrowserView = SilkyView.extend({
         if (itemType === FSItemType.File && this.model.clickProcess === "save")
             this.model.requestSave(itemPath, itemType);
     },
+    _nameChanged : function(event) {
+        let $button = this.$header.find(".silky-bs-fslist-browser-save-button");
+        var name = this.$header.find(".silky-bs-fslist-browser-save-name").val().trim();
+        if (name === "")
+            $button.addClass("disabled-div");
+        else
+            $button.removeClass("disabled-div");
+
+    },
     _saveClicked : function(event) {
         var dirInfo = this.model.get('dirInfo');
-        if (_.isUndefined(dirInfo) === false) {
-            var name = this.$header.find(".silky-bs-fslist-browser-save-name").val();
+        if (dirInfo !== undefined) {
+            var name = this.$header.find(".silky-bs-fslist-browser-save-name").val().trim();
+            if (name === "")
+                return;
+
             if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 name = name + '.' + this.filterExtension;
             var path = dirInfo.path + '/' + name;
