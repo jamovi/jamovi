@@ -9,7 +9,7 @@ import os
 import os.path
 import re
 
-from silky import MeasureType
+from ...core import MeasureType
 
 
 def write(data, path):

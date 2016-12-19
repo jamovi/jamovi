@@ -30,6 +30,10 @@ body.windows {
     padding: 1px ;
 }
 
+body.drag-in-progress {
+    pointer-events: none ;
+}
+
 h1 {
     font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
 }

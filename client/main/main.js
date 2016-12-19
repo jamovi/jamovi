@@ -77,6 +77,17 @@ $(document).ready(() => {
     }
 
     document.oncontextmenu = function() { return false; };
+    document.ondragover = (event) => {
+        if (event.dataTransfer.files) {
+            event.dataTransfer.dropEffect = 'copy';
+            event.preventDefault();
+        }
+    };
+    document.body.ondrop = (event) => {
+        for (let file of event.dataTransfer.files)
+            instance.open(file.path);
+        event.preventDefault();
+    };
 
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : "#backstage", model : backstageModel });
@@ -176,22 +187,22 @@ $(document).ready(() => {
 
     }).then(instanceId => {
 
+        let toOpen = '';  // '' denotes blank data set
+        if (window.location.search.indexOf('?open=') !== -1)
+            toOpen = window.location.search.split('?open=')[1];
+
         let newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
         history.replaceState({}, '', newUrl);
 
-        return instanceId;
-
-    }).then(() => {
-
         if ( ! instance.get('hasDataSet'))
-            return instance.open(''); // blank
+            return instance.open(toOpen);
 
     }).then(() => {
 
         let settings = new coms.Messages.SettingsRequest();
         let request = new coms.Messages.ComsMessage();
         request.payload = settings.toArrayBuffer();
-        request.payloadType = "SettingsRequest";
+        request.payloadType = 'SettingsRequest';
         request.instanceId = instance.instanceId();
 
         return coms.send(request);

@@ -3,7 +3,7 @@
 #
 
 import csv
-from silky import MeasureType
+from ...core import MeasureType
 
 
 def calc_dps(value, max_dp=3):

@@ -1,5 +1,5 @@
 
-import os
+import sys
 import os.path as path
 import platform
 
@@ -10,6 +10,7 @@ from enum import Enum
 
 import nanomsg
 
+from .utils import conf
 from . import jamovi_pb2 as jcoms
 from .analyses import Analysis
 
@@ -48,32 +49,30 @@ class Engine:
         return self.status is Engine.Status.WAITING
 
     def start(self):
-        root = path.realpath(path.join(path.dirname(__file__), '../../..'))
-        exe_path = path.join(root, 'bin/jamovi-engine')
 
-        if platform.uname().system == 'Windows':
-            r_home = path.join(root, 'Frameworks', 'R')
-            paths = [
-                path.join(root, 'Resources', 'lib'),
-                path.join(r_home, 'bin', 'x64'),
-                path.join(r_home, 'library', 'RInside', 'lib', 'x64'),
-            ]
-            all_paths = ';'.join(paths)
-        else:
-            all_paths = ''
-
-        env = os.environ
-        env['PATH'] = all_paths
+        exe_dir = path.join(conf.get('home'), 'bin')
+        exe_path = path.join(exe_dir, 'jamovi-engine')
 
         si = None
+        stdout = sys.stdout
+        stderr = sys.stderr
         if platform.uname().system == 'Windows':
             si = subprocess.STARTUPINFO()
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            stdout = None
+            stderr = None  # stdouts seem to break things
+
+        # be a bit wary of changes to the Popen call
+        # seemingly inconsequential changes can break things on windows
 
         address = self._conn_root + '-' + str(self._index)
         con = '--con={}'.format(address)
         pth = '--path={}'.format(self._session_path)
-        self._process = subprocess.Popen([exe_path, con, pth], env=env, startupinfo=si)
+        self._process = subprocess.Popen(
+            [exe_path, con, pth],
+            startupinfo=si,
+            stdout=stdout,
+            stderr=stderr)
 
         self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)

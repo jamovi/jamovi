@@ -5,15 +5,16 @@
 import os
 import platform
 
-from silky import MeasureType
-from silky import Dirs
-from silky import MemoryMap
-from silky import DataSet
+from ..core import MeasureType
+from ..core import Dirs
+from ..core import MemoryMap
+from ..core import DataSet
 
 from .settings import Settings
 
 from . import jamovi_pb2 as jcoms
 
+from .utils import conf
 from .enginemanager import EngineManager
 from .analyses import Analyses
 from .modules import Modules
@@ -85,9 +86,7 @@ class Instance:
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
         elif path.startswith('{{Examples}}'):
-            here = os.path.realpath(os.path.dirname(__file__))
-            root = os.path.join(here, '..', '..', 'examples')
-            nor_path = path.replace('{{Examples}}', root)
+            nor_path = path.replace('{{Examples}}', conf.get('examples_path'))
         return nor_path
 
     def _virtualise_path(path):
@@ -681,8 +680,7 @@ class Instance:
             recent_pb.location = recent['location']
 
         try:
-            here = os.path.realpath(os.path.dirname(__file__))
-            path = os.path.join(here, '..', '..', 'examples', 'index.yaml')
+            path = os.path.join(conf.get('examples_path'), 'index.yaml')
             with open(path, encoding='utf-8') as index:
                 for example in yaml.safe_load(index):
                     example_pb = response.examples.add()

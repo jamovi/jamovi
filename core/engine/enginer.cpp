@@ -137,7 +137,7 @@ void EngineR::setLibPaths(const std::string &moduleName)
     path = Settings::get("ENV.R_LIBS", "");
     algorithm::split(sysR, path, algorithm::is_any_of(";:"), token_compress_on);
 
-    path = Settings::get("JAMOVI.MODULE_PATH", "");
+    path = Settings::get("JAMOVI.MODULES_PATH", "");
     algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
 
     string sep = "";
@@ -341,7 +341,7 @@ void EngineR::initR()
     if (path != "")
         nowide::setenv("R_HOME", makeAbsolute(path).c_str(), 1);
 
-    path = Settings::get("ENV.R_LIBS", "");
+    path = Settings::get("ENV.R_LIBS", "something-which-doesnt-exist");
     if (path != "")
         nowide::setenv("R_LIBS", makeAbsolute(path).c_str(), 1);
 

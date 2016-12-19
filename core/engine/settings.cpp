@@ -25,8 +25,7 @@ string Settings::get(const string &key, const string &defaul)
 Settings::Settings()
 {
     filesystem::path path = Dirs::exePath();
-    string filename = path.stem().generic_string() + ".conf";
-    path = path.parent_path() / filename;
+    path = path.parent_path() / "env.conf";
     try
     {
         property_tree::read_ini(path.generic_string(), _pt);

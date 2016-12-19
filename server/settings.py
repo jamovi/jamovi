@@ -2,7 +2,7 @@
 import json
 import os.path
 
-from silky import Dirs
+from ..core import Dirs
 
 
 class Settings:

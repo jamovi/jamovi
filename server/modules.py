@@ -5,7 +5,10 @@ import logging
 import yaml
 import shutil
 from zipfile import ZipFile
-from silky import Dirs
+
+from ..core import Dirs
+
+from .utils import conf
 
 log = logging.getLogger('jamovi')
 
@@ -70,8 +73,8 @@ class Modules:
             self.reread()
 
     def reread(self):
-        here = os.path.realpath(os.path.dirname(__file__))
-        sys_module_path = os.path.join(here, 'resources', 'modules')
+
+        sys_module_path = conf.get('modules_path')
         user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
 
         os.makedirs(sys_module_path, exist_ok=True)

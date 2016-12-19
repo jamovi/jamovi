@@ -8,7 +8,7 @@ import struct
 import os
 import os.path
 
-from silky import MeasureType
+from ...core import MeasureType
 
 
 def write(data, path):

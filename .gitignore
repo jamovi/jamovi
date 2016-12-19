@@ -8,7 +8,7 @@ analyses/
 node_modules/
 npm-debug.log
 
-core/libsilky/silky.cpp
+core/core/core.cpp
 
 **/__pycache__/
 

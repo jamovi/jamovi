@@ -9,31 +9,39 @@ from tornado.web import StaticFileHandler
 from .clientconnection import ClientConnection
 from .instance import Instance
 from .modules import Modules
+from .utils import conf
 
+import sys
 import os.path
 import uuid
 
-import threading
-import time
 import tempfile
 import logging
+import pkg_resources
+import threading
 
 log = logging.getLogger('jamovi')
 
 
 class SingleFileHandler(RequestHandler):
 
-    def initialize(self, path, mime_type=None, no_cache=False):
+    def initialize(self, path, is_pkg_resource=False, mime_type=None, no_cache=False):
         self._path = path
+        self._is_pkg_resource = is_pkg_resource
         self._mime_type = mime_type
         self._no_cache = no_cache
 
     def get(self):
         if self._mime_type is not None:
             self.set_header('Content-Type', self._mime_type)
-        with open(self._path, 'rb') as file:
-            content = file.read()
-            self.write(content)
+        if self._is_pkg_resource:
+            with pkg_resources.resource_stream(__name__, self._path) as file:
+                content = file.read()
+                self.write(content)
+        else:
+            with open(self._path, 'rb') as file:
+                content = file.read()
+                self.write(content)
 
     def set_extra_headers(self, path):
         if self._no_cache:
@@ -119,7 +127,7 @@ class SFHandler(StaticFileHandler):
 
 class Server:
 
-    def __init__(self, port, shutdown_on_idle=False, debug=False):
+    def __init__(self, port, debug=False):
 
         if port == 0:
             self._ports = [ 0, 0, 0 ]
@@ -127,52 +135,29 @@ class Server:
             self._ports = [int(port), int(port) + 1, int(port) + 2]
 
         self._ioloop = tornado.ioloop.IOLoop.instance()
-        self._shutdown_on_idle = shutdown_on_idle
+
         self._debug = debug
         self._ports_opened_listeners = [ ]
+
+        self._thread = threading.Thread(target=self._read_stdin)
+        self._thread.start()
 
     def add_ports_opened_listener(self, listener):
         self._ports_opened_listeners.append(listener)
 
-    def check_for_shutdown(self):
+    def _read_stdin(self):
+        for line in sys.stdin:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        self.stop()
 
-        try:
-            parent = threading.main_thread()
-            time_without_listeners = None
-
-            while True:
-                time.sleep(.2)
-                if parent.is_alive() is False:
-                    break
-
-                now = time.time()
-
-                if ClientConnection.number_of_connections == 0:
-                    if time_without_listeners is None:
-                        time_without_listeners = now
-                    elif now - time_without_listeners > 1:
-                        log.info('Server shutting down due to inactivity')
-                        break
-                else:
-                    time_without_listeners = None
-
-        except Exception as e:
-            log.exception(e)
-
-        try:
-            for id, instance in Instance.instances.items():
-                instance.close()
-        except Exception as e:
-            log.exception(e)
-
+    def stop(self):
         tornado.ioloop.IOLoop.instance().stop()
 
     def start(self):
 
-        here = os.path.dirname(os.path.realpath(__file__))
-
-        client_path  = os.path.join(here, 'resources', 'client')
-        coms_path = os.path.join(here, 'jamovi.proto')
+        client_path = conf.get('client_path')
+        coms_path   = 'jamovi.proto'
 
         session_dir = tempfile.TemporaryDirectory()
         session_path = session_dir.name
@@ -183,6 +168,7 @@ class Server:
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto',   SingleFileHandler, {
                 'path': coms_path,
+                'is_pkg_resource': True,
                 'mime_type': 'text/plain',
                 'no_cache': self._debug }),
             (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
@@ -243,8 +229,7 @@ class Server:
         for listener in self._ports_opened_listeners:
             listener(self._ports)
 
-        if self._shutdown_on_idle:
-            thread = threading.Thread(target=self.check_for_shutdown)
-            thread.start()
-
-        self._ioloop.start()
+        try:
+            self._ioloop.start()
+        except KeyboardInterrupt:
+            pass
