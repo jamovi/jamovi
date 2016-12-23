@@ -5,10 +5,89 @@ const _ = require('underscore');
 var FormatDef = require('./formatdef');
 var SuperClass = require('../common/superclass');
 
-function Actions() {
+function View() {
+
+    this._loaded = true;
+    this._initialising = false;
+    this.workspace = {};
+
+    this._baseEvents = [
+        {
+            onEvent: "view.loaded", execute: function(ui) {
+                this._loaded = true;
+            }
+        },
+        {
+            onEvent: "view.data-initialising", execute: function(ui) {
+                this.workspace = {};
+                this._initialising = true;
+            }
+        },
+        {
+            onEvent: "view.ready", execute: function(ui) {
+                this._initialising = false;
+                if (this.initialise) {
+                    this.initialise(ui);
+                }
+            }
+        }
+    ];
+
+    this.findChanges = function(id, current, updateWS, format) {
+        let oldValue = this.workspace[id];
+
+        let diff = null;
+
+        if (Array.isArray(current)) {
+            diff = { removed: [], added: [], hasChanged: false };
+            if (oldValue !== undefined)
+                diff = this.findDifferences(oldValue, current, format);
+            diff.hasChanged = diff.removed.length > 0 || diff.added.length;
+        }
+        else {
+            let hasChanged = oldValue === undefined;
+            if (current === undefined)
+                hasChanged = true;
+            else if (oldValue !== undefined) {
+                if (format === undefined)
+                    hasChanged = oldValue !== current;
+                else
+                    hasChanged = format.isEqual(oldValue, current) === false;
+            }
+
+            diff = { oldValue: oldValue, newValue: current, hasChanged: hasChanged };
+        }
+
+        if (updateWS)
+            this.workspace[id] = current;
+
+        return diff;
+    };
+
+    this.isReady = function() {
+        return this._initialising === false && this._loaded;
+    };
+
+    this.initialiseValue = function(option, defaultValue) {
+        var value = option.value();
+        if (value === null) {
+            option.setValue(defaultValue);
+            return true;
+        }
+
+        return false;
+    };
 
     this.clone = function(obj) {
         return JSON.parse(JSON.stringify(obj));
+    };
+
+    this.cloneArray = function(array, ifNull) {
+        let clone = this.clone(array);
+        if (ifNull !== undefined && clone === null)
+            clone = ifNull;
+
+        return clone;
     };
 
     this.sortArraysByLength = function(arrays) {
@@ -73,8 +152,11 @@ function Actions() {
         return obj;
     };
 
-    this.getCombinations = function(values) {
+    this.getCombinations = function(values, baseList) {
         var list = [];
+        if (baseList !== undefined && Array.isArray(baseList))
+            list = baseList;
+
         for (let i = 0; i < values.length; i++) {
             var listLength = list.length;
             var value = values[i];
@@ -112,13 +194,17 @@ function Actions() {
     };
 }
 
-SuperClass.create(Actions);
+SuperClass.create(View);
 
-Actions.extend = function(params) {
+View.extend = function(params) {
     return function() {
-        Actions.extendTo(this);
+        View.extendTo(this);
         _.extend(this, params);
+        if (this.events !== undefined)
+            this.events = this._baseEvents.concat(this.events);
+        else
+            this.events = this._baseEvents;
     };
 };
 
-module.exports = Actions;
+module.exports = View;
