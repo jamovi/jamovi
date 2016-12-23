@@ -32,7 +32,7 @@ var LayoutCell = function(parent) {
     this._preferredHeight = -1;
     this._contentWidth = -1;
     this._contentHeight = -1;
-    this._initialised = false;
+    this._initialized = false;
     this._width = -1;
     this._height = -1;
     this._left = -1;
@@ -550,7 +550,7 @@ var LayoutCell = function(parent) {
             data['z-index'] = this._visible ? 1 : 0;
         }
 
-        if (this._initialised === false)
+        if (this._initialized === false)
         {
             window.setTimeout(function() {
                 self.$el.removeClass("not-rendered");
@@ -572,7 +572,7 @@ var LayoutCell = function(parent) {
         if (this._heightAdjusted)
             this.updateContentVerticalAlignment(this._height);
 
-        this._initialised = true;
+        this._initialized = true;
 
         this._topAdjusted = false;
         this._leftAdjusted = false;

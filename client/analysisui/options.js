@@ -103,7 +103,7 @@ var Options = function(def) {
     this._beginEdit = 0;
     this._serverQueuedEvents = new keyedQueue();
 
-    this.initialise = function(def) {
+    this.initialize = function(def) {
         for (var i = 0;i < def.length; i++) {
             var item = def[i];
 
@@ -240,7 +240,7 @@ var Options = function(def) {
         }
     };
 
-    this.initialise(def);
+    this.initialize(def);
 };
 
 Options.getDefaultEventParams = function() {

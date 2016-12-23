@@ -19,6 +19,7 @@ const OptionTypes = {
 OptionTypes.Option = function(template, value, isLeaf) {
     this._template = template;
     this._isLeaf = isLeaf;
+    this._initialized = false;
 
     this.getValue = function() {
         if (this._isLeaf)
@@ -38,6 +39,9 @@ OptionTypes.Option = function(template, value, isLeaf) {
             if (this._createChildren)
                 this._createChildren(value);
         }
+
+        if (value !== null)
+            this._initialized = true;
     };
 
     this.getUsedColumns = function() {
@@ -138,6 +142,9 @@ OptionTypes.Array = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, false);
 
     this._override('_onGetValue', (baseFunction) => {
+        if (this._initialized === false)
+            return null;
+
         var r = [];
         for (let i = 0; i < this.children.length; i++)
             r.push(this.children[i].getValue());
@@ -158,6 +165,9 @@ OptionTypes.Group = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, false);
 
     this._override('_onGetValue', (baseFunction) => {
+        if (this._initialized === false)
+            return null;
+
         var r = { };
         for (let i = 0; i < this._template.elements.length; i++) {
             let element = this._template.elements[i];

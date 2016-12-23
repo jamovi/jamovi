@@ -5,12 +5,28 @@ var backbone = require('backbone');
 var LayoutAction = require('./layoutaction');
 var SuperClass = require('../common/superclass');
 
-var LayoutActionManager = function(actions) {
+var LayoutActionManager = function(view) {
 
-    this._actionsSource = actions;
+    this._view = view;
     this._actions = [];
     this._resources = { };
     this._executingActions = 0;
+    this._initializingData = 0;
+
+    this.beginInitializingData = function() {
+        this._initializingData += 1;
+    };
+
+    this.endInitializingData = function() {
+        if (this._initializingData === 0)
+            return;
+
+        this._initializingData -= 1;
+    };
+
+    this.initializingData = function() {
+        return this._initializingData !== 0;
+    };
 
     this._executeStarted = function(action) {
         this._executingActions += 1;
@@ -46,10 +62,10 @@ var LayoutActionManager = function(actions) {
         return obj;
     };
 
-    this.initialiseAll = function() {
+    this.initializeAll = function() {
         for (var i = 0; i < this._actions.length; i++) {
             var action = this._actions[i];
-            action.initialise();
+            action.initialize();
         }
     };
 
@@ -62,9 +78,9 @@ var LayoutActionManager = function(actions) {
     };
 
 
-    if (Array.isArray(this._actionsSource.events)) {
-        for (var i = 0; i < this._actionsSource.events.length; i++) {
-            var action = this._actionsSource.events[i];
+    if (Array.isArray(this._view.events)) {
+        for (var i = 0; i < this._view.events.length; i++) {
+            var action = this._view.events[i];
             if (_.isFunction(action.execute) === false)
                 throw "An action must contain an execute function.";
 
