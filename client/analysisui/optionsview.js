@@ -54,11 +54,7 @@ var OptionsView = function(uiModel) {
             var self = this;
             window.setTimeout(function() {
                 self._loaded = true;
-                self.model.options.beginEdit();
-                self.beginDataInitialisation();
                 self.layoutActionManager.initialiseAll();
-                self.endDataInitialisation();
-                self.model.options.endEdit();
                 self.trigger('loaded');
             }, 0);
         }
@@ -214,6 +210,7 @@ var OptionsView = function(uiModel) {
 
         this._initialisingData += 1;
         this.trigger("data-initialising");
+        this.model.actionManager.beginInitialisingData();
 
         return true;
     };
@@ -223,7 +220,8 @@ var OptionsView = function(uiModel) {
             return false;
 
         this._initialisingData -= 1;
-        this.trigger("data-initialised");
+        this.model.actionManager.endInitialisingData();
+        this.trigger("ready");
 
         return true;
     };
