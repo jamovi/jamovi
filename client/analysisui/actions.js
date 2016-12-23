@@ -8,7 +8,7 @@ var SuperClass = require('../common/superclass');
 function View() {
 
     this._loaded = true;
-    this._initialising = false;
+    this._initializing = false;
     this.workspace = {};
 
     this._baseEvents = [
@@ -20,12 +20,12 @@ function View() {
         {
             onEvent: "view.data-initializing", execute: function(ui) {
                 this.workspace = {};
-                this._initialising = true;
+                this._initializing = true;
             }
         },
         {
             onEvent: "view.ready", execute: function(ui) {
-                this._initialising = false;
+                this._initializing = false;
                 if (this.initialize) {
                     this.initialize(ui);
                 }
@@ -65,7 +65,7 @@ function View() {
     };
 
     this.isReady = function() {
-        return this._initialising === false && this._loaded;
+        return this._initializing === false && this._loaded;
     };
 
     this.initializeValue = function(option, defaultValue) {
