@@ -49,7 +49,7 @@ var OptionListControl = function(params) {
         }
     };
 
-    this.initialise = function() {
+    this.initialize = function() {
 
         var columns = this.getPropertyValue("columns");
         this._columnInfo = { _list:[] };
@@ -182,7 +182,7 @@ var OptionListControl = function(params) {
     this.validateOption = function() {
         var list = this.option.getValue();
         if (_.isUndefined(list) || list === null)
-            this.state = 'Uninitialised';
+            this.state = 'Uninitialized';
         else
             this.state = 'OK';
     };
@@ -491,7 +491,7 @@ var OptionListControl = function(params) {
         return JSON.parse(JSON.stringify(object));
     };
 
-    this.initialise();
+    this.initialize();
 };
 
 SuperClass.create(OptionListControl);

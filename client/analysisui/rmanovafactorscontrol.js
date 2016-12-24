@@ -267,7 +267,7 @@ var RMAnovaFactorsControl = function(params) {
     };
 
     this.onOptionSet = function(option) {
-        if (this.option.isValueInitialised()) {
+        if (this.option.isValueInitialized()) {
             this.data = this.clone(this.option.getValue());
             this.updateData();
         }
@@ -314,7 +314,7 @@ var RMAnovaFactorsControl = function(params) {
 
     this.updateData = function() {
 
-        if ((this.data === null || this.data.length === 0) && this.option.isValueInitialised())
+        if ((this.data === null || this.data.length === 0) && this.option.isValueInitialized())
             this.option.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
         else {
             if (this.data === null)

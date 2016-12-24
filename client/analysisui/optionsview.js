@@ -18,7 +18,7 @@ var OptionsView = function(uiModel) {
     this.resources = this.model.resources;
     this._contextDependentCtrls = [];
     this._loaded = false;
-    this._initialisingData = 0;
+    this._initializingData = 0;
 
     this.render = function() {
         var options = this.model.options;
@@ -54,7 +54,7 @@ var OptionsView = function(uiModel) {
             var self = this;
             window.setTimeout(function() {
                 self._loaded = true;
-                self.layoutActionManager.initialiseAll();
+                self.layoutActionManager.initializeAll();
                 self.trigger('loaded');
             }, 0);
         }
@@ -109,8 +109,8 @@ var OptionsView = function(uiModel) {
                     options.setOptionValue(option, value, key, eventParams);
                 },
 
-                isValueInitialised: function() {
-                    return option.isValueInitialised();
+                isValueInitialized: function() {
+                    return option.isValueInitialized();
                 },
 
                 getLength: function(key) {
@@ -204,23 +204,23 @@ var OptionsView = function(uiModel) {
         return ctrl;
     };
 
-    this.beginDataInitialisation = function() {
+    this.beginDataInitialization = function() {
         if (this._loaded === false)
             return false;
 
-        this._initialisingData += 1;
-        this.trigger("data-initialising");
-        this.model.actionManager.beginInitialisingData();
+        this._initializingData += 1;
+        this.trigger("data-initializing");
+        this.model.actionManager.beginInitializingData();
 
         return true;
     };
 
-    this.endDataInitialisation = function() {
-        if (this._loaded === false || this._initialisingData === 0)
+    this.endDataInitialization = function() {
+        if (this._loaded === false || this._initializingData === 0)
             return false;
 
-        this._initialisingData -= 1;
-        this.model.actionManager.endInitialisingData();
+        this._initializingData -= 1;
+        this.model.actionManager.endInitializingData();
         this.trigger("ready");
 
         return true;

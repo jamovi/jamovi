@@ -18,7 +18,7 @@ var LayoutAction = function(manager, params) {
 
     var self = this;
     this.execute = function(param1, param2, param3, param4, param5, param6, param7) {
-        if (self._manager.initialisingData())
+        if (self._manager.initializingData())
             return;
 
         self._manager._executeStarted(self);
@@ -75,7 +75,7 @@ var LayoutAction = function(manager, params) {
         }
     };
 
-    this.initialise = function() {
+    this.initialize = function() {
         for (var i = 0; i < this._listeners.length; i++) {
             var eventObj = this._listeners[i];
             if (eventObj.connected === false) {

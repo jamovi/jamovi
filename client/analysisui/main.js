@@ -155,13 +155,13 @@ function setOptionsValues(data) {
 
     var model = analysis.model;
     model.options.beginEdit();
-    if (analysis.View.beginDataInitialisation()) {
+    if (analysis.View.beginDataInitialization()) {
         var params = Options.getDefaultEventParams("changed");
         params.silent = true;
         _.each(data, function(value, key, list) {
             model.options.setOptionValue(key, value, params);
         });
-        analysis.View.endDataInitialisation();
+        analysis.View.endDataInitialization();
     }
     model.options.endEdit();
 }

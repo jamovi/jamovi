@@ -11,21 +11,21 @@ var LayoutActionManager = function(view) {
     this._actions = [];
     this._resources = { };
     this._executingActions = 0;
-    this._initialisingData = 0;
+    this._initializingData = 0;
 
-    this.beginInitialisingData = function() {
-        this._initialisingData += 1;
+    this.beginInitializingData = function() {
+        this._initializingData += 1;
     };
 
-    this.endInitialisingData = function() {
-        if (this._initialisingData === 0)
+    this.endInitializingData = function() {
+        if (this._initializingData === 0)
             return;
 
-        this._initialisingData -= 1;
+        this._initializingData -= 1;
     };
 
-    this.initialisingData = function() {
-        return this._initialisingData !== 0;
+    this.initializingData = function() {
+        return this._initializingData !== 0;
     };
 
     this._executeStarted = function(action) {
@@ -62,10 +62,10 @@ var LayoutActionManager = function(view) {
         return obj;
     };
 
-    this.initialiseAll = function() {
+    this.initializeAll = function() {
         for (var i = 0; i < this._actions.length; i++) {
             var action = this._actions[i];
-            action.initialise();
+            action.initialize();
         }
     };
 
