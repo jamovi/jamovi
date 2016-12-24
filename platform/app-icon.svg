@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg id="svg4159" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="48" width="48" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 48 48.000001">
+ <metadata id="metadata4164">
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g id="layer1" transform="translate(6.481 -7.3175)">
+  <g id="g4207" transform="matrix(.74141 0 0 .74141 -1.4962 14.125)">
+   <path id="path4134" stroke-linejoin="round" d="m56.826 23.811a31.185 31.185 0 0 1 -31.781 30.557 31.185 31.185 0 0 1 -30.577 -31.761 31.185 31.185 0 0 1 31.742 -30.598 31.185 31.185 0 0 1 30.618 31.723" stroke="#fff" stroke-linecap="round" stroke-width=".29256" fill="#3e6da9"/>
+   <path id="path4694-7" d="m10.191 25.158v-18.121h4.7774 4.7774v12.542 12.542l0.74133-0.2299c2.9234-0.90666 7.3826-3.9732 10.195-7.0111 4.246-4.5862 6.4457-9.4597 7.3474-16.278l0.20696-1.565h4.7258 4.7258l-0.14479 1.4003c-0.84009 8.1232-2.7701 13.432-7.0819 19.48-4.2019 5.8937-10.33 10.501-17.613 13.242-2.7784 1.0458-8.1737 2.1195-10.65 2.1195h-2.0075z" stroke="#27456a" stroke-width=".48760" fill="#fff"/>
+  </g>
+ </g>
+</svg>

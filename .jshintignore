@@ -1,3 +1,4 @@
+client/node_modules
 client/lib
 client/*.js
 analyses/*

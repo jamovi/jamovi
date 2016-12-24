@@ -1,0 +1,9 @@
+{
+  "name": "jamovi",
+  "productName": "jamovi",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jamovi/jamovi.git"
+  }
+}

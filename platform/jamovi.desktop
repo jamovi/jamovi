@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=jamovi
+Comment=Statistical spreadsheet
+Keywords=statistics;data;spreadsheet;analysis
+Exec=/usr/bin/jamovi %f
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=/usr/lib/jamovi/resources/app-icon.svg
+MimeType=text/csv;application/vnd.jamovi.dataset

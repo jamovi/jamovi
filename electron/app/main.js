@@ -26,18 +26,26 @@ const ini = require('./ini');
 let confPath = path.join(path.dirname(process.execPath), 'env.conf');
 let content = fs.readFileSync(confPath, 'utf8');
 let conf = ini.parse(content);
-let rootPath = path.resolve(path.dirname(process.execPath), conf.JAMOVI.CLIENT_PATH) + '/';
+let rootPath = path.resolve(path.dirname(process.execPath), conf.ENV.JAMOVI_CLIENT_PATH) + '/';
 
-let serverCMD = conf.JAMOVI.SERVER_CMD.split(' ')
+let serverCMD = conf.ENV.JAMOVI_SERVER_CMD.split(' ')
 let cmd = path.resolve(path.dirname(process.execPath), serverCMD[0]);
 let args = serverCMD.slice(1);
 
 let env = { };
-if (process.env.HOME)  // fontconfig in R on macOS likes HOME to be defined
-    env.HOME = process.env.HOME;
+if (process.platform === 'linux') {
+    // maintain environmental variables from linux
+    Object.assign(env, process.env);
+}
+else if (process.platform === 'darwin') {
+    // fontconfig in R on macOS likes HOME to be defined
+    if (process.env.HOME)
+        env.HOME = process.env.HOME;
+}
 Object.assign(env, conf.ENV);
 
 for (let name in env) {
+    // expand paths
     if (name.endsWith('PATH') || name.endsWith('HOME')) {
         let value = env[name];
         let paths = value.split(path.delimiter);

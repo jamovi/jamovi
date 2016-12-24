@@ -4,26 +4,20 @@
 *.swp
 .DS_Store
 
-analyses/
 node_modules/
 npm-debug.log
 
-core/core/core.cpp
+server/build/
+server/jamovi/core.cpp
+electron/default_app.asar
 
 **/__pycache__/
 
-server/resources/client/*.js
-server/resources/client/*.css
-
-server/resources/modules/*
-!server/resources/modules/base
-server/resources/modules/base/*
-!server/resources/modules/base/R
-server/resources/modules/base/R/*
-!server/resources/modules/base/R/.empty
+client/*
+!client/package.json
 
 # protocol buffers
 *.pb.cc
 *.pb.h
 *_pb2.py
-
+*_pb.js

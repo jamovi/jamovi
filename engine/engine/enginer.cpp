@@ -13,7 +13,6 @@
 #include <boost/nowide/cstdlib.hpp>
 #include <boost/nowide/fstream.hpp>
 
-#include "settings.h"
 #include "dirs.h"
 #include "memorymap.h"
 #include "dataset.h"
@@ -134,10 +133,10 @@ void EngineR::setLibPaths(const std::string &moduleName)
     vector<string> sysR;
     vector<string> moduleR;
 
-    path = Settings::get("ENV.R_LIBS", "");
+    path = nowide::getenv("R_LIBS");
     algorithm::split(sysR, path, algorithm::is_any_of(";:"), token_compress_on);
 
-    path = Settings::get("JAMOVI.MODULES_PATH", "");
+    path = nowide::getenv("JAMOVI_MODULES_PATH");
     algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
 
     string sep = "";
@@ -335,20 +334,6 @@ void EngineR::createDirectories(const string &path)
 
 void EngineR::initR()
 {
-    string path;
-
-    path = Settings::get("ENV.R_HOME", "");
-    if (path != "")
-        nowide::setenv("R_HOME", makeAbsolute(path).c_str(), 1);
-
-    path = Settings::get("ENV.R_LIBS", "something-which-doesnt-exist");
-    if (path != "")
-        nowide::setenv("R_LIBS", makeAbsolute(path).c_str(), 1);
-
-    path = Settings::get("ENV.FONTCONFIG_PATH", "");
-    if (path != "")
-        nowide::setenv("FONTCONFIG_PATH", makeAbsolute(path).c_str(), 1);
-
     nowide::setenv("R_ENVIRON", "something-which-doesnt-exist", 1);
     nowide::setenv("R_PROFILE", "something-which-doesnt-exist", 1);
     nowide::setenv("R_PROFILE_USER", "something-which-doesnt-exist", 1);

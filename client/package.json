@@ -1,0 +1,38 @@
+{
+  "name": "jamovi-client",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jamovi/jamovi.git"
+  },
+  "scripts": {
+    "prepublish": "echo BUILDING CLIENT && npm run build:main && npm run build:analysisui && npm run build:resultsview && echo DONE && npm run beep",
+    "build:main":        "browserify --debug main/main.js        --outfile main.js        && lessc main/main.less        main.css",
+    "build:analysisui":  "browserify --debug analysisui/main.js  --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
+    "build:resultsview": "browserify --debug resultsview/main.js --outfile resultsview.js && lessc resultsview/main.less resultsview.css",
+    "watch": "npm run prepare && onchange main/* analysisui/* resultsview/* common/* -- npm run prepare",
+    "beep": "node -e \"require('beepbeep')()\""
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "backbone": "^1.3.3",
+    "beepbeep": "^1.2.0",
+    "browserify": "^13.1.1",
+    "chai": "^3.5.0",
+    "clipboard-js": "^0.3.1",
+    "jquery": "^3.1.1",
+    "js-yaml": "^3.7.0",
+    "jshint": "^2.9.4",
+    "keyboardjs": "^2.3.3",
+    "less": "^2.7.1",
+    "mocha": "^3.2.0",
+    "npm": "^4.0.5",
+    "onchange": "^3.2.0",
+    "preprocessify": "^1.0.1",
+    "protobufjs": "5.0.1",
+    "q": "^1.4.1",
+    "uglifyify": "^3.0.4",
+    "underscore": "^1.8.3"
+  }
+}

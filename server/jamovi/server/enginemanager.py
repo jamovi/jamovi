@@ -60,9 +60,9 @@ class Engine:
             si = subprocess.STARTUPINFO()
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             stdout = None
-            stderr = None  # stdouts seem to break things
+            stderr = None  # stdouts seem to break things on windows
 
-        # be a bit wary of changes to the Popen call
+        # be a bit wary to make changes to the Popen call
         # seemingly inconsequential changes can break things on windows
 
         address = self._conn_root + '-' + str(self._index)
