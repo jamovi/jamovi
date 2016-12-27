@@ -6,5 +6,5 @@ Exec=/usr/bin/jamovi %f
 Terminal=false
 Type=Application
 StartupNotify=true
-Icon=/usr/lib/jamovi/resources/app-icon.svg
+Icon=/usr/lib/jamovi/Resources/app-icon.svg
 MimeType=text/csv;application/vnd.jamovi.dataset
