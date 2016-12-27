@@ -129,9 +129,20 @@ var GridTargetList = function(params) {
         return this._listFilter.testValue(this.getPropertyValue("valueFilter"), item.value, rowIndex, columnName);
     };
 
+    this.checkDropBehaviour = function() {
+        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+
+        let hasMaxItemCount = this.targetGrid.maxItemCount >= 0;
+        if (hasMaxItemCount && this.option.getLength() >= this.targetGrid.maxItemCount)
+            dropBehaviour = "overwrite";
+
+        return dropBehaviour;
+    };
+
     // Catching methods
     this.catchDroppedItems = function(source, items, xpos, ypos) {
-        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+        let dropBehaviour = this.checkDropBehaviour();
+
         var cell = this.targetGrid.cellFromPosition(xpos, ypos);
         var pos = null;
         var destFormat = null;
@@ -189,7 +200,7 @@ var GridTargetList = function(params) {
     };
 
     this.onDraggingOver = function(xpos, ypos) {
-        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+        let dropBehaviour = this.checkDropBehaviour();
         if (_$hoverCell !== null) {
             _$hoverCell.removeClass("item-hovering");
             _$hoverCell.removeClass("item-overwrite-on-drop");
