@@ -197,6 +197,11 @@ $(document).ready(() => {
         if ( ! instance.get('hasDataSet'))
             return instance.open(toOpen);
 
+    }).catch(() => { // if the initial open fails
+
+        if ( ! instance.get('hasDataSet'))
+            return instance.open('');
+
     }).then(() => {
 
         let settings = new coms.Messages.SettingsRequest();

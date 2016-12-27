@@ -138,6 +138,10 @@ app.on('window-all-closed', () => app.quit());
 app.on('will-finish-launching', () => {
     // macOS file open events
     app.on('open-file', (event, path) => {
+        // https://github.com/electron/electron/issues/3657
+        if (path.startsWith('-psn'))
+            return;
+
         event.preventDefault();
         createWindow({ open: path });
     });
