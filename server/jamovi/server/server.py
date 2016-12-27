@@ -146,10 +146,22 @@ class Server:
         self._ports_opened_listeners.append(listener)
 
     def _read_stdin(self):
+        ioloop = tornado.ioloop.IOLoop.instance()
         for line in sys.stdin:
-            sys.stdout.write(line)
-            sys.stdout.flush()
-        self.stop()
+            line = line.strip()
+            ioloop.add_callback(self._stdin, line)
+        ioloop.add_callback(self.stop)
+
+    def _stdin(self, line):
+        if line.startswith('install: '):
+            path = line[9:]
+            Modules.instance().install(path)
+            for instanceId, instance in Instance.instances.items():
+                if instance.is_active:
+                    instance._on_settings()
+                    instance.rerun()
+        else:
+            print(line)
 
     def stop(self):
         tornado.ioloop.IOLoop.instance().stop()

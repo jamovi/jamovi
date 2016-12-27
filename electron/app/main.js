@@ -4,13 +4,42 @@
 const electron = require('electron');
 const app = electron.app;
 const path = require('path');
+const fs = require('fs');
+
+const marshallArgs = function(argv, wd, first) {
+
+    let cmd = { first: first };
+
+    if (argv.length < 2) {
+        cmd.open = '';
+    }
+    else if (argv[1] === '--install') {
+        if (argv.length > 2) {
+            let p = path.resolve(wd, argv[2]);
+            if (fs.existsSync(p))
+                cmd.install = p;
+            else
+                cmd.error = 'File not found';
+        }
+        else {
+            cmd.error = 'You must specify a .jmo file to install';
+        }
+    }
+    else {
+        cmd.open = path.resolve(wd, argv[1]);
+    }
+
+    return cmd;
+}
 
 let alreadyRunning = app.makeSingleInstance((argv, wd) => {
-    let toOpen = '';
-    if (argv.length > 1)
-        toOpen = path.resolve(wd, argv[1])
-    createWindow({ open: toOpen });
+    let cmd = marshallArgs(argv, wd);
+    handleCommand(cmd);
 });
+
+let argvCmd = marshallArgs(process.argv, '.', true)
+if (argvCmd.error)
+    console.log(argvCmd.error);
 
 if (alreadyRunning)
     app.quit()
@@ -18,7 +47,6 @@ if (alreadyRunning)
 const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
 const dialog = electron.dialog;
-const fs = require('fs');
 const child_process = require('child_process');
 
 const ini = require('./ini');
@@ -95,10 +123,6 @@ let spawn = new Promise((resolve, reject) => {
     app.quit();
 });
 
-let toOpen = '';
-if (process.argv.length >= 2)
-    toOpen = process.argv[1];
-
 let windows = [ ];
 
 // windows path adjustments
@@ -124,7 +148,7 @@ let ready = new Promise(resolve => {
 });
 
 Promise.all([ready, spawn]).then(() => {
-    createWindow({ open: toOpen });
+    handleCommand(argvCmd);
 });
 
 // handle requests sent from the browser instances
@@ -162,6 +186,21 @@ ipc.on('request', (event, arg) => {
             break;
     }
 });
+
+const handleCommand = function(cmd) {
+    if ('error' in cmd) {
+        if (cmd.first)
+            app.quit();
+    }
+    else if ('open' in cmd) {
+        createWindow(cmd);
+    }
+    else if ('install' in cmd) {
+        server.stdin.write('install: ' + cmd.install + '\n');
+        if (cmd.first)
+            app.quit();
+    }
+};
 
 const createWindow = function(open) {
 

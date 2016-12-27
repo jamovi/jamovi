@@ -24,6 +24,9 @@ def start():
         if sys.argv[i] == '--debug':
             debug = True
 
+    sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0')
+    sys.stdout.flush()
+
     server = Server(port, debug=debug)
 
     signal.signal(signal.SIGTERM, server.stop)

@@ -312,11 +312,14 @@ class Instance:
 
         self._coms.send(response, self._instance_id)
 
+    def rerun(self):
+        self._em.restart_engines()
+
     def _on_analysis(self, request):
 
         if request.restartEngines:
 
-            self._em.restart_engines()
+            self.rerun()
 
         elif request.HasField('options'):
 

@@ -129,7 +129,6 @@ class Engine:
         self._socket.close()
         if self._restarting:
             log.info('Restarting engine')
-            self._restarting = False
             self._stopping = False
             self.start()
         else:
