@@ -25,6 +25,10 @@ const marshallArgs = function(argv, wd, first) {
             cmd.error = 'You must specify a .jmo file to install';
         }
     }
+    else if (argv[1].startsWith('-psn')) {
+        // https://github.com/electron/electron/issues/3657
+        cmd.open = '';
+    }
     else {
         cmd.open = path.resolve(wd, argv[1]);
     }
@@ -138,12 +142,12 @@ app.on('window-all-closed', () => app.quit());
 app.on('will-finish-launching', () => {
     // macOS file open events
     app.on('open-file', (event, path) => {
-        // https://github.com/electron/electron/issues/3657
-        if (path.startsWith('-psn'))
-            return;
-
+        let cmd = { open: path };
+        if (app.isReady())
+            createWindow(cmd);
+        else
+            argvCmd = cmd;
         event.preventDefault();
-        createWindow({ open: path });
     });
 });
 
