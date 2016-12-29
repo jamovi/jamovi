@@ -17,10 +17,8 @@ var LayoutCollapseView = function(params) {
 
     this.registerSimpleProperty("collapsed", false);
     this.registerSimpleProperty("label", null);
-    this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
 
     this._collapsed = this.getPropertyValue('collapsed');
-    this.level = this.getPropertyValue('level');
 
     this._body = null;
 

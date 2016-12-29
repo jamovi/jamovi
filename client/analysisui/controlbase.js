@@ -10,7 +10,6 @@ var ControlBase = function(params) {
 
     this.registerSimpleProperty("stage", 0); //0 - release, 1 - development, 2 - proposed
     this.registerSimpleProperty("cell", null);
-    this.registerSimpleProperty("level", null);
     this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
 
 };

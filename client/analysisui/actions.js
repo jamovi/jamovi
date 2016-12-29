@@ -163,11 +163,16 @@ function View() {
 
             for (let j = 0; j < listLength; j++) {
                 var newValue = this.clone(list[j]);
-                newValue.push(value);
+                if (Array.isArray(value))
+                    newValue = newValue.concat(value);
+                else
+                    newValue.push(value);
                 list.push(newValue);
             }
-
-            list.push([value]);
+            if (Array.isArray(value))
+                list.push(this.clone(value));
+            else
+                list.push([value]);
         }
 
         return list;
