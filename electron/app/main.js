@@ -13,6 +13,10 @@ const marshallArgs = function(argv, wd, first) {
     if (argv.length < 2) {
         cmd.open = '';
     }
+    else if (argv[1] === '--version') {
+        console.log('0.0.0.0');
+        cmd.exit = true;
+    }
     else if (argv[1] === '--install') {
         if (argv.length > 2) {
             let p = path.resolve(wd, argv[2]);
@@ -36,14 +40,16 @@ const marshallArgs = function(argv, wd, first) {
     return cmd;
 }
 
+let argvCmd = marshallArgs(process.argv, '.', true)
+if (argvCmd.error)
+    console.log(argvCmd.error);
+if (argvCmd.exit)
+    app.quit();
+
 let alreadyRunning = app.makeSingleInstance((argv, wd) => {
     let cmd = marshallArgs(argv, wd);
     handleCommand(cmd);
 });
-
-let argvCmd = marshallArgs(process.argv, '.', true)
-if (argvCmd.error)
-    console.log(argvCmd.error);
 
 if (alreadyRunning)
     app.quit()
