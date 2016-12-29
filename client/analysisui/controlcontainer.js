@@ -39,7 +39,7 @@ var ControlContainer = function(params) {
         return { height: 1, width: 1, cell: cell };
     };
 
-    this.renderContainer = function(context, level) {
+    this.renderContainer = function(context) {
         if (this.onContainerRendering)
             this.onContainerRendering(context);
 
@@ -48,12 +48,6 @@ var ControlContainer = function(params) {
         var _nextCell = { row: 0, column: 0 };
         for (var i = 0; i < controls.length; i++) {
             var ctrlDef = controls[i];
-
-            var itemLevel = ctrlDef.level;
-            if (_.isUndefined(itemLevel)) {
-                ctrlDef.level = level;
-                itemLevel = level;
-            }
 
             var cell = ctrlDef.cell;
             if (_.isUndefined(cell) === false) {
@@ -70,7 +64,7 @@ var ControlContainer = function(params) {
             var bodyContainer = null;
             if (ctrl.renderContainer) {
                 var labeledGroup = _.isUndefined(ctrlDef.label) === false;
-                ctrl.renderContainer(context, labeledGroup ? itemLevel + 1 : itemLevel);
+                ctrl.renderContainer(context);
             }
             else if (_.isUndefined(ctrlDef.controls) === false) {
                 ctrlDef.style = _.isUndefined(ctrlDef.style) ? "list" : ctrlDef.style;
@@ -78,7 +72,7 @@ var ControlContainer = function(params) {
                 childStyle = childStyle[childStyle.length - 1];
 
                 bodyContainer = new ControlContainer( { name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: childStyle });
-                bodyContainer.renderContainer(context, itemLevel);
+                bodyContainer.renderContainer(context);
             }
 
             var cr2 = ctrl.renderToGrid(this, _nextCell.row, _nextCell.column);

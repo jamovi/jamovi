@@ -33,7 +33,7 @@ var OptionsView = function(uiModel) {
             layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
             layoutGrid._animateCells = true;
 
-            layoutGrid.renderContainer(this, 1);
+            layoutGrid.renderContainer(this);
 
             layoutGrid.render();
 
