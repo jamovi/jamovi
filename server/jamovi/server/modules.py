@@ -141,6 +141,8 @@ class Modules:
                 module.authors.extend(defn['authors'])
 
                 for analysis_defn in defn['analyses']:
+                    if 'hidden' in analysis_defn and analysis_defn['hidden'] is True:
+                        continue
                     analysis = AnalysisMeta()
                     analysis.name = analysis_defn['name']
                     analysis.ns = analysis_defn['ns']
