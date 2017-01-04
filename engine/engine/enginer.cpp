@@ -345,6 +345,9 @@ void EngineR::initR()
 
     setLibPaths("jmv");
 
+    // change the interaction component separator to an asterisk
+    _rInside->parseEvalQNT("sep <- ' \u273B '; base::Encoding(sep) <- 'UTF-8'; options(jmvTermSep=sep); rm(list='sep')\n");
+
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
 }
