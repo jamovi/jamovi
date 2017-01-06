@@ -12,6 +12,7 @@ var OptionsView = require('./optionsview');
 var ui = require('./layoutdef');
 var Format = require('./format.js');
 var FormatDef = require('./formatdef');
+var DefaultControls = require('./defaultcontrols');
 var View = require('./actions');
 var ListItemControl = require('./listitemcontrol');
 var ControlManager = require('./controlmanager');

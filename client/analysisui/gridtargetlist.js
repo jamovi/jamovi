@@ -17,8 +17,8 @@ var GridTargetList = function(params) {
     _.extend(this, Backbone.Events);
 
     this.registerSimpleProperty("maxItemCount", -1);
-    this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "unique_per_row", "unique_per_column"], "none"));
-    this.registerSimpleProperty("itemDropBehaviour", "insert", new EnumPropertyFilter(["overwrite", "insert", "empty_space"], "insert"));
+    this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "uniquePerRow", "uniquePerColumn"], "none"));
+    this.registerSimpleProperty("itemDropBehaviour", "insert", new EnumPropertyFilter(["overwrite", "insert", "emptyspace"], "insert"));
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -147,7 +147,7 @@ var GridTargetList = function(params) {
         var pos = null;
         var destFormat = null;
         var onCell = false;
-        if (dropBehaviour !== "empty_space" && cell !== null) {
+        if (dropBehaviour !== "emptyspace" && cell !== null) {
             var cellInfo = this.targetGrid.getCellInfo(cell);
             pos = cellInfo.valueIndex;
             destFormat = cellInfo.format;
@@ -186,7 +186,7 @@ var GridTargetList = function(params) {
             _$hoverCell.removeClass("item-hovering");
             _$hoverCell.removeClass("item-overwrite-on-drop");
             _$hoverCell.removeClass("item-insert-on-drop");
-            _$hoverCell.removeClass("item-empty_space-on-drop");
+            _$hoverCell.removeClass("item-emptyspace-on-drop");
             _$hoverCell = null;
         }
     };
@@ -205,7 +205,7 @@ var GridTargetList = function(params) {
             _$hoverCell.removeClass("item-hovering");
             _$hoverCell.removeClass("item-overwrite-on-drop");
             _$hoverCell.removeClass("item-insert-on-drop");
-            _$hoverCell.removeClass("item-empty_space-on-drop");
+            _$hoverCell.removeClass("item-emptyspace-on-drop");
             _$hoverCell = null;
         }
 
