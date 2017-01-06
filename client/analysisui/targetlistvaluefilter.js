@@ -66,7 +66,7 @@ var TargetListValueFilter = function() {
         return true;
     };
 
-    this.testValue_unique_per_row = function(value, rowIndex, columnName) {
+    this.testValue_uniquePerRow = function(value, rowIndex, columnName) {
         var row = this._data[rowIndex];
         if (_.isUndefined(row))
             return true;
@@ -80,7 +80,7 @@ var TargetListValueFilter = function() {
         return true;
     };
 
-    this.testValue_unique_per_column = function(value, rowIndex, columnName) {
+    this.testValue_uniquePerColumn = function(value, rowIndex, columnName) {
         for (var r = 0; r < this._data.length; r++) {
             var row = this._data[r];
             var cell = row[columnName];

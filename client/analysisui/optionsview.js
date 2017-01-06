@@ -5,6 +5,7 @@ var $ = require('jquery');
 
 var OptionControlBase = require('./optioncontrolbase');
 var ControlContainer = require('./controlcontainer');
+var DefaultControls = require('./defaultcontrols');
 var Backbone = require('backbone');
 
 
@@ -144,14 +145,14 @@ var OptionsView = function(uiModel) {
     };
 
     this.createSubControl = function(uiDef) {
-        if (_.isUndefined(uiDef.type)) {
-            if (_.isUndefined(uiDef.controls) === false)
-                uiDef.type = "collection";
+        if (uiDef.type === undefined) {
+            if (uiDef.controls !== undefined)
+                uiDef.type = DefaultControls.LayoutBox;
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }
 
-        var ctrl = this.model.controls.create(uiDef.type, uiDef);
+        var ctrl = new uiDef.type(uiDef);
 
         if (ctrl.updateContext)
             this._contextDependentCtrls.push(ctrl);
@@ -163,14 +164,14 @@ var OptionsView = function(uiModel) {
     };
 
     this.createControl = function(uiDef) {
-        if (_.isUndefined(uiDef.type)) {
-            if (_.isUndefined(uiDef.controls) === false)
-                uiDef.type = "collection";
+        if (uiDef.type === undefined) {
+            if (uiDef.controls !== undefined)
+                uiDef.type = DefaultControls.LayoutBox;
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }
 
-        var ctrl = this.model.controls.create(uiDef.type, uiDef);
+        var ctrl = new uiDef.type(uiDef);
 
         if (ctrl.getPropertyValue("stage") > this.model.currentStage)
             return null;

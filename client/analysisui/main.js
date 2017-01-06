@@ -12,10 +12,10 @@ var OptionsView = require('./optionsview');
 var ui = require('./layoutdef');
 var Format = require('./format.js');
 var FormatDef = require('./formatdef');
+var DefaultControls = require('./defaultcontrols');
 var View = require('./actions');
 var ListItemControl = require('./listitemcontrol');
 var ControlManager = require('./controlmanager');
-var SilkyControlManager = require('./silkycontrolmanager');
 var LayoutActionManager = require('./layoutactionmanager');
 
 window._ = _;
@@ -41,17 +41,12 @@ function sendMsg(id, data) {
     window.parent.postMessage(msg, '*');
 }
 
-var Analysis = function(def, resources, baseControls) {
+
+var Analysis = function(def, resources) {
 
     eval(def);
 
     var options = module.exports.options;
-
-    var controls = baseControls;
-    if (_.isUndefined(module.exports.customControls) === false) {
-        controls = module.exports.customControls;
-        controls.setBaseControls(baseControls);
-    }
 
     var layoutDef = new module.exports.view.layout();
     var view = new module.exports.view();
@@ -64,7 +59,7 @@ var Analysis = function(def, resources, baseControls) {
             optionsManager.endEdit();
     };
 
-    this.model = { options: optionsManager, ui: layoutDef, resources: resources, controls: controls, actionManager: actionManager, currentStage: 0 };
+    this.model = { options: optionsManager, ui: layoutDef, resources: resources, actionManager: actionManager, currentStage: 0 };
 
     this.View = new OptionsView( this.model);
 
@@ -81,7 +76,6 @@ var errored = false;
 var $header = null;
 var $hide = null;
 
-var _controlManager = new SilkyControlManager();
 
 
 $(document).ready(function() {
@@ -106,7 +100,7 @@ function loadAnalysisDef(def) {
 }
 
 function loadAnalysis(def, resources) {
-    analysis = new Analysis(def, resources, _controlManager);
+    analysis = new Analysis(def, resources);
 
     var title = analysis.model.ui.getTitle();
     console.log("loading - " + title + "...");

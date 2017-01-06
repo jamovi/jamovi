@@ -52,13 +52,16 @@ var GridRadioButton = function(params) {
         }
     };
 
-    var self = this;
-    this._override('getValue', function(baseFunction, keys) {
-        return baseFunction.call(self, keys) === self.checkedValue;
+    this._override('getValue', (baseFunction, keys) => {
+        return baseFunction.call(this, keys) === this.checkedValue;
     });
 
-    this._override('setValue', function(baseFunction, value, keys) {
-        return baseFunction.call(self, value ? self.checkedValue : self.otherValue, keys);
+    this._override('setValue', (baseFunction, value, keys) => {
+        return baseFunction.call(this, value ? this.checkedValue : this.otherValue, keys);
+    });
+
+    this._override('value', (baseFunction, keys) => {
+        return baseFunction.call(this, keys) === this.checkedValue;
     });
 
     ChildLayoutSupport.extendTo(this);

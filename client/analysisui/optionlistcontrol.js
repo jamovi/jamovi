@@ -5,10 +5,12 @@ var _ = require('underscore');
 var SelectableLayoutGrid = require('./selectablelayoutgrid');
 var OptionControl = require('./optioncontrol');
 var FormatDef = require('./formatdef');
+var DefaultControls;
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var SuperClass = require('../common/superclass');
 
 var OptionListControl = function(params) {
+    DefaultControls = require('./defaultcontrols');
     OptionControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
 
@@ -16,7 +18,7 @@ var OptionListControl = function(params) {
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("showColumnHeaders", false);
     this.registerSimpleProperty("fullRowSelect", false);
-    this.registerSimpleProperty("removeAction", "delete_row", new EnumPropertyFilter(["delete_row", "clear_cell"], "delete_row"));
+    this.registerSimpleProperty("removeAction", "deleterow", new EnumPropertyFilter(["deleterow", "clearcell"], "deleterow"));
     this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest"], "normal"));
     this.registerSimpleProperty("rowDataAsArray", false);
 
@@ -57,7 +59,7 @@ var OptionListControl = function(params) {
         if (Array.isArray(columns)) {
             for (var i = 0; i < columns.length; i++) {
 
-                var columnInfo = { type: "label", selectable: true, stretchFactor: 1, label: columns[i].name };
+                var columnInfo = { type: DefaultControls.ListItem.Label, selectable: true, stretchFactor: 1, label: columns[i].name };
 
                 _.extend(columnInfo, columns[i]);
 
@@ -110,7 +112,9 @@ var OptionListControl = function(params) {
 
         if (cell === null) {
             let format = columnInfo.format;
+            let type = columnInfo.type;
             var params = JSON.parse(JSON.stringify(columnInfo));
+            params.type = type;
             if (format !== undefined)
                 params.format = format;
 
@@ -326,7 +330,7 @@ var OptionListControl = function(params) {
 
         if (this.isSingleItem)
             this.clearFromOption(cellInfo);
-        else if (this.removeAction === "delete_row") {
+        else if (this.removeAction === "deleterow") {
             cellInfo.removed = false;
             this.option.removeAt([cellInfo.listIndex]);
         }
