@@ -702,8 +702,8 @@ const TableView = SilkyView.extend({
 
         if (botRow > rowCount - 1)
             botRow = rowCount - 1;
-        if (botRow < 0)
-            botRow = 0;
+        if (botRow < -1) // row count of zero is a bottom row of -1
+            botRow = -1;
         if (topRow > rowCount - 1)
             topRow = rowCount - 1;
         if (topRow < 0)

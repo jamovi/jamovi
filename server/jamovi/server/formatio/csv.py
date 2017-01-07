@@ -22,6 +22,8 @@ def calc_dps(value, max_dp=3):
 
 
 def fix_names(names):
+    if len(names) == 0:
+        return [ 'X' ]
     for i in range(1, len(names)):
         name = names[i]
         names_used = names[:i - 1]
@@ -39,6 +41,8 @@ def read(data, path):
     with open(path, encoding='utf-8-sig') as csvfile:
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(4096))
+            if dialect.delimiter.isalpha():
+                dialect.delimiter = ','
         except csv.Error:
             dialect = 'excel'
 
@@ -104,7 +108,6 @@ class ColumnWriter:
         self._only_floats = True
         self._is_empty = True
         self._unique_values = set()
-        self._many_uniques = False
         self._measure_type = None
         self._ruminated = False
         self._includes_na = False
@@ -126,12 +129,7 @@ class ColumnWriter:
         else:
             self._is_empty = False
 
-        if self._many_uniques is False:
-            if len(self._unique_values) >= 49:
-                self._many_uniques = True
-                self._unique_values.clear()
-            else:
-                self._unique_values.add(value)
+        self._unique_values.add(value)
 
         if self._only_integers:
             try:
@@ -149,7 +147,11 @@ class ColumnWriter:
 
     def ruminate(self):
 
-        if self._only_integers and self._many_uniques is False:
+        many_uniques = False
+        if len(self._unique_values) >= 49:
+            many_uniques = True
+
+        if self._only_integers and many_uniques is False:
             self._measure_type = MeasureType.NOMINAL
             self._unique_values = list(self._unique_values)
             self._unique_values = list(map(lambda x: int(x), self._unique_values))

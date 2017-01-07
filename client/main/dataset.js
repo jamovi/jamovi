@@ -298,7 +298,8 @@ const DataSetViewModel = DataSetModel.extend({
         this.trigger("viewportChanged");
         this.trigger("viewportReset");
 
-        this._requestCells(viewport);
+        if (nRows !== 0 && nCols !== 0)
+            this._requestCells(viewport);
     },
     reshape(left, top, right, bottom) {
 
