@@ -147,7 +147,7 @@ var OptionsView = function(uiModel) {
     this.createSubControl = function(uiDef) {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
-                uiDef.type = DefaultControls.collection;
+                uiDef.type = DefaultControls.LayoutBox;
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }
@@ -166,7 +166,7 @@ var OptionsView = function(uiModel) {
     this.createControl = function(uiDef) {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
-                uiDef.type = DefaultControls.collection;
+                uiDef.type = DefaultControls.LayoutBox;
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }

@@ -59,7 +59,7 @@ var OptionListControl = function(params) {
         if (Array.isArray(columns)) {
             for (var i = 0; i < columns.length; i++) {
 
-                var columnInfo = { type: DefaultControls.listitem.label, selectable: true, stretchFactor: 1, label: columns[i].name };
+                var columnInfo = { type: DefaultControls.ListItem.Label, selectable: true, stretchFactor: 1, label: columns[i].name };
 
                 _.extend(columnInfo, columns[i]);
 
