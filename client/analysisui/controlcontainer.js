@@ -50,12 +50,12 @@ var ControlContainer = function(params) {
             var ctrlDef = controls[i];
 
             var cell = ctrlDef.cell;
-            if (_.isUndefined(cell) === false) {
-                _nextCell.row = cell[1];
-                _nextCell.column = cell[0];
+            if (cell !== undefined) {
+                _nextCell.row = cell.row;
+                _nextCell.column = cell.column;
             }
             else
-                ctrlDef.cell = [_nextCell.column, _nextCell.row];
+                ctrlDef.cell = { column: _nextCell.column, row: _nextCell.row };
 
             var ctrl = context.createControl(ctrlDef);
             if (ctrl === null)
