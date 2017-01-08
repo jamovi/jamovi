@@ -100,7 +100,7 @@ function loadAnalysisDef(def) {
 }
 
 function loadAnalysis(def, resources) {
-    analysis = new Analysis(def, resources, _controlManager);
+    analysis = new Analysis(def, resources);
 
     var title = analysis.model.ui.getTitle();
     console.log("loading - " + title + "...");
