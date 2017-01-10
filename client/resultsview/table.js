@@ -376,8 +376,15 @@ const TableView = Elem.View.extend({
                     let content = cell.value;
                     if (content === '')
                         content = '&nbsp;';
-                    html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + '</td>';
-                    html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
+                    if (cell.sups && cell.classes.indexOf('silky-results-table-cell-text') !== -1) {
+                        // place the superscript beside the content if left aligned
+                        html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + ' ' + cell.sups + '</td>';
+                        html += '<td class="silky-results-table-cell silky-results-table-cell-sup"></td>';
+                    }
+                    else {
+                        html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + '</td>';
+                        html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
+                    }
                 }
                 else {
                     html += '<td colspan="2">&nbsp;</td>';
