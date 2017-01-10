@@ -64,6 +64,31 @@ function View() {
         return diff;
     };
 
+    this.checkValue = function(ctrl, valueIsList, validValues, format) {
+        let value = this.clone(ctrl.value());
+        if (valueIsList && value === null)
+            value = [];
+
+        let changed = false;
+
+        if (valueIsList) {
+            for (let i = 0; i < value.length; i++) {
+                if (this.listContains(validValues, value[i], format) === false) {
+                    value.splice(i, 1);
+                    i -= 1;
+                    changed = true;
+                }
+            }
+        }
+        else if (this.listContains(validValues, value, format) === false) {
+            value = null;
+            changed = true;
+        }
+
+        if (changed)
+            ctrl.setValue(value);
+    };
+
     this.isReady = function() {
         return this._updating === false && this._loaded;
     };
