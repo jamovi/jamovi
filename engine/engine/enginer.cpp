@@ -139,24 +139,18 @@ void EngineR::setLibPaths(const std::string &moduleName)
     path = nowide::getenv("JAMOVI_MODULES_PATH");
     algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
 
-    string sep = "";
     ss << "base::.libPaths(c(";
+
+    ss << "'" << Dirs::appDataDir() << "/modules/" << moduleName << "/R'";
 
     for (auto path : moduleR)
     {
-        ss << sep << "'" << makeAbsolute(path) << "/base/R'";
-        ss << ", '" << makeAbsolute(path) << "/" << moduleName << "/R'";
-        sep = ",";
+        ss << ",'" << makeAbsolute(path) << "/" << moduleName << "/R'";
+        ss << ",'" << makeAbsolute(path) << "/base/R'";
     }
 
     for (auto path : sysR)
-    {
-        ss << sep << "'" << makeAbsolute(path) << "'";
-        sep = ",";
-    }
-
-    sep = ",";
-    ss << sep << "'" << Dirs::appDataDir() << "/modules/" << moduleName << "/R'";
+        ss << ",'" << makeAbsolute(path) << "'";
 
     ss << "))\n";
 
