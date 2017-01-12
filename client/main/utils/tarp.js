@@ -30,7 +30,7 @@ module.exports.show = function(cancellable = true, opacity = 0) {
         }
 
         $tarp.css('opacity', opacity);
-        $tarp.one('click', event => {
+        $tarp.one('mousedown', event => {
             if (canCancel) {
                 $tarp.hide();
                 rejectPromise();
@@ -45,7 +45,7 @@ module.exports.show = function(cancellable = true, opacity = 0) {
 module.exports.hide = function() {
     if ($tarp !== undefined) {
         $tarp.hide();
-        $tarp.off('click');
+        $tarp.off('mousedown');
         resolvePromise();
     }
 };
