@@ -15,8 +15,11 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     this.$items = [];
     this.levelButtons = [];
 
+    this._topIndex = -1;
+
     this.render = function(index) {
 
+        this._topIndex = index;
         this.$closeButton = $('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
         this.listenForCompleteRemove(this.$closeButton);
 
@@ -60,13 +63,63 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
 
         if (isEmpty === false) {
             for (var i = 0; i <= levels.length; i++)
-                this.createLevel(levels[i], i);
+                this.createLevel(index, levels[i], i);
         }
     };
 
-    this.createLevel = function(levelText, index) {
+    this.intToRoman = function(number) {
+        let text;
+        if (number > 3999)
+            throw "Can not convert to roman numeral. Number to large.";
+
+        text  = [ '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][parseInt(number) % 10];
+        text = [ '', 'X', 'XX', 'XXX', 'XL', 'L', 'LX', 'LXX', 'LXXX', 'XC'][parseInt(number / 10) % 10] + text;
+        text = [ '', 'C', 'CC', 'CCC', 'CD', 'D', 'DC', 'DCC', 'DCCC', 'CM'][parseInt(number / 100) % 10] + text;
+        text = [ '', 'M', 'MM', 'MMM'][parseInt(number / 1000) % 10] + text;
+
+        return text;
+    };
+
+    this.getSequenceChar = function(seq, index) {
+        seq = seq % 4;
+        let alph = [];
+        if (seq === 0)
+            return (index + 1).toString();
+        else if (seq === 1) {
+            alph = [
+                'A','B','C','D','E','F','G','H','I',
+                'J','K','L','M','N','O','P','Q','R',
+                'S','T','U','V','W','X','Y','Z'
+            ];
+        }
+        else if (seq === 2) {
+            alph = [
+                'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η',
+                'θ', 'ι', 'κ', 'λ', 'μ', 'ν',
+                'ξ', 'ο', 'π', 'ρ', 'σ', 'τ',
+                'υ', 'φ', 'χ', 'ψ', 'ω'
+            ];
+        }
+        else if (seq === 3)
+            return this.intToRoman(index + 1);
+
+        let value = '';
+        let c = index;
+        do {
+            let i = c % alph.length;
+            value = alph[i] + value;
+            c -= i;
+            c /= alph.length;
+            c -= 1;
+        }
+        while (c >= 0);
+
+        return value;
+    };
+
+    this.createLevel = function(groupIndex, levelText, index) {
         var level = index + 1;
-        var text = "Level " + level;
+        var text = "Level " + this.getSequenceChar(groupIndex, index); //level;
         var isEmpty = true;
         if (levelText !== null && _.isUndefined(levelText) === false) {
             text = levelText;
@@ -123,6 +176,8 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.updateData = function(data, index) {
+
+        this._topIndex = index;
         this.data = data;
         this.suspendLayout();
         if (_.isUndefined(data) || data === null) {
@@ -147,7 +202,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
                 this.$closeButton.css("visibility", "visible");
 
             for (var j = 0; j <= this.data.levels.length; j++) {
-                this.createLevel(this.data.levels[j], j);
+                this.createLevel(index, this.data.levels[j], j);
             }
 
             var toRemove = this.$items.length - this.data.levels.length - 1;
@@ -215,7 +270,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     this.labelChange = function($item) {
         var value = $item.val();
         if (_.isUndefined(this.data) || this.data === null) {
-            this.parent.onItemAdded({label: value, levels: ["Level 1", "Level 2"]});
+            this.parent.onItemAdded({label: value, levels: ["Level " + this.getSequenceChar(this._topIndex , 0), "Level " + this.getSequenceChar(this._topIndex , 1)]});
         }
         else {
             this.data.label = value;
