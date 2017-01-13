@@ -68,36 +68,16 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.intToRoman = function(number) {
-        let x = number;
-        let diff = 0;
-        let count = 0;
-        let value = '';
-        let roman = [];
-
+        let text;
         if (number > 3999)
             throw "Can not convert to roman numeral. Number to large.";
 
-        do {
-            if (count === 0)
-                roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
-            else if (count === 1)
-                roman = ['X', 'XX', 'XXX', 'XL', 'L', 'LX', 'LXX', 'LXX', 'XC'];
-            else if (count === 2)
-                roman = ['C', 'CC', 'CCC', 'CD', 'D', 'DC', 'DCC', 'DCCC', 'CM'];
-            else if (count === 3)
-                roman = ['M', 'MM', 'MMM'];
+        text  = [ '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][parseInt(number) % 10];
+        text = [ '', 'X', 'XX', 'XXX', 'XL', 'L', 'LX', 'LXX', 'LXXX', 'XC'][parseInt(number / 10) % 10] + text;
+        text = [ '', 'C', 'CC', 'CCC', 'CD', 'D', 'DC', 'DCC', 'DCCC', 'CM'][parseInt(number / 100) % 10] + text;
+        text = [ '', 'M', 'MM', 'MMM'][parseInt(number / 1000) % 10] + text;
 
-            diff = x % 10;
-            if (diff > 0) {
-                value = roman[diff - 1] + value;
-                x -= diff;
-            }
-            x /= 10;
-            count += 1;
-        }
-        while (x >= 1);
-
-        return value;
+        return text;
     };
 
     this.getSequenceChar = function(seq, index) {
@@ -105,16 +85,14 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         let alph = [];
         if (seq === 0)
             return (index + 1).toString();
-        else if (seq === 1)
-            return this.intToRoman(index + 1);
-        else if (seq === 2) {
+        else if (seq === 1) {
             alph = [
-                'a','b','c','d','e','f','g','h','i',
-                'j','k','l','m','n','o','p','q','r',
-                's','t','u','v','w','x','y','z'
+                'A','B','C','D','E','F','G','H','I',
+                'J','K','L','M','N','O','P','Q','R',
+                'S','T','U','V','W','X','Y','Z'
             ];
         }
-        else if (seq === 3) {
+        else if (seq === 2) {
             alph = [
                 'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η',
                 'θ', 'ι', 'κ', 'λ', 'μ', 'ν',
@@ -122,6 +100,8 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
                 'υ', 'φ', 'χ', 'ψ', 'ω'
             ];
         }
+        else if (seq === 3)
+            return this.intToRoman(index + 1);
 
         let value = '';
         let c = index;
