@@ -14,6 +14,7 @@ from .utils import conf
 import sys
 import os.path
 import uuid
+import mimetypes
 
 import tempfile
 import logging
@@ -62,6 +63,38 @@ class ResourceHandler(RequestHandler):
 
         with open(resource_path, 'rb') as file:
             content = file.read()
+            self.write(content)
+
+
+class ModuleAssetHandler(RequestHandler):
+
+    def get(self, instance_id, analysis_id, path):
+        instance = Instance.get(instance_id)
+        if instance is None:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write('instance ' + instance_id + ' could not be found')
+            return
+
+        analysis = instance.analyses.get(int(analysis_id))
+        module_name = analysis.ns
+        module_path = Modules.instance().get(module_name).path
+        asset_path = os.path.join(module_path, 'R', analysis.ns, path)
+
+        if asset_path.startswith(module_path) is False:
+            self.set_status(403)
+            self.write('<h1>403</h1>')
+            self.write('verboten')
+            return
+
+        mt = mimetypes.guess_type(asset_path)
+
+        with open(asset_path, 'rb') as file:
+            content = file.read()
+            if mt[0] is not None:
+                self.set_header('Content-Type', mt[0])
+            if mt[1] is not None:
+                self.set_header('Content-Encoding', mt[1])
             self.write(content)
 
 
@@ -216,11 +249,11 @@ class Server:
         resultsviewcss_path = os.path.join(client_path, 'resultsview.css')
 
         self._resultsview_app = tornado.web.Application([
-            (r'/.*/', SingleFileHandler, { 'path': resultsview_path }),
-            (r'/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
-            (r'/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
-            (r'/.*/assets/(.*)', SFHandler, { 'path': assets_path }),
-            (r'/(.*)/res/(.*)', ResourceHandler),
+            (r'/.*/.*/', SingleFileHandler, { 'path': resultsview_path }),
+            (r'/.*/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
+            (r'/.*/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
+            (r'/(.*)/.*/res/(.*)', ResourceHandler),
+            (r'/(.*)/(.*)/assets/(.*)', ModuleAssetHandler),
         ])
 
         sockets = tornado.netutil.bind_sockets(self._ports[0], 'localhost')

@@ -84,6 +84,8 @@ var GroupView = Element.View.extend({
             this.$el.addClass('silky-results-error');
         }
 
+        let promises = [ ];
+
         this.model.attributes.element.elements.forEach(element => {
             if (this.mode === 'rich' && element.syntax)
                 return;
@@ -94,8 +96,11 @@ var GroupView = Element.View.extend({
                 this.children.push(child);
                 $el.appendTo(this.$el);
                 $('<br>').appendTo(this.$el);
+                promises.push(child);
             }
         });
+
+        this.ready = Promise.all(promises);
     }
 });
 

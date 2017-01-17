@@ -13,6 +13,8 @@ const ArrayModel = require('./array').Model;
 const ArrayView  = require('./array').View;
 const SyntaxModel = require('./syntax').Model;
 const SyntaxView  = require('./syntax').View;
+const HtmlModel = require('./html').Model;
+const HtmlView  = require('./html').View;
 
 const createItem = function(element, $el, level, parent, mode) {
 
@@ -118,6 +120,21 @@ const createItem = function(element, $el, level, parent, mode) {
             error: element.error,
             stale: element.stale });
         view = new SyntaxView({
+            el: $el,
+            model: model,
+            level: level,
+            parent: parent,
+            mode: mode });
+    }
+    else if (element.html) {
+        model = new HtmlModel({
+            name : element.name,
+            title : element.title,
+            element : element.html,
+            status: element.status,
+            error: element.error,
+            stale: element.stale });
+        view = new HtmlView({
             el: $el,
             model: model,
             level: level,

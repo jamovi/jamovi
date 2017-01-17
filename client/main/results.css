@@ -36,12 +36,16 @@
     display: none;
 }
 
-.silky-results-panel[data-analysis-selected] iframe:not([data-selected]) {
+.silky-results-panel[data-analysis-selected] .silky-results-container iframe {
     background-color: #E8E8E8 ;
 }
 
-.silky-results-panel iframe[data-selected] {
+.silky-results-panel[data-analysis-selected] .silky-results-container[data-selected] iframe {
     background-color: white ;
+}
+
+.silky-results-container[data-selected] .silky-results-cover {
+    display: none ;
 }
 
 .silky-results-container {

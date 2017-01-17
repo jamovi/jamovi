@@ -38,6 +38,11 @@ const ResultsPanel = Backbone.View.extend({
         window.addEventListener('message', event => this._messageEvent(event));
 
         this.clickPos = null;
+
+        this.$el.on('click', () => {
+            if (this.model.attributes.selectedAnalysis !== null)
+                this.model.set('selectedAnalysis', null);
+        });
     },
     _resultsEvent(analysis) {
 
@@ -48,7 +53,7 @@ const ResultsPanel = Backbone.View.extend({
             let element = '<iframe \
                 scrolling="no" \
                 class="id' + analysis.id + '" \
-                src="' + this.iframeUrl + this.model.instanceId() + '/" \
+                src="' + this.iframeUrl + this.model.instanceId() + '/' + analysis.id + '/" \
                 sandbox="allow-scripts allow-same-origin" \
                 style="border: 0 ; height : 0 ;" \
                 ></iframe>';
@@ -60,7 +65,7 @@ const ResultsPanel = Backbone.View.extend({
 
             let selected = this.model.get('selectedAnalysis');
             if (selected !== null && analysis.id === selected.id)
-                $iframe.attr('data-selected', '');
+                $container.attr('data-selected', '');
 
             resources = {
                 iframe : iframe,
@@ -102,6 +107,7 @@ const ResultsPanel = Backbone.View.extend({
         }
     },
     _resultsClicked(event, analysis) {
+        event.stopPropagation();
         let current = this.model.get('selectedAnalysis');
         if (current === null || current.id !== analysis.id)
             this.model.set('selectedAnalysis', analysis);
@@ -238,14 +244,14 @@ const ResultsPanel = Backbone.View.extend({
         if (oldSelected) {
             let oldSelectedResults = this.resources[oldSelected.id];
             if (oldSelectedResults)
-                oldSelectedResults.$iframe.removeAttr('data-selected');
+                oldSelectedResults.$container.removeAttr('data-selected');
         }
 
         if (newSelected) {
             this.$el.attr('data-analysis-selected', '');
             let newSelectedResults = this.resources[newSelected.id];
             if (newSelectedResults)
-                newSelectedResults.$iframe.attr('data-selected', '');
+                newSelectedResults.$container.attr('data-selected', '');
         }
         else {
             this.$el.removeAttr('data-analysis-selected');

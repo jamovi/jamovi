@@ -170,6 +170,10 @@ class Instance:
         else:
             return time.time() - self._inactive_since
 
+    @property
+    def analyses(self):
+        return self._data.analyses
+
     def get_path_to_resource(self, resourceId):
         return os.path.join(self._data.instance_path, resourceId)
 

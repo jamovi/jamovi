@@ -75,13 +75,18 @@ var ArrayView = Element.View.extend({
     },
     render: function() {
 
+        let promises = [ ];
+
         this.model.attributes.element.elements.forEach(element => {
             var $el = $('<div></div>');
             var child = this.create(element, $el, this.level+1, this, this.mode);
             this.children.push(child);
+            promises.push(child.ready);
+
             $el.appendTo(this.$el);
         });
 
+        this.ready = Promise.all(promises);
     }
 });
 

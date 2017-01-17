@@ -14,10 +14,7 @@ const ElementView = Backbone.View.extend({
         this.$el.addClass('silky-results-item');
         this.$el.attr('data-name', btoa(this.model.attributes.name));
 
-        this.$el.on('click', event => {
-            event.stopPropagation();
-            this._sendEvent({ type : 'menu', data : [ ] });
-        });
+        this.ready = Promise.resolve();
     },
     _sendEvent(event) {
         if (this.parent === null)

@@ -5,7 +5,11 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
+const ERDM = require("element-resize-detector");
+
 const createItem = require('./create').createItem;
+
+
 
 class Main {  // this is constructed at the bottom
 
@@ -17,7 +21,7 @@ class Main {  // this is constructed at the bottom
 
         window.addEventListener('message', event => this._messageEvent(event));
 
-        this._notifyResize = _.debounce(() => this._reallyNotifyResize(), 0);
+        this._notifyResize = _.debounce(() => this._reallyNotifyResize(), 50);
     }
 
     _reallyNotifyResize() {
@@ -71,7 +75,12 @@ class Main {  // this is constructed at the bottom
                 hostEvent.mode);
             this.$results.appendTo($body);
 
-            this._notifyResize();
+            $(document).ready(() => {
+                let erd = ERDM({ strategy: "scroll" });
+                erd.listenTo(this.$results[0], (element) => {
+                    this._notifyResize();
+                });
+            });
         }
         else if (hostEvent.type === 'click') {
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
