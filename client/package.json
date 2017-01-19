@@ -10,7 +10,7 @@
     "build:main": "browserify --debug main/main.js        --outfile main.js        && lessc main/main.less        main.css",
     "build:analysisui": "browserify --debug analysisui/main.js  --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
     "build:resultsview": "browserify --debug resultsview/main.js --outfile resultsview.js && lessc resultsview/main.less resultsview.css",
-    "watch": "npm run prepare && onchange main/* analysisui/* resultsview/* common/* -- npm run prepare",
+    "watch": "npm run prepublish && onchange main/* analysisui/* resultsview/* common/* -- npm run prepublish",
     "beep": "node -e \"require('beepbeep')()\""
   },
   "dependencies": {},

@@ -30,17 +30,14 @@
     overflow: hidden ;
     transition: width 0.4s, height 0.2s, background-color 0.2s ;
     margin: 5px ;
+    background-color: transparent ;
 }
 
 .silky-results-panel iframe::-webkit-scrollbar {
     display: none;
 }
 
-.silky-results-panel[data-analysis-selected] .silky-results-container iframe {
-    background-color: #E8E8E8 ;
-}
-
-.silky-results-panel[data-analysis-selected] .silky-results-container[data-selected] iframe {
+.silky-results-container[data-selected] iframe {
     background-color: white ;
 }
 

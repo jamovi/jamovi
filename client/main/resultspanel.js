@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -26,18 +25,16 @@ const ResultsPanel = Backbone.View.extend({
 
         this.resources = { };
 
-        if (_.has(args, 'iframeUrl'))
+        if ('iframeUrl' in args)
             this.iframeUrl = args.iframeUrl;
 
-        if (_.has(args, 'mode'))
+        if ('mode' in args)
             this.mode = args.mode;
 
         this.model.analyses().on('analysisResultsChanged', this._resultsEvent, this);
         this.model.on('change:selectedAnalysis', this._selectedChanged, this);
 
         window.addEventListener('message', event => this._messageEvent(event));
-
-        this.clickPos = null;
 
         this.$el.on('click', () => {
             if (this.model.attributes.selectedAnalysis !== null)
@@ -48,7 +45,7 @@ const ResultsPanel = Backbone.View.extend({
 
         let resources = this.resources[analysis.id];
 
-        if (_.isUndefined(resources)) {
+        if (resources === undefined) {
 
             let element = '<iframe \
                 scrolling="no" \
@@ -101,8 +98,11 @@ const ResultsPanel = Backbone.View.extend({
         if (this.mode === 'rich' || resources.incAsText) {
             let event = {
                 type: 'results',
-                results: resources.results,
-                mode: this.mode };
+                data: {
+                    results: resources.results,
+                    mode: this.mode
+                }
+            };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
         }
     },
@@ -115,32 +115,34 @@ const ResultsPanel = Backbone.View.extend({
             this.model.set('selectedAnalysis', null);
     },
     _resultsRightClicked(event, analysis) {
-        let resources = this.resources[analysis.id];
-        let iframe = resources.iframe;
-        this.clickPos = { left: event.clientX, top: event.clientY };
-        let clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
-        iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
+        let selected = this.model.attributes.selectedAnalysis;
+        if (selected === null || selected === analysis) {
+            let resources = this.resources[analysis.id];
+            let iframe = resources.iframe;
+            let clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
+            iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
+        }
+        else {
+            this.model.set('selectedAnalysis', null);
+        }
     },
     _messageEvent(event) {
 
-        let ids = _.keys(this.resources);
+        for (let id in this.resources) {
 
-        for (let i = 0; i < ids.length; i++) {
-
-            let id = ids[i];
             let resources = this.resources[id];
-
             if (event.source !== resources.iframe.contentWindow)
                 continue;
 
-            let eventType = event.data.eventType;
-            let eventData = event.data.eventData;
+            let payload = event.data;
+            let eventType = payload.type;
+            let eventData = payload.data;
             let $iframe = resources.$iframe;
             let $container = resources.$container;
 
             switch (eventType) {
                 case 'sizeChanged':
-                    let height = eventData.height + 12;
+                    let height = eventData.height;
                     let width = eventData.width;
                     if (height < 100)
                         height = 100;
@@ -158,7 +160,10 @@ const ResultsPanel = Backbone.View.extend({
                     $container.width(width);
                     $container.height(height);
                     break;
-                case 'menuRequest':
+                case 'menu':
+                    let offset = $iframe.offset();
+                    eventData.pos.left += offset.left;
+                    eventData.pos.top  += offset.top;
                     this._showMenu(id, eventData);
                     break;
                 case 'clipboardCopy':
@@ -172,10 +177,8 @@ const ResultsPanel = Backbone.View.extend({
         this._menuId = id;
 
         let entries = [ ];
-        for (let i = 0; i < data.length; i++) {
-            let entry = data[i];
+        for (let entry of data.entries)
             entries.push({ label: entry.type, address: entry.address, options: entry.options });
-        }
 
         if (entries.length > 0) {
             let lastEntry = entries[entries.length-1];
@@ -183,7 +186,7 @@ const ResultsPanel = Backbone.View.extend({
         }
 
         this.menu.setup(entries);
-        this.menu.show({ clickPos: this.clickPos });
+        this.menu.show({ clickPos : { top: data.pos.top, left: data.pos.left } });
     },
     _menuEvent(event) {
 

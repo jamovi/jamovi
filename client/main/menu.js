@@ -2,7 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
+const tarp = require('./utils/tarp');
 
 const Menu = function($el, parent) {
     this.$el = $el;
@@ -20,13 +20,6 @@ const Menu = function($el, parent) {
     this.submenu = null;
 
     this.listeners = [ ];
-
-    if ( ! parent)
-        this.$cover = $('<div class="silky-menu-cover"></div>').appendTo('body');
-    else
-        this.$cover = $();
-
-    this.$cover.on('mousedown', event => this.hide());
 };
 
 Menu.prototype._entryClicked = function(event) {
@@ -89,14 +82,15 @@ Menu.prototype.show = function(pos) {
     this.pos = finalPos;
     this.$el.css(finalPos);
     this.$el.show();
-    this.$cover.show();
+
+    if ( ! this.parent)
+        tarp.show().then(() => {}, () => this.hide());
 
     this._showSubMenu();
 };
 
 Menu.prototype.hide = function() {
     this.$el.hide();
-    this.$cover.hide();
 
     for (let listener of this.listeners)
         listener({ type: 'activated', address: null });

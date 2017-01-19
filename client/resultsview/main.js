@@ -25,31 +25,28 @@ class Main {  // this is constructed at the bottom
     }
 
     _reallyNotifyResize() {
-        let width  = this.$results.width();
-        let height = this.$results.height();
+        let width  = this.$results.width() + 20;
+        let height = this.$results.height() + 20;
 
         this.mainWindow.postMessage({
-            eventType : 'sizeChanged',
-            eventData : { width: width, height: height }}, '*');
+            type : 'sizeChanged',
+            data : { width: width, height: height }}, '*');
     }
 
-    _sendMenuRequest(data) {
-        let entries = data.data;
+    _sendMenuRequest(event) {
+        let entries = event.data.entries;
         entries[0].type = 'Analysis';
 
-        this.mainWindow.postMessage({
-            eventType : 'menuRequest',
-            eventData : entries }, '*');
+        this.mainWindow.postMessage(event, '*');
 
         let lastEntry = entries[entries.length-1];
-        let event = { type: 'activated', address: lastEntry.address };
-        this._menuEvent(event);
+        this._menuEvent({ type: 'activated', address: lastEntry.address });
     }
 
     _sendClipboardContent(data) {
         this.mainWindow.postMessage({
-            eventType : 'clipboardCopy',
-            eventData : data }, '*');
+            type : 'clipboardCopy',
+            data : data }, '*');
     }
 
     _messageEvent(event) {
@@ -59,20 +56,21 @@ class Main {  // this is constructed at the bottom
 
         this.mainWindow = event.source;
         let hostEvent = event.data;
+        let eventData = hostEvent.data;
 
         if (hostEvent.type === 'results') {
             let content = '';
             let $body = $('body');
-            $body.attr('data-mode', hostEvent.mode);
+            $body.attr('data-mode', eventData.mode);
             $body.empty();
 
             this.$results = $('<div id="results"></div>');
             this.results = createItem(
-                hostEvent.results,
+                eventData.results,
                 this.$results,
                 0,
                 { _sendEvent: event => this._sendMenuRequest(event) },
-                hostEvent.mode);
+                eventData.mode);
             this.$results.appendTo($body);
 
             $(document).ready(() => {
@@ -84,11 +82,15 @@ class Main {  // this is constructed at the bottom
         }
         else if (hostEvent.type === 'click') {
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
-            if (el !== null)
-                $(el).trigger('click', hostEvent);
+            if (el !== null) {
+                let clickEvent = $.Event('contextmenu');
+                clickEvent.pageX = hostEvent.pageX;
+                clickEvent.pageY = hostEvent.pageY;
+                $(el).trigger(clickEvent);
+            }
         }
         else if (hostEvent.type === 'menuEvent') {
-            this._menuEvent(hostEvent.data);
+            this._menuEvent(eventData);
         }
     }
 

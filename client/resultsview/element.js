@@ -14,6 +14,12 @@ const ElementView = Backbone.View.extend({
         this.$el.addClass('silky-results-item');
         this.$el.attr('data-name', btoa(this.model.attributes.name));
 
+        this.$el.on('contextmenu', event => {
+            event.stopPropagation();
+            this._sendEvent({ type : 'menu', data : { entries : [ ], pos : { left: event.pageX, top: event.pageY } } });
+            return false;
+        });
+
         this.ready = Promise.resolve();
     },
     _sendEvent(event) {
@@ -23,7 +29,7 @@ const ElementView = Backbone.View.extend({
         if (event.type === 'menu') {
             let options = [ { label: 'Copy' }, { label: 'Save' } ];
             let entry = { type: this.type(), address: this.address(), options: options };
-            event.data.unshift(entry);
+            event.data.entries.unshift(entry);
             this.parent._sendEvent(event);
         }
     },
