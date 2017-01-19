@@ -42,7 +42,14 @@ const createItem = function(element, $el, level, parent, mode) {
     }
     else if (element.group) {
 
-        if (element.group.elements.length > 0) {
+        let visible = false;
+
+        for (let child of element.group.elements) {
+            if (child.visible === 0 || child.visible === 2)
+                visible = true;
+        }
+
+        if (visible) {
             model = new GroupModel({
                 name: element.name,
                 title: element.title,
@@ -77,7 +84,14 @@ const createItem = function(element, $el, level, parent, mode) {
     }
     else if (element.array) {
 
-        if (element.array.elements.length > 0) {
+        let visible = false;
+
+        for (let child of element.array.elements) {
+            if (child.visible === 0 || child.visible === 2)
+                visible = true;
+        }
+
+        if (visible) {
             model = new ArrayModel({
                 name: element.name,
                 title: element.title,

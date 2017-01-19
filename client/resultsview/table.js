@@ -74,7 +74,7 @@ const TableView = Elem.View.extend({
         }
     },
     type() {
-        return "Table";
+        return 'Table';
     },
     render() {
 
@@ -114,14 +114,17 @@ const TableView = Elem.View.extend({
         let formattings = new Array(table.columns.length);
 
         for (let colNo = 0; colNo < table.columns.length; colNo++) {
-            let column = table.columns[colNo];
+
+            let column  = table.columns[colNo];
+            let visible = (column.visible === 0 || column.visible === 2);
+
             if ('title' in column)
-                cells.header[colNo] = { value : column.title, classes : '' };
+                cells.header[colNo] = { value : column.title, classes : '', visible : visible };
             else
-                cells.header[colNo] = { value : column.name, classes : '' };
+                cells.header[colNo] = { value : column.name, classes : '', visible : visible };
 
             if (column.superTitle)
-                cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
+                cells.superHeader[colNo] = { value : column.superTitle, classes : '', visible : visible };
 
             let values = column.cells.map(v => v.d);
             formattings[colNo] = determineFormatting(values, column.type, column.format);
@@ -149,18 +152,22 @@ const TableView = Elem.View.extend({
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' silky-results-table-cell-negative';
 
+                cell.visible = (sourceColumn.visible === 0 || sourceColumn.visible === 2);
+
                 for (let symbol of sourceCell.symbols)
                     cell.sups += symbol;
 
-                for (let i = 0; i < sourceCell.footnotes.length; i++) {
-                    let footnote = sourceCell.footnotes[i];
-                    let index = fnIndices[footnote];
-                    if (_.isUndefined(index)) {
-                        index = _.size(fnIndices);
-                        fnIndices[footnote] = index;
-                        footnotes[index] = footnote;
+                if (cell.visible) {
+                    for (let i = 0; i < sourceCell.footnotes.length; i++) {
+                        let footnote = sourceCell.footnotes[i];
+                        let index = fnIndices[footnote];
+                        if (index === undefined) {
+                            index = Object.keys(fnIndices).length;
+                            fnIndices[footnote] = index;
+                            footnotes[index] = footnote;
+                        }
+                        cell.sups += SUPSCRIPTS[index];
                     }
-                    cell.sups += SUPSCRIPTS[index];
                 }
 
                 switch (sourceCell.cellType) {
@@ -304,7 +311,11 @@ const TableView = Elem.View.extend({
         html = '';
 
         if (hasSuperHeader) {
+
+            let allSHHidden = true;  // all super headers hidden
+
             let span = 1;
+            let allHidden = true;
             for (let i = 0; i < cells.superHeader.length; i++) {
                 let head = cells.superHeader[i];
 
@@ -318,20 +329,31 @@ const TableView = Elem.View.extend({
                 }
 
                 let content = '';
-                if (typeof(head) !== 'undefined')
+                if (typeof(head) !== 'undefined') {
                     content = head.value;
+                    if (head.visible) {
+                        allHidden = false;
+                        allSHHidden = false;
+                    }
+                }
 
                 if (content == nextContent) {
                     span++;
                 }
                 else {
-                    html += '<th class="silky-results-table-cell" colspan="' + (2 * span) + '">' + content + '</th>';
+                    let hidden = '';
+                    if (allHidden)
+                        hidden = ' cell-hidden';
+                    html += '<th class="silky-results-table-cell' + hidden + '" colspan="' + (2 * span) + '">' + content + '</th>';
                     span = 1;
+                    allHidden = true;
                 }
             }
-        }
 
-        this.$columnHeaderRowSuper.html(html);
+            if (allSHHidden)
+                this.$columnHeaderRowSuper.addClass('cell-hidden');
+            this.$columnHeaderRowSuper.html(html);
+        }
 
 
         html = '';
@@ -341,13 +363,11 @@ const TableView = Elem.View.extend({
             let content = head.value;
             if (content === '')
                 content = '&nbsp;';
-            html += '<th class="silky-results-table-cell" colspan="2">' + content + '</th>';
+            let hidden = head.visible ? '' : ' cell-hidden';
+            html += '<th class="silky-results-table-cell' + hidden + '" colspan="2">' + content + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
-
-        html = '';
-
 
         if (cells.header.length === 0) {
             this.$titleCell.attr('colspan', 1);
@@ -364,9 +384,12 @@ const TableView = Elem.View.extend({
 
         this.$titleCell.attr('colspan', nPhysCols);
 
+        html = '';
+
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
-            html += '<tr>';
+            let rowHtml = '';
+            let allCellsHidden = true;
 
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
@@ -374,24 +397,32 @@ const TableView = Elem.View.extend({
 
                 if (cell) {
                     let content = cell.value;
+
+                    let hidden = '';
+                    if (cell.visible)
+                        allCellsHidden = false;
+                    else
+                        hidden = ' cell-hidden';
+
                     if (content === '')
                         content = '&nbsp;';
                     if (cell.sups && cell.classes.indexOf('silky-results-table-cell-text') !== -1) {
                         // place the superscript beside the content if left aligned
-                        html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + ' ' + cell.sups + '</td>';
-                        html += '<td class="silky-results-table-cell silky-results-table-cell-sup"></td>';
+                        rowHtml += '<td class="silky-results-table-cell ' + cell.classes + hidden + '">' + content + ' ' + cell.sups + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup ' + hidden + '"></td>';
                     }
                     else {
-                        html += '<td class="silky-results-table-cell ' + cell.classes + '">' + content + '</td>';
-                        html += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell ' + cell.classes + hidden + '">' + content + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup ' + hidden + '">' + (cell.sups ? cell.sups : '') + '</td>';
                     }
                 }
                 else {
-                    html += '<td colspan="2">&nbsp;</td>';
+                    rowHtml += '<td colspan="2" class="cell-hidden">&nbsp;</td>';
                 }
             }
 
-            html += '</tr>';
+            let hidden = (allCellsHidden ? ' cell-hidden' : '');
+            html += '<tr class="' + hidden + '">' + rowHtml + '</tr>';
         }
 
         this.$tableBody.html(html);

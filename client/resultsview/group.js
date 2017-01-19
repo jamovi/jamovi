@@ -1,13 +1,12 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var Element = require('./element');
+const Elem = require('./element');
 
-var GroupModel = Backbone.Model.extend({
+const GroupModel = Backbone.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -21,10 +20,13 @@ var GroupModel = Backbone.Model.extend({
     }
 });
 
-var GroupView = Element.View.extend({
+const GroupView = Elem.View.extend({
     initialize: function(data) {
 
-        Element.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data);
+
+        if (this.model === null)
+            this.model = new GroupModel();
 
         this.create = data.create;
         this.children = [ ];
@@ -35,9 +37,6 @@ var GroupView = Element.View.extend({
 
         this.$el.addClass('silky-results-group');
 
-        if (this.model === null)
-            this.model = new GroupModel();
-
         if (this.mode === 'text')
             this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
         else
@@ -46,38 +45,34 @@ var GroupView = Element.View.extend({
         this.render();
     },
     type: function() {
-        return "Group";
+        return 'Group';
     },
     get: function(address) {
         if (address.length === 0)
             return this;
 
-        var childName = address[0];
-        var child = null;
+        let childName = address[0];
+        let child = null;
 
-        for (var i = 0; i < this.children.length; i++) {
-            var nextChild = this.children[i];
+        for (let i = 0; i < this.children.length; i++) {
+            let nextChild = this.children[i];
             if (nextChild.model.get('name') === childName) {
                 child = nextChild;
                 break;
             }
         }
 
-        if (child !== null && address.length > 1) {
-            var nextAddress = _.clone(address);
-            nextAddress.shift();
-            return child.get(nextAddress);
-        }
-        else {
+        if (child !== null && address.length > 1)
+            return child.get(address.slice(1));
+        else
             return child;
-        }
     },
     render: function() {
 
-        var error = this.model.get('error');
+        let error = this.model.get('error');
         if (error !== null) {
-            var $errorPlacement = $('<div class="silky-results-error-placement"></div>');
-            var $error = $('<div class="silky-results-error-message"></div>');
+            let $errorPlacement = $('<div class="silky-results-error-placement"></div>');
+            let $error = $('<div class="silky-results-error-message"></div>');
             $error.append(error.message);
             $errorPlacement.append($error);
             this.$el.append($errorPlacement);
@@ -85,20 +80,23 @@ var GroupView = Element.View.extend({
         }
 
         let promises = [ ];
+        let elements = this.model.attributes.element.elements;
 
-        this.model.attributes.element.elements.forEach(element => {
+        for (let element of elements) {
             if (this.mode === 'rich' && element.syntax)
-                return;
+                continue;
+            if (element.visible === 1 || element.visible === 3)
+                continue;
 
-            var $el = $('<div></div>');
-            var child = this.create(element, $el, this.level+1, this, this.mode);
+            let $el = $('<div></div>');
+            let child = this.create(element, $el, this.level+1, this, this.mode);
             if (child !== null) {
                 this.children.push(child);
                 $el.appendTo(this.$el);
                 $('<br>').appendTo(this.$el);
                 promises.push(child);
             }
-        });
+        }
 
         this.ready = Promise.all(promises);
     }

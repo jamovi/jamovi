@@ -1,13 +1,12 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var Element = require('./element');
+const Elem = require('./element');
 
-var ArrayModel = Backbone.Model.extend({
+const ArrayModel = Backbone.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -21,10 +20,10 @@ var ArrayModel = Backbone.Model.extend({
     }
 });
 
-var ArrayView = Element.View.extend({
+const ArrayView = Elem.View.extend({
     initialize: function(data) {
 
-        Element.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data);
 
         this.create = data.create;
         this.level = data.level;
@@ -47,44 +46,44 @@ var ArrayView = Element.View.extend({
         this.render();
     },
     type: function() {
-        return "Group";
+        return 'Group';
     },
     get: function(address) {
         if (address.length === 0)
             return this;
 
-        var childName = address[0];
-        var child = null;
+        let childName = address[0];
+        let child = null;
 
-        for (var i = 0; i < this.children.length; i++) {
-            var nextChild = this.children[i];
+        for (let i = 0; i < this.children.length; i++) {
+            let nextChild = this.children[i];
             if (nextChild.model.get('name') === childName) {
                 child = nextChild;
                 break;
             }
         }
 
-        if (child !== null && address.length > 1) {
-            var nextAddress = _.clone(address);
-            nextAddress.shift();
-            return child.get(nextAddress);
-        }
-        else {
+        if (child !== null && address.length > 1)
+            return child.get(address.slice(1));
+        else
             return child;
-        }
     },
     render: function() {
 
         let promises = [ ];
+        let elements = this.model.attributes.element.elements;
 
-        this.model.attributes.element.elements.forEach(element => {
-            var $el = $('<div></div>');
-            var child = this.create(element, $el, this.level+1, this, this.mode);
+        for (let element of elements) {
+            if (element.visible == 1 || element.visible == 3)
+                continue;
+
+            let $el = $('<div></div>');
+            let child = this.create(element, $el, this.level+1, this, this.mode);
             this.children.push(child);
             promises.push(child.ready);
 
             $el.appendTo(this.$el);
-        });
+        }
 
         this.ready = Promise.all(promises);
     }
