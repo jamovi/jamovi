@@ -72,16 +72,22 @@ void Engine::start()
     if (_conId < 0)
         throw runtime_error("Unable to connect : could not connect to endpoint");
 
+    // start the message loop thread
     thread t(&Engine::messageLoop, this);
 
+    // locks for sharing between threads
     unique_lock<mutex> lock(_mutex, std::defer_lock);
+
+    std::function<Analysis*()> checkForNew;
+    checkForNew = std::bind(&Engine::waiting, this);
+    _R->setCheckForNewCB(checkForNew);
 
     while (true)
     {
         lock.lock(); // lock to access _waiting
 
         while (_waiting == NULL)
-            _condition.wait(lock);
+            _condition.wait(lock); // wait for notification from message loop
 
         _running = _waiting;
         _waiting = NULL;
@@ -101,8 +107,20 @@ void Engine::terminate()
     std::exit(0);
 }
 
+Analysis *Engine::waiting()
+{
+    // called from the main loop
+
+    lock_guard<mutex> lock(_mutex);
+    Analysis *analysis = _waiting;
+
+    return analysis;
+}
+
 void Engine::analysisRequested(int requestId, Analysis *analysis)
 {
+    // this is called from the message loop thread
+
     lock_guard<mutex> lock(_mutex);
     _condition.notify_all();
 
@@ -112,6 +130,8 @@ void Engine::analysisRequested(int requestId, Analysis *analysis)
 
 void Engine::resultsReceived(const string &results)
 {
+    // this is called from the main thread
+
     ComsMessage message;
 
     message.set_id(_currentRequestId);
@@ -127,6 +147,8 @@ void Engine::resultsReceived(const string &results)
 
 void Engine::messageLoop()
 {
+    // message loop runs in its own thread
+
     while (_exiting == false)
     {
         char *buf = NULL;

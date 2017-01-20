@@ -35,6 +35,8 @@ void EngineR::setPath(const std::string &path)
 
 void EngineR::run(Analysis *analysis)
 {
+    _current = analysis; // assigned so callbacks can access it
+
     if (_rInside == NULL)
         initR();
 
@@ -80,48 +82,50 @@ void EngineR::run(Analysis *analysis)
     rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
     rInside.parseEvalQNT("analysis$.setResourcesPathSource(resourcesPath)");
 
-    std::function<void(SEXP)> check = std::bind(&EngineR::checkpoint, this, std::placeholders::_1);
-    rInside["checkpoint"] = Rcpp::InternalFunction(check);
+    std::function<SEXP(SEXP)> checkpoint = std::bind(&EngineR::checkpoint, this, std::placeholders::_1);
+    rInside["checkpoint"] = Rcpp::InternalFunction(checkpoint);
     rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
 
     rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
-    rInside.parseEvalQNT("analysis$init()");
+    rInside.parseEvalQ("analysis$init()");
 
     if ( ! analysis->clearState)
     {
         Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
         rInside["changed"] = changed;
-        rInside.parseEvalQNT("analysis$.load(changed)");
+        rInside.parseEvalQ("analysis$.load(changed)");
     }
 
-    Rcpp::RawVector rawVec = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+    Rcpp::RawVector rawVec = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
     std::string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw);
 
     if (analysis->perform == 0) // INIT
     {
-        rInside.parseEvalQNT("analysis$.save();");
+        rInside.parseEvalQ("analysis$.save();");
     }
     else
     {
-        rInside.parseEvalQNT("analysis$run(silent=TRUE);");
+        bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
+        if ( ! shouldSend)
+            return;
 
-        Rcpp::RawVector rawVec2 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+        Rcpp::RawVector rawVec2 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
         std::string raw2(rawVec2.begin(), rawVec2.end());
         resultsReceived(raw2);
 
         rInside.parseEvalQNT("analysis$render();");
 
-        Rcpp::RawVector rawVec3 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
+        Rcpp::RawVector rawVec3 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
         std::string raw3(rawVec3.begin(), rawVec3.end());
         resultsReceived(raw3);
 
-        Rcpp::RawVector rawVec4 = _rInside->parseEvalNT("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
+        Rcpp::RawVector rawVec4 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
         std::string raw4(rawVec4.begin(), rawVec4.end());
         resultsReceived(raw4);
 
-        rInside.parseEvalQNT("analysis$.save();");
+        rInside.parseEvalQ("analysis$.save();");
     }
 }
 
@@ -157,13 +161,20 @@ void EngineR::setLibPaths(const std::string &moduleName)
     _rInside->parseEvalQNT(ss.str());
 }
 
-void EngineR::checkpoint(SEXP results)
+SEXP EngineR::checkpoint(SEXP results)
 {
+    Analysis *analysis = _checkForNew();
+
+    if (analysis != NULL)
+        return Rcpp::CharacterVector("restart");
+
     if ( ! Rf_isNull(results)) {
         Rcpp::RawVector rawVec = Rcpp::as<Rcpp::RawVector>(results);
         std::string raw(rawVec.begin(), rawVec.end());
         resultsReceived(raw);
     }
+
+    return R_NilValue;
 }
 
 Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columnsRequired, bool headerOnly)
@@ -281,6 +292,11 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     columns.attr("class") = "data.frame";
 
     return columns;
+}
+
+void EngineR::setCheckForNewCB(std::function<Analysis*()> check)
+{
+    _checkForNew = check;
 }
 
 string EngineR::analysisDirPath(const std::string &datasetId, const string &analysisId)

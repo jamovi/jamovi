@@ -24,13 +24,19 @@ public:
     EngineR();
     void run(Analysis *analysis);
     void setPath(const std::string &path);
+    void setCheckForNewCB(std::function<Analysis*()> check);
 
     boost::signals2::signal<void (const std::string &)> resultsReceived;
 
 private:
 
+    Analysis *_current;
+
     void initR();
-    void checkpoint(SEXP results = R_NilValue);
+    SEXP checkpoint(SEXP results = R_NilValue);
+
+    std::function<Analysis*()> _checkForNew;
+
     Rcpp::DataFrame readDataset(const std::string &datasetId, Rcpp::List columns, bool headerOnly);
     std::string analysisDirPath(const std::string &datasetId, const std::string &analysisId);
     std::string statePath(const std::string &datasetId, const std::string &analysisId);

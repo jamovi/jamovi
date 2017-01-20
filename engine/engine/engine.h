@@ -33,6 +33,7 @@ private:
     void analysisRequested(int requestId, Analysis *analysis);
     void resultsReceived(const std::string &results);
     void terminate();
+    Analysis *waiting();
 
     EngineComs _coms;
 
