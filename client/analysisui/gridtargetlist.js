@@ -60,6 +60,21 @@ var GridTargetList = function(params) {
         this.targetGrid.refreshItems();
     };
 
+    this.itemCount = function(item) {
+        let count = 0;
+        for (var i = 0; i < this.targetGrid._cells.length; i++) {
+            var cellInfo = this.targetGrid.getCellInfo(this.targetGrid._cells[i]);
+            if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                let subFormatInfo = cellInfo.format.allFormats();
+                for (let sf = 0; sf < subFormatInfo.length; sf++) {
+                    if (item.value.equalTo(new FormatDef.constructor(this._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format)))
+                        count += 1;
+                }
+            }
+        }
+        return count;
+    };
+
     // Drag/Drop methods
     this.setPickupSourceElement(this.targetGrid.$el);
 

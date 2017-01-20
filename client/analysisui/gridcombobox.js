@@ -23,7 +23,7 @@ var GridCombobox = function(params) {
         if (label !== "") {
             this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
             cell = grid.addCell(column, row, true, this.$label);
-            cell.setAlignment("left", "centre");
+            cell.setAlignment("left", "center");
             columnUsed += 1;
         }
 
@@ -45,7 +45,7 @@ var GridCombobox = function(params) {
         });
 
         cell = grid.addCell(column + columnUsed, row, true, this.$input);
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
         columnUsed += 1;
 

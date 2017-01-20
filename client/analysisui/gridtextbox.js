@@ -32,7 +32,7 @@ var GridTextbox = function(params) {
         this.$label = $('<div class="silky-option-text-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
         cell = grid.addCell(column, row, true, this.$label);
         cell.blockInsert("right");
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
 
         var suffix = this.getPropertyValue('suffix');
@@ -67,13 +67,13 @@ var GridTextbox = function(params) {
 
         cell = subgrid.addCell(0, 0, true, this.$input);
         cell.blockInsert("left");
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
         startClass = suffix === "" ? "" : 'silky-option-text-end';
 
         this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue("margin") + " " + startClass + '" style="display: inline; white-space: nowrap;" >' + suffix + '</div>');
         cell = subgrid.addCell(1, 0, true, this.$suffix);
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
         return { height: 1, width: 3 };
     };

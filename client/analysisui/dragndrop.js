@@ -29,7 +29,7 @@ var DragNDrop = function() {
     this._ddMouseMove = function(event) {
         var self = event.data;
 
-        if (self.hasItems() === false)
+        if (self.hasDraggingItems() === false)
             return;
 
         if (self._isDragging === false) {
@@ -217,7 +217,7 @@ var DragNDrop = function() {
         return $items;
     };
 
-    this.hasItems = function() {
+    this.hasDraggingItems = function() {
         return this._itemsBeingDragged !== null;
     };
 

@@ -21,6 +21,8 @@ var OptionListControl = function(params) {
     this.registerSimpleProperty("removeAction", "deleterow", new EnumPropertyFilter(["deleterow", "clearcell"], "deleterow"));
     this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest"], "normal"));
     this.registerSimpleProperty("rowDataAsArray", false);
+    this.registerSimpleProperty("stripedRows", false);
+
 
     this.maxItemCount = this.getPropertyValue('maxItemCount');
     this.showHeaders = this.getPropertyValue('showColumnHeaders');
@@ -55,6 +57,7 @@ var OptionListControl = function(params) {
 
         var columns = this.getPropertyValue("columns");
         this._columnInfo = { _list:[] };
+        this._realColumnInfoList = [];
 
         if (Array.isArray(columns)) {
             for (var i = 0; i < columns.length; i++) {
@@ -76,16 +79,27 @@ var OptionListControl = function(params) {
                 this._columnInfo[name] = columnInfo;
                 this._columnInfo._list.push(columnInfo);
 
+                if ( ! columnInfo.isVirtual) {
+                    columnInfo.isVirtual = false;
+                    this._realColumnInfoList.push(columnInfo);
+                }
+
                 var row = 0;
                 if (this.showHeaders) {
                     var hCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
                     hCell.setStretchFactor(columnInfo.stretchFactor);
-                    hCell.hAlign = 'centre';
-                    hCell.vAlign = 'top';
+                    hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
+                    hCell.setVerticalAlign('center');
+                    hCell.minimumWidth = columnInfo.minWidth;
+                    hCell.maximumWidth = columnInfo.maxWidth;
+                    hCell.minimumHeight = columnInfo.maxHeight;
+                    hCell.maximumHeight = columnInfo.minHeight;
                     row += 1;
                 }
                 var fillerCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="list-item-ctrl silky-option-list-filler"> </div>'));
                 fillerCell.setStretchFactor(columnInfo.stretchFactor);
+                fillerCell.minimumWidth = columnInfo.minWidth;
+                fillerCell.maximumWidth = columnInfo.maxWidth;
             }
         }
 
@@ -99,8 +113,13 @@ var OptionListControl = function(params) {
     this.refreshItems = function() {
         for (let i = 0; i < this._cells.length; i++) {
             var item = this._cells[i].item;
-            if (item !== null && item.render)
-                item.render();
+            let cellInfo = this.getCellInfo(this._cells[i]);
+            if (item !== null && item.render) {
+                if (cellInfo.columnInfo.isVirtual)
+                    item.render(cellInfo.value);
+                else
+                    item.render();
+            }
         }
     };
 
@@ -119,7 +138,7 @@ var OptionListControl = function(params) {
                 params.format = format;
 
             params.valuekey = [this.displayRowToRowIndex(dispRow)];
-            if (this._columnInfo._list.length > 1)
+            if (this._realColumnInfoList.length > 1)
                 params.valuekey.push(this.rowDataAsArray ? columnInfo.index : columnInfo.name);
 
             var ctrl = this.createItem(value, params);
@@ -130,19 +149,32 @@ var OptionListControl = function(params) {
                 throw "The listitem control '" + columnInfo.type  + "' does not specify a format type.";
 
             cell = this.addCell(dispColumn, dispRow, false, ctrl);
+            cell.minimumWidth = ctrl.getPropertyValue('minWidth');
+            cell.maximumWidth = ctrl.getPropertyValue('maxWidth');
+            cell.minimumHeight = ctrl.getPropertyValue('maxHeight');
+            cell.maximumHeight = ctrl.getPropertyValue('minHeight');
             cell.clickable(columnInfo.selectable);
+            if (this.getPropertyValue('stripedRows')) {
+                if (this.showHeaders)
+                    cell.$el.addClass((this.displayRowToRowIndex(dispRow) % 2 === 0) ? "even-list-row" : "odd-list-row");
+                else
+                    cell.$el.addClass((this.displayRowToRowIndex(dispRow) % 2 === 0) ? "odd-list-row" : "even-list-row");
+            }
 
+            cell.setHorizontalAlign(ctrl.getPropertyValue('horizontalAlignment'));
+            cell.setVerticalAlign(ctrl.getPropertyValue('verticalAlignment'));
             cell.setStretchFactor(columnInfo.stretchFactor);
-            cell.hAlign = 'left';
-            cell.vAlign = 'centre';
+
         }
+        else if (columnInfo.isVirtual)
+            cell.item.render(value);
     };
 
     this.createItem = function(data, params) {
 
         var ctrl = this._context.createSubControl(params);
         var self = this;
-        ctrl.getDataRenderProperties = function(data, format, index) {
+        ctrl.getDataRenderProperties = function(rdata, format, index) {
             var properties = { root: null, sub: null };
             var localItem = new FormatDef.constructor(data, format);
             if (self.getSupplierItem)
@@ -150,17 +182,21 @@ var OptionListControl = function(params) {
 
             return properties;
         };
-        ctrl.setOption(this.option);
-        ctrl.render();
+        if (params.isVirtual === false)
+            ctrl.setOption(this.option);
+        else
+            ctrl.setParent(this);
+
+        ctrl.render(data);
         return ctrl;
     };
 
-    this.updateDisplayRow = function(dispRow, value) {
+    this.updateDisplayRow = function(dispRow, value, onlyVirtual) {
          var columnInfo = null;
 
          if (this._columnInfo._list.length === 1) {
              columnInfo = this._columnInfo._list[0];
-             if (_.isUndefined(columnInfo) === false)
+             if (_.isUndefined(columnInfo) === false && (!onlyVirtual || columnInfo.isVirtual))
                  this.updateValueCell(columnInfo, dispRow, value);
          }
         else {
@@ -170,18 +206,58 @@ var OptionListControl = function(params) {
                 for (let i = 0; i < value.length; i++) {
                     if (i >= columnInfoList.length)
                         break;
-                    self.updateValueCell(columnInfoList[i], dispRow, value[i]);
+
+                    if (!onlyVirtual || columnInfoList[i].isVirtual)
+                        self.updateValueCell(columnInfoList[i], dispRow, value[i]);
                 }
             }
             else {
                 _.each(value, function(value, key, list) {
                     columnInfo = self._columnInfo[key];
-                    if (_.isUndefined(columnInfo) === false)
+                    if (_.isUndefined(columnInfo) === false && (!onlyVirtual || columnInfo.isVirtual))
                         self.updateValueCell(columnInfo, dispRow, value);
                 });
             }
         }
     };
+
+
+    this._override("getValue", (baseFunction, keys) => {
+        if (this._realColumnInfoList.length === this._columnInfo._list.length)
+            return baseFunction.call(this, keys);
+        else
+            return this._localData;
+    });
+
+    this._override("setValue", (baseFunction, value, key, insert) => {
+        if (this._realColumnInfoList.length === this._columnInfo._list.length)
+            baseFunction.call(this, value, key, insert);
+        else if (key === undefined || key.length === 0) {
+            this.beginPropertyEdit();
+            baseFunction.call(this, this.virtualDataToReal(value), key, insert);
+            for (let r = 0; r < value.length; r++) {
+                this._localData[r] = this.clone(value[r]);
+                this.updateDisplayRow(this.rowIndexToDisplayIndex(r), value[r], true);
+            }
+            this.endPropertyEdit();
+        }
+        else if (key.length > 1) {
+            if (key[1] === this._realColumnInfoList[0].name) {
+                let realKey = key;
+                if (this._realColumnInfoList.length === 1)
+                    realKey = this.clone(key).splice(1, 1);
+                baseFunction.call(this, value, realKey, insert);
+            }
+            else {
+                this.beginPropertyEdit();
+                baseFunction.call(this, this.virtualToRealRowData(value), key, insert);
+                this._localData[key[0]] = value;
+                this.updateDisplayRow(this.rowIndexToDisplayIndex(key[0]), value, true);
+                this.endPropertyEdit();
+            }
+        }
+    });
+
 
     this.validateOption = function() {
         var list = this.option.getValue();
@@ -444,7 +520,7 @@ var OptionListControl = function(params) {
         this.suspendLayout();
         var dispRow = this.rowIndexToDisplayIndex(keys[0]);
         this.insertRow(dispRow, 1);
-        var rowData = this.option.getValue(keys[0]);
+        var rowData = this.realToVirtualRowData(this.option.getValue(keys[0]));
 
         this._localData.splice(keys[0], 0, this.clone(rowData));
         this.updateDisplayRow(dispRow, rowData);
@@ -454,10 +530,61 @@ var OptionListControl = function(params) {
 
     this.onOptionValueRemoved = function(keys, data) {
 
-        var dispRow = this.rowIndexToDisplayIndex(keys[0]);
-        this.removeRow(dispRow);
+        this.disposeOfRows(keys[0], 1);
         this._localData.splice(keys[0], 1);
 
+    };
+
+    this.virtualDataToReal = function(data) {
+        let rData = [];
+        for (let i = 0; i < data.length; i++)
+            rData.push(this.virtualToRealRowData(data[i]));
+
+        return rData;
+    };
+
+    this.realToVirtualRowData = function(rowData, oldRow) {
+        if (this._realColumnInfoList.length === this._columnInfo._list.length)
+            return rowData;
+
+        let obj = { };
+        if (this._realColumnInfoList.length === 1) {
+            for (let i = 0; i < this._columnInfo._list.length; i++) {
+                let columnInfo = this._columnInfo._list[i];
+                if (oldRow === undefined)
+                    obj[columnInfo.name] = null;
+                else
+                    obj[columnInfo.name] = oldRow[columnInfo.name];
+
+
+            }
+            for (let i = 0; i < this._realColumnInfoList.length; i++) {
+                let columnInfo = this._realColumnInfoList[i];
+                obj[columnInfo.name] = this._realColumnInfoList.length === 1 ? rowData : rowData[columnInfo.name];
+            }
+        }
+
+        return obj;
+    };
+
+    this.virtualToRealRowData = function(rowData) {
+        if (this._realColumnInfoList.length === this._columnInfo._list.length)
+            return rowData;
+
+        if (this._realColumnInfoList.length === 1) {
+            if (typeof rowData === 'object')
+                return rowData[this._realColumnInfoList[0].name];
+
+            return rowData;
+        }
+
+        let obj = { };
+        for (let i = 0; i < this._realColumnInfoList.length; i++) {
+            let columnInfo = this._realColumnInfoList[i];
+            obj[columnInfo.name] = rowData[columnInfo.name];
+        }
+
+        return obj;
     };
 
     this.onOptionValueChanged = function(keys, data) {
@@ -467,28 +594,47 @@ var OptionListControl = function(params) {
 
         if (list !== null) {
             var oldLocalCount = this._localData.length;
+            let oldLocal = this._localData;
             this._localData = [];
             if (Array.isArray(list)) {
                 for (var i = 0; i < list.length; i++) {
-                    this.updateDisplayRow(this.rowIndexToDisplayIndex(i), list[i]);
-                    this._localData.push(this.clone(list[i]));
+                    let rowData = this.realToVirtualRowData(list[i], oldLocal[i]);
+                    this.updateDisplayRow(this.rowIndexToDisplayIndex(i), rowData);
+                    this._localData.push(this.clone(rowData));
                 }
-                var countToRemove = this.displayRowToRowIndex(oldLocalCount) - this._localData.length;
+                var countToRemove = oldLocalCount - this._localData.length;
                 if (countToRemove > 0)
-                    this.removeRow(this.rowIndexToDisplayIndex(this._localData.length), countToRemove);
+                    this.disposeOfRows(this._localData.length, countToRemove);
             }
             else if (this.isSingleItem) {
-                this._localData[0] = this.clone(list);
-                this.updateDisplayRow(this.rowIndexToDisplayIndex(0), list);
+                let rowData = this.realToVirtualRowData(list, this._localData[0]);
+                this._localData[0] = this.clone(rowData);
+                this.updateDisplayRow(this.rowIndexToDisplayIndex(0), rowData);
             }
         }
         else if (this._localData.length > 0) {
-            this.removeRow(this.rowIndexToDisplayIndex(0), this._localData.length);
+            this.disposeOfRows(0, this._localData.length);
             this._localData = [];
         }
 
         this.resumeLayout();
 
+    };
+
+    this.disposeOfRows = function(rowIndex, count) {
+
+        let displayIndex = this.rowIndexToDisplayIndex(rowIndex);
+
+        for (let r = displayIndex; r < displayIndex + count; r++) {
+            let rowCells = this.getRow(r);
+            for (let c = 0; c < rowCells.length; c++) {
+                let cell = rowCells[c];
+                if (cell.item && cell.item.dispose)
+                    cell.item.dispose();
+            }
+        }
+
+        this.removeRow(displayIndex, count);
     };
 
     this.clone = function(object) {

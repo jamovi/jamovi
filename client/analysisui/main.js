@@ -5,6 +5,7 @@
 var _ = require('underscore');
 var $ = require('jquery');
 var Backbone = require('backbone');
+const Framesg = require('framesg').default;
 Backbone.$ = $;
 
 var Options = require('./options');
@@ -15,42 +16,90 @@ var FormatDef = require('./formatdef');
 var DefaultControls = require('./defaultcontrols');
 var View = require('./actions');
 var ListItemControl = require('./listitemcontrol');
-var ControlManager = require('./controlmanager');
 var LayoutActionManager = require('./layoutactionmanager');
+const RequestDataSupport = require('./requestdatasupport');
+
 
 window._ = _;
 
-function addMsgListener(cmd, callback, failed) {
-    window.addEventListener("message",
-        function (e) {
-            //try {
+var frameCommsApi = {
+    setOptionsDefinition: loadAnalysis,
 
-                var msg = e.data;
-                if (msg.cmd !== cmd)
-                    return;
+    dataChanged: data => {
+        if (analysis !== null) {
+            if (data.dataType === 'columns') {
+                requestData("columns", null, true).then(columnInfo => {
+                    dataResources = { columns: columnInfo.columns };
+                    analysis.dataChanged(data);
+                });
+            }
+            else
+                analysis.dataChanged(data);
+        }
+    },
 
-                callback(msg.data);
-            //} catch (e) {
-            //    failed(e);
-            //}
-        }, false);
-}
+    initialiseOptions: setOptionsValues
+};
 
-function sendMsg(id, data) {
-    var msg = { cmd: id, data: data };
-    window.parent.postMessage(msg, '*');
-}
+var parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
+
+var requestData = function(requestType, requestData, getRemote) {
+    let data = { requestType: requestType, requestData: requestData };
+    if (getRemote)
+        return parentFrame.send("requestData", data);
+    else if (requestType === "columns") {
+        return new Promise((resolve, reject) => {
+            resolve(dataResources);
+        });
+    }
+    else if (requestType === "column") {
+        if (requestLocalColumnData(data) === false)
+            return parentFrame.send("requestData", data);
+        else
+            return new Promise((resolve, reject) => { resolve(data); });
+    }
+    else
+        return parentFrame.send("requestData", data);
+};
+
+var requestLocalColumnData = function(data) {
+    var columns = dataResources.columns;
+    let found = false;
+    let foundAll = true;
+    for (let i = 0; i < columns.length; i++) {
+        if ((data.requestData.columnId !== undefined && columns[i].id === data.requestData.columnId) ||
+            (data.requestData.columnName !== undefined && columns[i].name === data.requestData.columnName)) {
+            found = true;
+            for (let p = 0; p < data.requestData.properties.length; p++) {
+                let propertyName = data.requestData.properties[p];
+                let value = columns[i][propertyName];
+                if (value !== undefined)
+                    data[propertyName] = columns[i][propertyName];
+                else
+                    foundAll = false;
+            }
+            break;
+        }
+    }
+
+    data.columnFound = found;
+
+    return found && foundAll;
+};
+
+var dataResources = { columns: [] };
 
 
-var Analysis = function(def, resources) {
+var Analysis = function(def) {
 
     eval(def);
 
     var options = module.exports.options;
 
     var layoutDef = new module.exports.view.layout();
-    var view = new module.exports.view();
-    var actionManager = new LayoutActionManager(view);
+    this.viewTemplate = new module.exports.view();
+    this.viewTemplate.setRequestedDataSource(this);
+    var actionManager = new LayoutActionManager(this.viewTemplate);
     var optionsManager = new Options(options);
     actionManager.onExecutingStateChanged = function(state) {
         if (state)
@@ -59,18 +108,24 @@ var Analysis = function(def, resources) {
             optionsManager.endEdit();
     };
 
-    this.model = { options: optionsManager, ui: layoutDef, resources: resources, actionManager: actionManager, currentStage: 0 };
+    this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 2 };
 
     this.View = new OptionsView( this.model);
 
-    this.setResources = function(resources) {
-        this.model.resources = resources;
-        this.View.updateResources();
+    this.View.setRequestedDataSource(this);
+
+    this.requestData = function(requestId, data) {
+        return requestData(requestId, data);
+    };
+
+    this.dataChanged = function(data) {
+        this.View.dataChanged(data);
+        if (this.viewTemplate.onDataChanged)
+            this.viewTemplate.onDataChanged(data);
     };
 };
 
 var analysis = null;
-var _def = null;
 var _analysisResources = null;
 var errored = false;
 var $header = null;
@@ -84,58 +139,37 @@ $(document).ready(function() {
     $(document).mouseup(this, mouseUp);
     $(document).mousemove(this, mouseMove);
 
-    addMsgListener("options.def", loadAnalysisDef, loadFailed);
-    addMsgListener("analysis.context", setResources);
-    addMsgListener("options.changed", setOptionsValues);
-
-    sendMsg("document.ready");
+    parentFrame.send("frameDocumentReady", null);
 
     $(window).resize( updateContainerHeight );
 });
 
-function loadAnalysisDef(def) {
-    _def = def;
-    if (_def !== null && _analysisResources !== null)
-        loadAnalysis(_def, _analysisResources);
-}
 
-function loadAnalysis(def, resources) {
-    analysis = new Analysis(def, resources);
+function loadAnalysis(def) {
+    return requestData("columns", null, true).then(data => {
 
-    var title = analysis.model.ui.getTitle();
-    console.log("loading - " + title + "...");
-    var $title = $('.silky-options-title');
-    $title.empty();
-    $title.append(title);
+        dataResources = { columns: data.columns };
 
-    $('body').append(analysis.View.$el);
-    analysis.View.render();
+        analysis = new Analysis(def);
 
-    var $hide = $('.silky-sp-back-button');
-    $hide.on("click", function(event) {
-        closeOptions();
+        var title = analysis.model.ui.getTitle();
+        console.log("loading - " + title + "...");
+        var $title = $('.silky-options-title');
+        $title.empty();
+        $title.append(title);
+
+        $('body').append(analysis.View.$el);
+        analysis.View.render();
+
+        var $hide = $('.silky-sp-back-button');
+        $hide.on("click", function(event) {
+            closeOptions();
+        });
+
+        analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
+
+        updateContainerHeight();
     });
-
-    analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
-
-    updateContainerHeight();
-}
-
-function loadFailed(e) {
-    errored = true;
-    console.log(e);
-}
-
-function setResources(resources) {
-
-    _analysisResources = resources;
-
-    if (analysis === null) {
-        if (_analysisResources && _def !== null)
-            loadAnalysis(_def, _analysisResources);
-    }
-    else
-        analysis.setResources(resources);
 }
 
 function setOptionsValues(data) {
@@ -152,7 +186,7 @@ function setOptionsValues(data) {
     if (analysis.View.beginDataInitialization()) {
         var params = Options.getDefaultEventParams("changed");
         params.silent = true;
-        _.each(data, function(value, key, list) {
+        _.each(data.options, function(value, key, list) {
             model.options.setOptionValue(key, value, params);
         });
         analysis.View.endDataInitialization();
@@ -168,10 +202,7 @@ function onValuesForServerChanges(e) {
         compiledList[key] = value.option.getValue();
     });
 
-    /*for (var i = 0; i < e.data.length; i++)
-        list[e.data[i].name] = e.data[i].option.getValue();*/
-
-    sendMsg("options.changed", compiledList);
+    parentFrame.send("onOptionsChanged", compiledList);
 }
 
 
@@ -183,7 +214,7 @@ function mouseUp(event) {
         pageY: event.pageY
     };
 
-    sendMsg("document.mouse", data);
+    parentFrame.send("onFrameMouseEvent", data);
 }
 
 function mouseMove(event) {
@@ -194,7 +225,7 @@ function mouseMove(event) {
         pageY: event.pageY
     };
 
-    sendMsg("document.mouse", data);
+    parentFrame.send("onFrameMouseEvent", data);
 }
 
 function mouseDown(event) {
@@ -205,12 +236,12 @@ function mouseDown(event) {
         pageY: event.pageY
     };
 
-    sendMsg("document.mouse", data);
+    parentFrame.send("onFrameMouseEvent", data);
 }
 
 
 function closeOptions() {
-    sendMsg("options.close");
+    parentFrame.send("hideOptions", null);
 }
 
 function updateContainerHeight() {

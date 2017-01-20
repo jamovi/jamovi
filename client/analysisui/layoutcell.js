@@ -150,11 +150,6 @@ var LayoutCell = function(parent) {
         }
     };
 
-    this.setAlignment = function(hAlign, vAlign) {
-        this.hAlign = hAlign;
-        this.vAlign = vAlign;
-    };
-
     this.top = function() {
         if (this._top === -1)
             this._top = parseFloat(this.$el.css('top'));
@@ -263,88 +258,60 @@ var LayoutCell = function(parent) {
         }
     };
 
+    this.adjustCellTop = function(top) {
+        if (this._top !== top) {
+            this._top = top;
+            this._topAdjusted = true;
+        }
+    };
+
     this.adjustCellWidth = function(width) {
         if (this._width !== width) {
             this._width = width;
+            if (this.maximumWidth > -1)
+                this._width = Math.min(this._width, this.maximumWidth);
+            if (this.minimumWidth > -1)
+                this._width = Math.max(this._width, this.minimumWidth);
             this._widthAdjusted = true;
         }
     };
 
     this.adjustCellPosition = function(left, top) {
-        if (this._left !== left) {
-            this._left = left;
-            this._leftAdjusted = true;
-        }
-
-        if (this._top !== top) {
-            this._top = top;
-            this._topAdjusted = true;
-        }
+        this.adjustCellLeft(left);
+        this.adjustCellTop(top);
     };
 
     this.adjustCellDimensions = function(width, height) {
-        if (this._width !== width) {
-            this._width = width;
-            this._widthAdjusted = true;
-        }
-
-        if (this._height !== height) {
-            this._height = height;
-            this._heightAdjusted = true;
-        }
+        this.adjustCellWidth(width);
+        this.adjustCellHeight(height);
     };
 
     this.adjustCellHorizontally = function(left, width) {
-        if (this._left !== left) {
-            this._left = left;
-            this._leftAdjusted = true;
-        }
-
-        if (this._width !== width) {
-            this._width = width;
-            this._widthAdjusted = true;
-        }
+        this.adjustCellLeft(left);
+        this.adjustCellWidth(width);
     };
 
     this.adjustCellVertically = function(top, height) {
-        if (this._top !== top) {
-            this._top = top;
-            this._topAdjusted = true;
-        }
-
-        if (this._height !== height) {
-            this._height = height;
-            this._heightAdjusted = true;
-        }
+        this.adjustCellTop(top);
+        this.adjustCellHeight(height);
     };
 
     this.adjustCellHeight = function(height) {
         if (this._height !== height) {
             this._height = height;
             this._heightAdjusted = true;
+            if (this.maximumHeight > -1)
+                this._height = Math.min(this._height, this.maximumHeight);
+            if (this.minimumHeight > -1)
+                this._height = Math.max(this._height, this.minimumHeight);
         }
     };
 
     this.adjustCell = function(left, top, width, height) {
-        if (left !== this._left) {
-            this._left = left;
-            this._leftAdjusted = true;
-        }
-
-        if (top !== this._top) {
-            this._top = top;
-            this._topAdjusted = true;
-        }
-
-        if (width !== this._width) {
-            this._width = width;
-            this._widthAdjusted = true;
-        }
-
-        if (height !== this._height) {
-            this._height = height;
-            this._heightAdjusted = true;
-        }
+        this.adjustCellLeft(left);
+        this.adjustCellTop(top);
+        this.adjustCellWidth(width);
+        this.adjustCellHeight(height);
     };
 
     this.updateContentHorizontalAlignment = function(cellWidth) {
@@ -370,7 +337,7 @@ var LayoutCell = function(parent) {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
             left = this.cssProperties["padding-left"] + innerWidth - Math.ceil(this.contentWidth());
         }
-        else if (this.hAlign === "centre") {
+        else if (this.hAlign === "center") {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
             left = this.cssProperties["padding-left"] + (innerWidth/2) - (Math.ceil(this.contentWidth())/2);
         }
@@ -418,7 +385,7 @@ var LayoutCell = function(parent) {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
             top = this.cssProperties["padding-top"] + innerHeight - Math.ceil(this.contentHeight());
         }
-        else if (this.vAlign === "centre") {
+        else if (this.vAlign === "center") {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
             top = this.cssProperties["padding-top"] + (innerHeight/2) - (Math.ceil(this.contentHeight())/2);
         }
@@ -601,8 +568,30 @@ var LayoutCell = function(parent) {
             this.fitToGrid = true;
     };
 
-    this.fitToGrid = true;
+    this.setHorizontalAlign = function(hAlign) {
+        if (hAlign !== "left" && this.dockContentWidth)
+            this.dockContentWidth = false;
 
+        this.hAlign = hAlign;
+    };
+
+    this.setVerticalAlign = function(vAlign) {
+        if (vAlign !== "top" && this.dockContentHeight)
+            this.dockContentHeight = false;
+
+        this.vAlign = vAlign;
+    };
+
+    this.setAlignment = function(hAlign, vAlign) {
+        this.setHorizontalAlign(hAlign);
+        this.setVerticalAlign(vAlign);
+    };
+
+    this.fitToGrid = true;
+    this.maximumWidth = -1;
+    this.minimumWidth = -1;
+    this.maximumHeight = -1;
+    this.minimumHeight = -1;
     this.horizontalStretchFactor = 0;
 
     this.spanAllRows = false;

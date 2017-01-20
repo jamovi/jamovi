@@ -16,7 +16,7 @@ var GridOptionListControl = function(option, params) {
         cell.setStretchFactor(0.5);
         cell.dockContentHeight = true;
 
-        return { height: 1, width: 1 };
+        return { height: 1, width: 1, cell: cell };
     };
 };
 

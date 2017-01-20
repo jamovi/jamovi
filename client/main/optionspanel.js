@@ -2,21 +2,27 @@
 
 var _ = require('underscore');
 var $ = require('jquery');
+const Framesg = require('framesg').default;
 var Backbone = require('backbone');
 Backbone.$ = $;
 
 var SilkyView = require('./view');
 
 
-var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
+var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
-    this.context = context;
+    _.extend(this, Backbone.Events);
+
+    //this.context = context;
     this.analysis = analysis;
     this.name = analysis.name;
     this.options = null;
     this.def = null;
 
-    var element = '<iframe id="' + analysis.ns + '-' + analysis.name + '" \
+    this.key = analysis.ns + '-' + analysis.name;
+
+    var element = '<iframe id="' + this.key + '" \
+            name="' + this.key + '" \
             sandbox="allow-scripts allow-same-origin" \
             src="' + iframeUrl + instanceId + '/" \
             class="silky-options-control silky-hidden-options-control" \
@@ -25,67 +31,102 @@ var AnalysisResources = function(analysis, context, iframeUrl, instanceId) {
             ></iframe>';
 
     this.$frame = $(element);
+    $target.append(this.$frame);
 
-    var self = this;
+    this.frameCommsApi = {
+        frameDocumentReady: data => {
+            this.notifyDocumentReady();
+            this.trigger("frameReady");
+        },
 
-    this.sendMsg = function(id, data) {
-        var msg = { cmd: id, data: data };
-        this.$frame[0].contentWindow.postMessage(msg, '*');
-    };
+        onFrameMouseEvent: data => {
+            var event = $.Event( data.eventName, data);
 
-    this.addMsgListener = function(cmd, callback) {
-        var self = this;
-        window.addEventListener("message",
-            function (e) {
-                var frame = self.$frame[0];
-                if (e.source === frame.contentWindow) {
-                    var msg = e.data;
-                    if (msg.cmd !== cmd)
-                        return;
+            var pos = $('iframe.silky-options-control').offset();
 
-                    callback.call(self, msg.data);
+            event.pageX += pos.left;
+            event.pageY += pos.top;
+
+            $(document).trigger(event);
+        },
+
+        onOptionsChanged: data => {
+            this.analysis.setOptions(data);
+        },
+
+        hideOptions: data => {
+            this.$frame.addClass('silky-hidden-options-control');
+            this.trigger("hideOptions");
+        },
+
+        requestData: data => {
+            if (data.requestType === "columns") {
+                let columns = this.dataSetModel.get('columns');
+                let columnData = [];
+                for (let i = 0; i < columns.length; i++)
+                    columnData[i] = { name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType };
+                data.columns = columnData;
+            }
+            else if (data.requestType === "column") {
+                let found = false;
+                let columns = this.dataSetModel.get('columns');
+                for (let i = 0; i < columns.length; i++) {
+                    if ((data.requestData.columnId !== undefined && columns[i].id === data.requestData.columnId) ||
+                        (data.requestData.columnName !== undefined && columns[i].name === data.requestData.columnName)) {
+                        found = true;
+                        for (let p = 0; p < data.requestData.properties.length; p++) {
+                            let propertyName = data.requestData.properties[p];
+                            data[propertyName] = columns[i][propertyName];
+                        }
+                        break;
+                    }
                 }
-        }, false);
+                data.columnFound = found;
+            }
+            else
+                data.error = "Request type unknown";
+            return data;
+        }
     };
 
-    this.updateData = function(options, context) {
-        this.context = context;
+    this.frameComms = new Framesg(this.$frame[0].contentWindow, this.key, this.frameCommsApi);
+
+    this.setDataModel = function(dataSetModel) {
+        this.dataSetModel = dataSetModel;
+    };
+
+    this.updateData = function(options) {
         this.options = options;
 
-        this.sendMsg("analysis.context", this.context);
-        this.sendMsg("options.changed", this.options);
+        this.frameComms.send("initialiseOptions", { options: this.options });
     };
 
-    this.updateContext = function(context) {
-        this.context = context;
-        this.sendMsg("analysis.context", this.context);
+    this.notifyDataChanged = function(dataType, dataInfo) {
+        this.frameComms.send("dataChanged", { dataType: dataType, dataInfo: dataInfo });
     };
 
-    var notifyDocumentReady;
     var notifyAborted;
+    this.notifyDocumentReady = null;
 
     this.ready = Promise.all([
-        new Promise(function(resolve, reject) {
+        new Promise((resolve, reject) => {
             var url = 'analyses/' + analysis.ns + '/' + analysis.name;
-            return $.get(url, function(script) {
-                self.def = script;
+            return $.get(url, (script) => {
+                this.def = script;
                 resolve(script);
             });
         }),
-        new Promise(function(resolve, reject) {
-            notifyDocumentReady = resolve;
+        new Promise((resolve, reject) => {
+            this.notifyDocumentReady= resolve;
             notifyAborted = reject;
         })
-    ]).then(function() {
-        self.sendMsg("analysis.context", self.context);
-        self.sendMsg("options.def", self.def);
+    ]).then(() => {
+        return this.frameComms.send("setOptionsDefinition", this.def);
     });
 
     this.abort = function() {
         notifyAborted("Aborted");
     };
-
-    this.addMsgListener("document.ready", notifyDocumentReady);
 };
 
 var OptionsPanel = SilkyView.extend({
@@ -99,9 +140,8 @@ var OptionsPanel = SilkyView.extend({
 
         this._currentResources = null;
 
-        var self = this;
-        $(window).resize(function() { self.resizeHandler(); });
-        this.$el.on('resized', function() { self.resizeHandler(); });
+        $(window).resize(() => { this.resizeHandler(); });
+        this.$el.on('resized', () => { this.resizeHandler(); });
 
         this.render();
     },
@@ -113,53 +153,51 @@ var OptionsPanel = SilkyView.extend({
         var createdNew = false;
 
         if (_.isUndefined(resources)) {
-            resources = new AnalysisResources(analysis, { columns: this.dataSetModel.get('columns') }, this.iframeUrl, this.model.instanceId());
+            resources = new AnalysisResources(analysis, this.$el, this.iframeUrl, this.model.instanceId());
+            resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
             createdNew = true;
         }
 
         if (this._currentResources !== null && resources !== this._currentResources) {
-            this.removeMsgListeners();
+            this.removeMsgListeners(this._currentResources);
             this._currentResources.abort();
             this._currentResources.$frame.addClass('silky-hidden-options-control');
             this._currentResources.$frame.css("height", 0);
             this._currentResources = null;
         }
 
-        var context = { columns: this.dataSetModel.get('columns') };
+        //var context = { columns: this.dataSetModel.get('columns') };
         resources.ready.then(function() {
-            resources.updateData(analysis.options.getValues(), context);
+            resources.updateData(analysis.options.getValues());
         });
 
         resources.analysis = analysis;
         if (this._currentResources === null) {
             this._currentResources = resources;
-            this.addMsgListeners(this._currentResources.$frame);
+            this.addMsgListeners(this._currentResources);
             this.updateContentHeight();
-            if (createdNew)
-                this.$el.append(resources.$frame);
+            //if (createdNew)
+            //    this.$el.append(resources.$frame);
         }
         if (this._currentResources !== null)
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
     },
 
-    applyContextChange: function(resource, context) {
-        resource.ready.then(function() {
-            resource.updateContext(context);
+    notifyOfDataChange: function(resource, dataType, dataInfo) {
+        resource.ready.then(() => {
+            resource.notifyDataChanged(dataType, dataInfo);
         });
     },
 
     setDataSetModel: function(dataSetModel) {
         this.dataSetModel = dataSetModel;
 
-        var self = this;
         this.dataSetModel.on('columnsChanged', event => {
             for (let changes of event.changes) {
-                if (changes.measureTypeChanged || changes.nameChanged) {
-                    var context = { columns: self.dataSetModel.get('columns') };
-                    for (let analysesKey in self._analysesResources)
-                        self.applyContextChange(self._analysesResources[analysesKey], context);
-                    break;
+                if (changes.measureTypeChanged || changes.nameChanged || changes.levelsChanged) {
+                    for (let analysesKey in this._analysesResources)
+                        this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', { measureTypeChanged: changes.measureTypeChanged, nameChanged: changes.nameChanged , levelsChanged: changes.levelsChanged });
                 }
             }
         });
@@ -185,50 +223,25 @@ var OptionsPanel = SilkyView.extend({
         $frame.css("height", value);
     },
 
-    addMsgListeners: function($frame) {
-        this.addMsgListener($frame, "options.changed", this.optionsChanged);
-        this.addMsgListener($frame, "options.close", this.hideOptions);
-        this.addMsgListener($frame, "document.ready", this.frameReady);
-        this.addMsgListener($frame, "document.mouse", this.frameMouseEvent);
+    addMsgListeners: function(resource) {
+        resource.on("hideOptions", () => {
+            this.model.set('selectedAnalysis', null);
+            this.$el.trigger("splitpanel-hide");
+        });
+
+        resource.on("frameReady", () => {
+            this.updateContentHeight();
+        });
     },
 
-    addMsgListener: function($frame, cmd, callback) {
-        var self = this;
-        var action = function (e) {
-            //var frames = document.getElementsByClassName('silky-options-control active-options');
-            if (e.source === $frame[0].contentWindow) {
-                var msg = e.data;
-                if (msg.cmd !== cmd)
-                    return;
-
-                callback.call(self, msg.data);
-            }
-        };
-
-        if (_.isUndefined(this._msgActions))
-            this._msgActions = [];
-        this._msgActions.push(action);
-
-        window.addEventListener("message", action, false);
-    },
-
-    removeMsgListeners: function(cmd) {
-        if (_.isUndefined(this._msgActions) === false) {
-            for(var i = 0; i < this._msgActions.length; i++)
-                window.removeEventListener("message", this._msgActions[i], false);
-        }
-
-        this._msgActions = [];
+    removeMsgListeners: function(resource) {
+        resource.off("hideOptions");
+        resource.off("frameReady");
     },
 
     hideOptions: function(data) {
         this.model.set('selectedAnalysis', null);
-        this._currentResources.$frame.addClass('silky-hidden-options-control');
         this.$el.trigger("splitpanel-hide");
-    },
-
-    optionsChanged: function(data) {
-        this._currentResources.analysis.setOptions(data);
     },
 
     frameReady: function(data) {
@@ -238,17 +251,6 @@ var OptionsPanel = SilkyView.extend({
     resizeHandler: function() {
 
         this.updateContentHeight();
-    },
-
-    frameMouseEvent: function(data) {
-        var event = $.Event( data.eventName, data);
-
-        var pos = $('iframe.silky-options-control').offset();
-
-        event.pageX += pos.left;
-        event.pageY += pos.top;
-
-        $(document).trigger(event);
     }
 });
 

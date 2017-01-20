@@ -4,10 +4,12 @@
 var LayoutSupplierView = require('./layoutsupplierview');
 var FormatDef = require('./formatdef');
 var EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
+const RequestDataSupport = require('./requestdatasupport');
 
 var LayoutVariablesView = function(params) {
 
     LayoutSupplierView.extendTo(this, params);
+    RequestDataSupport.extendTo(this);
 
     this.$el.addClass("silky-options-variable-supplier-group");
 
@@ -16,17 +18,45 @@ var LayoutVariablesView = function(params) {
 
     this._override("onContainerRendering", function(baseFunction, context) {
 
-        this.resources = context.resources;
+        //this.resources = context.resources;
 
         baseFunction.call(this, context);
 
-        this.populateItemList();
+        let promise = this.requestData("columns", null);
+        promise.then(columnInfo => {
+            this.resources = columnInfo;
+            this.populateItemList();
+        });
+
+        //this.populateItemList();
     });
 
-    this.updateContext = function(context) {
-        this.resources = context.resources;
-        this.populateItemList();
+    this._override("onDataChanged", (baseFunction, data) => {
+        if (data.dataType !== "columns")
+            return;
+
+        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged) {
+            let promise = this.requestData("columns", null);
+            promise.then(columnInfo => {
+                this.resources = columnInfo;
+                this.populateItemList();
+            });
+        }
+    });
+
+    this.requestMeasureType = function(columnId, item) {
+        let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id" ] });
+        promise.then(rData => {
+            if (rData.measureType === undefined)
+                rData.measureType = "none";
+
+            item.properties.type = rData.measureType;
+            item.properties.columnId = rData.id;
+          });
+        return promise;
     };
+
+    this._waitingFor = 0;
 
     this.populateItemList = function() {
 
@@ -38,9 +68,12 @@ var LayoutVariablesView = function(params) {
 
         var items = [];
         var columns = this.resources.columns;
+        var promises = [];
         for (var i = 0; i < columns.length; i++) {
             var column = columns[i];
-            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: { type: column.measureType, permitted: true } };
+            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: {  id: column.id, permitted: true } };
+
+            promises.push(this.requestMeasureType(column.id, item));
 
             if (suggested && this._contains(column.measureType, suggested)) {
                 items.splice(suggestedCount, 0, item);
@@ -55,7 +88,10 @@ var LayoutVariablesView = function(params) {
                 item.properties.permitted = permitted.length === 0;
             }
         }
-        this.setList(items);
+
+        Promise.all(promises).then(() => {
+            this.setList(items);
+        });
     };
 
     this._contains = function(value, list) {

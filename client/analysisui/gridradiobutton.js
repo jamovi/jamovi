@@ -31,9 +31,9 @@ var GridRadioButton = function(params) {
         });
 
         var cell = grid.addCell(column, row, true, this.$el);
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
-        return { height: 1, width: 1 };
+        return { height: 1, width: 1, cell: cell };
     };
 
     this.onOptionValueChanged = function(keys, data) {
@@ -58,10 +58,6 @@ var GridRadioButton = function(params) {
 
     this._override('setValue', (baseFunction, value, keys) => {
         return baseFunction.call(this, value ? this.checkedValue : this.otherValue, keys);
-    });
-
-    this._override('value', (baseFunction, keys) => {
-        return baseFunction.call(this, keys) === this.checkedValue;
     });
 
     ChildLayoutSupport.extendTo(this);

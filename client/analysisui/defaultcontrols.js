@@ -17,9 +17,10 @@ var ListItemVariableLabel = require('./listitemvariablelabel');
 var ListItemCombobox = require('./listitemcombobox');
 var ListItemLabel = require('./listitemlabel');
 var ListItemTermLabel = require('./listitemtermlabel');
+var ListItemTextbox = require('./listitemtextbox');
 
 var DefaultControls = {
-    
+
     RMAnovaFactorsBox: RMAnovaFactorsControl,
     CheckBox: GridCheckbox,
     RadioButton: GridRadioButton,
@@ -37,7 +38,8 @@ var DefaultControls = {
         VariableLabel: ListItemVariableLabel,
         ComboBox: ListItemCombobox,
         Label: ListItemLabel,
-        TermLabel: ListItemTermLabel
+        TermLabel: ListItemTermLabel,
+        TextBox: ListItemTextbox
     }
 };
 

@@ -4,9 +4,11 @@ var $ = require('jquery');
 var _ = require('underscore');
 var FormatDef = require('./formatdef');
 var GridTargetList = require('./gridtargetlist');
+const RequestDataSupport = require('./requestdatasupport');
 
 var GridVariablesTargetList = function(params) {
     GridTargetList.extendTo(this, params);
+    RequestDataSupport.extendTo(this);
 
     this._suggestedVariableTypes = [];
     this._permittedVariableTypes = [];
@@ -125,13 +127,6 @@ var GridVariablesTargetList = function(params) {
             this.$icons.removeClass('silky-variable-flash');
         }, 500);
     };
-
-    this._override('updateContext', function(baseFunction, context) {
-        if (baseFunction !== null)
-            baseFunction.call(this, context);
-
-        this.refreshListItems();
-    });
 };
 
 module.exports = GridVariablesTargetList;

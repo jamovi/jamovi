@@ -18,7 +18,6 @@ var ControlContainer = function(params) {
 
     this.editable = true;
 
-    this.registerSimpleProperty("stretchFactor", 0);
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
     this.registerSimpleProperty("name", null);
     this.registerSimpleProperty("margin", "none", new EnumPropertyFilter(["small", "normal", "large", "none"], "none"));
@@ -30,11 +29,7 @@ var ControlContainer = function(params) {
 
         this.$el.addClass("silky-control-margin-" + this.getPropertyValue("margin"));
 
-        var stretchFactor = this.getPropertyValue("stretchFactor");
-
         var cell = grid.addLayout(column, row, true, this);
-
-        cell.setStretchFactor(stretchFactor);
 
         return { height: 1, width: 1, cell: cell };
     };
@@ -66,19 +61,37 @@ var ControlContainer = function(params) {
                 var labeledGroup = _.isUndefined(ctrlDef.label) === false;
                 ctrl.renderContainer(context);
             }
-            else if (_.isUndefined(ctrlDef.controls) === false) {
-                ctrlDef.style = _.isUndefined(ctrlDef.style) ? "list" : ctrlDef.style;
+            else if (ctrlDef.controls !== undefined) {
+                ctrlDef.style = ctrlDef.style === undefined ? "list" : ctrlDef.style;
                 var childStyle = ctrlDef.style.split('-');
                 childStyle = childStyle[childStyle.length - 1];
 
-                bodyContainer = new ControlContainer( { name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: childStyle });
+                bodyContainer = new ControlContainer({ name: ctrlDef.name + "_children", controls: ctrlDef.controls, style: childStyle, stretchFactor: 1 });
                 bodyContainer.renderContainer(context);
             }
 
             var cr2 = ctrl.renderToGrid(this, _nextCell.row, _nextCell.column);
+
+            if (cr2.cell !== undefined) {
+                if (ctrl.hasProperty('fitToGrid'))
+                    cr2.cell.fitToGrid = ctrl.getPropertyValue('fitToGrid');
+
+                if (ctrl.hasProperty('stretchFactor'))
+                    cr2.cell.setStretchFactor(ctrl.getPropertyValue('stretchFactor'));
+
+                if (ctrl.hasProperty('horizontalAlignment'))
+                    cr2.cell.setHorizontalAlign(ctrl.getPropertyValue('horizontalAlignment'));
+
+                if (ctrl.hasProperty('verticalAlignment'))
+                    cr2.cell.setVerticalAlign(ctrl.getPropertyValue('verticalAlignment'));
+            }
+
             if (bodyContainer !== null) {
-                if (ctrl.setBody)
-                    ctrl.setBody(bodyContainer);
+                if (ctrl.setBody) {
+                    let bodyCell = ctrl.setBody(bodyContainer);
+                    if (ctrl.getPropertyValue('stretchFactor') > 0)
+                        bodyCell.setStretchFactor(1);
+                }
                 else
                     throw "this control does not yet support child controls";
             }

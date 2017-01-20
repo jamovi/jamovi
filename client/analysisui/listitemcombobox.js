@@ -17,6 +17,10 @@ var ListItemCombobox = function(params) {
         $item.off("change", this.onUserChange);
     };
 
+    this.onDisposed = function() {
+        this.$el.find(".silky-option-input").off("change", this.onUserChange);
+    };
+
     this.onUpdateView = function(data, format, properties) {
         var select = this.$el.find(".silky-option-input")[0];
         var options = this.getPropertyValue('options');

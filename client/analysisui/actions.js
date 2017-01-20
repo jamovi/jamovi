@@ -4,14 +4,23 @@
 const _ = require('underscore');
 var FormatDef = require('./formatdef');
 var SuperClass = require('../common/superclass');
+const RequestDataSupport = require('./requestdatasupport');
 
 function View() {
+
+    RequestDataSupport.extendTo(this);
 
     this._loaded = true;
     this._updating = false;
     this.workspace = {};
 
     this._baseEvents = [
+        {
+            onEvent: 'view.remote-data-changed', execute: function(ui, data) {
+                if (this.update)
+                    this.remoteDataChanged(ui, data);
+            }
+        },
         {
             onEvent: "view.loaded", execute: function(ui) {
                 this._loaded = true;

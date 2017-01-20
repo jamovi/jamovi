@@ -24,6 +24,8 @@ var ListItemLabel = function(params) {
         if (data !== null)
             displayValue = format.toString(data);
 
+        this.$el.addClass("silky-list-item-label");
+
         var $item = $('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item silky-format-' + format.name + ' silky-list-item-value">' + displayValue + '</div>');
         this.$el.append($item);
     };

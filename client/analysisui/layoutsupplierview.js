@@ -30,7 +30,7 @@ var LayoutSupplierView = function(params) {
             }
             item.index = i;
             if (_.isUndefined(item.used))
-                item.used = 0;
+                item.used = this.numberUsed(item);
             if (_.isUndefined(item.properties))
                 item.properties = {};
 
@@ -180,6 +180,20 @@ var LayoutSupplierView = function(params) {
                 return item;
         }
         return null;
+    };
+
+    this.numberUsed = function(item) {
+        let count = 0;
+        for (let t = 0; t < this._targets.length; t++) {
+            let target = this._targets[t];
+            if (target.itemCount)
+                count += target.itemCount(item);
+            else {
+                throw "Target is missing an itemCount function";
+            }
+        }
+
+        return count;
     };
 
     this.addTarget = function(target) {

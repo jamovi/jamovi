@@ -14,7 +14,7 @@ var OptionControlBase = function(params) {
     };
 
     this.value = function(key) {
-        return this.option.getValue(key);
+        return this.getValue(key);
     };
 
     this.setValue = function(value, key, insert) {

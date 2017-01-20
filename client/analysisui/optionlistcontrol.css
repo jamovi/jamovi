@@ -25,3 +25,7 @@
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-list {
     margin-bottom: 0px;
 }
+
+.silky-layout-cell.even-list-row {
+    background-color: #E8F1FC;
+}

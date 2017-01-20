@@ -47,7 +47,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         else
             this.$label.removeClass("rma-new-factor");
         var cell = this.addCell(0, 0, false, this.$label);
-        cell.hAlign = 'centre';
+        cell.setHorizontalAlign('center');
         cell.setStretchFactor(1);
         if (this.isFirst === false)
             cell.ignoreContentMargin_top = true;
@@ -59,7 +59,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             this.$closeButton.css("visibility", "visible");
 
         cell = this.addCell(1, 0, false, this.$closeButton);
-        cell.vAlign = "centre";
+        cell.vAlign = "center";
 
         if (isEmpty === false) {
             for (var i = 0; i <= levels.length; i++)
@@ -158,7 +158,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             this.levelButtons[index] = $levelButton;
 
             cell = this.addCell(1, index + 1, false, $levelButton);
-            cell.vAlign = "centre";
+            cell.vAlign = "center";
         }
 
         $t.data("index", index);

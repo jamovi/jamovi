@@ -28,9 +28,9 @@ var GridCheckbox = function(params) {
         });
 
         var cell = grid.addCell(column, row, true, this.$el);
-        cell.setAlignment("left", "centre");
+        cell.setAlignment("left", "center");
 
-        return { height: 1, width: 1 };
+        return { height: 1, width: 1, cell: cell };
     };
 
     this.onOptionValueChanged = function(keys, data) {

@@ -16,8 +16,7 @@ var OptionsView = function(uiModel) {
     this.$el = $('<div class="silky-options-content"></div>');
 
     this.model = uiModel;
-    this.resources = this.model.resources;
-    this._contextDependentCtrls = [];
+    this._allCtrls = [];
     this._loaded = false;
     this._initializingData = 0;
 
@@ -64,10 +63,13 @@ var OptionsView = function(uiModel) {
         }
     };
 
-    this.updateResources = function() {
-        this.resources = this.model.resources;
-        for (let i = 0; i < this._contextDependentCtrls.length; i++)
-            this._contextDependentCtrls[i].updateContext(this);
+    this.dataChanged = function(data) {
+        for (let i = 0; i < this._allCtrls.length; i++) {
+            let ctrl = this._allCtrls[i];
+            if (ctrl.onDataChanged)
+                ctrl.onDataChanged(data);
+        }
+        this.trigger("remote-data-changed", data);
     };
 
     this._getOption = function(id) {
@@ -144,6 +146,25 @@ var OptionsView = function(uiModel) {
         return ctrlOption;
     };
 
+    this._requestedDataSource = null;
+    this.setRequestedDataSource = function(source) {
+        this._requestedDataSource = source;
+    };
+
+    this._ctrlListValid = true;
+
+    this._validateControlList = function() {
+        this._ctrlListValid = true;
+        let i = 0;
+        while (i < this._allCtrls.length) {
+            let ctrl = this._allCtrls[i];
+            if (ctrl.isDisposed)
+                this._allCtrls.splice(i, 1);
+            else
+                i += 1;
+        }
+    };
+
     this.createSubControl = function(uiDef) {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
@@ -154,11 +175,21 @@ var OptionsView = function(uiModel) {
 
         var ctrl = new uiDef.type(uiDef);
 
-        if (ctrl.updateContext)
-            this._contextDependentCtrls.push(ctrl);
+
+        ctrl._override("onDisposed", () => {
+            if (this._ctrlListValid === true) {
+                this._ctrlListValid = false;
+                setTimeout(() => { this._validateControlList(); }, 0);
+            }
+        });
+
+        if (ctrl.setRequestedDataSource)
+            ctrl.setRequestedDataSource(this._requestedDataSource);
 
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
+
+        this._allCtrls.push(ctrl);
 
         return ctrl;
     };
@@ -176,11 +207,20 @@ var OptionsView = function(uiModel) {
         if (ctrl.getPropertyValue("stage") > this.model.currentStage)
             return null;
 
-        if (ctrl.updateContext)
-            this._contextDependentCtrls.push(ctrl);
+            ctrl._override("onDisposed", () => {
+                if (this._ctrlListValid === true) {
+                    this._ctrlListValid = false;
+                    setTimeout(() => { this._validateControlList(); }, 0);
+                }
+            });
+
+        if (ctrl.setRequestedDataSource)
+            ctrl.setRequestedDataSource(this._requestedDataSource);
 
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
+
+        this._allCtrls.push(ctrl);
 
         if (ctrl.hasProperty("name") === false)
             return ctrl;

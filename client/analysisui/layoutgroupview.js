@@ -15,6 +15,7 @@ var LayoutGroupView = function(params) {
     GridControl.extendTo(this);
 
     this.registerSimpleProperty("label", "");
+    this.registerSimpleProperty("stretchFactor", 0);
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
     this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
 
@@ -24,9 +25,10 @@ var LayoutGroupView = function(params) {
         var groupText = this.getPropertyValue('label');
         var classes = groupText === "" ? "silky-control-label-empty" : "";
         var $header = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;">' + groupText + '</div>');
-        this.headerCell = grid.addCell(column, row, false, $header);
-        this.hasHeader = true;
-        return { height: 1, width: 1 };
+        let cell = grid.addCell(column, row, false, $header);
+        var stretchFactor = this.getPropertyValue("stretchFactor");
+        cell.setStretchFactor(stretchFactor);
+        return { height: 1, width: 1, cell: cell };
     };
 
     ChildLayoutSupport.extendTo(this);

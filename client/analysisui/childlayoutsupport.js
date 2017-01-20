@@ -23,7 +23,7 @@ var ChildLayoutSupport = function(params) {
             var cell = grid.addLayout(column, row, true, self._baseLayout);
             self._contentsPosition = baseFunction.call(self, self._baseLayout, 0, 0);
 
-            return { height: 1, width: 1 };
+            return { height: 1, width: 1, cell: cell };
         }
         else
             return baseFunction.call(self, grid, row, column);
@@ -33,10 +33,13 @@ var ChildLayoutSupport = function(params) {
         this._body = body;
         body.$el.addClass("silky-control-body silky-control-body-style-"  + this._parentStyle);
 
+        var rData = null;
         if (this._style.startsWith('list'))
-            body.renderToGrid(this._baseLayout, this._contentsPosition.height, 0);
+            rData = body.renderToGrid(this._baseLayout, this._contentsPosition.height, 0);
         else
-            body.renderToGrid(this._baseLayout, 0, this._contentsPosition.width);
+            rData = body.renderToGrid(this._baseLayout, 0, this._contentsPosition.width);
+
+        return rData.cell;
     };
 
 };

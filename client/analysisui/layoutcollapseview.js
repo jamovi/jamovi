@@ -44,7 +44,7 @@ var LayoutCollapseView = function(params) {
             group.toggleColapsedState();
         });
 
-        return { height: 1, width: 1 };
+        return { height: 1, width: 1, cell: cell  };
     };
 
     this.setBody = function(body) {
@@ -52,8 +52,8 @@ var LayoutCollapseView = function(params) {
         body.$el.addClass("silky-control-body");
         var data = body.renderToGrid(this._layout, 1, 0);
         this._bodyCell = data.cell;
-        this._bodyCell.setStretchFactor(1);
         this.setContentVisibility(this._collapsed === false);
+        return data.cell;
     };
 
     this.collapse = function() {
