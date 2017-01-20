@@ -252,8 +252,11 @@ class Server:
             (r'/.*/.*/', SingleFileHandler, { 'path': resultsview_path }),
             (r'/.*/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
             (r'/.*/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
+            (r'/.*/.*/assets/(.*)', SFHandler, {
+                'path': assets_path,
+                'no_cache': self._debug }),
             (r'/(.*)/.*/res/(.*)', ResourceHandler),
-            (r'/(.*)/(.*)/assets/(.*)', ModuleAssetHandler),
+            (r'/(.*)/(.*)/module/(.*)', ModuleAssetHandler),
         ])
 
         sockets = tornado.netutil.bind_sockets(self._ports[0], 'localhost')

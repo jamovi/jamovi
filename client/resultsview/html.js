@@ -41,13 +41,13 @@ var HtmlView = Elem.View.extend({
         let promises = [ ];
 
         for (let ss of doc.stylesheets) {
-            let url = 'assets/' + ss;
+            let url = 'module/' + ss;
             let promise = this._insertSS(url);
             promises.push(promise);
         }
 
         for (let script of doc.scripts)
-            this.$head.append('<script src="assets/' + script + '" class="module-asset"></script>');
+            this.$head.append('<script src="module/' + script + '" class="module-asset"></script>');
 
         this.ready = Promise.all(promises).then(() => {
             this.$el.html(doc.content);
