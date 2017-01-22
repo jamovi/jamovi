@@ -118,10 +118,16 @@ const TableView = Elem.View.extend({
             let column  = table.columns[colNo];
             let visible = (column.visible === 0 || column.visible === 2);
 
+            let classes = '';
+            let format = column.format.split(',');
+            if (format.includes('narrow'))
+                classes += ' silky-results-table-cell-format-narrow';
+
+            let title = name;
             if ('title' in column)
-                cells.header[colNo] = { value : column.title, classes : '', visible : visible };
-            else
-                cells.header[colNo] = { value : column.name, classes : '', visible : visible };
+                title = column.title;
+
+            cells.header[colNo] = { value : column.title, classes : classes, visible : visible };
 
             if (column.superTitle)
                 cells.superHeader[colNo] = { value : column.superTitle, classes : '', visible : visible };
@@ -364,7 +370,8 @@ const TableView = Elem.View.extend({
             if (content === '')
                 content = '&nbsp;';
             let hidden = head.visible ? '' : ' cell-hidden';
-            html += '<th class="silky-results-table-cell' + hidden + '" colspan="2">' + content + '</th>';
+            let classes = head.classes;
+            html += '<th class="silky-results-table-cell' + hidden + ' ' + classes + '" colspan="2">' + content + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
