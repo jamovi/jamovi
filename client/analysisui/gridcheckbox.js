@@ -53,7 +53,7 @@ var GridCheckbox = function(params) {
     };
 
     this.onOptionValueChanged = function(keys, data) {
-        this.$input.prop('checked', this.option.getValue(keys));
+        this.$input.prop('checked', this.getValue(keys));
     };
 
     this.onPropertyChanged = function(name) {
@@ -90,9 +90,11 @@ var GridCheckbox = function(params) {
         if (this.checkedValue === null)
             return baseFunction.call(this, value, keys);
 
-        let list = baseFunction.call(this, []);
+        let list = this.option.getValue();
         if (list === null || Array.isArray(list) === false)
             list = [];
+        else
+            list = list.slice(0);
 
         if (value === false) {
             for (let i = 0; i < list.length; i++) {
