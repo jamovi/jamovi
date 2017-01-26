@@ -17,7 +17,7 @@ function View() {
     this._baseEvents = [
         {
             onEvent: 'view.remote-data-changed', execute: function(ui, data) {
-                if (this.update)
+                if (this.remoteDataChanged)
                     this.remoteDataChanged(ui, data);
             }
         },
