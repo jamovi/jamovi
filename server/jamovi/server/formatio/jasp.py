@@ -131,3 +131,6 @@ def read(data, path):
                         value = struct.unpack('<i', byts)
                         column[i] = value[0]
             data_file.close()
+
+        for column in data.dataset:
+            column.determine_dps()

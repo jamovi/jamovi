@@ -149,6 +149,9 @@ def read(data, path):
                         column[i] = value[0]
             data_file.close()
 
+        for column in data.dataset:
+            column.determine_dps()
+
         is_analysis = re.compile('^[0-9][0-9]+ .+/analysis$')
         is_resource = re.compile('^[0-9][0-9]+ .+/resources/.+')
 
