@@ -108,7 +108,7 @@ var Analysis = function(def) {
             optionsManager.endEdit();
     };
 
-    this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 2 };
+    this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
 
     this.View = new OptionsView( this.model);
 
