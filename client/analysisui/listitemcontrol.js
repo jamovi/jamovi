@@ -56,16 +56,22 @@ var ListItemControl = function(params) {
         if (inError === false && this.getDataRenderProperties && index !== null)
             properties = this.getDataRenderProperties(data, format, index);
 
-        if (this._valid && inError === false)
-            this.onUpdateView(data, format, properties);
+        if (this._valid && inError === false) {
+            let handlerResult = this.onUpdateView(data, format, properties);
+            if (handlerResult && handlerResult.then && handlerResult.catch)
+                handlerResult.then(() => { this.$el.trigger("contentchanged"); });
+        }
         else {
             if (this.onEmptyingView)
                 this.onEmptyingView();
 
             this.$el.empty();
 
-            if (inError === false)
-                this.onRender(data, format, properties);
+            if (inError === false) {
+                let handlerResult = this.onRender(data, format, properties);
+                if (handlerResult && handlerResult.then && handlerResult.catch)
+                    handlerResult.then(() => { this.$el.trigger("contentchanged"); });
+            }
             else
                 this.onRenderError(data, format, properties);
 
