@@ -312,7 +312,9 @@ const TableView = Elem.View.extend({
             //fix cols
             for (let colNo = 0; colNo < cells.header.length - 1; colNo++) {
                 swapped.body[colNo] = new Array(cells.body.length + 1);
-                swapped.body[colNo][0] = cells.header[colNo + 1];
+                let cell = cells.header[colNo + 1];
+                cell.group = 0;
+                swapped.body[colNo][0] = cell;
             }
             //fix body
             for (let rowNo = 0; rowNo < swapped.body.length; rowNo++) {
