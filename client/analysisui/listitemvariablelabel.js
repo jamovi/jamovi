@@ -43,6 +43,7 @@ var ListItemVariableLabel = function(params) {
             if (data !== null)
                 $label.append(format.toString(data));
           });
+          return promise;
     };
 
     this.onRender = function(data, format, properties) {
@@ -67,6 +68,7 @@ var ListItemVariableLabel = function(params) {
 
             this.$el.append($item);
         });
+        return promise;
     };
 };
 
