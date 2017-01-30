@@ -74,11 +74,14 @@ const ArrayView = Elem.View.extend({
         let elements = this.model.attributes.element.elements;
 
         for (let element of elements) {
-            if (element.visible == 1 || element.visible == 3)
+            if (element.visible === 1 || element.visible === 3)
                 continue;
 
             let $el = $('<div></div>');
             let child = this.create(element, $el, this.level+1, this, this.mode);
+            if (child === null)
+                continue;
+
             this.children.push(child);
             promises.push(child.ready);
 

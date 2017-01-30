@@ -18,9 +18,9 @@ const HtmlView  = require('./html').View;
 
 const createItem = function(element, $el, level, parent, mode) {
 
-    if (_.isUndefined(level))
+    if (level === undefined)
         level = 1;
-    if (_.isUndefined(mode))
+    if (mode === undefined)
         mode = 'rich';
 
     let model;

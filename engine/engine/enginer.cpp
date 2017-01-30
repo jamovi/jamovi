@@ -101,7 +101,15 @@ void EngineR::run(Analysis *analysis)
     std::string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw);
 
-    if (analysis->perform == 0) // INIT
+    if (rInside.parseEvalNT("analysis$status == 'complete'"))
+    {
+        Rcpp::RawVector rawVec = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
+        std::string raw(rawVec.begin(), rawVec.end());
+        resultsReceived(raw);
+
+        rInside.parseEvalQ("analysis$.save();");
+    }
+    else if (analysis->perform == 0)   // INIT
     {
         rInside.parseEvalQ("analysis$.save();");
     }
