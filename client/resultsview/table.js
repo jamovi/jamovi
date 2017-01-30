@@ -149,8 +149,6 @@ const TableView = Elem.View.extend({
             let firstCell = table.columns[0].cells[rowNo];
             if ((firstCell.format & Format.BEGIN_GROUP) == Format.BEGIN_GROUP)
                 group++;
-            if ((firstCell.format & Format.END_GROUP) == Format.END_GROUP)
-                group++;
 
             for (let colNo = 0; colNo < table.columns.length; colNo++) {
                 let sourceColumn = table.columns[colNo];
@@ -206,6 +204,9 @@ const TableView = Elem.View.extend({
 
                 cells.body[rowNo][colNo] = cell;
             }
+
+            if ((firstCell.format & Format.END_GROUP) == Format.END_GROUP)
+                group++;
         }
 
         let rowPlan = {};
