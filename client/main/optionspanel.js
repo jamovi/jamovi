@@ -241,6 +241,8 @@ var OptionsPanel = SilkyView.extend({
 
     hideOptions: function(data) {
         this.model.set('selectedAnalysis', null);
+        if (this._currentResources !== null)
+            this._currentResources.$frame.addClass('silky-hidden-options-control');
         this.$el.trigger("splitpanel-hide");
     },
 
