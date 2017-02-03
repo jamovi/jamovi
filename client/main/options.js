@@ -9,10 +9,18 @@ const OptionTypes = {
 
     create: function(template, value) {
         var constructor = OptionTypes[template.type];
-        if ( ! constructor)
-            return new OptionTypes.Option(template, value, true);
+        var initialValue = value;
+        if (initialValue === undefined) {
+            if (constructor && constructor.defaultValue !== undefined)
+                initialValue = constructor.defaultValue;
+            else
+                initialValue = null;
+        }
 
-        return new constructor(template, value);
+        if ( ! constructor)
+            return new OptionTypes.Option(template, initialValue, true);
+
+        return new constructor(template, initialValue);
     }
 };
 
@@ -28,7 +36,10 @@ OptionTypes.Option = function(template, value, isLeaf) {
             return this._onGetValue();
     };
 
-    this.setValue = function(value) {
+    this.setValue = function(value, initializeOnly) {
+        if (initializeOnly && this._initialized)
+            return;
+
         if (this._isLeaf)
             this._value = value;
         else {
@@ -73,9 +84,21 @@ OptionTypes.Option = function(template, value, isLeaf) {
 
      this._onRenameColumn = function() {  };
 
-    this.setValue(value);
+    this.setValue(value, true);
 };
 SuperClass.create(OptionTypes.Option);
+
+OptionTypes.Integer = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value, true);
+};
+OptionTypes.Integer.defaultValue = 0;
+SuperClass.create(OptionTypes.Integer);
+
+OptionTypes.number = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value, true);
+};
+OptionTypes.number.defaultValue = 0;
+SuperClass.create(OptionTypes.number);
 
 OptionTypes.Variable = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
@@ -196,8 +219,6 @@ const Options = function(def) {
     for (var i = 0; i < def.length; i++) {
         var template = def[i];
         let defaultValue = template.default;
-        if (defaultValue === undefined)
-            defaultValue = null;
         var option = OptionTypes.create(template, defaultValue);
         this._options[template.name] = option;
     }
@@ -223,11 +244,11 @@ const Options = function(def) {
         return this._options[name];
     };
 
-    this.setValues = function(values) {
+    this.setValues = function(values, initializeOnly) {
         for (let name in values) {
             if (name in this._options) {
                 if (values[name] !== undefined)
-                    this._options[name].setValue(values[name]);
+                    this._options[name].setValue(values[name], initializeOnly);
             }
         }
     };

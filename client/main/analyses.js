@@ -39,7 +39,7 @@ const Analysis = function(id, name, ns) {
         })
     ]).then(() => {
         this.isReady = true;
-        this.options.setValues(this.values);
+        this.options.setValues(this.values, true);
     });
 };
 
