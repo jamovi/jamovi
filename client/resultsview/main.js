@@ -25,8 +25,8 @@ class Main {  // this is constructed at the bottom
     }
 
     _reallyNotifyResize() {
-        let width  = this.$results.width() + 20;
-        let height = this.$results.height() + 20;
+        let width  = this.$results.width()  + 20;
+        let height = this.$results.height() + 25;
 
         this.mainWindow.postMessage({
             type : 'sizeChanged',
