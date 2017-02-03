@@ -22,6 +22,7 @@ const Analysis = function(id, name, ns) {
     this.isReady = false;
     this.incAsText = false;
     this.revision = 0;
+    this.deleted = false;
 
     this._parent = null;
     this._defn = null;
@@ -52,14 +53,14 @@ Analysis.prototype.setResults = function(results, incAsText, syntax) {
     this.results = results;
     this.incAsText = incAsText;
     this.syntax = syntax;
-    if (this._parent !== null)
+    if (this.deleted === false && this._parent !== null)
         this._parent._notifyResultsChanged(this);
 };
 
 Analysis.prototype.setOptions = function(values) {
     this.options.setValues(values);
     this.revision++;
-    if (this._parent !== null)
+    if (this.deleted === false && this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };
 
@@ -67,7 +68,7 @@ Analysis.prototype.renameColumns = function(columnRenames) {
     for (let i = 0; i < columnRenames.length; i++)
         this.options.renameColumn(columnRenames[i].oldName, columnRenames[i].newName);
     this.revision++;
-    if (this._parent !== null)
+    if (this.deleted === false && this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };
 
@@ -119,6 +120,12 @@ const Analyses = Backbone.Model.extend({
             this._nextId = id + 1;
 
         this.trigger('analysisCreated', analysis);
+    },
+    deleteAnalysis : function(id) {
+        let analysis = this.get(id);
+        analysis.deleted = true;
+        this._notifyOptionsChanged(analysis);
+        this._notifyResultsChanged(analysis);
     },
     get : function(id) {
         for (let i = 0; i < this._analyses.length; i++) {

@@ -16,6 +16,7 @@ class Analysis:
         RUNNING = 2
         COMPLETE = 3
         ERROR = 4
+        DELETED = 5
 
     def __init__(self, id, name, ns, options, parent):
         self.id = id
@@ -173,6 +174,14 @@ class Analyses:
         if analysis is None:
             raise KeyError(id)
         return analysis
+
+    def __delitem__(self, id):
+        for analysis in self._analyses:
+            if analysis.id == id:
+                self._analyses.remove(analysis)
+                break
+        else:
+            raise KeyError(id)
 
     def __iter__(self):
         return self._analyses.__iter__()

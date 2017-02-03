@@ -65,6 +65,7 @@ const ResultsPanel = Backbone.View.extend({
                 $container.attr('data-selected', '');
 
             resources = {
+                id : analysis.id,
                 iframe : iframe,
                 $iframe : $iframe,
                 $container : $container,
@@ -84,6 +85,9 @@ const ResultsPanel = Backbone.View.extend({
                 if (event.button === 2)
                     this._resultsRightClicked(event, analysis);
             });
+        }
+        else if (analysis.deleted) {
+            resources.$container.css('height', '0');
         }
         else {
 
@@ -206,6 +210,11 @@ const ResultsPanel = Backbone.View.extend({
 
                 this.model.trigger('notification', note);
             });
+        }
+        else if (event.op === 'remove') {
+            this.model.set('selectedAnalysis', null);
+            let analysisId = this.resources[this._menuId].id;
+            this.model.analyses().deleteAnalysis(analysisId);
         }
         else {
             let message = { type: 'menuEvent', data: event };

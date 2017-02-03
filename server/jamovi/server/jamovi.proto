@@ -43,6 +43,7 @@ message AnalysisRequest {
     enum Perform {
         INIT = 0;
         RUN = 1;
+        DELETE = 6;
     }
 
     Perform perform = 5;

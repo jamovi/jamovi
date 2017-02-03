@@ -329,7 +329,10 @@ class Instance:
 
             analysis = self._data.analyses.get(request.analysisId)
             if analysis is not None:
-                analysis.set_options(request.options, request.changed)
+                if request.perform is jcoms.AnalysisRequest.Perform.Value('DELETE'):
+                    del self._data.analyses[request.analysisId]
+                else:
+                    analysis.set_options(request.options, request.changed)
             else:
                 log.error('Instance._on_analysis(): Analysis ' + analysis.id + ' could not be found')
 

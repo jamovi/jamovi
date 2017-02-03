@@ -47,6 +47,8 @@
 
 .silky-results-container {
     position: relative ;
+    overflow: hidden ;
+    transition: 0.5s height ;
 }
 
 .silky-results-cover {

@@ -28,10 +28,13 @@ Menu.prototype._entryClicked = function(event) {
     let $entry = event.data.$entry;
 
     let nextEvent;
-    if (entry.op)
+    if (entry.op) {
         nextEvent = { type: 'selected', address: entry.address, op: entry.op };
-    else
+        tarp.hide();
+    }
+    else {
         nextEvent = { type: 'activated', address: entry.address };
+    }
 
     if (this.parent) {
         this._notifyMenuEvent(nextEvent);
@@ -145,7 +148,7 @@ Menu.prototype._showSubMenu = function() {
     if (this.active === null)
         return;
 
-    this.submenu.setup([
+    let ops = [
         {
             label  : 'Copy',
             op     : 'copy',
@@ -156,7 +159,12 @@ Menu.prototype._showSubMenu = function() {
             op     : 'save',
             address: this.active.address
         },
-    ]);
+    ];
+
+    if (this.active.address.length === 1)  // the analysis
+        ops.push({ label: 'Remove', op: 'remove', address: this.active.address });
+
+    this.submenu.setup(ops);
 
     let borderTopWidth = parseInt(this.$el.css('borderTopWidth'));
     let borderRightWidth = parseInt(this.$el.css('borderRightWidth'));

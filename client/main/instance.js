@@ -311,6 +311,9 @@ const Instance = Backbone.Model.extend({
             analysisRequest.setOptions(OptionsPB.toPB(analysis.options, ppi, coms.Messages));
         }
 
+        if (analysis.deleted)
+            analysisRequest.perform = 6; // delete
+
         let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();
         request.payloadType = 'AnalysisRequest';
