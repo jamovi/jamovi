@@ -222,6 +222,9 @@ var Opt = function(type, initialValue, params) {
     };
 
     this.toString = function() {
+        if (this._value === undefined || this._value === null)
+            return '';
+            
         return this._value.toString();
     };
 

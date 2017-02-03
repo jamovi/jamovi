@@ -107,6 +107,9 @@ var Options = function(def) {
         for (var i = 0;i < def.length; i++) {
             var item = def[i];
 
+            if (item.default === undefined)
+                item.default = null;
+                
             var option = new Opt(item.type, item.default, item);
 
             this._list.push(option);
