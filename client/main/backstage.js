@@ -342,6 +342,7 @@ var FSEntryBrowserView = SilkyView.extend({
             $target.addClass("silky-bs-fslist-selected-item");
 
             this.$header.find('.silky-bs-fslist-browser-save-name').val(name);
+            this._nameChanged();
             this._selected = true;
         }
     },
@@ -520,18 +521,15 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    var activePath = this._pcSaveListModel.currentActivePath;
-                    if (activePath !== null)
-                        this.requestSave(activePath);
-                    else
-                        this.set('operation', 'saveAs');
+                    this._updateSavePath(this.instance.get('filePath'));
+                    this.requestSave(this._pcSaveListModel.currentActivePath, true);
                 }
             },
             {
                 name: 'saveAs',
                 title: 'Save As',
                 action: () => {
-                    this._pcSaveListModel.currentActivePath = this.instance.get('filePath');
+                    this._updateSavePath(this.instance.get('filePath'));
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
@@ -585,7 +583,7 @@ var BackstageModel = Backbone.Model.extend({
                 dialog.showSaveDialog({ filters : filters }, function(fileName) {
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
-                        self.requestSave(fileName);
+                        self.requestSave(fileName, true);
                     }
                 });
             }
@@ -700,12 +698,31 @@ var BackstageModel = Backbone.Model.extend({
             this.set('activated', false);
          });
     },
-    requestSave: function(path) {
-        this.instance.save(path)
+    requestSave: function(path, overwrite) {
+
+        if (overwrite === undefined && typeof path === "boolean") {
+            overwrite = path;
+            path = null;
+        }
+
+        if (path === undefined || path === null) {
+            if (this._pcSaveListModel.currentActivePath === null) {
+                this.set('activated', true);
+                this.set('operation', 'saveAs');
+                return;
+            }
+            else
+                path = this._pcSaveListModel.currentActivePath;
+        }
+
+        this.instance.save(path, overwrite)
             .then(() => {
                 this._updateSavePath(path);
                 this.set('activated', false);
-             });
+            }).catch(() => {
+                this.set('activated', true);
+                this.set('operation', 'saveAs');
+            });
     },
     _updateSavePath: function(path) {
         if (path.endsWith(".omv"))

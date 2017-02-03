@@ -220,9 +220,12 @@ message OpenProgress {
 
 message SaveRequest {
     string filename = 1;
+    bool override = 2;
 }
 
 message SaveProgress {
+    bool fileExists = 1;
+    bool success = 2;
 }
 
 message FSEntry {
