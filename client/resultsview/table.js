@@ -82,7 +82,9 @@ const TableView = Elem.View.extend({
         let fnIndices = { };
         let footnotes = [ ];
 
-        if (this.model.attributes.status === 2)
+        if (this.model.attributes.status === 1)
+            this.$el.addClass('silky-results-status-inited');
+        else if (this.model.attributes.status === 2)
             this.$el.addClass('silky-results-status-running');
 
         if (this.model.attributes.title)
