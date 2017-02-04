@@ -499,6 +499,8 @@ var BackstageModel = Backbone.Model.extend({
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
 
+        this._savePromiseResolve = null;
+
         this.attributes.ops = [
             {
                 name: 'new',
