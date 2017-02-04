@@ -240,11 +240,10 @@ var FSEntryBrowserView = SilkyView.extend({
 
         if (this.model.clickProcess === "save") {
             this.filterExtension = "omv";
-            var self = this;
-            setTimeout(function () {
-                self.$header.find('.silky-bs-fslist-browser-save-name').focus();
+            setTimeout(() => {
+                this.$header.find('.silky-bs-fslist-browser-save-name').focus();
                 keyboardJS.setContext('save_name_textbox');
-                keyboardJS.bind('', event => self._nameBoxFocused(event));
+                keyboardJS.bind('', event => this._nameBoxFocused(event));
             }, 50);
         }
     },
@@ -556,8 +555,6 @@ var BackstageModel = Backbone.Model.extend({
             var remote = window.require('electron').remote;
             var dialog = remote.dialog;
 
-            var self = this;
-
             if (type === 'open') {
 
                 let filters = [
@@ -567,10 +564,10 @@ var BackstageModel = Backbone.Model.extend({
                     { name: 'JASP', extensions: ['jasp'] },
                 ];
 
-                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, function(fileNames) {
+                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, (fileNames) => {
                     if (fileNames) {
                         var path = fileNames[0].replace(/\\/g, '/');
-                        self.requestOpen(path);
+                        this.requestOpen(path);
                     }
                 });
             }
@@ -580,10 +577,10 @@ var BackstageModel = Backbone.Model.extend({
                     { name: 'jamovi', extensions: ['omv'] },
                 ];
 
-                dialog.showSaveDialog({ filters : filters }, function(fileName) {
+                dialog.showSaveDialog({ filters : filters }, (fileName) => {
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
-                        self.requestSave(fileName, true);
+                        this.requestSave(fileName, true);
                     }
                 });
             }
@@ -659,11 +656,8 @@ var BackstageModel = Backbone.Model.extend({
 
             if (old) {
                 this.attributes.place = place;
-                var self = this;
-                setTimeout(function() {
-                    //self.attributes.place = old;
-                    //self.set('place', place);
-                    self.trigger('change:place');
+                setTimeout(() => {
+                    this.trigger('change:place');
                 }, 0);
             }
         }
@@ -675,15 +669,13 @@ var BackstageModel = Backbone.Model.extend({
 
         var url = this.get("hostBaseUrl") + "upload";
 
-        var self = this;
-
         $.ajax({
             url : url,
             type: 'POST',
             data: data,
-            xhr: function() {
+            xhr: () => {
                 var xhr = $.ajaxSettings.xhr();
-                xhr.upload.addEventListener("progress", self.progressHandler);
+                xhr.upload.addEventListener("progress", this.progressHandler);
                 return xhr;
             },
             processData: false,
@@ -699,6 +691,12 @@ var BackstageModel = Backbone.Model.extend({
          });
     },
     requestSave: function(path, overwrite) {
+
+        // can be called as requestSave(path, overwrite), requestSave(path), requestSave(), requestSave(overwrite)
+
+        // if path is not specified then the current opened path is used. If overwrite is not specified it defaults to false.
+        // if overwrite is false and the specified file already exists a popup asks for overwrite.
+        // if overwrite is true and the specified file already exists the file is overwritten.
 
         if (overwrite === undefined && typeof path === "boolean") {
             overwrite = path;
@@ -815,13 +813,12 @@ var BackstageView = SilkyView.extend({
 
         this.model.set('activated', false);
 
-        var self = this;
-        setTimeout(function () {
-            var ops = self.model.attributes.ops;
+        setTimeout(() => {
+            var ops = this.model.attributes.ops;
             for (let i = 0; i < ops.length; i++) {
                 if ('places' in ops[i]) {
-                    self.model.set('operation', ops[i].name);
-                    self.model.set('place', ops[i].places[0].name);
+                    this.model.set('operation', ops[i].name);
+                    this.model.set('place', ops[i].places[0].name);
                     break;
                 }
             }

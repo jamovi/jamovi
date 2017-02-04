@@ -273,15 +273,15 @@ class Instance:
 
         try:
             file_exists = os.path.isfile(path)
-            successfulWrite = False
+            successful_write = False
             if file_exists is False or request.override is True:
                 formatio.write(self._data, path)
-                successfulWrite = True
+                successful_write = True
 
             self._filepath = path
             response = jcoms.SaveProgress()
             response.fileExists = file_exists
-            response.success = successfulWrite
+            response.success = successful_write
             self._coms.send(response, self._instance_id, request)
 
             if response.success:
