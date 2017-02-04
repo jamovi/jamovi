@@ -703,24 +703,29 @@ var BackstageModel = Backbone.Model.extend({
             path = null;
         }
 
-        if (path === undefined || path === null) {
-            if (this._pcSaveListModel.currentActivePath === null) {
-                this.set('activated', true);
-                this.set('operation', 'saveAs');
-                return;
+        return new Promise((resolve, reject) => {
+            if (path === undefined || path === null) {
+                if (this._pcSaveListModel.currentActivePath === null) {
+                    this.set('activated', true);
+                    this.set('operation', 'saveAs');
+                    reject();
+                    return;
+                }
+                else
+                    path = this._pcSaveListModel.currentActivePath;
             }
-            else
-                path = this._pcSaveListModel.currentActivePath;
-        }
 
-        this.instance.save(path, overwrite)
-            .then(() => {
-                this._updateSavePath(path);
-                this.set('activated', false);
-            }).catch(() => {
-                this.set('activated', true);
-                this.set('operation', 'saveAs');
-            });
+            this.instance.save(path, overwrite)
+                .then(() => {
+                    this._updateSavePath(path);
+                    this.set('activated', false);
+                    resolve();
+                }).catch(() => {
+                    this.set('activated', true);
+                    this.set('operation', 'saveAs');
+                    reject();
+                });
+        });
     },
     _updateSavePath: function(path) {
         if (path.endsWith(".omv"))
