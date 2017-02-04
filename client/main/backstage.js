@@ -699,7 +699,7 @@ var BackstageModel = Backbone.Model.extend({
         // if overwrite is true and the specified file already exists the file is overwritten.
 
         if (this.get("activated"))
-            throw "This method can only be called from outside of backstage."
+            throw "This method can only be called from outside of backstage.";
 
         let rej;
         let prom = new Promise((resolve, reject) => {
