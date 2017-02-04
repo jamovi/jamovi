@@ -3,6 +3,7 @@
 #
 
 import os
+import os.path
 import platform
 
 from ..core import MeasureType
@@ -270,13 +271,33 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
 
-        formatio.write(self._data, path)
+        try:
+            file_exists = os.path.isfile(path)
+            successful_write = False
+            if file_exists is False or request.overwrite is True:
+                formatio.write(self._data, path)
+                successful_write = True
 
-        self._filepath = path
-        response = jcoms.SaveProgress()
-        self._coms.send(response, self._instance_id, request)
+            self._filepath = path
+            response = jcoms.SaveProgress()
+            response.fileExists = file_exists
+            response.success = successful_write
+            self._coms.send(response, self._instance_id, request)
 
-        self._add_to_recents(path)
+            if response.success:
+                self._add_to_recents(path)
+
+        except OSError as e:
+            base    = os.path.basename(path)
+            message = 'Unable to save {}'.format(base)
+            cause = e.strerror
+            self._coms.send_error(message, cause, self._instance_id, request)
+
+        except Exception as e:
+            base    = os.path.basename(path)
+            message = 'Unable to save {}'.format(base)
+            cause = str(e)
+            self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_open(self, request):
         path = request.filename

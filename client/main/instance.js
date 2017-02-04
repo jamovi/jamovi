@@ -134,25 +134,45 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
-    save(filePath) {
+    save(filePath, overwrite) {
+
+        if (overwrite === undefined)
+            overwrite = false;
 
         let coms = this.attributes.coms;
 
-        let save = new coms.Messages.SaveRequest(filePath);
+        let save = new coms.Messages.SaveRequest(filePath, overwrite);
         let request = new coms.Messages.ComsMessage();
         request.payload = save.toArrayBuffer();
         request.payloadType = "SaveRequest";
         request.instanceId = this._instanceId;
 
-        let prom = coms.send(request);
-
-        prom.then(() => {
-            let ext = path.extname(filePath);
-            this.set('filePath', filePath);
-            this.set('fileName', path.basename(filePath, ext));
+        return new Promise((resolve, reject) => {
+            coms.send(request).then((response) => {
+                let info = coms.Messages.SaveProgress.decode(response.payload);
+                if (info.success === false) {
+                    if (overwrite === false && info.fileExists) {
+                        let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Do you want to overwrite this file?", 'Confirm overwite');
+                        if (response)
+                            this.save(filePath, true).then((response) => resolve(response), (reason) => reject(reason) );
+                        else
+                            reject("File overwrite cancelled.");
+                    }
+                    else
+                        reject("File save failed.");
+                }
+                else {
+                    let ext = path.extname(filePath);
+                    this.set('filePath', filePath);
+                    this.set('fileName', path.basename(filePath, ext));
+                    resolve(response);
+                    this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
+                }
+            }).catch(error => {
+                reject("File save failed.");
+                this._notify(error);
+            });
         });
-
-        return prom;
     },
     browse(path) {
 
