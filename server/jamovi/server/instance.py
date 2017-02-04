@@ -274,7 +274,7 @@ class Instance:
         try:
             file_exists = os.path.isfile(path)
             successful_write = False
-            if file_exists is False or request.override is True:
+            if file_exists is False or request.overwrite is True:
                 formatio.write(self._data, path)
                 successful_write = True
 

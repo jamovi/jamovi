@@ -220,7 +220,7 @@ message OpenProgress {
 
 message SaveRequest {
     string filename = 1;
-    bool override = 2;
+    bool overwrite = 2;
 }
 
 message SaveProgress {
