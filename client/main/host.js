@@ -21,6 +21,9 @@ let zoom;
 let zoomIn;
 let zoomOut;
 let currentZoom;
+let setEdited;
+let showMessageBox;
+let navigate;
 
 let emitter = new events.EventEmitter();
 
@@ -34,12 +37,54 @@ if (window.require) {
     const electron = window.require('electron');
     const remote = electron.remote;
     const webFrame = electron.webFrame;
+    const browserWindow = remote.getCurrentWindow();
+    const webContents = browserWindow.webContents;
+    const dialog = remote.dialog;
 
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
     resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
 
     const ipc = electron.ipcRenderer;
+
+    // intercept page refreshes, so we can differentiate between
+    // a page refresh, and a window close
+
+    let beforeInputEvent = (event, input) => {
+        if (input.type !== 'keyDown')
+            return;
+        if ((input.key === 'r' && input.meta) ||
+            (input.key === 'F5') ||
+            (input.key === 'r' && input.ctrlKey)) {
+            loading = true;
+            location.reload();
+        }
+    };
+
+    webContents.on('before-input-event', beforeInputEvent);
+
+    let loading = false;
+    let closing = false;
+
+    // beforeunload is how we intercept window closes (prompt to save)
+    // but it also gets triggered for page refreshes. in general, the user
+    // shouldn't be able to refresh the page, but they're useful during
+    // development.
+
+    window.onbeforeunload = event => {
+        if (closing !== true && loading !== true) {
+            setTimeout(() => {
+                let event = new Event('close', { cancelable: true });
+                _notify('close', event);
+                if (event.defaultPrevented === false) {
+                    closing = true;
+                    closeWindow();
+                }
+            });
+            return false;
+        }
+        webContents.removeListener('before-input-event', beforeInputEvent);
+    };
 
     minimizeWindow = function() {
         ipc.send('request', { type: 'minimize' });
@@ -49,8 +94,15 @@ if (window.require) {
         ipc.send('request', { type: 'maximize' });
     };
 
-    closeWindow = function() {
+    closeWindow = function(force) {
+        if (force)
+            closing = true;
         ipc.send('request', { type: 'close' });
+    };
+
+    navigate = function(instanceId) {
+        loading = true;
+        window.location = baseUrl + '?id=' + instanceId;
     };
 
     openWindow = function(instanceId) {
@@ -88,6 +140,10 @@ if (window.require) {
         return webFrame.getZoomFactor();
     };
 
+    showMessageBox = function(options) {
+        return dialog.showMessageBox(browserWindow, options);
+    };
+
     window.onkeydown = function(event) {
         if (navigator.platform === 'MacIntel') {
             if (event.key === '_' && event.metaKey && event.shiftKey) {
@@ -109,6 +165,10 @@ if (window.require) {
                 event.preventDefault();
             }
         }
+    };
+
+    setEdited = function(edited) {
+        browserWindow.setDocumentEdited(edited);
     };
 }
 else {
@@ -139,6 +199,9 @@ const Host = {
     zoomOut,
     currentZoom,
     on,
+    showMessageBox,
+    setEdited,
+    navigate,
 };
 
 module.exports = Host;

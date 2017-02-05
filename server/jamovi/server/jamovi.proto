@@ -328,11 +328,14 @@ message InfoRequest {
 
 message InfoResponse {
     bool hasDataSet = 1;
-    DataSetSchema schema = 2;
-    uint32 rowCount = 3;
-    uint32 columnCount = 4;
-    string filePath = 5;
-    repeated AnalysisResponse analyses = 6;
+    string title = 2;
+    string path = 3;
+    bool edited = 4;
+    bool blank = 5;
+    DataSetSchema schema = 6;
+    uint32 rowCount = 7;
+    uint32 columnCount = 8;
+    repeated AnalysisResponse analyses = 9;
 }
 
 enum SpecialValues {

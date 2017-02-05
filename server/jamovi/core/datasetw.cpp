@@ -41,6 +41,28 @@ DataSetW::DataSetW(MemoryMapW *mm)
     : DataSet(mm)
 {
     _mm = mm;
+    _edited = false;
+    _blank = false;
+}
+
+void DataSetW::setEdited(bool edited)
+{
+    _edited = edited;
+}
+
+bool DataSetW::isEdited() const
+{
+    return _edited;
+}
+
+void DataSetW::setBlank(bool blank)
+{
+    _blank = blank;
+}
+
+bool DataSetW::isBlank() const
+{
+    return _blank;
 }
 
 ColumnW DataSetW::operator[](const char *name)

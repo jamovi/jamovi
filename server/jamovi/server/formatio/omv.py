@@ -97,8 +97,15 @@ def write(data, path):
             abs_path = os.path.join(data.instance_path, rel_path)
             zip.write(abs_path, rel_path)
 
+    data.title = os.path.splitext(os.path.basename(path))[0]
+    data.path = path
 
-def read(data, path):
+
+def read(data, path, is_example=False):
+
+    data.title = os.path.splitext(os.path.basename(path))[0]
+    if not is_example:
+        data.path = path
 
     with ZipFile(path, 'r') as zip:
         # manifest = zip.read('META-INF/MANIFEST.MF')

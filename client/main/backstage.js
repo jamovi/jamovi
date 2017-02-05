@@ -522,7 +522,7 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    this._updateSavePath(this.instance.get('filePath'));
+                    this._updateSavePath(this.instance.get('path'));
                     this.requestSave(this._pcSaveListModel.currentActivePath, true);
                 }
             },
@@ -530,7 +530,7 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'saveAs',
                 title: 'Save As',
                 action: () => {
-                    this._updateSavePath(this.instance.get('filePath'));
+                    this._updateSavePath(this.instance.get('path'));
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
@@ -700,8 +700,11 @@ var BackstageModel = Backbone.Model.extend({
         // if overwrite is false and the specified file already exists a popup asks for overwrite.
         // if overwrite is true and the specified file already exists the file is overwritten.
 
-        if (this.get("activated"))
-            throw "This method can only be called from outside of backstage.";
+        if (this.get('activated'))
+            throw 'This method can only be called from outside of backstage.';
+
+        if (this.instance.attributes.path)
+            return this.requestSave(this.instance.attributes.path, true);
 
         let rej;
         let prom = new Promise((resolve, reject) => {
@@ -753,6 +756,7 @@ var BackstageModel = Backbone.Model.extend({
                     if (this._savePromiseResolve !== null)
                         this._savePromiseResolve();
                     this.set('activated', false);
+                    this.trigger('saved');
                     resolve();
                 }).catch(() => {
                     this.set('activated', true);

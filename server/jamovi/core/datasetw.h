@@ -28,6 +28,12 @@ public:
     ColumnW operator[](const char *name);
     ColumnW getColumnById(int id);
 
+    void setEdited(bool edited);
+    bool isEdited() const;
+
+    void setBlank(bool blank);
+    bool isBlank() const;
+
 protected:
 
     DataSetW(MemoryMapW *memoryMap);
@@ -35,6 +41,8 @@ protected:
 private:
 
     MemoryMapW *_mm;
+    bool _edited;
+    bool _blank;
 };
 
 #endif // DATASETW_H

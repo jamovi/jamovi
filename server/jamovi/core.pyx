@@ -30,6 +30,10 @@ cdef extern from "datasetw.h":
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
+        void setEdited(bool edited);
+        bool isEdited() const;
+        void setBlank(bool blank);
+        bool isBlank() const;
 
 class ColumnIterator:
     def __init__(self, dataset):
@@ -104,6 +108,20 @@ cdef class DataSet:
     @property
     def column_count(self):
         return self._this.columnCount()
+
+    property is_edited:
+        def __get__(self):
+            return self._this.isEdited()
+
+        def __set__(self, edited):
+            self._this.setEdited(edited)
+
+    property is_blank:
+        def __get__(self):
+            return self._this.isBlank()
+
+        def __set__(self, blank):
+            self._this.setBlank(blank)
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
@@ -536,7 +554,7 @@ cdef class MemoryMap:
 
     def __init__(self):
         pass
-       
+
     def close(self):
         self._this.close()
 

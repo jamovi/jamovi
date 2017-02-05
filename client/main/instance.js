@@ -49,9 +49,10 @@ const Instance = Backbone.Model.extend({
         coms : null,
         selectedAnalysis : null,
         hasDataSet : false,
-        filePath : null,
-        fileName : 'Untitled',
-        resultsMode : 'rich'
+        path : null,
+        title : '',
+        resultsMode : 'rich',
+        blank : false,
     },
     instanceId() {
         return this._instanceId;
@@ -98,8 +99,13 @@ const Instance = Backbone.Model.extend({
             promise = instance.connect().then(() => {
                 return instance.open(filePath);
             }).then(() => {
-                host.openWindow(instance.instanceId());
-                instance.destroy();
+                if (this.attributes.blank && this._dataSetModel.attributes.edited === false) {
+                    host.navigate(instance.instanceId());
+                }
+                else {
+                    host.openWindow(instance.instanceId());
+                    instance.destroy();
+                }
             }).catch(error => {
                 this._notify(error);
                 instance.destroy();
@@ -110,13 +116,13 @@ const Instance = Backbone.Model.extend({
             let open = new coms.Messages.OpenRequest(filePath);
             let request = new coms.Messages.ComsMessage();
             request.payload = open.toArrayBuffer();
-            request.payloadType = "OpenRequest";
+            request.payloadType = 'OpenRequest';
             request.instanceId = this._instanceId;
 
             let onresolve = (response) => {
                 let ext = path.extname(filePath);
-                this.set('filePath', filePath);
-                this.set('fileName', path.basename(filePath, ext));
+                this.set('path', filePath);
+                this.set('title', path.basename(filePath, ext));
                 this._retrieveInfo();
             };
 
@@ -150,7 +156,15 @@ const Instance = Backbone.Model.extend({
         return new Promise((resolve, reject) => {
             coms.send(request).then((response) => {
                 let info = coms.Messages.SaveProgress.decode(response.payload);
-                if (info.success === false) {
+                if (info.success) {
+                    let ext = path.extname(filePath);
+                    this.set('path', filePath);
+                    this.set('title', path.basename(filePath, ext));
+                    resolve(response);
+                    this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
+                    this._dataSetModel.set('edited', false);
+                }
+                else {
                     if (overwrite === false && info.fileExists) {
                         let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Do you want to overwrite this file?", 'Confirm overwite');
                         if (response)
@@ -158,28 +172,23 @@ const Instance = Backbone.Model.extend({
                         else
                             reject("File overwrite cancelled.");
                     }
-                    else
+                    else {
                         reject("File save failed.");
+                    }
                 }
-                else {
-                    let ext = path.extname(filePath);
-                    this.set('filePath', filePath);
-                    this.set('fileName', path.basename(filePath, ext));
-                    resolve(response);
-                    this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
-                }
+
             }).catch(error => {
                 reject("File save failed.");
                 this._notify(error);
             });
         });
     },
-    browse(path) {
+    browse(filePath) {
 
         let coms = this.attributes.coms;
 
         let fs = new coms.Messages.FSRequest();
-        fs.path = path;
+        fs.path = filePath;
 
         let message = new coms.Messages.ComsMessage();
         message.payload = fs.toArrayBuffer();
@@ -212,13 +221,13 @@ const Instance = Backbone.Model.extend({
 
         return coms.sendP(request);
     },
-    installModule(path) {
+    installModule(filePath) {
 
         let coms = this.attributes.coms;
 
         let moduleRequest = new coms.Messages.ModuleRequest();
         moduleRequest.command = coms.Messages.ModuleRequest.ModuleCommand.INSTALL;
-        moduleRequest.path = path;
+        moduleRequest.path = filePath;
 
         let request = new coms.Messages.ComsMessage();
         request.payload = moduleRequest.toArrayBuffer();
@@ -257,7 +266,7 @@ const Instance = Backbone.Model.extend({
         let instanceRequest = new coms.Messages.InstanceRequest();
         let request = new coms.Messages.ComsMessage();
         request.payload = instanceRequest.toArrayBuffer();
-        request.payloadType = "InstanceRequest";
+        request.payloadType = 'InstanceRequest';
 
         if (instanceId)
             request.instanceId = instanceId;
@@ -285,10 +294,9 @@ const Instance = Backbone.Model.extend({
             if (info.hasDataSet) {
                 this._dataSetModel.setup(info);
                 this.set('hasDataSet', true);
-
-                let ext = path.extname(info.filePath);
-                this.set('filePath', info.filePath);
-                this.set('fileName', path.basename(info.filePath, ext));
+                this.set('title', info.title);
+                this.set('path',  info.path);
+                this.set('blank', info.blank);
             }
 
             for (let analysis of info.analyses) {
@@ -314,6 +322,8 @@ const Instance = Backbone.Model.extend({
         }
     },
     _runAnalysis(analysis, changed) {
+
+        this._dataSetModel.set('edited', true);
 
         let coms = this.attributes.coms;
 
@@ -369,6 +379,9 @@ const Instance = Backbone.Model.extend({
         }
     },
     _columnsChanged(event) {
+
+        this._dataSetModel.set('edited', true);
+
         for (let analysis of this._analyses) {
             let using = analysis.getUsing();
 

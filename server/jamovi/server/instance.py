@@ -40,7 +40,8 @@ class InstanceData:
     def __init__(self):
         self.analyses = None
         self.dataset = None
-        self.path = None
+        self.title = None
+        self.path = ''
 
 
 class Instance:
@@ -121,7 +122,6 @@ class Instance:
         self._data.analyses = Analyses()
 
         self._coms = None
-        self._filepath = None
         self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
         self._inactive_since = None
 
@@ -273,18 +273,18 @@ class Instance:
 
         try:
             file_exists = os.path.isfile(path)
-            successful_write = False
+            success = False
             if file_exists is False or request.overwrite is True:
                 formatio.write(self._data, path)
-                successful_write = True
+                success = True
+                self._data.dataset.is_edited = False
 
-            self._filepath = path
             response = jcoms.SaveProgress()
             response.fileExists = file_exists
-            response.success = successful_write
+            response.success = success
             self._coms.send(response, self._instance_id, request)
 
-            if response.success:
+            if success:
                 self._add_to_recents(path)
 
         except OSError as e:
@@ -308,13 +308,12 @@ class Instance:
 
         try:
             self._data.dataset = dataset
-            self._filepath = path
 
-            formatio.read(self._data, nor_path)
-
+            is_example = path.startswith('{{Examples}}')
+            formatio.read(self._data, nor_path, is_example)
             self._coms.send(None, self._instance_id, request)
 
-            if path != '' and not path.startswith('{{Examples}}'):
+            if path != '' and not is_example:
                 self._add_to_recents(path)
 
         except OSError as e:
@@ -350,6 +349,7 @@ class Instance:
 
             analysis = self._data.analyses.get(request.analysisId)
             if analysis is not None:
+                self._data.dataset.is_edited = True
                 if request.perform is jcoms.AnalysisRequest.Perform.Value('DELETE'):
                     del self._data.analyses[request.analysisId]
                 else:
@@ -362,6 +362,7 @@ class Instance:
         else:
             try:
                 analysis = self._data.analyses.create(request.analysisId, request.name, request.ns)
+                self._data.dataset.is_edited = True
 
                 response = jcoms.AnalysisResponse()
                 response.analysisId = request.analysisId
@@ -385,13 +386,16 @@ class Instance:
 
         response = jcoms.InfoResponse()
 
-        hasDataSet = self._data.dataset is not None
-        response.hasDataSet = hasDataSet
+        has_dataset = self._data.dataset is not None
+        response.hasDataSet = has_dataset
 
-        if hasDataSet:
-            response.filePath = self._filepath
+        if has_dataset:
+            response.title = self._data.title
+            response.path = self._data.path
             response.rowCount = self._data.dataset.row_count
             response.columnCount = self._data.dataset.column_count
+            response.edited = self._data.dataset.is_edited
+            response.blank = self._data.dataset.is_blank
 
             for column in self._data.dataset:
                 column_schema = response.schema.columns.add()
@@ -478,6 +482,8 @@ class Instance:
             response.incSchema = True
             schema = response.schema.add()
             self._populate_column_schema(column, schema)
+
+        self._data.dataset.is_edited = True
 
     def _apply_cells(self, request, response):
         row_start = request.rowStart
@@ -571,6 +577,8 @@ class Instance:
                 response.incSchema = True
                 schema = response.schema.add()
                 self._populate_column_schema(column, schema)
+
+            self._data.dataset.is_edited = True
 
     def _auto_adjust(self, column):
         if column.measure_type == MeasureType.NOMINAL_TEXT:

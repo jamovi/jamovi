@@ -21,11 +21,14 @@ const DataSetModel = Backbone.Model.extend({
         coms : null,
         instanceId : null,
         editingVar : null,
-        varEdited : false
+        varEdited : false,
+        edited : false,
     },
     setup(infoPB) {
 
         if (infoPB.hasDataSet) {
+
+            this.set('edited', infoPB.edited);
 
             let schemaPB = infoPB.schema;
             let columns = Array(schemaPB.columns.length);
@@ -260,8 +263,8 @@ const DataSetViewModel = DataSetModel.extend({
     },
     defaults() {
         return _.extend({
-            cells      : [ ],
-            viewport   : { left : 0, top : 0, right : -1, bottom : -1}
+            cells    : [ ],
+            viewport : { left : 0, top : 0, right : -1, bottom : -1 },
         }, DataSetModel.prototype.defaults);
     },
     valueAt(rowNo, colNo) {
@@ -435,7 +438,7 @@ const DataSetViewModel = DataSetModel.extend({
 
             return cells;
 
-        });
+        }).done();
     },
     changeCells(viewport, cells) {
 
@@ -525,6 +528,7 @@ const DataSetViewModel = DataSetModel.extend({
                 }
             }
 
+            this.set('edited', true);
             this.trigger('columnsChanged', { changed, changes });
         });
 

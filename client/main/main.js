@@ -47,7 +47,7 @@ coms.on('broadcast', function(broadcast) {
 
 coms.on('close', function() {
     window.alert('Connection lost\n\nThe processing engine has ended unexpectedly.\nThis jamovi window will now close down. Sorry for the inconvenience.\n\nIf you could report your experiences to the jamovi team, that would be appreciated.');
-    host.closeWindow();
+    host.closeWindow(true);
 });
 
 $(document).ready(() => {
@@ -122,12 +122,10 @@ $(document).ready(() => {
     });
 
     let $fileName = $('.header-file-name');
-    instance.on('change:fileName', function(event) {
-        let fileName = event.changed.fileName;
-        if (fileName === '')
-            fileName = 'Untitled';
-        $fileName.text(fileName);
-        document.title = fileName;
+    instance.on('change:title', function(event) {
+        let title = event.changed.title;
+        $fileName.text(title);
+        document.title = title;
     });
 
     let section = splitPanel.getSection("main-options");
@@ -168,6 +166,29 @@ $(document).ready(() => {
     instance.on( 'notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
     ribbon.on('notification', note => notifications.notify(note));
+
+    dataSetModel.on('change:edited', event => {
+        host.setEdited(dataSetModel.attributes.edited);
+    });
+
+    host.on('close', event => {
+        if (dataSetModel.attributes.edited) {
+            let response = host.showMessageBox({
+                type: 'question',
+                buttons: [ 'Save', 'Cancel', "Don't Save" ],
+                defaultId: 1,
+                message: 'Do you want to save the changes made to "' + instance.attributes.title + '"?',
+            });
+            if (response === 1) {  // Cancel
+                event.preventDefault();
+            }
+            else if (response === 0) {  // Save
+                event.preventDefault();
+                backstageModel.externalRequestSave(true)
+                    .then(() => host.closeWindow(true));
+            }
+        }
+    });
 
     Promise.resolve(() => {
 
