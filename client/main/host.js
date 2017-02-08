@@ -102,7 +102,7 @@ if (window.require) {
 
     navigate = function(instanceId) {
         loading = true;
-        window.location = baseUrl + '?id=' + instanceId;
+        window.location = window.location.origin + window.location.pathname + '?id=' + instanceId;
     };
 
     openWindow = function(instanceId) {
