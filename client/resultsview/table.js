@@ -33,6 +33,10 @@ const TableModel = Backbone.Model.extend({
     }
 });
 
+const isVis = function(column) {
+    return column.visible === 0 || column.visible === 2;
+};
+
 const TableView = Elem.View.extend({
     initialize(data) {
 
@@ -90,34 +94,38 @@ const TableView = Elem.View.extend({
         if (this.model.attributes.title)
             this.$titleText.text(this.model.attributes.title);
 
-        let columnCount = table.columns.length;
-        let rowCount;
+        let columnCount = 0;
+        let rowCount = 0;
+
+        for (let column of table.columns) {
+            if (isVis(column))
+                columnCount++;
+        }
 
         if (table.columns.length > 0)
             rowCount = table.columns[0].cells.length;
-        else
-            rowCount = 0;
 
         let hasSuperHeader = false;
-        for (let i = 0; i < columnCount; i++) {
-            if (table.columns[i].superTitle) {
+        for (let column of table.columns) {
+            if (isVis(column) && column.superTitle) {
                 hasSuperHeader = true;
                 break;
             }
         }
 
         let cells = {
-            header  : new Array(table.columns.length),
-            superHeader : new Array(table.columns.length),
+            header  : new Array(columnCount),
+            superHeader : new Array(columnCount),
             body : new Array(rowCount)
         };
 
-        let formattings = new Array(table.columns.length);
+        let formattings = new Array(columnCount);
 
-        for (let colNo = 0; colNo < table.columns.length; colNo++) {
+        let colNo = 0;
+        for (let column of table.columns) {
 
-            let column  = table.columns[colNo];
-            let visible = (column.visible === 0 || column.visible === 2);
+            if ( ! isVis(column))
+                continue;
 
             let classes = '';
             let format = column.format.split(',');
@@ -128,20 +136,22 @@ const TableView = Elem.View.extend({
             if ('title' in column)
                 title = column.title;
 
-            cells.header[colNo] = { value : column.title, classes : classes, visible : visible };
+            cells.header[colNo] = { value : column.title, classes : classes };
 
             if (column.superTitle)
-                cells.superHeader[colNo] = { value : column.superTitle, classes : '', visible : visible };
+                cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
 
             let values = column.cells.map(v => v.d);
             formattings[colNo] = determineFormatting(values, column.type, column.format);
+
+            colNo++;
         }
 
         let group = 0;
 
         for (let rowNo = 0; rowNo < rowCount; rowNo++) {
 
-            cells.body[rowNo] = new Array(table.columns.length);
+            cells.body[rowNo] = new Array(columnCount);
 
             if (table.columns.length === 0)
                 break;
@@ -152,8 +162,11 @@ const TableView = Elem.View.extend({
             if ((firstCell.format & Format.BEGIN_GROUP) == Format.BEGIN_GROUP)
                 group++;
 
-            for (let colNo = 0; colNo < table.columns.length; colNo++) {
-                let sourceColumn = table.columns[colNo];
+            let colNo = 0;
+            for (let sourceColumn of table.columns) {
+                if ( ! isVis(sourceColumn))
+                    continue;
+
                 let sourceCell = sourceColumn.cells[rowNo];
 
                 let cell = { value : null, classes : rowFormat, sups : '', group : group };
@@ -161,7 +174,7 @@ const TableView = Elem.View.extend({
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' silky-results-table-cell-negative';
 
-                cell.visible = (sourceColumn.visible === 0 || sourceColumn.visible === 2);
+                cell.visible = isVis(sourceColumn);
 
                 if (sourceColumn.combineBelow)
                     cell.combineBelow = true;
@@ -169,17 +182,15 @@ const TableView = Elem.View.extend({
                 for (let symbol of sourceCell.symbols)
                     cell.sups += symbol;
 
-                if (cell.visible) {
-                    for (let i = 0; i < sourceCell.footnotes.length; i++) {
-                        let footnote = sourceCell.footnotes[i];
-                        let index = fnIndices[footnote];
-                        if (index === undefined) {
-                            index = Object.keys(fnIndices).length;
-                            fnIndices[footnote] = index;
-                            footnotes[index] = footnote;
-                        }
-                        cell.sups += SUPSCRIPTS[index];
+                for (let i = 0; i < sourceCell.footnotes.length; i++) {
+                    let footnote = sourceCell.footnotes[i];
+                    let index = fnIndices[footnote];
+                    if (index === undefined) {
+                        index = Object.keys(fnIndices).length;
+                        fnIndices[footnote] = index;
+                        footnotes[index] = footnote;
                     }
+                    cell.sups += SUPSCRIPTS[index];
                 }
 
                 switch (sourceCell.cellType) {
@@ -205,6 +216,8 @@ const TableView = Elem.View.extend({
                 cell.classes += this.makeFormatClasses(sourceColumn);
 
                 cells.body[rowNo][colNo] = cell;
+
+                colNo++;
             }
 
             if ((firstCell.format & Format.END_GROUP) == Format.END_GROUP)
@@ -214,9 +227,11 @@ const TableView = Elem.View.extend({
         let rowPlan = {};
         let foldedNames = [];
         let nFolds = 1;
+        colNo = 0;
 
-        for (let i = 0; i < columnCount; i++) {
-            let column = table.columns[i];
+        for (let column of table.columns) {
+            if ( ! isVis(column))
+                continue;
             let columnName = column.name;
             let foldedName = columnName;
             let index = foldedName.indexOf('[');
@@ -225,13 +240,14 @@ const TableView = Elem.View.extend({
 
             if (foldedName in rowPlan) {
                 let folds = rowPlan[foldedName];
-                folds.push(i);
+                folds.push(colNo);
                 nFolds = Math.max(nFolds, folds.length);
             }
             else {
                 foldedNames.push(foldedName);
-                rowPlan[foldedName] = [ i ];
+                rowPlan[foldedName] = [ colNo ];
             }
+            colNo++;
         }
 
         if (nFolds > 1) {
@@ -290,7 +306,7 @@ const TableView = Elem.View.extend({
 
                 for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
                     let cell = cells.body[rowNo][colNo];
-                    if (cell === undefined || cell.visible !== true)
+                    if (cell === undefined)
                         continue;
                     let nowValue = cell.value;
                     if (cell.value === lastValue)
@@ -334,10 +350,7 @@ const TableView = Elem.View.extend({
 
         if (hasSuperHeader) {
 
-            let allSHHidden = true;  // all super headers hidden
-
             let span = 1;
-            let allHidden = true;
             for (let i = 0; i < cells.superHeader.length; i++) {
                 let head = cells.superHeader[i];
 
@@ -351,29 +364,18 @@ const TableView = Elem.View.extend({
                 }
 
                 let content = '';
-                if (typeof(head) !== 'undefined') {
+                if (typeof(head) !== 'undefined')
                     content = head.value;
-                    if (head.visible) {
-                        allHidden = false;
-                        allSHHidden = false;
-                    }
-                }
 
                 if (content == nextContent) {
                     span++;
                 }
                 else {
-                    let hidden = '';
-                    if (allHidden)
-                        hidden = ' cell-hidden';
-                    html += '<th class="silky-results-table-cell' + hidden + '" colspan="' + (2 * span) + '">' + content + '</th>';
+                    html += '<th class="silky-results-table-cell" colspan="' + (2 * span) + '">' + content + '</th>';
                     span = 1;
-                    allHidden = true;
                 }
             }
 
-            if (allSHHidden)
-                this.$columnHeaderRowSuper.addClass('cell-hidden');
             this.$columnHeaderRowSuper.html(html);
         }
 
@@ -384,9 +386,8 @@ const TableView = Elem.View.extend({
             let content = head.value;
             if (content === '')
                 content = '&nbsp;';
-            let hidden = head.visible ? '' : ' cell-hidden';
             let classes = head.classes;
-            html += '<th class="silky-results-table-cell' + hidden + ' ' + classes + '" colspan="2">' + content + '</th>';
+            html += '<th class="silky-results-table-cell' + classes + '" colspan="2">' + content + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
@@ -414,7 +415,6 @@ const TableView = Elem.View.extend({
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
             let rowHtml = '';
-            let allCellsHidden = true;
 
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
@@ -429,34 +429,26 @@ const TableView = Elem.View.extend({
                         classes += ' silky-results-table-cell-group-begin';
                     }
 
-                    let hidden = '';
-                    if (cell.visible)
-                        allCellsHidden = false;
-                    else
-                        hidden = ' cell-hidden';
-
                     if (content === '')
                         content = '&nbsp;';
                     if (cell.sups && cell.classes.indexOf('silky-results-table-cell-text') !== -1) {
                         // place the superscript beside the content if left aligned
-                        rowHtml += '<td class="silky-results-table-cell ' + classes + hidden + '">' + content + ' ' + cell.sups + '</td>';
-                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup ' + hidden + '"></td>';
+                        rowHtml += '<td class="silky-results-table-cell ' + classes + '">' + content + ' ' + cell.sups + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup"></td>';
                     }
                     else {
-                        rowHtml += '<td class="silky-results-table-cell ' + classes + hidden + '">' + content + '</td>';
-                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup ' + hidden + '">' + (cell.sups ? cell.sups : '') + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell ' + classes + '">' + content + '</td>';
+                        rowHtml += '<td class="silky-results-table-cell silky-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
                     }
                 }
                 else {
-                    rowHtml += '<td colspan="2" class="cell-hidden">&nbsp;</td>';
+                    rowHtml += '<td colspan="2">&nbsp;</td>';
                 }
             }
 
-            if ( ! allCellsHidden)
-                prevGroup = currentGroup;
+            prevGroup = currentGroup;
 
-            let hidden = (allCellsHidden ? ' cell-hidden' : '');
-            html += '<tr class="' + hidden + '">' + rowHtml + '</tr>';
+            html += '<tr>' + rowHtml + '</tr>';
         }
 
         this.$tableBody.html(html);
