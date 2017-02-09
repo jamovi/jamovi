@@ -31,7 +31,7 @@ class Options:
                 default = False
             elif typ == 'Variables':
                 default = []
-            elif typ == 'Int':
+            elif typ == 'Integer':
                 default = 0
             elif typ == 'Number':
                 default = 0.0
