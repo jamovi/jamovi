@@ -15,7 +15,6 @@ var LayoutGroupView = function(params) {
     GridControl.extendTo(this);
 
     this.registerSimpleProperty("label", "");
-    this.registerSimpleProperty("stretchFactor", 0);
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
     this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
 
