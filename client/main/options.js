@@ -36,10 +36,7 @@ OptionTypes.Option = function(template, value, isLeaf) {
             return this._onGetValue();
     };
 
-    this.setValue = function(value, initializeOnly) {
-        if (initializeOnly && this._initialized)
-            return;
-
+    this.setValue = function(value) {
         if (this._isLeaf)
             this._value = value;
         else {
@@ -84,7 +81,7 @@ OptionTypes.Option = function(template, value, isLeaf) {
 
      this._onRenameColumn = function() {  };
 
-    this.setValue(value, true);
+    this.setValue(value);
 };
 SuperClass.create(OptionTypes.Option);
 
