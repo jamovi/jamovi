@@ -36,24 +36,24 @@ string Dirs::_desktopDir = "";
 
 string Dirs::appDataDir()
 {
-	if (Dirs::_appDataDir == "")
-	{
-		string dir;
-		filesystem::path path;
+    if (Dirs::_appDataDir == "")
+    {
+        string dir;
+        filesystem::path path;
 
 #ifdef _WIN32
 
-		TCHAR buffer[MAX_PATH];
+        TCHAR buffer[MAX_PATH];
 
-		HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
 
-		if ( ! SUCCEEDED(ret))
+        if ( ! SUCCEEDED(ret))
             "Could not retrieve app data directory";
 
-		dir = nowide::narrow(buffer);
-		dir += "/jamovi";
+        dir = nowide::narrow(buffer);
+        dir += "/jamovi";
 
-		path = nowide::widen(dir);
+        path = nowide::widen(dir);
 
 #elif defined(__APPLE__)
 
@@ -65,46 +65,46 @@ string Dirs::appDataDir()
 
 #else
 
-		path = dir = homeDir() + "/.jamovi";
+        path = dir = homeDir() + "/.jamovi";
 
 #endif
 
-		if ( ! filesystem::exists(path))
-		{
-			system::error_code ec;
+        if ( ! filesystem::exists(path))
+        {
+            system::error_code ec;
 
-			filesystem::create_directories(path, ec);
+            filesystem::create_directories(path, ec);
 
-			if (ec)
+            if (ec)
                 throw "could not create app data dir";
-		}
+        }
 
-		Dirs::_appDataDir = filesystem::path(dir).generic_string();
-	}
+        Dirs::_appDataDir = filesystem::path(dir).generic_string();
+    }
 
-	return Dirs::_appDataDir;
+    return Dirs::_appDataDir;
 }
 
 string Dirs::tempDir()
 {
-	if (Dirs::_tempDir == "")
-	{
-		string dir;
-		filesystem::path path;
+    if (Dirs::_tempDir == "")
+    {
+        string dir;
+        filesystem::path path;
 
 #ifdef _WIN32
 
-		TCHAR buffer[MAX_PATH];
+        TCHAR buffer[MAX_PATH];
 
-		HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
 
-		if ( ! SUCCEEDED(ret))
+        if ( ! SUCCEEDED(ret))
             "Could not retrieve app data directory";
 
-		dir = nowide::narrow(buffer);
-		dir += "/jamovi/temp";
+        dir = nowide::narrow(buffer);
+        dir += "/jamovi/temp";
 
-		path = nowide::widen(dir);
+        path = nowide::widen(dir);
 
 #elif defined(__APPLE__)
 
@@ -112,24 +112,24 @@ string Dirs::tempDir()
 
 #else
 
-		path = dir = homeDir() + "/.jamovi/temp";
+        path = dir = homeDir() + "/.jamovi/temp";
 
 #endif
 
-		if ( ! filesystem::exists(path))
-		{
-			system::error_code ec;
+        if ( ! filesystem::exists(path))
+        {
+            system::error_code ec;
 
-			filesystem::create_directories(path, ec);
+            filesystem::create_directories(path, ec);
 
-			if (ec)
+            if (ec)
                 throw "could not create app data dir";
-		}
+        }
 
-		Dirs::_tempDir = filesystem::path(dir).generic_string();
-	}
+        Dirs::_tempDir = filesystem::path(dir).generic_string();
+    }
 
-	return Dirs::_tempDir;
+    return Dirs::_tempDir;
 }
 
 string Dirs::exePath()
@@ -261,89 +261,89 @@ string Dirs::rHomeDir()
 
 string Dirs::documentsDir()
 {
-	if (Dirs::_documentsDir == "")
-	{
+    if (Dirs::_documentsDir == "")
+    {
 
-		string dir;
+        string dir;
 
 #ifdef _WIN32
 
-		TCHAR buffer[MAX_PATH];
+        TCHAR buffer[MAX_PATH];
 
-		HRESULT ret = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, buffer);
+        HRESULT ret = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, buffer);
 
-		if ( ! SUCCEEDED(ret))
-		    throw "Could not retrieve documents directory";
+        if ( ! SUCCEEDED(ret))
+            throw "Could not retrieve documents directory";
 
-		dir = nowide::narrow(buffer);
+        dir = nowide::narrow(buffer);
 
 #else
 
-		dir = homeDir() + "/Documents";
+        dir = homeDir() + "/Documents";
 
 #endif
 
-		Dirs::_documentsDir = filesystem::path(dir).generic_string();
-	}
+        Dirs::_documentsDir = filesystem::path(dir).generic_string();
+    }
 
-	return Dirs::_documentsDir;
+    return Dirs::_documentsDir;
 }
 
 string Dirs::homeDir()
 {
-	if (Dirs::_homeDir == "")
-	{
-		string dir;
+    if (Dirs::_homeDir == "")
+    {
+        string dir;
 
 #ifdef _WIN32
 
-		TCHAR buffer[MAX_PATH];
+        TCHAR buffer[MAX_PATH];
 
-		HRESULT ret = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, 0, buffer);
 
-		if ( ! SUCCEEDED(ret))
-		    throw "Could not retrieve home directory";
+        if ( ! SUCCEEDED(ret))
+            throw "Could not retrieve home directory";
 
-		dir = nowide::narrow(buffer);
+        dir = nowide::narrow(buffer);
 
 #else
 
-		dir = string(getpwuid(getuid())->pw_dir);
+        dir = string(getpwuid(getuid())->pw_dir);
 
 #endif
 
-		Dirs::_homeDir = filesystem::path(dir).generic_string();
-	}
+        Dirs::_homeDir = filesystem::path(dir).generic_string();
+    }
 
-	return Dirs::_homeDir;
+    return Dirs::_homeDir;
 }
 
 string Dirs::desktopDir()
 {
-	if (Dirs::_desktopDir == "")
-	{
+    if (Dirs::_desktopDir == "")
+    {
 
-		string dir;
+        string dir;
 
 #ifdef _WIN32
 
-		TCHAR buffer[MAX_PATH];
+        TCHAR buffer[MAX_PATH];
 
-		HRESULT ret = SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, buffer);
 
-		if ( ! SUCCEEDED(ret))
-		    throw "Could not retrieve desktop";
+        if ( ! SUCCEEDED(ret))
+            throw "Could not retrieve desktop";
 
-		dir = nowide::narrow(buffer);
+        dir = nowide::narrow(buffer);
 
 #else
 
-		dir = string(getpwuid(getuid())->pw_dir) + "/Desktop";
+        dir = string(getpwuid(getuid())->pw_dir) + "/Desktop";
 
 #endif
 
-		Dirs::_desktopDir = filesystem::path(dir).generic_string();
-	}
+        Dirs::_desktopDir = filesystem::path(dir).generic_string();
+    }
 
-	return Dirs::_desktopDir;
+    return Dirs::_desktopDir;
 }

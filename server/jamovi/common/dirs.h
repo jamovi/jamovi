@@ -11,24 +11,24 @@
 class Dirs {
 
 public:
-	static std::string appDataDir();
-	static std::string tempDir();
-	static std::string exePath();
-	static std::string exeDir();
-	static std::string rHomeDir();
-	static std::string documentsDir();
-	static std::string homeDir();
-	static std::string desktopDir();
+    static std::string appDataDir();
+    static std::string tempDir();
+    static std::string exePath();
+    static std::string exeDir();
+    static std::string rHomeDir();
+    static std::string documentsDir();
+    static std::string homeDir();
+    static std::string desktopDir();
 
 private:
-	static std::string _appDataDir;
-	static std::string _tempDir;
-	static std::string _exePath;
-	static std::string _exeDir;
-	static std::string _rHomeDir;
-	static std::string _documentsDir;
-	static std::string _homeDir;
-	static std::string _desktopDir;
+    static std::string _appDataDir;
+    static std::string _tempDir;
+    static std::string _exePath;
+    static std::string _exeDir;
+    static std::string _rHomeDir;
+    static std::string _documentsDir;
+    static std::string _homeDir;
+    static std::string _desktopDir;
 
 };
 

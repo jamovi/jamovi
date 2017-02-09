@@ -15,42 +15,42 @@ namespace fs = boost::filesystem;
 unsigned long Utils::currentPID()
 {
 #ifdef _WIN32
-	return GetCurrentProcessId();
+    return GetCurrentProcessId();
 #else
-	return getpid();
+    return getpid();
 #endif
 }
 
 unsigned long Utils::parentPID()
 {
 #ifdef _WIN32
-	HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	PROCESSENTRY32 pe = { 0 };
-	pe.dwSize = sizeof(PROCESSENTRY32);
+    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    PROCESSENTRY32 pe = { 0 };
+    pe.dwSize = sizeof(PROCESSENTRY32);
 
     unsigned long pid = currentPID();
-	unsigned long ppid = 0;
+    unsigned long ppid = 0;
 
-	if (Process32First(h, &pe))
-	{
-		do
-		{
-			if (pe.th32ProcessID == pid)
-			{
-				ppid = pe.th32ParentProcessID;
-				break;
-			}
+    if (Process32First(h, &pe))
+    {
+        do
+        {
+            if (pe.th32ProcessID == pid)
+            {
+                ppid = pe.th32ParentProcessID;
+                break;
+            }
 
-		} while( Process32Next(h, &pe));
-	}
+        } while( Process32Next(h, &pe));
+    }
 
-	CloseHandle(h);
+    CloseHandle(h);
 
-	return ppid;
+    return ppid;
 
 #else
 
-	return getppid();
+    return getppid();
 
 #endif
 }
@@ -60,26 +60,26 @@ bool Utils::isParentAlive()
 #ifdef _WIN32
 
     static unsigned long ppid = parentPID();
-	static void* handle = NULL;
+    static void* handle = NULL;
 
-	if (handle == NULL && ppid != 0)
-		handle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, ppid);
+    if (handle == NULL && ppid != 0)
+        handle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, ppid);
 
-	if (handle != NULL)
-	{
-		BOOL ok;
-		DWORD exit;
+    if (handle != NULL)
+    {
+        BOOL ok;
+        DWORD exit;
 
-		ok = GetExitCodeProcess(handle, &exit);
+        ok = GetExitCodeProcess(handle, &exit);
 
-		return ( ! ok) || exit == STILL_ACTIVE;
-	}
+        return ( ! ok) || exit == STILL_ACTIVE;
+    }
 
-	return FALSE;
+    return FALSE;
 
 #else
 
-	return getppid() != 1;
+    return getppid() != 1;
 
 #endif
 }
