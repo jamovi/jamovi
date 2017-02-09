@@ -51,8 +51,6 @@ const PageModules = Backbone.View.extend({
         });
 
         this.$errorRetry.on('click', () => this.model.retrieve());
-
-        setTimeout(() => this.model.retrieve(), 500);
     },
     _refresh() {
 
