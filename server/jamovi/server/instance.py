@@ -195,6 +195,8 @@ class Instance:
             self._on_fs_request(request)
         elif type(request) == jcoms.ModuleRequest:
             self._on_module(request)
+        elif type(request) == jcoms.StoreRequest:
+            self._on_store(request)
         else:
             log.info('unrecognised request')
             log.info(request.payloadType)
@@ -433,13 +435,9 @@ class Instance:
         modules = Modules.instance()
 
         if request.command == jcoms.ModuleRequest.ModuleCommand.Value('INSTALL'):
-            try:
-                modules.install(request.path)
-                self._coms.send(None, self._instance_id, request)
-                self._notify_modules_changed()
-            except Exception as e:
-                log.exception(e)
-                self._coms.send_error(str(e), None, self._instance_id, request)
+            modules.install(
+                request.path,
+                lambda t, result: self._on_module_callback(t, result, request))
         elif request.command == jcoms.ModuleRequest.ModuleCommand.Value('UNINSTALL'):
             try:
                 modules.uninstall(request.name)
@@ -448,6 +446,48 @@ class Instance:
             except Exception as e:
                 log.exception(e)
                 self._coms.send_error(str(e), None, self._instance_id, request)
+
+    def _on_module_callback(self, t, result, request):
+        if t == 'progress':
+            progress = jcoms.Progress()
+            progress.progress = result[0]
+            progress.total = result[1]
+            self._coms.send(progress, self._instance_id, request, complete=False)
+        elif t == 'error':
+            self._coms.send_error('Unable to install module', str(result), self._instance_id, request)
+        elif t == 'success':
+            self._coms.send(None, self._instance_id, request)
+            self._notify_modules_changed()
+        else:
+            log.error("Instance._on_module_callback(): shouldn't get here")
+
+    def _on_module_install_error(self, request, e):
+        log.error(str(e))
+        self._coms.send_error(str(e), None, self._instance_id, request)
+
+    def _on_module_install_progress(self, request, progress):
+        print(progress)
+
+    def _on_store(self, request):
+        modules = Modules.instance()
+        modules.read_store(lambda t, res: self._on_store_callback(request, t, res))
+
+    def _on_store_callback(self, request, t, result):
+        if t == 'progress':
+            progress = jcoms.Progress()
+            progress.progress = result[0]
+            progress.total = result[1]
+            self._coms.send(progress, self._instance_id, request, complete=False)
+        elif t == 'error':
+            self._coms.send_error('Unable to access store', str(result), self._instance_id, request)
+        elif t == 'success':
+            response = jcoms.StoreResponse()
+            for module in result:
+                module_pb = response.modules.add()
+                self._module_to_pb(module, module_pb)
+            self._coms.send(response, self._instance_id, request)
+        else:
+            log.error('_on_store_callback(): shouldnt get here')
 
     def _notify_modules_changed(self):
         for instanceId, instance in Instance.instances.items():
@@ -731,27 +771,30 @@ class Instance:
 
         for module in Modules.instance():
             module_pb = response.modules.add()
-            module_pb.name = module.name
-            module_pb.title = module.title
-            module_pb.version.major = module.version[0]
-            module_pb.version.minor = module.version[1]
-            module_pb.version.revision = module.version[2]
-            module_pb.description = module.description
-            module_pb.authors.extend(module.authors)
-            module_pb.path = module.path
-            module_pb.isSystem = module.is_sys
-
-            for analysis in module.analyses:
-                analysis_pb = module_pb.analyses.add()
-                analysis_pb.name = analysis.name
-                analysis_pb.ns = analysis.ns
-                analysis_pb.title = analysis.title
-                analysis_pb.menuGroup = analysis.menuGroup
-                analysis_pb.menuSubgroup = analysis.menuSubgroup
-                analysis_pb.menuTitle = analysis.menuTitle
-                analysis_pb.menuSubtitle = analysis.menuSubtitle
+            self._module_to_pb(module, module_pb)
 
         self._coms.send(response, self._instance_id, request)
+
+    def _module_to_pb(self, module, module_pb):
+        module_pb.name = module.name
+        module_pb.title = module.title
+        module_pb.version.major = module.version[0]
+        module_pb.version.minor = module.version[1]
+        module_pb.version.revision = module.version[2]
+        module_pb.description = module.description
+        module_pb.authors.extend(module.authors)
+        module_pb.path = module.path
+        module_pb.isSystem = module.is_sys
+
+        for analysis in module.analyses:
+            analysis_pb = module_pb.analyses.add()
+            analysis_pb.name = analysis.name
+            analysis_pb.ns = analysis.ns
+            analysis_pb.title = analysis.title
+            analysis_pb.menuGroup = analysis.menuGroup
+            analysis_pb.menuSubgroup = analysis.menuSubgroup
+            analysis_pb.menuTitle = analysis.menuTitle
+            analysis_pb.menuSubtitle = analysis.menuSubtitle
 
     def _on_engine_event(self, event):
         if event['type'] == 'terminated' and self._coms is not None:

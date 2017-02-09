@@ -9,25 +9,20 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const Request = require('./request');
+const yaml = require('js-yaml');
 
-const Modules = Backbone.Model.extend({
-
+const ModulesBase = Backbone.Model.extend({
     defaults : {
-        modules : [ ]
-    },
-    setup(modulesPB) {
-        this.set('modules', modulesPB);
-    },
-    install(path) {
-        return this._instance.installModule(path);
-    },
-    uninstall(name) {
-        return this._instance.uninstallModule(name);
+        modules : [ ],
+        progress : [ 0, 1 ],
+        status : 'none',
+        error: null,
     },
     initialize(args) {
 
         this._instance = args.instance;
+        this._parent = args.parent;
+        this._retrieved = false;
 
         this[Symbol.iterator] = () => {
             let index = 0;
@@ -47,6 +42,105 @@ const Modules = Backbone.Model.extend({
             };
         };
     },
+    install(path) {
+        this.set('progress', [ 0, 1 ]);
+        this.set('status', 'installing');
+        let install = this._instance.installModule(path);
+        install.then(() => {
+            this.set('status', 'done');
+        }, error => {
+            throw error;
+        }, progress => {
+            this.set('progress', progress);
+        });
+        return install;
+    },
+    uninstall(name) {
+        return this._instance.uninstallModule(name);
+    },
+    retrieve() {
+
+    },
+    setup(modulesPB) {
+
+        let modules = [ ];
+
+        for (let modulePB of modulesPB) {
+
+            let module = {
+                name:  modulePB.name,
+                title: modulePB.title,
+                version: [ modulePB.version.major, modulePB.version.minor, modulePB.version.revision ],
+                authors: modulePB.authors,
+                description: modulePB.description,
+                analyses: modulePB.analyses,
+                path: modulePB.path,
+                isSystem: modulePB.isSystem,
+            };
+
+            module.ops = this._determineOps(module);
+            modules.push(module);
+        }
+
+        this.set('modules', modules);
+    },
+    _determineOps(module) {
+        return [ ];
+    }
 });
+
+const Available = ModulesBase.extend({
+
+    initialize(args) {
+        ModulesBase.prototype.initialize.apply(this, arguments);
+        this._parent.on('change:modules', () => this._updateOps());
+    },
+    retrieve() {
+
+        this._instance.retrieveAvailableModules()
+            .then(storeResponse => {
+                this.setup(storeResponse.modules);
+                this.set('status', 'done');
+            }, error => {
+                this.set('error', error);
+                this.set('status', 'error');
+            }).done();
+        this.set('status', 'loading');
+    },
+    _updateOps() {
+        let modules = this.attributes.modules;
+        for (let module of modules)
+            module.ops = this._determineOps(module);
+        this.attributes.modules = [ ];
+        this.set('modules', modules);
+    },
+    _determineOps(module) {
+        if (module.path === '')
+            return [ 'unavailable' ];
+        for (let installed of this._parent) {
+            if (module.name === installed.name)
+                return [ 'installed' ];
+        }
+        return [ 'install' ];
+    }
+});
+
+const Modules = ModulesBase.extend({
+    initialize(args) {
+        ModulesBase.prototype.initialize.apply(this, arguments);
+        this._available = new Available({ instance: args.instance, parent: this });
+    },
+    available() {
+        return this._available;
+    },
+    _determineOps(module) {
+        if (module.isSystem)
+            return [ ];
+        else
+            return [ 'remove' ];
+    }
+});
+
+
 
 module.exports = Modules;

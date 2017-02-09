@@ -188,7 +188,7 @@ class Server:
     def _stdin(self, line):
         if line.startswith('install: '):
             path = line[9:]
-            Modules.instance().install(path)
+            Modules.instance().install(path, lambda t, res: None)
             for instanceId, instance in Instance.instances.items():
                 if instance.is_active:
                     instance._on_settings()

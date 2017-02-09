@@ -1,5 +1,105 @@
 
+.jmv-store-body {
+    background-color: white ;
+    height: 100% ;
+    border: 1px solid #ACACAC ;
+    padding: 0 20px ;
+    color: #555555 ;
+    overflow-y: scroll ;
+}
+
+.jmv-store-module {
+    padding: 20px 10px ;
+    display: flex ;
+}
+
+.jmv-store-module:not(:last-child) {
+    border-bottom: 1px solid #ACACAC ;
+}
+
+.jmv-store-module h2 {
+    color: #555555 ;
+    margin-bottom: 4px ;
+}
+
+.jmv-store-module-lhs {
+    width: 90px ;
+    min-width: 90px ;
+    max-width: 90px ;
+}
+
+.jmv-store-module-icon {
+    width: 70px ;
+    height: 70px ;
+    background-image: url('assets/analysis-module.svg');
+    background-size: 100% ;
+    background-repeat: no-repeat ;
+    border: 1.5px solid #6B9DE8 ;
+    box-sizing: border-box;
+}
+
+.jmv-store-module .description {
+    line-height: 140% ;
+}
+
+.jmv-store-module-button {
+    background-color: white ;
+    border: 1.5px solid #6B9DE8 ;
+    color: #6B9DE8 ;
+    margin-top: 8px ;
+    padding: 5px 8px ;
+    box-sizing: border-box;
+    font-size: 90% ;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.jmv-store-module-button[data-op='remove']:before {
+    content: 'Remove' ;
+}
+
+.jmv-store-module-button[data-op='install']:before {
+    content: 'Install' ;
+}
+
+.jmv-store-module-button[data-op='installed']:before {
+    content: 'Installed' ;
+}
+
+.jmv-store-module-button[data-op='unavailable']:before {
+    content: 'Unavailable' ;
+}
+
+.jmv-store-module-button[data-op='installed'] {
+    padding-left: 0 ;
+    border: 1.5px solid transparent ;
+}
+
+.jmv-store-module-button[data-op='unavailable'] {
+    padding-left: 0 ;
+    border: 1.5px solid transparent ;
+    color: #DD0000 ;
+}
+
+.jmv-store-module-button:enabled:hover {
+    background-color: #6B9DE8 ;
+    color: white ;
+}
+
+.jmv-store-module .version {
+    font-size: 80% ;
+    color: #9F9F9F ;
+    padding-left: 6px ;
+}
+
+.jmv-store-module .authors {
+    font-size: 80% ;
+    color: #6B9DE8 ;
+    margin-bottom: 6px ;
+}
+
 .jmv-store-page-installed-drop {
+    margin-top: 60px ;
     text-align: center ;
     font-size: 180px ;
     color: #BBBBBB ;
@@ -39,8 +139,86 @@
     height: 0 ;
 }
 
-.jmv-store-page-store .content {
-    font-size: 32px ;
-    margin: 32px auto ;
+.jmv-store-loading {
+    position: absolute ;
+    top: 0 ;
+    left: 50% ;
+    margin-left: -150px ;
+    width: 300px ;
+    height: 200px ;
+    transition: opacity .2s ;
+    opacity: 0;
+    background-image: url('assets/indicator-running.svg');
+    background-size: 50px ;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+[data-status='loading'] .jmv-store-loading {
+    opacity: 1;
+}
+
+.jmv-store-error {
+    position: absolute ;
+    padding: 24px ;
+    top: 0 ;
+    left: 50% ;
+    width: 500px ;
+    margin-left: -250px ;
+    opacity: 0 ;
     text-align: center ;
+}
+
+.jmv-store-error-cause {
+    margin: 20px ;
+}
+
+[data-status='error'] .jmv-store-error {
+    opacity: 1 ;
+}
+
+.jmv-store-installing {
+    height: 0 ;
+    transition: height 0.3s ;
+    box-sizing: border-box;
+    position: absolute ;
+    top: 0 ;
+    left: 50% ;
+    width: 300px ;
+    margin-left: -170px ;
+    text-align: center ;
+    border: 1px solid #ACACAC ;
+    border-bottom: none ;
+    background-color: #F0F0F0 ;
+    overflow: hidden;
+}
+
+.jmv-store-installing h2 {
+    margin-top: 24px ;
+}
+
+[data-status='installing'] .jmv-store-installing {
+    height: 140px ;
+    border: 1px solid #ACACAC ;
+}
+
+.jmv-store-progress {
+    display: inline-block;
+    width: 200px ;
+    height: 16px ;
+    background-color: white ;
+}
+
+.jmv-store-progress-bar {
+    width: 0 ;
+    height: 100% ;
+    background-color: #6B9DE8 ;
+}
+
+[data-status='installing'] .jmv-store-progress-bar {
+    /* transition: width .2s ;*/
+}
+
+.jmv-store-installing-description {
+    padding: 12px ;
 }

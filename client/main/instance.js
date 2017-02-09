@@ -221,6 +221,26 @@ const Instance = Backbone.Model.extend({
 
         return coms.sendP(request);
     },
+    retrieveAvailableModules() {
+
+        let coms = this.attributes.coms;
+
+        let storeRequest = new coms.Messages.StoreRequest();
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = storeRequest.toArrayBuffer();
+        request.payloadType = 'StoreRequest';
+        request.instanceId = this._instanceId;
+
+        return coms.send(request)
+            .then(response => {
+                return coms.Messages.StoreResponse.decode(response.payload);
+            }, error => {
+                throw error;
+            }, progress => {
+                return coms.Messages.Progress.decode(progress.payload);
+            });
+    },
     installModule(filePath) {
 
         let coms = this.attributes.coms;
@@ -234,7 +254,11 @@ const Instance = Backbone.Model.extend({
         request.payloadType = 'ModuleRequest';
         request.instanceId = this._instanceId;
 
-        return coms.send(request);
+        return coms.send(request)
+            .then(undefined, undefined, progress => {
+                let pg = coms.Messages.Progress.decode(progress.payload);
+                return [ pg.progress, pg.total ];
+            });
     },
     uninstallModule(name) {
 

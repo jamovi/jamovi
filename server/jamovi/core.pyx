@@ -594,3 +594,13 @@ class MeasureType(Enum):
             return MeasureType.NOMINAL_TEXT
         else:
             return MeasureType.MISC
+
+cdef extern from "platforminfo.h":
+    cdef cppclass CPlatformInfo "PlatformInfo":
+        @staticmethod
+        string platform()
+
+class PlatformInfo:
+    @staticmethod
+    def platform():
+        return decode(CPlatformInfo.platform())

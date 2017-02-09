@@ -205,6 +205,11 @@ message ResultsElement {
 
 // CLIENT
 
+message Progress {
+    uint32 progress = 1;
+    uint32 total = 2;
+}
+
 message InstanceRequest {
 }
 
@@ -287,6 +292,13 @@ message SettingsResponse {
     repeated DataSetEntry recents = 1;
     repeated DataSetEntry examples = 2;
     repeated ModuleMeta modules = 3;
+}
+
+message StoreRequest {
+}
+
+message StoreResponse {
+    repeated ModuleMeta modules = 1;
 }
 
 message VariableLevel {

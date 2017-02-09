@@ -17,11 +17,9 @@ const PageSideload = Backbone.View.extend({
     initialize() {
 
         this.$el.addClass('jmv-store-page-sideload');
-
-        this.$heading = $('<h2>Sideload module</h2>').appendTo(this.$el);
-
+        this.$body = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$drop = $('<div class="jmv-store-page-installed-drop"><span class="mif-file-upload"></span></div>')
-            .appendTo(this.$el)
+            .appendTo(this.$body)
             .on('click', event => this._dropClicked());
     },
     _dropClicked(event) {
