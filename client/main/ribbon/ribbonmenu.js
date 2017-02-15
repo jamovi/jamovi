@@ -4,7 +4,7 @@
 const $ = require('jquery');
 const _ = require('underscore');
 
-const RibbonMenu = function($el, parent, title, name, items, right) {
+const RibbonMenu = function($el, parent, title, name, items, right, containsNew) {
 
     this.$el = $el;
     this.$el.addClass('jmv-ribbon-button');
@@ -13,9 +13,12 @@ const RibbonMenu = function($el, parent, title, name, items, right) {
     this.title = title;
     this.name = name;
     this.items = items;
+    this.containsNew = containsNew;
 
     this.$el.attr('data-name', this.name.toLowerCase());
     this.$el.attr('disabled');
+    if (containsNew)
+        this.$el.addClass('contains-new');
     if (right)
         this.$el.addClass('right');
 
@@ -77,8 +80,8 @@ RibbonMenu.prototype._itemClicked = function(event) {
 
 RibbonMenu.prototype._createMenuItem = function(item) {
     if (item.subtitle)
-        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item">' + item.title + '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
-    return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item">' + item.title + '</div>';
+        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item ' + (item.new ? 'new':'') + '">' + item.title + '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
+    return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item ' + (item.new ? 'new':'') + '">' + item.title + '</div>';
 };
 
 RibbonMenu.prototype._createMenuGroup = function(group) {

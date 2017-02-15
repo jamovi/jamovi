@@ -785,6 +785,7 @@ class Instance:
         module_pb.authors.extend(module.authors)
         module_pb.path = module.path
         module_pb.isSystem = module.is_sys
+        module_pb.new = module.new
 
         for analysis in module.analyses:
             analysis_pb = module_pb.analyses.add()

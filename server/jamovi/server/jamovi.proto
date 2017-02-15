@@ -283,6 +283,7 @@ message ModuleMeta {
     repeated AnalysisMeta analyses = 6;
     string path = 10;
     bool isSystem = 11;
+    bool new = 12;
 }
 
 message SettingsRequest {

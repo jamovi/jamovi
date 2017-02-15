@@ -76,6 +76,7 @@ const ModulesBase = Backbone.Model.extend({
                 analyses: modulePB.analyses,
                 path: modulePB.path,
                 isSystem: modulePB.isSystem,
+                new: modulePB.new,
             };
 
             module.ops = this._determineOps(module);

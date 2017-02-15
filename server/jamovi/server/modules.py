@@ -25,6 +25,7 @@ class ModuleMeta:
         self.analyses = [ ]
         self.path = None
         self.is_sys = False
+        self.new = False
 
 
 class AnalysisMeta:
@@ -53,6 +54,7 @@ class Modules:
         self._read = False
         self._modules = [ ]
         self._listeners = [ ]
+        self._original = None
 
     def get(self, name):
         for module in self._modules:
@@ -73,6 +75,7 @@ class Modules:
     def read(self):
         if self._read is False:
             self.reread()
+            self._original = list(map(lambda x: x.name, self._modules))
 
     def read_store(self, callback):
         Downloader.download(
@@ -119,14 +122,17 @@ class Modules:
                     continue
                 if entry.is_dir() is False:
                     continue
-                self._read_module(entry.path, True)
+                module = self._read_module(entry.path, True)
+                self._modules.append(module)
 
             for entry in os.scandir(user_module_path):
                 if entry.name == 'base':
                     continue
                 if entry.is_dir() is False:
                     continue
-                self._read_module(entry.path, False)
+                module = self._read_module(entry.path, False)
+                module.new = self._read and (module.name in self._original) is False
+                self._modules.append(module)
             self._read = True
         except Exception as e:
             log.exception(e)
@@ -168,9 +174,7 @@ class Modules:
             meta_path = os.path.join(path, 'jamovi.yaml')
             with open(meta_path, encoding='utf-8') as stream:
                 defn = yaml.safe_load(stream)
-                module = Modules.parse(defn, path, is_sys)
-                self._modules.append(module)
-
+                return Modules.parse(defn, path, is_sys)
         except Exception as e:
             log.exception(e)
 

@@ -96,10 +96,12 @@ const RibbonView = Backbone.View.extend({
         let lastSub = null;
 
         for (let module of this.model.modules()) {
+            let isNew = module.new;
             for (let analysis of module.analyses) {
                 let group = analysis.menuGroup;
                 let subgroup = analysis.menuSubgroup;
                 let menu = group in menus ? menus[group] : { };
+                menu._new = isNew;
                 let submenu = { name };
                 if (subgroup in menu)
                     submenu = menu[subgroup];
@@ -110,6 +112,7 @@ const RibbonView = Backbone.View.extend({
                     ns: analysis.ns,
                     title: analysis.menuTitle,
                     subtitle: analysis.menuSubtitle,
+                    new: isNew,
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;
@@ -120,12 +123,16 @@ const RibbonView = Backbone.View.extend({
         for (let group in menus) {
             let menu = menus[group];
             let flattened = [ ];
-            for (let subgroup in menu)
+            let containsNew = menu._new;
+            for (let subgroup in menu) {
+                if (subgroup === '_new')
+                    continue;
                 flattened.push({
                     name: subgroup,
                     title: subgroup,
                     type: 'group',
                     items: menu[subgroup].items });
+            }
 
             if (flattened.length > 0 && flattened[0].name === '') {
                 let items = flattened.shift().items;
@@ -133,7 +140,7 @@ const RibbonView = Backbone.View.extend({
             }
 
             let $button = $('<div></div>').insertBefore(this.$separator);
-            let  button = new RibbonMenu($button, this, group, group, flattened);
+            let  button = new RibbonMenu($button, this, group, group, flattened, false, containsNew);
         }
     },
     _ribbonClicked : function(event) {

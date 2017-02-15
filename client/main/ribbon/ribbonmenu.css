@@ -18,6 +18,10 @@
     filter: grayscale(100%) opacity(50%);
 }
 
+.jmv-ribbon-button.contains-new {
+    background-color: #C7D8F2 ;
+}
+
 .jmv-ribbon-button:not([disabled]):hover {
     background-color: #DDDDDD ;
 }
@@ -68,6 +72,10 @@
 .jmv-ribbon-menu-item {
     font-size: 110% ;
     padding: 8px 18px 8px 18px ;
+}
+
+.jmv-ribbon-menu-item.new {
+    background-color: #C7D8F2 ;
 }
 
 .jmv-ribbon-menu-item:first-child {
