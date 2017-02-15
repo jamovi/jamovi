@@ -55,6 +55,7 @@ RibbonMenu.prototype._hideMenu = function() {
 };
 
 RibbonMenu.prototype._showMenu = function() {
+    this.$el.removeClass('contains-new');
     this.$menu.show();
     this.menuVisible = true;
 };
@@ -76,6 +77,7 @@ RibbonMenu.prototype._clicked = function(event) {
 RibbonMenu.prototype._itemClicked = function(event) {
     let source = event.target;
     this._notifySelected(source.dataset.name, source.dataset.ns);
+    $(source).removeClass('new');
 };
 
 RibbonMenu.prototype._createMenuItem = function(item) {
