@@ -18,8 +18,15 @@
     filter: grayscale(100%) opacity(50%);
 }
 
+@-webkit-keyframes pulsate {
+    0% {background: rgba(199, 216, 242, 0);}
+    50% {background: rgba(199, 216, 242, 1);}
+    100% {background: rgba(199, 216, 242, 0);}
+}
+
 .jmv-ribbon-button.contains-new {
-    background-color: #C7D8F2 ;
+    -webkit-animation: pulsate 2s ease-out;
+    -webkit-animation-iteration-count: infinite;
 }
 
 .jmv-ribbon-button:not([disabled]):hover {
