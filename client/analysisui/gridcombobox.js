@@ -72,14 +72,14 @@ var GridCombobox = function(params) {
     };
 
     this.onPropertyChanged = function(name) {
-        if (name === 'disabled') {
-            var disabled = this.getPropertyValue(name);
-            this.$input.prop('disabled', disabled);
+        if (name === 'enableOn') {
+            var enabled = this.getPropertyValue(name);
+            this.$input.prop('disabled', enabled === false);
             if (this.$label !== null) {
-                if (disabled)
-                    this.$label.addClass("disabled-text");
-                else
+                if (enabled)
                     this.$label.removeClass("disabled-text");
+                else
+                    this.$label.addClass("disabled-text");
             }
         }
     };

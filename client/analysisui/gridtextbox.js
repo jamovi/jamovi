@@ -83,8 +83,8 @@ var GridTextbox = function(params) {
     };
 
     this.onPropertyChanged = function(name) {
-        if (name === 'disabled') {
-            var disabled = this.getPropertyValue(name);
+        if (name === 'enableOn') {
+            var disabled = this.getPropertyValue(name) === false;
             this.$input.prop('disabled', disabled);
             if (disabled) {
                 if (this.$label !== null)
