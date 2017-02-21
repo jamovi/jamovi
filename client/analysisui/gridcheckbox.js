@@ -57,7 +57,7 @@ var GridCheckbox = function(params) {
     };
 
     this.onPropertyChanged = function(name) {
-        if (name === 'enableOn') {
+        if (name === 'enable') {
             var enabled = this.getPropertyValue(name);
             this.$el.find('input').prop('disabled', enabled === false);
             if (enabled)

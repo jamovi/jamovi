@@ -72,7 +72,7 @@ var GridCombobox = function(params) {
     };
 
     this.onPropertyChanged = function(name) {
-        if (name === 'enableOn') {
+        if (name === 'enable') {
             var enabled = this.getPropertyValue(name);
             this.$input.prop('disabled', enabled === false);
             if (this.$label !== null) {

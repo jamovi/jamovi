@@ -57,7 +57,7 @@ var GridRadioButton = function(params) {
     };
 
     this.onPropertyChanged = function(name) {
-        if (name === 'enableOn') {
+        if (name === 'enable') {
             var disabled = this.getPropertyValue(name) === false;
             this.$el.find('input').prop('disabled', disabled);
             if (disabled)
