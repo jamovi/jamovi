@@ -61,9 +61,9 @@ var GridCheckbox = function(params) {
             var enabled = this.getPropertyValue(name);
             this.$el.find('input').prop('disabled', enabled === false);
             if (enabled)
-                this.$el.removeClass("disabled-text");
+                this.$el.removeClass('disabled-text');
             else
-                this.$el.addClass("disabled-text");
+                this.$el.addClass('disabled-text');
         }
     };
 

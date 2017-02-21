@@ -14,8 +14,23 @@ var GridRadioButton = function(params) {
 
         var optionValue = this.option.getValue();
         this.checkedValue = this.getPropertyValue('checkedValue');
-        var options = this.option.source.params.options;
-        this.otherValue = options[0] === this.checkedValue ? options[1] : options[0];
+
+        if (optionValue !== null && typeof this.checkedValue !== typeof optionValue)
+            throw "The type of the checkedValue property must be the same as the option.";
+
+        if (typeof this.checkedValue === 'string') {
+            var options = this.option.source.params.options;
+            this.otherValue = '';
+            if (options !== undefined)
+                this.otherValue = options[0] === this.checkedValue ? options[1] : options[0];
+        }
+        else if (typeof this.checkedValue === 'boolean')
+            this.otherValue = !this.checkedValue;
+        else if (typeof this.checkedValue === 'number')
+            this.otherValue = this.checkedValue === 0 ? 1 : 0;
+        else
+            throw "The checkedValue property does not support '" + typeof optionValue + "' data types.";
+
         var label = this.getPropertyValue('label');
         var name = this.getPropertyValue('name');
         if (label === null)
@@ -46,9 +61,9 @@ var GridRadioButton = function(params) {
             var disabled = this.getPropertyValue(name) === false;
             this.$el.find('input').prop('disabled', disabled);
             if (disabled)
-                this.$el.addClass("disabled-text");
+                this.$el.addClass('disabled-text');
             else
-                this.$el.removeClass("disabled-text");
+                this.$el.removeClass('disabled-text');
         }
     };
 

@@ -77,9 +77,9 @@ var GridCombobox = function(params) {
             this.$input.prop('disabled', enabled === false);
             if (this.$label !== null) {
                 if (enabled)
-                    this.$label.removeClass("disabled-text");
+                    this.$label.removeClass('disabled-text');
                 else
-                    this.$label.addClass("disabled-text");
+                    this.$label.addClass('disabled-text');
             }
         }
     };
