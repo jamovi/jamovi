@@ -10,12 +10,12 @@ var OptionControl = function(params) {
     OptionControlBase.extendTo(this, params);
 
     this.registerSimpleProperty("optionId", null);
-    this.registerSimpleProperty("disabled", false);
+    this.registerSimpleProperty("enable", true);
     this.registerSimpleProperty("label", null);
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
 
     this.setEnabled = function(value) {
-        this.setPropertyValue("disabled", !value);
+        this.setPropertyValue("enable", value);
     };
 
 };

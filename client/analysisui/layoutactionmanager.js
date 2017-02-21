@@ -42,6 +42,40 @@ var LayoutActionManager = function(view) {
         }
     };
 
+    this.bindAction = function(sourceName, target, targetProperty, isCompare, compareValue) {
+        return {
+            onChange: sourceName,
+            execute: (ui) => {
+                let value = ui[sourceName].value();
+                if (isCompare)
+                    value = value === compareValue;
+                target.setPropertyValue(targetProperty, value);
+            }
+        };
+    };
+
+    this.bindingsToActions = function() {
+        for (let name in this._resources) {
+            let res = this._resources[name];
+            if (res.properties !== undefined) {
+                for (let property in res.properties) {
+                    let prop = res.properties[property];
+                    if (prop.binding !== undefined) {
+                        let bind = prop.binding.substring(1, prop.binding.length - 1);
+                        let parts = bind.split(":");
+                        let sourceName = parts[0];
+                        if (this._resources[sourceName] === undefined)
+                            throw "Cannot bind to '" + sourceName + "'. It does not exist.";
+                        let isCompare = parts.length > 1;
+                        let action = this.bindAction(sourceName, res, property, isCompare, parts[1]);
+                        this.addAction(action);
+                        action.execute(this._resources);
+                    }
+                }
+            }
+        }
+    };
+
     this.addAction = function(callback) {
         this._actions.push(new LayoutAction(this, callback));
     };
@@ -63,6 +97,8 @@ var LayoutActionManager = function(view) {
     };
 
     this.initializeAll = function() {
+        this.bindingsToActions();
+
         for (var i = 0; i < this._actions.length; i++) {
             var action = this._actions[i];
             action.initialize();

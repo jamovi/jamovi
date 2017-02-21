@@ -27,21 +27,36 @@ var PropertySupplier = function(properties) {
         if (_.isUndefined(this.properties[name]) === false && this.properties[name].isDefined)
             return;
 
-        var self = this;
-        this.properties[name] = {
-            get: function() {
-                return self.properties[name].value;
-            },
-            set: function(value) {
-                var v = value;
-                if (filter !== null && _.isUndefined(filter) === false)
-                    v = filter.check(value);
-                self.properties[name].value = v;
-            },
-            value: initialValue,
+        let dataBound = this.isValueDataBound(initialValue);
+
+        let properties = {
             trigger: name + "_changed",
-            isDefined: defined
+            isDefined: defined,
+            get: () => {
+                return this.properties[name].value;
+            },
+            set: (value) => {
+                var v = value;
+                if (filter !== null && filter !== undefined)
+                    v = filter.check(value);
+                this.properties[name].value = v;
+            },
+            value: initialValue
         };
+
+        if (dataBound) {
+            properties.binding = initialValue;
+            properties.value = null;
+        }
+
+        this.properties[name] = properties;
+    };
+
+    this.isValueDataBound = function(value) {
+        if (typeof value === 'string')
+            return value.startsWith('(') && value.endsWith(')');
+
+        return false;
     };
 
     this.getPropertyValue = function(property) {
