@@ -38,7 +38,7 @@ def fix_names(names):
 
 def read(data, path):
 
-    with open(path, encoding='utf-8-sig') as csvfile:
+    with open(path, encoding='utf-8-sig', errors='replace') as csvfile:
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(4096))
             if dialect.delimiter.isalpha():
