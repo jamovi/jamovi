@@ -97,7 +97,7 @@ const TableView = SilkyView.extend({
 
             let html = '';
             html += '<div data-id="' + column.id + '" data-index="' + colNo + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
-            html +=     column.name;
+            html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
             html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
             html += '</div>';
 
@@ -171,7 +171,8 @@ const TableView = SilkyView.extend({
 
                 if (changes.nameChanged) {
                     let header = this.$headers[index];
-                    header.innerText = column.name;
+                    let $label = $(header).find('.silky-column-header-label');
+                    $label.text(column.name);
                 }
             }
         }
