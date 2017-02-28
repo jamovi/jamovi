@@ -344,27 +344,27 @@ class Instance:
     def _on_analysis(self, request):
 
         if request.restartEngines:
-
             self.rerun()
+            return
 
-        elif request.HasField('options'):
-
-            analysis = self._data.analyses.get(request.analysisId)
-            if analysis is not None:
-                self._data.dataset.is_edited = True
-                if request.perform is jcoms.AnalysisRequest.Perform.Value('DELETE'):
-                    del self._data.analyses[request.analysisId]
-                else:
-                    analysis.set_options(request.options, request.changed)
-            else:
-                log.error('Instance._on_analysis(): Analysis ' + analysis.id + ' could not be found')
-
+        if request.analysisId == 0:
+            log.error('Instance._on_analysis(): Analysis id of zero is not allowed')
             self._coms.discard(request)
+            return
 
-        else:
+        analysis = self._data.analyses.get(request.analysisId)
+
+        if analysis is not None:  # analysis already exists
+            self._data.is_edited = True
+            if request.perform is jcoms.AnalysisRequest.Perform.Value('DELETE'):
+                del self._data.analyses[request.analysisId]
+            else:
+                analysis.set_options(request.options, request.changed)
+
+        else:  # create analysis
             try:
-                analysis = self._data.analyses.create(request.analysisId, request.name, request.ns)
-                self._data.dataset.is_edited = True
+                analysis = self._data.analyses.create(request.analysisId, request.name, request.ns, request.options)
+                self._data.is_edited = True
 
                 response = jcoms.AnalysisResponse()
                 response.analysisId = request.analysisId

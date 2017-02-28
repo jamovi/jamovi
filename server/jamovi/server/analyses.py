@@ -117,7 +117,7 @@ class Analyses:
 
         return analysis
 
-    def create(self, id, name, ns):
+    def create(self, id, name, ns, options_pb):
 
         module = Modules.instance().get(ns)
         analysis_root = os.path.join(module.path, 'analyses', name.lower())
@@ -128,6 +128,7 @@ class Analyses:
             optionDefs = defn['options']
 
             options = Options.create(optionDefs)
+            options.set(options_pb)
 
             analysis = Analysis(id, analysisName, ns, options, self)
             self._analyses.append(analysis)

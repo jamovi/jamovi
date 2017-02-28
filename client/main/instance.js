@@ -350,6 +350,7 @@ const Instance = Backbone.Model.extend({
         this._dataSetModel.set('edited', true);
 
         let coms = this.attributes.coms;
+        let ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
         let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;
@@ -360,10 +361,10 @@ const Instance = Backbone.Model.extend({
         if (changed)
             analysisRequest.changed = changed;
 
-        if (analysis.isReady) {
-            let ppi = parseInt(72 * (window.devicePixelRatio || 1));
+        if (analysis.isReady)
             analysisRequest.setOptions(OptionsPB.toPB(analysis.options, ppi, coms.Messages));
-        }
+        else
+            analysisRequest.setOptions(OptionsPB.toPB({ }, ppi, coms.Messages));
 
         if (analysis.deleted)
             analysisRequest.perform = 6; // delete
