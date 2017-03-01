@@ -22,6 +22,12 @@ class Main {  // this is constructed at the bottom
         window.addEventListener('message', event => this._messageEvent(event));
 
         this._notifyResize = _.debounce(() => this._reallyNotifyResize(), 50);
+
+        window.setOption = (name, value) => {
+            this.mainWindow.postMessage({
+                type : 'setOption',
+                data : { name, value }}, '*');
+        };
     }
 
     _reallyNotifyResize() {

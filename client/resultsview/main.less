@@ -216,6 +216,55 @@ td.silky-results-table-cell-format-sep + td.silky-results-table-cell-sup {
     min-width: 0 ;
 }
 
+th button {
+    display: inline-block ;
+    width: 20px ;
+    height: 16px ;
+    background-color: transparent ;
+    background-size: 20px 14px ;
+    background-repeat: no-repeat;
+    background-position: center 1px ;
+    border: 0 ;
+    outline: none;
+}
+
+th button.sort-asc {
+    background-image: url('assets/action-sort-asc.svg');
+}
+
+th button.sort-desc {
+    position: relative ;
+    left: -4px ;
+    background-image: url('assets/action-sort-desc.svg');
+}
+
+th button.sorted-asc {
+    background-image: url('assets/action-sorted-asc.svg');
+}
+
+th button.sorted-desc {
+    position: relative ;
+    left: -4px ;
+    background-image: url('assets/action-sorted-desc.svg');
+}
+
+th button.sort-asc:hover {
+    background-image: url('assets/action-sort-asc-hover.svg');
+}
+
+th button.sort-desc:hover {
+    background-image: url('assets/action-sort-desc-hover.svg');
+}
+
+table.row-selectable tr.content-row:hover:not(.selected) td {
+    background-color: #F0F0F0 ;
+}
+
+table.row-selectable tr.selected td {
+    background-color: #6B9DE8 ;
+    color: white ;
+}
+
 .silky-results-image {
 
 }

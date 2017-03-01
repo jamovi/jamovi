@@ -3,6 +3,13 @@ from .jamovi_pb2 import AnalysisOption
 from .jamovi_pb2 import AnalysisOptions
 
 
+class Option:
+    def __init__(self):
+        self.name = None
+        self.type = None
+        self.passive = False
+
+
 class Options:
 
     @staticmethod
@@ -21,6 +28,12 @@ class Options:
 
             if typ == 'Data':
                 continue
+
+            option = Option()
+            option.name = name
+            option.type = typ
+            option.passive = 'passive' in opt_defn and opt_defn['passive']
+            options._options[name] = option
 
             options._pb.names.append(name)
             opt_pb = options._pb.options.add()
@@ -69,10 +82,32 @@ class Options:
             dest_pb.o = AnalysisOption.Other.Value('NULL')
 
     def __init__(self):
+        self._options = { }
         self._pb = AnalysisOptions()
 
     def set(self, pb):
-        self._pb.CopyFrom(pb)
+        changes = False
+        old_names = list(self._pb.names)
+        new_names = list(pb.names)
+
+        for i in range(len(new_names)):
+            name = new_names[i]
+            new_pb = pb.options[i]
+            if name in old_names:
+                old_index = old_names.index(name)
+                old_pb = self._pb.options[old_index]
+                if old_pb != new_pb:
+                    old_pb.CopyFrom(new_pb)
+                    if name not in self._options or not self._options[name].passive:
+                        changes = True
+            else:
+                self._pb.names.append(name)
+                option_pb = self._pb.options.add()
+                option_pb.CopyFrom(new_pb)
+                if name not in self._options or not self._options[name].passive:
+                    changes = True
+
+        return changes
 
     def read(self, bin):
         self._pb.ParseFromString(bin)
@@ -82,3 +117,10 @@ class Options:
 
     def as_bytes(self):
         return self._pb.SerializeToString()
+
+    @staticmethod
+    def _get_option_pb(pb, name):
+        for i in range(len(pb.names)):
+            if pb.names[i] == name:
+                return pb.options[i]
+        return None

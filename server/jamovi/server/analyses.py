@@ -35,7 +35,9 @@ class Analysis:
         return self.results is not None
 
     def set_options(self, options, changes=[]):
-        self.options.set(options)
+        non_passive_changes = self.options.set(options)
+        if not non_passive_changes and len(changes) == 0:
+            return
         if len(changes) > 0:
             self.changes |= set(changes)
         self.revision += 1

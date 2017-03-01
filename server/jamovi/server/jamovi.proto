@@ -132,6 +132,7 @@ message ResultsCell {
 
     repeated string footnotes = 6;
     repeated string symbols = 7;
+    int32 sortKey = 8;
 }
 
 message ResultsColumn {
@@ -145,6 +146,8 @@ message ResultsColumn {
 
     repeated ResultsCell cells = 7;
 
+    bool sortable = 13;
+    bool hasSortKeys = 14;
     Visible visible = 15;
 }
 
@@ -154,12 +157,21 @@ message ResultsTableNote {
     bool   init = 3;
 }
 
+message Sort {
+    string sortBy = 1;
+    bool   sortDesc = 2;
+}
+
 message ResultsTable {
     repeated ResultsColumn columns = 1;
     repeated string rowNames = 2;
     bool swapRowsColumns = 3;
     repeated ResultsTableNote notes = 4;
     string asText = 5;
+    string rowSelect = 6;
+    int32 rowSelected = 7;
+    string sortSelect = 8;
+    Sort sortSelected = 9;
 }
 
 message ResultsImage {
@@ -199,6 +211,7 @@ message ResultsElement {
         ResultsHtml html = 12;
     }
 
+    bytes state = 14;
     Visible visible = 15;
 }
 

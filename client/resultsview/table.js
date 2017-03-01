@@ -18,6 +18,36 @@ const Format = {
     NEGATIVE: 4
 };
 
+const extractCellValue = function(cellPB) {
+    if (cellPB.cellType === 'o')
+        return null;
+    else
+        return cellPB[cellPB.cellType];
+};
+
+const createSortTransform = function(column, dir) {
+
+    let trans = new Array(column.cells.length);
+
+    let sortBy;
+    if (column.hasSortKeys)
+        sortBy = (a, b) => a.sortKey - b.sortKey;
+    else
+        sortBy = (a, b) => extractCellValue(a) - extractCellValue(b);
+
+    let i = 0;
+    let cells = column.cells.slice().sort(sortBy);
+    for (let cell of cells) {
+        let index = column.cells.indexOf(cell);
+        trans[i++] = index;
+    }
+
+    if (dir === 'desc')
+        trans = trans.reverse();
+
+    return trans;
+};
+
 const TableModel = Backbone.Model.extend({
     defaults : {
         name: "name",
@@ -27,10 +57,68 @@ const TableModel = Backbone.Model.extend({
         },
         error: null,
         status: 'complete',
-        asText: null
+        asText: null,
+        sortedCells : [ ],
+        sortTransform: [ ],
     },
     initialize() {
-    }
+
+        let table = this.attributes.element;
+        let cells = table.columns.map(column => column.cells);
+
+        if (table.sortSelected) {
+
+            let sortBy = table.sortSelected.sortBy;
+            let sortDesc = table.sortSelected.sortDesc;
+
+            this.sort(sortBy, sortDesc ? 'desc' : 'asc');
+
+        } else {
+
+            if (cells.length > 0 && cells[0].length > 0) {
+                let trans = new Array(cells[0].length);
+                for (let i = 0; i < trans.length; i++)
+                    trans[i] = i;
+                this.set('sortTransform', trans);
+            }
+
+            this.set('sortedCells', cells);
+        }
+    },
+    sort(by, dir) {
+
+        let table = this.attributes.element;
+
+        let column = null;
+        for (let c of table.columns) {
+            if (c.name === by) {
+                column = c;
+                break;
+            }
+        }
+        if (column === null)
+            throw 'no such column';
+
+        table.sortSelected = { sortBy: by, sortDesc: dir === 'desc' };
+
+        let trans = createSortTransform(column, dir);
+        this.set('sortTransform', trans);
+
+        let oldColumns = table.columns;
+        let newColumns = new Array(oldColumns.length);
+
+        for (let i = 0; i < oldColumns.length; i++) {
+            let oldColumn = oldColumns[i];
+            let newColumn = new Array(trans.length);
+            for (let j = 0; j < trans.length; j++)
+                newColumn[j] = oldColumn.cells[trans[j]];
+            newColumns[i] = newColumn;
+        }
+
+        this.set('sortedCells', newColumns);
+
+        window.setOption(table.sortSelect, { sortBy: by, sortDesc: dir === 'desc' });
+    },
 });
 
 const isVis = function(column) {
@@ -49,9 +137,15 @@ const TableView = Elem.View.extend({
 
         let table = this.model.attributes.element;
 
+        this._ascButtons = $();
+        this._descButtons = $();
+        this._trs = $();
+
         if (data.mode === 'rich') {
 
-            this.$table = $('<table class="silky-results-table-table"></table>').appendTo(this.$el);
+            let rowSelectable = table.rowSelect ? ' row-selectable' : '';
+
+            this.$table = $('<table class="silky-results-table-table' + rowSelectable + '"></table>').appendTo(this.$el);
             this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
             this.$titleRow = $('<tr class="silky-results-table-title-row"></tr>').appendTo(this.$tableHeader);
             this.$titleCell = $('<th class="silky-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
@@ -63,6 +157,8 @@ const TableView = Elem.View.extend({
 
             this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
             this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
+
+            this.model.on('change:sortedCells', () => this.render());
 
             this.render();
         }
@@ -82,9 +178,15 @@ const TableView = Elem.View.extend({
     render() {
 
         let table = this.model.attributes.element;
+        let columns = table.columns;
+        let sortedCells = this.model.attributes.sortedCells;
         let html;
         let fnIndices = { };
         let footnotes = [ ];
+
+        this._ascButtons.off();
+        this._descButtons.off();
+        this._trs.off();
 
         if (this.model.attributes.status === 1)
             this.$el.addClass('silky-results-status-inited');
@@ -97,16 +199,16 @@ const TableView = Elem.View.extend({
         let columnCount = 0;
         let rowCount = 0;
 
-        for (let column of table.columns) {
+        for (let column of columns) {
             if (isVis(column))
                 columnCount++;
         }
 
-        if (table.columns.length > 0)
-            rowCount = table.columns[0].cells.length;
+        if (columns.length > 0)
+            rowCount = columns[0].cells.length;
 
         let hasSuperHeader = false;
-        for (let column of table.columns) {
+        for (let column of columns) {
             if (isVis(column) && column.superTitle) {
                 hasSuperHeader = true;
                 break;
@@ -122,7 +224,7 @@ const TableView = Elem.View.extend({
         let formattings = new Array(columnCount);
 
         let colNo = 0;
-        for (let column of table.columns) {
+        for (let column of columns) {
 
             if ( ! isVis(column))
                 continue;
@@ -132,11 +234,14 @@ const TableView = Elem.View.extend({
             if (format.includes('narrow'))
                 classes += ' silky-results-table-cell-format-narrow';
 
+            let name = column.name;
             let title = name;
             if ('title' in column)
                 title = column.title;
 
-            cells.header[colNo] = { value : column.title, classes : classes };
+            let sortable = column.sortable ? true : false;
+
+            cells.header[colNo] = { name : name, value : column.title, classes : classes, sortable : sortable };
 
             if (column.superTitle)
                 cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
@@ -153,21 +258,23 @@ const TableView = Elem.View.extend({
 
             cells.body[rowNo] = new Array(columnCount);
 
-            if (table.columns.length === 0)
+            if (columns.length === 0)
                 break;
 
             let rowFormat = '';
 
-            let firstCell = table.columns[0].cells[rowNo];
+            let firstCell = sortedCells[0][rowNo];
             if ((firstCell.format & Format.BEGIN_GROUP) == Format.BEGIN_GROUP)
                 group++;
 
             let colNo = 0;
-            for (let sourceColumn of table.columns) {
+            for (let sourceColNo = 0; sourceColNo < columns.length; sourceColNo++) {
+                let sourceColumn = columns[sourceColNo];
+                let sourceCells = sortedCells[sourceColNo];
                 if ( ! isVis(sourceColumn))
                     continue;
 
-                let sourceCell = sourceColumn.cells[rowNo];
+                let sourceCell = sourceCells[rowNo];
 
                 let cell = { value : null, classes : rowFormat, sups : '', group : group };
 
@@ -229,7 +336,7 @@ const TableView = Elem.View.extend({
         let nFolds = 1;
         colNo = 0;
 
-        for (let column of table.columns) {
+        for (let column of columns) {
             if ( ! isVis(column))
                 continue;
             let columnName = column.name;
@@ -387,7 +494,19 @@ const TableView = Elem.View.extend({
             if (content === '')
                 content = '&nbsp;';
             let classes = head.classes;
-            html += '<th class="silky-results-table-cell' + classes + '" colspan="2">' + content + '</th>';
+            let sortStuff = '';
+            if (head.sortable) {
+                let asc = 'sort-asc';
+                let desc = 'sort-desc';
+                if (table.sortSelected && head.name === table.sortSelected.sortBy) {
+                    if (table.sortSelected.sortDesc)
+                        desc = 'sorted-desc';
+                    else
+                        asc = 'sorted-asc';
+                }
+                sortStuff = ' <button class="' + asc + '" data-name="' + head.name + '"></button><button class="' + desc + '" data-name="' + head.name + '"></button>';
+            }
+            html += '<th class="silky-results-table-cell' + classes + '" colspan="2">' + content + sortStuff + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
@@ -448,7 +567,12 @@ const TableView = Elem.View.extend({
 
             prevGroup = currentGroup;
 
-            html += '<tr>' + rowHtml + '</tr>';
+            let selected = '';
+            let trans = this.model.attributes.sortTransform;
+            if (table.rowSelected === trans[rowNo])
+                selected = ' selected';
+
+            html += '<tr class="content-row' + selected + '">' + rowHtml + '</tr>';
         }
 
         this.$tableBody.html(html);
@@ -463,6 +587,29 @@ const TableView = Elem.View.extend({
 
         html += '<tr><td colspan="' + nPhysCols + '"></td></tr>';
         this.$tableFooter.html(html);
+
+        this._ascButtons = this.$tableHeader.find('button.sort-asc');
+        this._descButtons = this.$tableHeader.find('button.sort-desc');
+        this._trs = this.$tableBody.find('tr');
+
+        this._ascButtons.on('click', event => {
+            let $button = $(event.target);
+            let columnName = $button.attr('data-name');
+            this.model.sort(columnName, 'asc');
+        });
+
+        this._descButtons.on('click', event => {
+            let $button = $(event.target);
+            let columnName = $button.attr('data-name');
+            this.model.sort(columnName, 'desc');
+        });
+
+        this._trs.on('click', event => {
+            let $row = $(event.target).closest(this._trs);
+            let rowNo = this._trs.index($row);
+            rowNo = this.model.attributes.sortTransform[rowNo];
+            window.setOption(table.rowSelect, rowNo);
+        });
     },
     makeFormatClasses(column) {
 

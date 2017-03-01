@@ -66,6 +66,7 @@ const ResultsPanel = Backbone.View.extend({
 
             resources = {
                 id : analysis.id,
+                analysis : analysis,
                 iframe : iframe,
                 $iframe : $iframe,
                 $container : $container,
@@ -143,6 +144,7 @@ const ResultsPanel = Backbone.View.extend({
             let eventData = payload.data;
             let $iframe = resources.$iframe;
             let $container = resources.$container;
+            let analysis = resources.analysis;
 
             switch (eventType) {
                 case 'sizeChanged':
@@ -173,6 +175,10 @@ const ResultsPanel = Backbone.View.extend({
                 case 'clipboardCopy':
                     this._copyToClipboard(eventData);
                     break;
+                case 'setOption':
+                    let options = { };
+                    options[eventData.name] = eventData.value;
+                    analysis.setOptions(options);
             }
         }
     },
