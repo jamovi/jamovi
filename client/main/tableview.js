@@ -193,8 +193,9 @@ const TableView = SilkyView.extend({
             }
         }
         else if (event.type === 'dblclick') {
-            if ($element.hasClass('silky-column-header')) {
-                let colNo = $element.data('index');
+            let $header = $element.closest('.silky-column-header');
+            if ($header.length > 0) {
+                let colNo = $header.data('index');
                 this._endEditing().then(() => {
                     let rowNo = this.selection === null ? 0 : this.selection.rowNo;
                     this._setSelection(rowNo, colNo);
