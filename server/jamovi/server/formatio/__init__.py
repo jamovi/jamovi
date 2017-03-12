@@ -23,6 +23,8 @@ def read(data, path, is_example=False):
     else:
         omv.read(data, path, is_example)
 
+    data.refresh()
+
 
 def write(data, path):
     omv.write(data, path)

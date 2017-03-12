@@ -45,6 +45,9 @@ const TableView = SilkyView.extend({
         this.$header    = this.$el.find('.silky-table-header');
         this.$body      = this.$container.find('.silky-table-body');
         this.$columns   = [ ];
+        this.$headers   = [ ];
+
+        this._bodyWidth = 0;
 
         this.rowHeaderWidth = 32;
 
@@ -80,44 +83,53 @@ const TableView = SilkyView.extend({
         else
             keyboardJS.setContext('');
     },
+    _appendColumn(column) {
+        let width  = column.width;
+        let left = this._bodyWidth;
+
+        let html = '';
+        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
+        html +=     '<div class="silky-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
+        html += '</div>';
+
+        let $header = $(html);
+        this.$header.append($header);
+        this.$headers.push($header);
+
+        let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        this.$body.append($column);
+        this.$columns.push($column);
+
+        this._lefts[column.index] = left;
+        this._widths[column.index] = width;
+        this._bodyWidth += width;
+
+        this.$body.css('width',  this._bodyWidth);
+    },
     _dataSetLoaded() {
 
         this.$header.empty();  // clear the temporary cell
+
+        // add the top-left corner cell
         this.$header.append('<div class="silky-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
 
         let columns = this.model.get('columns');
-        let left = this.rowHeaderWidth;
+        this._bodyWidth = this.rowHeaderWidth;
 
         this._lefts = new Array(columns.length);  // store the left co-ordinate for each column
         this._widths = new Array(columns.length);
 
         for (let colNo = 0; colNo < columns.length; colNo++) {
             let column = columns[colNo];
-            let width  = column.width;
-
-            let html = '';
-            html += '<div data-id="' + column.id + '" data-index="' + colNo + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
-            html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
-            html +=     '<div class="silky-column-header-resizer" data-index="' + colNo + '" draggable="true"></div>';
-            html += '</div>';
-
-            this.$header.append(html);
-            this.$body.append('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
-
-            this._lefts[colNo] = left;
-            this._widths[colNo] = width;
-            left += width;
+            this._appendColumn(column);
         }
 
-        this.$headers = this.$header.children(':not(:first-child)');
-        this.$columns = this.$body.children();
-        this.$body.css('width',  left);
-
-        let rowCount = this.model.get('rowCount');
-        let totalHeight = rowCount * this._rowHeight;
-        this.$body.css('height', totalHeight);
-
         this.$rhColumn = $('<div class="silky-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
+
+        let vRowCount = this.model.get('vRowCount');
+        let totalHeight = vRowCount * this._rowHeight;
+        this.$body.css('height', totalHeight);
 
         this._updateViewRange();
 
@@ -154,28 +166,42 @@ const TableView = SilkyView.extend({
             }
         });
 
+        this.model.on('change:vRowCount', event => {
+            this._updateHeight();
+        });
+
         this._setSelection(0, 0);
+    },
+    _updateHeight() {
+        let vRowCount = this.model.get('vRowCount');
+        let totalHeight = vRowCount * this._rowHeight;
+        this.$body.css('height', totalHeight);
+        this._refreshRHCells(this.viewport);
     },
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
             let column = this.model.getColumnById(changes.id);
-            let index = this.model.indexOfColumnById(changes.id);
-            if (index !== -1) {
-                if (changes.levelsChanged || changes.measureTypeChanged) {
-                    let $header = $(this.$headers[index]);
-                    $header.attr('data-measuretype', column.measureType);
-                    let $column = $(this.$columns[index]);
-                    $column.attr('data-measuretype', column.measureType);
-                }
 
-                if (changes.nameChanged) {
-                    let header = this.$headers[index];
-                    let $label = $(header).find('.silky-column-header-label');
-                    $label.text(column.name);
-                }
+            if (changes.created) {
+                this._appendColumn(column);
+            }
+
+            if (changes.levelsChanged || changes.measureTypeChanged) {
+                let $header = $(this.$headers[column.index]);
+                $header.attr('data-measuretype', column.measureType);
+                let $column = $(this.$columns[column.index]);
+                $column.attr('data-measuretype', column.measureType);
+            }
+
+            if (changes.nameChanged) {
+                let header = this.$headers[column.index];
+                let $label = $(header).find('.silky-column-header-label');
+                $label.text(column.name);
             }
         }
+
+        this._updateViewRange();
     },
     _clickHandler(event) {
         let element = document.elementFromPoint(event.clientX, event.clientY);
@@ -227,7 +253,7 @@ const TableView = SilkyView.extend({
                     this._setSelection(rowNo - 1, colNo);
                 break;
             case 'down':
-                if (this.selection.rowNo < this.model.attributes.rowCount - 1)
+                if (this.selection.rowNo < this.model.attributes.vRowCount - 1)
                     this._setSelection(rowNo + 1, colNo);
                 break;
         }
@@ -675,10 +701,10 @@ const TableView = SilkyView.extend({
         let topRow = Math.floor(v.top / this._rowHeight) - 1;
         let botRow = Math.ceil(v.bottom / this._rowHeight) - 1;
 
-        let rowCount = this.model.get('rowCount');
+        let rowCount = this.model.get('vRowCount');
         let columnCount = this.model.get('columnCount');
 
-        let columns = this.model.get("columns");
+        let columns = this.model.get('columns');
 
         let leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
         let rightColumn = _.sortedIndex(this._lefts, v.right) - 1;
@@ -737,9 +763,25 @@ const TableView = SilkyView.extend({
 
         let highlighted = '';
         if (this.selection !== null && this.selection.rowNo === rowNo)
-            highlighted = 'highlighted';
+            highlighted = ' highlighted';
 
-        return '<div class="silky-row-header-cell ' + highlighted + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
+        let virtual = '';
+        if (rowNo >= this.model.attributes.rowCount)
+            virtual = ' virtual';
+
+        return '<div class="silky-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
+    },
+    _refreshRHCells(v) {
+        this.$rhColumn.empty();
+        let nRows = v.bottom - v.top + 1;
+
+        for (let j = 0; j < nRows; j++) {
+            let rowNo = v.top + j;
+            let top   = rowNo * this._rowHeight;
+            let content = '' + (v.top+j+1);
+            let $cell = $(this._createRHCellHTML(top, this._rowHeight, content, rowNo));
+            this.$rhColumn.append($cell);
+        }
     },
     refreshCells(oldViewport, newViewport) {
 
@@ -749,16 +791,7 @@ const TableView = SilkyView.extend({
         let columns = this.model.get('columns');
 
         if (o === null || n.top !== o.top || n.bottom !== o.bottom) {
-
-            this.$rhColumn.empty();
-            let nRows = n.bottom - n.top + 1;
-
-            for (let j = 0; j < nRows; j++) {
-                let rowNo = n.top + j;
-                let top   = rowNo * this._rowHeight;
-                let $cell = $(this._createRHCellHTML(top, this._rowHeight, '' + (n.top+j+1), rowNo));
-                this.$rhColumn.append($cell);
-            }
+            this._refreshRHCells(n);
         }
 
         if (o === null || this._overlaps(o, n) === false) { // entirely new cells

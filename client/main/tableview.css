@@ -63,6 +63,10 @@
     color: #3E6DA9 ;
 }
 
+.silky-row-header-cell.virtual {
+    color: #BFBFBF ;
+}
+
 .silky-column-header:first-child {
     position: relative ;
 }

@@ -147,7 +147,10 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 
     struc()->columnCount++;
 
-    return ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
+    ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
+    wrapper.setRowCount<int>(rowCount());
+
+    return wrapper;
 }
 
 void DataSetW::setRowCount(size_t count)

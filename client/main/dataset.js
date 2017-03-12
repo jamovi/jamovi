@@ -17,6 +17,7 @@ const DataSetModel = Backbone.Model.extend({
         hasDataSet : false,
         columns    : [ ],
         rowCount : 0,
+        vRowCount : 0,
         columnCount : 0,
         coms : null,
         instanceId : null,
@@ -34,36 +35,16 @@ const DataSetModel = Backbone.Model.extend({
             let columns = Array(schemaPB.columns.length);
 
             for (let i = 0; i < schemaPB.columns.length; i++) {
-
                 let columnPB = schemaPB.columns[i];
                 let column = { };
-
-                column.name = columnPB.name;
-                column.id = columnPB.id;
-                column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
-                column.autoMeasure = columnPB.autoMeasure;
-                column.dps = columnPB.dps;
-                column.width = columnPB.width;
-
-                let levels = null;
-                if (columnPB.hasLevels) {
-                    levels = new Array(columnPB.levels.length);
-                    for (let i = 0; i < levels.length; i++) {
-                        let levelPB = columnPB.levels[i];
-                        levels[i] = {
-                            label: levelPB.label,
-                            value: levelPB.value,
-                        };
-                    }
-                }
-                column.levels = levels;
-
+                this._readColumnPB(column, columnPB);
                 columns[i] = column;
             }
 
             this.attributes.columns  = columns;
-            this.attributes.rowCount = infoPB.rowCount;
-            this.attributes.columnCount = infoPB.columnCount;
+            this.attributes.rowCount = infoPB.schema.rowCount;
+            this.attributes.vRowCount = infoPB.schema.vRowCount;
+            this.attributes.columnCount = infoPB.schema.columnCount;
 
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
@@ -71,6 +52,8 @@ const DataSetModel = Backbone.Model.extend({
     },
     getColumnById(id) {
         for (let column of this.attributes.columns) {
+            if (column === undefined)
+                continue;
             if (column.id === id)
                 return column;
         }
@@ -87,33 +70,6 @@ const DataSetModel = Backbone.Model.extend({
         }
         return null;
     },
-    indexOfColumnById(id) {
-        let columns = this.attributes.columns;
-        for (let i = 0; i < columns.length; i++) {
-            if (columns[i].id === id)
-                return i;
-        }
-        return -1;
-    },
-    indexOfColumn(columnOrName) {
-
-        let columns = this.attributes.columns;
-
-        if (typeof(columnOrName) === 'string') {
-            for (let i = 0; i < columns.length; i++) {
-                if (columns[i].name === columnOrName)
-                    return i;
-            }
-        }
-        else {
-            for (let i = 0; i < columns.length; i++) {
-                if (columns[i] === columnOrName)
-                    return i;
-            }
-        }
-
-        return -1;
-    },
     changeColumn(id, values) {
 
         let column = this.getColumnById(id);
@@ -124,10 +80,14 @@ const DataSetModel = Backbone.Model.extend({
         columnPB.id = id;
         columnPB.measureType = DataSetModel.parseMeasureType(values.measureType);
 
-        let nameChanged = values.name !== column.name;
+        if (values.name === '')
+            values.name = genColName(column.index);
+
+        let nameChanged = (values.name !== column.name);
         let oldName = column.name;
 
         let testName = values.name;
+
         if (nameChanged) {
             let names = this.attributes.columns.map((column) => { return column.name; } );
             let i = 2;
@@ -172,7 +132,8 @@ const DataSetModel = Backbone.Model.extend({
         let datasetPB = new coms.Messages.DataSetRR();
         datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.incSchema = true;
-        datasetPB.schema.push(columnPB);
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.columns.push(columnPB);
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -183,14 +144,31 @@ const DataSetModel = Backbone.Model.extend({
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             if (datasetPB.incSchema) {
 
-                let changed = Array(datasetPB.schema.length);
-                let changes = Array(datasetPB.schema.length);
+                let changed = Array(datasetPB.schema.columns.length);
+                let changes = Array(datasetPB.schema.columns.length);
+                let nCreated = 0;
 
-                for (let i = 0; i < datasetPB.schema.length; i++) {
-                    let columnPB = datasetPB.schema[i];
+                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
+                    let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
-                    this._readColumnPB(columnPB, column);
+                    let newName = columnPB.name;
+
+                    let created = false;
+                    let oldName;
+                    if (column !== undefined) {
+                        oldName = column.name;
+                        this._readColumnPB(column, columnPB);
+                    }
+                    else {
+                        oldName = columnPB.name;
+                        column = { };
+                        created = true;
+                        nCreated++;
+                        this._readColumnPB(column, columnPB);
+                        this.attributes.columns[column.index] = column;
+                    }
+
                     changed[i] = columnPB.name;
                     changes[i] = {
                         id: id,
@@ -198,19 +176,27 @@ const DataSetModel = Backbone.Model.extend({
                         levelsChanged: true,
                         measureTypeChanged: true,
                         nameChanged: nameChanged,
-                        dataChanged: true
+                        dataChanged: true,
+                        created: created,
                     };
                 }
 
                 this.trigger('columnsChanged', { changed, changes });
+
+                if (nCreated > 0)
+                    this.set('columnCount', this.attributes.columnCount + nCreated);
             }
         });
     },
-    _readColumnPB(columnPB, column) {
+    _readColumnPB(column, columnPB) {
+        column.id = columnPB.id;
+        column.name = columnPB.name;
+        column.index = columnPB.index;
         column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
         column.autoMeasure = columnPB.autoMeasure;
-        column.name = columnPB.name;
         column.dps = columnPB.dps;
+        column.width = columnPB.width;
+
         let levels = null;
         if (columnPB.hasLevels) {
             levels = new Array(columnPB.levels.length);
@@ -237,7 +223,7 @@ DataSetModel.stringifyMeasureType = function(type) {
         case 4:
             return 'continuous';
         default:
-            return 'misc';
+            return 'none';
     }
 };
 
@@ -488,7 +474,7 @@ const DataSetViewModel = DataSetModel.extend({
 
         let request = new coms.Messages.ComsMessage();
         request.payload = cellsRequest.toArrayBuffer();
-        request.payloadType = "DataSetRR";
+        request.payloadType = 'DataSetRR';
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
@@ -496,23 +482,43 @@ const DataSetViewModel = DataSetModel.extend({
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             let changes = [ ];
             let changed = [ ];
+            let nCreated = 0;
 
             if (datasetPB.incSchema) {
-                changes = Array(datasetPB.schema.length);
-                changed = Array(datasetPB.schema.length);
-                for (let i = 0; i < datasetPB.schema.length; i++) {
-                    let columnPB = datasetPB.schema[i];
+                changes = Array(datasetPB.schema.columns.length);
+                changed = Array(datasetPB.schema.columns.length);
+
+                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
+                    let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
-                    this._readColumnPB(columnPB, column);
+                    let newName = columnPB.name;
+
+                    let created = false;
+                    let oldName;
+                    if (column !== undefined) {
+                        oldName = column.name;
+                        this._readColumnPB(column, columnPB);
+                    }
+                    else {
+                        oldName = columnPB.name;
+                        column = { };
+                        created = true;
+                        nCreated++;
+                        this._readColumnPB(column, columnPB);
+                        this.attributes.columns[column.index] = column;
+                    }
+
                     changed[i] = columnPB.name;
                     changes[i] = {
                         id: id,
-                        oldName: columnPB.name,
+                        oldName: oldName,
+                        name: newName,
                         levelsChanged: true,
                         measureTypeChanged: true,
-                        nameChanged: false,
-                        dataChanged: true
+                        nameChanged: oldName !== newName,
+                        dataChanged: true,
+                        created: created,
                     };
                 }
             }
@@ -527,6 +533,12 @@ const DataSetViewModel = DataSetModel.extend({
                     changes.push({ id: column.id, oldName: name, dataChanged: true });
                 }
             }
+
+            if (nCreated > 0)
+                this.set('columnCount', this.attributes.columnCount + nCreated);
+
+            this.set('rowCount', datasetPB.schema.rowCount);
+            this.set('vRowCount', datasetPB.schema.vRowCount);
 
             this.set('edited', true);
             this.trigger('columnsChanged', { changed, changes });
@@ -566,7 +578,7 @@ const DataSetViewModel = DataSetModel.extend({
             if (changes.dataChanged === false)
                 continue;
 
-            let index = this.indexOfColumnById(changes.id);
+            let index = this.getColumnById(changes.id).index;
             let viewport = {
                 left: index,
                 top: this.attributes.viewport.top,
@@ -577,5 +589,27 @@ const DataSetViewModel = DataSetModel.extend({
         }
     }
 });
+
+const genColName = function(index) {
+    let alph = [
+            'A','B','C','D','E','F','G','H','I',
+            'J','K','L','M','N','O','P','Q','R',
+            'S','T','U','V','W','X','Y','Z'
+        ];
+
+    let value = '';
+    let c = index;
+    do {
+        let i = c % alph.length;
+        value = alph[i] + value;
+        c -= i;
+        c /= alph.length;
+        c -= 1;
+    }
+    while (c >= 0);
+
+    return value;
+};
+
 
 module.exports = { DataSetModel : DataSetModel, DataSetViewModel : DataSetViewModel };

@@ -63,7 +63,7 @@ namespace MeasureType
 {
     enum Type
     {
-        MISC = 0,
+        NONE = 0,
         NOMINAL_TEXT = 1,
         NOMINAL = 2,
         ORDINAL = 3,

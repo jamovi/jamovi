@@ -80,14 +80,6 @@ cdef class DataSet:
     def __iter__(self):
         return ColumnIterator(self)
 
-    def get_column_by_id(self, id):
-        cdef int _id
-
-        c = Column()
-        _id = id
-        c._this = deref(self._this).getColumnById(_id)
-        return c
-
     def append_column(self, name, import_name=None):
         c = Column()
         if import_name is None:
@@ -152,7 +144,7 @@ cdef extern from "columnw.h":
 
 cdef extern from "column.h":
     ctypedef enum CMeasureType  "MeasureType::Type":
-        CMeasureTypeMisc        "MeasureType::MISC"
+        CMeasureTypeNone        "MeasureType::NONE"
         CMeasureTypeNominalText "MeasureType::NOMINAL_TEXT"
         CMeasureTypeNominal     "MeasureType::NOMINAL"
         CMeasureTypeOrdinal     "MeasureType::ORDINAL"
@@ -171,10 +163,6 @@ class CellIterator:
 
 cdef class Column:
     cdef CColumn _this
-
-    property id:
-        def __get__(self):
-            return self._this.id()
 
     property name:
         def __get__(self):
@@ -563,7 +551,7 @@ def decode(string str):
     return str.c_str().decode('utf-8')
 
 class MeasureType(Enum):
-    MISC         = CMeasureTypeMisc
+    NONE         = CMeasureTypeNone
     NOMINAL_TEXT = CMeasureTypeNominalText
     NOMINAL      = CMeasureTypeNominal
     ORDINAL      = CMeasureTypeOrdinal
@@ -580,7 +568,7 @@ class MeasureType(Enum):
         elif measure_type == MeasureType.NOMINAL_TEXT:
             return "NominalText"
         else:
-            return "Misc"
+            return "None"
 
     @staticmethod
     def parse(measure_type):
@@ -593,7 +581,7 @@ class MeasureType(Enum):
         elif measure_type == "NominalText":
             return MeasureType.NOMINAL_TEXT
         else:
-            return MeasureType.MISC
+            return MeasureType.NONE
 
 cdef extern from "platforminfo.h":
     cdef cppclass CPlatformInfo "PlatformInfo":

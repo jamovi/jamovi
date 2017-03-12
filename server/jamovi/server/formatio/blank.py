@@ -1,8 +1,8 @@
 
 
 def read(data):
-    n_cols = 24
-    n_rows = 50
+    n_cols = 3
+    n_rows = 0
 
     for i in range(n_cols):
         name = chr(65 + i)

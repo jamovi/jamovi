@@ -71,6 +71,8 @@ var LayoutVariablesView = function(params) {
         var promises = [];
         for (var i = 0; i < columns.length; i++) {
             var column = columns[i];
+            if (column.measureType === 'none')
+                continue;
             var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: {  id: column.id, permitted: true } };
 
             promises.push(this.requestMeasureType(column.id, item));

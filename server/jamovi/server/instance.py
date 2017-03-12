@@ -17,8 +17,8 @@ from . import jamovi_pb2 as jcoms
 
 from .utils import conf
 from .enginemanager import EngineManager
-from .analyses import Analyses
 from .modules import Modules
+from .instancemodel import InstanceModel
 from . import formatio
 
 import uuid
@@ -34,14 +34,6 @@ from threading import Thread
 from .utils import fs
 
 log = logging.getLogger('jamovi')
-
-
-class InstanceData:
-    def __init__(self):
-        self.analyses = None
-        self.dataset = None
-        self.title = None
-        self.path = ''
 
 
 class Instance:
@@ -117,9 +109,7 @@ class Instance:
         self._instance_id = instance_id
 
         self._mm = None
-        self._data = InstanceData()
-        self._data.dataset = None
-        self._data.analyses = Analyses()
+        self._data = InstanceModel()
 
         self._coms = None
         self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
@@ -279,7 +269,7 @@ class Instance:
             if file_exists is False or request.overwrite is True:
                 formatio.write(self._data, path)
                 success = True
-                self._data.dataset.is_edited = False
+                self._data.is_edited = False
 
             response = jcoms.SaveProgress()
             response.fileExists = file_exists
@@ -388,18 +378,20 @@ class Instance:
 
         response = jcoms.InfoResponse()
 
-        has_dataset = self._data.dataset is not None
+        has_dataset = self._data.has_dataset
         response.hasDataSet = has_dataset
 
         if has_dataset:
             response.title = self._data.title
             response.path = self._data.path
-            response.rowCount = self._data.dataset.row_count
-            response.columnCount = self._data.dataset.column_count
-            response.edited = self._data.dataset.is_edited
-            response.blank = self._data.dataset.is_blank
+            response.edited = self._data.is_edited
+            response.blank = self._data.is_blank
 
-            for column in self._data.dataset:
+            response.schema.rowCount = self._data.row_count
+            response.schema.vRowCount = self._data.virtual_row_count
+            response.schema.columnCount = self._data.column_count
+
+            for column in self._data:
                 column_schema = response.schema.columns.add()
                 self._populate_column_schema(column, column_schema)
 
@@ -412,7 +404,7 @@ class Instance:
 
     def _on_dataset(self, request):
 
-        if self._data.dataset is None:
+        if self._data is None:
             return
 
         response = jcoms.DataSetRR()
@@ -507,9 +499,25 @@ class Instance:
             self._populate_cells(request, response)
 
     def _apply_schema(self, request, response):
-        for i in range(len(request.schema)):
-            column_schema = request.schema[i]
-            column = self._data.dataset.get_column_by_id(column_schema.id)
+
+        n_cols_before = self._data.column_count
+
+        min_index = self._data.column_count
+
+        for column_schema in request.schema.columns:
+            column = self._data.get_column_by_id(column_schema.id)
+            if column.index < min_index:
+                min_index = column.index
+
+        for i in range(self._data.virtual_start, min_index):
+            column = self._data[i]
+            column.realise()
+            response.incSchema = True
+            schema = response.schema.columns.add()
+            self._populate_column_schema(column, schema)
+
+        for column_schema in request.schema.columns:
+            column = self._data.get_column_by_id(column_schema.id)
 
             levels = None
             if column_schema.hasLevels:
@@ -520,10 +528,15 @@ class Instance:
             column.change(column_schema.measureType, column_schema.name, levels, auto_measure=column_schema.autoMeasure)
 
             response.incSchema = True
-            schema = response.schema.add()
+            schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
 
-        self._data.dataset.is_edited = True
+        self._data.is_edited = True
+
+        for i in range(n_cols_before, self._data.column_count):  # cols added
+            column = self._data[i]
+            schema = response.schema.columns.add()
+            self._populate_column_schema(column, schema)
 
     def _apply_cells(self, request, response):
         row_start = request.rowStart
@@ -533,11 +546,43 @@ class Instance:
         row_count = row_end - row_start + 1
         col_count = col_end - col_start + 1
 
+        if row_end >= self._data.row_count:
+            self._data.set_row_count(row_end + 1)
+
+        n_cols_before = self._data.column_count
+
+        for i in range(self._data.virtual_start, col_start):
+            column = self._data[i]
+            column.realise()
+            response.incSchema = True
+            schema = response.schema.columns.add()
+            self._populate_column_schema(column, schema)
+
         for i in range(col_count):
-            column = self._data.dataset[col_start + i]
+            column = self._data[col_start + i]
             col_res = request.data[i]
 
+            was_virtual = column.is_virtual
             changes = column.changes
+
+            if column.measure_type == MeasureType.NONE:
+
+                mt = MeasureType.NONE
+
+                for j in range(row_count):
+                    cell = col_res.values[j]
+                    if cell.HasField('o'):
+                        mt = MeasureType.NOMINAL_TEXT
+                    elif cell.HasField('d'):
+                        if mt is not MeasureType.NOMINAL_TEXT:
+                            mt = MeasureType.CONTINUOUS
+                    elif cell.HasField('i'):
+                        if mt is not MeasureType.NOMINAL_TEXT and mt is not MeasureType.CONTINUOUS:
+                            mt = MeasureType.NOMINAL
+                    elif cell.HasField('s') and column.auto_measure:
+                        mt = MeasureType.NOMINAL_TEXT
+
+                column.measure_type = mt
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 nan = float('nan')
@@ -613,12 +658,20 @@ class Instance:
             elif column.measure_type == MeasureType.CONTINUOUS:
                 column.determine_dps()
 
-            if changes != column.changes:
+            if changes != column.changes or was_virtual:
                 response.incSchema = True
-                schema = response.schema.add()
+                schema = response.schema.columns.add()
                 self._populate_column_schema(column, schema)
 
-            self._data.dataset.is_edited = True
+        self._data.is_edited = True
+
+        for i in range(n_cols_before, self._data.column_count):  # cols added
+            column = self._data[i]
+            columnPB = response.schema.columns.add()
+            self._populate_column_schema(column, columnPB)
+
+        response.schema.rowCount = self._data.row_count
+        response.schema.vRowCount = self._data.virtual_row_count
 
     def _auto_adjust(self, column):
         if column.measure_type == MeasureType.NOMINAL_TEXT:
@@ -662,7 +715,7 @@ class Instance:
         col_count = col_end - col_start + 1
 
         for c in range(col_start, col_start + col_count):
-            column = self._data.dataset[c]
+            column = self._data[c]
 
             col_res = response.data.add()
 
@@ -693,14 +746,18 @@ class Instance:
 
     def _populate_schema(self, request, response):
         response.incSchema = True
-        for column in self._data.dataset:
-            column_schema = response.schema.add()
+        for column in self._data:
+            column_schema = response.schema.columns.add()
             self._populate_column_schema(column, column_schema)
+        response.schema.rowCount = self._data.row_count
+        response.schema.vRowCount = self._data.virtual_row_count
+        response.schema.columnCount = self._data.column_count
 
     def _populate_column_schema(self, column, column_schema):
         column_schema.name = column.name
         column_schema.importName = column.import_name
         column_schema.id = column.id
+        column_schema.index = column.index
 
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure

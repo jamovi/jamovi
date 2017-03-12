@@ -177,11 +177,13 @@
 
 .silky-variable-editor-widget-types-highlight {
     position: absolute ;
+    top: -4px ;
     padding: 2px ;
     width: 32px ;
-    height: 32px ;
+    height: 0 ;
     background-color: #E8E8E8 ;
     transition: all .2s ;
+    width: 150px ;
 }
 
 .silky-variable-editor-autotype {
