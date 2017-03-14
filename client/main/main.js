@@ -50,6 +50,19 @@ coms.on('close', function() {
     host.closeWindow(true);
 });
 
+if (window.navigator.platform === 'MacIntel') {
+    host.constructMenu([
+        {
+            label: 'jamovi',
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'quit' },
+            ]
+        }
+    ]);
+}
+
 $(document).ready(() => {
 
     if (navigator.platform === "Win32")

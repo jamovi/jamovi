@@ -24,6 +24,7 @@ let currentZoom;
 let setEdited;
 let showMessageBox;
 let navigate;
+let constructMenu;
 
 let emitter = new events.EventEmitter();
 
@@ -40,6 +41,7 @@ if (window.require) {
     const browserWindow = remote.getCurrentWindow();
     const webContents = browserWindow.webContents;
     const dialog = remote.dialog;
+    const Menu = remote.Menu;
 
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
@@ -170,6 +172,11 @@ if (window.require) {
     setEdited = function(edited) {
         browserWindow.setDocumentEdited(edited);
     };
+
+    constructMenu = function(template) {
+        const menu = Menu.buildFromTemplate(template);
+        Menu.setApplicationMenu(menu);
+    };
 }
 else {
 
@@ -202,6 +209,7 @@ const Host = {
     showMessageBox,
     setEdited,
     navigate,
+    constructMenu,
 };
 
 module.exports = Host;
