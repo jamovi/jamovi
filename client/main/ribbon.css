@@ -80,6 +80,10 @@ body.windows .jmv-ribbon-appmenu {
     background-image: url('assets/analysis-frequencies.svg');
 }
 
+.jmv-ribbon-button[data-name=factor] .jmv-ribbon-button-icon {
+    background-image: url('assets/analysis-factor.svg');
+}
+
 .jmv-ribbon-button[data-name="base r"] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-r.svg');
 }
