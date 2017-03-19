@@ -140,6 +140,12 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
+    export(filePath) {
+        //For JLo, needs to return a promise
+        return new Promise((resolve, reject) => {
+            resolve();
+        })
+    },
     save(filePath, overwrite) {
 
         if (overwrite === undefined)
