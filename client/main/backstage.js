@@ -123,6 +123,16 @@ var FSEntryBrowserView = SilkyView.extend({
         this._createHeader();
         this._render();
     },
+    onClose: function() {
+        let context = keyboardJS.getContext();
+        keyboardJS.setContext('save_name_textbox');
+        keyboardJS.reset();
+        if (this._keyboardSetup) {
+            keyboardJS.setContext('save_file_browser');
+            keyboardJS.reset();
+        }
+        keyboardJS.setContext(context);
+    },
     _normalisePath: function(path) {
         var normPath = path;
         if (path.startsWith('{{Documents}}'))
@@ -1072,6 +1082,8 @@ var BackstageChoices = SilkyView.extend({
         if (place.model) {
             this.$current = $('<div class="silky-bs-choices-list" style="display: none ; width:100%; height:100%"></div>');
             this.$current.appendTo(this.$el);
+            if (this.current)
+                this.current.close();
             this.current = new place.view({ el: this.$current, model: place.model });
             this.$current.fadeIn(200);
         }
