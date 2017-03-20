@@ -27,7 +27,10 @@ def read(data, path, is_example=False):
 
 
 def write(data, path):
-    omv.write(data, path)
+    if path.endswith('.csv'):
+        csv.write(data, path)
+    else:
+        omv.write(data, path)
 
 
 def is_supported(filename):

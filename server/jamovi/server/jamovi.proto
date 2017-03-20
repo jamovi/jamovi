@@ -239,6 +239,7 @@ message OpenProgress {
 message SaveRequest {
     string filename = 1;
     bool overwrite = 2;
+    bool export = 3;
 }
 
 message SaveProgress {

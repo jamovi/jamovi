@@ -6,6 +6,12 @@ import csv
 from ...core import MeasureType
 
 
+def write(data, path):
+
+    with open(path, 'w', encoding='utf-8') as file:
+        file.write('ravi! get to work!')
+
+
 def calc_dps(value, max_dp=3):
     max_dp_required = 0
     value %= 1

@@ -141,19 +141,18 @@ const Instance = Backbone.Model.extend({
         return promise;
     },
     export(filePath) {
-        //For JLo, needs to return a promise
-        return new Promise((resolve, reject) => {
-            resolve();
-        });
+        return this.save(filePath, false, true);
     },
-    save(filePath, overwrite) {
+    save(filePath, overwrite, exp0rt) {
 
         if (overwrite === undefined)
             overwrite = false;
+        if (exp0rt === undefined)
+            exp0rt = false;
 
         let coms = this.attributes.coms;
 
-        let save = new coms.Messages.SaveRequest(filePath, overwrite);
+        let save = new coms.Messages.SaveRequest(filePath, overwrite, exp0rt);
         let request = new coms.Messages.ComsMessage();
         request.payload = save.toArrayBuffer();
         request.payloadType = "SaveRequest";
@@ -163,18 +162,24 @@ const Instance = Backbone.Model.extend({
             coms.send(request).then((response) => {
                 let info = coms.Messages.SaveProgress.decode(response.payload);
                 if (info.success) {
-                    let ext = path.extname(filePath);
-                    this.set('path', filePath);
-                    this.set('title', path.basename(filePath, ext));
-                    resolve(response);
-                    this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
-                    this._dataSetModel.set('edited', false);
+                    if (exp0rt) {
+                        resolve();
+                        this._notify({ message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" });
+                    }
+                    else {
+                        let ext = path.extname(filePath);
+                        this.set('path', filePath);
+                        this.set('title', path.basename(filePath, ext));
+                        resolve();
+                        this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
+                        this._dataSetModel.set('edited', false);
+                    }
                 }
                 else {
                     if (overwrite === false && info.fileExists) {
                         let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Do you want to overwrite this file?", 'Confirm overwite');
                         if (response)
-                            this.save(filePath, true).then((response) => resolve(response), (reason) => reject(reason) );
+                            this.save(filePath, true, exp0rt).then(() => resolve(), (reason) => reject(reason) );
                         else
                             reject("File overwrite cancelled.");
                     }

@@ -263,20 +263,25 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
 
+        is_export = request.export
+
         try:
             file_exists = os.path.isfile(path)
             success = False
             if file_exists is False or request.overwrite is True:
                 formatio.write(self._data, path)
                 success = True
-                self._data.is_edited = False
+                if not is_export:
+                    self._data.title = os.path.splitext(os.path.basename(path))[0]
+                    self._data.path = path
+                    self._data.is_edited = False
 
             response = jcoms.SaveProgress()
             response.fileExists = file_exists
             response.success = success
             self._coms.send(response, self._instance_id, request)
 
-            if success:
+            if success and not is_export:
                 self._add_to_recents(path)
 
         except OSError as e:
