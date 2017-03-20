@@ -23,6 +23,9 @@ var FSEntryListModel = Backbone.Model.extend({
     },
     requestSave : function(path, type) {
         this.trigger('dataSetSaveRequested', path, type);
+    },
+    requestExport : function(path, type) {
+        this.trigger('dataSetExportRequested', path, type);
     }
 });
 
@@ -204,7 +207,7 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto; height=18px; border-width: 0px; background-color: inherit"></div>';
         html += '   </div>';
         var extension = null;
-        if (this.model.clickProcess === "save") {
+        if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
             var path = this.model.currentActivePath;
             var insert = "";
             if (path) {
@@ -217,14 +220,24 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here"' + insert + ' />';
             html += '           <div class="silky-bs-fslist-browser-save-filetype">';
             html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
-            html += '                   <option data-extension="omv" value=".omv" selected>jamovi file (*.omv)</option>';
+            for (let i = 0; i < this.model.fileExtensions.length; i++) {
+                let ext = this.model.fileExtensions[i].extension;
+                let desc = this.model.fileExtensions[i].description;
+                let selected = "";
+                if (i === 0)
+                    selected = "selected";
+                html += '                   <option data-extension="' + ext + '" value=".' + ext + '" ' + selected + '>' + desc + '</option>';
+            }
             //html += '                   <option data-extension="jasp" value=".jasp">JASP File (*.jasp)</option>';
             html += '               </select>';
             html += '           </div>';
             html += '       </div>';
             html += '       <div class="silky-bs-fslist-browser-save-button' + (path ? "" : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
-            html += '           <span>Save</span>';
+            if (this.model.clickProcess === "save")
+                html += '           <span>Save</span>';
+            else if (this.model.clickProcess === "export")
+                html += '           <span>Export</span>';
             html += '       </div>';
             html += '   </div>';
         }
@@ -238,8 +251,8 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        if (this.model.clickProcess === "save") {
-            this.filterExtension = "omv";
+        if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
+            this.filterExtension = this.model.fileExtensions[0].extension;
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
                 keyboardJS.setContext('save_name_textbox');
@@ -366,6 +379,8 @@ var FSEntryBrowserView = SilkyView.extend({
                     var itemPath = $target.data('path');
                     if (itemType === FSItemType.File && this.model.clickProcess === "save")
                         this.model.requestSave(itemPath, itemType);
+                    else if (itemType === FSItemType.File && this.model.clickProcess === "export")
+                        this.model.requestExport(itemPath, itemType);
                 }
                 event.preventDefault();
                 break;
@@ -402,6 +417,8 @@ var FSEntryBrowserView = SilkyView.extend({
         var itemPath = $target.data('path');
         if (itemType === FSItemType.File && this.model.clickProcess === "save")
             this.model.requestSave(itemPath, itemType);
+        else if (itemType === FSItemType.File && this.model.clickProcess === "export")
+            this.model.requestExport(itemPath, itemType);
     },
     _nameChanged : function(event) {
         let $button = this.$header.find(".silky-bs-fslist-browser-save-button");
@@ -422,7 +439,10 @@ var FSEntryBrowserView = SilkyView.extend({
             if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
                 name = name + '.' + this.filterExtension;
             var path = dirInfo.path + '/' + name;
-            this.model.requestSave(path, FSItemType.File);
+            if (this.model.clickProcess === "save")
+                this.model.requestSave(path, FSItemType.File);
+            else if (this.model.clickProcess === "export")
+                this.model.requestExport(path, FSItemType.File);
             var items = this.model.get('items');
             items.push({ name: name, path: path, type: FSItemType.File });
             this._render();
@@ -491,13 +511,22 @@ var BackstageModel = Backbone.Model.extend({
 
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = "open";
+        this._pcListModel.fileExtensions = [ { extension: "omv", description: "jamovi file (*.omv)" } ];
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = "save";
         this._pcSaveListModel.currentActivePath = null;
+        this._pcSaveListModel.fileExtensions = [ { extension: "omv", description: "jamovi file (*.omv)" } ];
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
+
+
+        this._pcExportListModel = new FSEntryListModel();
+        this._pcExportListModel.clickProcess = "export";
+        this._pcExportListModel.currentActivePath = null;
+        this._pcExportListModel.fileExtensions = [ { extension: "csv", description: "CSV (Comma delimited) (*.csv)" } ];
+        this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
 
         this._savePromiseResolve = null;
 
@@ -541,8 +570,16 @@ var BackstageModel = Backbone.Model.extend({
             {
                 name: 'export',
                 title: 'Export',
+                action: () => {
+                    this._updateExportPath(this.instance.get('path'));
+                },
                 places: [
-                    { name: 'csvDoc',      title: 'As CSV file',   model: { title: "Exporting to a CSV file is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
+                    {
+                        name: 'csvDoc',
+                        title: 'As CSV file',
+                        model: this._pcExportListModel,
+                        view: FSEntryBrowserView
+                    },
                     { name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
                     { name: 'htmlDoc',      title: 'As HTML file',   model: { title: "Exporting to a HTML file is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView },
                     { name: 'pdfDoc',      title: 'As PDF document',   model: { title: "Exporting to a PDF document is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView }
@@ -620,6 +657,9 @@ var BackstageModel = Backbone.Model.extend({
     trySave: function(path, type) {
         this.requestSave(path);
     },
+    tryExport: function(path, type) {
+        this.requestExport(path);
+    },
     setCurrentDirectory: function(path, type) {
         this.instance.browse(path).then(response => {
             this._pcListModel.set('error', response.errorMessage);
@@ -629,6 +669,10 @@ var BackstageModel = Backbone.Model.extend({
             this._pcSaveListModel.set('error', response.errorMessage);
             this._pcSaveListModel.set('items', response.contents);
             this._pcSaveListModel.set('dirInfo', { path: path, type: type } );
+
+            this._pcExportListModel.set('error', response.errorMessage);
+            this._pcExportListModel.set('items', response.contents);
+            this._pcExportListModel.set('dirInfo', { path: path, type: type } );
 
             this._hasCurrentDirectory = true;
         });
@@ -725,6 +769,16 @@ var BackstageModel = Backbone.Model.extend({
 
         return prom;
     },
+    requestExport: function(path) {
+        this.instance.export(path)
+            .then(() => {
+                this._updateExportPath(path);
+                this.set('activated', false);
+            }).catch(() => {
+                this.set('activated', true);
+                this.set('operation', 'export');
+            });
+    },
     requestSave: function(path, overwrite) {
 
         // can be called as requestSave(path, overwrite), requestSave(path), requestSave(), requestSave(overwrite)
@@ -770,6 +824,9 @@ var BackstageModel = Backbone.Model.extend({
             this._pcSaveListModel.currentActivePath = path;
         else
             this._pcSaveListModel.currentActivePath = null;
+    },
+    _updateExportPath: function(path) {
+        this._pcExportListModel.currentActivePath = path;
     },
     _settingsChanged : function() {
         var settings = this.attributes.settings;
@@ -1019,7 +1076,7 @@ var BackstageChoices = SilkyView.extend({
             this.$current.fadeIn(200);
         }
 
-        if (place.name === 'thispc' && this.model.hasCurrentDirectory() === false)
+        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory() === false)
             this.model.setCurrentDirectory('{{Documents}}');
 
         if (old) {
