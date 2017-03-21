@@ -454,7 +454,15 @@ var FSEntryBrowserView = SilkyView.extend({
             else if (this.model.clickProcess === "export")
                 this.model.requestExport(path, FSItemType.File);
             var items = this.model.get('items');
-            items.push({ name: name, path: path, type: FSItemType.File });
+            let foundItem = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type === FSItemType.File && items[i].name === name && items[i].path === path) {
+                    foundItem = true;
+                    break;
+                }
+            }
+            if (foundItem === false)
+                items.push({ name: name, path: path, type: FSItemType.File });
             this._render();
         }
     },
