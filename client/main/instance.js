@@ -140,8 +140,8 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
-    export(filePath) {
-        return this.save(filePath, false, true);
+    export(filePath, overwrite) {
+        return this.save(filePath, overwrite, true);
     },
     save(filePath, overwrite, exp0rt) {
 
