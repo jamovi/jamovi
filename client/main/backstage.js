@@ -537,6 +537,7 @@ var BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.currentActivePath = null;
         this._pcExportListModel.fileExtensions = [ { extension: "csv", description: "CSV (Comma delimited) (*.csv)" } ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
+        this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this._savePromiseResolve = null;
 
@@ -592,7 +593,8 @@ var BackstageModel = Backbone.Model.extend({
                     },
                     { name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
                     { name: 'htmlDoc',      title: 'As HTML file',   model: { title: "Exporting to a HTML file is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView },
-                    { name: 'pdfDoc',      title: 'As PDF document',   model: { title: "Exporting to a PDF document is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView }
+                    { name: 'pdfDoc',      title: 'As PDF document', separator: true,   model: { title: "Exporting to a PDF document is under development", msg: "Support for exporting your results to other formats is coming soon!" }, view: InDevelopmentView },
+                    { name: 'browse', title: 'Browse', action: () => { this._browse('export'); } }
                 ]
             }
         ];
@@ -630,6 +632,19 @@ var BackstageModel = Backbone.Model.extend({
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
                         this.requestSave(fileName, true);
+                    }
+                });
+            }
+            else if (type === 'export') {
+
+                let filters = [
+                    { name: 'CSV (Comma delimited)', extensions: ['csv'] }
+                ];
+
+                dialog.showSaveDialog({ filters : filters }, (fileName) => {
+                    if (fileName) {
+                        fileName = fileName.replace(/\\/g, '/');
+                        this.requestExport(fileName, true);
                     }
                 });
             }
@@ -779,8 +794,8 @@ var BackstageModel = Backbone.Model.extend({
 
         return prom;
     },
-    requestExport: function(path) {
-        this.instance.export(path)
+    requestExport: function(path, overwrite) {
+        this.instance.export(path, overwrite)
             .then(() => {
                 this._updateExportPath(path);
                 this.set('activated', false);
