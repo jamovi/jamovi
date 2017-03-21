@@ -3,13 +3,31 @@
 #
 
 import csv
+import math
 from ...core import MeasureType
 
 
 def write(data, path):
 
     with open(path, 'w', encoding='utf-8') as file:
-        file.write('ravi! get to work!')
+        sep = ''
+        for column in data.dataset:
+            file.write(sep + column.name)
+            sep = ','
+        file.write('\n')
+
+        for row_no in range(data.dataset.row_count):
+            sep = ''
+            for col_no in range(data.dataset.column_count):
+                cell = data.dataset[col_no][row_no]
+                if isinstance(cell, int) and cell == -2147483648:
+                    file.write(sep + '')
+                elif isinstance(cell, float) and math.isnan(cell):
+                    file.write(sep + '')
+                else:
+                    file.write(sep + str(cell))
+                sep = ','
+            file.write('\n')
 
 
 def calc_dps(value, max_dp=3):
