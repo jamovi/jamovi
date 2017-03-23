@@ -91,7 +91,7 @@ $(document).ready(() => {
 
     document.oncontextmenu = function() { return false; };
     document.ondragover = (event) => {
-        if (event.dataTransfer.files) {
+        if (event.dataTransfer.files.length > 0) {
             event.dataTransfer.dropEffect = 'copy';
             event.preventDefault();
         }
