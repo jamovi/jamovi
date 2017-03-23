@@ -100,6 +100,22 @@ const TableView = SilkyView.extend({
         let $header = $(html);
         this.$header.append($header);
         this.$headers.push($header);
+        let columnIndex = this.$columns.length;
+        $header.on('click', null, this, (event) =>{
+            let vRowCount = this.model.get('vRowCount');
+            let topVisibleCell = this.viewport.top + 1;
+            if (this.$container.scrollTop() === 0)
+                topVisibleCell = 0;
+            let range = {
+                rowNo: topVisibleCell,
+                colNo: columnIndex,
+                left: columnIndex,
+                right: columnIndex,
+                top: 0,
+                bottom: vRowCount - 1 };
+
+            this._setSelectedRange(range);
+        });
 
         let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
@@ -1038,7 +1054,23 @@ const TableView = SilkyView.extend({
         if (rowNo >= this.model.attributes.rowCount)
             virtual = ' virtual';
 
-        return '<div class="silky-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>';
+        let $cell = $('<div class="silky-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>');
+        $cell.on('click', null, this, (event) =>{
+            let vColCount = this.$columns.length - 1;
+            let leftVisibleCell = this.viewport.left + 1;
+            if (this.$container.scrollLeft() === 0)
+                leftVisibleCell = 0;
+            let range = {
+                rowNo: rowNo,
+                colNo: leftVisibleCell,
+                left: 0,
+                right: vColCount,
+                top: rowNo,
+                bottom: rowNo };
+
+            this._setSelectedRange(range);
+        });
+        return $cell;
     },
     _refreshRHCells(v) {
         this.$rhColumn.empty();
