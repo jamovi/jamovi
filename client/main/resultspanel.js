@@ -139,6 +139,9 @@ const ResultsPanel = Backbone.View.extend({
             if (event.source !== resources.iframe.contentWindow)
                 continue;
 
+            if (resources.analysis.deleted)
+                return;
+
             let payload = event.data;
             let eventType = payload.type;
             let eventData = payload.data;
