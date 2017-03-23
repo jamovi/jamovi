@@ -701,12 +701,19 @@ const TableView = SilkyView.extend({
 
         if (event.ctrlKey || event.metaKey) {
             if (event.key === 'c') {
-                this._copySelectionToClipboard();
+                this._copySelectionToClipboard()
+                    .done();
                 event.preventDefault();
             }
             else if (event.key === 'v') {
-                this._pasteClipboardToSelection();
+                this._pasteClipboardToSelection()
+                    .done();
                 event.preventDefault();
+            }
+            else if (event.key === 'x') {
+                this._copySelectionToClipboard()
+                    .then(() => this.model.changeCells(this.selection, null))
+                    .done();
             }
         }
 
@@ -777,14 +784,14 @@ const TableView = SilkyView.extend({
                     text: csvifyCells(cells),
                     html: htmlifyCells(cells),
                 });
-            }).done();
+            });
     },
     _pasteClipboardToSelection() {
         let content = host.pasteFromClipboard();
         if (typeof content !== 'string' || content.trim() === '')
             return;
 
-        this.model.changeCells(this.selection, content)
+        return this.model.changeCells(this.selection, content)
             .then(range => {
 
                 range.rowNo = range.top;
@@ -798,7 +805,7 @@ const TableView = SilkyView.extend({
                     duration: 4000,
                 });
                 this.trigger('notification', notification);
-            }).done();
+            });
     },
     _columnResizeHandler(event) {
         if (event.clientX === 0 && event.clientY === 0)
