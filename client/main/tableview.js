@@ -321,21 +321,33 @@ const TableView = SilkyView.extend({
         let rowNo = range.rowNo;
         let colNo = range.colNo;
 
+        let scrollLeft = false;
+        let scrollRight = false;
+        let scrollUp = false;
+        let scrollDown = false;
+
         switch (direction) {
             case 'left':
                 if (extend) {
-                    if (range.right > range.colNo)
+                    if (range.right > range.colNo) {
                         range.right--;
-                    else if (range.left > 0)
+                    }
+                    else if (range.left > 0) {
                         range.left--;
-                    else
+                        scrollLeft = true;
+                    }
+                    else {
                         return;
+                    }
                 }
                 else {
-                    if (colNo > 0)
+                    if (colNo > 0) {
                         colNo--;
-                    else
+                        scrollLeft = true;
+                    }
+                    else {
                         colNo = 0;
+                    }
                     range.left  = colNo;
                     range.right = colNo;
                     range.colNo = colNo;
@@ -346,18 +358,25 @@ const TableView = SilkyView.extend({
                 break;
             case 'right':
                 if (extend) {
-                    if (range.left < range.colNo)
+                    if (range.left < range.colNo) {
                         range.left++;
-                    else if (range.right < this.model.attributes.columnCount - 1)
+                    }
+                    else if (range.right < this.model.attributes.columnCount - 1) {
                         range.right++;
-                    else
+                        scrollRight = true;
+                    }
+                    else {
                         return;
+                    }
                 }
                 else {
-                    if (range.colNo < this.model.attributes.columnCount - 1)
+                    if (range.colNo < this.model.attributes.columnCount - 1) {
                         colNo = range.colNo + 1;
-                    else
+                        scrollRight = true;
+                    }
+                    else {
                         colNo = this.model.attributes.columnCount - 1;
+                    }
                     range.left  = colNo;
                     range.right = colNo;
                     range.colNo = colNo;
@@ -368,18 +387,25 @@ const TableView = SilkyView.extend({
                 break;
             case 'up':
                 if (extend) {
-                    if (range.bottom > range.rowNo)
+                    if (range.bottom > range.rowNo) {
                         range.bottom--;
-                    else if (range.top > 0)
+                    }
+                    else if (range.top > 0) {
                         range.top--;
-                    else
+                        scrollUp = true;
+                    }
+                    else {
                         return;
+                    }
                 }
                 else {
-                    if (rowNo > 0)
+                    if (rowNo > 0) {
                         rowNo--;
-                    else
+                        scrollUp = true;
+                    }
+                    else {
                         rowNo = 0;
+                    }
                     range.top    = rowNo;
                     range.bottom = rowNo;
                     range.rowNo  = rowNo;
@@ -390,18 +416,25 @@ const TableView = SilkyView.extend({
                 break;
             case 'down':
                 if (extend) {
-                    if (range.top < range.rowNo)
+                    if (range.top < range.rowNo) {
                         range.top++;
-                    else if (range.bottom < this.model.attributes.vRowCount - 1)
+                    }
+                    else if (range.bottom < this.model.attributes.vRowCount - 1) {
                         range.bottom++;
-                    else
+                        scrollDown = true;
+                    }
+                    else {
                         return;
+                    }
                 }
                 else {
-                    if (range.rowNo < this.model.attributes.vRowCount - 1)
+                    if (range.rowNo < this.model.attributes.vRowCount - 1) {
                         rowNo = range.rowNo + 1;
-                    else
+                        scrollDown = true;
+                    }
+                    else {
                         rowNo = this.model.attributes.rRowCount - 1;
+                    }
                     range.top    = rowNo;
                     range.bottom = rowNo;
                     range.rowNo  = rowNo;
@@ -413,6 +446,35 @@ const TableView = SilkyView.extend({
         }
 
         this._setSelectedRange(range);
+
+        if (scrollLeft || scrollRight) {
+            let x = this._lefts[range.left];
+            let width = this._lefts[range.right] + this._widths[range.right] - x;
+            let selRight = x + width;
+            let scrollX = this.$container.scrollLeft();
+            let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
+            if (scrollRight && selRight > containerRight)
+                this.$container.scrollLeft(scrollX + selRight - containerRight);
+            else if (scrollLeft && x - this.rowHeaderWidth < scrollX)
+                this.$container.scrollLeft(x - this.rowHeaderWidth);
+        }
+
+        if (scrollUp || scrollDown) {
+
+            let nRows = range.bottom - range.top + 1;
+            let y = range.top * this._rowHeight;
+            let height = this._rowHeight * nRows;
+
+            let selBottom = y + height;
+            let scrollY = this.$container.scrollTop();
+            let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
+
+            if (scrollDown && selBottom > containerBottom)
+                this.$container.scrollTop(scrollY + selBottom - containerBottom);
+            else if (scrollUp && y < scrollY)
+                this.$container.scrollTop(y);
+        }
+
     },
     _setSelection(rowNo, colNo) {
         this._setSelectedRange({
@@ -478,29 +540,6 @@ const TableView = SilkyView.extend({
         this.$selection.blur();
         this.$selection.removeClass('editing');
         this.$selection.val('');
-
-        let selRight = x + width;
-        let scrollX = this.$container.scrollLeft();
-        let diffX = 0;
-        let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
-        if (selRight > containerRight)
-            diffX = selRight - containerRight;
-        else if (x - this.rowHeaderWidth < scrollX)
-            diffX = (x - this.rowHeaderWidth) - scrollX;
-
-        let selBottom = y + height;
-        let scrollY = this.$container.scrollTop();
-        let diffY = 0;
-        let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
-        if (selBottom > containerBottom)
-            diffY = selBottom - containerBottom;
-        else if (y < scrollY)
-            diffY = y - scrollY;
-
-        if (diffX)
-            this.$container.scrollLeft(scrollX + diffX);
-        if (diffY)
-            this.$container.scrollTop(scrollY + diffY);
 
         // slide row/column highlight *lines* into position
         this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
