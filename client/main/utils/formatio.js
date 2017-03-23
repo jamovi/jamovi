@@ -3,6 +3,57 @@
 
 const $ = require('jquery');
 
+const csvifyCells = function(cells) {
+    if (cells.length === 0)
+        return '';
+
+    let rows = new Array(cells[0].length);
+
+    for (let rowNo = 0; rowNo < cells[0].length; rowNo++) {
+        let row = '';
+        let sep = '';
+        for (let colNo = 0; colNo < cells.length; colNo++) {
+            let cell = cells[colNo][rowNo];
+            if (cell === null)
+                row += sep + '';
+            else if (typeof cell === 'string')
+                row += sep + '"' + cell.replace(/"/g, '""') + '"';
+            else
+                row += sep + cell;
+            sep = ',';
+        }
+        rows[rowNo] = row;
+    }
+
+    return rows.join('\n');
+};
+
+const htmlifyCells = function(cells) {
+    if (cells.length === 0)
+        return '';
+
+    let rows = new Array(cells[0].length);
+
+    for (let rowNo = 0; rowNo < cells[0].length; rowNo++) {
+        let row = '<tr><td>';
+        let sep = '';
+        for (let colNo = 0; colNo < cells.length; colNo++) {
+            let cell = cells[colNo][rowNo];
+            if (cell === null)
+                row += sep + '';
+            else if (typeof cell === 'string')
+                row += sep + '"' + cell + '"';
+            else
+                row += sep + cell;
+            sep = '</td><td>';
+        }
+        row += '</td></tr>';
+        rows[rowNo] = row;
+    }
+
+    return '<html><body><table>' + rows.join('\n') + '</table></body></html>';
+};
+
 const exportElem = function($el, format) {
     if (format === 'text/plain')
         return _textify($el[0]);
@@ -114,4 +165,4 @@ const _htmlifyDiv = function(el) {
     return str;
 };
 
-module.exports = { exportElem };
+module.exports = { exportElem, csvifyCells, htmlifyCells };

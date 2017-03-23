@@ -103,14 +103,14 @@
 
 input.silky-table-cell-selected {
     position: absolute ;
-    border: 2px solid #5E8BC4 ;
+    border: 1px solid #5E8BC4 ;
     z-index: 10 ;
     box-sizing: border-box ;
     transition: left 0.1s, top 0.1s, width 0.1s, height 0.1s ;
-    box-shadow: 0 0 1px 1px #5E8BC4 ;
+    box-shadow: 0 0 0 2px #5E8BC4 ;
     padding: 2px 4px ;
     white-space: no-wrap;
-    background: transparent;
+    background-color: transparent;
     font-size: 12.8px ;
 
     left: -100px ; /* overridden by code */
@@ -119,6 +119,7 @@ input.silky-table-cell-selected {
 
 .silky-table-cell-selected:not(.editing) {
     cursor: default ;
+    pointer-events: none ;
 }
 
 .silky-table-cell-selected[data-measuretype="continuous"],

@@ -16,6 +16,7 @@ from .settings import Settings
 from . import jamovi_pb2 as jcoms
 
 from .utils import conf
+from .utils.csvparser import CSVParser
 from .enginemanager import EngineManager
 from .modules import Modules
 from .instancemodel import InstanceModel
@@ -412,20 +413,28 @@ class Instance:
         if self._data is None:
             return
 
-        response = jcoms.DataSetRR()
+        try:
 
-        response.op = request.op
-        response.rowStart    = request.rowStart
-        response.columnStart = request.columnStart
-        response.rowEnd      = request.rowEnd
-        response.columnEnd   = request.columnEnd
+            response = jcoms.DataSetRR()
 
-        if request.op == jcoms.GetSet.Value('SET'):
-            self._on_dataset_set(request, response)
-        else:
-            self._on_dataset_get(request, response)
+            response.op = request.op
+            response.rowStart    = request.rowStart
+            response.columnStart = request.columnStart
+            response.rowEnd      = request.rowEnd
+            response.columnEnd   = request.columnEnd
 
-        self._coms.send(response, self._instance_id, request)
+            if request.op == jcoms.GetSet.Value('SET'):
+                self._on_dataset_set(request, response)
+            else:
+                self._on_dataset_get(request, response)
+
+            self._coms.send(response, self._instance_id, request)
+
+        except TypeError as e:
+            self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
+        except Exception as e:
+            log.exception(e)
+            self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
 
     def _on_module(self, request):
 
@@ -492,7 +501,7 @@ class Instance:
                 instance._on_settings()
 
     def _on_dataset_set(self, request, response):
-        if request.incData:
+        if request.incData or request.incSerializedData:
             self._apply_cells(request, response)
         if request.incSchema:
             self._apply_schema(request, response)
@@ -543,18 +552,110 @@ class Instance:
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
 
+    def _parse_cells(self, request):
+
+        if request.incData:
+
+            selection = {
+                'row_start': request.rowStart,
+                'col_start': request.columnStart,
+                'row_end': request.rowEnd,
+                'col_end': request.columnEnd,
+            }
+
+            row_count = request.rowEnd - request.rowStart + 1
+            col_count = request.columnEnd - request.columnStart + 1
+
+            cells = [None] * col_count
+
+            for i in range(col_count):
+
+                cells[i] = [None] * row_count
+
+                values = request.data[i].values
+
+                for j in range(row_count):
+                    cell_pb = values[j]
+                    if cell_pb.HasField('o'):
+                        cells[i][j] = None
+                    elif cell_pb.HasField('d'):
+                        cells[i][j] = cell_pb.d
+                    elif cell_pb.HasField('i'):
+                        cells[i][j] = cell_pb.i
+                    elif cell_pb.HasField('s'):
+                        cells[i][j] = cell_pb.s
+
+            return cells, selection
+
+        elif request.incSerializedData:
+
+            csv = request.serializedData.decode('utf-8', errors='replace')
+            cells = CSVParser.parse(csv)
+
+            col_end = request.columnStart + len(cells) - 1
+            row_end = request.rowStart - 1
+            if (len(cells) > 0):
+                row_end += len(cells[0])
+
+            selection = {
+                'row_start': request.rowStart,
+                'col_start': request.columnStart,
+                'row_end': row_end,
+                'col_end': col_end,
+            }
+
+            return cells, selection
+
+        else:
+            return [ ], { }
+
     def _apply_cells(self, request, response):
-        row_start = request.rowStart
-        col_start = request.columnStart
-        row_end   = request.rowEnd
-        col_end   = request.columnEnd
+
+        cells, selection = self._parse_cells(request)
+
+        row_start = selection['row_start']
+        col_start = selection['col_start']
+        row_end   = selection['row_end']
+        col_end   = selection['col_end']
         row_count = row_end - row_start + 1
         col_count = col_end - col_start + 1
 
-        if row_end >= self._data.row_count:
-            self._data.set_row_count(row_end + 1)
+        response.rowStart    = row_start
+        response.columnStart = col_start
+        response.rowEnd      = row_end
+        response.columnEnd   = col_end
+
+        if row_count == 0 or col_count == 0:
+            return
+
+        # check that the assignments are possible
+
+        for i in range(col_count):
+            index = col_start + i
+            if index >= self._data.virtual_start:
+                break
+            column = self._data[index]
+            if column.auto_measure:
+                continue
+
+            values = cells[i]
+
+            if column.measure_type == MeasureType.CONTINUOUS:
+                for value in values:
+                    if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
+                        raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
+
+            elif column.measure_type == MeasureType.NOMINAL or column.measure_type == MeasureType.ORDINAL:
+                for value in values:
+                    if value is not None and value != '' and not isinstance(value, int):
+                        raise TypeError("Cannot assign non-interger value to column '{}'".format(column.name))
+
+        # assign
 
         n_cols_before = self._data.column_count
+
+        if row_end >= self._data.row_count:
+            self._data.set_row_count(row_end + 1)
 
         for i in range(self._data.virtual_start, col_start):
             column = self._data[i]
@@ -565,66 +666,67 @@ class Instance:
 
         for i in range(col_count):
             column = self._data[col_start + i]
-            col_res = request.data[i]
+
+            values = cells[i]
 
             was_virtual = column.is_virtual
             changes = column.changes
 
-            if column.measure_type == MeasureType.NONE:
+            if column.auto_measure:  # change column type if necessary
 
-                mt = MeasureType.NONE
+                mt = column.measure_type
 
                 for j in range(row_count):
-                    cell = col_res.values[j]
-                    if cell.HasField('o'):
-                        mt = MeasureType.NOMINAL_TEXT
-                    elif cell.HasField('d'):
+                    value = values[j]
+                    if value is None or value == '':
+                        pass
+                    elif isinstance(value, float):
                         if mt is not MeasureType.NOMINAL_TEXT:
                             mt = MeasureType.CONTINUOUS
-                    elif cell.HasField('i'):
+                    elif isinstance(value, int):
                         if mt is not MeasureType.NOMINAL_TEXT and mt is not MeasureType.CONTINUOUS:
                             mt = MeasureType.NOMINAL
-                    elif cell.HasField('s') and column.auto_measure:
+                    elif isinstance(value, str):
                         mt = MeasureType.NOMINAL_TEXT
 
-                column.measure_type = mt
+                if mt != column.measure_type:
+                    column.change(mt)
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 nan = float('nan')
                 for j in range(row_count):
-                    cell = col_res.values[j]
-                    if cell.HasField('o'):
-                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
-                            column[row_start + j] = nan
-                    elif cell.HasField('d'):
-                        column[row_start + j] = cell.d
-                    elif cell.HasField('i'):
-                        column[row_start + j] = cell.i
-                    elif cell.HasField('s') and column.auto_measure:
+                    value = values[j]
+                    if value is None or value == '':
+                        column[row_start + j] = nan
+                    elif isinstance(value, float):
+                        column[row_start + j] = value
+                    elif isinstance(value, int):
+                        column[row_start + j] = value
+                    elif isinstance(value, str) and column.auto_measure:
                         column.change(MeasureType.NOMINAL_TEXT)
                         index = column.level_count
-                        column.insert_level(index, cell.s)
+                        column.insert_level(index, value)
                         column[row_start + j] = index
+                    else:
+                        raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
 
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for j in range(row_count):
-                    cell = col_res.values[j]
-                    if cell.HasField('o'):
-                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
-                            column[row_start + j] = -2147483648
+                    value = values[j]
+
+                    if value is None or value == '':
+                        column[row_start + j] = -2147483648
                     else:
-                        if cell.HasField('s'):
-                            value = cell.s
+                        if isinstance(value, str):
                             if value == '':
                                 value = -2147483648
-                        elif cell.HasField('d'):
-                            value = cell.d
+                        elif isinstance(value, float):
                             if math.isnan(value):
                                 value = -2147483648
                             else:
                                 value = str(value)
                         else:
-                            value = cell.i
+                            value = str(value)
 
                         column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
 
@@ -638,22 +740,19 @@ class Instance:
                         column[row_start + j] = index
             else:
                 for j in range(row_count):
-                    cell = col_res.values[j]
-                    if cell.HasField('o'):
-                        if cell.o == jcoms.SpecialValues.Value('MISSING'):
-                            column[row_start + j] = -2147483648
-                    elif cell.HasField('i'):
-                        value = cell.i
+                    value = values[j]
+                    if value is None or value == '':
+                        column[row_start + j] = -2147483648
+                    elif isinstance(value, int):
                         if not column.has_level(value) and value != -2147483648:
                             column.insert_level(value, str(value))
                         column[row_start + j] = value
-                    elif cell.HasField('d') and column.auto_measure:
+                    elif isinstance(value, float) and column.auto_measure:
                         column.change(MeasureType.CONTINUOUS)
-                        column[row_start + j] = cell.d
-                    elif cell.HasField('s') and column.auto_measure:
+                        column[row_start + j] = value
+                    elif isinstance(value, str) and column.auto_measure:
                         column.change(MeasureType.NOMINAL_TEXT)
                         column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
-                        value = cell.s
                         index = column.level_count
                         column.insert_level(index, value)
                         column[row_start + j] = index
@@ -665,8 +764,8 @@ class Instance:
 
             if changes != column.changes or was_virtual:
                 response.incSchema = True
-                schema = response.schema.columns.add()
-                self._populate_column_schema(column, schema)
+                columnPB = response.schema.columns.add()
+                self._populate_column_schema(column, columnPB)
 
         self._data.is_edited = True
 
@@ -677,6 +776,8 @@ class Instance:
 
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
+
+        self._populate_cells(request, response)
 
     def _auto_adjust(self, column):
         if column.measure_type == MeasureType.NOMINAL_TEXT:
@@ -712,10 +813,10 @@ class Instance:
 
     def _populate_cells(self, request, response):
 
-        row_start = request.rowStart
-        col_start = request.columnStart
-        row_end   = request.rowEnd
-        col_end   = request.columnEnd
+        row_start = response.rowStart
+        col_start = response.columnStart
+        row_end   = response.rowEnd
+        col_end   = response.columnEnd
         row_count = row_end - row_start + 1
         col_count = col_end - col_start + 1
 

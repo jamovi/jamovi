@@ -14,6 +14,8 @@ const keyboardJS = require('keyboardjs');
 const SilkyView = require('./view');
 const DataSetModel = require('./dataset').Model;
 const Notify = require('./notification');
+const { csvifyCells, htmlifyCells } = require('./utils/formatio');
+const host = require('./host');
 
 const TableView = SilkyView.extend({
     className: "tableview",
@@ -62,8 +64,10 @@ const TableView = SilkyView.extend({
 
         this.selection = null;
 
-        this.$el.on('click', event => this._clickHandler(event));
-        this.$el.on('dblclick', event => this._clickHandler(event));
+        this.$body.on('mousedown', event => this._mouseDown(event));
+        this.$body.on('mousemove', event => this._mouseMove(event));
+        $(document).on('mouseup', event => this._mouseUp(event));
+        this.$el.on('dblclick', event => this._dblClickHandler(event));
 
         this._active = true;
 
@@ -203,100 +207,272 @@ const TableView = SilkyView.extend({
 
         this._updateViewRange();
     },
-    _clickHandler(event) {
+    _getPos(x, y) {
+        let bounds = this.$body[0].getBoundingClientRect();
+        let vx = x - bounds.left;
+        let vy = y - bounds.top;
+
+        let rowNo = parseInt(vy / this._rowHeight);
+        let colNo;
+        for (colNo = -1; colNo < this._lefts.length - 1; colNo++) {
+            if (vx < this._lefts[colNo+1])
+                break;
+        }
+
+        return { rowNo: rowNo, colNo: colNo, x: vx, y: vy };
+    },
+    _mouseDown(event) {
+
+        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
+            // right click
+            return;
+        }
+
+        let pos = this._getPos(event.clientX, event.clientY);
+        let rowNo = pos.rowNo;
+        let colNo = pos.colNo;
+
+        if (colNo < 0)
+            return;
+
+        if (this._editing &&
+            rowNo === this.selection.rowNo &&
+            colNo === this.selection.colNo)
+                return;
+
+        this._endEditing().then(() => {
+            this._isDragging = true;
+            this._isClicking = true;
+
+            if (event.shiftKey) {
+                this._clickCoords = Object.assign({}, this.selection);
+                this._mouseMove(event);
+            }
+            else {
+                this._clickCoords = pos;
+            }
+        }, () => {});
+    },
+    _mouseUp(event) {
+        if (this._isClicking) {
+            this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo);
+        }
+        else if (this._isDragging) {
+
+        }
+        this._isClicking = false;
+        this._isDragging = false;
+    },
+    _mouseMove(event) {
+        if ( ! this._isDragging)
+            return;
+        this._isClicking = false; // mouse moved, no longer a click
+
+        let pos = this._getPos(event.clientX, event.clientY);
+
+        if (this._lastPos && pos.rowNo === this._lastPos.rowNo && pos.colNo === this._lastPos.colNo)
+            return;
+        this._lastPos = pos;
+
+        let rowNo = pos.rowNo;
+        let colNo = pos.colNo;
+
+        let left  = Math.min(colNo, this._clickCoords.colNo);
+        let right = Math.max(colNo, this._clickCoords.colNo);
+        let top   = Math.min(rowNo, this._clickCoords.rowNo);
+        let bottom = Math.max(rowNo, this._clickCoords.rowNo);
+
+        let range = {
+            rowNo: this._clickCoords.rowNo,
+            colNo: this._clickCoords.colNo,
+            left: left,
+            right: right,
+            top: top,
+            bottom: bottom };
+
+        this._setSelectedRange(range);
+    },
+    _dblClickHandler(event) {
+
         let element = document.elementFromPoint(event.clientX, event.clientY);
         let $element = $(element);
 
-        if (event.type === 'click') {
-            if ($element.hasClass('silky-column-cell')) {
-                let rowNo = $element.data('row');
-                let colNo = $element.data('col');
-                if (rowNo === this.selection.rowNo && colNo === this.selection.colNo)
-                    return;
-                this._endEditing().then(() => {
-                    this._setSelection(rowNo, colNo);
-                }, () => {});
-            }
+        let $header = $element.closest('.silky-column-header');
+        if ($header.length > 0) {
+            let colNo = $header.data('index');
+            this._endEditing().then(() => {
+                let rowNo = this.selection === null ? 0 : this.selection.rowNo;
+                this._setSelection(rowNo, colNo);
+            }, () => {});
+            if (this.model.get('editingVar') === null)
+                this.model.set('editingVar', colNo);
         }
-        else if (event.type === 'dblclick') {
-            let $header = $element.closest('.silky-column-header');
-            if ($header.length > 0) {
-                let colNo = $header.data('index');
-                this._endEditing().then(() => {
-                    let rowNo = this.selection === null ? 0 : this.selection.rowNo;
-                    this._setSelection(rowNo, colNo);
-                }, () => {});
-                if (this.model.get('editingVar') === null)
-                    this.model.set('editingVar', colNo);
-            }
+        else {
+            if ( ! this._editing)
+                this._beginEditing();
         }
     },
-    _moveCursor(direction) {
+    _moveCursor(direction, extend) {
 
         if (this.selection === null)
             return;
 
-        let rowNo = this.selection.rowNo;
-        let colNo = this.selection.colNo;
+        let range = Object.assign({}, this.selection);
+        let rowNo = range.rowNo;
+        let colNo = range.colNo;
 
         switch (direction) {
             case 'left':
-                if (this.selection.colNo > 0)
-                    this._setSelection(rowNo, colNo - 1);
+                if (extend) {
+                    if (range.right > range.colNo)
+                        range.right--;
+                    else if (range.left > 0)
+                        range.left--;
+                    else
+                        return;
+                }
+                else {
+                    if (colNo > 0)
+                        colNo--;
+                    else
+                        colNo = 0;
+                    range.left  = colNo;
+                    range.right = colNo;
+                    range.colNo = colNo;
+                    range.rowNo = rowNo;
+                    range.top   = rowNo;
+                    range.bottom = rowNo;
+                }
                 break;
             case 'right':
-                if (this.selection.colNo < this.model.attributes.columnCount - 1)
-                    this._setSelection(rowNo, colNo + 1);
+                if (extend) {
+                    if (range.left < range.colNo)
+                        range.left++;
+                    else if (range.right < this.model.attributes.columnCount - 1)
+                        range.right++;
+                    else
+                        return;
+                }
+                else {
+                    if (range.colNo < this.model.attributes.columnCount - 1)
+                        colNo = range.colNo + 1;
+                    else
+                        colNo = this.model.attributes.columnCount - 1;
+                    range.left  = colNo;
+                    range.right = colNo;
+                    range.colNo = colNo;
+                    range.rowNo = rowNo;
+                    range.top   = rowNo;
+                    range.bottom = rowNo;
+                }
                 break;
             case 'up':
-                if (this.selection.rowNo > 0)
-                    this._setSelection(rowNo - 1, colNo);
+                if (extend) {
+                    if (range.bottom > range.rowNo)
+                        range.bottom--;
+                    else if (range.top > 0)
+                        range.top--;
+                    else
+                        return;
+                }
+                else {
+                    if (rowNo > 0)
+                        rowNo--;
+                    else
+                        rowNo = 0;
+                    range.top    = rowNo;
+                    range.bottom = rowNo;
+                    range.rowNo  = rowNo;
+                    range.colNo  = colNo;
+                    range.left   = colNo;
+                    range.right  = colNo;
+                }
                 break;
             case 'down':
-                if (this.selection.rowNo < this.model.attributes.vRowCount - 1)
-                    this._setSelection(rowNo + 1, colNo);
+                if (extend) {
+                    if (range.top < range.rowNo)
+                        range.top++;
+                    else if (range.bottom < this.model.attributes.vRowCount - 1)
+                        range.bottom++;
+                    else
+                        return;
+                }
+                else {
+                    if (range.rowNo < this.model.attributes.vRowCount - 1)
+                        rowNo = range.rowNo + 1;
+                    else
+                        rowNo = this.model.attributes.rRowCount - 1;
+                    range.top    = rowNo;
+                    range.bottom = rowNo;
+                    range.rowNo  = rowNo;
+                    range.colNo  = colNo;
+                    range.left   = colNo;
+                    range.right  = colNo;
+                }
                 break;
         }
+
+        this._setSelectedRange(range);
     },
     _setSelection(rowNo, colNo) {
+        this._setSelectedRange({
+            rowNo: rowNo,
+            colNo: colNo,
+            top:   rowNo,
+            bottom: rowNo,
+            left:  colNo,
+            right: colNo });
+    },
+    _setSelectedRange(range) {
+
+        let rowNo = range.rowNo;
+        let colNo = range.colNo;
 
         if (this.selection !== null) {
 
             // remove row/column highlights from last time
 
-            if (colNo !== this.selection.colNo)
-                $(this.$headers[this.selection.colNo]).removeClass('highlighted');
-            if (rowNo !== this.selection.rowNo && rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
-                let vRowNo = this.selection.rowNo - this.viewport.top;
-                let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
-                $cell.removeClass('highlighted');
+            for (let colNo = this.selection.left; colNo <= this.selection.right; colNo++)
+                $(this.$headers[colNo]).removeClass('highlighted');
+
+            for (let rowNo = this.selection.top; rowNo <= this.selection.bottom; rowNo++) {
+                if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+                    let vRowNo = rowNo - this.viewport.top;
+                    let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
+                    $cell.removeClass('highlighted');
+                }
             }
+
         } else {
 
             this.selection = {};
         }
 
-        this.selection.rowNo = rowNo;
-        this.selection.colNo = colNo;
+        Object.assign(this.selection, range);
+
         this.currentColumn = this.model.attributes.columns[colNo];
         if (this.model.get('editingVar') !== null)
             this.model.set('editingVar', colNo);
 
         // add column header highlight
-        $(this.$headers[colNo]).addClass('highlighted');
+        for (let colNo = range.left; colNo <= range.right; colNo++)
+            $(this.$headers[colNo]).addClass('highlighted');
 
         // add row header highlight
-        if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
-            let vRowNo = rowNo - this.viewport.top;
-            let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
-            $cell.addClass('highlighted');
+        for (let rowNo = range.top; rowNo <= range.bottom; rowNo++) {
+            if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+                let vRowNo = rowNo - this.viewport.top;
+                let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
+                $cell.addClass('highlighted');
+            }
         }
 
         // move selection cell to new location
-        let x = this._lefts[colNo];
-        let y = rowNo * this._rowHeight;
-        let width = this._widths[colNo];
-        let height = this._rowHeight;
+        let nRows = range.bottom - range.top + 1;
+        let x = this._lefts[range.left];
+        let y = range.top * this._rowHeight;
+        let width = this._lefts[range.right] + this._widths[range.right] - x;
+        let height = this._rowHeight * nRows;
 
         this.$selection.css({ left: x, top: y, width: width, height: height});
         this.$selection.blur();
@@ -328,7 +504,7 @@ const TableView = SilkyView.extend({
 
         // slide row/column highlight *lines* into position
         this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
-        this.$selectionColumnHighlight.css({ left: x, width: width, height: height });
+        this.$selectionColumnHighlight.css({ left: x, width: width, height: this._rowHeight });
 
         return new Promise((resolve, reject) => {
             this.$selection.one('transitionend', resolve);
@@ -338,6 +514,11 @@ const TableView = SilkyView.extend({
 
         if (this._editing)
             return;
+        if (this.selection.left !== this.selection.right)
+            return;
+        if (this.selection.top !== this.selection.bottom)
+            return;
+
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
 
@@ -479,12 +660,23 @@ const TableView = SilkyView.extend({
     },
     _notEditingKeyPress(event) {
 
+        if (event.ctrlKey || event.metaKey) {
+            if (event.key === 'c') {
+                this._copySelectionToClipboard();
+                event.preventDefault();
+            }
+            else if (event.key === 'v') {
+                this._pasteClipboardToSelection();
+                event.preventDefault();
+            }
+        }
+
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
         switch(event.key) {
         case 'ArrowLeft':
-            this._moveCursor('left');
+            this._moveCursor('left', event.shiftKey);
             event.preventDefault();
             break;
         case 'Tab':
@@ -495,15 +687,15 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         case 'ArrowRight':
-            this._moveCursor('right');
+            this._moveCursor('right', event.shiftKey);
             event.preventDefault();
             break;
         case 'ArrowUp':
-            this._moveCursor('up');
+            this._moveCursor('up', event.shiftKey);
             event.preventDefault();
             break;
         case 'ArrowDown':
-            this._moveCursor('down');
+            this._moveCursor('down', event.shiftKey);
             event.preventDefault();
             break;
         case 'Enter':
@@ -514,12 +706,11 @@ const TableView = SilkyView.extend({
         case 'Delete':
         case 'Backspace':
             let viewport = {
-                left:  this.selection.colNo,
-                right: this.selection.colNo,
-                top:   this.selection.rowNo,
-                bottom: this.selection.rowNo,
-            };
-            this.model.changeCells(viewport, [[ null ]]);
+                left:  this.selection.left,
+                right: this.selection.right,
+                top:   this.selection.top,
+                bottom: this.selection.bottom };
+            this.model.changeCells(viewport, null);
             break;
         case 'F2':
             this._beginEditing();
@@ -539,6 +730,36 @@ const TableView = SilkyView.extend({
                 this._beginEditing(event.key);
             break;
         }
+    },
+    _copySelectionToClipboard() {
+        return this.model.requestCells(this.selection)
+            .then(cells => {
+                host.copyToClipboard({
+                    text: csvifyCells(cells),
+                    html: htmlifyCells(cells),
+                });
+            }).done();
+    },
+    _pasteClipboardToSelection() {
+        let content = host.pasteFromClipboard();
+        if (typeof content !== 'string' || content.trim() === '')
+            return;
+
+        this.model.changeCells(this.selection, content)
+            .then(range => {
+
+                range.rowNo = range.top;
+                range.colNo = range.left;
+                this._setSelectedRange(range);
+
+            }, error => {
+                let notification = new Notify({
+                    title: error.message,
+                    message: error.cause,
+                    duration: 4000,
+                });
+                this.trigger('notification', notification);
+            }).done();
     },
     _columnResizeHandler(event) {
         if (event.clientX === 0 && event.clientY === 0)
@@ -750,14 +971,16 @@ const TableView = SilkyView.extend({
 
         this.refreshCells(oldViewport, this.viewport);
     },
-    _createCellHTML(top, height, rowNo, colNo) {
+    _createCell(top, height, rowNo, colNo) {
 
-        return '<div ' +
+        let $cell = $('<div ' +
             ' class="silky-column-cell"' +
             ' data-row="' + rowNo + '"' +
             ' data-col="' + colNo + '"' +
             ' style="top : ' + top + 'px ; height : ' + height + 'px">' +
-            '</div>';
+            '</div>');
+
+        return $cell;
     },
     _createRHCellHTML(top, height, content, rowNo) {
 
@@ -814,7 +1037,7 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = n.top + j;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
+                    let $cell = this._createCell(top, this._rowHeight, rowNo, i);
                     $column.append($cell);
                 }
             }
@@ -838,7 +1061,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, colNo));
+                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
                         $column.append($cell);
                     }
                 }
@@ -867,7 +1090,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, colNo));
+                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
                         $column.append($cell);
                     }
                 }
@@ -896,7 +1119,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.bottom + j + 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
+                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
                         $column.append($cell);
                     }
                 }
@@ -935,7 +1158,7 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.top - j - 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = $(this._createCellHTML(top, this._rowHeight, rowNo, i));
+                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
                         $column.prepend($cell);
                     }
                 }

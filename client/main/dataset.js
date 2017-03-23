@@ -9,6 +9,8 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
+const ByteBuffer = require('bytebuffer');
+
 const DataSetModel = Backbone.Model.extend({
 
     initialize() {
@@ -282,7 +284,7 @@ const DataSetViewModel = DataSetModel.extend({
         }
 
         this.attributes.cells = cells;
-        this.attributes.viewport = viewport;
+        this.attributes.viewport = Object.assign({}, viewport);
 
         this.trigger("viewportChanged");
         this.trigger("viewportReset");
@@ -369,6 +371,47 @@ const DataSetViewModel = DataSetModel.extend({
         this.trigger("viewportChanged");
     },
     _requestCells(viewport) {
+        this.requestCells(viewport).then(cells => {
+            this.setCells(viewport, cells);
+        }).done();
+    },
+    _parseCells(response) {
+
+        let columns = response.data;
+
+        let rowStart    = response.rowStart;
+        let columnStart = response.columnStart;
+        let rowEnd      = response.rowEnd;
+        let columnEnd   = response.columnEnd;
+
+        let viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
+
+        let columnCount = columnEnd - columnStart + 1;
+        let rowCount    = rowEnd    - rowStart + 1;
+
+        let cells = new Array(columnCount);
+
+        for (let colNo = 0; colNo < columnCount; colNo++) {
+
+            let column = columns[colNo];
+            let values = Array(column.values.length);
+
+            for (let i = 0; i < column.values.length; i++) {
+                let inValue = column.values[i];
+                let outValue;
+                if (inValue.type === 'o')
+                    outValue = null;
+                else
+                    outValue = inValue[inValue.type];
+                values[i] = outValue;
+            }
+
+            cells[colNo] = values;
+        }
+
+        return cells;
+    },
+    requestCells(viewport) {
 
         let coms = this.attributes.coms;
 
@@ -385,46 +428,10 @@ const DataSetViewModel = DataSetModel.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-
-            let cellsResponse = coms.Messages.DataSetRR.decode(response.payload);
-
-            let columns = cellsResponse.data;
-
-            let rowStart    = cellsResponse.rowStart;
-            let columnStart = cellsResponse.columnStart;
-            let rowEnd      = cellsResponse.rowEnd;
-            let columnEnd   = cellsResponse.columnEnd;
-
-            let viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
-
-            let columnCount = columnEnd - columnStart + 1;
-            let rowCount    = rowEnd    - rowStart + 1;
-
-            let cells = new Array(columnCount);
-
-            for (let colNo = 0; colNo < columnCount; colNo++) {
-
-                let column = columns[colNo];
-                let values = Array(column.values.length);
-
-                for (let i = 0; i < column.values.length; i++) {
-                    let inValue = column.values[i];
-                    let outValue;
-                    if (inValue.type === 'o')
-                        outValue = null;
-                    else
-                        outValue = inValue[inValue.type];
-                    values[i] = outValue;
-                }
-
-                cells[colNo] = values;
-            }
-
-            this.setCells(viewport, cells);
-
+            let dsrrPB = coms.Messages.DataSetRR.decode(response.payload);
+            let cells = this._parseCells(dsrrPB);
             return cells;
-
-        }).done();
+        });
     },
     changeCells(viewport, cells) {
 
@@ -435,41 +442,67 @@ const DataSetViewModel = DataSetModel.extend({
 
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.op = coms.Messages.GetSet.SET;
-        cellsRequest.incData = true;
         cellsRequest.rowStart    = viewport.top;
         cellsRequest.columnStart = viewport.left;
         cellsRequest.rowEnd      = viewport.bottom;
         cellsRequest.columnEnd   = viewport.right;
 
-        for (let i = 0; i < nCols; i++) {
+        if (typeof(cells) === 'string') {
+            // send serialized data
+            cellsRequest.incSerializedData = true;
+            cellsRequest.serializedData = ByteBuffer.fromUTF8(cells);
+        }
+        else if (cells === null) {
 
-            let inCells = cells[i];
-            let columnType = this.attributes.columns[viewport.left + i].measureType;
-            let columnPB = new coms.Messages.DataSetRR.ColumnData();
+            cellsRequest.incData = true;
 
-            for (let j = 0; j < nRows; j++) {
-                let outValue = new coms.Messages.DataSetRR.ColumnData.CellValue();
-                let inValue = inCells[j];
-                if (inValue === null) {
-                    outValue.o = coms.Messages.SpecialValues.MISSING;
-                    outValue.type = 'o';
+            for (let i = 0; i < nCols; i++) {
+                let columnPB = new coms.Messages.DataSetRR.ColumnData();
+
+                for (let j = 0; j < nRows; j++) {
+                    let cellPB = new coms.Messages.DataSetRR.ColumnData.CellValue();
+                    cellPB.o = coms.Messages.SpecialValues.MISSING;
+                    cellPB.type = 'o';
+                    columnPB.values.push(cellPB);
                 }
-                else if (typeof(inValue) === 'string') {
-                    outValue.s = inValue;
-                    outValue.type = 's';
-                }
-                else if (Math.floor(inValue) === inValue) {
-                    outValue.i = inValue;
-                    outValue.type = 'i';
-                }
-                else {
-                    outValue.d = inValue;
-                    outValue.type = 'd';
-                }
-                columnPB.values.push(outValue);
+
+                cellsRequest.data.push(columnPB);
             }
+        }
+        else {
 
-            cellsRequest.data.push(columnPB);
+            cellsRequest.incData = true;
+
+            for (let i = 0; i < nCols; i++) {
+
+                let inCells = cells[i];
+                let columnType = this.attributes.columns[viewport.left + i].measureType;
+                let columnPB = new coms.Messages.DataSetRR.ColumnData();
+
+                for (let j = 0; j < nRows; j++) {
+                    let outValue = new coms.Messages.DataSetRR.ColumnData.CellValue();
+                    let inValue = inCells[j];
+                    if (inValue === null) {
+                        outValue.o = coms.Messages.SpecialValues.MISSING;
+                        outValue.type = 'o';
+                    }
+                    else if (typeof(inValue) === 'string') {
+                        outValue.s = inValue;
+                        outValue.type = 's';
+                    }
+                    else if (Math.floor(inValue) === inValue) {
+                        outValue.i = inValue;
+                        outValue.type = 'i';
+                    }
+                    else {
+                        outValue.d = inValue;
+                        outValue.type = 'd';
+                    }
+                    columnPB.values.push(outValue);
+                }
+
+                cellsRequest.data.push(columnPB);
+            }
         }
 
         let request = new coms.Messages.ComsMessage();
@@ -480,6 +513,15 @@ const DataSetViewModel = DataSetModel.extend({
         return coms.send(request).then(response => {
 
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+
+            let viewport = {
+                top:    datasetPB.rowStart,
+                bottom: datasetPB.rowEnd,
+                left:   datasetPB.columnStart,
+                right:  datasetPB.columnEnd };
+
+            nCols = viewport.right - viewport.left + 1;
+
             let changes = [ ];
             let changed = [ ];
             let nCreated = 0;
@@ -523,8 +565,6 @@ const DataSetViewModel = DataSetModel.extend({
                 }
             }
 
-            this.setCells(viewport, cells);
-
             for (let i = 0; i < nCols; i++) {
                 let column = this.attributes.columns[viewport.left + i];
                 let name = column.name;
@@ -537,11 +577,18 @@ const DataSetViewModel = DataSetModel.extend({
             if (nCreated > 0)
                 this.set('columnCount', this.attributes.columnCount + nCreated);
 
-            this.set('rowCount', datasetPB.schema.rowCount);
-            this.set('vRowCount', datasetPB.schema.vRowCount);
+            if (datasetPB.schema) {
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+            }
 
             this.set('edited', true);
             this.trigger('columnsChanged', { changed, changes });
+
+            let cells = this._parseCells(datasetPB);
+            this.setCells(viewport, cells);
+
+            return viewport;
         });
 
     },
@@ -552,8 +599,8 @@ const DataSetViewModel = DataSetModel.extend({
         let top    = Math.max(viewport.top,    this.attributes.viewport.top);
         let bottom = Math.min(viewport.bottom, this.attributes.viewport.bottom);
 
-        let inColOffset = viewport.left - left;
-        let inRowOffset = viewport.top  - top;
+        let inColOffset = left - viewport.left;
+        let inRowOffset = top - viewport.top;
 
         let outColOffset = left - this.attributes.viewport.left;
         let outRowOffset = top - this.attributes.viewport.top;
@@ -565,7 +612,6 @@ const DataSetViewModel = DataSetModel.extend({
 
             let inCol  = cells[inColOffset + i];
             let outCol = this.attributes.cells[outColOffset + i];
-
             for (let j = 0; j < nRows; j++)
                 outCol[outRowOffset + j] = inCol[inRowOffset + j];
         }

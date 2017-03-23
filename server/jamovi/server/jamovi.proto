@@ -400,6 +400,9 @@ message DataSetRR {
 
     repeated ColumnData data = 8;
     DataSetSchema schema = 9;
+
+    bool incSerializedData = 10;
+    bytes serializedData = 11;
 }
 
 message ModuleRequest {

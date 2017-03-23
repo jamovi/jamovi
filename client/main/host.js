@@ -25,6 +25,8 @@ let setEdited;
 let showMessageBox;
 let navigate;
 let constructMenu;
+let copyToClipboard;
+let pasteFromClipboard;
 
 let emitter = new events.EventEmitter();
 
@@ -42,6 +44,7 @@ if (window.require) {
     const webContents = browserWindow.webContents;
     const dialog = remote.dialog;
     const Menu = remote.Menu;
+    const clipboard = electron.clipboard;
 
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
@@ -177,6 +180,14 @@ if (window.require) {
         const menu = Menu.buildFromTemplate(template);
         Menu.setApplicationMenu(menu);
     };
+
+    copyToClipboard = function(data) {
+        clipboard.write(data);
+    };
+
+    pasteFromClipboard = function() {
+        return clipboard.readText();
+    };
 }
 else {
 
@@ -191,7 +202,7 @@ else {
     };
 }
 
-const Host = {
+module.exports = {
     baseUrl,
     analysisUIUrl,
     resultsViewUrl,
@@ -210,6 +221,6 @@ const Host = {
     setEdited,
     navigate,
     constructMenu,
+    copyToClipboard,
+    pasteFromClipboard,
 };
-
-module.exports = Host;
