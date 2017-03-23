@@ -64,11 +64,9 @@ def read(data, path):
 
     with open(path, encoding='utf-8-sig', errors='replace') as csvfile:
         try:
-            dialect = csv.Sniffer().sniff(csvfile.read(4096))
-            if dialect.delimiter.isalpha():
-                dialect.delimiter = ','
+            dialect = csv.Sniffer().sniff(csvfile.read(4096), ', \t;')
         except csv.Error:
-            dialect = 'excel'
+            dialect = csv.excel
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)
