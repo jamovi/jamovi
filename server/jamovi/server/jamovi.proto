@@ -347,6 +347,7 @@ message DataSetSchema {
     uint32 rowCount = 5;
     uint32 columnCount = 6;
     uint32 vRowCount = 7;
+    uint32 vColumnCount = 8;
 }
 
 enum GetSet {

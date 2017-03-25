@@ -18,8 +18,6 @@ class InstanceModel:
         self._columns = [ ]
         self._next_id = 0
 
-        self._virtual_start = -1
-
     def __getitem__(self, index_or_name):
         if type(index_or_name) is int:
             index = index_or_name
@@ -41,10 +39,6 @@ class InstanceModel:
                 return column
         else:
             raise KeyError()
-
-    @property
-    def virtual_start(self):
-        return self._virtual_start
 
     def append_column(self, name, import_name=None):
         return self._dataset.append_column(name, import_name)
@@ -91,13 +85,12 @@ class InstanceModel:
             self._columns.append(column)
             index += 1
 
-        self._virtual_start = index
         self._add_virtual_columns()
 
     def _add_virtual_columns(self):
-        n_virtual = len(self._columns) - self._virtual_start
+        n_virtual = self.virtual_column_count - self.column_count
         for i in range(n_virtual, InstanceModel.N_VIRTUAL_COLS):
-            index = self._virtual_start + i
+            index = self.virtual_column_count
             column = Column(self)
             column.id = index
             column.index = index
@@ -117,12 +110,16 @@ class InstanceModel:
         return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
 
     @property
+    def virtual_column_count(self):
+        return len(self._columns)
+
+    @property
     def row_count(self):
         return self._dataset.row_count
 
     @property
     def column_count(self):
-        return len(self._columns)
+        return self._dataset.column_count
 
     @property
     def is_edited(self):
@@ -166,13 +163,12 @@ class InstanceModel:
 
     def _realise_column(self, column):
         index = column.index
-        for i in range(self._virtual_start, index + 1):
+        for i in range(self.column_count, index + 1):
             name = self._gen_column_name(i)
             child = self._dataset.append_column(name)
             wrapper = self[i]
             wrapper._child = child
             wrapper.auto_measure = True
-        self._virtual_start = index + 1
         self._add_virtual_columns()
 
 

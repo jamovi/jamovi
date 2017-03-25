@@ -396,6 +396,7 @@ class Instance:
             response.schema.rowCount = self._data.row_count
             response.schema.vRowCount = self._data.virtual_row_count
             response.schema.columnCount = self._data.column_count
+            response.schema.vColumnCount = self._data.virtual_column_count
 
             for column in self._data:
                 column_schema = response.schema.columns.add()
@@ -514,16 +515,16 @@ class Instance:
 
     def _apply_schema(self, request, response):
 
-        n_cols_before = self._data.column_count
+        n_cols_before = self._data.virtual_column_count
 
-        min_index = self._data.column_count
+        min_index = self._data.virtual_column_count
 
         for column_schema in request.schema.columns:
             column = self._data.get_column_by_id(column_schema.id)
             if column.index < min_index:
                 min_index = column.index
 
-        for i in range(self._data.virtual_start, min_index):
+        for i in range(self._data.column_count, min_index):
             column = self._data[i]
             column.realise()
             response.incSchema = True
@@ -547,7 +548,7 @@ class Instance:
 
         self._data.is_edited = True
 
-        for i in range(n_cols_before, self._data.column_count):  # cols added
+        for i in range(n_cols_before, self._data.virtual_column_count):  # cols added
             column = self._data[i]
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
@@ -632,7 +633,7 @@ class Instance:
 
         for i in range(col_count):
             index = col_start + i
-            if index >= self._data.virtual_start:
+            if index >= self._data.column_count:
                 break
             column = self._data[index]
             if column.auto_measure:
@@ -652,12 +653,12 @@ class Instance:
 
         # assign
 
-        n_cols_before = self._data.column_count
+        n_cols_before = self._data.virtual_column_count
 
         if row_end >= self._data.row_count:
             self._data.set_row_count(row_end + 1)
 
-        for i in range(self._data.virtual_start, col_start):
+        for i in range(self._data.column_count, col_start):
             column = self._data[i]
             column.realise()
             response.incSchema = True
@@ -769,13 +770,15 @@ class Instance:
 
         self._data.is_edited = True
 
-        for i in range(n_cols_before, self._data.column_count):  # cols added
+        for i in range(n_cols_before, self._data.virtual_column_count):  # cols added
             column = self._data[i]
             columnPB = response.schema.columns.add()
             self._populate_column_schema(column, columnPB)
 
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
+        response.schema.columnCount = self._data.column_count
+        response.schema.vColumnCount = self._data.virtual_column_count
 
         self._populate_cells(request, response)
 
@@ -858,6 +861,7 @@ class Instance:
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
         response.schema.columnCount = self._data.column_count
+        response.schema.vColumnCount = self._data.virtual_column_count
 
     def _populate_column_schema(self, column, column_schema):
         column_schema.name = column.name

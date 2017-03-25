@@ -377,7 +377,7 @@ const TableView = SilkyView.extend({
                     if (range.left < range.colNo) {
                         range.left++;
                     }
-                    else if (range.right < this.model.attributes.columnCount - 1) {
+                    else if (range.right < this.model.attributes.vColumnCount - 1) {
                         range.right++;
                         scrollRight = true;
                     }
@@ -386,12 +386,12 @@ const TableView = SilkyView.extend({
                     }
                 }
                 else {
-                    if (range.colNo < this.model.attributes.columnCount - 1) {
+                    if (range.colNo < this.model.attributes.vColumnCount - 1) {
                         colNo = range.colNo + 1;
                         scrollRight = true;
                     }
                     else {
-                        colNo = this.model.attributes.columnCount - 1;
+                        colNo = this.model.attributes.vColumnCount - 1;
                     }
                     range.left  = colNo;
                     range.right = colNo;
@@ -985,7 +985,7 @@ const TableView = SilkyView.extend({
         let botRow = Math.ceil(v.bottom / this._rowHeight) - 1;
 
         let rowCount = this.model.get('vRowCount');
-        let columnCount = this.model.get('columnCount');
+        let columnCount = this.model.get('vColumnCount');
 
         let columns = this.model.get('columns');
 

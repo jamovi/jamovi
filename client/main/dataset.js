@@ -21,6 +21,7 @@ const DataSetModel = Backbone.Model.extend({
         rowCount : 0,
         vRowCount : 0,
         columnCount : 0,
+        vColumnCount : 0,
         coms : null,
         instanceId : null,
         editingVar : null,
@@ -47,6 +48,7 @@ const DataSetModel = Backbone.Model.extend({
             this.attributes.rowCount = infoPB.schema.rowCount;
             this.attributes.vRowCount = infoPB.schema.vRowCount;
             this.attributes.columnCount = infoPB.schema.columnCount;
+            this.attributes.vColumnCount = infoPB.schema.vColumnCount;
 
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
@@ -185,8 +187,10 @@ const DataSetModel = Backbone.Model.extend({
 
                 this.trigger('columnsChanged', { changed, changes });
 
-                if (nCreated > 0)
+                if (nCreated > 0) {
                     this.set('columnCount', this.attributes.columnCount + nCreated);
+                    this.set('vColumnCount', this.attributes.vColumnCount + nCreated);
+                }
             }
         });
     },
@@ -456,6 +460,18 @@ const DataSetViewModel = DataSetModel.extend({
 
             cellsRequest.incData = true;
 
+            if (viewport.top < this.attributes.rowCount &&
+                viewport.bottom >= this.attributes.rowCount) {
+                    nRows = this.attributes.rowCount - viewport.top + 1;
+                    cellsRequest.rowEnd = this.attributes.rowCount - 1;
+            }
+
+            if (viewport.left < this.attributes.columnCount &&
+                viewport.right >= this.attributes.columnCount) {
+                    nCols = this.attributes.columnCount - viewport.left + 1;
+                    cellsRequest.columnEnd = this.attributes.columnCount - 1;
+            }
+
             for (let i = 0; i < nCols; i++) {
                 let columnPB = new coms.Messages.DataSetRR.ColumnData();
 
@@ -574,8 +590,10 @@ const DataSetViewModel = DataSetModel.extend({
                 }
             }
 
-            if (nCreated > 0)
+            if (nCreated > 0) {
                 this.set('columnCount', this.attributes.columnCount + nCreated);
+                this.set('vColumnCount', this.attributes.vColumnCount + nCreated);
+            }
 
             if (datasetPB.schema) {
                 this.set('rowCount', datasetPB.schema.rowCount);
