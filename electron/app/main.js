@@ -54,6 +54,9 @@ let alreadyRunning = app.makeSingleInstance((argv, wd) => {
 if (alreadyRunning)
     app.quit()
 
+// proxy servers can interfere with accessing localhost
+app.commandLine.appendSwitch('no-proxy-server');
+
 const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
 const dialog = electron.dialog;
