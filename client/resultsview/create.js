@@ -26,7 +26,7 @@ const createItem = function(element, $el, level, parent, mode) {
     let model;
     let view;
 
-    if (element.table) {
+    if (element.type === 'table') {
         model = new TableModel({
             name: element.name,
             title: element.title,
@@ -40,7 +40,7 @@ const createItem = function(element, $el, level, parent, mode) {
             parent: parent,
             mode: mode });
     }
-    else if (element.group) {
+    else if (element.type === 'group') {
 
         let visible = false;
 
@@ -68,7 +68,7 @@ const createItem = function(element, $el, level, parent, mode) {
             view = null;
         }
     }
-    else if (element.image) {
+    else if (element.type === 'image') {
         model = new ImageModel({
             name: element.name,
             title: element.title,
@@ -82,7 +82,7 @@ const createItem = function(element, $el, level, parent, mode) {
             parent: parent,
             mode: mode });
     }
-    else if (element.array) {
+    else if (element.type === 'array') {
 
         let visible = false;
 
@@ -110,7 +110,7 @@ const createItem = function(element, $el, level, parent, mode) {
             view = null;
         }
     }
-    else if (element.syntax) {
+    else if (element.type === 'syntax') {
         model = new SyntaxModel({
             name : element.name,
             title : element.title,
@@ -125,7 +125,7 @@ const createItem = function(element, $el, level, parent, mode) {
             parent: parent,
             mode: mode });
     }
-    else if (element.preformatted) {
+    else if (element.type === 'preformatted') {
         model = new SyntaxModel({
             name : element.name,
             title : element.title,
@@ -140,7 +140,7 @@ const createItem = function(element, $el, level, parent, mode) {
             parent: parent,
             mode: mode });
     }
-    else if (element.html) {
+    else if (element.type === 'html') {
         model = new HtmlModel({
             name : element.name,
             title : element.title,
