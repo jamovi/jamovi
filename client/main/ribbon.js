@@ -21,6 +21,9 @@ const RibbonModel = Backbone.Model.extend({
     toggleResultsMode() {
         this.trigger('toggleResultsMode');
     },
+    toggleDevMode() {
+        this.trigger('toggleDevMode');
+    },
     defaults : {
         tabs : [
             { title : "File" },

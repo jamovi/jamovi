@@ -16,7 +16,7 @@ const SyntaxView  = require('./syntax').View;
 const HtmlModel = require('./html').Model;
 const HtmlView  = require('./html').View;
 
-const createItem = function(element, $el, level, parent, mode) {
+const createItem = function(element, $el, level, parent, mode, devMode) {
 
     if (level === undefined)
         level = 1;
@@ -62,7 +62,8 @@ const createItem = function(element, $el, level, parent, mode) {
                 create: createItem,
                 level: level,
                 parent: parent,
-                mode: mode });
+                mode: mode,
+                devMode: devMode });
         }
         else {
             view = null;
@@ -109,21 +110,6 @@ const createItem = function(element, $el, level, parent, mode) {
         else {
             view = null;
         }
-    }
-    else if (element.type === 'syntax') {
-        model = new SyntaxModel({
-            name : element.name,
-            title : element.title,
-            element : element.syntax,
-            status: element.status,
-            error: element.error,
-            stale: element.stale });
-        view = new SyntaxView({
-            el: $el,
-            model: model,
-            level: level,
-            parent: parent,
-            mode: mode });
     }
     else if (element.type === 'preformatted') {
         model = new SyntaxModel({

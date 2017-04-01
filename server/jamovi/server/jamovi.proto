@@ -78,6 +78,7 @@ message AnalysisResponse {
     bool incAsText = 10;
     int32 revision = 11;
     bool restartEngines = 12;
+    string stacktrace = 13;
 }
 
 message AnalysisOption {

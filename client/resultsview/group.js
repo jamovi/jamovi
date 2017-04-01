@@ -31,6 +31,7 @@ const GroupView = Elem.View.extend({
         this.create = data.create;
         this.children = [ ];
         this.mode = data.mode;
+        this.devMode = data.devMode;
 
         this.hoTag = '<h'  + (this.level+1) + '>';
         this.hcTag = '</h' + (this.level+1) + '>';
@@ -83,7 +84,9 @@ const GroupView = Elem.View.extend({
         let elements = this.model.attributes.element.elements;
 
         for (let element of elements) {
-            if (this.mode === 'rich' && element.syntax)
+            if (this.mode === 'rich' && element.name === 'syntax' && element.type === 'preformatted')
+                continue;
+            if ( ! this.devMode && element.name === 'debug' && element.type === 'preformatted')
                 continue;
             if (element.visible === 1 || element.visible === 3)
                 continue;

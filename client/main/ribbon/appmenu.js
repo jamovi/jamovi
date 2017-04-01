@@ -30,8 +30,11 @@ const AppMenuButton = Backbone.View.extend({
         this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoom);
         this.$zoomIn = $('<div class="jmv-ribbon-appmenu-zoomin">+</div>').appendTo(this.$zoom);
 
-        this.$syntaxMode = $('<label class="jmv-ribbon-appmenu-syntaxmode"><input type="checkbox">Syntax mode</label>').appendTo(this.$menu);
+        this.$syntaxMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-syntaxmode"><input type="checkbox">Syntax mode</label>').appendTo(this.$menu);
         this.$syntaxModeCheck = this.$syntaxMode.find('input');
+
+        this.$devMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-devmode"><input type="checkbox">Dev mode</label>').appendTo(this.$menu);
+        this.$devModeCheck = this.$devMode.find('input');
 
         this.$zoomIn.on('click', event => host.zoomIn());
         this.$zoomOut.on('click', event => host.zoomOut());
@@ -42,6 +45,7 @@ const AppMenuButton = Backbone.View.extend({
         });
 
         this.$syntaxModeCheck.on('change', event => this.model.toggleResultsMode());
+        this.$devModeCheck.on('change', event => this.model.toggleDevMode());
     },
     _show() {
         if (this.menuVisible)

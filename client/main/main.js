@@ -111,6 +111,7 @@ $(document).ready(() => {
     });
 
     ribbonModel.on('toggleResultsMode', () => instance.toggleResultsMode());
+    ribbonModel.on('toggleDevMode', () => instance.toggleDevMode());
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     let optionsFixedWidth = 585;

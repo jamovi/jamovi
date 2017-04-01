@@ -17,21 +17,20 @@
     margin-top: 2px ;
     font-size: 70% ;
     border-radius: 1px ;
+    text-align: left ;
 }
 
-.jmv-ribbon-appmenu-menu > * {
-    padding: 12px 6px ;
-}
-
-.jmv-ribbon-appmenu-syntaxmode {
+.jmv-ribbon-appmenu-checkbox {
     display: block ;
+    padding: 6px 12px ;
 }
 
 .jmv-ribbon-appmenu-zoom {
     display: flex ;
     justify-content: center;
     border-bottom: 1px solid #ACACAC ;
-    margin: 0 ;
+    padding: 8px 6px ;
+    margin-bottom: 6px ;
 }
 
 .jmv-ribbon-appmenu-zoom > * {
@@ -46,10 +45,11 @@
     border: 1px solid #ACACAC ;
     width: 30px ;
     border-radius: 1px ;
+    text-align: center ;
 }
 
 .jmv-ribbon-appmenu-zoomin:hover,
 .jmv-ribbon-appmenu-zoomout:hover,
-.jmv-ribbon-appmenu-syntaxmode:hover {
+.jmv-ribbon-appmenu-checkbox:hover {
     background-color: #E0E0E0 ;
 }

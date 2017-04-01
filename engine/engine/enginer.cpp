@@ -51,17 +51,20 @@ void EngineR::run(Analysis *analysis)
 
     stringstream ss;
 
-    ss << "{\n";
-    ss << "  options <- " << analysis->ns << "::" << analysis->name << "Options$new()\n";
-    ss << "  options$read(optionsPB)\n";
-    ss << "  analysis <- " << analysis->ns << "::" << analysis->name << "Class$new(";
-    ss << "    options=options,";
-    ss << "    datasetId='" << analysis->datasetId << "',";
-    ss << "    analysisId=" << analysis->id << ", ";
-    ss << "    revision=" << analysis->revision << ")\n";
-    ss << "}\n";
+    ss << "analysis <- jmvcore::create(" <<
+        "'" << analysis->ns << "', " <<
+        "'" << analysis->name << "', " <<
+        "optionsPB, " <<
+        "'" << analysis->datasetId << "', " <<
+        analysis->id << ", " <<
+        analysis->revision << ")\n";
 
     rInside.parseEvalQNT(ss.str());
+
+    if (rInside.parseEvalNT("analysis$errored\n")) {
+        sendResults(true, true);
+        return;
+    }
 
     std::function<Rcpp::DataFrame(Rcpp::List)> readDatasetHeader;
     std::function<Rcpp::DataFrame(Rcpp::List)> readDataset;
@@ -88,7 +91,12 @@ void EngineR::run(Analysis *analysis)
 
     rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
-    rInside.parseEvalQ("analysis$init()");
+    rInside.parseEvalQNT("analysis$init(noThrow=TRUE)");
+
+    if (rInside.parseEvalNT("analysis$errored\n")) {
+        sendResults(true, true);
+        return;
+    }
 
     if ( ! analysis->clearState)
     {
@@ -97,44 +105,41 @@ void EngineR::run(Analysis *analysis)
         rInside.parseEvalQ("analysis$.load(changed)");
     }
 
-    Rcpp::RawVector rawVec = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
-    std::string raw(rawVec.begin(), rawVec.end());
-    resultsReceived(raw);
-
-    if (rInside.parseEvalNT("analysis$status == 'complete'"))
+    if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
-        Rcpp::RawVector rawVec = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
-        std::string raw(rawVec.begin(), rawVec.end());
-        resultsReceived(raw);
-
+        sendResults(true, true);
         rInside.parseEvalQ("analysis$.save();");
     }
     else if (analysis->perform == 0)   // INIT
     {
+        sendResults();
         rInside.parseEvalQ("analysis$.save();");
     }
     else
     {
+        sendResults();
+
         bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
         if ( ! shouldSend)
             return;
 
-        Rcpp::RawVector rawVec2 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
-        std::string raw2(rawVec2.begin(), rawVec2.end());
-        resultsReceived(raw2);
-
-        rInside.parseEvalQNT("analysis$render();");
-
-        Rcpp::RawVector rawVec3 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(), NULL)\n");
-        std::string raw3(rawVec3.begin(), rawVec3.end());
-        resultsReceived(raw3);
-
-        Rcpp::RawVector rawVec4 = _rInside->parseEval("RProtoBuf::serialize(analysis$asProtoBuf(incOptions=TRUE, incAsText=TRUE), NULL)\n");
-        std::string raw4(rawVec4.begin(), rawVec4.end());
-        resultsReceived(raw4);
-
+        sendResults();
+        rInside.parseEvalQNT("analysis$render(noThrow=TRUE);");
+        sendResults();
+        sendResults(true, true);
         rInside.parseEvalQ("analysis$.save();");
     }
+}
+
+void EngineR::sendResults(bool incOptions, bool incAsText)
+{
+    stringstream ss;
+    ss << "analysis$serialize(";
+    ss << "incOptions=" << (incOptions ? "TRUE" : "FALSE") << ", ";
+    ss << "incAsText=" << (incAsText ? "TRUE" : "FALSE") << ")\n";
+    Rcpp::RawVector rawVec = _rInside->parseEval(ss.str());
+    string raw(rawVec.begin(), rawVec.end());
+    resultsReceived(raw);
 }
 
 void EngineR::setLibPaths(const std::string &moduleName)

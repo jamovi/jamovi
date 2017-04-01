@@ -76,7 +76,8 @@ class Main {  // this is constructed at the bottom
                 this.$results,
                 0,
                 { _sendEvent: event => this._sendMenuRequest(event) },
-                eventData.mode);
+                eventData.mode,
+                eventData.devMode);
             this.$results.appendTo($body);
 
             $(document).ready(() => {

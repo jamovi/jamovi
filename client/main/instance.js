@@ -52,6 +52,7 @@ const Instance = Backbone.Model.extend({
         path : null,
         title : '',
         resultsMode : 'rich',
+        devMode: false,
         blank : false,
     },
     instanceId() {
@@ -217,6 +218,10 @@ const Instance = Backbone.Model.extend({
         else
             mode = 'text';
         this.set('resultsMode', mode);
+    },
+    toggleDevMode() {
+        let mode = ! this.attributes.devMode;
+        this.set('devMode', mode);
     },
     restartEngines() {
 

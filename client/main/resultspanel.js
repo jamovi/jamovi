@@ -40,6 +40,8 @@ const ResultsPanel = Backbone.View.extend({
             if (this.model.attributes.selectedAnalysis !== null)
                 this.model.set('selectedAnalysis', null);
         });
+
+        this.model.on('change:devMode', () => this._updateAll());
     },
     _resultsEvent(analysis) {
 
@@ -105,11 +107,26 @@ const ResultsPanel = Backbone.View.extend({
                 type: 'results',
                 data: {
                     results: resources.results,
-                    mode: this.mode
+                    mode: this.mode,
+                    devMode: this.model.get('devMode'),
                 }
             };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
         }
+    },
+    _updateAll() {
+
+        for (let id in this.resources) {
+            let resources = this.resources[id];
+            if (resources === undefined)
+                continue;
+            if (resources.analysis.deleted)
+                continue;
+            if (resources.loaded === false)
+                continue;
+            this._sendResults(resources);
+        }
+
     },
     _resultsClicked(event, analysis) {
         event.stopPropagation();
