@@ -43,11 +43,19 @@ class Options:
             elif typ == 'Bool':
                 default = False
             elif typ == 'Variables':
-                default = []
+                default = [ ]
             elif typ == 'Integer':
                 default = 0
             elif typ == 'Number':
                 default = 0.0
+            elif typ == 'List':
+                first_option = opt_defn['options'][0]
+                if isinstance(first_option, dict):
+                    default = first_option['value']
+                else:
+                    default = first_option
+            elif typ == 'NMXList':
+                default = [ ]
             else:
                 default = None
 
