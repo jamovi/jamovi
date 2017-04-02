@@ -1,0 +1,6 @@
+[submodule "jmv"]
+	path = jmv
+	url = https://github.com/jamovi/jmv.git
+[submodule "jmvcore"]
+	path = jmvcore
+	url = https://github.com/jamovi/jmvcore.git
