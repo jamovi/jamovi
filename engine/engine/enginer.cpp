@@ -102,18 +102,18 @@ void EngineR::run(Analysis *analysis)
     {
         Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
         rInside["changed"] = changed;
-        rInside.parseEvalQ("analysis$.load(changed)");
+        rInside.parseEvalQ("try(analysis$.load(changed))");
     }
 
     if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
         sendResults(true, true);
-        rInside.parseEvalQ("analysis$.save();");
+        rInside.parseEvalQ("try(analysis$.save())");
     }
     else if (analysis->perform == 0)   // INIT
     {
         sendResults();
-        rInside.parseEvalQ("analysis$.save();");
+        rInside.parseEvalQ("try(analysis$.save())");
     }
     else
     {
@@ -127,7 +127,7 @@ void EngineR::run(Analysis *analysis)
         rInside.parseEvalQNT("analysis$render(noThrow=TRUE);");
         sendResults();
         sendResults(true, true);
-        rInside.parseEvalQ("analysis$.save();");
+        rInside.parseEvalQ("try(analysis$.save())");
     }
 }
 
