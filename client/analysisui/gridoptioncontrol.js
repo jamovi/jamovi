@@ -1,12 +1,12 @@
 'use strict';
 
-var GridControl = require('./gridcontrol');
-var OptionControl = require('./optioncontrol');
-var SuperClass = require('../common/superclass');
+const GridControl = require('./gridcontrol');
+const OptionControl = require('./optioncontrol');
+const SuperClass = require('../common/superclass');
 
-var GridOptionControl = function(params) {
+const GridOptionControl = function(params) {
 
-    GridControl.extendTo(this);
+    GridControl.extendTo(this, params);
     OptionControl.extendTo(this, params);
 
 };

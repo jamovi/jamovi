@@ -1,11 +1,10 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var GridOptionControl = require('./gridoptioncontrol');
-var LayoutGrid = require('./layoutgrid').Grid;
+const $ = require('jquery');
+const GridOptionControl = require('./gridoptioncontrol');
+const LayoutGrid = require('./layoutgrid').Grid;
 
-var rmafcItem = function(parent, data, isFirst, isLast) {
+const rmafcItem = function(parent, data, isFirst, isLast) {
 
     LayoutGrid.extendTo(this);
 
@@ -23,10 +22,10 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         this.$closeButton = $('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
         this.listenForCompleteRemove(this.$closeButton);
 
-        var levels = [];
-        var label = "RM Factor " + (index + 1);
-        var isEmpty = true;
-        if (_.isUndefined(this.data) === false && this.data !== null) {
+        let levels = [];
+        let label = "RM Factor " + (index + 1);
+        let isEmpty = true;
+        if (this.data !== undefined && this.data !== null) {
             label = this.data.label;
             levels = this.data.levels;
             isEmpty = false;
@@ -35,7 +34,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" value="' + label + '">');
         this.$label.focus(function() { $(this).select(); } );
         this.$label.keydown((event) => {
-            var keypressed = event.keyCode || event.which;
+            let keypressed = event.keyCode || event.which;
             if (keypressed == 13) {
                 this.labelChange(this.$label);
                 this.$label.blur();
@@ -46,7 +45,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             this.$label.addClass("rma-new-factor");
         else
             this.$label.removeClass("rma-new-factor");
-        var cell = this.addCell(0, 0, false, this.$label);
+        let cell = this.addCell(0, 0, false, this.$label);
         cell.setHorizontalAlign('center');
         cell.setStretchFactor(1);
         if (this.isFirst === false)
@@ -62,7 +61,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         cell.vAlign = "center";
 
         if (isEmpty === false) {
-            for (var i = 0; i <= levels.length; i++)
+            for (let i = 0; i <= levels.length; i++)
                 this.createLevel(index, levels[i], i);
         }
     };
@@ -118,16 +117,16 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.createLevel = function(groupIndex, levelText, index) {
-        var level = index + 1;
-        var text = "Level " + this.getSequenceChar(groupIndex, index); //level;
-        var isEmpty = true;
-        if (levelText !== null && _.isUndefined(levelText) === false) {
+        let level = index + 1;
+        let text = "Level " + this.getSequenceChar(groupIndex, index); //level;
+        let isEmpty = true;
+        if (levelText !== null && levelText !== undefined) {
             text = levelText;
             isEmpty = false;
         }
 
-        var $t = null;
-        var $levelButton = null;
+        let $t = null;
+        let $levelButton = null;
 
         if (index < this.$items.length) {
             $t = this.$items[index];
@@ -138,7 +137,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             $t = $('<input class="silky-option-listitem" type="text" value="' + text + '">');
             $t.focus(function() { $(this).select(); } );
             $t.keydown((event) => {
-                var keypressed = event.keyCode || event.which;
+                let keypressed = event.keyCode || event.which;
                 if (keypressed == 13) {
                     this.onChange($t);
                     $t.blur();
@@ -147,13 +146,13 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             this.listenForChange($t);
             this.$items[index] = $t;
 
-            var cell = this.addCell(0, index + 1, false, $t);
+            let cell = this.addCell(0, index + 1, false, $t);
             cell.ignoreContentMargin_top = true;
             cell.ignoreContentMargin_bottom = true;
             cell.setStretchFactor(1);
 
             $levelButton = $('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
-            var self = this;
+
             this.listenForRemove($levelButton);
             this.levelButtons[index] = $levelButton;
 
@@ -180,11 +179,11 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
         this._topIndex = index;
         this.data = data;
         this.suspendLayout();
-        if (_.isUndefined(data) || data === null) {
+        if (data === undefined || data === null) {
             this.$label.val("RM Factor " + (index + 1));
             this.$label.addClass("rma-new-factor");
             this.$closeButton.css("visibility", "hidden");
-            for (var i = 0; i < this.$items.length; i++) {
+            for (let i = 0; i < this.$items.length; i++) {
                 this.$items[i].off();
                 this.levelButtons[i].off();
             }
@@ -201,13 +200,13 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
             else
                 this.$closeButton.css("visibility", "visible");
 
-            for (var j = 0; j <= this.data.levels.length; j++) {
+            for (let j = 0; j <= this.data.levels.length; j++) {
                 this.createLevel(index, this.data.levels[j], j);
             }
 
-            var toRemove = this.$items.length - this.data.levels.length - 1;
+            let toRemove = this.$items.length - this.data.levels.length - 1;
             if (toRemove > 0) {
-                for (var k = this.data.levels.length + 1; k < this.$items.length; k++) {
+                for (let k = this.data.levels.length + 1; k < this.$items.length; k++) {
                     this.$items[k].off();
                     this.levelButtons[k].off();
                 }
@@ -223,7 +222,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.close = function() {
-        for (var i = 0; i < this.$items.length; i++) {
+        for (let i = 0; i < this.$items.length; i++) {
             this.$items[i].off();
             this.levelButtons[i].off();
         }
@@ -231,32 +230,29 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.listenForCompleteRemove = function($button) {
-        var self = this;
-        $button.click(function(event) {
-            var index = $button.data("index");
-            self.parent.onItemRemoved(index);
+        $button.click((event) => {
+            let index = $button.data("index");
+            this.parent.onItemRemoved(index);
         });
     };
 
     this.listenForRemove = function($button) {
-        var self = this;
-        $button.click(function(event) {
-            var index = $button.data("index");
-            self.data.levels.splice(index, 1);
-            self.parent.onItemChanged();
+        $button.click((event) => {
+            let index = $button.data("index");
+            this.data.levels.splice(index, 1);
+            this.parent.onItemChanged();
         });
     };
 
     this.listenForChange = function($item) {
-        var self = this;
         $item.change((event) => {
             this.onChange($item);
         });
     };
 
     this.onChange = function($item) {
-        var value = $item.val();
-        var index = $item.data("index");
+        let value = $item.val();
+        let index = $item.data("index");
         this.data.levels[index] = value;
         this.parent.onItemChanged();
     };
@@ -268,8 +264,8 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.labelChange = function($item) {
-        var value = $item.val();
-        if (_.isUndefined(this.data) || this.data === null) {
+        let value = $item.val();
+        if (this.data === undefined || this.data === null) {
             this.parent.onItemAdded({label: value, levels: ["Level " + this.getSequenceChar(this._topIndex , 0), "Level " + this.getSequenceChar(this._topIndex , 1)]});
         }
         else {
@@ -279,7 +275,7 @@ var rmafcItem = function(parent, data, isFirst, isLast) {
     };
 };
 
-var RMAnovaFactorsControl = function(params) {
+const RMAnovaFactorsControl = function(params) {
     GridOptionControl.extendTo(this, params);
     LayoutGrid.extendTo(this);
 
@@ -292,12 +288,12 @@ var RMAnovaFactorsControl = function(params) {
 
     this.createFactorsObject = function(data, index, isVirtual) {
 
-        var item = this.items[index];
-        if (item === null || _.isUndefined(item)) {
+        let item = this.items[index];
+        if (item === null || item === undefined) {
             item = new rmafcItem(this, data, index === 0, isVirtual);
             item.render(index);
 
-            var cell = this.addLayout(0, index, false, item);
+            let cell = this.addCell(0, index, false, item);
             cell.setStretchFactor(1);
 
             this.items[index] = item;
@@ -309,46 +305,47 @@ var RMAnovaFactorsControl = function(params) {
 
     this.onRenderToGrid = function(grid, row, column) {
 
-        grid.addCell(column, row + 1, false, $('<div class="supplier-button-filler"></div>'));
+        let width = 1;
+        if (grid.addCell('aux', row + 1, false, $('<div class="supplier-button-filler"></div>')) !== null)
+            width += 1;
 
-        var label = this.getPropertyValue("label");
+        let label = this.getPropertyValue("label");
         if (label !== null)
-            grid.addCell(column + 1, row, true, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
+            grid.addCell(column, row, true, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
 
-        var cell = grid.addLayout(column + 1, row + 1, true, this);
+        let cell = grid.addCell(column, row + 1, true, this);
         cell.setStretchFactor(0.5);
 
-        return { height: 2, width: 2 };
+        return { height: 2, width: width };
     };
 
     this.onOptionSet = function(option) {
-        if (this.option.isValueInitialized()) {
-            this.data = this.clone(this.option.getValue());
+        if (this.getOption().isValueInitialized()) {
+            this.data = this.clone(this.getSourceValue());
             this.updateData();
         }
     };
 
     this.data = [];
 
-
     this.onItemChanged = function(item) {
-        this.option.setValue(this.data);
+        this.setValue(this.data);
     };
 
     this.onItemAdded = function(data) {
         this.data.push(data);
-        this.option.setValue(this.data);
+        this.setValue(this.data);
     };
 
     this.onItemRemoved = function(index) {
         this.data.splice(index, 1);
-        this.option.setValue(this.data);
+        this.setValue(this.data);
     };
 
-    this.onOptionValueInserted = function(keys, data) {
-        var index = keys[0];
+    this.onOptionValueInserted = function(key, data) {
+        let index = key[0];
         this.insertRow(index, 1);
-        var optionData = this.clone(this.option.getValue(keys));
+        let optionData = this.clone(this.getValue(key));
 
         this.data.splice(index, 0, optionData);
         this.items.splice(index, 0, null);
@@ -356,47 +353,42 @@ var RMAnovaFactorsControl = function(params) {
         this.createFactorsObject(optionData, index, false);
     };
 
-    this.onOptionValueRemoved = function(keys, data) {
-        var index = keys[0];
+    this.onOptionValueRemoved = function(key, data) {
+        let index = key[0];
         this.items.splice(index, 1);
         this.removeRow(index);
     };
 
-    this.onOptionValueChanged = function(keys, data) {
-        this.data = this.clone(this.option.getValue());
+    this.onOptionValueChanged = function(key, data) {
+        this.data = this.clone(this.getValue());
         this.updateData();
     };
 
     this.updateData = function() {
-
-        if ((this.data === null || this.data.length === 0) && this.option.isValueInitialized())
-            this.option.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
+        if ((this.data === null || this.data.length === 0) && this.getOption().isValueInitialized())
+            this.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
         else {
             if (this.data === null)
                 this.data = [];
 
             this.suspendLayout();
-            for (var i = 0; i <= this.data.length; i++)
+            for (let i = 0; i <= this.data.length; i++)
                 this.createFactorsObject(this.data[i], i, i  === this.data.length);
 
             if (this.items.length > this.data.length + 1) {
-                var countToRemove = this.items.length - this.data.length - 1;
-                for (var j = this.data.length + 1; j < this.items.length; j++)
+                let countToRemove = this.items.length - this.data.length - 1;
+                for (let j = this.data.length + 1; j < this.items.length; j++)
                     this.items[j].close();
                 this.items.splice(this.data.length + 1, countToRemove);
                 this.removeRow(this.data.length + 1, countToRemove);
             }
             this.resumeLayout();
         }
-
     };
 
     this.clone = function(object) {
         return JSON.parse(JSON.stringify(object));
     };
-
-
-
 };
 
 module.exports = RMAnovaFactorsControl;

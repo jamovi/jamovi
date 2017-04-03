@@ -1,11 +1,11 @@
 'use strict';
 
-var _ = require('underscore');
-var backbone = require('backbone');
-var LayoutAction = require('./layoutaction');
-var SuperClass = require('../common/superclass');
+const _ = require('underscore');
+const backbone = require('backbone');
+const LayoutAction = require('./layoutaction');
+const SuperClass = require('../common/superclass');
 
-var LayoutActionManager = function(view) {
+const LayoutActionManager = function(view) {
 
     this._view = view;
     this._actions = [];
@@ -85,12 +85,12 @@ var LayoutActionManager = function(view) {
     };
 
     this.exists = function(name) {
-        return _.isUndefined(this._resources[name]) === false;
+        return this._resources[name] !== undefined;
     };
 
     this.getObject = function(name) {
-        var obj = this._resources[name];
-        if (_.isUndefined(obj))
+        let obj = this._resources[name];
+        if (obj === undefined)
             throw "UI Object '" + name + "' does not exist and cannot be accessed.";
 
         return obj;
@@ -99,15 +99,15 @@ var LayoutActionManager = function(view) {
     this.initializeAll = function() {
         this.bindingsToActions();
 
-        for (var i = 0; i < this._actions.length; i++) {
-            var action = this._actions[i];
+        for (let i = 0; i < this._actions.length; i++) {
+            let action = this._actions[i];
             action.initialize();
         }
     };
 
     this.close = function() {
-        for (var i = 0; i < this._actions.length; i++) {
-            var action = this._actions[i];
+        for (let i = 0; i < this._actions.length; i++) {
+            let action = this._actions[i];
             action.close();
         }
         this._resources = { };
@@ -115,8 +115,8 @@ var LayoutActionManager = function(view) {
 
 
     if (Array.isArray(this._view.events)) {
-        for (var i = 0; i < this._view.events.length; i++) {
-            var action = this._view.events[i];
+        for (let i = 0; i < this._view.events.length; i++) {
+            let action = this._view.events[i];
             if (_.isFunction(action.execute) === false)
                 throw "An action must contain an execute function.";
 

@@ -1,48 +1,51 @@
 
 'use strict';
 
-var LayoutGrid = require('./layoutgrid').Grid;
-var LayoutGridBorderSupport = require('./layoutgridbordersupport');
-var SuperClass = require('../common/superclass');
+const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGridBorderSupport = require('./layoutgridbordersupport');
+const SuperClass = require('../common/superclass');
 
-var ChildLayoutSupport = function(params) {
+const ChildLayoutSupport = function(params) {
 
-
-    var self = this;
     this._style = this.getPropertyValue('style');
     this._styles = this._style.split('-');
     this._parentStyle = this._styles[0];
     this._childStyle = this._styles[this._styles.length - 1];
+    this.controls = [];
 
-
-    this._override('onRenderToGrid', function(baseFunction, grid, row, column) {
-        if (self.hasProperty('controls')) {
-            self._baseLayout = new LayoutGrid();
-            LayoutGridBorderSupport.extendTo(self._baseLayout);
-            self._baseLayout.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-" + self._parentStyle + " silky-control-margin-" + self.getPropertyValue("margin"));
-            var cell = grid.addLayout(column, row, true, self._baseLayout);
-            self._contentsPosition = baseFunction.call(self, self._baseLayout, 0, 0);
-
-            return { height: 1, width: 1, cell: cell };
+    this._override('renderToGrid', (baseFunction, grid, row, column) => {
+        if (this.hasProperty('controls')) {
+            let $el_sub = this.$el;
+            LayoutGrid.extendTo(this);
+            LayoutGridBorderSupport.extendTo(this);
+            this.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-" + this._parentStyle + " silky-control-margin-" + this.getPropertyValue("margin"));
+            let cell = this.addCell(0, 0, true, $el_sub);
+            this._applyCellProperties(cell);
         }
-        else
-            return baseFunction.call(self, grid, row, column);
+
+        return baseFunction.call(this, grid, row, column);
     });
 
     this.setBody = function(body) {
         this._body = body;
+        this.controls = body.controls;
         body.$el.addClass("silky-control-body silky-control-body-style-"  + this._parentStyle);
 
-        var rData = null;
+        let rData = null;
         if (this._style.startsWith('list'))
-            rData = body.renderToGrid(this._baseLayout, this._contentsPosition.height, 0);
+            rData = body.renderToGrid(this, 1, 0);
         else
-            rData = body.renderToGrid(this._baseLayout, 0, this._contentsPosition.width);
+            rData = body.renderToGrid(this, 0, 1);
 
         return rData.cell;
     };
 
+    this.getControls = function() {
+        return this.controls;
+    };
+
 };
+
 
 SuperClass.create(ChildLayoutSupport);
 

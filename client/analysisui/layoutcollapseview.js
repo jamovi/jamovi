@@ -1,56 +1,51 @@
 
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
+const $ = require('jquery');
+const _ = require('underscore');
 
-var GridControl = require('./gridcontrol');
-var ControlBase = require('./controlbase');
-var LayoutGrid = require('./layoutgrid').Grid;
-var EnumPropertyFilter = require('./enumpropertyfilter');
-var LayoutGridBorderSupport = require('./layoutgridbordersupport');
+const LayoutGrid = require('./layoutgrid').Grid;
+const EnumPropertyFilter = require('./enumpropertyfilter');
+const GridControl = require('./gridcontrol');
+const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 
-var LayoutCollapseView = function(params) {
+const LayoutCollapseView = function(params) {
 
-    ControlBase.extendTo(this, params);
-    GridControl.extendTo(this);
+    GridControl.extendTo(this, params);
+    LayoutGrid.extendTo(this);
+    LayoutGridBorderSupport.extendTo(this);
 
     this.registerSimpleProperty("collapsed", false);
     this.registerSimpleProperty("label", null);
+    this.registerSimpleProperty("stretchFactor", 1);
 
     this._collapsed = this.getPropertyValue('collapsed');
 
     this._body = null;
 
-    this.onRenderToGrid = function(grid, row, column) {
-        this._layout = new LayoutGrid();
-        this._layout.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
-        LayoutGridBorderSupport.extendTo(this._layout);
-        var cell = grid.addLayout(column, row, false, this._layout);
-        cell.setStretchFactor(1);
+    this.createItem = function() {
+        this.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
 
-        var groupText = this.getPropertyValue('label');
-        var t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
+        let groupText = this.getPropertyValue('label');
+        let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.$header = $('<div class="silky-options-collapse-button silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + t + groupText + '</div>');
 
         if (this._collapsed)
             this.$header.addClass("silky-gridlayout-collapsed");
 
-        this._headerCell = this._layout.addCell(0, 0, false, this.$header);
+        this._headerCell = this.addCell(0, 0, false, this.$header);
         this._headerCell.setStretchFactor(1);
 
         this.$header.on('click', null, this, function(event) {
-            var group = event.data;
+            let group = event.data;
             group.toggleColapsedState();
         });
-
-        return { height: 1, width: 1, cell: cell  };
     };
 
     this.setBody = function(body) {
         this._body = body;
         body.$el.addClass("silky-control-body");
-        var data = body.renderToGrid(this._layout, 1, 0);
+        let data = body.renderToGrid(this, 1, 0);
         this._bodyCell = data.cell;
         this.setContentVisibility(this._collapsed === false);
         return data.cell;
@@ -65,7 +60,7 @@ var LayoutCollapseView = function(params) {
 
         this.setContentVisibility(false);
         this._headerCell.invalidateContentSize();
-        this._layout.invalidateLayout('both', Math.random());
+        this.invalidateLayout('both', Math.random());
         this._collapsed = true;
     };
 
@@ -82,7 +77,7 @@ var LayoutCollapseView = function(params) {
 
         this.setContentVisibility(true);
         this._headerCell.invalidateContentSize();
-        this._layout.invalidateLayout('both', Math.random(), true);
+        this.invalidateLayout('both', Math.random(), true);
         this._collapsed = false;
 
     };

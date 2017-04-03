@@ -1,23 +1,19 @@
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
-var GridControl = require('./gridcontrol');
-var OptionListControl = require('./optionlistcontrol');
+const GridControl = require('./gridcontrol');
+const OptionListControl = require('./optionlistcontrol');
+const SuperClass = require('../common/superclass');
 
-var GridOptionListControl = function(option, params) {
-    GridControl.extendTo(this);
-    OptionListControl.extendTo(this, option, params);
+const GridOptionListControl = function(params) {
+    OptionListControl.extendTo(this, params);
+    GridControl.extendTo(this, params);
 
-    this.onRenderToGrid = function(grid, row, column) {
+    this.registerSimpleProperty("stretchFactor", 0.5);
 
-        this.setAutoSizeHeight(false);
-        var cell = grid.addLayout(column, row, false, this);
-        cell.setStretchFactor(0.5);
-        cell.dockContentHeight = true;
-
-        return { height: 1, width: 1, cell: cell };
+    this.addedContentToCell = function(cell) {
+        if (this.isSingleItem === false)
+            cell.dockContentHeight = true;
     };
 };
-
+SuperClass.create(GridOptionListControl);
 module.exports = GridOptionListControl;

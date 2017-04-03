@@ -1,12 +1,12 @@
 
 'use strict';
 
-var LayoutSupplierView = require('./layoutsupplierview');
-var FormatDef = require('./formatdef');
-var EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
+const LayoutSupplierView = require('./layoutsupplierview');
+const FormatDef = require('./formatdef');
+const EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
 const RequestDataSupport = require('./requestdatasupport');
 
-var LayoutVariablesView = function(params) {
+const LayoutVariablesView = function(params) {
 
     LayoutSupplierView.extendTo(this, params);
     RequestDataSupport.extendTo(this);
@@ -15,6 +15,7 @@ var LayoutVariablesView = function(params) {
 
     this.registerSimpleProperty("suggested", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
     this.registerSimpleProperty("permitted", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
+    this.registerSimpleProperty("format", FormatDef.variable);
 
     this._override("onContainerRendering", function(baseFunction, context) {
 
@@ -60,20 +61,20 @@ var LayoutVariablesView = function(params) {
 
     this.populateItemList = function() {
 
-        var suggested = this.getPropertyValue("suggested");
-        var permitted = this.getPropertyValue("permitted");
+        let suggested = this.getPropertyValue("suggested");
+        let permitted = this.getPropertyValue("permitted");
 
-        var suggestedCount = 0;
-        var permittedCount = 0;
+        let suggestedCount = 0;
+        let permittedCount = 0;
 
-        var items = [];
-        var columns = this.resources.columns;
-        var promises = [];
-        for (var i = 0; i < columns.length; i++) {
-            var column = columns[i];
+        let items = [];
+        let columns = this.resources.columns;
+        let promises = [];
+        for (let i = 0; i < columns.length; i++) {
+            let column = columns[i];
             if (column.measureType === 'none')
                 continue;
-            var item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: {  id: column.id, permitted: true } };
+            let item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: {  id: column.id, permitted: true } };
 
             promises.push(this.requestMeasureType(column.id, item));
 

@@ -1,27 +1,62 @@
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
-var SelectableLayoutGrid = require('./selectablelayoutgrid');
-var OptionControl = require('./optioncontrol');
-var FormatDef = require('./formatdef');
-var DefaultControls;
-var EnumPropertyFilter = require('./enumpropertyfilter');
-var SuperClass = require('../common/superclass');
+const $ = require('jquery');
+const _ = require('underscore');
+const SelectableLayoutGrid = require('./selectablelayoutgrid');
+const OptionControl = require('./optioncontrol');
+const GridControl = require('./gridcontrol');
+const FormatDef = require('./formatdef');
+let DefaultControls;
+const EnumPropertyFilter = require('./enumpropertyfilter');
+const SuperClass = require('../common/superclass');
+const Backbone = require('backbone');
+const deepRenderToGrid = require('./controlcontainer').renderContainerItem;
+const TemplateItemControl = require('./templateitemcontrol');
+const TargetListValueFilter = require('./targetlistvaluefilter');
 
-var OptionListControl = function(params) {
-    DefaultControls = require('./defaultcontrols');
+const OptionListControl = function(params) {
+    if (!DefaultControls)
+        DefaultControls = require('./defaultcontrols');
+
+    if (params.columns === undefined) {
+        let columnInfo = {
+            name: "column1",
+            stretchFactor: 1,
+            template: params.template
+        };
+        delete params.template;
+
+        if (params.templateName !== undefined) {
+            columnInfo.templateName = params.templateName;
+            delete params.templateName;
+        }
+
+        if (params.selectable !== undefined) {
+            columnInfo.selectable = params.selectable;
+            delete params.selectable;
+        }
+
+        params.columns = [ columnInfo ];
+    }
+
     OptionControl.extendTo(this, params);
+    GridControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
+
+    Object.assign(this, Backbone.Events);
 
     this.registerSimpleProperty("columns", null);
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("showColumnHeaders", false);
     this.registerSimpleProperty("fullRowSelect", false);
     this.registerSimpleProperty("removeAction", "deleterow", new EnumPropertyFilter(["deleterow", "clearcell"], "deleterow"));
-    this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest"], "normal"));
+    this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest", "auto"], "normal"));
     this.registerSimpleProperty("rowDataAsArray", false);
     this.registerSimpleProperty("stripedRows", false);
+    this.registerSimpleProperty("addButton", null);
+    this.registerSimpleProperty("ghostText", null);
+    this.registerSimpleProperty("isTarget", false);
+    this.registerSimpleProperty("valueFilter", "none", new EnumPropertyFilter(["none", "unique", "uniquePerRow", "uniquePerColumn"], "none"));
 
 
     this.maxItemCount = this.getPropertyValue('maxItemCount');
@@ -30,45 +65,67 @@ var OptionListControl = function(params) {
     this.removeAction = this.getPropertyValue('removeAction');
     this.rowDataAsArray = this.getPropertyValue('rowDataAsArray');
 
-    this.$el.addClass(this.getPropertyValue('height') + "-size");
-    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
-
     this.isSingleItem = this.maxItemCount === 1;
-
-    this.$el.addClass("silky-option-list");
     this.stretchEndCells = true;
     this._animateCells = true;
     this.allocateSpaceForScrollbars = false;
+    this._localData = [];
+    this.controls = [];
 
+    this._listFilter = new TargetListValueFilter();
+
+    let heightType = this.getPropertyValue('height');
+    this.$el.addClass(heightType + "-size");
+    this.setAutoSizeHeight(heightType === 'auto');
+    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
+    this.$el.addClass("silky-option-list");
     if (this.isSingleItem)
         this.$el.addClass('single-item');
     else
         this.$el.addClass('multi-item');
 
-    this._localData = [];
 
     this.onPropertyChanged = function(name) {
         if (name === "maxItemCount") {
             this.maxItemCount = this.getPropertyValue('maxItemCount');
+            this.isSingleItem = this.maxItemCount === 1;
+            this.$el.removeClass('single-item');
+            this.$el.removeClass('multi-item');
+            if (this.isSingleItem)
+                this.$el.addClass('single-item');
+            else
+                this.$el.addClass('multi-item');
         }
     };
 
     this.initialize = function() {
 
-        var columns = this.getPropertyValue("columns");
+        let columns = this.getPropertyValue("columns");
         this._columnInfo = { _list:[] };
         this._realColumnInfoList = [];
-
+        let isTarget = this.getPropertyValue("isTarget");
         if (Array.isArray(columns)) {
-            for (var i = 0; i < columns.length; i++) {
+            for (let i = 0; i < columns.length; i++) {
 
-                var columnInfo = { type: DefaultControls.ListItem.Label, selectable: true, stretchFactor: 1, label: columns[i].name };
+                let columnInfo = { selectable: true, stretchFactor: 1, label: columns[i].name };
 
                 _.extend(columnInfo, columns[i]);
 
                 columnInfo.index = i;
+                columnInfo.type = columnInfo.template.type;
 
-                var name = columnInfo.name;
+                if (isTarget) {
+                    columnInfo.format = columnInfo.template.format;
+                    columnInfo.template._parentControl = this;
+                    if (columnInfo.format === undefined) {
+                        let ctrl = new columnInfo.type(columnInfo.template);
+                        columnInfo.format = ctrl.getPropertyValue("format");
+                    }
+                    if ( ! columnInfo.format)
+                        throw "The listitem control '" + columnInfo.type  + "' does not specify a format type.";
+                }
+
+                let name = columnInfo.name;
 
                 if (_.isUndefined(name))
                     throw 'columns must have a name property.';
@@ -84,9 +141,9 @@ var OptionListControl = function(params) {
                     this._realColumnInfoList.push(columnInfo);
                 }
 
-                var row = 0;
+                let row = 0;
                 if (this.showHeaders) {
-                    var hCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
+                    let hCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
                     hCell.setVerticalAlign('center');
@@ -96,7 +153,24 @@ var OptionListControl = function(params) {
                     hCell.maximumHeight = columnInfo.minHeight;
                     row += 1;
                 }
-                var fillerCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="list-item-ctrl silky-option-list-filler"> </div>'));
+                let $filler = $('<div style="white-space: nowrap;" class="list-item-ctrl silky-option-list-filler"></div>');
+                if (i === 0) {
+                    let ghostText = this.getPropertyValue("ghostText");
+                    if (ghostText !== null) {
+                        this.$ghostTextLabel = $('<div class="column-ghost-label">' + ghostText + '</div>');
+                        $filler.append(this.$ghostTextLabel);
+                    }
+
+                    let addButton = this.getPropertyValue("addButton");
+                    if (addButton !== null) {
+                        this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
+                        this.$addButton.click(() => {
+                            this.setValue(this.createNewRow(), [this._localData.length]);
+                        });
+                        $filler.append(this.$addButton);
+                    }
+                }
+                let fillerCell = this.addCell(i, row, false, $filler);
                 fillerCell.setStretchFactor(columnInfo.stretchFactor);
                 fillerCell.minimumWidth = columnInfo.minWidth;
                 fillerCell.maximumWidth = columnInfo.maxWidth;
@@ -105,54 +179,83 @@ var OptionListControl = function(params) {
 
     };
 
+    this.hasColumnWithFormat = function(format) {
+        for (let i = 0; i < this._columnInfo._list.length; i++) {
+            if (this._columnInfo._list[i].format.name === format.name) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     this._context = null;
     this.setControlManager = function(context) {
         this._context = context;
     };
 
-    this.refreshItems = function() {
-        for (let i = 0; i < this._cells.length; i++) {
-            var item = this._cells[i].item;
-            let cellInfo = this.getCellInfo(this._cells[i]);
-            if (item !== null && item.render) {
-                if (cellInfo.columnInfo.isVirtual)
-                    item.render(cellInfo.value);
-                else
-                    item.render();
-            }
-        }
-    };
-
     this.updateValueCell = function(columnInfo, dispRow, value) {
-        var dispColumn = columnInfo.index;
+        let dispColumn = columnInfo.index;
         if (dispRow === this._rowCount - 1)
             this.insertRow(dispRow, 1);
-        var cell = this.getCell(dispColumn, dispRow);
+        let cell = this.getCell(dispColumn, dispRow);
 
         if (cell === null) {
-            let format = columnInfo.format;
-            let type = columnInfo.type;
-            var params = JSON.parse(JSON.stringify(columnInfo));
-            params.type = type;
-            if (format !== undefined)
-                params.format = format;
 
-            params.valuekey = [this.displayRowToRowIndex(dispRow)];
-            if (this._realColumnInfoList.length > 1)
-                params.valuekey.push(this.rowDataAsArray ? columnInfo.index : columnInfo.name);
+            let isVirtual = columnInfo.isVirtual;
+            let params = { type: DefaultControls.Label };
 
-            var ctrl = this.createItem(value, params);
-            if (params.format === undefined)
-                columnInfo.format = ctrl.getPropertyValue('format');
+            if (isVirtual !== undefined)
+                params.isVirtual = isVirtual;
 
-            if (columnInfo.format === null)
-                throw "The listitem control '" + columnInfo.type  + "' does not specify a format type.";
+            if (columnInfo.maxWidth !== undefined)
+                params.maxWidth = columnInfo.maxWidth;
 
-            cell = this.addCell(dispColumn, dispRow, false, ctrl);
-            cell.minimumWidth = ctrl.getPropertyValue('minWidth');
-            cell.maximumWidth = ctrl.getPropertyValue('maxWidth');
-            cell.minimumHeight = ctrl.getPropertyValue('maxHeight');
-            cell.maximumHeight = ctrl.getPropertyValue('minHeight');
+            if (columnInfo.minWidth !== undefined)
+                params.minWidth = columnInfo.minWidth;
+
+            params.stretchFactor = columnInfo.stretchFactor;
+
+            params._templateInfo = { template: columnInfo.template, parent: this, name: columnInfo.name, instanceId: this.displayRowToRowIndex(dispRow) };
+
+            if (columnInfo.templateName !== undefined)
+                params._templateInfo.templateName = columnInfo.templateName;
+
+            if (columnInfo.template !== undefined)
+                _.extend(params, columnInfo.template);
+
+            let offsetKey = [this.displayRowToRowIndex(dispRow)];
+            if (this.maxItemCount === 1)
+                offsetKey = [];
+            params.itemKey = offsetKey;
+
+            if (this._realColumnInfoList.length > 1) {
+                let valueKeyOffset = [this.rowDataAsArray ? columnInfo.index : columnInfo.name];
+                if (params.valueKey !== undefined)
+                    params.valueKey = valueKeyOffset.concat(params.valueKey);
+                else
+                    params.valueKey = valueKeyOffset;
+            }
+
+            let ctrl = this._context.createControl(params, this);
+            TemplateItemControl.extendTo(ctrl);
+            this.controls.push(ctrl);
+
+            ctrl.setPropertyValue("useSingleCell", true);
+            ctrl.setPropertyValue("fitToGrid", true);
+            ctrl.setPropertyValue("verticalAlignment", "center");
+
+            cell = deepRenderToGrid(ctrl, this._context, this, dispRow, dispColumn).cell;
+            this.onListItemAdded(ctrl, this.displayRowToRowIndex(dispRow));
+
+            let hadAddButton = this.getPropertyValue("addButton") !== null;
+            if (hadAddButton) {
+                let $closeButton = $('<div class="list-item-delete-button"><span class="mif-cross"></span></div>');
+                $closeButton.click((event) => {
+                    this.getOption().removeAt(ctrl.getItemKey());
+                });
+                ctrl.$el.prepend($closeButton);
+            }
+
             cell.clickable(columnInfo.selectable);
             if (this.getPropertyValue('stripedRows')) {
                 if (this.showHeaders)
@@ -160,39 +263,26 @@ var OptionListControl = function(params) {
                 else
                     cell.$el.addClass((this.displayRowToRowIndex(dispRow) % 2 === 0) ? "odd-list-row" : "even-list-row");
             }
-
-            cell.setHorizontalAlign(ctrl.getPropertyValue('horizontalAlignment'));
-            cell.setVerticalAlign(ctrl.getPropertyValue('verticalAlignment'));
-            cell.setStretchFactor(columnInfo.stretchFactor);
-
         }
-        else if (columnInfo.isVirtual)
-            cell.item.render(value);
+        else if (columnInfo.isVirtual && cell.item.setValue)
+            cell.item.setValue(value);
+
+        let rowIndex = this.displayRowToRowIndex(dispRow);
+        this._listFilter.addValue(new FormatDef.constructor(value, columnInfo.format), rowIndex, columnInfo.name);
     };
 
-    this.createItem = function(data, params) {
+    this.onListItemAdded = function(item, index) {
+        let data = { item: item, index: index };
+        this.trigger("listItemAdded", data);
+    };
 
-        var ctrl = this._context.createSubControl(params);
-        var self = this;
-        ctrl.getDataRenderProperties = function(rdata, format, index) {
-            var properties = { root: null, sub: null };
-            var localItem = new FormatDef.constructor(data, format);
-            if (self.getSupplierItem)
-                properties = self.getSupplierItem(localItem);
-
-            return properties;
-        };
-        if (params.isVirtual === false)
-            ctrl.setOption(this.option);
-        else
-            ctrl.setParent(this);
-
-        ctrl.render(data);
-        return ctrl;
+    this.onListItemRemoved = function(item) {
+        let data = { item: item };
+        this.trigger("listItemRemoved", data);
     };
 
     this.updateDisplayRow = function(dispRow, value, onlyVirtual) {
-         var columnInfo = null;
+         let columnInfo = null;
 
          if (this._columnInfo._list.length === 1) {
              columnInfo = this._columnInfo._list[0];
@@ -200,22 +290,21 @@ var OptionListControl = function(params) {
                  this.updateValueCell(columnInfo, dispRow, value);
          }
         else {
-            var self = this;
             if (this.rowDataAsArray) {
-                var columnInfoList = self._columnInfo._list;
+                let columnInfoList = this._columnInfo._list;
                 for (let i = 0; i < value.length; i++) {
                     if (i >= columnInfoList.length)
                         break;
 
                     if (!onlyVirtual || columnInfoList[i].isVirtual)
-                        self.updateValueCell(columnInfoList[i], dispRow, value[i]);
+                        this.updateValueCell(columnInfoList[i], dispRow, value[i]);
                 }
             }
             else {
-                _.each(value, function(value, key, list) {
-                    columnInfo = self._columnInfo[key];
+                _.each(value, (value, key, list) => {
+                    columnInfo = this._columnInfo[key];
                     if (_.isUndefined(columnInfo) === false && (!onlyVirtual || columnInfo.isVirtual))
-                        self.updateValueCell(columnInfo, dispRow, value);
+                        this.updateValueCell(columnInfo, dispRow, value);
                 });
             }
         }
@@ -258,17 +347,8 @@ var OptionListControl = function(params) {
         }
     });
 
-
-    this.validateOption = function() {
-        var list = this.option.getValue();
-        if (_.isUndefined(list) || list === null)
-            this.state = 'Uninitialized';
-        else
-            this.state = 'OK';
-    };
-
     this.selectNextAvaliableItem = function(from) {
-        var cell = this.getCell(0, this.rowIndexToDisplayIndex(from >= this._localData.length ? this._localData.length - 1 : from));
+        let cell = this.getCell(0, this.rowIndexToDisplayIndex(from >= this._localData.length ? this._localData.length - 1 : from));
         this.selectCell(cell);
     };
 
@@ -281,16 +361,20 @@ var OptionListControl = function(params) {
     };
 
     this.getCellInfo = function(cell) {
-        var info = { };
+        let info = { };
 
-        var rowIndex = this.displayRowToRowIndex(cell.data.row);
+        let rowIndex = this.displayRowToRowIndex(cell.data.row);
 
         info.validInfo = true;
         info.removed = false;
         info.cell = cell;
         info.columnInfo = this._columnInfo._list[cell.data.column];
         info.listIndex = rowIndex;
-        info.valueIndex = [rowIndex];
+
+        let offsetKey = [rowIndex];
+        if (this.maxItemCount === 1)
+            offsetKey = [];
+        info.valueIndex = this.getFullKey(offsetKey);
 
         info.value = this._localData[rowIndex];
         info.isValueCell = info.value !== undefined;
@@ -316,20 +400,20 @@ var OptionListControl = function(params) {
 
     this.findEmptyProperty = function(item, format, value) {
 
-        var columns = this._columnInfo._list;
+        let columns = this._columnInfo._list;
 
-        for (var i = 0; i < columns.length; i++) {
+        for (let i = 0; i < columns.length; i++) {
 
-            var baseKey = [columns[i].name];
+            let valueKey = [columns[i].name];
             if (this.rowDataAsArray)
-                baseKey = [columns[i].index];
+                valueKey = [columns[i].index];
             if (this._columnInfo._list.length === 1)
-                baseKey = [];
+                valueKey = [];
 
-            var columnFormat = columns[i].format;
-            var formats = columnFormat.allFormats(format);
+            let columnFormat = columns[i].format;
+            let formats = columnFormat.allFormats(format);
             for (let y = 0; y < formats.length; y++) {
-                let key = baseKey.concat(formats[y].key);
+                let key = valueKey.concat(formats[y].key);
                 let subItem = this._findValueWithKey(item, key);
                 if (subItem === undefined || formats[y].format.isEmpty(subItem)) {
                     if (value !== undefined)
@@ -363,17 +447,17 @@ var OptionListControl = function(params) {
     };
 
     this.createNewRow = function() {
-        var itemPrototype = {};
+        let itemPrototype = {};
         if (this.rowDataAsArray)
             itemPrototype = [];
 
-        var columns = this._columnInfo._list;
+        let columns = this._columnInfo._list;
 
         if (columns.length === 1)
             return null;
 
-        for (var i = 0; i < columns.length; i++) {
-            var key = null;
+        for (let i = 0; i < columns.length; i++) {
+            let key = null;
             if (this.rowDataAsArray)
                 key = columns[i].index;
             else
@@ -408,7 +492,7 @@ var OptionListControl = function(params) {
             this.clearFromOption(cellInfo);
         else if (this.removeAction === "deleterow") {
             cellInfo.removed = false;
-            this.option.removeAt([cellInfo.listIndex]);
+            this.getOption().removeAt(this.getFullKey([cellInfo.listIndex]));
         }
         else {
             this.clearFromOption(cellInfo);
@@ -419,15 +503,16 @@ var OptionListControl = function(params) {
     };
 
     this.addRawToOption = function(data, cellKey, insert, format) {
-        var hasMaxItemCount = this.maxItemCount >= 0;
-        var currentCount = this.option.getLength();
-        var overrideValue = cellKey === null || insert === false;
+        let hasMaxItemCount = this.maxItemCount >= 0;
+        let option = this.getOption();
+        let currentCount = option.getLength(this.getValueKey());
+        let overrideValue = cellKey === null || insert === false;
 
         if (cellKey === null) {
-            var lastRow = this.option.getLength() - 1;
-            var emptyKey = null;
-            for (var r = 0; r <= lastRow; r++) {
-                var value = this.option.getValue(r);
+            let lastRow = option.getLength(this.getValueKey()) - 1;
+            let emptyKey = null;
+            for (let r = 0; r <= lastRow; r++) {
+                let value = this.getSourceValue([r]);
                 emptyKey = _.isUndefined(r) ? null : this.findEmptyProperty(value, format).key;
                 if (emptyKey !== null) {
                     cellKey = [r].concat(emptyKey);
@@ -443,10 +528,10 @@ var OptionListControl = function(params) {
         }
 
         if (cellKey === null)
-            cellKey = [this.option.getLength()];
+            cellKey = [option.getLength(this.getValueKey())];
 
         if (overrideValue === false || this.isRowEmpty(cellKey[0])) {
-            var newRow = this.createNewRow();
+            let newRow = this.createNewRow();
             if (newRow !== null) {
                 if (cellKey.length === 1)
                     this.findEmptyProperty(newRow, format, data);
@@ -457,10 +542,10 @@ var OptionListControl = function(params) {
             cellKey = [cellKey[0]];
         }
 
-        if (this.isSingleItem === false && hasMaxItemCount && (cellKey[0] > this.maxItemCount - 1 || (overrideValue === false && this.option.getLength() === this.maxItemCount)))
+        if (this.isSingleItem === false && hasMaxItemCount && (cellKey[0] > this.maxItemCount - 1 || (overrideValue === false && option.getLength(this.getValueKey()) === this.maxItemCount)))
             return false;
 
-        if (this.option.valueInited() === false || this.isSingleItem) {
+        if (option.valueInited() === false || this.isSingleItem) {
             cellKey = [];
             if (this.isSingleItem === false)
                 data = [data];
@@ -472,10 +557,10 @@ var OptionListControl = function(params) {
     };
 
     this.isRowEmpty = function(rowIndex) {
-        if (rowIndex >= this.option.getLength())
+        if (rowIndex >= this.getOption().getLength(this.getValueKey()))
             return true;
 
-        let value = this.option.getValue([rowIndex]);
+        let value = this.getSourceValue([rowIndex]);
         if (value === null || value === undefined)
             return true;
 
@@ -484,18 +569,21 @@ var OptionListControl = function(params) {
 
     this.formatFromCellKey = function(key) {
 
-        var columnCount = this._columnInfo._list.length;
+        let columnCount = this._columnInfo._list.length;
 
-        var arrayOfObjects = columnCount > 1 && this.rowDataAsArray === false;
-        var arrayOfArrays = columnCount > 1 && this.rowDataAsArray === true;
-        var multiDimensional = arrayOfObjects || arrayOfArrays;
-
-        if (key.length === 0)
-            return null;
+        let arrayOfObjects = columnCount > 1 && this.rowDataAsArray === false;
+        let arrayOfArrays = columnCount > 1 && this.rowDataAsArray === true;
+        let multiDimensional = arrayOfObjects || arrayOfArrays;
 
         let columnFormat = null;
 
-        if (key.length === 1) {
+        if (key.length === 0) {
+            if (this.maxItemCount === 1 && multiDimensional === false)
+                columnFormat = this._columnInfo._list[0].format;
+            else
+                return null;
+        }
+        else if (key.length === 1) {
             if (multiDimensional === false)
                 columnFormat = this._columnInfo._list[0].format;
             else
@@ -508,7 +596,7 @@ var OptionListControl = function(params) {
                 columnFormat = this._columnInfo[key[1]].format;
         }
 
-        if ((key.length === 1 && multiDimensional === false) || (key.length === 2 && multiDimensional === true))
+        if (((key.length === 0 || key.length === 1) && multiDimensional === false) || (key.length === 2 && multiDimensional === true))
             return columnFormat;
 
         return columnFormat.getFormat(key.slice(multiDimensional ? 2 : 1));
@@ -517,22 +605,52 @@ var OptionListControl = function(params) {
     //outside -> in
     this.onOptionValueInserted = function(keys, data) {
 
+        if (keys.length !== 1)
+            return;
+
         this.suspendLayout();
-        var dispRow = this.rowIndexToDisplayIndex(keys[0]);
+        let dispRow = this.rowIndexToDisplayIndex(keys[0]);
+
+        this.adjustItemBaseKeys(keys[0], 1);
+
         this.insertRow(dispRow, 1);
-        var rowData = this.realToVirtualRowData(this.option.getValue(keys[0]));
+        let rowData = this.realToVirtualRowData(this.getSourceValue([keys[0]]));
 
         this._localData.splice(keys[0], 0, this.clone(rowData));
         this.updateDisplayRow(dispRow, rowData);
+        this.updateGhostLabel();
         this.resumeLayout();
 
     };
 
+    this.adjustItemBaseKeys = function(index, by) {
+        this.applyToItems(index, (item, index) => {
+            if (item.setPropertyValue) {
+                let cellRelPath = item.getPropertyValue('itemKey').slice();
+                cellRelPath[0] += by;
+                item.setPropertyValue('itemKey', cellRelPath);
+            }
+        });
+    };
+
     this.onOptionValueRemoved = function(keys, data) {
+        if (keys.length === 1) {
+            this.disposeOfRows(keys[0], 1);
+            this._localData.splice(keys[0], 1);
+            this.updateGhostLabel();
 
-        this.disposeOfRows(keys[0], 1);
-        this._localData.splice(keys[0], 1);
+            this._listFilter.removeRow(keys[0]);
+        }
+    };
 
+    this.updateGhostLabel = function() {
+        if (this.$ghostTextLabel) {
+            if (this._localData.length === 0)
+                this.$ghostTextLabel.removeClass('hidden-ghost-label');
+            else
+                this.$ghostTextLabel.addClass('hidden-ghost-label');
+            this.$ghostTextLabel.trigger("contentchanged");
+        }
     };
 
     this.virtualDataToReal = function(data) {
@@ -587,22 +705,28 @@ var OptionListControl = function(params) {
         return obj;
     };
 
-    this.onOptionValueChanged = function(keys, data) {
-        var list = this.option.getValue();
+    this.onOptionValueChanged = function(key, data) {
+        //if (key.length > 0)
+        //    return;
+        this._listFilter.clear();
+
+        let list = [];
+        if (this.getOption() !== null)
+            list = this.getSourceValue();
 
         this.suspendLayout();
 
         if (list !== null) {
-            var oldLocalCount = this._localData.length;
+            let oldLocalCount = this._localData.length;
             let oldLocal = this._localData;
             this._localData = [];
             if (Array.isArray(list)) {
-                for (var i = 0; i < list.length; i++) {
+                for (let i = 0; i < list.length; i++) {
                     let rowData = this.realToVirtualRowData(list[i], oldLocal[i]);
                     this.updateDisplayRow(this.rowIndexToDisplayIndex(i), rowData);
                     this._localData.push(this.clone(rowData));
                 }
-                var countToRemove = oldLocalCount - this._localData.length;
+                let countToRemove = oldLocalCount - this._localData.length;
                 if (countToRemove > 0)
                     this.disposeOfRows(this._localData.length, countToRemove);
             }
@@ -617,24 +741,77 @@ var OptionListControl = function(params) {
             this._localData = [];
         }
 
+        this.updateGhostLabel();
+
         this.resumeLayout();
 
     };
 
-    this.disposeOfRows = function(rowIndex, count) {
+    this.itemCount = function() {
+        return this._rowCount - (this.showHeaders ? 1 : 0) - 1;
+    };
 
+    this.applyToItems = function(rowIndex, count, callback) {
         let displayIndex = this.rowIndexToDisplayIndex(rowIndex);
+        if (callback === undefined) {
+            callback = count;
+            count = this.itemCount() - displayIndex;
+        }
 
         for (let r = displayIndex; r < displayIndex + count; r++) {
             let rowCells = this.getRow(r);
             for (let c = 0; c < rowCells.length; c++) {
                 let cell = rowCells[c];
-                if (cell.item && cell.item.dispose)
-                    cell.item.dispose();
+                if (cell.item)
+                    callback(cell.item, this.displayRowToRowIndex(r));
             }
         }
+    };
 
+    this.testValue = function(item, rowIndex, columnName) {
+        return this._listFilter.testValue(this.getPropertyValue("valueFilter"), item.value, rowIndex, columnName);
+    };
+
+
+    this.getControls = function() {
+        return this.controls;
+    };
+
+    this.disposeOfRows = function(rowIndex, count) {
+
+        let itemsToRemove = [];
+        this.applyToItems(rowIndex, count, (item, index) => {
+            itemsToRemove.push(item);
+        });
+
+        let displayIndex = this.rowIndexToDisplayIndex(rowIndex);
         this.removeRow(displayIndex, count);
+
+        this.adjustItemBaseKeys(rowIndex, -count);
+
+        for (let i = 0; i < itemsToRemove.length; i++) {
+            let item = itemsToRemove[i];
+            this.removeControlFromList(item);
+            this.onListItemRemoved(item);
+            if (item.dispose)
+                item.dispose();
+            else {
+                throw "Item has not been disposed of properly.";
+            }
+        }
+    };
+
+    this.removeControlFromList = function(ctrl) {
+        let found = false;
+        for (let u = 0; u < this.controls.length; u++) {
+            if (this.controls[u] === ctrl) {
+                this.controls.splice(u, 1);
+                found = true;
+                break;
+            }
+        }
+        if (found === false)
+            throw 'For some reason the control was not found in the control list. Must be a bug somewhere.';
     };
 
     this.clone = function(object) {

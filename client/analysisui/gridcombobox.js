@@ -1,25 +1,26 @@
 'use strict';
 
-var $ = require('jquery');
-var GridOptionControl = require('./gridoptioncontrol');
+const $ = require('jquery');
+const GridOptionControl = require('./gridoptioncontrol');
+const FormatDef = require('./formatdef');
 
-var GridCombobox = function(params) {
+const GridCombobox = function(params) {
 
     GridOptionControl.extendTo(this, params);
 
     this.registerSimpleProperty("options", []);
+    this.registerSimpleProperty("format", FormatDef.string);
 
     this.$label = null;
 
     this.onRenderToGrid = function(grid, row, column) {
 
-        var id = this.option.getName();
-        var label = this.getPropertyValue('label');
+        let label = this.getPropertyValue('label');
         if (label === null)
-            label = this.getPropertyValue('name');
+            label = '';
 
-        var columnUsed = 0;
-        var cell = null;
+        let columnUsed = 0;
+        let cell = null;
         if (label !== "") {
             this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
             cell = grid.addCell(column, row, true, this.$label);
@@ -27,21 +28,21 @@ var GridCombobox = function(params) {
             columnUsed += 1;
         }
 
-        var options = this.getPropertyValue('options');
+        let options = this.getPropertyValue('options');
 
-        var t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
-        for (var i = 0; i < options.length; i++)
+        let t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
+        for (let i = 0; i < options.length; i++)
             t += '<option>' + options[i].label + '</option>';
         t += '</select>';
 
-        var self = this;
+        let self = this;
         this.$input = $(t);
         this.updateDisplayValue();
         this.$input.change(function(event) {
-            var select = self.$input[0];
-            var option = options[select.selectedIndex];
-            var value = option.value;
-            self.option.setValue(value);
+            let select = self.$input[0];
+            let option = options[select.selectedIndex];
+            let value = option.value;
+            self.setValue(value);
         });
 
         cell = grid.addCell(column + columnUsed, row, true, this.$input);
@@ -52,16 +53,17 @@ var GridCombobox = function(params) {
         return { height: 1, width: columnUsed };
     };
 
-    this.onOptionValueChanged = function(keys, data) {
-        this.updateDisplayValue();
+    this.onOptionValueChanged = function(key, data) {
+        if (this.$label)
+            this.updateDisplayValue();
     };
 
     this.updateDisplayValue = function() {
-        var select = this.$input[0];
-        var value = this.option.getValue();
-        var options = this.getPropertyValue('options');
-        var index = -1;
-        for (var i = 0; i < options.length; i++) {
+        let select = this.$input[0];
+        let value = this.getSourceValue();
+        let options = this.getPropertyValue('options');
+        let index = -1;
+        for (let i = 0; i < options.length; i++) {
             if (options[i].value === value) {
                 index = i;
                 break;
@@ -73,7 +75,7 @@ var GridCombobox = function(params) {
 
     this.onPropertyChanged = function(name) {
         if (name === 'enable') {
-            var enabled = this.getPropertyValue(name);
+            let enabled = this.getPropertyValue(name);
             this.$input.prop('disabled', enabled === false);
             if (this.$label !== null) {
                 if (enabled)
