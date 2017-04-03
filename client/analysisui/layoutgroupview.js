@@ -1,33 +1,82 @@
 
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
+const $ = require('jquery');
+const _ = require('underscore');
 
-var GridControl = require('./gridcontrol');
-var ControlBase = require('./controlbase');
-var ChildLayoutSupport = require('./childlayoutsupport');
-var EnumPropertyFilter = require('./enumpropertyfilter');
+const GridControl = require('./gridcontrol');
+const ChildLayoutSupport = require('./childlayoutsupport');
+const EnumPropertyFilter = require('./enumpropertyfilter');
+const FormatDef = require('./formatdef');
+const GridOptionControl = require('./gridoptioncontrol');
 
-var LayoutGroupView = function(params) {
+const LayoutGroupView = function(params) {
 
-    ControlBase.extendTo(this, params);
-    GridControl.extendTo(this);
+    let isOptionControl = params.label === undefined;
+    if (isOptionControl)
+        GridOptionControl.extendTo(this, params);
+    else
+        GridControl.extendTo(this, params);
 
-    this.registerSimpleProperty("label", "");
+    if (isOptionControl === false)
+        this.registerSimpleProperty("label", "");
+
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
     this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
+    this.registerSimpleProperty("format", FormatDef.string);
 
     this.style = this.getPropertyValue('style');
 
-    this.onRenderToGrid = function(grid, row, column) {
-        var groupText = this.getPropertyValue('label');
-        var classes = groupText === "" ? "silky-control-label-empty" : "";
-        var $header = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;">' + groupText + '</div>');
-        let cell = grid.addCell(column, row, false, $header);
-        var stretchFactor = this.getPropertyValue("stretchFactor");
-        cell.setStretchFactor(stretchFactor);
-        return { height: 1, width: 1, cell: cell };
+    let groupText = "";
+    if (isOptionControl === false)
+        groupText = this.getPropertyValue('label');
+
+    if (groupText === null)
+        groupText = "";
+
+    let classes = groupText === "" ? "silky-control-label-empty" : "";
+    this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;">' + groupText + '</div>');
+    this.$el = this.$_subel;
+
+    this.onPropertyChanged = function(name) {
+        if (isOptionControl === false) {
+            if (name === 'label')
+                this.setLabel(this.getPropertyValue(name));
+        }
+        else {
+            if (name === 'enable') {
+                let disabled = this.getPropertyValue(name) === false;
+                if (disabled)
+                    this.$_subel.addClass('disabled-text');
+                else
+                    this.$_subel.removeClass('disabled-text');
+            }
+        }
+    };
+
+    if (isOptionControl === false) {
+        this.setValue = function(value) {
+            this.setPropertyValue("label", value);
+        };
+    }
+    else {
+        this.onOptionValueChanged = function(key, data) {
+            let format = this.getPropertyValue('format');
+            this.setLabel(format.toString(this.getValue()));
+        };
+    }
+
+    this.setLabel = function(value) {
+        if (value === null)
+            value = '';
+
+        this.$_subel.text(value);
+        this.$_subel.trigger("contentchanged");
+
+        if (value === "")
+            this.$_subel.addClass("silky-control-label-empty");
+        else
+            this.$_subel.removeClass("silky-control-label-empty");
     };
 
     ChildLayoutSupport.extendTo(this);

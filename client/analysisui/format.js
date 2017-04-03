@@ -1,9 +1,9 @@
 
 'use strict';
 
-var _ = require('underscore');
+const _ = require('underscore');
 
-var Format = function(def) {
+const Format = function(def) {
 
     this.isEmpty = function(raw) {
         return raw === null;
@@ -31,7 +31,7 @@ var Format = function(def) {
         if (this.children) {
             item = { };
             for (let name in this.children) {
-                var format = this.children[name];
+                let format = this.children[name];
                 item[name] = format.create();
             }
         }
@@ -44,13 +44,13 @@ var Format = function(def) {
         return childrenList;
     };
 
-    this._allFormats = function(list, format, baseKey, equalTo) {
+    this._allFormats = function(list, format, valueKey, equalTo) {
         if (equalTo === undefined || equalTo.name === format.name)
-            list.push({ format: format, key: baseKey });
+            list.push({ format: format, key: valueKey });
 
         if (format.children) {
             for (let subItem in format.children) {
-                let subkey = baseKey.slice(0);
+                let subkey = valueKey.slice(0);
                 subkey.push(subItem);
                 let subFormat = format.children[subItem];
                 this._allFormats(list, subFormat, subkey, equalTo);

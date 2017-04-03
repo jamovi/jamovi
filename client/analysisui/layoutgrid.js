@@ -1,14 +1,14 @@
 
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
-var LayoutCell = require('./layoutcell').LayoutCell;
-var SpacerCell = require('./layoutcell').SpacerCell;
-var SuperClass = require('../common/superclass');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
+const LayoutCell = require('./layoutcell').LayoutCell;
+const SpacerCell = require('./layoutcell').SpacerCell;
+const SuperClass = require('../common/superclass');
 
-var LayoutGrid = function() {
+const LayoutGrid = function() {
 
     this.$el = $('<div class="silky-layout-grid"></div>');
     this.$el.css("position", "relative");
@@ -50,23 +50,23 @@ var LayoutGrid = function() {
     LayoutGrid.prototype._scrollbarWidth = null;
     this.getScrollbarWidth = function() {
         if (LayoutGrid.prototype._scrollbarWidth === null) {
-            var outer = document.createElement("div");
+            let outer = document.createElement("div");
             outer.style.visibility = "hidden";
             outer.style.width = "100px";
             outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
 
             document.body.appendChild(outer);
 
-            var widthNoScroll = outer.offsetWidth;
+            let widthNoScroll = outer.offsetWidth;
             // force scrollbars
             outer.style.overflow = "scroll";
 
             // add innerdiv
-            var inner = document.createElement("div");
+            let inner = document.createElement("div");
             inner.style.width = "100%";
             outer.appendChild(inner);
 
-            var widthWithScroll = inner.offsetWidth;
+            let widthWithScroll = inner.offsetWidth;
 
             // remove divs
             outer.parentNode.removeChild(outer);
@@ -78,8 +78,8 @@ var LayoutGrid = function() {
 
     this._setAsPrepared = function() {
         this._preparingLayout = false;
-        for (var i = 0; i < this._layouts.length; i++) {
-            var layout = this._layouts[i];
+        for (let i = 0; i < this._layouts.length; i++) {
+            let layout = this._layouts[i];
             layout._setAsPrepared();
         }
     };
@@ -102,8 +102,8 @@ var LayoutGrid = function() {
     this._setInvalidationFlag = function(deep) {
         this._layoutValid = false;
         if (deep) {
-            for (var j = 0; j < this._layouts.length; j++) {
-                var layout = this._layouts[j];
+            for (let j = 0; j < this._layouts.length; j++) {
+                let layout = this._layouts[j];
                 if (layout._parentCell === null || layout._parentCell.visible())
                     layout._setInvalidationFlag(deep);
             }
@@ -121,17 +121,16 @@ var LayoutGrid = function() {
                 this._hasResized = {  type: type };
         }
         else {
-            var newContent = this._initaliseContent();
+            let newContent = this._initaliseContent();
             if (this.waitingForValidation())
                 return;
 
             if (newContent) {
                 this._waitingForValidation = true;
-                var self = this;
-                window.setTimeout(function() {
-                    if (self._processCells(type, updateId))
-                        self._postProcessCells();
-                    self._waitingForValidation = false;
+                window.setTimeout(() => {
+                    if (this._processCells(type, updateId))
+                        this._postProcessCells();
+                    this._waitingForValidation = false;
                 }, 0);
             }
             else {
@@ -153,17 +152,17 @@ var LayoutGrid = function() {
 
         if (this._requiresPostProccessing) {
             if (this._postProcessCellList.length > 0) {
-                var gridWidth = null;
-                var gridHeight = null;
-                var maxFlexRow = null;
+                let gridWidth = null;
+                let gridHeight = null;
+                let maxFlexRow = null;
 
-                var vScrollSpace = (this._hasVScrollbars && this.autoSizeWidth === false) ? this.getScrollbarWidth() : 0;
-                var hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarWidth() : 0;
+                let vScrollSpace = (this._hasVScrollbars && this.autoSizeWidth === false) ? this.getScrollbarWidth() : 0;
+                let hScrollSpace = (this._hasHScrollbars && this.autoSizeHeight === false) ? this.getScrollbarWidth() : 0;
 
-                var r;
-                for (var i = 0; i < this._postProcessCellList.length; i++) {
-                    var cell = this._postProcessCellList[i];
-                    var cellData = cell.data;
+                let r;
+                for (let i = 0; i < this._postProcessCellList.length; i++) {
+                    let cell = this._postProcessCellList[i];
+                    let cellData = cell.data;
                     if (cell.isVirtual)
                         continue;
 
@@ -185,12 +184,12 @@ var LayoutGrid = function() {
                         if (gridWidth === null)
                             gridWidth = parseFloat(this.$el.css("width")) - vScrollSpace;
 
-                        var flexRow = cellData.row;
+                        let flexRow = cellData.row;
                         if (cell.spanAllRows) {
                             if (maxFlexRow === null) {
-                                var maxFlex = {row:0, flex:0 };
+                                let maxFlex = {row:0, flex:0 };
                                 for (r = 0; r < this._rowCount; r++) {
-                                    var rowFlex = this._rowStrechDetails[r].flex;
+                                    let rowFlex = this._rowStrechDetails[r].flex;
                                     if (maxFlex.flex < rowFlex)
                                         maxFlex = { row: r, flex: rowFlex };
                                 }
@@ -198,10 +197,10 @@ var LayoutGrid = function() {
                             }
                             flexRow = maxFlexRow;
                         }
-                        var rowStrechDetails = this._rowStrechDetails[flexRow];
+                        let rowStrechDetails = this._rowStrechDetails[flexRow];
 
-                        var newWidth = (gridWidth - rowStrechDetails.fixed) * (cell.horizontalStretchFactor / rowStrechDetails.flex);
-                        var oldWidth = cell.actualWidth();
+                        let newWidth = (gridWidth - rowStrechDetails.fixed) * (cell.horizontalStretchFactor / rowStrechDetails.flex);
+                        let oldWidth = cell.actualWidth();
                         cell.adjustCellWidth(newWidth);
 
                         if (cell.spanAllRows) {
@@ -222,8 +221,8 @@ var LayoutGrid = function() {
             this._postProcessCellList = [];
         }
 
-        for (var j = 0; j < this._layouts.length; j++) {
-            var layout = this._layouts[j];
+        for (let j = 0; j < this._layouts.length; j++) {
+            let layout = this._layouts[j];
             if (layout._parentCell === null || layout._parentCell.visible())
                 layout._postProcessCells();
         }
@@ -235,11 +234,11 @@ var LayoutGrid = function() {
     };
 
     this._onCellRightEdgeMove = function(cell) {
-        var r;
-        var column;
-        var mCell;
-        var rightBoundary = cell.right();
-        var rightCell = cell.rightCell();
+        let r;
+        let column;
+        let mCell;
+        let rightBoundary = cell.right();
+        let rightCell = cell.rightCell();
         if (cell.spanAllRows === false && cell.fitToGrid === false && rightCell !== null)
             this._updateRowCellPositionsFrom(rightBoundary, rightCell);
         else if (cell.spanAllRows) {
@@ -262,7 +261,7 @@ var LayoutGrid = function() {
                 if (r !== cell.data.row) {
                     column = cell.data.column;
                     mCell = this.getCell(column, r);
-                    var edge = cell.left();
+                    let edge = cell.left();
                     if (mCell === null) {
                         mCell = this.getCell(column+1, r);
                         edge = cell.right();
@@ -277,11 +276,11 @@ var LayoutGrid = function() {
     };
 
     this._updateRowCellPositionsFrom = function(rightBoundary, nextCell) {
-        var rightEdgeMove = 0;
+        let rightEdgeMove = 0;
 
         if (nextCell.left() < rightBoundary) {
-            var diff = rightBoundary - nextCell.left();
-            var roomToMove = nextCell.adjustableWidth();
+            let diff = rightBoundary - nextCell.left();
+            let roomToMove = nextCell.adjustableWidth();
              if (roomToMove === 0) {
                  nextCell.adjustCellLeft(rightBoundary);
                  rightEdgeMove = diff;
@@ -300,16 +299,16 @@ var LayoutGrid = function() {
 
     this._initaliseContent = function() {
 
-        var requiresDelay = false;
-        for (var i = 0; i < this._layouts.length; i++) {
-            var delay = this._layouts[i]._initaliseContent();
+        let requiresDelay = false;
+        for (let i = 0; i < this._layouts.length; i++) {
+            let delay = this._layouts[i]._initaliseContent();
             if (delay)
                 requiresDelay = delay;
         }
 
-        for (var j = 0; j < this._cells.length; j++) {
-            var cell = this._cells[j];
-            var cellData = cell.data;
+        for (let j = 0; j < this._cells.length; j++) {
+            let cell = this._cells[j];
+            let cellData = cell.data;
 
             if (cellData.hasContentChanged) {
                 requiresDelay = true;
@@ -344,10 +343,10 @@ var LayoutGrid = function() {
         if (this._parentCell !== null && this._parentCell.visible() === false)
             return false;
 
-        var postProcess = false;
-        for (var i = 0; i < this._layouts.length; i++) {
-            var layout = this._layouts[i];
-            var pp = layout._processCells(type, updateId);
+        let postProcess = false;
+        for (let i = 0; i < this._layouts.length; i++) {
+            let layout = this._layouts[i];
+            let pp = layout._processCells(type, updateId);
             if (pp)
                 postProcess = true;
         }
@@ -368,13 +367,13 @@ var LayoutGrid = function() {
 
     this._updateSize = function(type, updateId) {
 
-        var widthChanged = false;
-        var heightChanged = false;
+        let widthChanged = false;
+        let heightChanged = false;
 
-        var properties = { };
+        let properties = { };
 
         if (this.autoSizeHeight && this.heightControlledByParent() === false) {
-            var height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
+            let height = this._maxPreferredColumnHeight > this.preferredHeight ? this._maxPreferredColumnHeight : this.preferredHeight;
             height = (this.maximumHeight !== -1 && height > this.maximumHeight) ? this.maximumHeight : height;
             height = (this.minimumHeight !== -1 && height < this.minimumHeight) ? this.minimumHeight : height;
             if (this._oldKnownSize.height !== height) {
@@ -385,7 +384,7 @@ var LayoutGrid = function() {
         }
 
         if (this.autoSizeWidth && this.widthControlledByParent() === false) {
-            var width = this.preferredWidth;
+            let width = this.preferredWidth;
             width = (this.maximumWidth !== -1 && width > this.maximumWidth) ? this.maximumWidth : width;
             width = (this.minimumWidth !== -1 && width < this.minimumWidth) ? this.minimumWidth : width;
             if (this._oldKnownSize.width !== width) {
@@ -395,10 +394,12 @@ var LayoutGrid = function() {
             }
         }
 
+        let hadScrollBars = this._hasHScrollbars || this._hasVScrollbars;
         this._hasHScrollbars = this.autoSizeWidth === false && (this.allocateSpaceForScrollbars === true || (this._parentCell !== null && this.contentWidth > this._parentCell.actualWidth()));
         this._hasVScrollbars = this.autoSizeHeight === false && (this.allocateSpaceForScrollbars === true || (this._parentCell !== null && this.contentHeight > this._parentCell.actualHeight()));
+        let scrollbarsChanged= hadScrollBars !== (this._hasHScrollbars || this._hasVScrollbars);
 
-        var makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
+        let makeSpaceForHScroll = this._hasHScrollbars && this.autoSizeHeight;
         if (this._oldKnownSize.hScrollSpace !== makeSpaceForHScroll) {
             if (makeSpaceForHScroll)
                 properties["padding-bottom"] = this.getScrollbarWidth();
@@ -409,7 +410,7 @@ var LayoutGrid = function() {
             heightChanged = true;
         }
 
-        var makeSpaceForVScroll = this._hasVScrollbars && this.autoSizeWidth;
+        let makeSpaceForVScroll = this._hasVScrollbars && this.autoSizeWidth;
         if (this._oldKnownSize.vScrollSpace !== makeSpaceForVScroll) {
             if (makeSpaceForVScroll)
                 properties["padding-right"] = this.getScrollbarWidth();
@@ -420,20 +421,25 @@ var LayoutGrid = function() {
             widthChanged = true;
         }
 
-        var eventFired = false;
+        let eventFired = false;
         if (widthChanged || heightChanged) {
 
             this.$el.css(properties);
 
-
-            var eventType = 'both';
+            let eventType = 'both';
             if (widthChanged !== heightChanged)
                 eventType = widthChanged ? 'width' : 'height';
 
             if (this._sizesInited && this._parentCell !== null) {
-                this._parentCell.onContentSizeChanged({ type: eventType, updateId: updateId });
+                this._parentCell.onContentSizeChanged({ type: eventType, updateId: updateId }); //Invalidate up the layout tree
                 eventFired = true;
             }
+        }
+
+        if (scrollbarsChanged) {
+            setTimeout(() => {
+                this.invalidateLayout("both", Math.random(), true); //invalidate down the layout tree
+            }, 0);
         }
 
         this._sizesInited = true;
@@ -443,18 +449,18 @@ var LayoutGrid = function() {
 
     this.isLayoutVisible = function() {
 
-        var visible = this._parentCell === null || this._parentCell.visible();
+        let visible = this._parentCell === null || this._parentCell.visible();
         if (visible === false)
             return false;
 
         return this._parentLayout === null || this._parentLayout.isLayoutVisible();
     };
 
-    this.addLayout = function(column, row, fitToGrid, layoutView) {
-        var grid = layoutView;
+    this._addLayout = function(column, row, fitToGrid, layoutView) {
+        let grid = layoutView;
         layoutView.isChildLayout = true;
         this._layouts.push(grid);
-        var cell = this.addCell(column, row, fitToGrid, grid.$el);
+        let cell = this.addCell(column, row, fitToGrid, grid/*.$el*/, false);
         layoutView._parentCell = cell;
         layoutView._parentLayout = this;
 
@@ -479,7 +485,7 @@ var LayoutGrid = function() {
     this.cellFromPosition = function(x, y) {
         let sx = x + this.$el.scrollLeft();
         let sy = y + this.$el.scrollTop();
-        for (var i = 0; i < this._cells.length; i++) {
+        for (let i = 0; i < this._cells.length; i++) {
             let cell = this._cells[i];
             if (sx >= cell.left() && sx <= cell.right() && sy >= cell.top() && sy <= cell.bottom())
                 return cell;
@@ -491,18 +497,18 @@ var LayoutGrid = function() {
         cell._id = this._currentId++;
         row = this.getTranformedRow(row, column);
         column = this.getTranformedColumn(row, column);
-        if (_.isUndefined(this._orderedCells[row]))
+        if (this._orderedCells[row] === undefined)
             this._orderedCells[row] = [];
         else if (cell.spanAllRows)
             throw "This column already contains cells. Cannot add the column.";
 
-        if (_.isUndefined(this._orderedColumns[column]))
+        if (this._orderedColumns[column] === undefined)
             this._orderedColumns[column] = [];
 
-        var oldCell = this._orderedCells[row][column];
-        if (_.isUndefined(oldCell) || oldCell === null) {
+        let oldCell = this._orderedCells[row][column];
+        if (oldCell === undefined || oldCell === null) {
             this._newCellsAdded = true;
-            var cellData = { cell: cell, row: row, column: column, listIndex: this._cells.length, initialized: false, hasNewContent: true };
+            let cellData = { cell: cell, row: row, column: column, listIndex: this._cells.length, initialized: false, hasNewContent: true };
             cell.data = cellData;
             this._orderedCells[row][column] = cell;
             this._orderedColumns[column][row] = cell;
@@ -547,13 +553,41 @@ var LayoutGrid = function() {
         }
     };
 
-    this.addCell = function(column, row, fitToGrid, item) {
-        var cell = new LayoutCell(this);
+    this.addCell = function(column, row, fitToGrid, item, _layoutCheck) {
+
+        if (typeof column === 'string') {
+            if (this.getColumnIndexFromName)
+                column = this.getColumnIndexFromName(column);
+            else
+                column = -1;
+        }
+
+        if (column < 0)
+            return null;
+
+        if (typeof row === 'string') {
+            if (this.getColumnIndexFromName)
+                row = this.getRowIndexFromName(row);
+            else
+                row = -1;
+        }
+
+        if (row < 0)
+            return null;
+
+        _layoutCheck = _layoutCheck === undefined ? true : _layoutCheck;
+        //looks like a layoutGrid object
+        if (_layoutCheck && "addCell" in item && "invalidateLayout" in item)
+            return this._addLayout(column, row, fitToGrid, item);
+
+        let cell = new LayoutCell(this);
         cell.$el.addClass('silky-layout-cell');
         cell.setContent(item);
         if (this._addCellEventListeners)
             this._addCellEventListeners(cell);
         cell.fitToGrid = fitToGrid;
+
+
 
         this._add(column, row, cell);
 
@@ -576,13 +610,13 @@ var LayoutGrid = function() {
 
         cell._parentLayout = null;
 
-        var cellData = cell.data;
+        let cellData = cell.data;
 
         this._cells.splice(cellData.listIndex, 1);
         this._orderedCells[cellData.row][cellData.column] = null;
         this._orderedColumns[cellData.column][cellData.row] = null;
 
-        for (var i = cellData.listIndex; i < this._cells.length; i++)
+        for (let i = cellData.listIndex; i < this._cells.length; i++)
             this._cells[i].data.listIndex = i;
 
         if (cell.$el)
@@ -596,20 +630,20 @@ var LayoutGrid = function() {
 
     this.removeRow = function(rowIndex, count) {
 
-        count = _.isUndefined(count) ? 1 : count;
+        count = count === undefined ? 1 : count;
 
         this.suspendLayout();
-        for (var r = 0; r < count; r++) {
-            var rowCells = this.getRow(rowIndex + r);
-            for (var i = 0; i < rowCells.length; i++) {
-                var cell = rowCells[i];
+        for (let r = 0; r < count; r++) {
+            let rowCells = this.getRow(rowIndex + r);
+            for (let i = 0; i < rowCells.length; i++) {
+                let cell = rowCells[i];
                 if (cell !== null)
                     this.removeCell(cell);
             }
         }
 
-        for (var j = 0; j < this._cells.length; j++) {
-            var data = this._cells[j].data;
+        for (let j = 0; j < this._cells.length; j++) {
+            let data = this._cells[j].data;
             if (data.row > rowIndex)
                 data.row -= count;
         }
@@ -617,8 +651,8 @@ var LayoutGrid = function() {
 
         this._orderedCells.splice(rowIndex, count);
 
-        for (var c = 0; c < this._orderedColumns.length; c++) {
-            var columnCells = this._orderedColumns[c];
+        for (let c = 0; c < this._orderedColumns.length; c++) {
+            let columnCells = this._orderedColumns[c];
             columnCells.splice(rowIndex, count);
         }
 
@@ -628,14 +662,14 @@ var LayoutGrid = function() {
     };
 
     this.insertRow = function(rowIndex, count) {
-        for (var j = 0; j < this._cells.length; j++) {
-            var data = this._cells[j].data;
+        for (let j = 0; j < this._cells.length; j++) {
+            let data = this._cells[j].data;
             if (data.row >= rowIndex)
                 data.row += count;
         }
 
-        var a2 = [];
-        for (var i = 0; i < count; i++)
+        let a2 = [];
+        for (let i = 0; i < count; i++)
             a2.push([]);
 
         this._orderedCells.splice.apply(this._orderedCells, [rowIndex, 0].concat(a2));
@@ -688,12 +722,12 @@ var LayoutGrid = function() {
 
     this.getCell = function(columnIndex, rowIndex) {
 
-        var row = this._orderedCells[rowIndex];
-        if (_.isUndefined(row))
+        let row = this._orderedCells[rowIndex];
+        if (row === undefined)
             return null;
 
-        var cell = row[columnIndex];
-        if (_.isUndefined(cell) || cell === null) {
+        let cell = row[columnIndex];
+        if (cell === undefined || cell === null) {
             if (rowIndex !== 0) {
                  cell = this.getCell(columnIndex, 0);
                 if (cell !== null && cell.spanAllRows === false)
@@ -712,38 +746,38 @@ var LayoutGrid = function() {
 
     this._calculateGrid = function() {
 
-        var columnData;
+        let columnData;
 
         this._gridColumnData = [];
         this._gridRowData = [];
         this._maxPreferredColumnHeight = 0;
 
-        var top = 0;
-        var firstRow = true;
-        for (var r = 0; r < this._rowCount; r++) {
-            var left = 0;
-            var leftCell = null;
-            var topCells = [];
+        let top = 0;
+        let firstRow = true;
+        for (let r = 0; r < this._rowCount; r++) {
+            let left = 0;
+            let leftCell = null;
+            let topCells = [];
             if (_.isUndefined(this._gridRowData[r]))
                 this._gridRowData[r] = { top: top, height: 0 };
-            var rowData = this._gridRowData[r];
-            var firstCell = true;
-            for (var c = 0; c < this._columnCount; c++) {
+            let rowData = this._gridRowData[r];
+            let firstCell = true;
+            for (let c = 0; c < this._columnCount; c++) {
 
                 if (_.isUndefined(this._gridColumnData[c]))
                     this._gridColumnData[c] = { left: 0, width: 0, tight: false };
 
-                var cell = this.getCell(c, r);
+                let cell = this.getCell(c, r);
                 if (cell === null || cell.visible() === false) {
                     topCells[c] = null;
                     continue;
                 }
 
-                var preferredSize = cell.preferredSize();
+                let preferredSize = cell.preferredSize();
 
                 columnData = this._gridColumnData[c];
 
-                var cellWidth = preferredSize.width;
+                let cellWidth = preferredSize.width;
 
                 if (cell.fitToGrid) {
 
@@ -757,7 +791,7 @@ var LayoutGrid = function() {
                 }
 
                 if (cell.spanAllRows === false || this._rowCount === 1) {
-                    var rowHeight = preferredSize.height;
+                    let rowHeight = preferredSize.height;
                     if (rowData.height < rowHeight)
                         rowData.height = rowHeight;
                 }
@@ -776,9 +810,9 @@ var LayoutGrid = function() {
             firstRow = false;
         }
 
-        for (var i = 0; i < this._gridColumnData.length - 1; i++) {
+        for (let i = 0; i < this._gridColumnData.length - 1; i++) {
             columnData = this._gridColumnData[i];
-            var nextColumnData = this._gridColumnData[i + 1];
+            let nextColumnData = this._gridColumnData[i + 1];
             if (columnData.tight) {
                 if (nextColumnData.left < columnData.left + columnData.width)
                     nextColumnData.left = columnData.left + columnData.width;
@@ -790,8 +824,8 @@ var LayoutGrid = function() {
 
     this.beginCellManipulation = function() {
 
-            for (var i = 0; i < this._cells.length; i++) {
-                var cell = this._cells[i];
+            for (let i = 0; i < this._cells.length; i++) {
+                let cell = this._cells[i];
                 if (cell.isVirtual)
                     continue;
 
@@ -801,8 +835,8 @@ var LayoutGrid = function() {
 
     this.endCellManipulation = function(animate) {
 
-        for (var i = 0; i < this._cells.length; i++) {
-            var cell = this._cells[i];
+        for (let i = 0; i < this._cells.length; i++) {
+            let cell = this._cells[i];
             if (cell.isVirtual)
                 continue;
 
@@ -813,19 +847,19 @@ var LayoutGrid = function() {
 
     this._layoutGrid = function(type) {
 
-        var contentHeight = 0;
-        var contentWidth = 0;
+        let contentHeight = 0;
+        let contentWidth = 0;
         this._rowStrechDetails = [];
         this._postProcessCellList = [];
-        for (var r = 0; r < this._rowCount; r++) {
+        for (let r = 0; r < this._rowCount; r++) {
             this._rowStrechDetails[r] = { flex: 0, fixed: 0 };
-            var left = 0;
-            var top = this._gridRowData[r].top;
-            var height = this._gridRowData[r].height;
-            var allowRowOnlyStrechFactor = true;
-            var hasRowOnlyStrechFactor = false;
-            for (var c = 0; c < this._columnCount; c++) {
-                var cell = this.getCell(c, r);
+            let left = 0;
+            let top = this._gridRowData[r].top;
+            let height = this._gridRowData[r].height;
+            let allowRowOnlyStrechFactor = true;
+            let hasRowOnlyStrechFactor = false;
+            for (let c = 0; c < this._columnCount; c++) {
+                let cell = this.getCell(c, r);
                 if (cell === null || cell.visible() === false)
                     continue;
 
@@ -845,8 +879,8 @@ var LayoutGrid = function() {
 
                 left = cell.fitToGrid ? this._gridColumnData[c].left : left;
 
-                var columnWidth = this._gridColumnData[c].width;
-                var width = cell.fitToGrid ? columnWidth : cell.preferredWidth();
+                let columnWidth = this._gridColumnData[c].width;
+                let width = cell.fitToGrid ? columnWidth : cell.preferredWidth();
 
                 if (cell.isVirtual === false && (cell.spanAllRows === false || r === 0)) {
                     //if (type === 'height')

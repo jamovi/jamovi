@@ -44,6 +44,10 @@
     white-space: nowrap;
 }
 
+/*.silky-option-list .silky-control-label {
+    margin: 2px 5px 2px 5px;
+    font-weight: normal;
+}*/
 
 .silky-options-group.silky-control-margin-small {
     margin: 2px;

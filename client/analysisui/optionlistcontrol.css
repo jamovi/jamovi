@@ -29,3 +29,59 @@
 .silky-layout-cell.even-list-row {
     background-color: #E8F1FC;
 }
+
+.column-ghost-label {
+    color: #cccccc;
+    margin: 5px;
+}
+
+.hidden-ghost-label {
+    display: none;
+}
+
+.column-add-button {
+  background: #3498db;
+  background-image: linear-gradient(to bottom, #3498db, #2980b9);
+  box-shadow: 0px 1px 3px #666666;
+  color: #ffffff;
+  height: 25px;
+  margin: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.column-add-button:hover {
+  background: #3cb0fd;
+  background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+}
+
+.list-add-button {
+    font-size: 11px ;
+    color: #FFFFFF ;
+    box-sizing: border-box ;
+    text-align: center ;
+    /*vertical-align: middle ;*/
+    cursor: default ;
+    margin-right: 6px ;
+    margin-left: 6px ;
+    white-space: nowrap;
+    display: inline;
+}
+
+.list-item-delete-button {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    font-size: 11px ;
+    color: #555555 ;
+    box-sizing: border-box ;
+    text-align: center ;
+    cursor: default ;
+    padding: 2px 2px 1px 2px;
+    border: 1px solid transparent;
+    z-index: 100;
+}
+
+.list-item-delete-button:hover {
+    border: 1px solid #555555;
+}

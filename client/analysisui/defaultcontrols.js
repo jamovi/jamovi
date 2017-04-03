@@ -1,25 +1,22 @@
 'use strict';
 
-var LayoutGroupView = require('./layoutgroupview');
-var LayoutCollapseView = require('./layoutcollapseview');
-var LayoutSupplierView = require('./layoutsupplierview');
-var LayoutVariablesView = require('./layoutvariablesview');
-var GridCheckbox = require('./gridcheckbox');
-var GridRadioButton = require('./gridradiobutton');
-var GridTextbox = require('./gridtextbox');
-var GridCombobox = require('./gridcombobox');
-var GridVariablesTargetList =  require('./gridvariablestargetlist');
-var GridTargetList =  require('./gridtargetlist');
-var GridOptionListControl = require('./gridoptionlistcontrol');
-var ControlContainer = require('./controlcontainer');
-var RMAnovaFactorsControl = require('./rmanovafactorscontrol');
-var ListItemVariableLabel = require('./listitemvariablelabel');
-var ListItemCombobox = require('./listitemcombobox');
-var ListItemLabel = require('./listitemlabel');
-var ListItemTermLabel = require('./listitemtermlabel');
-var ListItemTextbox = require('./listitemtextbox');
+const LayoutCollapseView = require('./layoutcollapseview');
+const LayoutGroupView = require('./layoutgroupview');
+const LayoutSupplierView = require('./layoutsupplierview');
+const LayoutVariablesView = require('./layoutvariablesview');
+const GridCheckbox = require('./gridcheckbox');
+const GridRadioButton = require('./gridradiobutton');
+const GridTextbox = require('./gridtextbox');
+const GridCombobox = require('./gridcombobox');
+const GridOptionListControl = require('./gridoptionlistcontrol');
+const ControlContainer = require('./controlcontainer').container;
+const RMAnovaFactorsControl = require('./rmanovafactorscontrol');
+const VariableLabel = require('./variablelabel');
+const TermLabel = require('./termlabel');
+const GridTargetContainer = require('./gridtargetcontrol');
+const VariablesListBox = require('./variableslistbox');
 
-var DefaultControls = {
+const DefaultControls = {
 
     RMAnovaFactorsBox: RMAnovaFactorsControl,
     CheckBox: GridCheckbox,
@@ -27,19 +24,24 @@ var DefaultControls = {
     ComboBox: GridCombobox,
     TextBox: GridTextbox,
     ListBox: GridOptionListControl,
-    TargetListBox: GridTargetList,
-    VariableTargetListBox: GridVariablesTargetList,
+    TargetLayoutBox: GridTargetContainer,
+    VariablesListBox: VariablesListBox,
+    TargetListBox: function() { return "TargetListBox is no longer used."; },
+    VariableTargetListBox: function() { return "VariableTargetListBox is no longer used."; },
     Supplier: LayoutSupplierView,
     VariableSupplier: LayoutVariablesView,
     CollapseBox: LayoutCollapseView,
     Label: LayoutGroupView,
     LayoutBox: ControlContainer,
-    ListItem : {
-        VariableLabel: ListItemVariableLabel,
-        ComboBox: ListItemCombobox,
-        Label: ListItemLabel,
-        TermLabel: ListItemTermLabel,
-        TextBox: ListItemTextbox
+    VariableLabel: VariableLabel,
+    TermLabel: TermLabel,
+
+    ListItem: {//Not to be used, no longer supported
+        TextBox: GridTextbox, //Not to be used, no longer supported
+        ComboBox: GridCombobox, //Not to be used, no longer supported
+        TermLabel: TermLabel, //Not to be used, no longer supported
+        VariableLabel:VariableLabel, //Not to be used, no longer supported
+        Label: LayoutGroupView //Not to be used, no longer supported
     }
 };
 

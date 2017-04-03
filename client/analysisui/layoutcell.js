@@ -1,12 +1,12 @@
 
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
-var SuperClass = require('../common/superclass');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
+const SuperClass = require('../common/superclass');
 
-var LayoutCell = function(parent) {
+const LayoutCell = function(parent) {
 
 
     this.$el = $('<div style="opacity: 0" class="not-rendered"></div>');
@@ -39,25 +39,23 @@ var LayoutCell = function(parent) {
     this._top = -1;
     this._parentLayout = parent;
 
-    var self = this;
-
     this.blockInsert = function(direction) {
         if (parent.editable)
             this.$el.css("border-" + direction + "-style", "none");
     };
 
-    this.onMouseDown = function(event) {
-        var ctrlKey = event.ctrlKey;
+    this.onMouseDown = (event) => {
+        let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
-        self.trigger('layoutcell.mousedown', ctrlKey, event.shiftKey);
+        this.trigger('layoutcell.mousedown', ctrlKey, event.shiftKey);
     };
 
-    this.onMouseUp = function(event) {
-        var ctrlKey = event.ctrlKey;
+    this.onMouseUp = (event) => {
+        let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
-        self.trigger('layoutcell.mouseup', ctrlKey, event.shiftKey);
+        this.trigger('layoutcell.mouseup', ctrlKey, event.shiftKey);
     };
 
     this.clickable = function(value) {
@@ -86,9 +84,9 @@ var LayoutCell = function(parent) {
         return this._selected;
     };
 
-    this.onContentChangedEvent = function(event) {
-        self.data.hasContentChanged = true;
-        self.onContentSizeChanged({type: "both"});
+    this.onContentChangedEvent = (event) => {
+        this.data.hasContentChanged = true;
+        this.onContentSizeChanged({type: "both"});
     };
 
     this.setContent = function(item) {
@@ -101,7 +99,7 @@ var LayoutCell = function(parent) {
 
         this.item = item;
         if (item !== null && item.$el)
-            this.$content = item.$el;
+            this.$content = item.$el_cell !== undefined ? item.$el_cell : item.$el;
         else
             this.$content = item;
 
@@ -129,12 +127,13 @@ var LayoutCell = function(parent) {
 
     this.onContentSizeChanged = function(data) {
 
-        self.invalidateContentSize();
+        this.invalidateContentSize();
 
         if (_.isUndefined(data.updateId))
             data.updateId = Math.random();
 
-        self._parentLayout.invalidateLayout(data.type, data.updateId);
+        if (this._parentLayout !== null)
+            this._parentLayout.invalidateLayout(data.type, data.updateId);
     };
 
     this.render = function() {
@@ -145,6 +144,8 @@ var LayoutCell = function(parent) {
         }
 
         if (this.$content) {
+            if (this.$content.css === undefined)
+                this.$content = null;
             this.$content.css( "position", "absolute");
             this.$el.append(this.$content);
         }
@@ -190,8 +191,8 @@ var LayoutCell = function(parent) {
         if (this._preferredWidth === -1) {
             if (this.cssProperties === null)
                 this.refreshCSSProperties();
-            //var properties = this.$el.css(["padding-left", "padding-right", "border-left-width", "border-right-width"]);
-            var contentSpace = (this.dockContentWidth || (this.horizontalStretchFactor > 0)) ? 0 : this.contentWidth();
+            //let properties = this.$el.css(["padding-left", "padding-right", "border-left-width", "border-right-width"]);
+            let contentSpace = (this.dockContentWidth || (this.horizontalStretchFactor > 0)) ? 0 : this.contentWidth();
             this._preferredWidth =  contentSpace + this.cssProperties["padding-left"] + this.cssProperties["padding-right"] + this.cssProperties["border-left-width"] + this.cssProperties["border-right-width"];
         }
         return this._preferredWidth;
@@ -214,9 +215,9 @@ var LayoutCell = function(parent) {
 
     this.contentWidth = function() {
         if (this._contentWidth === -1) {
-            var f = this.$content[0].getBoundingClientRect().width;
+            let f = this.$content[0].getBoundingClientRect().width;
             if (this.ignoreContentMargin_left === false || this.ignoreContentMargin_right === false) {
-                var properties = this.$content.css(["margin-left", "margin-right"]);
+                let properties = this.$content.css(["margin-left", "margin-right"]);
                 if (this.ignoreContentMargin_left === false)
                     f += parseFloat(properties["margin-left"]);
                 if (this.ignoreContentMargin_right === false)
@@ -230,9 +231,9 @@ var LayoutCell = function(parent) {
 
     this.contentHeight = function() {
         if (this._contentHeight === -1) {
-            var f = this.$content[0].getBoundingClientRect().height;
+            let f = this.$content[0].getBoundingClientRect().height;
             if (this.ignoreContentMargin_top === false || this.ignoreContentMargin_bottom === false) {
-                var properties = this.$content.css(["margin-top", "margin-bottom"]);
+                let properties = this.$content.css(["margin-top", "margin-bottom"]);
                 if (this.ignoreContentMargin_top === false)
                     f += parseFloat(properties["margin-top"]);
                 if (this.ignoreContentMargin_bottom === false)
@@ -315,19 +316,19 @@ var LayoutCell = function(parent) {
     };
 
     this.updateContentHorizontalAlignment = function(cellWidth) {
-        var properties = null;
-        var innerWidth = null;
+        let properties = null;
+        let innerWidth = null;
 
         if (this.cssProperties === null)
             this.refreshCSSProperties();
 
-        var left = null;
-        var width = null;
+        let left = null;
+        let width = null;
 
         if (this.dockContentWidth) {
             innerWidth = cellWidth - this.cssProperties["padding-left"] - this.cssProperties["padding-right"] - this.cssProperties["border-left-width"] - this.cssProperties["border-right-width"];
 
-            var contentProperties = this.$content.css(["padding-left", "padding-right", "margin-left", "margin-right", "border-left-width", "border-right-width"]);
+            let contentProperties = this.$content.css(["padding-left", "padding-right", "margin-left", "margin-right", "border-left-width", "border-right-width"]);
             left = this.cssProperties["padding-left"];
             width = innerWidth - parseFloat(contentProperties["margin-left"]) - parseFloat(contentProperties["margin-right"]) - parseFloat(contentProperties["padding-left"]) - parseFloat(contentProperties["padding-right"]) - parseFloat(contentProperties["border-left-width"]) - parseFloat(contentProperties["border-right-width"]);
         }
@@ -343,7 +344,7 @@ var LayoutCell = function(parent) {
         }
 
         if (this.ignoreContentMargin_left || this.ignoreContentMargin_right) {
-            var margins = this.$content.css(["margin-left", "margin-right"]);
+            let margins = this.$content.css(["margin-left", "margin-right"]);
             if (this.ignoreContentMargin_left) {
                 if (left !== null)
                     left -= parseFloat(margins["margin-left"]);
@@ -363,19 +364,19 @@ var LayoutCell = function(parent) {
     };
 
     this.updateContentVerticalAlignment = function(cellHeight) {
-        var properties = null;
-        var innerHeight = null;
+        let properties = null;
+        let innerHeight = null;
 
         if (this.cssProperties === null)
             this.refreshCSSProperties();
 
-        var top = null;
-        var height = null;
+        let top = null;
+        let height = null;
 
         if (this.dockContentHeight) {
             innerHeight = cellHeight - this.cssProperties["padding-top"] - this.cssProperties["padding-bottom"] - this.cssProperties["border-top-width"] - this.cssProperties["border-bottom-width"];
 
-            var contentProperties = this.$content.css(["padding-top", "padding-bottom", "margin-top", "margin-bottom", "border-top-width", "border-bottom-width"]);
+            let contentProperties = this.$content.css(["padding-top", "padding-bottom", "margin-top", "margin-bottom", "border-top-width", "border-bottom-width"]);
             top = this.cssProperties["padding-top"];
             height = innerHeight - parseFloat(contentProperties["margin-top"]) - parseFloat(contentProperties["margin-bottom"]) - parseFloat(contentProperties["padding-top"]) - parseFloat(contentProperties["padding-bottom"]) - parseFloat(contentProperties["border-top-width"]) - parseFloat(contentProperties["border-bottom-width"]);
         }
@@ -391,7 +392,7 @@ var LayoutCell = function(parent) {
         }
 
         if (this.ignoreContentMargin_top || this.ignoreContentMargin_bottom) {
-            var margins = this.$content.css(["margin-top", "margin-bottom"]);
+            let margins = this.$content.css(["margin-top", "margin-bottom"]);
             if (this.ignoreContentMargin_top) {
                 if (top !== null)
                     top -= parseFloat(margins["margin-top"]);
@@ -425,8 +426,8 @@ var LayoutCell = function(parent) {
     };
 
     this.rightCell = function() {
-        var cell = null;
-        var c = this.data.column + 1;
+        let cell = null;
+        let c = this.data.column + 1;
         if (c < this._parentLayout._columnCount) {
 
             do {
@@ -443,8 +444,8 @@ var LayoutCell = function(parent) {
     };
 
     this.leftCell = function() {
-        var cell = null;
-        var c = this.data.column - 1;
+        let cell = null;
+        let c = this.data.column - 1;
         if (c < this._parentLayout._columnCount) {
 
             do {
@@ -462,13 +463,13 @@ var LayoutCell = function(parent) {
 
     this.adjustableWidth = function() {
 
-        var diff = this.preferredWidth() - this.actualWidth();
+        let diff = this.preferredWidth() - this.actualWidth();
         return diff < 0 ? 0 : diff;
     };
 
     this.adjustableHeight = function() {
 
-        var diff = this.preferredHeight() - this.actualHeight();
+        let diff = this.preferredHeight() - this.actualHeight();
         return diff < 0 ? 0 : diff;
     };
 
@@ -481,8 +482,8 @@ var LayoutCell = function(parent) {
     };
 
     this.checkForHeightDiscrepancy = function() {
-        var oldPreferedHeight = this._preferredHeight;
-        //var oldPreferedWidth = this._preferredWidth;
+        let oldPreferedHeight = this._preferredHeight;
+        //let oldPreferedWidth = this._preferredWidth;
 
         //this._preferredWidth = -1;
         this._preferredHeight = -1;
@@ -499,7 +500,7 @@ var LayoutCell = function(parent) {
         if (this._manipulating > 0)
             return;
 
-        var data = {};
+        let data = {};
         if (this._leftAdjusted)
             data.left = this._left;
         if (this._topAdjusted)
@@ -519,11 +520,11 @@ var LayoutCell = function(parent) {
 
         if (this._initialized === false)
         {
-            window.setTimeout(function() {
-                self.$el.removeClass("not-rendered");
-                self.$el.addClass("rendered");
-                if (self._visible)
-                    self.$el.css("opacity", 1);
+            window.setTimeout(() => {
+                this.$el.removeClass("not-rendered");
+                this.$el.addClass("rendered");
+                if (this._visible)
+                    this.$el.css("opacity", 1);
             }, 0);
         }
 
@@ -553,6 +554,9 @@ var LayoutCell = function(parent) {
     };
 
     this.setStretchFactor = function(factor) {
+        if (factor === this.horizontalStretchFactor)
+            return;
+
         this.horizontalStretchFactor = factor;
 
         this.dockContentWidth = this.horizontalStretchFactor > 0 && this.hAlign === "left";
@@ -610,7 +614,7 @@ var LayoutCell = function(parent) {
 
 SuperClass.create(LayoutCell);
 
-var SpacerCell = function(width, height, fitToGrid) {
+const SpacerCell = function(width, height, fitToGrid) {
 
     this._initalHeight = height;
     this._initalWidth = width;

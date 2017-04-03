@@ -1,18 +1,4 @@
 
-@import (inline) "../lib/metro-icons.css";
-@import (inline) "controlcontainer.css";
-@import (inline) "optionlistcontrol.css";
-@import (inline) "layoutgroupview.css";
-@import (inline) "layoutvariablesview.css";
-@import (inline) "layoutcollapseview.css";
-@import (inline) "gridcheckbox.css";
-@import (inline) "gridradiobutton.css";
-@import (inline) "gridtextbox.css";
-@import (inline) "gridcombobox.css";
-@import (inline) "rmanovafactorscontrol.css";
-@import (inline) "gridvariablestargetlist.css";
-@import (inline) "gridtargetlist.css";
-
 
 * {
     user-select: none ;
@@ -71,8 +57,10 @@ h1 {
     margin: 5px;
 }
 
-.silky-list-item-label {
-    margin: 2px 5px 2px 5px;
+.hasStretchFactor {
+    border-style: solid;
+    border-width: 1px;
+    border-color: red;
 }
 
 .silky-list-item-textbox {
@@ -155,23 +143,6 @@ h1 {
     padding-top: 3px;
     padding-bottom: 3px;
     vertical-align: middle ;
-}
-
-.rma-cell-measure-ctrl .silky-format-variable {
-    font-size: 100% ;
-    padding-left: 5px;
-    padding-top: 3px;
-    padding-bottom: 0px;
-    vertical-align: middle ;
-}
-
-.rma-cell-measure-ctrl .silky-format-rma-cell {
-    font-size: 80% ;
-    padding-right: 3px;
-    padding-top: 0px;
-    padding-bottom: 3px;
-    vertical-align: middle ;
-    float: right;
 }
 
 .silky-list-item .silky-list-item-value {
@@ -267,6 +238,10 @@ h1 {
     overflow-x: hidden;
 }
 
+.silky-layout-grid.multi-item.auto-size {
+    overflow-y: hidden;
+}
+
 .silky-layout-grid.multi-item.smallest-size {
     height: 32px; //27px + 5 for end insert space
 }
@@ -359,3 +334,43 @@ input[type=text].silky-option-listitem:focus {
 .top-level {
     margin-bottom: 20px;
 }
+
+.rmcell-template {
+    border-bottom: 1px solid #eaeaea;
+}
+
+.rmcell-template .silky-control-label {
+    font-size: 80% ;
+    padding-right: 3px;
+    padding-top: 0px;
+    padding-bottom: 3px;
+}
+
+.rmcell-template .silky-option-list {
+    border-style: none;
+    height: 22px;
+}
+
+.linreg-block-template {
+    border-bottom: 1px solid #eaeaea;
+}
+
+.linreg-block-template .silky-option-list {
+    border-style: none;
+}
+
+
+@import (inline) "../lib/metro-icons.css";
+@import (inline) "controlcontainer.css";
+@import (inline) "optionlistcontrol.css";
+@import (inline) "layoutgroupview.css";
+@import (inline) "layoutvariablesview.css";
+@import (inline) "layoutcollapseview.css";
+@import (inline) "gridcheckbox.css";
+@import (inline) "gridradiobutton.css";
+@import (inline) "gridtextbox.css";
+@import (inline) "gridcombobox.css";
+@import (inline) "rmanovafactorscontrol.css";
+@import (inline) "gridvariablestargetlist.css";
+@import (inline) "gridtargetcontrol.css";
+@import (inline) "gridcontrol.css";

@@ -1,14 +1,24 @@
 'use strict';
 
-var $ = require('jquery');
-var _ = require('underscore');
-var FormatDef = require('./formatdef');
-var GridTargetList = require('./gridtargetlist');
+const $ = require('jquery');
+const FormatDef = require('./formatdef');
+const GridOptionListControl = require('./gridoptionlistcontrol');
 const RequestDataSupport = require('./requestdatasupport');
+const SuperClass = require('../common/superclass');
+let DefaultControls;
 
-var GridVariablesTargetList = function(params) {
-    GridTargetList.extendTo(this, params);
+const VariablesListBox = function(params) {
+
+    if (params.columns === undefined) {
+        if (!DefaultControls)
+            DefaultControls = require('./defaultcontrols');
+        params.template = { type: DefaultControls.VariableLabel };
+    }
+
+    GridOptionListControl.extendTo(this, params);
     RequestDataSupport.extendTo(this);
+
+    this.registerSimpleProperty("format", FormatDef.variables);
 
     this._suggestedVariableTypes = [];
     this._permittedVariableTypes = [];
@@ -31,19 +41,26 @@ var GridVariablesTargetList = function(params) {
         return null;
     };
 
-    this.onOptionSet = function(option) {
+    this._override("onOptionSet", (baseFunction, option) => {
+
+        if (baseFunction !== null)
+            baseFunction.call(this, option);
+
+        if (option === null)
+            return;
+
         var properties = this.searchForVariableProperties(option.getProperties());
 
         this._suggestedVariableTypes = properties.suggested;
-        if (_.isUndefined(this._suggestedVariableTypes))
+        if (this._suggestedVariableTypes === undefined)
             this._suggestedVariableTypes = [];
         this._permittedVariableTypes = properties.permitted;
-        if (_.isUndefined(this._permittedVariableTypes))
+        if (this._permittedVariableTypes === undefined)
             this._permittedVariableTypes = [];
 
         if (this._rendered)
-            self._renderSuggestedIcons();
-    };
+            this._renderSuggestedIcons();
+    });
 
     this._renderSuggestedIcons = function() {
         if (this._suggestedVariableTypes.length > 0) {
@@ -53,7 +70,7 @@ var GridVariablesTargetList = function(params) {
             }
 
             this.checkScrollBars();
-            this.targetGrid._parentCell.$el.append(this.$icons);
+            this._parentCell.$el.append(this.$icons);
         }
     };
 
@@ -61,12 +78,12 @@ var GridVariablesTargetList = function(params) {
         setTimeout(() => {
             if (this.$icons) {
                 var rightValue = 3;
-                if (this.targetGrid.hasVScrollbar())
-                    rightValue += this.targetGrid.getScrollbarWidth();
+                if (this.hasVScrollbar())
+                    rightValue += this.getScrollbarWidth();
 
-                var bottomValue = parseFloat(this.targetGrid.$el.css("bottom")) + 3;
-                if (this.targetGrid.hasHScrollbar())
-                    bottomValue += this.targetGrid.getScrollbarWidth();
+                var bottomValue = parseFloat(this.$el.css("bottom")) + 3;
+                if (this.hasHScrollbar())
+                    bottomValue += this.getScrollbarWidth();
 
                 this.$icons.css("bottom", bottomValue);
                 this.$icons.css("right", rightValue);
@@ -74,28 +91,27 @@ var GridVariablesTargetList = function(params) {
         }, 0);
     };
 
-    var self = this;
-    this._override('onRenderToGrid', function(baseFunction, grid, row, column) {
-        var returnValue = baseFunction.call(self, grid, row, column);
+    this._override('addedContentToCell', (baseFunction, cell) => {
+        if (baseFunction !== null)
+            baseFunction.call(this, cell);
 
-        self.targetGrid.on('layoutgrid.validated', () => { this.checkScrollBars(); } );
-        self.targetGrid.$el.addClass("silky-variable-target");
-        if (self.option !== null)
-            self._renderSuggestedIcons();
-        self._rendered = true;
-        return returnValue;
+        this.on('layoutgrid.validated', () => { this.checkScrollBars(); } );
+        this.$el.addClass("silky-variable-target");
+        if (this.getOption() !== null)
+            this._renderSuggestedIcons();
+        this._rendered = true;
     });
 
-    this._override('testValue', function(baseFunction, item, rowIndex, columnName) {
-        var allowItem = true;
+    this._override('testValue', (baseFunction, item, rowIndex, columnName) => {
+        let allowItem = true;
         if (baseFunction !== null) {
-            allowItem = baseFunction.call(self, item, rowIndex, columnName);
+            allowItem = baseFunction.call(this, item, rowIndex, columnName);
             if (!allowItem)
                 return allowItem;
         }
 
         var itemValue = item.value;
-        if (itemValue.format.name === 'variable')
+        if (itemValue.format.name === 'variable' && item.properties !== undefined)
             allowItem = this._checkIfVariableTypeAllowed(item.properties.type);
 
         if (!allowItem)
@@ -105,7 +121,7 @@ var GridVariablesTargetList = function(params) {
     });
 
     this._checkIfVariableTypeAllowed = function(type) {
-        var allowItem = true;
+        let allowItem = true;
         if (this._permittedVariableTypes.length > 0) {
             allowItem = false;
             for (let i = 0; i < this._permittedVariableTypes.length; i++) {
@@ -128,5 +144,5 @@ var GridVariablesTargetList = function(params) {
         }, 500);
     };
 };
-
-module.exports = GridVariablesTargetList;
+SuperClass.create(VariablesListBox);
+module.exports = VariablesListBox;

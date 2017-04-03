@@ -1,15 +1,15 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
+const _ = require('underscore');
+const $ = require('jquery');
 const Framesg = require('framesg').default;
-var Backbone = require('backbone');
+const Backbone = require('backbone');
 Backbone.$ = $;
 
-var SilkyView = require('./view');
+const SilkyView = require('./view');
 
 
-var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
+const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     _.extend(this, Backbone.Events);
 
@@ -21,7 +21,7 @@ var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.key = analysis.ns + '-' + analysis.name;
 
-    var element = '<iframe id="' + this.key + '" \
+    let element = '<iframe id="' + this.key + '" \
             name="' + this.key + '" \
             sandbox="allow-scripts allow-same-origin" \
             src="' + iframeUrl + instanceId + '/" \
@@ -40,9 +40,9 @@ var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         },
 
         onFrameMouseEvent: data => {
-            var event = $.Event( data.eventName, data);
+            let event = $.Event( data.eventName, data);
 
-            var pos = $('iframe.silky-options-control').offset();
+            let pos = $('iframe.silky-options-control').offset();
 
             event.pageX += pos.left;
             event.pageY += pos.top;
@@ -105,12 +105,12 @@ var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         this.frameComms.send("dataChanged", { dataType: dataType, dataInfo: dataInfo });
     };
 
-    var notifyAborted;
+    let notifyAborted;
     this.notifyDocumentReady = null;
 
     this.ready = Promise.all([
         new Promise((resolve, reject) => {
-            var url = 'analyses/' + analysis.ns + '/' + analysis.name;
+            let url = 'analyses/' + analysis.ns + '/' + analysis.name;
             return $.get(url, (script) => {
                 this.def = script;
                 resolve(script);
@@ -129,7 +129,7 @@ var AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
     };
 };
 
-var OptionsPanel = SilkyView.extend({
+let OptionsPanel = SilkyView.extend({
 
     initialize: function(args) {
 
@@ -149,8 +149,8 @@ var OptionsPanel = SilkyView.extend({
     setAnalysis: function(analysis) {
 
         let analysesKey = analysis.ns + "-" + analysis.name;
-        var resources = this._analysesResources[analysesKey];
-        var createdNew = false;
+        let resources = this._analysesResources[analysesKey];
+        let createdNew = false;
 
         if (_.isUndefined(resources)) {
             resources = new AnalysisResources(analysis, this.$el, this.iframeUrl, this.model.instanceId());
@@ -167,7 +167,7 @@ var OptionsPanel = SilkyView.extend({
             this._currentResources = null;
         }
 
-        //var context = { columns: this.dataSetModel.get('columns') };
+        //let context = { columns: this.dataSetModel.get('columns') };
         resources.ready.then(function() {
             resources.updateData(analysis.options.getValues());
         });
@@ -212,13 +212,13 @@ var OptionsPanel = SilkyView.extend({
         if (this._currentResources === null)
             return;
 
-        var $frame = this._currentResources.$frame;
-        var pos = $frame.position();
+        let $frame = this._currentResources.$frame;
+        let pos = $frame.position();
 
-        var properties = this.$el.css(["height", "padding-top", "padding-bottom", "border-top", "border-bottom"]);
-        var height = parseFloat(properties.height) - parseFloat(properties["padding-top"]) - parseFloat(properties["padding-bottom"]) - parseFloat(properties["border-top"]) - parseFloat(properties["border-bottom"]);
+        let properties = this.$el.css(["height", "padding-top", "padding-bottom", "border-top", "border-bottom"]);
+        let height = parseFloat(properties.height) - parseFloat(properties["padding-top"]) - parseFloat(properties["padding-bottom"]) - parseFloat(properties["border-top"]) - parseFloat(properties["border-bottom"]);
 
-        var value = height - pos.top;
+        let value = height - pos.top;
 
         $frame.css("height", value);
     },

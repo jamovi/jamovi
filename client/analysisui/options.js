@@ -1,13 +1,13 @@
 
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
-var Opt = require('./option');
+const Opt = require('./option');
 
-var keyedQueue = function() {
+const keyedQueue = function() {
 
     this.map = {};
     this._hasEvents = false;
@@ -25,7 +25,7 @@ var keyedQueue = function() {
 
     this.push = function(key, obj) {
         this._hasEvents = true;
-        var oldData = this.map[key];
+        let oldData = this.map[key];
         if (_.isUndefined(oldData) || obj.type === 'change' && this.getKeyLevel(obj.keys) === 0) {
             this.map[key] = { option: obj.option, events: [ obj ] };
             return;
@@ -38,10 +38,10 @@ var keyedQueue = function() {
         if (k2.length > newKey.length || newKey.length === 0)
             return { same: false, sibling: false };
 
-        for (var i = 0; i < newKey.length; i++) {
+        for (let i = 0; i < newKey.length; i++) {
             if (i === newKey.length.length - 1) {
-                var isIndex = typeof(newKey[i]) === 'number';
-                var sameType = typeof(newKey[i]) === typeof(k2[i]);
+                let isIndex = typeof(newKey[i]) === 'number';
+                let sameType = typeof(newKey[i]) === typeof(k2[i]);
                 if (sameType && newKey[i] === k2[i])
                     return { same: true, sibling: true, distance: 0 };
                 else if (sameType && isIndex)
@@ -64,9 +64,9 @@ var keyedQueue = function() {
             return;
         }
 
-        var lastItem = oldData[startIndex];
-        var compare = this.compareKeys(obj.keys, lastItem.keys);
-        var unsafeDirection = -1;
+        let lastItem = oldData[startIndex];
+        let compare = this.compareKeys(obj.keys, lastItem.keys);
+        let unsafeDirection = -1;
         if (obj.type === 'change')
             unsafeDirection = 1;
 
@@ -92,7 +92,7 @@ var keyedQueue = function() {
     };
 };
 
-var Options = function(def) {
+const Options = function(def) {
 
     _.extend(this, Backbone.Events);
 
@@ -104,13 +104,13 @@ var Options = function(def) {
     this._serverQueuedEvents = new keyedQueue();
 
     this.initialize = function(def) {
-        for (var i = 0;i < def.length; i++) {
-            var item = def[i];
+        for (let i = 0;i < def.length; i++) {
+            let item = def[i];
 
             if (item.default === undefined)
                 item.default = null;
-                
-            var option = new Opt(item.type, item.default, item);
+
+            let option = new Opt(item.default, item);
 
             this._list.push(option);
         }
@@ -129,7 +129,7 @@ var Options = function(def) {
 
     this.getOption = function(name) {
 
-        var list = this._list;
+        let list = this._list;
 
         if ( ! list)
             return null;
@@ -137,13 +137,13 @@ var Options = function(def) {
         if ($.isNumeric(name))
             return list[name];
 
-        var option = this._refList[name];
+        let option = this._refList[name];
 
-        if (_.isUndefined(option) === true) {
+        if (option === undefined) {
             option = null;
-            var i = this._refListIndex;
+            let i = this._refListIndex;
             for (; i < list.length; i++) {
-                var optObj = list[i];
+                let optObj = list[i];
                 this._refList[optObj.name] = optObj;
                 if (optObj.name === name) {
                     option = optObj;
@@ -173,8 +173,8 @@ var Options = function(def) {
                 eventParams = Options.getDefaultEventParams();
         }
 
-        var option = null;
-        if (_.isUndefined(name.type) === false)
+        let option = null;
+        if (name._value !== undefined && name._initialized !== undefined)
             option = name;
         else
             option = this.getOption(name);
@@ -182,7 +182,7 @@ var Options = function(def) {
         if (option === null || !option.setValue)
             return false;
 
-        var eOpt = Opt.getDefaultEventParams();
+        let eOpt = Opt.getDefaultEventParams();
         eOpt.force = eventParams.force;
 
         if (option.setValue(value, keys, eOpt) && eventParams.silent === false)
@@ -196,13 +196,13 @@ var Options = function(def) {
         if (_.isUndefined(eventParams))
             eventParams = Options.getDefaultEventParams();
 
-        var option = null;
-        if (_.isUndefined(name.type) === false)
+        let option = null;
+        if (name._value !== undefined && name._initialized !== undefined)
             option = name;
         else
             option = this.getOption(name);
 
-        var eOpt = Opt.getDefaultEventParams("inserted");
+        let eOpt = Opt.getDefaultEventParams("inserted");
         eOpt.force = eventParams.force;
 
         if (option.insertValueAt(value, keys, eOpt) && eventParams.silent === false)
@@ -214,13 +214,13 @@ var Options = function(def) {
         if (_.isUndefined(eventParams))
             eventParams = Options.getDefaultEventParams();
 
-        var option = null;
-        if (_.isUndefined(name.type) === false)
+        let option = null;
+        if (name._value !== undefined && name._initialized !== undefined)
             option = name;
         else
             option = this.getOption(name);
 
-        var eOpt = Opt.getDefaultEventParams("removed");
+        let eOpt = Opt.getDefaultEventParams("removed");
         eOpt.force = eventParams.force;
 
         if (option.removeAt(keys, eOpt) && eventParams.silent === false)

@@ -1,26 +1,37 @@
 
 'use strict';
 
-var SuperClass = { };
+const SuperClass = { };
 
 SuperClass.superClasses = { };
 
-SuperClass._addOverrideAbility = function(target) {
+SuperClass._addInheritanceFunctionality = function(target) {
     target._override = function(functionName, callback) {
-        var baseFunction = this[functionName];
+        let baseFunction = this[functionName];
         if (!baseFunction)
             baseFunction = null;
 
-        var self = this;
-        this[functionName] = function(_param1, _param2, _param3, _param4, _param5, _param6, _param7) {
-            return callback.call(self, baseFunction, _param1, _param2, _param3, _param4, _param5, _param6, _param7);
+        this[functionName] = (_param1, _param2, _param3, _param4, _param5, _param6, _param7) => {
+            return callback.call(this, baseFunction, _param1, _param2, _param3, _param4, _param5, _param6, _param7);
         };
+    };
+
+    target._isInheritedFrom = function(_class) {
+        let className = _class.name.replace(".", "#");
+
+        for (let i = 0; i < this._inheritedClasses.length; i++) {
+            let scid = this._inheritedClasses[i];
+            if (scid === className)
+                return true;
+        }
+
+        return false;
     };
 };
 
 SuperClass.create = function(_class) {
 
-    var className = _class.name.replace(".", "#");
+    let className = _class.name.replace(".", "#");
 
     if (className in SuperClass.superClasses)
         throw "This name is already used for a superclass.";
@@ -29,11 +40,11 @@ SuperClass.create = function(_class) {
 
         if (!target._inheritedClasses) {
             target._inheritedClasses = [];
-            SuperClass._addOverrideAbility(target);
+            SuperClass._addInheritanceFunctionality(target);
         }
         else {
             for (let i = 0; i < target._inheritedClasses.length; i++) {
-                var scid = target._inheritedClasses[i];
+                let scid = target._inheritedClasses[i];
                 if (scid === className)
                     return false;
             }

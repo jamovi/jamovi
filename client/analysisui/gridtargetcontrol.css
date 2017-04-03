@@ -28,20 +28,6 @@
     margin: 0px;
 }
 
-.list-item-ctrl {
-    box-sizing: border-box;
-    border: 1px solid transparent;
-}
-
-.list-item-ctrl.rma-cell-measure-ctrl {
-    border-bottom: 1px solid #eaeaea;
-}
-
-.list-item-ctrl.item-overwrite-on-drop {
-    border: 1px dotted rgba(0, 0, 0, 0.3);
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
 .item-insert-on-drop {
     border: 1px solid transparent;
     border-top: 1px dotted rgba(0, 0, 0, 0.4);
@@ -49,4 +35,25 @@
 
 .silky-option-list-filler {
     min-height: 5px;
+}
+
+
+.silky-option-list.sub-option-List {
+    border-style: none none none none;
+}
+
+.silky-target-list.sub-targetGrid.selected-sub-targetlist {
+    background-color: #eaf0fa;
+}
+
+.silky-target-list.sub-targetGrid.selected-sub-targetlist .column-ghost-label {
+    color: #b3b3b3
+}
+
+.sub-targetList .silky-target-list-header {
+    font-weight: bold;
+}
+
+.item-hovering.item-overwrite-on-drop {
+    background-color: rgba(0, 0, 0, 0.1);
 }

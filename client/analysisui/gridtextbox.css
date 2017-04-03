@@ -13,7 +13,27 @@
     width: 150px;
 }
 
+.silky-option-text-input.frameless-textbox {
+  -webkit-transition: all 0.30s ease-in-out;
+  -moz-transition: all 0.30s ease-in-out;
+  -ms-transition: all 0.30s ease-in-out;
+  -o-transition: all 0.30s ease-in-out;
+  outline: none;
+  padding: 3px 3px 3px 3px;
+  border: 1px solid transparent;
+  z-index: 98;
+  background-color: transparent
+}
 
+.silky-option-text-input.frameless-textbox:focus {
+  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
+  border: 1px solid rgba(181, 202, 239, 1);
+  z-index: 99;
+}
+
+.centre-text {
+    text-align: center
+}
 
 .silky-option-text-input:not(.silky-option-text-start)  {
     margin-left: 1ex;
@@ -23,15 +43,15 @@
     margin-right: 1ex;
 }
 
-.silky-option-text-start.silky-control-margin-small {
+.silky-option-text-start.silky-control-margin-small:not(.frameless-textbox) {
     margin-left: 2px;
 }
 
-.silky-option-text-end.silky-control-margin-small {
+.silky-option-text-end.silky-control-margin-small:not(.frameless-textbox) {
     margin-right: 2px;
 }
 
-.silky-option-text-input.silky-control-margin-small {
+.silky-option-text-input.silky-control-margin-small:not(.frameless-textbox) {
     margin-top: 2px;
     margin-bottom: 2px;
 }
@@ -62,10 +82,10 @@
     margin-bottom: 10px;
 }
 
-.silky-layout-container > .first-cell > .silky-option-text-start {
+.silky-layout-container > .first-cell > .silky-option-text-start:not(.frameless-textbox) {
     margin-left: 0px;
 }
 
-.silky-layout-container > .last-cell > .silky-option-text-end {
+.silky-layout-container > .last-cell > .silky-option-text-end:not(.frameless-textbox) {
     margin-right: 0px;
 }
