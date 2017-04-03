@@ -16,7 +16,7 @@ const LayoutCell = function(parent) {
     //if (parent.editable)
     //    this.$el.css("border", "1px dotted red");
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this._visible = true;
     this.cssProperties = null;

@@ -15,7 +15,7 @@ const LayoutGrid = function() {
 
     this.editable = false;
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this._parentCell = null;
     this._layoutValid = false;

@@ -220,7 +220,7 @@ SuperClass.create(TargetListSupport);
 
 const GridTargetContainer = function(params) {
     GridControl.extendTo(this, params);
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this.registerSimpleProperty("label", null);
     this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));

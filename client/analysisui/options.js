@@ -94,7 +94,7 @@ const keyedQueue = function() {
 
 const Options = function(def) {
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this._list = [];
     this._refList = { };

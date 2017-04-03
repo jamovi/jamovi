@@ -11,7 +11,7 @@ const Opt = require('./option');
 
 const OptionsView = function(uiModel) {
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this.$el = $('<div class="silky-options-content"></div>');
 

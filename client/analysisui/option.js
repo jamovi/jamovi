@@ -11,7 +11,7 @@ const Opt = function(initialValue, params) {
     this._value = initialValue;
     this._initialized = false;
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this.getLength = function(keys) {
         if (this._value === null)

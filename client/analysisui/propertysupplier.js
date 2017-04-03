@@ -7,7 +7,7 @@ var SuperClass = require('../common/superclass');
 
 var PropertySupplier = function(properties) {
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this._propertySupplier_editting = 0;
     this._propertySupplier_eventsPending = {};

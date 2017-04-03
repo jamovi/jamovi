@@ -43,7 +43,7 @@ const OptionListControl = function(params) {
     GridControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this.registerSimpleProperty("columns", null);
     this.registerSimpleProperty("maxItemCount", -1);

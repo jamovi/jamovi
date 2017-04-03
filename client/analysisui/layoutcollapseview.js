@@ -42,10 +42,6 @@ const LayoutCollapseView = function(params) {
         });
     };
 
-    //this.addedContentToCell = function(cell) {
-        //cell.setStretchFactor(1);
-    //};
-
     this.setBody = function(body) {
         this._body = body;
         body.$el.addClass("silky-control-body");
