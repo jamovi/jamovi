@@ -747,15 +747,15 @@ const OptionListControl = function(params) {
 
     };
 
-    this.itemCount = function() {
-        return this._rowCount - (this.showHeaders ? 1 : 0) - 1;
+    this.contentRowCount = function() {
+        return  this._rowCount - (this.showHeaders ? 1 : 0) - 1;
     };
 
     this.applyToItems = function(rowIndex, count, callback) {
         let displayIndex = this.rowIndexToDisplayIndex(rowIndex);
         if (callback === undefined) {
             callback = count;
-            count = this.itemCount() - displayIndex;
+            count = this.contentRowCount() - displayIndex;
         }
 
         for (let r = displayIndex; r < displayIndex + count; r++) {
