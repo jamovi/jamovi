@@ -215,6 +215,21 @@ const TargetListSupport = function(supplier) {
         }
         return testedItems;
     };
+
+    this.itemCount = function(item) {
+        let count = 0;
+        for (let i = 0; i < this._cells.length; i++) {
+            let cellInfo = this.getCellInfo(this._cells[i]);
+            if (cellInfo.value !== null && cellInfo.value !== undefined) {
+                let subFormatInfo = cellInfo.format.allFormats();
+                for (let sf = 0; sf < subFormatInfo.length; sf++) {
+                    if (item.value.equalTo(new FormatDef.constructor(this._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format)))
+                        count += 1;
+                }
+            }
+        }
+        return count;
+    };
 };
 SuperClass.create(TargetListSupport);
 
@@ -604,23 +619,6 @@ const GridTargetContainer = function(params) {
         return value;
     };
 
-    this.itemCount = function(item) {
-        let count = 0;
-        for (let a = 0; a < this.targetGrids.length; a++) {
-            let targetlist = this.targetGrids[a];
-            for (let i = 0; i < targetlist._cells.length; i++) {
-                let cellInfo = targetlist.getCellInfo(targetlist._cells[i]);
-                if (cellInfo.value !== null && cellInfo.value !== undefined) {
-                    let subFormatInfo = cellInfo.format.allFormats();
-                    for (let sf = 0; sf < subFormatInfo.length; sf++) {
-                        if (item.value.equalTo(new FormatDef.constructor(this._findValueWithKey(cellInfo.value, subFormatInfo[sf].key), subFormatInfo[sf].format)))
-                            count += 1;
-                    }
-                }
-            }
-        }
-        return count;
-    };
 
     this.renderContainer = function(context) {
         this.container.renderContainer(context);
