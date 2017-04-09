@@ -70,6 +70,8 @@ const ArrayView = Elem.View.extend({
     },
     render: function() {
 
+        Elem.View.prototype.render.call(this);
+
         let promises = [ ];
         let elements = this.model.attributes.element.elements;
 

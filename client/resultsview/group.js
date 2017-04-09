@@ -70,15 +70,7 @@ const GroupView = Elem.View.extend({
     },
     render: function() {
 
-        let error = this.model.get('error');
-        if (error !== null) {
-            let $errorPlacement = $('<div class="silky-results-error-placement"></div>');
-            let $error = $('<div class="silky-results-error-message"></div>');
-            $error.append(error.message);
-            $errorPlacement.append($error);
-            this.$el.append($errorPlacement);
-            this.$el.addClass('silky-results-error');
-        }
+        Elem.View.prototype.render.call(this);
 
         let promises = [ ];
         let elements = this.model.attributes.element.elements;

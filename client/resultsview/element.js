@@ -22,6 +22,17 @@ const ElementView = Backbone.View.extend({
 
         this.ready = Promise.resolve();
     },
+    render() {
+        let error = this.model.get('error');
+        if (error !== null) {
+            let $errorPlacement = $('<div class="silky-results-error-placement"></div>');
+            let $error = $('<div class="silky-results-error-message"></div>');
+            $error.append(error.message);
+            $errorPlacement.append($error);
+            this.$el.append($errorPlacement);
+            this.$el.addClass('silky-results-error');
+        }
+    },
     _sendEvent(event) {
         if (this.parent === null)
             return;
