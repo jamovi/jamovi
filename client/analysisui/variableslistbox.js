@@ -70,26 +70,24 @@ const VariablesListBox = function(params) {
             }
 
             this.checkScrollBars();
-            this._parentCell.$el.append(this.$icons);
+            this.$el.append(this.$icons);
         }
     };
 
-    this.checkScrollBars = function() {
-        setTimeout(() => {
-            if (this.$icons) {
-                var rightValue = 3;
-                if (this.hasVScrollbar())
-                    rightValue += this.getScrollbarWidth();
 
-                var bottomValue = parseFloat(this.$el.css("bottom")) + 3;
-                if (this.hasHScrollbar())
-                    bottomValue += this.getScrollbarWidth();
+    this.checkScrollBars = () => {
+            if (this.$icons) {
+
+                let rightValue = 3 - this.$el.scrollLeft();
+                let bottomValue = 3 - this.$el.scrollTop();
 
                 this.$icons.css("bottom", bottomValue);
                 this.$icons.css("right", rightValue);
             }
-        }, 0);
     };
+
+    this.$el.scroll(this.checkScrollBars);
+
 
     this._override('addedContentToCell', (baseFunction, cell) => {
         if (baseFunction !== null)
