@@ -26,6 +26,8 @@ const Opt = function(initialValue, params) {
         let value = null;
         let a = this._value;
         for (let i = 0; i < keys.length; i++) {
+            if (a === undefined || a === null)
+                break;
             let index = keys[i];
             a = a[index];
             if (i === keys.length - 1)
@@ -144,7 +146,15 @@ const Opt = function(initialValue, params) {
                 }
                 p = a;
                 let b = a[index];
-                if (i === keys.length - 1 && (force || _.isEqual(b, fValue) === false)) {
+                if (b === undefined && i !== keys.length - 1) {
+                    let keyType = typeof keys[i + 1];
+                    if (keyType === 'number')
+                        b = [ ];
+                    else if (keyType === 'string')
+                        b = { };
+                    a[index] = b;
+                }
+                else if (i === keys.length - 1 && (force || _.isEqual(b, fValue) === false)) {
                     a[index] = fValue;
                     if (eventParams.silent === false)
                         this.trigger(eventParams.eventType, keys, eventParams.data);
