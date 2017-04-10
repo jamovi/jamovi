@@ -48,13 +48,16 @@ const GridTextbox = function(params) {
         startClass = label === "" ? 'silky-option-text-start' : "";
         startClass = startClass + " " + (suffix === "" ? 'silky-option-text-end' : "");
 
-        let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-option-short-text silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
+
+        let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
         let inputPattern = this.getPropertyValue("inputPattern");
         if (inputPattern !== null)
             t += ' pattern="'+ inputPattern +'"';
         t += '>';
 
         this.$input = $(t);
+        if (this.getPropertyValue("stretchFactor") === 0)
+            this.$input.addClass('silky-option-short-text');
         if (this.getPropertyValue("borderless"))
             this.$input.addClass('frameless-textbox');
         if (this.getPropertyValue("alignText") === 'center')
