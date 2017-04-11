@@ -88,6 +88,8 @@ const GridControl = function(params) {
                 let cell = grid.addCell(column, row, this.getPropertyValue('fitToGrid'), this);
                 this.render();
                 this._applyCellProperties(cell);
+                if (this.addedContentToCell)
+                    this.addedContentToCell(cell);
                 return { height: 1, width: 1, cell: cell };
             }
             return { height: 0, width: 0 };
