@@ -14,6 +14,7 @@ const DragNDrop = function() {
     this._dropId = DragNDrop._dropId;
     DragNDrop._dropId += 1;
     this._draggingLocked = false;
+    this._draggingOffset = { x: 0, y: 0 };
 
     this._ddMouseUp = function(event) {
         let self = event.data;
@@ -27,6 +28,18 @@ const DragNDrop = function() {
 
         let items = self.getPickupItems();
         self._ddPickupItems(items.length === 0 ? null : items);
+        let sum = -1;
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i];
+            let offset = item.$el.offset();
+            let dOffsetX = event.pageX - offset.left;
+            let dOffsetY = event.pageY - offset.top;
+            if (dOffsetX >= 0 && dOffsetY >= 0 && (dOffsetX + dOffsetY < sum || sum === -1)) {
+                sum = dOffsetX + dOffsetY;
+                self._draggingOffset.x = dOffsetX;
+                self._draggingOffset.y = dOffsetY;
+            }
+        }
         self.setOverTarget(self, event.pageX, event.pageY);
     };
 
@@ -54,7 +67,7 @@ const DragNDrop = function() {
             pageY: event.pageY
         };
 
-        self._$el.css({ top: event.pageY + 1, left: event.pageX + 1 });
+        self._$el.css({ top: event.pageY - self._draggingOffset.y, left: event.pageX - self._draggingOffset.x });
     };
 
     this.fireDragging = function() {
@@ -244,8 +257,11 @@ const DragNDrop = function() {
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             let $item = item.$el.clone();
+            let $itemOuter = $('<div style="position: static;"></div>');
+            $itemOuter.css('position', 'relative');
+            $itemOuter.append($item);
             $item.css('position', 'static');
-            $items.append($item);
+            $items.append($itemOuter);
         }
         return $items;
     };
