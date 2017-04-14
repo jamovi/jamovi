@@ -122,17 +122,23 @@ class Modules:
                     continue
                 if entry.is_dir() is False:
                     continue
-                module = self._read_module(entry.path, True)
-                self._modules.append(module)
+                try:
+                    module = self._read_module(entry.path, True)
+                    self._modules.append(module)
+                except Exception as e:
+                    log.exception(e)
 
             for entry in os.scandir(user_module_path):
                 if entry.name == 'base':
                     continue
                 if entry.is_dir() is False:
                     continue
-                module = self._read_module(entry.path, False)
-                module.new = self._read and (module.name in self._original) is False
-                self._modules.append(module)
+                try:
+                    module = self._read_module(entry.path, False)
+                    module.new = self._read and (module.name in self._original) is False
+                    self._modules.append(module)
+                except Exception as e:
+                    log.exception(e)
             self._read = True
         except Exception as e:
             log.exception(e)
@@ -170,13 +176,10 @@ class Modules:
             log.error("Modules._on_install(): shouldn't get here.")
 
     def _read_module(self, path, is_sys):
-        try:
-            meta_path = os.path.join(path, 'jamovi.yaml')
-            with open(meta_path, encoding='utf-8') as stream:
-                defn = yaml.safe_load(stream)
-                return Modules.parse(defn, path, is_sys)
-        except Exception as e:
-            log.exception(e)
+        meta_path = os.path.join(path, 'jamovi.yaml')
+        with open(meta_path, encoding='utf-8') as stream:
+            defn = yaml.safe_load(stream)
+            return Modules.parse(defn, path, is_sys)
 
     def __iter__(self):
         return self._modules.__iter__()
