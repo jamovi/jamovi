@@ -14,7 +14,7 @@ const marshallArgs = function(argv, wd, first) {
         cmd.open = '';
     }
     else if (argv[1] === '--version') {
-        console.log('0.0.0.0');
+        console.log('0.7.3.0');
         cmd.exit = true;
     }
     else if (argv[1] === '--install') {
