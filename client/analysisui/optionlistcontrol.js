@@ -84,6 +84,9 @@ const OptionListControl = function(params) {
     else
         this.$el.addClass('multi-item');
 
+    this.hasDisplayLabel = function() {
+        return false;
+    };
 
     this.onPropertyChanged = function(name) {
         if (name === "maxItemCount") {
