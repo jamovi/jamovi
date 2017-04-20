@@ -16,7 +16,7 @@ const GridCheckbox = function(params) {
 
     this.createItem = function() {
         let type = "checkbox";
-        this.checkedValue = this.getPropertyValue('focusValue');
+        this.checkedValue = this.getPropertyValue('optionPart');
 
         let value = this.getSourceValue();
         let label = this.getPropertyValue('label');
