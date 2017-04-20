@@ -603,7 +603,8 @@ const GridTargetContainer = function(params) {
 
     this._override("onPropertyChanged", (baseFunction, name) => {
 
-        baseFunction.call(this, name);
+        if (baseFunction !== null)
+            baseFunction.call(this, name);
 
         if (name === "label" && this.$label) {
             let label = this.getPropertyValue('label');
@@ -624,6 +625,18 @@ const GridTargetContainer = function(params) {
         this.container.renderContainer(context);
         this.controls = this.container.controls;
         this.searchForListControls(this.container);
+
+        let label = this.getPropertyValue('label');
+        if (label === null) {
+            if (this.controls.length > 0) {
+                let ctrl = this.controls[0];
+                if (ctrl.hasProperty('label') && ctrl.hasDisplayLabel && ctrl.hasDisplayLabel() === false) {
+                    let ctrlLabel = ctrl.getPropertyValue('label');
+                    if (ctrlLabel !== '')
+                        this.setPropertyValue('label', ctrlLabel);
+                }
+            }
+        }
     };
 
     this.searchForListControls = function(container, removing) {
