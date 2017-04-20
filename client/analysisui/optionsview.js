@@ -296,12 +296,12 @@ const OptionsView = function(uiModel) {
 
         this._allCtrls.push(ctrl);
 
-        if (uiDef.name === undefined && ctrl.hasProperty("optionId") === false)
+        if (uiDef.name === undefined && ctrl.hasProperty("optionName") === false)
             return ctrl;
 
         let name = uiDef.name;
         if (ctrl.setOption) {
-            let id = ctrl.getPropertyValue("optionId");
+            let id = ctrl.getPropertyValue("optionName");
             let isVirtual = false;
             if (id === null) {
                 id = name;

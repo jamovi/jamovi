@@ -15,7 +15,7 @@ const GridRadioButton = function(params) {
 
     this.createItem = function() {
         let optionValue = this.getSourceValue();
-        this.checkedValue = this.getPropertyValue('focusValue');
+        this.checkedValue = this.getPropertyValue('optionPart');
 
         if (optionValue !== null && typeof this.checkedValue !== typeof optionValue)
             throw "The type of the checkedValue property must be the same as the option.";

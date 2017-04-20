@@ -17,12 +17,12 @@ var OptionControl = function(params) {
         this._optProperties.push({ optPropertyName: optPropertyName, overrideName: overrideName });
     };
 
-    this.registerSimpleProperty("optionId", null);
+    this.registerSimpleProperty("optionName", null);
     this.registerSimpleProperty("enable", true);
     this.registerOptionProperty("title", "label");
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
 
-    this.registerSimpleProperty("focusValue", null);
+    this.registerSimpleProperty("optionPart", null);
 
     this.setEnabled = function(value) {
         this.setPropertyValue("enable", value);
@@ -36,7 +36,7 @@ var OptionControl = function(params) {
             if (property === overridePropertyInfo.overrideName) {
                 if (value === null) {
                     let option = this.getOption();
-                    let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue("focusValue"));
+                    let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue("optionPart"));
                     if (optionProperties[overridePropertyInfo.optPropertyName] !== undefined)
                         value = optionProperties[overridePropertyInfo.optPropertyName];
                 }

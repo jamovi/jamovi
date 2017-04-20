@@ -31,6 +31,11 @@ const layoutUpgrade_2_0 = function(ctrl, parent) {
 
     let upgradedCtrl = ctrl;
 
+    if (ctrl.optionId !== undefined) {
+        ctrl.optionName = ctrl.optionId;
+        delete ctrl.optionId;
+    }
+
     if (ctrl.type === DefaultControls.VariableTargetListBox || ctrl.type === DefaultControls.TargetListBox) {
         if (ctrl.columns !== undefined) {
             for (let c = 0; c < ctrl.columns.length; c++) {
@@ -106,7 +111,7 @@ const layoutUpgrade_2_0 = function(ctrl, parent) {
 
     if (ctrl.type === DefaultControls.CheckBox || ctrl.type === DefaultControls.RadioButton) {
         if (ctrl.checkedValue !== undefined) {
-            ctrl.focusValue = ctrl.checkedValue;
+            ctrl.optionPart = ctrl.checkedValue;
             delete ctrl.checkedValue;
         }
     }
