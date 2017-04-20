@@ -13,11 +13,9 @@ const GridRadioButton = function(params) {
     this.$_subel = $('<label class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></label>');
     this.$el = this.$_subel;
 
-    this.registerSimpleProperty("checkedValue", null);
-
     this.createItem = function() {
         let optionValue = this.getSourceValue();
-        this.checkedValue = this.getPropertyValue('checkedValue');
+        this.checkedValue = this.getPropertyValue('focusValue');
 
         if (optionValue !== null && typeof this.checkedValue !== typeof optionValue)
             throw "The type of the checkedValue property must be the same as the option.";

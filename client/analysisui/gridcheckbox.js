@@ -14,11 +14,9 @@ const GridCheckbox = function(params) {
     this.$_subel = $('<label class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></label>');
     this.$el = this.$_subel;
 
-    this.registerSimpleProperty("checkedValue", null);
-
     this.createItem = function() {
         let type = "checkbox";
-        this.checkedValue = this.getPropertyValue('checkedValue');
+        this.checkedValue = this.getPropertyValue('focusValue');
 
         let value = this.getSourceValue();
         let label = this.getPropertyValue('label');

@@ -104,8 +104,62 @@ const OptionsView = function(uiModel) {
 
                 source: option,
 
-                getProperties: function() {
-                    return option.params;
+                getProperties: function(key, fragmentName) {
+                    if (key === undefined)
+                        key = [];
+
+                    let properties = option.params;
+                    for (let i = 0; i < key.length; i ++) {
+                        let keyItem = key[i];
+                        if (typeof keyItem === 'string') {
+                            let list = null;
+                            if (properties.elements !== undefined)
+                                list = properties.elements;
+                            else
+                                throw "This option requires an 'elements' property to be considered an object.";
+
+                            let found = false;
+                            for (let e = 0; e < list.length; e++) {
+                                let item = list[e];
+                                if (item.name === keyItem) {
+                                    properties = item;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (found === false)
+                                throw "This option does not contain this key.";
+                        }
+                        else if (typeof keyItem === 'number'){
+                            if (properties.template === undefined)
+                                throw "This option requires a 'template' property to be considered an array.";
+                            properties = properties.template;
+                        }
+                        else
+                            throw "This type is not supported as a key item.";
+                    }
+
+                    if (fragmentName) {
+                        let list = null;
+                        if (properties.options !== undefined)
+                            list = properties.options;
+                        else
+                            throw "This option requires an 'options' property to be considered an fragmentable option.";
+
+                        let found = false;
+                        for (let e = 0; e < list.length; e++) {
+                            let item = list[e];
+                            if ((typeof item === 'string' && item === fragmentName) || (typeof item === 'object' && item.name === fragmentName)) {
+                                properties = item;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found === false)
+                            throw "This option does not contain this fragment.";
+                    }
+
+                    return properties;
                 },
 
                 isVirtual: isVirtual,
