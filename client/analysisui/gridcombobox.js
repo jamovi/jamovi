@@ -8,10 +8,28 @@ const GridCombobox = function(params) {
 
     GridOptionControl.extendTo(this, params);
 
-    this.registerSimpleProperty("options", []);
+    this.registerOptionProperty("options");
     this.registerSimpleProperty("format", FormatDef.string);
 
     this.$label = null;
+
+    this.getOptionsProperty = function() {
+        let options = this.getPropertyValue('options');
+        if (options === null)
+            options = [];
+
+        if (options.length > 0) {
+            if (typeof options[0] === 'string') {
+                let newOptions = [];
+                for (let i = 0; i < options.length; i++)
+                    newOptions[i] = { title: options[i], name: options[i] };
+                this.setPropertyValue('options', newOptions);
+                options = newOptions;
+            }
+        }
+
+        return options;
+    };
 
     this.onRenderToGrid = function(grid, row, column) {
 
@@ -28,11 +46,11 @@ const GridCombobox = function(params) {
             columnUsed += 1;
         }
 
-        let options = this.getPropertyValue('options');
+        let options = this.getOptionsProperty();
 
         let t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
         for (let i = 0; i < options.length; i++)
-            t += '<option>' + options[i].label + '</option>';
+            t += '<option>' + options[i].title + '</option>';
         t += '</select>';
 
         let self = this;
@@ -41,7 +59,7 @@ const GridCombobox = function(params) {
         this.$input.change(function(event) {
             let select = self.$input[0];
             let option = options[select.selectedIndex];
-            let value = option.value;
+            let value = option.name;
             self.setValue(value);
         });
 
@@ -61,10 +79,10 @@ const GridCombobox = function(params) {
     this.updateDisplayValue = function() {
         let select = this.$input[0];
         let value = this.getSourceValue();
-        let options = this.getPropertyValue('options');
+        let options = this.getOptionsProperty();
         let index = -1;
         for (let i = 0; i < options.length; i++) {
-            if (options[i].value === value) {
+            if (options[i].name === value) {
                 index = i;
                 break;
             }

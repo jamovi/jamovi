@@ -195,7 +195,7 @@ const OptionControlBase = function(params) {
 
     this.getFullKey = function(relativeKey) {
         let valueKey = this.getValueKey();
-        if (relativeKey === undefined || relativeKey.length === 0)
+        if (relativeKey === undefined || relativeKey === null || relativeKey.length === 0)
             return valueKey;
 
         return valueKey.concat(relativeKey);

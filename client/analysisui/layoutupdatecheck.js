@@ -92,6 +92,25 @@ const layoutUpgrade_2_0 = function(ctrl, parent) {
         }
     }
 
+    if (ctrl.type === DefaultControls.ComboBox) {
+        if (ctrl.options !== undefined) {
+            for (let i = 0; i < ctrl.options.length; i++) {
+                let option = ctrl.options[i];
+                option.title = option.label;
+                option.name = option.value;
+                delete option.label;
+                delete option.value;
+            }
+        }
+    }
+
+    if (ctrl.type === DefaultControls.CheckBox || ctrl.type === DefaultControls.RadioButton) {
+        if (ctrl.checkedValue !== undefined) {
+            ctrl.focusValue = ctrl.checkedValue;
+            delete ctrl.checkedValue;
+        }
+    }
+
     return upgradedCtrl;
 };
 
