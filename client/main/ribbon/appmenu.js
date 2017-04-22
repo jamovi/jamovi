@@ -5,7 +5,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const tarp = require('../utils/tarp');
 const host = require('../host');
 
 const AppMenuButton = Backbone.View.extend({
@@ -22,7 +21,8 @@ const AppMenuButton = Backbone.View.extend({
         this.menuVisible = false;
         this.$el.on('click', event => {
             if ( ! this.menuVisible)
-                this._show();
+                this.show();
+            event.stopPropagation();
         });
 
         this.$zoom = $('<div class="jmv-ribbon-appmenu-zoom"></div>').appendTo(this.$menu);
@@ -47,16 +47,14 @@ const AppMenuButton = Backbone.View.extend({
         this.$syntaxModeCheck.on('change', event => this.model.toggleResultsMode());
         this.$devModeCheck.on('change', event => this.model.toggleDevMode());
     },
-    _show() {
+    show() {
         if (this.menuVisible)
             return;
         this.menuVisible = true;
+        this.trigger('shown', this);
         this.$menu.show();
-        tarp.show().catch(() => {
-            this._hide();
-        });
     },
-    _hide() {
+    hide() {
         this.menuVisible = false;
         this.$menu.hide();
     }

@@ -30,7 +30,7 @@ const init = function() {
     }
 };
 
-const show = function(cancellable = true, opacity = 0) {
+const show = function(cancellable = true, opacity = 0, zIndex = 99) {
 
     init();
 
@@ -39,6 +39,7 @@ const show = function(cancellable = true, opacity = 0) {
         resolvePromise = resolve;
         rejectPromise = reject;
         $tarp.css('opacity', opacity);
+        $tarp.css('z-index', zIndex);
         $tarp.one('mousedown', event => {
             if (canCancel) {
                 setTimeout(() => $tarp.hide());

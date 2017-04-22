@@ -9,6 +9,7 @@ const RibbonMenu = require('./ribbon/ribbonmenu');
 const AppMenu = require('./ribbon/appmenu');
 const Store = require('./store');
 const Modules = require('./modules');
+const tarp = require('./utils/tarp');
 
 const RibbonModel = Backbone.Model.extend({
 
@@ -41,6 +42,8 @@ const RibbonView = Backbone.View.extend({
         'click .jmv-ribbon-tab': '_ribbonClicked'
     },
     initialize() {
+
+        this.buttons = [ ];
 
         if (this.model === undefined)
             this.model = new RibbonModel();
@@ -79,6 +82,8 @@ const RibbonView = Backbone.View.extend({
         $(this.$tabs[1]).addClass('selected');
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
+        this.appMenu.on('shown', event => this._menuShown(event));
+        this.$header.on('click', event => this._closeMenus());
 
         this._refresh();
 
@@ -87,13 +92,18 @@ const RibbonView = Backbone.View.extend({
     },
     _refresh() {
 
+        this.buttons = [ ];
+        let menuShown = (menu) => this._menuShown(menu);
+
         this.$body.empty();
         this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
 
         let $button = $('<div></div>').insertAfter(this.$separator);
         let  button = new RibbonMenu($button, this, 'Modules', 'modules', [
             { name : 'modules', title : 'jamovi store', ns : 'app' }
-        ], true);
+        ], true, false);
+        button.on('shown', menuShown);
+        this.buttons.push(button);
 
         let menus = { };
         let lastSub = null;
@@ -144,13 +154,44 @@ const RibbonView = Backbone.View.extend({
 
             let $button = $('<div></div>').insertBefore(this.$separator);
             let  button = new RibbonMenu($button, this, group, group, flattened, false, containsNew);
+            this.buttons.push(button);
+            button.on('shown', menuShown);
         }
     },
+    _menuShown(source) {
+        if (this.appMenu !== source)
+            this.appMenu.hide();
+        for (let button of this.buttons) {
+            if (button !== source)
+                button.hideMenu();
+        }
+
+        if ( ! this._tarpVisible) {
+            tarp.show(true, 0, 40)
+                .then(() => this._menuClosed(), () => this._menuClosed());
+            this.$el.css('z-index', '50');
+            this._tarpVisible = true;
+        }
+    },
+    _closeMenus() {
+        tarp.hide();
+    },
+    _menuClosed() {
+        if (this._tarpVisible === false)
+            return;
+        this.$el.css('z-index', '');
+        this._tarpVisible = false;
+        for (let button of this.buttons)
+            button.hideMenu();
+        this.appMenu.hide();
+    },
     _ribbonClicked : function(event) {
+        this._closeMenus();
         let index = this.$tabs.index(event.target);
         this.model.set('selectedIndex', index);
     },
     _analysisSelected : function(analysis) {
+        this._closeMenus();
         if (analysis.name === 'modules' && analysis.ns === 'app')
             this._storeSelected();
         else

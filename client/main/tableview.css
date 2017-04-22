@@ -139,8 +139,7 @@ input.silky-table-cell-selected {
 .silky-table-row-highlight,
 .silky-table-column-highlight {
     position: absolute ;
-    /*background-color: rgba(160, 160, 160, 0.4);*/
-    z-index: 50 ;
+    z-index: 40 ;
 }
 
 .silky-table-row-highlight {
