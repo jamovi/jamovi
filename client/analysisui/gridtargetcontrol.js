@@ -118,25 +118,42 @@ const TargetListSupport = function(supplier) {
         }
         let insert = dropBehaviour === "insert";
 
-        for (let i = 0; i < items.length; i++) {
+        let itemsList = items;
+        let overflowStartIndex = -1;
+        if (this.isSingleItem && itemsList.length > 1) {
+            itemsList = [items[0]];
+            overflowStartIndex = 1;
+        }
+
+        for (let i = 0; i < itemsList.length; i++) {
             if (onCell) {
-                let subkeys = destFormat.allFormats(items[i].value.format);
+                let subkeys = destFormat.allFormats(itemsList[i].value.format);
                 for (let x = 0; x < subkeys.length; x++) {
                     let key = pos.concat(subkeys[x].key);
-                    let item = items[i++];
-                    this.addRawToOption(item.value.raw, key, insert, item.value.format);
+                    let item = itemsList[i++];
+                    if (this.addRawToOption(item.value.raw, key, insert, item.value.format) === false) {
+                        overflowStartIndex = i;
+                        break;
+                    }
                     insert = false;
-                    if (i >= items.length)
+                    if (i >= itemsList.length)
                         break;
                 }
             }
-            else
-                this.addRawToOption(items[i].value.raw, null, false, items[i].value.format);
+            else {
+                if (this.addRawToOption(itemsList[i].value.raw, null, false, itemsList[i].value.format) === false) {
+                    overflowStartIndex = i;
+                    break;
+                }
+            }
             pos = null;
             destFormat = null;
             insert = false;
             onCell = false;
         }
+
+        if (overflowStartIndex > -1)
+            this.trigger('dropoverflow', source, items.slice(overflowStartIndex));
     };
 
     this.filterItemsForDrop = function(items, intoSelf, xpos, ypos) {
@@ -198,7 +215,18 @@ const TargetListSupport = function(supplier) {
     };
 
     this.dropTargetElement = function() {
-        return this.$el;
+        let parent = this.getPropertyValue("_parentControl");
+        let $dropArea = this.$el;
+        while (parent !== null) {
+            let isTargetChain = false;
+            if (parent.hasProperty("targetArea") === true && parent.getPropertyValue("targetArea") === true)
+                $dropArea = parent.$el;
+            else
+                break;
+
+            parent = parent.getPropertyValue("_parentControl");
+        }
+        return $dropArea;
     };
 
     this.preprocessItems = function(items, intoSelf) {
@@ -209,8 +237,6 @@ const TargetListSupport = function(supplier) {
         for (let i = 0; i < data.items.length; i++) {
             if (this.testValue(data.items[i])) {
                 testedItems.push(data.items[i]);
-                if (this.isSingleItem)
-                    break;
             }
         }
         return testedItems;
@@ -329,6 +355,19 @@ const GridTargetContainer = function(params) {
             listbox.setPickupSourceElement(listbox.$el);
 
             listbox.$el.addClass("silky-target-list");
+
+            listbox.on('dropoverflow', (source, overflowItems) => {
+                let found = false;
+                for (let i = 0; i < this.targetGrids.length; i++) {
+                    let overflowTarget = this.targetGrids[i];
+                    if (found) {
+                        source.dropIntoTarget(overflowTarget, overflowItems, 0, 0);
+                        break;
+                    }
+                    else if (overflowTarget === listbox)
+                        found = true;
+                }
+            });
 
             listbox.on('changing', (event) => {
                 this.trigger('changing', event);
@@ -461,6 +500,8 @@ const GridTargetContainer = function(params) {
 
     this.getSupplierItems = function() {
         let items = this._supplier.getSelectedItems();
+        if (this.targetGrid.isSingleItem)
+            items = [items[0]];
         return this.targetGrid.preprocessItems(items, false);
     };
 
