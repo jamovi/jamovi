@@ -266,6 +266,7 @@ const GridTargetContainer = function(params) {
     this.registerSimpleProperty("label", null);
     this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
+    this.registerSimpleProperty("dropOverflow", "tryNext", new EnumPropertyFilter(["discard", "tryNext"], "tryNext"));
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -356,18 +357,21 @@ const GridTargetContainer = function(params) {
 
             listbox.$el.addClass("silky-target-list");
 
-            listbox.on('dropoverflow', (source, overflowItems) => {
-                let found = false;
-                for (let i = 0; i < this.targetGrids.length; i++) {
-                    let overflowTarget = this.targetGrids[i];
-                    if (found) {
-                        source.dropIntoTarget(overflowTarget, overflowItems, 0, 0);
-                        break;
+            let dropOverflow = this.getPropertyValue('dropOverflow');
+            if (dropOverflow !== 'discard') {
+                listbox.on('dropoverflow', (source, overflowItems) => {
+                    let found = false;
+                    for (let i = 0; i < this.targetGrids.length; i++) {
+                        let overflowTarget = this.targetGrids[i];
+                        if (found) {
+                            source.dropIntoTarget(overflowTarget, overflowItems, 0, 0);
+                            break;
+                        }
+                        else if (overflowTarget === listbox)
+                            found = true;
                     }
-                    else if (overflowTarget === listbox)
-                        found = true;
-                }
-            });
+                });
+            }
 
             listbox.on('changing', (event) => {
                 this.trigger('changing', event);
