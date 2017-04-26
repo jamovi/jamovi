@@ -125,29 +125,33 @@ const DragNDrop = function() {
         this._itemsBeingDragged = items;
     };
 
+    this.dropIntoTarget = function(target, items, pageX, pageY) {
+        let itemsToDrop = target.filterItemsForDrop(items, this._dropId === target._dropId, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
+        if (itemsToDrop !== null && itemsToDrop.length !== 0) {
+            if (target.onDragDropStart)
+                target.onDragDropStart();
+            if (this.onDragDropStart)
+                this.onDragDropStart();
+
+            if (this.onItemsDropping)
+                this.onItemsDropping(itemsToDrop, this._dropId === target._dropId);
+            target.catchDroppedItems(this, itemsToDrop, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
+
+            if (target.onDragDropEnd)
+                target.onDragDropEnd();
+            if (this.onDragDropEnd)
+                this.onDragDropEnd();
+
+            if (target.onDraggingLeave)
+                target.onDraggingLeave();
+        }
+    };
+
     this._ddDropItems = function(pageX, pageY) {
         if (this._isDragging) {
             if (this._stillOverTarget(this._currentTarget.endTarget, pageX, pageY)) {
                 let target = this._currentTarget.endTarget.target;
-                let itemsToDrop = target.filterItemsForDrop(this._itemsBeingDragged, this._dropId === target._dropId, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
-                if (itemsToDrop !== null && itemsToDrop.length !== 0) {
-                    if (target.onDragDropStart)
-                        target.onDragDropStart();
-                    if (this.onDragDropStart)
-                        this.onDragDropStart();
-
-                    if (this.onItemsDropping)
-                        this.onItemsDropping(itemsToDrop, this._dropId === target._dropId);
-                    target.catchDroppedItems(this, itemsToDrop, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
-
-                    if (target.onDragDropEnd)
-                        target.onDragDropEnd();
-                    if (this.onDragDropEnd)
-                        this.onDragDropEnd();
-
-                    if (target.onDraggingLeave)
-                        target.onDraggingLeave();
-                }
+                this.dropIntoTarget(target, this._itemsBeingDragged, pageX, pageY);
             }
             this._$el.remove();
             this._isDragging = false;
