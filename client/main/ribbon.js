@@ -39,7 +39,8 @@ const RibbonModel = Backbone.Model.extend({
 
 const RibbonView = Backbone.View.extend({
     events : {
-        'click .jmv-ribbon-tab': '_ribbonClicked'
+        'click .jmv-ribbon-tab': '_ribbonClicked',
+        'click .jmv-ribbon-body': '_closeMenus',
     },
     initialize() {
 

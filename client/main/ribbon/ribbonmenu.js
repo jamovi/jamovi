@@ -60,6 +60,7 @@ const RibbonMenu = Backbone.View.extend({
         if ($target.closest(this.$menu).length !== 0)
             return;
         this._toggleMenu();
+        event.stopPropagation();
     },
     _itemClicked(event) {
         let source = event.target;
