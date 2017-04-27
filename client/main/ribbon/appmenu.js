@@ -35,8 +35,8 @@ const AppMenuButton = Backbone.View.extend({
         this.$devMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-devmode"><input type="checkbox">Dev mode</label>').appendTo(this.$menu);
         this.$devModeCheck = this.$devMode.find('input');
 
-        this.$zoomIn.on('click', event => host.zoomIn());
-        this.$zoomOut.on('click', event => host.zoomOut());
+        this.$zoomIn.on('click', event => { host.zoomIn(); event.stopPropagation(); });
+        this.$zoomOut.on('click', event => { host.zoomOut(); event.stopPropagation(); });
 
         host.on('zoom', event => {
             let z = '' + parseInt(event.zoom * 100) + '%';
