@@ -43,6 +43,10 @@ var ResultsView = Backbone.View.extend({
             this.$welcome.addClass('silky-welcome-panel-hidden');
         });
 
+        this.model.analyses().once('analysisResultsChanged', (event) => {
+            this.$welcome.addClass('silky-welcome-panel-hidden');
+        });
+
         this.model.on('change:resultsMode', event => {
             if (event.changed.resultsMode === 'text')
                 this.$textView.removeClass('silky-results-panel-hidden');
