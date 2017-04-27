@@ -30,6 +30,19 @@ var ResultsView = Backbone.View.extend({
             model: this.model,
             mode: 'text' });
 
+        this.$splash = $('<iframe id="main_welcome" \
+                name="welcome" \
+                sandbox="allow-scripts allow-same-origin" \
+                src="https://jamovi.org/welcome.html?version=0.7.3.0" \
+                class="silky-welcome-panel" \
+                style="overflow: hidden; box-sizing: border-box;" \
+                ></iframe>');
+        this.$splash.appendTo(this.$el);
+
+        this.model.on("change:selectedAnalysis", (event) => {
+            this.$splash.addClass('silky-welcome-panel-hidden');
+        });
+
         this.model.on('change:resultsMode', event => {
             if (event.changed.resultsMode === 'text')
                 this.$textView.removeClass('silky-results-panel-hidden');

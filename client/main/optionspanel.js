@@ -27,7 +27,6 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             src="' + iframeUrl + instanceId + '/" \
             class="silky-options-control silky-hidden-options-control" \
             style="overflow: hidden; box-sizing: border-box;" \
-            src="./analysisui.html" \
             ></iframe>';
 
     this.$frame = $(element);
