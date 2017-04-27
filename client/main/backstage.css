@@ -21,6 +21,16 @@
     padding: 20px 0px;
 }
 
+.silky-bs-logo {
+    position: absolute;
+    bottom: 70px ;
+    right: -20px ;
+    width: 100px ;
+    height: 100px ;
+    background-image: url('assets/logo-v.svg');
+    background-size: cover;
+}
+
 .silky-bs-back-button {
     font-size: 24px ;
     width: 40px ;

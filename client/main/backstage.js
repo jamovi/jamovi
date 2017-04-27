@@ -896,6 +896,7 @@ var BackstageView = SilkyView.extend({
 
         html += '<div class="silky-bs-op silky-bs-op-panel">';
         html += '    <div class="silky-bs-back-button"><span class="mif-arrow-left"></span></div>';
+        html += '    <div class="silky-bs-logo"></div>';
         html += '</div>';
 
         this.$opPanel = $(html);
