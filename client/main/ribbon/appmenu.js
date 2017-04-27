@@ -20,8 +20,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.menuVisible = false;
         this.$el.on('click', event => {
-            if ( ! this.menuVisible)
-                this.show();
+            this.toggleMenu();
             event.stopPropagation();
         });
 
@@ -46,6 +45,12 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$syntaxModeCheck.on('change', event => this.model.toggleResultsMode());
         this.$devModeCheck.on('change', event => this.model.toggleDevMode());
+    },
+    toggleMenu() {
+        if (this.menuVisible)
+            this.hide();
+        else
+            this.show();
     },
     show() {
         if (this.menuVisible)
