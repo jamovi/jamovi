@@ -66,6 +66,7 @@ const RibbonMenu = Backbone.View.extend({
         let source = event.target;
         this._notifySelected(source.dataset.name, source.dataset.ns);
         $(source).removeClass('new');
+        event.stopPropagation();
     },
     _createMenuItem(item) {
         if (item.subtitle)
