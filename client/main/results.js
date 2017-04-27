@@ -39,10 +39,6 @@ var ResultsView = Backbone.View.extend({
                 ></iframe>');
         this.$welcome.appendTo(this.$el);
 
-        this.model.once("change:selectedAnalysis", (event) => {
-            this.$welcome.addClass('silky-welcome-panel-hidden');
-        });
-
         this.model.analyses().once('analysisResultsChanged', (event) => {
             this.$welcome.addClass('silky-welcome-panel-hidden');
         });
