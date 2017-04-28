@@ -103,8 +103,12 @@ const Analyses = Backbone.Model.extend({
     defaults : {
         dataSetModel : null
     },
-    analysesLoaded: function() {
-        return this._analyses.length > 0;
+    hasActiveAnalyses : function() {
+        for (let i = 0; i < this._analyses.length; i++) {
+            if (this._analyses[i].deleted === false)
+                return true;
+        }
+        return false;
     },
     createAnalysis : function(name, ns) {
         let analysis = new Analysis(this._nextId++, name, ns);
