@@ -1,13 +1,14 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 Backbone.$ = $;
-var SilkyView = require('./view');
-var SplitPanelSection = require('./splitpanelsection');
+const SilkyView = require('./view');
+const SplitPanelSection = require('./splitpanelsection');
+const tarp = require('./utils/tarp');
 
-var SplitPanel = SilkyView.extend({
+const SplitPanel = SilkyView.extend({
     className: "splitpanel",
 
     initialize: function() {
@@ -30,7 +31,7 @@ var SplitPanel = SilkyView.extend({
     },
 
     _getLeftZero: function() {
-        var leftZero = parseFloat(this.$el.css("padding-left"));
+        let leftZero = parseFloat(this.$el.css("padding-left"));
         if (isNaN(leftZero))
             return 0;
         return leftZero;
@@ -43,9 +44,9 @@ var SplitPanel = SilkyView.extend({
     _createSections: function() {
         this._sections = { _list: [] };
 
-        var lastSection = null;
-        for (var i = 0; i < this.$children.length; i++) {
-            var section = this.getSection(i);
+        let lastSection = null;
+        for (let i = 0; i < this.$children.length; i++) {
+            let section = this.getSection(i);
             if (lastSection !== null) {
                 section.setNextSection("left", lastSection);
                 lastSection.setNextSection("right", section);
@@ -59,17 +60,17 @@ var SplitPanel = SilkyView.extend({
 
     getSection: function(i) {
 
-        var keyIsIndex = false;
+        let keyIsIndex = false;
         if (i === parseInt(i, 10))
             keyIsIndex = true;
 
-        var data;
+        let data;
         if (keyIsIndex)
             data = this._sections._list[i];
         else
             data = this._sections[i];
 
-        if (_.isUndefined(data))
+        if (data === undefined)
             data = this._createPanel(i, {});
 
         return data;
@@ -79,13 +80,13 @@ var SplitPanel = SilkyView.extend({
         this.$el.append($('<div id="' + name + '"></div>'));
         this.$children  = this.$el.children();
 
-        var section = this.getSection(name);
+        let section = this.getSection(name);
 
-        if (_.isUndefined(this.firstSection))
+        if (this.firstSection === undefined)
             this.firstSection = section;
 
         if (section.listIndex > 0) {
-            var leftSection = this.getSection(section.listIndex - 1);
+            let leftSection = this.getSection(section.listIndex - 1);
             leftSection.setNextSection("right", section);
             section.setNextSection("left", leftSection);
          }
@@ -94,7 +95,7 @@ var SplitPanel = SilkyView.extend({
     },
 
     addContent: function(name, $content) {
-        var section = this.getSection(name);
+        let section = this.getSection(name);
 
         section.$panel.empty();
 
@@ -106,25 +107,25 @@ var SplitPanel = SilkyView.extend({
 
     setVisibility: function(i, value) {
 
-        var section = i;
-        if (_.isUndefined(i.name))
+        let section = i;
+        if (i.name === undefined)
             section = this.getSection(i);
 
-        var direction = value ? -1 : 1;
-        var wanted = direction * section.reservedAbsoluteWidth();
+        let direction = value ? -1 : 1;
+        let wanted = direction * section.reservedAbsoluteWidth();
 
         if (this._isLocked() || section.setVisibility(value, true) === false)
             return;
 
         this.totalWidth = this.$el.width();
 
-        var amountLeft = wanted;
+        let amountLeft = wanted;
         if (section.strongEdge === "right" && section.listIndex > 0) {
 
             section.getNext("left", function(nextSection) {
                 if (amountLeft === 0) return false;
 
-                var amount = nextSection.testCoreGrowth(amountLeft);
+                let amount = nextSection.testCoreGrowth(amountLeft);
                 if (amount !== 0) {
                     amountLeft -= amount;
                     nextSection.offsetCoreWidth(amount, true);
@@ -139,7 +140,7 @@ var SplitPanel = SilkyView.extend({
                 section.getNext("right", function(nextSection) {
                     if (amountLeft === 0) return false;
 
-                    var amount = nextSection.testCoreGrowth(amountLeft);
+                    let amount = nextSection.testCoreGrowth(amountLeft);
                     if (amount !== 0) {
                         amountLeft -= amount;
                         nextSection.offsetCoreWidth(amount, true);
@@ -150,11 +151,11 @@ var SplitPanel = SilkyView.extend({
             }
         }
 
-        var leftPos = this._getLeftZero();
+        let leftPos = this._getLeftZero();
 
         this._moveThroughSections(this.firstSection, "right", function(currentSection) {
 
-            var width = currentSection.coreWidth();
+            let width = currentSection.coreWidth();
 
             currentSection.sectionOnTop = false;
 
@@ -184,12 +185,12 @@ var SplitPanel = SilkyView.extend({
     },
 
     _createPanel: function(i, data) {
-        var keyIsIndex = false;
+        let keyIsIndex = false;
         if (i === parseInt(i, 10))
             keyIsIndex = true;
 
-        var panel = null;
-        var index = -1;
+        let panel = null;
+        let index = -1;
 
         if (keyIsIndex) {
             panel = $(this.$children[i]);
@@ -198,8 +199,8 @@ var SplitPanel = SilkyView.extend({
                 throw "Splitter panel doesn't exist.";
         }
         else {
-            for (var j = 0; j < this.$children.length; j++) {
-                var child = $(this.$children[j]);
+            for (let j = 0; j < this.$children.length; j++) {
+                let child = $(this.$children[j]);
                 if (child.attr('id') === i) {
 
                     panel = child;
@@ -211,11 +212,10 @@ var SplitPanel = SilkyView.extend({
                 throw "Splitter panel doesn't exist.";
         }
 
-        var section = new SplitPanelSection(index, panel, data, this);
+        let section = new SplitPanelSection(index, panel, data, this);
 
-        var self = this;
-        panel.on("splitpanel-hide", function(event) {
-            self.setVisibility(section, false);
+        panel.on("splitpanel-hide", (event) => {
+            this.setVisibility(section, false);
         });
 
         this._sections._list[section.listIndex] = section;
@@ -227,12 +227,12 @@ var SplitPanel = SilkyView.extend({
     render: function() {
         this._rendering = true;
 
-        var totalHeight = this.$el.height();
+        let totalHeight = this.$el.height();
         this.totalWidth = this.$el.width();
 
-        var leftPos = this._getLeftZero();
+        let leftPos = this._getLeftZero();
 
-        var lastSection = null;
+        let lastSection = null;
 
         this._moveThroughSections(this.firstSection, "right", function(currentSection) {
 
@@ -240,7 +240,7 @@ var SplitPanel = SilkyView.extend({
             currentSection.setHeight(totalHeight);
 
             if (currentSection.getVisibility()) {
-                if (_.isUndefined(currentSection.initialWidth) === false)
+                if (currentSection.initialWidth !== undefined)
                     currentSection.setCoreWidth(currentSection.initialWidth);
                 else if (currentSection.preferredWidth)
                     currentSection.setCoreWidth(currentSection.preferredWidth);
@@ -250,11 +250,11 @@ var SplitPanel = SilkyView.extend({
 
             leftPos += currentSection.absoluteWidth();
 
-            var splitter = currentSection.getSplitter();
+            let splitter = currentSection.getSplitter();
             if (splitter !== null) {
                 currentSection.$panel.before(splitter);
 
-                var data = { left: currentSection.getNext("left"), right: currentSection, self: this};
+                let data = { left: currentSection.getNext("left"), right: currentSection, self: this};
                 splitter.on("mousedown", null, data, this.onMouseDown);
             }
 
@@ -279,39 +279,41 @@ var SplitPanel = SilkyView.extend({
         if (this._resizing === true || event.data === null)
             return;
 
-        var data = event.data;
-        var self = data.self;
+        tarp.show();
+        let data = event.data;
+        let self = data.self;
 
         self._resizing = true;
         self._sizingData = data;
-        self._startPosX = _.isUndefined(event.pageX) ? event.originalEvent.pageX : event.pageX;
-        self._startPosY = _.isUndefined(event.pageY) ? event.originalEvent.pageY : event.pageY;
+        self._startPosX = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
+        self._startPosY = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
 
     },
 
     _mouseUpGeneral: function(event) {
 
-        var self = event.data;
+        let self = event.data;
         if (self === null || self._resizing === false)
             return;
 
         self._sizingData = null;
         self._resizing = false;
+        tarp.hide();
     },
 
     _mouseMoveGeneral: function(event) {
 
-        var self = event.data;
+        let self = event.data;
         if (self === null || self._resizing === false)
             return;
 
-        var data = self._sizingData;
+        let data = self._sizingData;
 
-        var xpos = _.isUndefined(event.pageX) ? event.originalEvent.pageX : event.pageX;
-        var ypos = _.isUndefined(event.pageY) ? event.originalEvent.pageY : event.pageY;
+        let xpos = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
+        let ypos = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
 
-        var diffX = xpos - self._startPosX;
-        var diffY = ypos - self._startPosY;
+        let diffX = xpos - self._startPosX;
+        let diffY = ypos - self._startPosY;
 
         self._startPosX = xpos;
         self._startPosY = ypos;
@@ -319,8 +321,8 @@ var SplitPanel = SilkyView.extend({
         if (self._isLocked())
             return;
 
-        var leftPanelData = data.left;
-        var testDiffX = leftPanelData.testCoreGrowth(diffX);
+        let leftPanelData = data.left;
+        let testDiffX = leftPanelData.testCoreGrowth(diffX);
         while (testDiffX === 0 && leftPanelData.getNext("left") !== null)
         {
             leftPanelData = leftPanelData.getNext("left");
@@ -328,7 +330,7 @@ var SplitPanel = SilkyView.extend({
         }
         diffX = testDiffX;
 
-        var rightPanelData = data.right;
+        let rightPanelData = data.right;
         if (diffX !== 0) {
             testDiffX = rightPanelData.testCoreGrowth(-diffX);
             while (testDiffX === 0 && rightPanelData.getNext("right") !== null) {
@@ -344,7 +346,7 @@ var SplitPanel = SilkyView.extend({
             leftPanelData.offsetCoreWidth(diffX);
             rightPanelData.offsetCoreWidth(-diffX);
 
-            var currentSection = data.right;
+            let currentSection = data.right;
             while (currentSection !== null && currentSection.listIndex <= rightPanelData.listIndex) {
                 currentSection.offset(diffX);
                 currentSection = currentSection.getNext("right");
@@ -365,32 +367,32 @@ var SplitPanel = SilkyView.extend({
         if (size === undefined)
             size = { height: this.$el.height(), width: this.$el.width() };
 
-        var totalHeight = size.height;
+        let totalHeight = size.height;
         if (totalHeight === undefined)
             totalHeight = this.$el.height();
 
-        var newNetWidth = size.width;
+        let newNetWidth = size.width;
         if (newNetWidth === undefined)
             newNetWidth = this.$el.width();
 
-        var oldNetWidth = 0;
+        let oldNetWidth = 0;
 
         this.totalWidth = this.$el.width();
 
-        var levelData = [];
+        let levelData = [];
 
-        var panelDataList = [];
-        var newPanelWidths = [];
+        let panelDataList = [];
+        let newPanelWidths = [];
 
         this._moveThroughSections(this.firstSection, "right", function(currentSection) {
             if (currentSection.listIndex > 0 && currentSection.getVisibility())
                 newNetWidth -= SplitPanelSection.sepWidth;
 
-            var level = currentSection.level;
-            var width = currentSection.coreWidth();
+            let level = currentSection.level;
+            let width = currentSection.coreWidth();
             newPanelWidths[currentSection.listIndex] = width;
             oldNetWidth += width;
-            if (_.isUndefined(levelData[level]))
+            if (levelData[level] === undefined)
                 levelData[level] = { width: width, panelCount: 1, panelDataList: [ currentSection ] };
             else {
                 levelData[level].width += width;
@@ -401,15 +403,15 @@ var SplitPanel = SilkyView.extend({
         }, this);
 
 
-        var netWidthDiff = newNetWidth - oldNetWidth;
+        let netWidthDiff = newNetWidth - oldNetWidth;
 
-        var currentLevel = 0;
-        var nextLevel = -1;
+        let currentLevel = 0;
+        let nextLevel = -1;
         do {
-            var levelWidthOffset = netWidthDiff / levelData[currentLevel].panelCount;
+            let levelWidthOffset = netWidthDiff / levelData[currentLevel].panelCount;
             nextLevel = -1;
-            for (var i = 0; i < panelDataList.length; i++) {
-                var panelData = panelDataList[i];
+            for (let i = 0; i < panelDataList.length; i++) {
+                let panelData = panelDataList[i];
 
                 if (panelData === null)
                     continue;
@@ -422,9 +424,9 @@ var SplitPanel = SilkyView.extend({
                     continue;
                 }
 
-                var oldWidth = newPanelWidths[i];
-                var wantedWidth = oldWidth + levelWidthOffset;
-                var possibleWidth =  oldWidth + panelData.testCoreGrowth(wantedWidth - oldWidth);
+                let oldWidth = newPanelWidths[i];
+                let wantedWidth = oldWidth + levelWidthOffset;
+                let possibleWidth =  oldWidth + panelData.testCoreGrowth(wantedWidth - oldWidth);
 
                 newPanelWidths[i] = possibleWidth;
 
@@ -441,12 +443,12 @@ var SplitPanel = SilkyView.extend({
             currentLevel = nextLevel;
         } while (currentLevel !== -1);
 
-        var leftPos = this._getLeftZero();
+        let leftPos = this._getLeftZero();
 
-        var lastSection = null;
+        let lastSection = null;
 
         this._moveThroughSections(this.firstSection, "right", function(currentSection) {
-            var newWidth = newPanelWidths[currentSection.listIndex];
+            let newWidth = newPanelWidths[currentSection.listIndex];
 
             currentSection.moveTo(leftPos);
             currentSection.setHeight(totalHeight);
