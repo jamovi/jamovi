@@ -217,6 +217,8 @@ $(document).ready(() => {
         let instanceId;
         if (window.location.search.indexOf('?id=') !== -1)
             instanceId = window.location.search.split('?id=')[1];
+        else
+            resultsView.showWelcome();
 
         return instance.connect(instanceId);
 

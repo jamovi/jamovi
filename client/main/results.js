@@ -30,28 +30,25 @@ var ResultsView = Backbone.View.extend({
             model: this.model,
             mode: 'text' });
 
-        setTimeout(() => {
-            if (this.model.analyses().hasActiveAnalyses() === false) {
-                this.$welcome = $('<iframe id="main_welcome" \
-                        name="welcome" \
-                        sandbox="allow-scripts allow-same-origin" \
-                        src="https://jamovi.org/welcome.html?version=0.7.3.0" \
-                        class="silky-welcome-panel" \
-                        style="overflow: hidden; box-sizing: border-box;" \
-                        ></iframe>');
-                this.$welcome.appendTo(this.$el);
-
-                this.model.analyses().once('analysisResultsChanged', (event) => {
-                    this.$welcome.addClass('silky-welcome-panel-hidden');
-                });
-            }
-        }, 500);
-
         this.model.on('change:resultsMode', event => {
             if (event.changed.resultsMode === 'text')
                 this.$textView.removeClass('silky-results-panel-hidden');
             else
                 this.$textView.addClass('silky-results-panel-hidden');
+        });
+    },
+    showWelcome() {
+        this.$welcome = $('<iframe id="main_welcome" \
+                name="welcome" \
+                sandbox="allow-scripts allow-same-origin" \
+                src="https://jamovi.org/welcome/?v=0.7.3.0" \
+                class="silky-welcome-panel" \
+                style="overflow: hidden; box-sizing: border-box;" \
+                ></iframe>');
+        this.$welcome.appendTo(this.$el);
+
+        this.model.analyses().once('analysisResultsChanged', (event) => {
+            this.$welcome.addClass('silky-welcome-panel-hidden');
         });
     }
 });
