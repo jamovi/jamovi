@@ -12,7 +12,7 @@ def write(data, path):
     with open(path, 'w', encoding='utf-8') as file:
         sep = ''
         for column in data.dataset:
-            file.write(sep + column.name)
+            file.write(sep + '"' + column.name + '"')
             sep = ','
         file.write('\n')
 
@@ -24,6 +24,11 @@ def write(data, path):
                     file.write(sep + '')
                 elif isinstance(cell, float) and math.isnan(cell):
                     file.write(sep + '')
+                elif isinstance(cell, str):
+                    if cell != '':
+                        cell = cell.replace('"', '""')
+                        cell = '"' + cell + '"'
+                    file.write(sep + cell)
                 else:
                     file.write(sep + str(cell))
                 sep = ','
