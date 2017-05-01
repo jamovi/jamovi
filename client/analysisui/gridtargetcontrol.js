@@ -344,6 +344,10 @@ const GridTargetContainer = function(params) {
             this.targetGrid = listbox; //new OptionListControl(params);
             this.targetGrids.push(listbox);
 
+            listbox.getSiblingCount = () => {
+                return this.targetGrids.length - 1;
+            };
+
             listbox.blockActionButtons = ($except) => {
                 this.blockActionButtons($except);
             };
@@ -386,6 +390,7 @@ const GridTargetContainer = function(params) {
 
             this._targetDoubleClickDetect = 0;
             listbox.$el.on('click', null, this, (event) => {
+                this.targetGrid = listbox;
                 this._targetDoubleClickDetect += 1;
                 if (this._targetDoubleClickDetect === 1) {
                     setTimeout(() => {
@@ -531,6 +536,18 @@ const GridTargetContainer = function(params) {
         }
     };
 
+    this.findListWithSpace = function(fromList, format) {
+        let foundList = false;
+        for (let i = 0; i < this.targetGrids.length; i++) {
+            if (foundList && this.targetGrids[i].hasSpace(format))
+                return this.targetGrids[i];
+            else if (fromList === this.targetGrids[i])
+                foundList = true;
+        }
+
+        return null;
+    };
+
     this.onAddButtonClick = function() {
         if (this.targetGrid === null)
             return;
@@ -554,7 +571,16 @@ const GridTargetContainer = function(params) {
                             postProcessSelectionIndex += 1;
                     }
 
-                    if (this.addRawToOption(selectedItem, null, false) === false)
+                    let nextTarget = this.targetGrid;
+                    while (this.addRawToOption(selectedItem, null, false) === false) {
+                        nextTarget = this.findListWithSpace(this.targetGrid);
+                        if (nextTarget === null)
+                            break;
+
+                        this.targetGrid = nextTarget;
+                    }
+
+                    if (nextTarget === null)
                         break;
                 }
                 postProcessList = this._supplier;
@@ -714,6 +740,8 @@ const GridTargetContainer = function(params) {
         if (grid.addTarget) {
             this.$button = $('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
             this.$button.click((event) => {
+                if (this.gainOnClick && this.targetGrids.length > 0)
+                    this.targetGrid = this.targetGrids[0];
                 if (this._actionsBlocked === false)
                     this.onAddButtonClick();
             });

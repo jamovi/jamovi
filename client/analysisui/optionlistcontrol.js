@@ -505,6 +505,31 @@ const OptionListControl = function(params) {
         return true;
     };
 
+    this.hasSpace = function(format) {
+        let hasMaxItemCount = this.maxItemCount >= 0;
+        let option = this.getOption();
+        let currentCount = option.getLength(this.getValueKey());
+
+        let cellKey = null;
+        let lastRow = option.getLength(this.getValueKey()) - 1;
+        for (let r = 0; r <= lastRow; r++) {
+            let value = this.getSourceValue([r]);
+            let emptyKey = r === undefined ? null : this.findEmptyProperty(value, format).key;
+            if (emptyKey !== null) {
+                cellKey = [r].concat(emptyKey);
+                break;
+            }
+        }
+
+        if (cellKey === null)
+            cellKey = [option.getLength(this.getValueKey())];
+
+        if (hasMaxItemCount && cellKey[0] > this.maxItemCount - 1)
+            return false;
+
+        return true;
+    };
+
     this.addRawToOption = function(data, cellKey, insert, format) {
         let hasMaxItemCount = this.maxItemCount >= 0;
         let option = this.getOption();
@@ -545,7 +570,11 @@ const OptionListControl = function(params) {
             cellKey = [cellKey[0]];
         }
 
-        if (this.isSingleItem === false && hasMaxItemCount && (cellKey[0] > this.maxItemCount - 1 || (overrideValue === false && option.getLength(this.getValueKey()) === this.maxItemCount)))
+        let siblingListCount = 0;
+        if (this.getSiblingCount)
+            siblingListCount = this.getSiblingCount();
+
+        if ((siblingListCount > 0 || this.isSingleItem === false) && hasMaxItemCount && (cellKey[0] > this.maxItemCount - 1 || (overrideValue === false && option.getLength(this.getValueKey()) === this.maxItemCount)))
             return false;
 
         if (option.valueInited() === false || this.isSingleItem) {
