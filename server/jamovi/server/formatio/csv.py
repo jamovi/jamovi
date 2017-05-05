@@ -36,6 +36,9 @@ def write(data, path):
 
 
 def calc_dps(value, max_dp=3):
+    if math.isnan(value):
+        return 0
+
     max_dp_required = 0
     value %= 1
     as_string = '{v:.{dp}f}'.format(v=value, dp=max_dp)
