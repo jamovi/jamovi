@@ -30,6 +30,10 @@ public:
     bool requiresDataset;
     std::string datasetId;
 
+    std::string path;
+    std::string format;
+    std::string part;
+
 private:
     Type type;
 };

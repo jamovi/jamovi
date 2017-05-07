@@ -9,6 +9,7 @@ const formatIO = require('./utils/formatio');
 
 const Menu = require('./menu');
 const Notify = require('./notification');
+const host = require('./host');
 
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
@@ -199,6 +200,7 @@ const ResultsPanel = Backbone.View.extend({
                     let options = { };
                     options[eventData.name] = eventData.value;
                     analysis.setOptions(options);
+                    break;
             }
         }
     },
@@ -207,8 +209,16 @@ const ResultsPanel = Backbone.View.extend({
         this._menuId = id;
 
         let entries = [ ];
-        for (let entry of data.entries)
-            entries.push({ label: entry.type, address: entry.address, options: entry.options });
+        for (let entry of data.entries) {
+            let e = {
+                label: entry.type,
+                type: entry.type,
+                address: entry.address,
+                options: entry.options,
+                title: entry.title,
+            };
+            entries.push(e);
+        }
 
         if (entries.length > 0) {
             let lastEntry = entries[entries.length-1];
@@ -218,12 +228,17 @@ const ResultsPanel = Backbone.View.extend({
         this.menu.setup(entries);
         this.menu.show({ clickPos : { top: data.pos.top, left: data.pos.left } });
     },
+    _getElement(address) {
+        let $results = $(this.resources[this._menuId].iframe.contentWindow.document).find('#results');
+        for (let i = 0; i < address.length; i++)
+            $results = $results.find('[data-name="' + btoa(address[i]) + '"]').first();
+        return $results;
+    },
     _menuEvent(event) {
 
         if (event.op === 'copy') {
-            let $results = $(this.resources[this._menuId].iframe.contentWindow.document).find('#results');
-            for (let i = 1; i < event.address.length; i++)
-                $results = $results.find('[data-name="' + btoa(event.address[i]) + '"]').first();
+
+            let $results = this._getElement(event.address);
 
             let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
             let content = formatIO.exportElem($results, type);
@@ -236,6 +251,34 @@ const ResultsPanel = Backbone.View.extend({
 
                 this.model.trigger('notification', note);
             });
+        }
+        else if (event.op === 'save') {
+
+            let part = '' + this._menuId + '/' + event.address.join('/');
+
+            if (event.target.type === 'Image') {
+                let options = {
+                    title: 'Save image',
+                    filters: [
+                        { name: 'PDF', extensions: [ 'pdf' ] },
+                        { name: 'PNG', extensions: [ 'png' ] },
+                        { name: 'SVG', extensions: [ 'svg' ] },
+                        { name: 'EPS', extensions: [ 'eps' ] }, ]
+                };
+
+                let path = host.showSaveDialog(options);
+                if (path) {
+                    path = path.replace(/\\/g, '/');  // convert to non-windows path
+                    this.model.save(path, { name: 'Image', export: true, part: part, partType: 'image' }, true);
+                }
+            }
+            else {
+                let note = new Notify({
+                    title: 'Coming soon!',
+                    message: 'Saving groups and tables is coming soon!',
+                    duration: 3000 });
+                this.model.trigger('notification', note);
+            }
         }
         else if (event.op === 'remove') {
             this.model.set('selectedAnalysis', null);

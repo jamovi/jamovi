@@ -264,38 +264,77 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
 
-        is_export = request.export
-
         try:
             file_exists = os.path.isfile(path)
-            success = False
             if file_exists is False or request.overwrite is True:
-                formatio.write(self._data, path)
-                success = True
-                if not is_export:
-                    self._data.title = os.path.splitext(os.path.basename(path))[0]
-                    self._data.path = path
-                    self._data.is_edited = False
-
-            response = jcoms.SaveProgress()
-            response.fileExists = file_exists
-            response.success = success
-            self._coms.send(response, self._instance_id, request)
-
-            if success and not is_export:
-                self._add_to_recents(path)
+                if request.part != '':
+                    self._on_save_part(request)
+                else:
+                    self._on_save_everything(request)
+            else:
+                response = jcoms.SaveProgress()
+                response.fileExists = True
+                response.success = False
+                self._coms.send(response, self._instance_id, request)
 
         except OSError as e:
+            log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to save {}'.format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
+            log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to save {}'.format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
+
+    def _on_save_everything(self, request):
+        path = request.filename
+        path = Instance._normalise_path(path)
+        is_export = request.export
+
+        formatio.write(self._data, path)
+
+        if not is_export:
+            self._data.title = os.path.splitext(os.path.basename(path))[0]
+            self._data.path = path
+            self._data.is_edited = False
+
+        response = jcoms.SaveProgress()
+        response.success = True
+        self._coms.send(response, self._instance_id, request)
+
+        if not is_export:
+            self._add_to_recents(path)
+
+    def _on_save_part(self, request):
+        path = request.filename
+        path = Instance._normalise_path(path)
+        part = request.part
+
+        segments = part.split('/')
+        analysisId = int(segments[0])
+        address = '/'.join(segments[1:])
+
+        analysis = self.analyses.get(analysisId)
+
+        if analysis is not None:
+            result = analysis.save(path, address)
+            result.add_done_callback(lambda result: self._on_part_saved(request, result))
+        else:
+            self._coms.send_error('Error', 'Unable to access analysis', self._instance_id, request)
+
+    def _on_part_saved(self, request, result):
+        try:
+            result.result()
+            response = jcoms.SaveProgress()
+            response.success = True
+            self._coms.send(response, self._instance_id, request)
+        except Exception as e:
+            self._coms.send_error('Unable to save', str(e), self._instance_id, request)
 
     def _on_open(self, request):
         path = request.filename
@@ -315,12 +354,14 @@ class Instance:
                 self._add_to_recents(path)
 
         except OSError as e:
+            log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to open {}'.format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
+            log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to open {}'.format(base)
             cause = str(e)

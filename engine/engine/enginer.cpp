@@ -105,7 +105,27 @@ void EngineR::run(Analysis *analysis)
         rInside.parseEvalQ("try(analysis$.load(changed))");
     }
 
-    if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
+    if (analysis->perform == 5)  // SAVE
+    {
+        ss.str("");
+        ss << "result <- try(";
+        ss << "  analysis$.savePart(";
+        ss << "  path='" << analysis->path << "',";
+        ss << "  part='" << analysis->part << "',";
+        ss << "  format='" << analysis->format << "')";
+        ss << ", silent=TRUE);";
+        ss << "if (inherits(result, 'try-error')) {";
+        ss << "  result <- jmvcore::extractErrorMessage(result)";
+        ss << "} else {";
+        ss << "  result <- ''";  // success
+        ss << "};";
+        ss << "result";
+
+        std::string result = rInside.parseEval(ss.str());
+
+        opEventReceived(result);
+    }
+    else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
         sendResults(true, true);
         rInside.parseEvalQ("try(analysis$.save())");
@@ -124,7 +144,7 @@ void EngineR::run(Analysis *analysis)
             return;
 
         sendResults();
-        rInside.parseEvalQNT("analysis$render(noThrow=TRUE);");
+        rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
         sendResults();
         sendResults(true, true);
         rInside.parseEvalQ("try(analysis$.save())");
@@ -325,7 +345,7 @@ string EngineR::analysisDirPath(const std::string &datasetId, const string &anal
 
 std::string EngineR::statePath(const string &datasetId, const string &analysisId)
 {
-    return analysisDirPath(datasetId, analysisId) + "/state";
+    return analysisDirPath(datasetId, analysisId) + "/analysis";
 }
 
 Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &analysisId, const std::string &elementId, const std::string &suffix)

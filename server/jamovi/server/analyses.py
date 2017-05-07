@@ -2,6 +2,7 @@
 import os.path
 import yaml
 from enum import Enum
+from concurrent.futures import Future
 
 from .modules import Modules
 from .options import Options
@@ -18,6 +19,26 @@ class Analysis:
         ERROR = 4
         DELETED = 5
 
+    class Op:
+
+        SAVE = 1
+
+        def __init__(self, op, parent):
+            self.op = op
+            self.parent = parent
+            self.waiting = True
+            self.future = Future()
+            self.path = None
+            self.part = None
+
+        def set_result(self, result):
+            self.parent._ops.remove(self)
+            self.future.set_result(result)
+
+        def set_exception(self, exception):
+            self.parent._ops.remove(self)
+            self.future.set_exception(exception)
+
     def __init__(self, id, name, ns, options, parent):
         self.id = id
         self.name = name
@@ -29,6 +50,8 @@ class Analysis:
         self.changes = set()
         self.status = Analysis.Status.NONE
         self.clear_state = False
+
+        self._ops = [ ]
 
     @property
     def has_results(self):
@@ -60,6 +83,26 @@ class Analysis:
     def serialize(self):
         return self.results.SerializeToString()
 
+    def save(self, path, part):
+        op = Analysis.Op(Analysis.Op.SAVE, self)
+        op.path = path
+        op.part = part
+        self._ops.append(op)
+        self.parent._notify_options_changed(self)
+        return op.future
+
+    @property
+    def needs_op(self):
+        if self._ops:
+            return self._ops[0].waiting
+        return False
+
+    @property
+    def op(self):
+        if self._ops:
+            return self._ops[0]
+        raise RuntimeError('No op waiting')
+
     @property
     def resources(self):
         return Analysis._get_resources(self.results.results)
@@ -82,21 +125,28 @@ class Analysis:
 
 
 class AnalysisIterator:
-    def __init__(self, parent, needs_init=False):
+    def __init__(self, parent, needs_init=False, needs_op=False):
         self._parent = parent
         self._needs_init = needs_init
+        self._needs_op = needs_op
         self._iter = parent.__iter__()
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        while True:
-            analysis = self._iter.__next__()
-            if analysis.status is Analysis.Status.NONE:
-                return analysis
-            elif self._needs_init is False and analysis.status is Analysis.Status.INITED:
-                return analysis
+        if self._needs_op:
+            while True:
+                analysis = self._iter.__next__()
+                if analysis.status is Analysis.Status.COMPLETE and analysis.needs_op:
+                    return analysis
+        else:
+            while True:
+                analysis = self._iter.__next__()
+                if analysis.status is Analysis.Status.NONE:
+                    return analysis
+                if self._needs_init is False and analysis.status is Analysis.Status.INITED:
+                    return analysis
 
 
 class Analyses:
@@ -126,25 +176,29 @@ class Analyses:
 
         with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
             defn = yaml.load(stream)
-            analysisName = defn['name']
-            optionDefs = defn['options']
+            analysis_name = defn['name']
+            option_defs = defn['options']
 
-            options = Options.create(optionDefs)
+            options = Options.create(option_defs)
             options.set(options_pb)
 
-            analysis = Analysis(id, analysisName, ns, options, self)
+            analysis = Analysis(id, analysis_name, ns, options, self)
             self._analyses.append(analysis)
             self._notify_options_changed(analysis)
 
             return analysis
 
     @property
-    def need_init(self):
+    def needs_init(self):
         return AnalysisIterator(self, True)
 
     @property
-    def need_run(self):
+    def needs_run(self):
         return AnalysisIterator(self, False)
+
+    @property
+    def needs_op(self):
+        return AnalysisIterator(self, needs_op=True)
 
     def add_results_changed_listener(self, listener):
         self._results_changed_listeners.append(listener)

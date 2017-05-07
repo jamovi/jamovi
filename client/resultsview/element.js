@@ -39,7 +39,12 @@ const ElementView = Backbone.View.extend({
 
         if (event.type === 'menu') {
             let options = [ { label: 'Copy' }, { label: 'Save' } ];
-            let entry = { type: this.type(), address: this.address(), options: options };
+            let entry = {
+                type: this.type(),
+                address: this.address(),
+                title: this.model.attributes.title,
+                options: options,
+            };
             event.data.entries.unshift(entry);
             this.parent._sendEvent(event);
         }
@@ -51,7 +56,7 @@ const ElementView = Backbone.View.extend({
             addr.push(this.model.attributes.name);
         }
         else {
-            addr = [ this.model.attributes.name ];
+            addr = [ ];
         }
         return addr;
     }

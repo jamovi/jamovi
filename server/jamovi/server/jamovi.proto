@@ -43,6 +43,8 @@ message AnalysisRequest {
     enum Perform {
         INIT = 0;
         RUN = 1;
+        RENDER = 4;
+        SAVE = 5;
         DELETE = 6;
     }
 
@@ -53,6 +55,10 @@ message AnalysisRequest {
     int32 revision = 9;
     bool restartEngines = 10;
     bool clearState = 11;
+
+    string path = 16;
+    string part = 17;
+    string format = 18;
 }
 
 enum AnalysisStatus {
@@ -241,6 +247,8 @@ message SaveRequest {
     string filename = 1;
     bool overwrite = 2;
     bool export = 3;
+    string part = 4;
+    string format = 5;
 }
 
 message SaveProgress {

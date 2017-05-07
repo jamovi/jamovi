@@ -141,29 +141,36 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
-    export(filePath, overwrite) {
-        return this.save(filePath, overwrite, true);
-    },
-    save(filePath, overwrite, exp0rt) {
+    save(filePath, options, overwrite) {
 
+        if (options === undefined)
+            options = { export: false, part: '' };
+        if (options.name === undefined)
+            options.name = 'Element';
+        if (options.export === undefined)
+            options.export = false;
+        if (options.part === undefined)
+            options.part = '';
         if (overwrite === undefined)
             overwrite = false;
-        if (exp0rt === undefined)
-            exp0rt = false;
 
         let coms = this.attributes.coms;
 
-        let save = new coms.Messages.SaveRequest(filePath, overwrite, exp0rt);
+        let save = new coms.Messages.SaveRequest(
+            filePath,
+            overwrite,
+            options.export,
+            options.part);
         let request = new coms.Messages.ComsMessage();
         request.payload = save.toArrayBuffer();
-        request.payloadType = "SaveRequest";
+        request.payloadType = 'SaveRequest';
         request.instanceId = this._instanceId;
 
         return new Promise((resolve, reject) => {
             coms.send(request).then((response) => {
                 let info = coms.Messages.SaveProgress.decode(response.payload);
                 if (info.success) {
-                    if (exp0rt) {
+                    if (options.export) {
                         resolve();
                         this._notify({ message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" });
                     }
@@ -180,7 +187,7 @@ const Instance = Backbone.Model.extend({
                     if (overwrite === false && info.fileExists) {
                         let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Do you want to overwrite this file?", 'Confirm overwite');
                         if (response)
-                            this.save(filePath, true, exp0rt).then(() => resolve(), (reason) => reject(reason) );
+                            this.save(filePath, options, true).then(() => resolve(), (reason) => reject(reason) );
                         else
                             reject("File overwrite cancelled.");
                     }

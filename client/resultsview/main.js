@@ -113,12 +113,10 @@ class Main {  // this is constructed at the bottom
 
         let address = event.address;
 
-        if (address.length === 1) {
+        if (address.length === 0) {
             this.active = this.results;
         }
         else {
-            address = _.clone(address);
-            address.shift();
             this.active = this.results.get(address);
         }
 

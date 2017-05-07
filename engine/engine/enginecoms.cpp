@@ -76,6 +76,10 @@ void EngineComs::parse(char *data, int len)
     analysis->perform = analysisRequest.perform();
     analysis->clearState = analysisRequest.clearstate();
 
+    analysis->path = analysisRequest.path();
+    analysis->format = analysisRequest.format();
+    analysis->part = analysisRequest.part();
+
     if (analysisRequest.changed_size() > 0)
         analysis->changed.assign(analysisRequest.changed().begin(), analysisRequest.changed().end());
 

@@ -25,6 +25,7 @@ class Engine:
         WAITING = 0
         INITING = 1
         RUNNING = 2
+        OPPING = 3  # performing operation
 
     def __init__(self, parent, instance_id, index, session_path, conn_root):
         self._parent = parent
@@ -143,24 +144,38 @@ class Engine:
 
         self._message_id += 1
         self.analysis = analysis
-        analysis.status = Analysis.Status.RUNNING
 
         request = jcoms.AnalysisRequest()
+
         request.datasetId = self._instance_id
         request.analysisId = analysis.id
         request.name = analysis.name
         request.ns = analysis.ns
-        request.options.CopyFrom(analysis.options.as_pb())
-        request.changed.extend(analysis.changes)
-        request.revision = analysis.revision
-        request.clearState = analysis.clear_state
 
-        if run:
-            request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')
-            self.status = Engine.Status.RUNNING
+        if analysis.status is Analysis.Status.COMPLETE and analysis.needs_op:
+
+            analysis.op.waiting = False
+            request.options.CopyFrom(analysis.options.as_pb())
+            request.perform = jcoms.AnalysisRequest.Perform.Value('SAVE')
+            request.path = analysis.op.path
+            request.part = analysis.op.part
+            self.status = Engine.Status.OPPING
+
         else:
-            request.perform = jcoms.AnalysisRequest.Perform.Value('INIT')
-            self.status = Engine.Status.INITING
+
+            analysis.status = Analysis.Status.RUNNING
+
+            request.options.CopyFrom(analysis.options.as_pb())
+            request.changed.extend(analysis.changes)
+            request.revision = analysis.revision
+            request.clearState = analysis.clear_state
+
+            if run:
+                request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')
+                self.status = Engine.Status.RUNNING
+            else:
+                request.perform = jcoms.AnalysisRequest.Perform.Value('INIT')
+                self.status = Engine.Status.INITING
 
         message = jcoms.ComsMessage()
         message.id = self._message_id
@@ -173,6 +188,14 @@ class Engine:
 
         if self.status is Engine.Status.WAITING:
             log.info('id : {}, response received when not running'.format(message.id))
+        elif self.status is Engine.Status.OPPING:
+            self.status = Engine.Status.WAITING
+            if message.status is jcoms.Status.Value('ERROR'):
+                self.analysis.op.set_exception(RuntimeError(message.error.cause))
+            else:
+                self.analysis.op.set_result(message)
+            self.analysis = None
+            self._parent._send_next()
         else:
             results = jcoms.AnalysisResponse()
             results.ParseFromString(message.payload)
@@ -251,10 +274,14 @@ class EngineManager:
                     engine.send(analysis)
         for engine in self._engines:
             if engine.is_waiting:
-                for analysis in self._analyses.need_init:
+                for analysis in self._analyses.needs_init:
                     engine.send(analysis, False)
                     break
             if engine.is_waiting:
-                for analysis in self._analyses.need_run:
+                for analysis in self._analyses.needs_op:
+                    engine.send(analysis, True)
+                    break
+            if engine.is_waiting:
+                for analysis in self._analyses.needs_run:
                     engine.send(analysis, True)
                     break

@@ -159,9 +159,12 @@ def read(data, path, is_example=False):
         is_analysis = re.compile('^[0-9][0-9]+ .+/analysis$')
         is_resource = re.compile('^[0-9][0-9]+ .+/resources/.+')
 
+        print(data.instance_path)
+
         for entry in zip.infolist():
-            if is_analysis.match(entry.filename) is not None:
+            if is_analysis.match(entry.filename):
+                zip.extract(entry, data.instance_path)
                 serial = zip.read(entry.filename)
                 data.analyses.create_from_serial(serial)
-            elif is_resource.match(entry.filename) is not None:
+            elif is_resource.match(entry.filename):
                 zip.extract(entry, data.instance_path)

@@ -837,7 +837,7 @@ var BackstageModel = Backbone.Model.extend({
                     path = this._pcSaveListModel.currentActivePath;
             }
 
-            this.instance.save(path, overwrite)
+            this.instance.save(path, undefined, overwrite)
                 .then(() => {
                     this._updateSavePath(path);
                     if (this._savePromiseResolve !== null)
@@ -845,10 +845,10 @@ var BackstageModel = Backbone.Model.extend({
                     this.set('activated', false);
                     this.trigger('saved');
                     resolve();
-                }).catch(() => {
+                }).catch(error => {
                     this.set('activated', true);
                     this.set('operation', 'saveAs');
-                    reject();
+                    reject(error);
                 });
         });
     },

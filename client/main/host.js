@@ -27,6 +27,7 @@ let navigate;
 let constructMenu;
 let copyToClipboard;
 let pasteFromClipboard;
+let showSaveDialog;
 
 let emitter = new events.EventEmitter();
 
@@ -188,6 +189,9 @@ if (window.require) {
     pasteFromClipboard = function() {
         return clipboard.readText();
     };
+
+    showSaveDialog = dialog.showSaveDialog;
+
 }
 else {
 
@@ -223,4 +227,5 @@ module.exports = {
     constructMenu,
     copyToClipboard,
     pasteFromClipboard,
+    showSaveDialog,
 };

@@ -26,6 +26,7 @@ public:
     void setPath(const std::string &path);
     void setCheckForNewCB(std::function<Analysis*()> check);
 
+    boost::signals2::signal<void (const std::string &)> opEventReceived;
     boost::signals2::signal<void (const std::string &)> resultsReceived;
 
 private:
