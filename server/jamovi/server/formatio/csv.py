@@ -4,6 +4,7 @@
 
 import csv
 import math
+import re
 from ...core import MeasureType
 
 
@@ -130,12 +131,29 @@ def read(data, path):
 
 
 class ColumnWriter:
+
+    euro_float_pattern = re.compile(r'^(-)?([0-9]*),([0-9]+)$')
+    euro_float_repl = r'\1\2.\3'
+
+    def _is_euro_float(self, v):
+        if ColumnWriter.euro_float_pattern.match(v):
+            return True
+        return False
+
+    def _parse_euro_float(self, v):
+        v = re.sub(
+            ColumnWriter.euro_float_pattern,
+            ColumnWriter.euro_float_repl,
+            v)
+        return float(v)
+
     def __init__(self, column, column_index):
         self._column = column
         self._column_index = column_index
 
         self._only_integers = True
         self._only_floats = True
+        self._only_euro_floats = True
         self._is_empty = True
         self._unique_values = set()
         self._measure_type = None
@@ -161,19 +179,28 @@ class ColumnWriter:
 
         self._unique_values.add(value)
 
-        if self._only_integers:
-            try:
-                i = int(value)
-                if i > 2147483647 or i < -2147483648:
-                    self._only_integers = False
-            except ValueError:
-                self._only_integers = False
-
         try:
-            f = float(value)
-            self._dps = max(self._dps, calc_dps(f))
+            i = int(value)
+            if i > 2147483647 or i < -2147483648:
+                self._only_integers = False
         except ValueError:
-            self._only_floats = False
+            self._only_integers = False
+
+            try:
+                f = float(value)
+
+                # we always calc dps, even if we know the column isn't going to be
+                # continuous. the user might change it *to* continuous later.
+                self._dps = max(self._dps, calc_dps(f))
+                self._only_euro_floats = False
+            except ValueError:
+                self._only_floats = False
+
+                if self._only_euro_floats and self._is_euro_float(value):
+                    f = self._parse_euro_float(value)
+                    self._dps = max(self._dps, calc_dps(f))
+                else:
+                    self._only_euro_floats = False
 
     def ruminate(self):
 
@@ -188,7 +215,9 @@ class ColumnWriter:
             self._unique_values.sort()
             for level in self._unique_values:
                 self._column.append_level(level, str(level))
-        elif self._only_floats:
+        elif self._only_floats or self._only_euro_floats:
+            if self._only_floats and self._only_euro_floats:
+                self._only_euro_floats = False
             self._measure_type = MeasureType.CONTINUOUS
         else:
             self._measure_type = MeasureType.NOMINAL_TEXT
@@ -229,6 +258,13 @@ class ColumnWriter:
                 self._column[row_no] = int(value)
 
         elif self._measure_type == MeasureType.CONTINUOUS:
+
+            if self._only_euro_floats:
+                value = re.sub(
+                    ColumnWriter.euro_float_pattern,
+                    ColumnWriter.euro_float_repl,
+                    value)
+
             if value is None:
                 self._column[row_no] = float('nan')
             else:
