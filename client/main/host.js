@@ -28,6 +28,7 @@ let constructMenu;
 let copyToClipboard;
 let pasteFromClipboard;
 let showSaveDialog;
+let version;
 
 let emitter = new events.EventEmitter();
 
@@ -47,6 +48,7 @@ if (window.require) {
     const Menu = remote.Menu;
     const clipboard = electron.clipboard;
 
+    version = remote.getGlobal('version');
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
     resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
@@ -207,6 +209,7 @@ else {
 }
 
 module.exports = {
+    version,
     baseUrl,
     analysisUIUrl,
     resultsViewUrl,

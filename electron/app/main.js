@@ -6,6 +6,16 @@ const app = electron.app;
 const path = require('path');
 const fs = require('fs');
 
+const version = function() {
+    let versionPath = path.join(path.dirname(process.execPath), '..', 'Resources', 'jamovi', 'version');
+    try {
+        return fs.readFileSync(versionPath, { encoding: 'utf-8' }).trim();
+    }
+    catch(e) {
+        return 'unknown version';
+    }
+}
+
 const marshallArgs = function(argv, wd, first) {
 
     let cmd = { first: first };
@@ -14,7 +24,7 @@ const marshallArgs = function(argv, wd, first) {
         cmd.open = '';
     }
     else if (argv[1] === '--version') {
-        console.log('0.7.3.0');
+        console.log(version());
         cmd.exit = true;
     }
     else if (argv[1] === '--install') {
@@ -72,6 +82,7 @@ let rootPath = path.resolve(path.dirname(process.execPath), conf.ENV.JAMOVI_CLIE
 let serverCMD = conf.ENV.JAMOVI_SERVER_CMD.split(' ')
 let cmd = path.resolve(path.dirname(process.execPath), serverCMD[0]);
 let args = serverCMD.slice(1);
+global.version = version();
 
 let env = { };
 if (process.platform === 'linux') {
