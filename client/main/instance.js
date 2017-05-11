@@ -33,6 +33,8 @@ const Instance = Backbone.Model.extend({
         this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
+        this.on('change:theme', event => this._themeChanged());
+
         this._instanceId = null;
 
         this._onBC = (bc => this._onReceive(bc));
@@ -54,6 +56,7 @@ const Instance = Backbone.Model.extend({
         resultsMode : 'rich',
         devMode: false,
         blank : false,
+        theme : 'default',
     },
     instanceId() {
         return this._instanceId;
@@ -298,6 +301,10 @@ const Instance = Backbone.Model.extend({
 
         return coms.send(request);
     },
+    _themeChanged() {
+        for (let analysis of this.analyses())
+            this._runAnalysis(analysis, 'theme');
+    },
     _notify(error) {
         let notification = new Notify({
             title: error.message,
@@ -375,6 +382,8 @@ const Instance = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
+        let theme = this.attributes.theme;
+
         let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;
         analysisRequest.name = analysis.name;
@@ -384,13 +393,14 @@ const Instance = Backbone.Model.extend({
         if (changed)
             analysisRequest.changed = changed;
 
+        let options = { };
         if (analysis.isReady)
-            analysisRequest.setOptions(OptionsPB.toPB(analysis.options, ppi, coms.Messages));
-        else
-            analysisRequest.setOptions(OptionsPB.toPB({ }, ppi, coms.Messages));
+            options = analysis.options;
+
+        analysisRequest.setOptions(OptionsPB.toPB(options, { '.ppi' : ppi, 'theme' : theme }, coms.Messages));
 
         if (analysis.deleted)
-            analysisRequest.perform = 6; // delete
+            analysisRequest.perform = 6; // DELETE
 
         let request = new coms.Messages.ComsMessage();
         request.payload = analysisRequest.toArrayBuffer();

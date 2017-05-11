@@ -25,6 +25,9 @@ const RibbonModel = Backbone.Model.extend({
     toggleDevMode() {
         this.trigger('toggleDevMode');
     },
+    changeTheme(name) {
+        this.trigger('themeChanged', name);
+    },
     defaults : {
         tabs : [
             { title : "File" },
@@ -84,6 +87,8 @@ const RibbonView = Backbone.View.extend({
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
         this.appMenu.on('shown', event => this._menuShown(event));
+        this.appMenu.on('themeChanged', name => this.model.changeTheme(name));
+
         this.$header.on('click', event => this._closeMenus());
 
         this._refresh();

@@ -25,6 +25,14 @@
     padding: 6px 12px ;
 }
 
+.jmv-ribbon-appmenu-list {
+    padding: 6px 12px ;
+}
+
+.jmv-ribbon-appmenu-list > * {
+    margin: 6px ;
+}
+
 .jmv-ribbon-appmenu-zoom {
     display: flex ;
     justify-content: center;

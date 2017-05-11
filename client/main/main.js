@@ -112,6 +112,7 @@ $(document).ready(() => {
 
     ribbonModel.on('toggleResultsMode', () => instance.toggleResultsMode());
     ribbonModel.on('toggleDevMode', () => instance.toggleDevMode());
+    ribbonModel.on('themeChanged', (name) => instance.set('theme', name));
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     let optionsFixedWidth = 585;

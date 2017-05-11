@@ -35,6 +35,13 @@ const AppMenuButton = Backbone.View.extend({
         this.$devMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-devmode"><input type="checkbox">Dev mode</label>').appendTo(this.$menu);
         this.$devModeCheck = this.$devMode.find('input');
 
+        this.$theme = $('<div class="jmv-ribbon-appmenu-list">Plot theme </div>')
+            .appendTo(this.$menu);
+        this.$themeList = $('<select><option value="default">default</option><option value="minimal">minimal</option><option value="iheartspss">i♥spss</option><option value="liberace">liberace</option><option value="hadley">hadley</option></select>')
+            .appendTo(this.$theme)
+            .click(event => event.stopPropagation())
+            .change(event => this._changeTheme(event.target.value));
+
         this.$zoomIn.on('click', event => { host.zoomIn(); event.stopPropagation(); });
         this.$zoomOut.on('click', event => { host.zoomOut(); event.stopPropagation(); });
 
@@ -45,6 +52,9 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$syntaxModeCheck.on('change', event => this.model.toggleResultsMode());
         this.$devModeCheck.on('change', event => this.model.toggleDevMode());
+    },
+    _changeTheme(name) {
+        this.trigger('themeChanged', name);
     },
     toggleMenu() {
         if (this.menuVisible)
