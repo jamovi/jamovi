@@ -561,7 +561,7 @@ var BackstageModel = Backbone.Model.extend({
                 places: [
                     { name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
+                    //{ name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
                     { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryListView, separator: true },
                     { name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
@@ -581,8 +581,8 @@ var BackstageModel = Backbone.Model.extend({
                     this._updateSavePath(this.instance.get('path'));
                 },
                 places: [
-                    { name: 'thispc', title: 'This PC', model: this._pcSaveListModel, view: FSEntryBrowserView },
-                    { name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
+                    { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
+                    //{ name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
                     { name: 'browse', title: 'Browse', action: () => { this._browse('saveAs'); } },
                 ]
             },
@@ -596,13 +596,14 @@ var BackstageModel = Backbone.Model.extend({
                     {
                         name: 'csvDoc',
                         title: 'As CSV file',
+                        separator: true,
                         action: () => {
                             this._pcExportListModel.fileExtensions = [ { extension: "csv", description: "CSV (Comma delimited) (*.csv)" } ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView
                     },
-                    { name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
+                    //{ name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
                     {
                         name: 'htmlDoc',
                         title: 'As HTML file',
