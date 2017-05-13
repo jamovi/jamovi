@@ -509,7 +509,7 @@ const GridTargetContainer = function(params) {
 
     this.getSupplierItems = function() {
         let items = this._supplier.getSelectedItems();
-        if (this.targetGrid.isSingleItem)
+        if (this.targetGrid.isSingleItem && this.targetGrids.length === 1)
             items = [items[0]];
         return this.targetGrid.preprocessItems(items, false);
     };

@@ -197,7 +197,7 @@ const DragNDrop = function() {
     this._mouseLeaveDropTarget = function(event) {
         let self = event.data.context;
         let target = self._currentTarget.target;
-        if (target !== null && target._dropId === this._dropId && self._stillOverTarget(self._currentTarget, event.pageX, event.pageY) === false) {
+        if (target && target._dropId === this._dropId && self._stillOverTarget(self._currentTarget, event.pageX, event.pageY) === false) {
             if (target.onDraggingLeave)
                 target.onDraggingLeave();
             self._currentTarget.target = null;
