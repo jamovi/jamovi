@@ -5,6 +5,8 @@ import tornado.httpserver
 
 from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
+from tornado.web import stream_request_body
+from tornado.concurrent import Future
 
 from .clientconnection import ClientConnection
 from .instance import Instance
@@ -15,6 +17,8 @@ import sys
 import os.path
 import uuid
 import mimetypes
+import random
+import re
 
 import tempfile
 import logging
@@ -61,7 +65,13 @@ class ResourceHandler(RequestHandler):
 
         resource_path = instance.get_path_to_resource(resource_id)
 
+        mt = mimetypes.guess_type(resource_id)
+
         with open(resource_path, 'rb') as file:
+            if mt[0] is not None:
+                self.set_header('Content-Type', mt[0])
+            if mt[1] is not None:
+                self.set_header('Content-Encoding', mt[1])
             content = file.read()
             self.write(content)
 
@@ -158,7 +168,39 @@ class SFHandler(StaticFileHandler):
             self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
 
 
+@stream_request_body
+class PDFConverter(RequestHandler):
+
+    def initialize(self, pdfservice):
+        self._pdfservice = pdfservice
+        self._file = None
+
+    def prepare(self):
+        self._file = tempfile.NamedTemporaryFile()
+
+    def data_received(self, data):
+        self._file.write(data)
+
+    async def post(self):
+        self._file.flush()
+        pdf_path = await self._pdfify()
+        with open(pdf_path, 'rb') as file:
+            content = file.read()
+            self.set_header('Content-Type', 'application/pdf')
+            self.write(content)
+
+    def _pdfify(self):
+        self._future = Future()
+        self._pdfservice._request({
+            'cmd': 'convert-to-pdf',
+            'args': [ self._file.name ],
+            'waiting': self._future })
+        return self._future
+
+
 class Server:
+
+    ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"$')
 
     def __init__(self, port, debug=False):
 
@@ -175,6 +217,19 @@ class Server:
         self._thread = threading.Thread(target=self._read_stdin)
         self._thread.start()
 
+        self._etron_reqs = [ ]
+
+    def _request(self, request):
+        id = str(random.randint(0, sys.maxsize))
+        request['id'] = id
+        self._etron_reqs.append(request)
+        cmd = 'request: {} ({}) "{}"'.format(
+            request['cmd'],
+            request['id'],
+            request['args'][0])
+        sys.stdout.write(cmd)
+        sys.stdout.flush()
+
     def add_ports_opened_listener(self, listener):
         self._ports_opened_listeners.append(listener)
 
@@ -186,7 +241,21 @@ class Server:
         ioloop.add_callback(self.stop)
 
     def _stdin(self, line):
-        if line.startswith('install: '):
+
+        match = Server.ETRON_RESP_REGEX.match(line)
+
+        if match:
+            id = match.group(2)
+            for request in self._etron_reqs:
+                if request['id'] == id:
+                    if match.group(3) == '1':
+                        request['waiting'].set_result(match.group(4))
+                    else:
+                        request['waiting'].set_exception(RuntimeError(match.group(4)))
+                    self._etron_reqs.remove(request)
+                    break
+
+        elif line.startswith('install: '):
             path = line[9:]
             Modules.instance().install(path, lambda t, res: None)
             for instanceId, instance in Instance.instances.items():
@@ -218,6 +287,7 @@ class Server:
                 'no_cache': self._debug }),
             (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
             (r'/analyses/(.*)/(.*)()', AnalysisDescriptor),
+            (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/(.*)', SFHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',

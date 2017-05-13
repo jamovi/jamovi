@@ -296,7 +296,11 @@ class Instance:
         path = Instance._normalise_path(path)
         is_export = request.export
 
-        formatio.write(self._data, path)
+        if request.incContent:
+            with open(path, 'wb') as file:
+                file.write(request.content)
+        else:
+            formatio.write(self._data, path)
 
         if not is_export:
             self._data.title = os.path.splitext(os.path.basename(path))[0]

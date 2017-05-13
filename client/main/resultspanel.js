@@ -234,6 +234,9 @@ const ResultsPanel = Backbone.View.extend({
             $results = $results.find('[data-name="' + btoa(address[i]) + '"]').first();
         return $results;
     },
+    getAsHTML(options) {
+        return formatIO.exportElem(this.$el, 'text/html', options);
+    },
     _menuEvent(event) {
 
         if (event.op === 'copy') {
@@ -241,9 +244,12 @@ const ResultsPanel = Backbone.View.extend({
             let $results = this._getElement(event.address);
 
             let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
-            let content = formatIO.exportElem($results, type);
 
-            clipboard.copy({ [ type ]: content }).then(() => {
+            formatIO.exportElem($results, type).then((content) => {
+
+                return clipboard.copy({ [ type ]: content });
+
+            }).then(() => {
                 let note = new Notify({
                     title: 'Copied',
                     message: 'The content has been copied to the clipboard',

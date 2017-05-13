@@ -249,6 +249,8 @@ message SaveRequest {
     bool export = 3;
     string part = 4;
     string format = 5;
+    bool incContent = 6;
+    bytes content = 7;
 }
 
 message SaveProgress {

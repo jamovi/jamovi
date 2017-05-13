@@ -54,11 +54,60 @@ const htmlifyCells = function(cells) {
     return '<html><body><table>' + rows.join('\n') + '</table></body></html>';
 };
 
-const exportElem = function($el, format) {
-    if (format === 'text/plain')
-        return _textify($el[0]);
-    else
-        return _htmlify($el[0]);
+const exportElem = function($el, format, options={inline:false}) {
+    if (format === 'text/plain') {
+        return new Promise.resolve(_textify($el[0]));
+    }
+    else {
+        return _htmlify($el[0], options).then((content) => {
+
+            let html = `<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Results</title>
+        <style>
+
+    body {
+        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
+        color: #333333 ;
+        cursor: default ;
+        margin: 24px ;
+        font-size: 12px ;
+    }
+
+    h1 {
+        font-size: 160% ;
+        color: #3E6DA9 ;
+        margin-bottom: 12px ;
+        white-space: nowrap ;
+    }
+
+    h2 {
+        font-size: 130% ;
+        margin-bottom: 12px ;
+        color: #3E6DA9 ;
+    }
+
+    h3, h4, h5 {
+        font-size: 110% ;
+        margin-bottom: 12px ;
+    }
+
+    table {
+        border-spacing: 0 ;
+    }
+        </style>
+</head>
+<body>`;
+
+
+            html += content;
+            html += '</body></html>';
+
+            return html;
+        });
+    }
 };
 
 const _textify = function(el) {
@@ -73,96 +122,142 @@ const _textify = function(el) {
     return str;
 };
 
-const _htmlify = function(el) {
+const _htmlify = function(el, options) {
 
     if (el.nodeType === Node.TEXT_NODE)
-        return el.data;
+        return Promise.resolve(el.data);
 
     if (el.nodeType !== Node.ELEMENT_NODE)
-        return '';
+        return Promise.resolve('');
 
-    let str = '';
     let tag = el.tagName;
     let include = false;
     let styles = [ ];
     let prepend = '';
     let append = '';
 
-    switch (tag) {
-    case 'DIV':
-        str += _htmlifyDiv(el);
-        break;
-    case 'TABLE':
-        include = true;
-        prepend = '';
-        append = '<p>&nbsp;</p>';
-        break;
-    case 'H1':
-    case 'H2':
-    case 'H3':
-    case 'H4':
-    case 'H5':
-    case 'THEAD':
-    case 'TBODY':
-    case 'TFOOT':
-    case 'TR':
-    case 'PRE':
-        include = true;
-        break;
-    case 'TD':
-    case 'TH':
-        include = true;
-        styles = [
-            'text-align',
-            'padding',
-            'border-left',
-            'border-right',
-            'border-top',
-            'border-bottom' ];
-        break;
-    }
+    return Promise.resolve().then(() => {
 
-    str += prepend;
-
-    if (include) {
-        str += '<' + tag;
-        for (let attrib of el.attributes) {
-            if (attrib.name !== 'class' && attrib.specified)
-                str += ' ' + attrib.name + '="' + attrib.value + '"';
+        switch (tag) {
+        case 'DIV':
+            return _htmlifyDiv(el, options);
+        case 'IFRAME':
+            return _htmlifyIFrame(el, options);
+        case 'TABLE':
+            include = true;
+            prepend = '';
+            append = '<p>&nbsp;</p>';
+            break;
+        case 'H1':
+        case 'H2':
+        case 'H3':
+        case 'H4':
+        case 'H5':
+        case 'THEAD':
+        case 'TBODY':
+        case 'TFOOT':
+        case 'TR':
+        case 'PRE':
+            include = true;
+            break;
+        case 'TD':
+        case 'TH':
+            include = true;
+            styles = [
+                'text-align',
+                'padding',
+                'border-left',
+                'border-right',
+                'border-top',
+                'border-bottom' ];
+            break;
         }
-        if (styles.length > 0) {
-            str += ' style="';
-            for (let style of styles)
-                str += style + ':' + $(el).css(style) + ';';
-            str += '"';
+
+        return Promise.resolve('');
+
+    }).then(html => {
+
+        html += prepend;
+
+        if (include) {
+            html += '<' + tag;
+            for (let attrib of el.attributes) {
+                if (attrib.name !== 'class' && attrib.specified)
+                    html += ' ' + attrib.name + '="' + attrib.value + '"';
+            }
+            if (styles.length > 0) {
+                html += ' style="';
+                for (let style of styles)
+                    html += style + ':' + $(el).css(style) + ';';
+                html += '"';
+            }
+            html += '>';
         }
-        str += '>';
-    }
 
-    for (let child of $(el).contents())
-        str += _htmlify(child);
+        let promises = [ ];
+        for (let child of $(el).contents())
+            promises.push(_htmlify(child, options));
 
-    if (include)
-        str += '</' + tag + '>';
+        return Promise.all(promises).then(all => {
 
-    str += append;
+            return html + all.join('');
 
-    return str;
+        }).then(html => {
+
+            if (include)
+                html += '</' + tag + '>';
+            html += append;
+            return html;
+        });
+    });
 };
 
-const _htmlifyDiv = function(el) {
+const _htmlifyIFrame = function(el, options) {
+    let str = '';
+    let promises = [ ];
+    for (let child of $(el.contentWindow.document).find('body').contents())
+        promises.push(_htmlify(child, options));
+    return Promise.all(promises).then(all => all.join(''));
+};
+
+const _htmlifyDiv = function(el, options) {
 
     let str = '';
     let bgiu = $(el).css('background-image');
 
-    if (bgiu !== 'none') {
-        let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
-        let width = $(el).css('width');
-        let height = $(el).css('height');
-        str += '<img src="' + bgi + '" style="width:' + width + ';height:' + height + ';">';
-    }
+    if (bgiu === 'none')
+        return Promise.resolve('');
 
-    return str;
+    let width = $(el).css('width');
+    let height = $(el).css('height');
+    let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
+    bgi = decodeURI(bgi);
+
+    if ( ! options.inline)
+        return '<img src="' + bgi + '" style="width:' + width + ';height:' + height + ';">';
+
+    return new Promise((resolve, reject) => {
+
+        let xhr = new XMLHttpRequest();  // jQuery doesn't support binary!
+        xhr.open('GET', bgi);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function(e) {
+            let mime = this.getResponseHeader('content-type');
+            let data = new Uint8Array(this.response);
+            let b64 = btoa(String.fromCharCode.apply(null, data));
+            let dataURI = 'data:' + mime + ';base64,' + b64;
+            resolve(dataURI);
+        };
+        xhr.onerror = function(e) {
+            reject(e);
+        };
+        xhr.send();
+
+        return str;
+    }).then((dataURI) => {
+
+        return '<img src="' + dataURI + '" style="width:' + width + ';height:' + height + ';">';
+    });
 };
 
 module.exports = { exportElem, csvifyCells, htmlifyCells };

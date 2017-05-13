@@ -57,6 +57,7 @@ const Instance = Backbone.Model.extend({
         devMode: false,
         blank : false,
         theme : 'default',
+        resultsSupplier: null,
     },
     instanceId() {
         return this._instanceId;
@@ -144,7 +145,7 @@ const Instance = Backbone.Model.extend({
 
         return promise;
     },
-    save(filePath, options, overwrite) {
+    save(filePath, options, overwrite, recursed) {  // recursed argument is a hack
 
         if (options === undefined)
             options = { export: false, part: '' };
@@ -154,55 +155,96 @@ const Instance = Backbone.Model.extend({
             options.export = false;
         if (options.part === undefined)
             options.part = '';
+        if (options.format === undefined)
+            options.format = '';
         if (overwrite === undefined)
             overwrite = false;
 
         let coms = this.attributes.coms;
 
-        let save = new coms.Messages.SaveRequest(
-            filePath,
-            overwrite,
-            options.export,
-            options.part);
-        let request = new coms.Messages.ComsMessage();
-        request.payload = save.toArrayBuffer();
-        request.payloadType = 'SaveRequest';
-        request.instanceId = this._instanceId;
+        return Promise.resolve().then(() => {
 
-        return new Promise((resolve, reject) => {
-            coms.send(request).then((response) => {
-                let info = coms.Messages.SaveProgress.decode(response.payload);
-                if (info.success) {
-                    if (options.export) {
-                        resolve();
-                        this._notify({ message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" });
-                    }
-                    else {
-                        let ext = path.extname(filePath);
-                        this.set('path', filePath);
-                        this.set('title', path.basename(filePath, ext));
-                        resolve();
-                        this._notify({ message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" });
-                        this._dataSetModel.set('edited', false);
-                    }
+            // Generate content if necessary
+
+            if (options.content) {
+                return options.content;
+            }
+            else if (options.part === '' && filePath.endsWith('.html')) {
+                return this.attributes.resultsSupplier.getResultsHTML({inline:true});
+            }
+            else if (options.part === '' && filePath.endsWith('.pdf')) {
+                return this.attributes.resultsSupplier.getResultsHTML()
+                    .then(html => this._requestPDF(html));
+            }
+            else {
+                return undefined;
+            }
+
+        }).then(content => {
+
+            // Send the save request
+
+            let save = new coms.Messages.SaveRequest(
+                filePath,
+                overwrite,
+                options.export,
+                options.part,
+                options.format);
+
+            if (content) {
+                if (typeof content === 'string')
+                    content = new TextEncoder('utf-8').encode(content);
+                save.incContent = true;
+                save.content = content;
+                options.content = content;
+            }
+
+            let request = new coms.Messages.ComsMessage();
+            request.payload = save.toArrayBuffer();
+            request.payloadType = 'SaveRequest';
+            request.instanceId = this._instanceId;
+
+            return coms.send(request)
+                .catch((err) => { throw err.cause; });
+
+        }).then(response => {
+
+            // Handle the response
+
+            let info = coms.Messages.SaveProgress.decode(response.payload);
+            if (info.success) {
+                if (options.export) {
+                    return { message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" };
                 }
                 else {
-                    if (overwrite === false && info.fileExists) {
-                        let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Do you want to overwrite this file?", 'Confirm overwite');
-                        if (response)
-                            this.save(filePath, options, true).then(() => resolve(), (reason) => reject(reason) );
-                        else
-                            reject("File overwrite cancelled.");
-                    }
-                    else {
-                        reject("File save failed.");
-                    }
+                    let ext = path.extname(filePath);
+                    this.set('path', filePath);
+                    this.set('title', path.basename(filePath, ext));
+                    this._dataSetModel.set('edited', false);
+                    return { message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" };
                 }
+            }
+            else {
+                if (overwrite === false && info.fileExists) {
+                    let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Overwrite this file?", 'Confirm overwite');
+                    if (response)
+                        return this.save(filePath, options, true, true);
+                    else
+                        return Promise.reject();  // cancelled
+                }
+                else {
+                    Promise.reject("File save failed.");
+                }
+            }
 
-            }).catch(error => {
-                reject("File save failed.");
-                this._notify(error);
-            });
+        }).then(message => {  // this stuff should get moved to the caller (so we can call this recursively)
+            if ( ! recursed && message) // hack!
+                this._notify(message);
+            return message;
+        }).catch(error => {
+            if ( ! recursed && error) // if not cancelled
+                this._notify({ message: 'Save failed', cause: error });
+            throw error;
         });
     },
     browse(filePath) {
@@ -480,7 +522,26 @@ const Instance = Backbone.Model.extend({
             default:
                 return '';
         }
-    }
+    },
+    _requestPDF(html) {
+        return new Promise((resolve, reject) => {
+
+            let url = host.baseUrl + 'utils/to-pdf';
+            let xhr = new XMLHttpRequest();  // jQuery doesn't support binary!
+            xhr.open('POST', url);
+            xhr.send(html);
+            xhr.responseType = 'arraybuffer';
+            xhr.onload = function(e) {
+                if (this.status === 200)
+                    resolve(this.response);
+                else
+                    reject(this.statusText);
+            };
+            xhr.onerror = function(e) {
+                reject(e);
+            };
+        });
+    },
 });
 
 module.exports = Instance;

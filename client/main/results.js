@@ -37,6 +37,8 @@ const ResultsView = Backbone.View.extend({
             else
                 this.$textView.addClass('silky-results-panel-hidden');
         });
+
+        this.model.set('resultsSupplier', this);
     },
     showWelcome() {
 
@@ -52,7 +54,10 @@ const ResultsView = Backbone.View.extend({
         this.model.analyses().once('analysisResultsChanged', (event) => {
             this.$welcome.addClass('silky-welcome-panel-hidden');
         });
-    }
+    },
+    getResultsHTML(options) {
+        return this.richView.getAsHTML(options);
+    },
 });
 
 module.exports = ResultsView;

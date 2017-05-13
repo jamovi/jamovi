@@ -73,6 +73,7 @@ const dialog = electron.dialog;
 const child_process = require('child_process');
 
 const ini = require('./ini');
+const tmp = require('./tmp');
 
 let confPath = path.join(path.dirname(process.execPath), 'env.conf');
 let content = fs.readFileSync(confPath, 'utf8');
@@ -107,6 +108,45 @@ for (let name in env) {
     }
 }
 
+const convertToPDF = function(path) {
+
+    let wind = new BrowserWindow({ width: 1280, height: 800, show: false });
+    wind.webContents.loadURL('file://' + path);
+
+    return new Promise((resolve, reject) => {
+
+        wind.webContents.once('did-finish-load', () => resolve());
+
+    }).then(() => {
+
+        return new Promise((resolve, reject) => {
+            wind.webContents.printToPDF({}, (err, data) => {
+                setTimeout(() => wind.close());
+                if (err)
+                    reject(err)
+                resolve(data);
+            });
+        });
+    }).then((data) => {
+
+        return new Promise((resolve, reject) => {
+            tmp.file({ postfix: '.pdf' }, (err, path, fd) => {
+                if (err)
+                    reject(err);
+                resolve({fd: fd, path: path, data: data});
+            });
+        });
+    }).then((obj) => {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(obj.fd, obj.data, (err) => {
+                if (err)
+                    reject(err)
+                resolve(obj.path);
+            });
+        });
+    });
+}
+
 let server;
 let ports = null;
 
@@ -115,7 +155,7 @@ let spawn = new Promise((resolve, reject) => {
     server = child_process.spawn(cmd, args, { env: env, detached: true });
     // detached, because weird stuff happens on windows if not detached
 
-    let dataListener = chunk => {
+    let dataListener = (chunk) => {
         console.log(chunk);
         if (ports === null) {
             // the server sends back the ports it has opened through stdout
@@ -124,6 +164,27 @@ let spawn = new Promise((resolve, reject) => {
                 ports = ports.slice(1, 4);
                 ports = ports.map(x => parseInt(x));
                 resolve(ports);
+            }
+        }
+
+        let cmdRegex = /^request: ([a-z-]+) \(([0-9]+)\) ?(.*)$/
+        let match = cmdRegex.exec(chunk)
+        if (match !== null) {
+            let id = match[2];
+            switch (match[1]) {
+            case 'convert-to-pdf':
+                match = /^"(.*)"$/.exec(match[3]);
+                if (match) {
+                    convertToPDF(match[1]).then((path) => {
+                        let response = 'response: convert-to-pdf (' + id + ') 1 "' + path + '"\n';
+                        server.stdin.write(response);
+                        console.log(response);
+                    }).catch((err) => {
+                        let response = 'response: convert-to-pdf (' + id + ') 0 "' + err + '"\n';
+                        server.stdin.write(response);
+                        console.log(response);
+                    });
+                }
             }
         }
     };
