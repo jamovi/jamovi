@@ -132,6 +132,7 @@ const _htmlify = function(el, options) {
 
     let tag = el.tagName;
     let include = false;
+    let includeChildren = true;
     let styles = [ ];
     let prepend = '';
     let append = '';
@@ -140,7 +141,14 @@ const _htmlify = function(el, options) {
 
         switch (tag) {
         case 'DIV':
-            return _htmlifyDiv(el, options);
+            if ($(el).css('display') === 'none') { // is display: none ;
+                include = false;
+                includeChildren = false;
+            }
+            else {
+                return _htmlifyDiv(el, options);
+            }
+            break;
         case 'IFRAME':
             return _htmlifyIFrame(el, options);
         case 'TABLE':
@@ -195,8 +203,10 @@ const _htmlify = function(el, options) {
         }
 
         let promises = [ ];
-        for (let child of $(el).contents())
-            promises.push(_htmlify(child, options));
+        if (includeChildren) {
+            for (let child of $(el).contents())
+                promises.push(_htmlify(child, options));
+        }
 
         return Promise.all(promises).then(all => {
 

@@ -183,11 +183,15 @@ class PDFConverter(RequestHandler):
 
     async def post(self):
         self._file.flush()
-        pdf_path = await self._pdfify()
-        with open(pdf_path, 'rb') as file:
-            content = file.read()
-            self.set_header('Content-Type', 'application/pdf')
-            self.write(content)
+        try:
+            pdf_path = await self._pdfify()
+            with open(pdf_path, 'rb') as file:
+                content = file.read()
+                self.set_header('Content-Type', 'application/pdf')
+                self.write(content)
+        except Exception as e:
+            self.set_status(500)
+            self.write(str(e))
 
     def _pdfify(self):
         self._future = Future()

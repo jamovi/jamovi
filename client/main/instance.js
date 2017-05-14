@@ -169,11 +169,15 @@ const Instance = Backbone.Model.extend({
             if (options.content) {
                 return options.content;
             }
-            else if (options.part === '' && filePath.endsWith('.html')) {
-                return this.attributes.resultsSupplier.getResultsHTML({inline:true});
+            else if (options.partType === 'image') {
+                // images are handled specially below
+                return undefined;
             }
-            else if (options.part === '' && filePath.endsWith('.pdf')) {
-                return this.attributes.resultsSupplier.getResultsHTML()
+            else if (filePath.endsWith('.html')) {
+                return this.attributes.resultsSupplier.getAsHTML({inline:true}, options.part);
+            }
+            else if (filePath.endsWith('.pdf')) {
+                return this.attributes.resultsSupplier.getAsHTML({}, options.part)
                     .then(html => this._requestPDF(html));
             }
             else {
@@ -534,6 +538,8 @@ const Instance = Backbone.Model.extend({
             xhr.onload = function(e) {
                 if (this.status === 200)
                     resolve(this.response);
+                if (this.status === 500)
+                    reject(this.responseText);
                 else
                     reject(this.statusText);
             };

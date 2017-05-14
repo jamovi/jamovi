@@ -91,7 +91,9 @@ const ResultsPanel = Backbone.View.extend({
             });
         }
         else if (analysis.deleted) {
-            resources.$container.css('height', '0');
+            let $container = resources.$container;
+            $container.css('height', '0');
+            $container.one('transitionend', () => $container.hide());
         }
         else {
 
@@ -228,22 +230,31 @@ const ResultsPanel = Backbone.View.extend({
         this.menu.setup(entries);
         this.menu.show({ clickPos : { top: data.pos.top, left: data.pos.left } });
     },
-    _getElement(address) {
-        let $results = $(this.resources[this._menuId].iframe.contentWindow.document).find('#results');
+    _getElement(address, id) {
+        if (id === undefined)
+            id = this._menuId;
+        let $results = $(this.resources[id].iframe.contentWindow.document).find('#results');
         for (let i = 0; i < address.length; i++)
             $results = $results.find('[data-name="' + btoa(address[i]) + '"]').first();
         return $results;
     },
-    getAsHTML(options) {
-        return formatIO.exportElem(this.$el, 'text/html', options);
+    getAsHTML(options, part) {
+        if ( ! part)
+            return formatIO.exportElem(this.$el, 'text/html', options);
+
+        let address = part.split('/');
+        let id = address.shift();
+        let $element = this._getElement(address, id);
+
+        return formatIO.exportElem($element, 'text/html', options);
     },
     _menuEvent(event) {
+
+        let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
 
         if (event.op === 'copy') {
 
             let $results = this._getElement(event.address);
-
-            let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
 
             formatIO.exportElem($results, type).then((content) => {
 
@@ -260,7 +271,9 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (event.op === 'save') {
 
-            let part = '' + this._menuId + '/' + event.address.join('/');
+            let part = '' + this._menuId;
+            if (event.address.length > 0)
+                part += '/' + event.address.join('/');
 
             if (event.target.type === 'Image') {
                 let options = {
@@ -279,11 +292,20 @@ const ResultsPanel = Backbone.View.extend({
                 }
             }
             else {
-                let note = new Notify({
-                    title: 'Coming soon!',
-                    message: 'Saving groups and tables is coming soon!',
-                    duration: 3000 });
-                this.model.trigger('notification', note);
+
+                let options = {
+                    title: 'Save results',
+                    filters: [
+                        { name: 'PDF', extensions:  [ 'pdf' ] },
+                        { name: 'HTML', extensions: [ 'html', 'htm' ] },
+                    ]
+                };
+
+                let path = host.showSaveDialog(options);
+                if (path) {
+                    path = path.replace(/\\/g, '/');  // convert to non-windows path
+                    this.model.save(path, { name: 'Image', export: true, part: part }, true);
+                }
             }
         }
         else if (event.op === 'remove') {

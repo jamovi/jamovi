@@ -267,7 +267,9 @@ class Instance:
         try:
             file_exists = os.path.isfile(path)
             if file_exists is False or request.overwrite is True:
-                if request.part != '':
+                if request.incContent:
+                    self._on_save_content(request)
+                elif request.part != '':
                     self._on_save_part(request)
                 else:
                     self._on_save_everything(request)
@@ -291,16 +293,23 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
+    def _on_save_content(self, request):
+        path = request.filename
+        path = Instance._normalise_path(path)
+
+        with open(path, 'wb') as file:
+            file.write(request.content)
+
+        response = jcoms.SaveProgress()
+        response.success = True
+        self._coms.send(response, self._instance_id, request)
+
     def _on_save_everything(self, request):
         path = request.filename
         path = Instance._normalise_path(path)
         is_export = request.export
 
-        if request.incContent:
-            with open(path, 'wb') as file:
-                file.write(request.content)
-        else:
-            formatio.write(self._data, path)
+        formatio.write(self._data, path)
 
         if not is_export:
             self._data.title = os.path.splitext(os.path.basename(path))[0]
