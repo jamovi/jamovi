@@ -32,6 +32,15 @@ const ImageView = ResultsElement.View.extend({
 
         this.$title = $('<h' + (this.level+1) + ' class="silky-results-image-title"></h' + (this.level+1) + '>');
         this.$title.appendTo(this.$el);
+        this.$status = $('<div class="silky-results-image-status-indicator"></div>');
+        this.$status.appendTo(this.$el);
+
+        if (this.model.attributes.status === 1)
+            this.$el.attr('data-status', 'inited');
+        else if (this.model.attributes.status === 2)
+            this.$el.attr('data-status', 'running');
+        else if (this.model.attributes.status === 5)
+            this.$el.attr('data-status', 'running');
 
         if (this.model === null)
             this.model = new ImageModel();

@@ -270,7 +270,25 @@ table.row-selectable tr.selected td {
 }
 
 .silky-results-image {
+    position: relative ;
+}
 
+.silky-results-image-status-indicator {
+    position: absolute ;
+    left: 50% ;
+    top: 50% ;
+    margin-left: -20px ;
+    margin-top: -20px ;
+    width: 40px ;
+    height: 40px ;
+    background-image: url('assets/indicator-running.svg');
+    background-size: 100% ;
+    display: none ;
+}
+
+.silky-results-image[data-status="inited"] .silky-results-image-status-indicator,
+.silky-results-image[data-status="running"] .silky-results-image-status-indicator {
+    display: block ;
 }
 
 .silky-results-array > .silky-results-image {

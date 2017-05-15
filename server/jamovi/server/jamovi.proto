@@ -67,7 +67,7 @@ enum AnalysisStatus {
     ANALYSIS_RUNNING = 2;
     ANALYSIS_COMPLETE = 3;
     ANALYSIS_ERROR = 4;
-    ANALYSIS_ABORTED = 5;
+    ANALYSIS_RENDERING = 5;
 }
 
 message AnalysisResponse {
