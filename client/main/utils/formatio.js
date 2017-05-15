@@ -96,6 +96,11 @@ const exportElem = function($el, format, options={inline:false}) {
 
     table {
         border-spacing: 0 ;
+        page-break-inside: avoid;
+    }
+
+    table tr td, table tr th {
+        page-break-inside: avoid;
     }
         </style>
 </head>
