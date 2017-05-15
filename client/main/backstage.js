@@ -4,17 +4,18 @@
 
 'use strict';
 
-var SilkyView = require('./view');
+const SilkyView = require('./view');
 const keyboardJS = require('keyboardjs');
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
+const _ = require('underscore');
+const $ = require('jquery');
+const Backbone = require('backbone');
 const Path = require('path');
 Backbone.$ = $;
+const tarp = require('./utils/tarp');
 
-var host = require('./host');
+const host = require('./host');
 
-var FSEntryListModel = Backbone.Model.extend({
+const FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ],
     },
@@ -29,7 +30,7 @@ var FSEntryListModel = Backbone.Model.extend({
     }
 });
 
-var FSEntryListView = SilkyView.extend({
+const FSEntryListView = SilkyView.extend({
 
     initialize : function() {
         if ( ! this.model)
@@ -82,7 +83,10 @@ var FSEntryListView = SilkyView.extend({
             }
 
             html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
-            html += '   <div class="silky-bs-fslist-entry-icon"></div>';
+            if (name.endsWith(".omv"))
+                html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
+            else
+                html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
             html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
             html += '       <div class="silky-bs-fslist-entry-location">' + location + '</div>';
@@ -316,6 +320,8 @@ var FSEntryBrowserView = SilkyView.extend({
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
                 else if (name.endsWith(".omv"))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
+                else if (name.endsWith(".pdf"))
+                    html += '       <span class="mif-file-pdf"></span>';
                 else
                     html += '       <span class="mif-file-empty"></span>';
             }
@@ -824,14 +830,35 @@ var BackstageModel = Backbone.Model.extend({
     },
     requestExport: function(path, overwrite) {
         let options = { export: true };
+        this.setSavingState(true);
         this.instance.save(path, options, overwrite)
             .then(() => {
+                this.setSavingState(false);
                 this._updateExportPath(path);
                 this.set('activated', false);
             }).catch(() => {
+                this.setSavingState(false);
                 this.set('activated', true);
                 this.set('operation', 'export');
             });
+    },
+
+    setSavingState: function(saving) {
+        let $button = $(document).find('.silky-bs-fslist-browser-save-button');
+        if ( ! $button)
+            return;
+
+        let $saveIcon = $button.find(".silky-bs-flist-save-icon");
+        if (saving) {
+            tarp.show(false, 0.3, 299);
+            $button.addClass("disabled-div");
+            $saveIcon.addClass('saving-file');
+        }
+        else {
+            tarp.hide();
+            $button.removeClass("disabled-div");
+            $saveIcon.removeClass('saving-file');
+        }
     },
     requestSave: function(path, overwrite) {
 
@@ -858,8 +885,10 @@ var BackstageModel = Backbone.Model.extend({
                     path = this._pcSaveListModel.currentActivePath;
             }
 
+            this.setSavingState(true);
             this.instance.save(path, undefined, overwrite)
                 .then(() => {
+                    this.setSavingState(false);
                     this._updateSavePath(path);
                     if (this._savePromiseResolve !== null)
                         this._savePromiseResolve();
@@ -867,6 +896,7 @@ var BackstageModel = Backbone.Model.extend({
                     this.trigger('saved');
                     resolve();
                 }).catch(error => {
+                    this.setSavingState(false);
                     this.set('activated', true);
                     this.set('operation', 'saveAs');
                     reject(error);

@@ -45,7 +45,7 @@ const ResultsView = Backbone.View.extend({
         this.$welcome = $('<iframe id="main_welcome" \
                 name="welcome" \
                 sandbox="allow-scripts allow-same-origin" \
-                src="https://jamovi.org/welcome/?v=' + host.version + '" \
+                src="https://jamovi.org/welcome/?v=' + host.version + '&r=' + (Math.floor(Math.random() * 100) + 1) + '" \
                 class="silky-welcome-panel" \
                 style="overflow: hidden; box-sizing: border-box;" \
                 ></iframe>');

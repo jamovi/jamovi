@@ -177,7 +177,7 @@
 
 .silky-bs-fslist-entry {
     padding: 6px ;
-    width: 300px ;
+    width: 310px ;
     white-space: nowrap ;
 }
 
@@ -186,14 +186,14 @@
 }
 
 .silky-bs-fslist-entry-icon {
-    width: 32px ;
-    height: 32px ;
+    width: 40px ;
+    height: 40px ;
     background-image: url('assets/document-spreadsheet.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
-    margin-left: 6px ;
-    margin-right: 6px ;
+    margin-left: 2px ;
+    margin-right: 2px ;
 }
 
 .silky-bs-fslist-item {
@@ -260,6 +260,10 @@
     background-size: 100% ;
     width: 22px ;
     height: 22px ;
+}
+
+.silky-bs-flist-save-icon.saving-file {
+    background-image: url('assets/indicator-running.svg');
 }
 
 .silky-bs-fslist-items {
