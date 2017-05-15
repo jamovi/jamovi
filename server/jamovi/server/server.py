@@ -7,6 +7,7 @@ from tornado.web import RequestHandler
 from tornado.web import StaticFileHandler
 from tornado.web import stream_request_body
 from tornado.concurrent import Future
+from tornado import gen
 
 from .clientconnection import ClientConnection
 from .instance import Instance
@@ -181,10 +182,11 @@ class PDFConverter(RequestHandler):
     def data_received(self, data):
         self._file.write(data)
 
-    async def post(self):
+    @gen.coroutine
+    def post(self):
         self._file.flush()
         try:
-            pdf_path = await self._pdfify()
+            pdf_path = yield self._pdfify()
             with open(pdf_path, 'rb') as file:
                 content = file.read()
                 self.set_header('Content-Type', 'application/pdf')
