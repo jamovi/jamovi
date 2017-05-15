@@ -37,4 +37,6 @@ def is_supported(filename):
     return (filename.endswith('.csv') or
             filename.endswith('.txt') or
             filename.endswith('.omv') or
-            filename.endswith('.jasp'))
+            filename.endswith('.jasp') or
+            filename.endswith('.pdf') or
+            filename.endswith('.html'))
