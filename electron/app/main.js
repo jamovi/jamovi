@@ -53,8 +53,10 @@ const marshallArgs = function(argv, wd, first) {
 let argvCmd = marshallArgs(process.argv, '.', true)
 if (argvCmd.error)
     console.log(argvCmd.error);
-if (argvCmd.exit)
+if (argvCmd.exit) {
     app.quit();
+    process.exit(0);
+}
 
 let alreadyRunning = app.makeSingleInstance((argv, wd) => {
     let cmd = marshallArgs(argv, wd);
