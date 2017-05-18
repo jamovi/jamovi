@@ -437,7 +437,7 @@ const DataSetViewModel = DataSetModel.extend({
             return cells;
         });
     },
-    changeCells(viewport, cells) {
+    changeCells(viewport, cells, cbHtml) {
 
         let nRows = viewport.bottom - viewport.top + 1;
         let nCols = viewport.right - viewport.left + 1;
@@ -453,8 +453,10 @@ const DataSetViewModel = DataSetModel.extend({
 
         if (typeof(cells) === 'string') {
             // send serialized data
-            cellsRequest.incSerializedData = true;
-            cellsRequest.serializedData = ByteBuffer.fromUTF8(cells);
+            cellsRequest.incCBData = true;
+            cellsRequest.cbText = cells;
+            if (cbHtml)
+                cellsRequest.cbHtml = cbHtml;
         }
         else if (cells === null) {
 

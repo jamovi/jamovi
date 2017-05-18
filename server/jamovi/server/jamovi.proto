@@ -413,8 +413,9 @@ message DataSetRR {
     repeated ColumnData data = 8;
     DataSetSchema schema = 9;
 
-    bool incSerializedData = 10;
-    bytes serializedData = 11;
+    bool incCBData = 10;
+    string cbText = 11;
+    string cbHtml = 12;
 }
 
 message ModuleRequest {

@@ -51,7 +51,7 @@ const htmlifyCells = function(cells) {
         rows[rowNo] = row;
     }
 
-    return '<html><body><table>' + rows.join('\n') + '</table></body></html>';
+    return '<!DOCTYPE html>\n<html><head><meta charset="utf-8"></head><body><table>' + rows.join('\n') + '</table></body></html>';
 };
 
 const exportElem = function($el, format, options={inline:false}) {

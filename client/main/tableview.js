@@ -804,10 +804,14 @@ const TableView = SilkyView.extend({
     },
     _pasteClipboardToSelection() {
         let content = host.pasteFromClipboard();
-        if (typeof content !== 'string' || content.trim() === '')
+
+        let text = content.text;
+        let html = content.html;
+
+        if (text.trim() === '' && html.trim() === '')
             return;
 
-        return this.model.changeCells(this.selection, content)
+        return this.model.changeCells(this.selection, text, html)
             .then(range => {
 
                 range.rowNo = range.top;

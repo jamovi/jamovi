@@ -17,6 +17,7 @@ from . import jamovi_pb2 as jcoms
 
 from .utils import conf
 from .utils.csvparser import CSVParser
+from .utils.htmlparser import HTMLParser
 from .enginemanager import EngineManager
 from .modules import Modules
 from .instancemodel import InstanceModel
@@ -556,7 +557,7 @@ class Instance:
                 instance._on_settings()
 
     def _on_dataset_set(self, request, response):
-        if request.incData or request.incSerializedData:
+        if request.incData or request.incCBData:
             self._apply_cells(request, response)
         if request.incSchema:
             self._apply_schema(request, response)
@@ -642,10 +643,12 @@ class Instance:
 
             return cells, selection
 
-        elif request.incSerializedData:
+        elif request.incCBData:
 
-            csv = request.serializedData.decode('utf-8', errors='replace')
-            cells = CSVParser.parse(csv, trim_empty_last_line=False)
+            if request.cbHtml and False:  # remove the 'and False' when ready
+                cells = HTMLParser.parse(request.cbHtml)
+            else:
+                cells = CSVParser.parse(request.cbText, trim_empty_last_line=False)
 
             col_end = request.columnStart + len(cells) - 1
             row_end = request.rowStart - 1
