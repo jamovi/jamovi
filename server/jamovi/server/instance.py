@@ -645,7 +645,7 @@ class Instance:
         elif request.incSerializedData:
 
             csv = request.serializedData.decode('utf-8', errors='replace')
-            cells = CSVParser.parse(csv)
+            cells = CSVParser.parse(csv, trim_empty_last_line=False)
 
             col_end = request.columnStart + len(cells) - 1
             row_end = request.rowStart - 1

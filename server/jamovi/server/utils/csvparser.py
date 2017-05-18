@@ -5,7 +5,7 @@ import csv
 class CSVParser:
 
     @staticmethod
-    def parse(text):
+    def parse(text, trim_empty_last_line=True):
         try:
             dialect = csv.Sniffer().sniff(text, ', \t;')
         except csv.Error:
@@ -14,7 +14,8 @@ class CSVParser:
         text = text.replace('\r\n', '\n')  # normalize line endings
         text = text.replace('\r', '\n')
         lines = text.split('\n')
-        lines = list(filter(lambda x: x != '', lines))  # remove empty lines
+        if trim_empty_last_line and lines[-1] == '':
+            del lines[-1]
 
         if len(lines) == 0:
             return [ ]
