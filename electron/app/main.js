@@ -63,8 +63,10 @@ let alreadyRunning = app.makeSingleInstance((argv, wd) => {
     handleCommand(cmd);
 });
 
-if (alreadyRunning)
-    app.quit()
+if (alreadyRunning) {
+    app.quit();
+    process.exit(0);
+}
 
 // proxy servers can interfere with accessing localhost
 app.commandLine.appendSwitch('no-proxy-server');
