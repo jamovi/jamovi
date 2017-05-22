@@ -308,6 +308,11 @@ const createWindow = function(open) {
 
     wind.loadURL(url);
 
+    wind.webContents.on('new-window', function(e, url) {
+        e.preventDefault();
+        electron.shell.openExternal(url);
+    });
+
     let requests = wind.webContents.session.webRequest;
     requests.onBeforeRequest((details, callback) => {
         // redirect requests to the local tornado server when appropriate
