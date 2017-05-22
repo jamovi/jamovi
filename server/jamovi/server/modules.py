@@ -93,8 +93,8 @@ class Modules:
                 module_data = yaml.load(result)
                 if 'jds' not in module_data:
                     raise Exception('No jds')
-                if module_data['jds'] != '1.0' and module_data['jds'] != '1.1':
-                    callback('error', 'The store requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
+                if module_data['jds'] != '1.0' and module_data['jds'] != '1.1' and module_data['jds'] != '1.2':
+                    callback('error', 'The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
                     return
                 for defn in module_data['modules']:
                     module = Modules.parse(defn)

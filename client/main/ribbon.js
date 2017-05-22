@@ -106,7 +106,7 @@ const RibbonView = Backbone.View.extend({
 
         let $button = $('<div></div>').insertAfter(this.$separator);
         let  button = new RibbonMenu($button, this, 'Modules', 'modules', [
-            { name : 'modules', title : 'jamovi store', ns : 'app' }
+            { name : 'modules', title : 'jamovi library', ns : 'app' }
         ], true, false);
         button.on('shown', menuShown);
         this.buttons.push(button);

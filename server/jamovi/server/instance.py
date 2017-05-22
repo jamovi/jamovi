@@ -541,7 +541,7 @@ class Instance:
             progress.total = result[1]
             self._coms.send(progress, self._instance_id, request, complete=False)
         elif t == 'error':
-            self._coms.send_error('Unable to access store', str(result), self._instance_id, request)
+            self._coms.send_error('Unable to access library', str(result), self._instance_id, request)
         elif t == 'success':
             response = jcoms.StoreResponse()
             for module in result:
