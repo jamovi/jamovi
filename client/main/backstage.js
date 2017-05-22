@@ -167,14 +167,17 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     _saveTypeChanged : function() {
         var selected = this.$el.find('option:selected');
-        this.filterExtension = selected.data('extension');
+        this.filterExtensions = selected.data('extensions');
         this._render();
     },
     _validExtension : function(ext) {
         var extOptions = this.$header.find('.silky-bs-fslist-browser-save-filetype option');
         for (let i = 0; i < extOptions.length; i++) {
-            if (extOptions[i].value === ext)
-                return true;
+            let exts = $(extOptions[i]).data('extensions');
+            for (let j = 0; j < exts.length; j++) {
+                if (("." + exts[j]) === ext)
+                    return true;
+            }
         }
         return false;
     },
@@ -235,14 +238,14 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '           <div class="silky-bs-fslist-browser-save-filetype">';
             html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
             for (let i = 0; i < this.model.fileExtensions.length; i++) {
-                let ext = this.model.fileExtensions[i].extension;
+                let exts = this.model.fileExtensions[i].extensions;
                 let desc = this.model.fileExtensions[i].description;
                 let selected = "";
                 if (i === 0)
                     selected = "selected";
-                html += '                   <option data-extension="' + ext + '" value=".' + ext + '" ' + selected + '>' + desc + '</option>';
+                html += '                   <option data-extensions="' + JSON.stringify(exts) + ' s' + selected + '>' + desc + '</option>';
             }
-            //html += '                   <option data-extension="jasp" value=".jasp">JASP File (*.jasp)</option>';
+            //html += '                   <option data-extensions="[jasp]" value=".jasp">JASP File (*.jasp)</option>';
             html += '               </select>';
             html += '           </div>';
             html += '       </div>';
@@ -266,7 +269,7 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$el.append(this.$itemsList);
 
         if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
-            this.filterExtension = this.model.fileExtensions[0].extension;
+            this.filterExtensions = this.model.fileExtensions[0].extensions;
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
                 keyboardJS.setContext('save_name_textbox');
@@ -310,7 +313,7 @@ var FSEntryBrowserView = SilkyView.extend({
             var itemPath = item.path;
             var itemType = item.type;
 
-            if (itemType === FSItemType.File && this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
+            if (itemType === FSItemType.File && this._hasValidExtension(name) === false)
                 continue;
 
             html += '<div class="silky-bs-fslist-item">';
@@ -445,6 +448,19 @@ var FSEntryBrowserView = SilkyView.extend({
             $button.removeClass("disabled-div");
 
     },
+    _hasValidExtension : function(name) {
+        let found = true;
+        if (this.filterExtensions) {
+            found = false;
+            for (let extIndex = 0; extIndex < this.filterExtensions.length; extIndex++) {
+                if (name.endsWith('.' + this.filterExtensions[extIndex])) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        return found;
+    },
     _saveClicked : function(event) {
         var dirInfo = this.model.get('dirInfo');
         if (dirInfo !== undefined) {
@@ -452,8 +468,8 @@ var FSEntryBrowserView = SilkyView.extend({
             if (name === "")
                 return;
 
-            if (this.filterExtension && name.endsWith('.' + this.filterExtension) === false)
-                name = name + '.' + this.filterExtension;
+            if (this._hasValidExtension(name) === false)
+                name = name + '.' + this.filterExtensions[0];
             var path = dirInfo.path + '/' + name;
             if (this.model.clickProcess === "save")
                 this.model.requestSave(path, FSItemType.File);
@@ -535,13 +551,13 @@ var BackstageModel = Backbone.Model.extend({
 
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = "open";
-        this._pcListModel.fileExtensions = [ { extension: "omv", description: "jamovi file (*.omv)" } ];
+        this._pcListModel.fileExtensions = [ { extensions: ["omv"], description: "jamovi file (*.omv)" } ];
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = "save";
         this._pcSaveListModel.currentActivePath = null;
-        this._pcSaveListModel.fileExtensions = [ { extension: "omv", description: "jamovi file (*.omv)" } ];
+        this._pcSaveListModel.fileExtensions = [ { extensions: ["omv"], description: "jamovi file (*.omv)" } ];
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
 
@@ -549,7 +565,7 @@ var BackstageModel = Backbone.Model.extend({
         this._pcExportListModel = new FSEntryListModel();
         this._pcExportListModel.clickProcess = "export";
         this._pcExportListModel.currentActivePath = null;
-        this._pcExportListModel.fileExtensions = [ { extension: "csv", description: "CSV (Comma delimited) (*.csv)" } ];
+        this._pcExportListModel.fileExtensions = [ { extensions: ["csv"], description: "CSV (Comma delimited) (*.csv)" } ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
@@ -604,7 +620,7 @@ var BackstageModel = Backbone.Model.extend({
                         title: 'As CSV file',
                         separator: true,
                         action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extension: "csv", description: "CSV (Comma delimited) (*.csv)" } ];
+                            this._pcExportListModel.fileExtensions = [ { extensions: ["csv"], description: "CSV (Comma delimited) (*.csv)" } ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView
@@ -614,7 +630,7 @@ var BackstageModel = Backbone.Model.extend({
                         name: 'htmlDoc',
                         title: 'As HTML file',
                         action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extension: "html", description: "Web Page (*.html)" } ];
+                            this._pcExportListModel.fileExtensions = [ { extensions: ["html", "htm"], description: "Web Page (*.html, *.htm)" } ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView
@@ -623,7 +639,7 @@ var BackstageModel = Backbone.Model.extend({
                         name: 'pdfDoc',
                         title: 'As PDF document', separator: true,
                         action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extension: "pdf", description: "Portable Document Format (*.pdf)" } ];
+                            this._pcExportListModel.fileExtensions = [ { extensions: ["pdf"], description: "Portable Document Format (*.pdf)" } ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView
@@ -672,7 +688,9 @@ var BackstageModel = Backbone.Model.extend({
             else if (type === 'export') {
 
                 let filters = [
-                    { name: 'CSV (Comma delimited)', extensions: ['csv'] }
+                    { name: 'CSV (Comma delimited)', extensions: ['csv'] },
+                    { name: 'Portable Document Format (*.pdf)', extensions: ['pdf'] },
+                    { name: 'Web Page (*.html)', extensions: ['html', 'htm'] }
                 ];
 
                 dialog.showSaveDialog({ filters : filters }, (fileName) => {

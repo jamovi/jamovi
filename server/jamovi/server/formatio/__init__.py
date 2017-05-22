@@ -39,4 +39,5 @@ def is_supported(filename):
             filename.endswith('.omv') or
             filename.endswith('.jasp') or
             filename.endswith('.pdf') or
-            filename.endswith('.html'))
+            filename.endswith('.html') or
+            filename.endswith('.htm'))
