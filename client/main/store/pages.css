@@ -32,7 +32,8 @@
     width: 70px ;
     height: 70px ;
     background-image: url('assets/analysis-module.svg');
-    background-size: 100% ;
+    background-size: 60%;
+    background-position: center;
     background-repeat: no-repeat ;
     border: 1.5px solid #6B9DE8 ;
     box-sizing: border-box;
