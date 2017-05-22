@@ -173,7 +173,7 @@ var FSEntryBrowserView = SilkyView.extend({
     _validExtension : function(ext) {
         var extOptions = this.$header.find('.silky-bs-fslist-browser-save-filetype option');
         for (let i = 0; i < extOptions.length; i++) {
-            let exts = $(extOptions[i]).data('extensions')
+            let exts = $(extOptions[i]).data('extensions');
             for (let j = 0; j < exts.length; j++) {
                 if (("." + exts[j]) === ext)
                     return true;
