@@ -672,7 +672,9 @@ var BackstageModel = Backbone.Model.extend({
             else if (type === 'export') {
 
                 let filters = [
-                    { name: 'CSV (Comma delimited)', extensions: ['csv'] }
+                    { name: 'CSV (Comma delimited)', extensions: ['csv'] },
+                    { name: 'Portable Document Format (*.pdf)', extensions: ['pdf'] },
+                    { name: 'Web Page (*.html)', extensions: ['html'] }
                 ];
 
                 dialog.showSaveDialog({ filters : filters }, (fileName) => {
