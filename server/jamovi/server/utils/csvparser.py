@@ -4,21 +4,31 @@ import csv
 
 class CSVParser:
 
-    @staticmethod
-    def parse(text, trim_empty_last_line=True):
+    def __init__(self):
+        self._result = None
+        self._trim_empty_last_line = True
+
+    def result(self):
+        return self._result
+
+    def close(self):
+        pass
+
+    def feed(self, data):
         try:
-            dialect = csv.Sniffer().sniff(text, ', \t;')
+            dialect = csv.Sniffer().sniff(data, ',\t;')
         except csv.Error:
             dialect = csv.excel
 
-        text = text.replace('\r\n', '\n')  # normalize line endings
-        text = text.replace('\r', '\n')
-        lines = text.split('\n')
-        if trim_empty_last_line and lines[-1] == '':
+        data = data.replace('\r\n', '\n')  # normalize line endings
+        data = data.replace('\r', '\n')
+        lines = data.split('\n')
+        if self._trim_empty_last_line and lines[-1] == '':
             del lines[-1]
 
         if len(lines) == 0:
-            return [ ]
+            self._result = [ ]
+            return
 
         row = csv.reader(lines, dialect).__iter__().__next__()
         n_cols = len(row)
@@ -45,4 +55,4 @@ class CSVParser:
                 cells[col_no][row_no] = value
             row_no += 1
 
-        return cells
+        self._result = cells

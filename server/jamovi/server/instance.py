@@ -645,10 +645,16 @@ class Instance:
 
         elif request.incCBData:
 
-            if request.cbHtml and False:  # remove the 'and False' when ready
-                cells = HTMLParser.parse(request.cbHtml)
+            if request.cbHtml != '':
+                parser = HTMLParser()
+                parser.feed(request.cbHtml)
+                parser.close()
+                cells = parser.result()
             else:
-                cells = CSVParser.parse(request.cbText, trim_empty_last_line=False)
+                parser = CSVParser()
+                parser.feed(request.cbText)
+                parser.close()
+                cells = parser.result()
 
             col_end = request.columnStart + len(cells) - 1
             row_end = request.rowStart - 1

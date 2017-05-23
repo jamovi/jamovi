@@ -42,7 +42,7 @@ const htmlifyCells = function(cells) {
             if (cell === null)
                 row += sep + '';
             else if (typeof cell === 'string')
-                row += sep + '"' + cell + '"';
+                row += sep + cell.replace('\u2212', '-');  // minus to dash
             else
                 row += sep + cell;
             sep = '</td><td>';
@@ -56,7 +56,7 @@ const htmlifyCells = function(cells) {
 
 const exportElem = function($el, format, options={inline:false}) {
     if (format === 'text/plain') {
-        return new Promise.resolve(_textify($el[0]));
+        return Promise.resolve(_textify($el[0]));
     }
     else {
         return _htmlify($el[0], options).then((content) => {
@@ -129,8 +129,10 @@ const _textify = function(el) {
 
 const _htmlify = function(el, options) {
 
-    if (el.nodeType === Node.TEXT_NODE)
-        return Promise.resolve(el.data);
+    if (el.nodeType === Node.TEXT_NODE) {
+        let data = el.data.replace('\u2212', '-');
+        return Promise.resolve(data);
+    }
 
     if (el.nodeType !== Node.ELEMENT_NODE)
         return Promise.resolve('');

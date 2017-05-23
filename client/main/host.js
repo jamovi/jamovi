@@ -189,7 +189,11 @@ if (window.require) {
     };
 
     pasteFromClipboard = function() {
-        return { text: clipboard.readText(), html: clipboard.readHTML() };
+        let text = clipboard.readText();
+        let html = clipboard.readHTML();
+        if (html === text)
+            html = '';
+        return { text: text, html: html };
     };
 
     showSaveDialog = dialog.showSaveDialog;
