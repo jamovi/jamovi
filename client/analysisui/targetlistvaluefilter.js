@@ -8,13 +8,13 @@ var TargetListValueFilter = function() {
 
     this.addValue = function(value, rowIndex, columnName) {
         var row = this._data[rowIndex];
-        if (_.isUndefined(row)) {
+        if (row === undefined || row === null) {
             row = {};
             this._data[rowIndex] = row;
         }
 
         var cell = row[columnName];
-        if (_.isUndefined(cell)) {
+        if (cell === undefined) {
             cell = {};
             row[columnName] = cell;
         }
@@ -22,6 +22,11 @@ var TargetListValueFilter = function() {
         cell.rowIndex = rowIndex;
         cell.columnName = columnName;
         cell.value = value;
+    };
+
+    this.insertRow = function(rowIndex, count) {
+        for (let i = 0; i < count; i++)
+            this._data.splice(rowIndex, 0, null);
     };
 
     this.removeValue = function(rowIndex, columnName) {

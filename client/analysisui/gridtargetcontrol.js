@@ -235,7 +235,7 @@ const TargetListSupport = function(supplier) {
 
         let testedItems = [];
         for (let i = 0; i < data.items.length; i++) {
-            if (this.testValue(data.items[i])) {
+            if (intoSelf || this.testValue(data.items[i])) {
                 testedItems.push(data.items[i]);
             }
         }

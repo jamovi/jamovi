@@ -646,6 +646,7 @@ const OptionListControl = function(params) {
         this.adjustItemBaseKeys(keys[0], 1);
 
         this.insertRow(dispRow, 1);
+        this._listFilter.insertRow(dispRow, 1);
         let rowData = this.realToVirtualRowData(this.getSourceValue([keys[0]]));
 
         this._localData.splice(keys[0], 0, this.clone(rowData));
