@@ -65,6 +65,11 @@ const GridTextbox = function(params) {
             this.$input.addClass('centre-text');
 
         this.$input.on('focus', function() { $(this).select(); });
+        this.$input.keyup((event) => {
+            if (event.keyCode == 13) {
+                this.$input.blur();
+            }
+        });
         this.$input.change((event) => {
 
             if (this.$input[0].validity.valid === false)
