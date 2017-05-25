@@ -494,7 +494,7 @@ const OptionListControl = function(params) {
         if (this.isSingleItem)
             this.clearFromOption(cellInfo);
         else if (this.removeAction === "deleterow") {
-            cellInfo.removed = false;
+            cellInfo.removed = true;
             this.getOption().removeAt(this.getFullKey([cellInfo.listIndex]));
         }
         else {
@@ -738,8 +738,9 @@ const OptionListControl = function(params) {
     };
 
     this.onOptionValueChanged = function(key, data) {
-        //if (key.length > 0)
-        //    return;
+        if (key.length > 1)
+            return;
+
         this._listFilter.clear();
 
         let list = [];
