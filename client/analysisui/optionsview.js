@@ -244,8 +244,12 @@ const OptionsView = function(uiModel) {
         let i = 0;
         while (i < this._allCtrls.length) {
             let ctrl = this._allCtrls[i];
-            if (ctrl.isDisposed)
+
+            if (ctrl.isDisposed) {
                 this._allCtrls.splice(i, 1);
+                if (ctrl.hasProperty('name'))
+                    this.model.actionManager.removeResource(ctrl.getPropertyValue('name'));
+            }
             else
                 i += 1;
         }

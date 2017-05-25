@@ -63,6 +63,8 @@ const GridTextbox = function(params) {
             this.$input.addClass('frameless-textbox');
         if (this.getPropertyValue("alignText") === 'center')
             this.$input.addClass('centre-text');
+
+        this.$input.on('focus', function() { $(this).select(); });
         this.$input.change((event) => {
 
             if (this.$input[0].validity.valid === false)

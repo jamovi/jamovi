@@ -41,6 +41,9 @@ const DragNDrop = function() {
             }
         }
         self.setOverTarget(self, event.pageX, event.pageY);
+
+        if(event.preventDefault)
+            event.preventDefault();
     };
 
     this._ddMouseMove = function(event) {
