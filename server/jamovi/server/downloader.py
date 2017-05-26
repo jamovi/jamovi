@@ -19,7 +19,8 @@ class Download:
         response = client.fetch(
             url,
             header_callback=self._header_callback,
-            streaming_callback=self._streaming_callback)
+            streaming_callback=self._streaming_callback,
+            request_timeout=24 * 60 * 60)
         response.add_done_callback(self._done_callback)
         self._callback('progress', (0, 1))
 
