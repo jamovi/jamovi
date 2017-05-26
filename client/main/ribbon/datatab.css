@@ -1,0 +1,49 @@
+
+
+.jmv-ribbon-button[data-name=copy] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-data-copy.svg');
+}
+
+.jmv-ribbon-button[data-name=paste] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-data-paste.svg');
+}
+
+.jmv-ribbon-button[data-name=appendvar] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-variable-append.svg');
+}
+
+.jmv-ribbon-button[data-name=appendcase] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-case-append.svg');
+}
+
+.jmv-ribbon-button[data-name=delcase] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-case-remove.svg');
+}
+
+.jmv-ribbon-button[data-name=delvar] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-variable-remove.svg');
+}
+
+.jmv-ribbon-button[data-name=cut] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-data-cut.svg');
+}
+
+.jmv-ribbon-button[data-name=editvar] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-variable-edit.svg');
+}
+
+.jmv-ribbon-button[data-name=addvar] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-variable-add.svg');
+}
+
+.jmv-ribbon-button[data-name=insertvar] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-variable-insert.svg');
+}
+
+.jmv-ribbon-button[data-name=insertcase] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-case-insert.svg');
+}
+
+.jmv-ribbon-button[data-name=addcase] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-case-add.svg');
+}

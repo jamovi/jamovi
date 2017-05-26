@@ -10,11 +10,14 @@ const AppMenu = require('./ribbon/appmenu');
 const Store = require('./store');
 const Modules = require('./modules');
 const tarp = require('./utils/tarp');
+const DataTab = require('./ribbon/datatab');
+const AnalyseTab = require('./ribbon/analysetab');
 
 const RibbonModel = Backbone.Model.extend({
 
     initialize(args) {
         this._modules = args.modules;
+        this.set('tabs', [ { name: 'file', title: 'File' },  new DataTab(), new AnalyseTab(this._modules) ]);
     },
     modules() {
         return this._modules;
@@ -28,16 +31,37 @@ const RibbonModel = Backbone.Model.extend({
     changeTheme(name) {
         this.trigger('themeChanged', name);
     },
+    getTabName(index) {
+        let tabs = this.get('tabs');
+        return tabs[index].name;
+    },
+    getSelectedTab() {
+        let currentTabName = this.get('selectedTab');
+        return this.getTab(currentTabName);
+    },
+    getTab(index) {
+        let tabs = this.get('tabs');
+        if (typeof index === 'number')
+            return tabs[index];
+
+        for (let i = 0; i < tabs.length; i++) {
+            let tab = tabs[i];
+            if (tab.name === index)
+                return tab;
+        }
+
+        return null;
+    },
     defaults : {
-        tabs : [
-            { title : "File" },
-            { title : "Analyse" },
-        ],
-        selectedIndex : 1
+        tabs : [ ],
+        selectedTab : "analyse"
+    },
+    _actionRequest(action) {
+        this.trigger('actionRequest', action );
     },
     _activateAnalysis(ns, name) {
         this.trigger('analysisSelected', { name : name, ns : ns } );
-    },
+    }
 });
 
 const RibbonView = Backbone.View.extend({
@@ -53,6 +77,16 @@ const RibbonView = Backbone.View.extend({
             this.model = new RibbonModel();
 
         this.model.modules().on('change:modules', this._refresh, this);
+        this.model.on('change:selectedTab', () => {
+            this._refresh();
+            if (this.selectedTab)
+                this.selectedTab.$el.removeClass('selected');
+
+            this.selectedTab = this.model.getSelectedTab();
+
+            if (this.selectedTab)
+                this.selectedTab.$el.addClass('selected');
+        }, this);
 
         this.$el.addClass('jmv-ribbon');
 
@@ -72,18 +106,23 @@ const RibbonView = Backbone.View.extend({
         this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
         this.$store = this.$el.find('.jmv-store');
 
-        let currentTabIndex = this.model.get('selectedIndex');
-        let currentTab = this.model.get('tabs')[currentTabIndex];
-
+        let currentTabName = this.model.get('selectedTab');
         let tabs = this.model.get('tabs');
-
         for (let i = 0; i < tabs.length; i++) {
             let tab = tabs[i];
-            this.$header.append('<div class="jmv-ribbon-tab">' + tab.title + '</div>');
+            let isSelected = tab.name === currentTabName;
+            let classes = "jmv-ribbon-tab";
+            if (isSelected) {
+                classes += " selected";
+                this.selectedTab = tab;
+            }
+
+            let $tab = $('<div class="' + classes + '">' + tab.title + '</div>');
+            this.$header.append($tab);
+            tab.$el = $tab;
         }
 
         this.$tabs = this.$header.find('.jmv-ribbon-tab');
-        $(this.$tabs[1]).addClass('selected');
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
         this.appMenu.on('shown', event => this._menuShown(event));
@@ -104,71 +143,31 @@ const RibbonView = Backbone.View.extend({
         this.$body.empty();
         this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
 
-        let $button = $('<div></div>').insertAfter(this.$separator);
-        let  button = new RibbonMenu($button, this, 'Modules', 'modules', [
-            { name : 'modules', title : 'jamovi library', ns : 'app' }
-        ], true, false);
-        button.on('shown', menuShown);
-        this.buttons.push(button);
+        let tab = this.model.getSelectedTab();
+        if (tab.getRibbonItems === undefined)
+            return;
 
-        let menus = { };
-        let lastSub = null;
+        let items = tab.getRibbonItems();
+        for (let i = 0; i < items.length; i++) {
+            let button = items[i];
+            if (button.setParent)
+                button.setParent(this);
+            if (button.setTabName)
+                button.setTabName(tab.name);
 
-        for (let module of this.model.modules()) {
-            let isNew = module.new;
-            for (let analysis of module.analyses) {
-                let group = analysis.menuGroup;
-                let subgroup = analysis.menuSubgroup;
-                let menu = group in menus ? menus[group] : { };
-                menu._new = isNew;
-                let submenu = { name };
-                if (subgroup in menu)
-                    submenu = menu[subgroup];
-                else
-                    submenu = { name: subgroup, title: subgroup, items: [ ] };
-                let item = {
-                    name: analysis.name,
-                    ns: analysis.ns,
-                    title: analysis.menuTitle,
-                    subtitle: analysis.menuSubtitle,
-                    new: isNew,
-                };
-                submenu.items.push(item);
-                menu[subgroup] = submenu;
-                menus[group] = menu;
-            }
-        }
-
-        for (let group in menus) {
-            let menu = menus[group];
-            let flattened = [ ];
-            let containsNew = menu._new;
-            for (let subgroup in menu) {
-                if (subgroup === '_new')
-                    continue;
-                flattened.push({
-                    name: subgroup,
-                    title: subgroup,
-                    type: 'group',
-                    items: menu[subgroup].items });
-            }
-
-            if (flattened.length > 0 && flattened[0].name === '') {
-                let items = flattened.shift().items;
-                flattened = items.concat(flattened);
-            }
-
-            let $button = $('<div></div>').insertBefore(this.$separator);
-            let  button = new RibbonMenu($button, this, group, group, flattened, false, containsNew);
-            this.buttons.push(button);
+            if (button.dock === 'right')
+                button.$el.insertAfter(this.$separator);
+            else
+                button.$el.insertBefore(this.$separator);
             button.on('shown', menuShown);
+            this.buttons.push(button);
         }
     },
     _menuShown(source) {
         if (this.appMenu !== source)
             this.appMenu.hide();
         for (let button of this.buttons) {
-            if (button !== source)
+            if (button !== source && button.hideMenu)
                 button.hideMenu();
         }
 
@@ -187,14 +186,22 @@ const RibbonView = Backbone.View.extend({
             return;
         this.$el.css('z-index', '');
         this._tarpVisible = false;
-        for (let button of this.buttons)
-            button.hideMenu();
+        for (let button of this.buttons) {
+            if (button.hideMenu)
+                button.hideMenu();
+        }
         this.appMenu.hide();
+
+        this.$el[0].focus();
     },
     _ribbonClicked : function(event) {
         this._closeMenus();
         let index = this.$tabs.index(event.target);
-        this.model.set('selectedIndex', index);
+        this.model.set('selectedTab', this.model.getTabName(index));
+    },
+    _buttonClicked : function(action) {
+        this._menuClosed();
+        this.model._actionRequest(action);
     },
     _analysisSelected : function(analysis) {
         this._closeMenus();

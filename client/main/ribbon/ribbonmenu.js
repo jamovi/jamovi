@@ -8,17 +8,17 @@ const Backbone = require('backbone');
 
 const RibbonMenu = Backbone.View.extend({
 
-    initialize($el, parent, title, name, items, right, containsNew) {
+    initialize($el, title, name, items, right, containsNew) {
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button');
 
-        this.parent = parent;
         this.title = title;
         this.name = name;
         this.items = items;
         this.containsNew = containsNew;
         this.menuVisible = false;
+        this.dock = right ? 'right' : 'left';
 
         this.$el.attr('data-name', this.name.toLowerCase());
         this.$el.attr('disabled');
@@ -30,6 +30,9 @@ const RibbonMenu = Backbone.View.extend({
         this.$el.on('click', event => this._clicked(event));
 
         this._refresh();
+    },
+    setParent(parent) {
+        this.parent = parent;
     },
     setEnabled(enabled) {
         this.$el.prop('disabled', ! enabled);
