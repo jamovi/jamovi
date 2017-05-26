@@ -46,52 +46,12 @@ body.windows .jmv-ribbon-appmenu {
 
 .jmv-ribbon-body {
     background-color : #F0F0F0 ;
-    height: 50px ;
-    padding: 6px 6px ;
+    height: 58px ;
+    padding: 6px 6px 2px 6px ;
     -webkit-app-region: no-drag;
     display: flex ;
 }
 
 .jmv-ribbon-button-separator {
     flex: 1 1 auto ;
-}
-
-.jmv-ribbon-button .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-other.svg');
-}
-
-.jmv-ribbon-button[data-name=exploration] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-descriptives.svg');
-}
-
-.jmv-ribbon-button[data-name=t-tests] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-ttest.svg');
-}
-
-.jmv-ribbon-button[data-name=anova] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-anova.svg');
-}
-
-.jmv-ribbon-button[data-name=regression] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-regression.svg');
-}
-
-.jmv-ribbon-button[data-name=frequencies] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-frequencies.svg');
-}
-
-.jmv-ribbon-button[data-name=factor] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-factor.svg');
-}
-
-.jmv-ribbon-button[data-name="base r"] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-r.svg');
-}
-
-.jmv-ribbon-button[data-name=walrus] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-walrus.svg');
-}
-
-.jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
-    background-image: url('assets/analysis-more.svg');
 }

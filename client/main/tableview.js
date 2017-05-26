@@ -722,8 +722,9 @@ const TableView = SilkyView.extend({
                 event.preventDefault();
             }
             else if (event.key === 'v') {
-                this._pasteClipboardToSelection()
-                    .done();
+                let promise = this._pasteClipboardToSelection();
+                if (promise)
+                    promise.done();
                 event.preventDefault();
             }
             else if (event.key === 'x') {
