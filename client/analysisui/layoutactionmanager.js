@@ -44,16 +44,177 @@ const LayoutActionManager = function(view) {
         }
     };
 
-    this.bindActionParams = function(sourceName, target, targetProperty, isCompare, compareValue) {
+    this.bindActionParams = function(target, targetProperty, bindData) {
         return {
-            onChange: sourceName,
+            onChange: bindData.sourceNames,
             execute: (ui) => {
-                let value = ui[sourceName].value();
-                if (isCompare)
-                    value = value === compareValue;
+                let value = bindData.bindFunction(ui);
+                if (bindData.inverted)
+                    value = !value;
                 target.setPropertyValue(targetProperty, value);
             }
         };
+    };
+
+    //enable: ~((fred:(tom)||fred:pop||~(tony:touch))&&steve:cat)
+
+    this._resolveBindPart = function(syntax, startIndex) {
+
+        let sourceName = null;
+        let compareValue = null;
+        let stage = "option";
+        let valueStart = -1;
+        let endIndex = startIndex;
+        for (let i = startIndex; i < syntax.length; i++) {
+            if (stage === "option") {
+                if ((syntax[i] === "|" && syntax[i + 1] === "|") ||
+                    (syntax[i] === "&" && syntax[i + 1] === "&") ||
+                     syntax[i] === ")") {
+
+                    sourceName = syntax.substring(startIndex, i);
+                    endIndex = i - 1;
+                    break;
+                }
+                else if (syntax[i] === ':') {
+                    sourceName = syntax.substring(startIndex, i);
+                    valueStart = i + 1;
+                    stage = "value";
+                }
+            }
+            else if (stage === "value") {
+                if ((syntax[i] === "|" && syntax[i + 1] === "|") ||
+                    (syntax[i] === "&" && syntax[i + 1] === "&") ||
+                     syntax[i] === ")") {
+
+                    compareValue = syntax.substring(valueStart, i);
+                    endIndex = i - 1;
+                    break;
+                }
+                else if ((syntax[i] === "~" && syntax[i + 1] === "(") ||
+                          syntax[i] === "(") {
+
+                    compareValue = this._resolveBinding(syntax, i);
+                    endIndex = compareValue.endIndex;
+                    break;
+                }
+            }
+        }
+
+        if (this._resources[sourceName] === undefined)
+            throw "Cannot bind to '" + sourceName + "'. It does not exist.";
+
+        let sourceNames = [sourceName];
+        if (compareValue !== null && compareValue.bindFunction !== undefined)
+            sourceNames = this._arrayUnique(sourceNames.concat(compareValue.sourceNames));
+
+        return {
+            bindFunction: (ui) => {
+                let value = ui[sourceName].value();
+                if (compareValue !== null) {
+                    let cValue = compareValue;
+                    if (compareValue.bindFunction !== undefined) {
+                        cValue = compareValue.bindFunction(ui);
+                    }
+                    value = value == cValue;
+                }
+
+                return value;
+            },
+            startIndex: startIndex,
+            invert: false,
+            endIndex: endIndex,
+            sourceNames: sourceNames
+        };
+    };
+
+    this._arrayUnique = function(array) {
+        let a = array.concat();
+        for(let i=0; i< a.length; ++i) {
+            for(let j=i+1; j< a.length; ++j) {
+                if(a[i] === a[j])
+                    a.splice(j--, 1);
+            }
+        }
+
+        return a;
+    };
+
+    this._resolveBinding = function(syntax, startIndex) {
+
+        let parts = [];
+
+        let inverted = syntax[startIndex] === '~';
+        let beginOffset = 1;
+        if (inverted)
+            beginOffset = 2;
+
+        let partData = null;
+        let endIndex = startIndex;
+        for (let i = startIndex + beginOffset; i < syntax.length; i++) {
+
+            if (syntax[i] === ' ')
+                continue;
+
+            if (syntax[i] === '(')
+                partData = this._resolveBinding(syntax, i);
+            else
+                partData = this._resolveBindPart(syntax, i);
+
+            parts.push(partData);
+            i = partData.endIndex + 1;
+
+            if (syntax[i] === ')' || i >= syntax.length - 1) {
+                endIndex = i;
+                break;
+            }
+
+            if ((syntax[i] === '|' && syntax[i + 1] === '|') || (syntax[i] === '&' && syntax[i + 1] === '&')) {
+                let logic = null;
+                let operatorLength = 0;
+                if (syntax[i] === '|') {
+                    logic = 'or';
+                    operatorLength = 2;
+                }
+                else if (syntax[i] === '&') {
+                    logic = 'and';
+                    operatorLength = 2;
+                }
+                else
+                    throw 'Unknown logic operator in binding syntax: "' + syntax + '"';
+
+                partData.logic = logic;
+                i += operatorLength - 1;
+            }
+        }
+
+        let sourceNames = [];
+        for (let i = 0; i < parts.length; i++) {
+            if (parts[i].sourceNames.length > 0)
+                sourceNames = this._arrayUnique(sourceNames.concat(parts[i].sourceNames));
+        }
+
+        let logicFunction = (ui) => {
+            let prevLogic = null;
+            let value = false;
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i].bindFunction) {
+                    let newValue = parts[i].bindFunction(ui);
+                    if (parts[i].inverted)
+                        newValue = !newValue;
+
+                    if (prevLogic === null)
+                        value = newValue;
+                    else if (prevLogic === 'and')
+                        value = value && newValue;
+                    else if (prevLogic === 'or')
+                        value = value || newValue;
+                }
+                prevLogic = parts[i].logic;
+            }
+            return value;
+        };
+
+        return { startIndex: startIndex, endIndex: endIndex, bindFunction: logicFunction, sourceNames: sourceNames, inverted: inverted };
     };
 
     this.bindingsToActions = function() {
@@ -63,13 +224,8 @@ const LayoutActionManager = function(view) {
                 for (let property in res.properties) {
                     let prop = res.properties[property];
                     if (prop.binding !== undefined) {
-                        let bind = prop.binding.substring(1, prop.binding.length - 1);
-                        let parts = bind.split(":");
-                        let sourceName = parts[0];
-                        if (this._resources[sourceName] === undefined)
-                            throw "Cannot bind to '" + sourceName + "'. It does not exist.";
-                        let isCompare = parts.length > 1;
-                        let params = this.bindActionParams(sourceName, res, property, isCompare, parts[1]);
+                        let resolvedBindData = this._resolveBinding(prop.binding, 0);
+                        let params = this.bindActionParams(res, property, resolvedBindData);
                         this.addDirectAction(name, params);
                         params.execute(this._resources);
                     }
