@@ -54,7 +54,7 @@ var PropertySupplier = function(properties) {
 
     this.isValueDataBound = function(value) {
         if (typeof value === 'string')
-            return (value.startsWith('(') || value.startsWith('~(')) && value.endsWith(')');
+            return value.startsWith('(') && value.endsWith(')');
 
         return false;
     };

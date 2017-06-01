@@ -56,7 +56,7 @@ const LayoutActionManager = function(view) {
         };
     };
 
-    //enable: ~((fred:(tom)||fred:pop||~(tony:touch))&&steve:cat)
+    //enable: (!((fred:(tom)||fred:pop||!tony:touch)&&steve:cat))
 
     this._resolveBindPart = function(syntax, startIndex) {
 
@@ -64,19 +64,28 @@ const LayoutActionManager = function(view) {
         let compareValue = null;
         let stage = "option";
         let valueStart = -1;
-        let endIndex = startIndex;
-        for (let i = startIndex; i < syntax.length; i++) {
+
+
+        let inverted = syntax[startIndex] === '!';
+        let beginOffset = 0;
+        if (inverted)
+            beginOffset = 1;
+
+        let optionNameStart = startIndex + beginOffset;
+        let endIndex = optionNameStart;
+
+        for (let i = optionNameStart; i < syntax.length; i++) {
             if (stage === "option") {
                 if ((syntax[i] === "|" && syntax[i + 1] === "|") ||
                     (syntax[i] === "&" && syntax[i + 1] === "&") ||
                      syntax[i] === ")") {
 
-                    sourceName = syntax.substring(startIndex, i);
+                    sourceName = syntax.substring(optionNameStart, i);
                     endIndex = i - 1;
                     break;
                 }
                 else if (syntax[i] === ':') {
-                    sourceName = syntax.substring(startIndex, i);
+                    sourceName = syntax.substring(optionNameStart, i);
                     valueStart = i + 1;
                     stage = "value";
                 }
@@ -90,7 +99,7 @@ const LayoutActionManager = function(view) {
                     endIndex = i - 1;
                     break;
                 }
-                else if ((syntax[i] === "~" && syntax[i + 1] === "(") ||
+                else if ((syntax[i] === "!" && syntax[i + 1] === "(") ||
                           syntax[i] === "(") {
 
                     compareValue = this._resolveBinding(syntax, i);
@@ -121,7 +130,7 @@ const LayoutActionManager = function(view) {
                 return value;
             },
             startIndex: startIndex,
-            invert: false,
+            inverted: inverted,
             endIndex: endIndex,
             sourceNames: sourceNames
         };
@@ -143,7 +152,7 @@ const LayoutActionManager = function(view) {
 
         let parts = [];
 
-        let inverted = syntax[startIndex] === '~';
+        let inverted = syntax[startIndex] === '!';
         let beginOffset = 1;
         if (inverted)
             beginOffset = 2;
@@ -152,10 +161,15 @@ const LayoutActionManager = function(view) {
         let endIndex = startIndex;
         for (let i = startIndex + beginOffset; i < syntax.length; i++) {
 
+            if (syntax[i] === ')' || i >= syntax.length - 1) {
+                endIndex = i;
+                break;
+            }
+
             if (syntax[i] === ' ')
                 continue;
 
-            if (syntax[i] === '(')
+            if (syntax[i] === '(' || (syntax[i] === '!' && syntax[i + 1] === '('))
                 partData = this._resolveBinding(syntax, i);
             else
                 partData = this._resolveBindPart(syntax, i);
