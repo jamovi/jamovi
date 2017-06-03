@@ -37,6 +37,10 @@
     background-image: url('assets/analysis-walrus.svg');
 }
 
+.jmv-ribbon-button[data-name=arcade] .jmv-ribbon-button-icon {
+    background-image: url('assets/analysis-jmvarcade.svg');
+}
+
 .jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-more.svg');
 }
