@@ -5,7 +5,9 @@
 import csv
 import math
 import re
+from io import TextIOWrapper
 from ...core import MeasureType
+import chardet
 
 
 def write(data, path):
@@ -71,7 +73,18 @@ def fix_names(names):
 
 def read(data, path):
 
-    with open(path, encoding='utf-8-sig', errors='replace') as csvfile:
+    with open(path, mode='rb') as file:
+
+        byts = file.read(4096)
+        det  = chardet.detect(byts)
+        encoding = det['encoding']
+        file.seek(0)
+
+        if encoding == 'ascii':
+            encoding = 'utf-8-sig'
+
+        csvfile = TextIOWrapper(file, encoding=encoding, errors='replace')
+
         try:
             dialect = csv.Sniffer().sniff(csvfile.read(4096), ', \t;')
         except csv.Error:
