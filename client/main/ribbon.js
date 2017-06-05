@@ -17,7 +17,7 @@ const RibbonModel = Backbone.Model.extend({
 
     initialize(args) {
         this._modules = args.modules;
-        this.set('tabs', [ { name: 'file', title: 'File' },  new DataTab(), new AnalyseTab(this._modules) ]);
+        this.set('tabs', [ { name: 'file', title: 'File' },  /* new DataTab(),*/ new AnalyseTab(this._modules) ]);
     },
     modules() {
         return this._modules;
