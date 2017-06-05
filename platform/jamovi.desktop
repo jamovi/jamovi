@@ -8,3 +8,4 @@ Type=Application
 StartupNotify=true
 Icon=/usr/lib/jamovi/Resources/app-icon.svg
 MimeType=text/csv;application/vnd.jamovi.dataset
+Categories=Science;NumericalAnalysis;Math
