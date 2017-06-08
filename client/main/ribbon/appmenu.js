@@ -9,7 +9,7 @@ const host = require('../host');
 
 const AppMenuButton = Backbone.View.extend({
 
-    initialize() {
+    initialize(args) {
 
         this.$el.addClass('jmv-ribbon-appmenu');
 
@@ -42,19 +42,34 @@ const AppMenuButton = Backbone.View.extend({
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
 
-        this.$zoomIn.on('click', event => { host.zoomIn(); event.stopPropagation(); });
-        this.$zoomOut.on('click', event => { host.zoomOut(); event.stopPropagation(); });
+        this.$zoomIn.on('click', event => { this.model.settings().zoomIn(); event.stopPropagation(); });
+        this.$zoomOut.on('click', event => { this.model.settings().zoomOut(); event.stopPropagation(); });
 
         host.on('zoom', event => {
             let z = '' + parseInt(event.zoom * 100) + '%';
             this.$zoomLevel.text(z);
         });
 
-        this.$syntaxModeCheck.on('change', event => this.model.toggleResultsMode());
-        this.$devModeCheck.on('change', event => this.model.toggleDevMode());
+        this.$syntaxModeCheck.on('change', event => this.model.settings().setSetting('syntaxMode', this.$syntaxModeCheck.prop('checked')));
+        this.$devModeCheck.on('change', event => {
+            this.model.settings().setSetting('devMode', this.$devModeCheck.prop('checked'));
+        });
+
+        this.model.settings().on('change:theme', () => this._updateUI());
+        this.model.settings().on('change:devMode', () => this._updateUI());
+        this.model.settings().on('change:zoom', () => this._updateUI());
     },
     _changeTheme(name) {
-        this.trigger('themeChanged', name);
+        this.model.settings().setSetting('theme', name);
+    },
+    _updateUI() {
+        let settings = this.model.settings();
+        let theme = settings.getSetting('theme', 'default');
+        this.$themeList.val(theme);
+        let devMode = settings.getSetting('devMode', false);
+        this.$devModeCheck.prop('checked', devMode);
+        let zoom = '' + settings.getSetting('zoom', 100) + '%';
+        this.$zoomLevel.text(zoom);
     },
     toggleMenu() {
         if (this.menuVisible)

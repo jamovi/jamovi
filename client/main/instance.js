@@ -17,6 +17,8 @@ const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset').DataSetViewModel;
 const OptionsPB = require('./optionspb');
 
+const Settings = require('./settings');
+
 const Instance = Backbone.Model.extend({
 
     initialize() {
@@ -24,6 +26,8 @@ const Instance = Backbone.Model.extend({
         this.transId = 0;
         this.command = '';
         this.seqNo = 0;
+
+        this._settings = new Settings({ coms: this.attributes.coms });
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
         this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
@@ -33,7 +37,7 @@ const Instance = Backbone.Model.extend({
         this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
-        this.on('change:theme', event => this._themeChanged());
+        this._settings.on('change:theme', event => this._themeChanged());
 
         this._instanceId = null;
 
@@ -46,6 +50,7 @@ const Instance = Backbone.Model.extend({
         this._analyses.off('analysisCreated', this._analysisCreated, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
         this.attributes.coms.off('broadcast', this._onBC);
+        this._settings.destroy();
     },
     defaults : {
         coms : null,
@@ -53,22 +58,20 @@ const Instance = Backbone.Model.extend({
         hasDataSet : false,
         path : null,
         title : '',
-        resultsMode : 'rich',
-        devMode: false,
         blank : false,
-        theme : 'default',
         resultsSupplier: null,
     },
     instanceId() {
         return this._instanceId;
     },
     dataSetModel() {
-
         return this._dataSetModel;
     },
     analyses() {
-
         return this._analyses;
+    },
+    settings() {
+        return this._settings;
     },
     connect(instanceId) {
 
@@ -78,9 +81,9 @@ const Instance = Backbone.Model.extend({
 
             return this._beginInstance(instanceId);
 
-        }).then(instanceId => {
+        }).then(() => {
 
-            this._instanceId = instanceId;
+            return this._settings.retrieve(this._instanceId);
 
         }).then(() => {
 
@@ -266,19 +269,6 @@ const Instance = Backbone.Model.extend({
         return coms.send(message)
             .then(response => coms.Messages.FSResponse.decode(response.payload));
     },
-    toggleResultsMode() {
-
-        let mode = this.attributes.resultsMode;
-        if (mode === 'text')
-            mode = 'rich';
-        else
-            mode = 'text';
-        this.set('resultsMode', mode);
-    },
-    toggleDevMode() {
-        let mode = ! this.attributes.devMode;
-        this.set('devMode', mode);
-    },
     restartEngines() {
 
         let coms = this.attributes.coms;
@@ -372,7 +362,7 @@ const Instance = Backbone.Model.extend({
             request.instanceId = instanceId;
 
         return coms.send(request).then(response => {
-            return response.instanceId;
+            this._instanceId = response.instanceId;
         });
     },
     _retrieveInfo() {
@@ -428,7 +418,7 @@ const Instance = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
-        let theme = this.attributes.theme;
+        let theme = this._settings.getSetting('theme', 'default');
 
         let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;

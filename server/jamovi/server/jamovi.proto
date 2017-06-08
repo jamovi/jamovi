@@ -311,13 +311,33 @@ message ModuleMeta {
     bool new = 12;
 }
 
+enum ValueType {
+    INT = 0;
+    DOUBLE = 1;
+    STRING = 2;
+    BOOL = 3;
+}
+
+message SettingValue {
+    string name = 1;
+    ValueType valueType = 2;
+    oneof value {
+        int32 i = 3;
+        double d = 4;
+        string s = 5;
+        bool b = 6;
+    }
+}
+
 message SettingsRequest {
+    repeated SettingValue settings = 4;
 }
 
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
     repeated DataSetEntry examples = 2;
     repeated ModuleMeta modules = 3;
+    repeated SettingValue settings = 4;
 }
 
 message StoreRequest {

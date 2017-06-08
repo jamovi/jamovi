@@ -31,8 +31,8 @@ const ResultsView = Backbone.View.extend({
             model: this.model,
             mode: 'text' });
 
-        this.model.on('change:resultsMode', event => {
-            if (event.changed.resultsMode === 'text')
+        this.model.settings().on('change:syntaxMode', event => {
+            if (event.changed.syntaxMode)
                 this.$textView.removeClass('silky-results-panel-hidden');
             else
                 this.$textView.addClass('silky-results-panel-hidden');

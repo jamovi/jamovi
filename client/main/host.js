@@ -121,31 +121,39 @@ if (window.require) {
         ipc.send('request', { type: 'openDevTools' });
     };
 
-    const zoomLevels = [ 0.3, 0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.2, 1.33, 1.5, 1.7, 2.0, 2.4, 3.0 ];
+    const zoomLevels = [ 30, 50, 67, 80, 90, 100, 110, 120, 133, 150, 170, 200, 240, 300 ];
     let zoomLevel = 5;
 
     zoomIn = function() {
-        if (zoomLevel < zoomLevels.length - 1)
-            zoom(zoomLevel + 1);
+        if (zoomLevel < zoomLevels.length - 1) {
+            zoomLevel++;
+            let z = zoomLevels[zoomLevel];
+            zoom(z);
+        }
     };
 
     zoomOut = function() {
-        if (zoomLevel > 0)
-            zoom(zoomLevel - 1);
+        if (zoomLevel > 0) {
+            zoomLevel--;
+            let z = zoomLevels[zoomLevel];
+            zoom(z);
+        }
     };
 
-    zoom = function(level) {
-        zoomLevel = level;
-        let zoom = zoomLevels[level];
+    zoom = function(z) {
+        zoomLevel = zoomLevels.indexOf(z);
+        if (zoomLevel === -1) {
+            zoomLevel = 5;
+            z = 100;
+        }
         webFrame.setLayoutZoomLevelLimits(-999999, 999999);
-        webFrame.setZoomFactor(zoom);
+        webFrame.setZoomFactor(z / 100);
         let ezl = webFrame.getZoomLevel();
         webFrame.setLayoutZoomLevelLimits(ezl, ezl);
-        emitter.emit('zoom', { zoom: zoom });
     };
 
     currentZoom = function() {
-        return webFrame.getZoomFactor();
+        return parseInt(100 * webFrame.getZoomFactor());
     };
 
     showMessageBox = function(options) {

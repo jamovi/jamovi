@@ -48,6 +48,9 @@ class Settings:
     def get(self, name, default=None):
         return self._root.get(name, default)
 
+    def __iter__(self):
+        return self._root.__iter__()
+
     def sync(self):
         if self._parent is not None:
             self._parent.sync()

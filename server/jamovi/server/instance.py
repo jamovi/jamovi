@@ -976,11 +976,56 @@ class Instance:
 
     def _on_settings(self, request=None):
 
-        settings = Settings.retrieve('backstage')
+        settings = Settings.retrieve('main')
 
-        recents = settings.get('recents', [ ])
+        if request and request.settings:
+
+            settings_pb = request.settings
+
+            for setting_pb in settings_pb:
+                name = setting_pb.name
+                if setting_pb.valueType is jcoms.ValueType.Value('STRING'):
+                    value = setting_pb.s
+                    settings.set(name, value)
+                elif setting_pb.valueType is jcoms.ValueType.Value('INT'):
+                    value = setting_pb.i
+                    settings.set(name, value)
+                elif setting_pb.valueType is jcoms.ValueType.Value('DOUBLE'):
+                    value = setting_pb.d
+                    settings.set(name, value)
+                elif setting_pb.valueType is jcoms.ValueType.Value('BOOL'):
+                    value = setting_pb.b
+                    settings.set(name, value)
+
+            settings.sync()
+
+            for instanceId, instance in Instance.instances.items():
+                if instance is not self and instance.is_active:
+                    instance._on_settings()
 
         response = jcoms.SettingsResponse()
+
+        for name in settings:
+            value = settings.get(name)
+            if isinstance(value, str):
+                setting_pb = response.settings.add()
+                setting_pb.name = name
+                setting_pb.s = value
+            elif isinstance(value, bool):
+                setting_pb = response.settings.add()
+                setting_pb.name = name
+                setting_pb.b = value
+            elif isinstance(value, int):
+                setting_pb = response.settings.add()
+                setting_pb.name = name
+                setting_pb.i = value
+            elif isinstance(value, float):
+                setting_pb = response.settings.add()
+                setting_pb.name = name
+                setting_pb.d = value
+
+        settings = Settings.retrieve('backstage')
+        recents = settings.get('recents', [ ])
 
         for recent in recents:
             recent_pb = response.recents.add()

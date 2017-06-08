@@ -17,19 +17,14 @@ const RibbonModel = Backbone.Model.extend({
 
     initialize(args) {
         this._modules = args.modules;
+        this._settings = args.settings;
         this.set('tabs', [ { name: 'file', title: 'File' },  /* new DataTab(),*/ new AnalyseTab(this._modules) ]);
     },
     modules() {
         return this._modules;
     },
-    toggleResultsMode() {
-        this.trigger('toggleResultsMode');
-    },
-    toggleDevMode() {
-        this.trigger('toggleDevMode');
-    },
-    changeTheme(name) {
-        this.trigger('themeChanged', name);
+    settings() {
+        return this._settings;
     },
     getTabName(index) {
         let tabs = this.get('tabs');
@@ -126,7 +121,6 @@ const RibbonView = Backbone.View.extend({
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
         this.appMenu.on('shown', event => this._menuShown(event));
-        this.appMenu.on('themeChanged', name => this.model.changeTheme(name));
 
         this.$header.on('click', event => this._closeMenus());
 

@@ -42,7 +42,7 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.set('selectedAnalysis', null);
         });
 
-        this.model.on('change:devMode', () => this._updateAll());
+        this.model.settings().on('change:devMode', () => this._updateAll());
     },
     _resultsEvent(analysis) {
 
@@ -111,7 +111,7 @@ const ResultsPanel = Backbone.View.extend({
                 data: {
                     results: resources.results,
                     mode: this.mode,
-                    devMode: this.model.get('devMode'),
+                    devMode: this.model.settings().get('devMode'),
                 }
             };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);

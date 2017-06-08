@@ -540,7 +540,11 @@ var BackstageModel = Backbone.Model.extend({
 
         this.instance = args.instance;
 
-        this.on('change:settings', this._settingsChanged, this);
+        this.instance.settings().on('change:recents',
+            (event) => this._settingsChanged(event));
+        this.instance.settings().on('change:examples',
+            (event) => this._settingsChanged(event));
+
         this.on('change:operation', this._opChanged, this);
 
         this._recentsListModel = new FSEntryListModel();
@@ -930,10 +934,11 @@ var BackstageModel = Backbone.Model.extend({
     _updateExportPath: function(path) {
         this._pcExportListModel.currentActivePath = path;
     },
-    _settingsChanged : function() {
-        var settings = this.attributes.settings;
-        this._recentsListModel.set('items', settings.recents);
-        this._examplesListModel.set('items', settings.examples);
+    _settingsChanged : function(event) {
+        if ('recents' in event.changed)
+            this._recentsListModel.set('items', event.changed.recents);
+        if ('examples' in event.changed)
+            this._examplesListModel.set('items', event.changed.examples);
     },
     recentsModel : function() {
         return this._recentsListModel;

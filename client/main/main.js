@@ -31,18 +31,10 @@ let analyses = instance.analyses();
 
 let backstageModel = new BackstageModel({ instance: instance });
 let modules = new Modules({ instance: instance });
-let ribbonModel = new RibbonModel({ modules: modules });
+let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
 
 ribbonModel.on('analysisSelected', function(info) {
     analyses.createAnalysis(info.name, info.ns);
-});
-
-coms.on('broadcast', function(broadcast) {
-    if (broadcast.payloadType === 'SettingsResponse') {
-        let settings = coms.Messages.SettingsResponse.decode(broadcast.payload);
-        backstageModel.set('settings', settings);
-        modules.setup(settings.modules);
-    }
 });
 
 coms.on('close', function() {
@@ -109,10 +101,6 @@ $(document).ready(() => {
         if (event.changed.selectedTab === 'file')
             backstage.activate();
     });
-
-    ribbonModel.on('toggleResultsMode', () => instance.toggleResultsMode());
-    ribbonModel.on('toggleDevMode', () => instance.toggleDevMode());
-    ribbonModel.on('themeChanged', (name) => instance.set('theme', name));
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     let optionsFixedWidth = 585;
@@ -265,20 +253,5 @@ $(document).ready(() => {
         if ( ! instance.get('hasDataSet'))
             return instance.open('');
 
-    }).then(() => {
-
-        let settings = new coms.Messages.SettingsRequest();
-        let request = new coms.Messages.ComsMessage();
-        request.payload = settings.toArrayBuffer();
-        request.payloadType = 'SettingsRequest';
-        request.instanceId = instance.instanceId();
-
-        return coms.send(request);
-
-    }).then(response => {
-
-        let settings = coms.Messages.SettingsResponse.decode(response.payload);
-        backstageModel.set('settings', settings);
-        modules.setup(settings.modules);
     });
 });
