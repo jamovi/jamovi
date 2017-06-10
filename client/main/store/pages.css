@@ -153,6 +153,7 @@
     background-size: 50px ;
     background-position: center;
     background-repeat: no-repeat;
+    pointer-events: none;
 }
 
 [data-status='loading'] .jmv-store-loading {
@@ -168,6 +169,7 @@
     margin-left: -250px ;
     opacity: 0 ;
     text-align: center ;
+    pointer-events: none;
 }
 
 .jmv-store-error-cause {
@@ -176,6 +178,7 @@
 
 [data-status='error'] .jmv-store-error {
     opacity: 1 ;
+    pointer-events: all;
 }
 
 .jmv-store-installing {

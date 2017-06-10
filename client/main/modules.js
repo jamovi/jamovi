@@ -104,6 +104,7 @@ const Available = ModulesBase.extend({
             }, error => {
                 this.set('error', error);
                 this.set('status', 'error');
+                this._setup([ ]);
             }).done();
         this.set('status', 'loading');
     },
