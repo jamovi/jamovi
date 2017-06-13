@@ -9,7 +9,7 @@
 
 .jmv-ribbon-group-body .jmv-ribbon-button .jmv-ribbon-button-menu {
     top: 100%;
-    left: '';
+    left: unset;
     margin-top: 0px;
     border-radius: 0px;
     background-color: white;
