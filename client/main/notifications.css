@@ -11,7 +11,7 @@
     padding: 0 12px ;
     background-color : #F0F0F0 ;
     border: 1px solid #ACACAC;
-    box-shadow: 0 0 1px 1px rgba(172, 172, 172, 0.5);
+    border-radius: 2px;
     transition: all .5s ;
     height: 85px ;
     overflow: hidden ;

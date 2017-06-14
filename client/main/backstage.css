@@ -1,49 +1,87 @@
 
 .silky-bs {
+    display: flex ;
     position: fixed ;
+    overflow: hidden;
     left: 0 ;
     top: 0 ;
     background-color: #F0F0F0 ;
     z-index: 100 ;
-    width: 100% ;
+    width: 0px;
     height: 100% ;
+    transition: .2s width ease-out;
+}
+
+.silky-bs.activated {
+    width: 250px;
+}
+
+.silky-bs.activated-sub {
+    width: 750px;
 }
 
 .silky-bs-op-panel {
-    width: 100px;
-    position: fixed ;
+    width: 250px;
     left: 0;
     top: 0 ;
     height: 100% ;
-    z-index: 10 ;
+    z-index: 0 ;
+    background-color: #FFFFFF ;
+    color: #333333 ;
+    display: flex;
+    flex-direction: column;
+}
+
+.silky-bs-main {
+    display: flex;
+    flex: 1;
+    position: relative;
+}
+
+.silky-bs-header {
+    display: flex ;
+    height: 100px;
     background-color: #3E6DA9 ;
-    color: #FFFFFF ;
-    padding: 20px 0px;
 }
 
 .silky-bs-logo {
-    position: absolute;
-    bottom: 70px ;
-    right: -20px ;
-    width: 100px ;
-    height: 100px ;
-    background-image: url('assets/logo-v.svg');
-    background-size: cover;
+    flex: 4;
+    background-image: url('assets/logo-store.svg');
+    background-size: 120px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .silky-bs-back-button {
-    font-size: 24px ;
-    width: 40px ;
-    height: 40px ;
+    flex: 1;
+    margin-left: 10px;
+}
+
+.silky-bs-back-button > div {
+    mask: url('assets/action-back.svg') 0 0/30px 30px no-repeat;
+    background-color: #FFFFFF;
+    -webkit-mask: url('assets/action-back.svg');
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: 30px;
+    height: 100px;
+    padding: 10px;
+    transition: .2s background-color ease-out;
     box-sizing: border-box ;
-    border: 3px solid white ;
-    border-radius: 50% ;
-    text-align: center ;
-    vertical-align: middle ;
-    cursor: default ;
-    margin-top: 6px ;
-    margin-bottom: 12px ;
-    margin-left: 18px ;
+    line-height: 30px;
+    text-align: center;
+}
+
+.silky-bs-back-button > div:hover  {
+    background-color: #DBE4F3;
+}
+
+.silky-bs-op-list {
+    margin-top: 20px;
+}
+
+.silky-bs-op-separator {
+    flex: 1;
 }
 
 .disabled-div {
@@ -52,36 +90,70 @@
     pointer-events: none;
 }
 
-.silky-bs-back-button:hover {
-
-    border-color: #DDDDDD ;
-    color: #DDDDDD ;
-}
-
-.silky-bs-back-button span {
-    line-height: 34px ;
-}
-
 .silky-bs-op-button {
     padding: 12px 24px 12px 18px;
     cursor: default ;
+    font-weight: bold;
 }
 
 .silky-bs-op-button:hover {
-    background-color: #325787 ;
+    background-color: #f3f6fb ;
 }
 
 .silky-bs-op-button.selected {
-    background-color: #6E96CA ;
+    background-color: #F0F0F0 ;
+    /*color: #cf901b;*/
+}
+
+.silky-bs-op-places {
+    padding: 0px 0px 0px 0px;
+}
+
+.silky-bs-op-place {
+    padding: 5px 0px 5px 28px;
+}
+
+.silky-bs-op-place:hover {
+    background-color: #e1e9f4 ;
+}
+
+.silky-bs-op-recents-main {
+    margin-bottom: 20px;
+}
+
+.silky-bs-op-recents.silky-bs-fslist {
+    padding-left: 0px;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-item {
+    height: 20px ;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry {
+    padding-left: 25px;
+    width: auto;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry:hover {
+    background-color: #f3f6fb ;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry-location {
+    display: none;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .silky-bs-mid {
     color: #555555 ;
+    flex: 1;
 }
 
 .silky-bs-places-panel {
     padding-top: 50px ;
-    position: absolute ;
     top: 0 ;
     width: 300px ;
     height: 100% ;
@@ -163,11 +235,13 @@
 }
 
 .silky-bs-choices-list {
+    flex: 1;
     position: absolute ;
     top: 0 ;
     min-height: 100px ;
     min-width: 100px ;
     overflow: hidden;
+    padding: 20px;
 }
 
 .silky-bs-fslist {

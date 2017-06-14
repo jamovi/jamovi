@@ -963,14 +963,15 @@ var BackstageView = SilkyView.extend({
     },
     render: function() {
 
-        this.$el.hide();
         this.$el.addClass("silky-bs");
 
         var html = '';
 
         html += '<div class="silky-bs-op silky-bs-op-panel">';
-        html += '    <div class="silky-bs-back-button"><span class="mif-arrow-left"></span></div>';
-        html += '    <div class="silky-bs-logo"></div>';
+        html += '    <div class="silky-bs-header">';
+        html += '        <div class="silky-bs-back-button"><div></div></div>';
+        html += '        <div class="silky-bs-logo"></div>';
+        html += '    </div>';
         html += '</div>';
 
         this.$opPanel = $(html);
@@ -978,46 +979,79 @@ var BackstageView = SilkyView.extend({
 
         $('<div class="silky-bs-main"></div>').appendTo(this.$el);
 
+        let $opList = $('<div class="silky-bs-op-list"></div>');
         var currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
             let op = this.model.attributes.ops[i];
             let selected = (op.name === this.model.attributes.operation);
             if (selected)
                 currentOp = op;
-            let $op = $('<div class="silky-bs-op-button" data-op="' + op.name + '" ' + (selected ? 'data-selected' : '') + '">' + op.title + '</div>');
+
+            let $op = $('<div></div>');
+            let $opTitle = $('<div class="silky-bs-op-button" data-op="' + op.name + '" ' + (selected ? 'data-selected' : '') + '>' + op.title + '</div>').appendTo($op);
+
+            if ('places' in op) {
+                let $opPlaces = $('<div class="silky-bs-op-places"></div>');
+                for (let place of op.places) {
+                    let $opPlace = $('<div class="silky-bs-op-place" data-op="' + place.name + '"' + '>' + place.title + '</div>')
+                    $opPlace.on('click', (event) => {
+                        this.model.set('op', op.name);
+                        this.model.set('place', place.name);
+                    });
+                    $opPlaces.append($opPlace)
+
+                }
+                $opPlaces.appendTo($op)
+            }
+
             op.$el = $op;
             $op.on('click', op, _.bind(this._opClicked, this));
-            $op.appendTo(this.$opPanel);
+            $opList.append($op);
         }
+        this.$opPanel.append($opList);
+
+        this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
+
+        // this.$opPanel.append($('<div class="silky-bs-op-button" data-op="' + 'Examples' + '" ' + '>' + 'Examples' + '</div>'));
+
+        let $op = $('<div class="silky-bs-op-recents-main"></div>');
+        let $opTitle = $('<div class="silky-bs-op-button" data-op="' + 'Recent' + '" ' + '>' + 'Recent' + '</div>').appendTo($op);
+        let $recentsBody = $('<div class="silky-bs-op-recents"></div>').appendTo($op);
+        $op.appendTo(this.$opPanel);
+
+        let recentsModel = this.model.recentsModel();
+        let recentsView = new FSEntryListView({el: $recentsBody, model: recentsModel});
+
 
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
         this.$ops = this.$el.find('.silky-bs-op-button');
 
         this._opChanged();
 
-        if ('places' in currentOp)
-            this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
+        //if ('places' in currentOp)
+        //    this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
+        this.main = new BackstageChoices({ el: ".silky-bs-main", model : this.model });
+    },
+    changePlace : function(place) {
+
+        this.model.set('place', place);
+
     },
     activate : function() {
 
-        this.$el.fadeIn(100);
+        this.$el.addClass('activated');
 
-        var width = this.$opPanel.outerWidth();
-        this.$opPanel.css("left", -width);
-        this.$opPanel.show();
-        this.$opPanel.animate({left:0}, 200);
-
-        if (this.main)
-            this.main.$el.css("margin-left", width + 32);
+        tarp.show(true, .3).then(
+            undefined,
+            () => this.deactivate());
 
         this.model.set('activated', true);
     },
     deactivate : function() {
 
-        this.$el.fadeOut(200);
-
-        var width = this.$opPanel.outerWidth();
-        this.$opPanel.animate({left:-width}, 200);
+        tarp.hide();
+        this.$el.removeClass('activated');
+        this.$el.removeClass('activated-sub');
 
         this.model.set('activated', false);
 
@@ -1042,6 +1076,7 @@ var BackstageView = SilkyView.extend({
     _opClicked : function(event) {
         var op = event.data;
         this.model.set('operation', op.name);
+        this.$el.addClass('activated-sub');
     },
     _opChanged : function() {
 
@@ -1053,7 +1088,7 @@ var BackstageView = SilkyView.extend({
     }
 });
 
-var BackstagePlaces = SilkyView.extend({
+/*var BackstagePlaces = SilkyView.extend({
     className: "silky-bs-places",
     events: {
         'change .silky-bs-browse-invoker' : '_fileUpload',
@@ -1077,7 +1112,7 @@ var BackstagePlaces = SilkyView.extend({
 
             let html = '';
 
-            html += '<div class="silky-bs-places-panel" data-op="' + op.name + '" style="display: none;">';
+            html += '<div class="silky-bs-places-panel" data-op="' + op.name + '">';
             html += '    <h1 class="silky-bs-title">' + op.title + '</h1>';
             html += '    <div class="silky-bs-places">';
             html += '    </div>';
@@ -1147,7 +1182,7 @@ var BackstagePlaces = SilkyView.extend({
         var file = evt.target.files[0];
         this.model.uploadFile(file);
     }
-});
+});*/
 
 var BackstageChoices = SilkyView.extend({
     className: "silky-bs-choices",
@@ -1178,7 +1213,7 @@ var BackstageChoices = SilkyView.extend({
         var $old = this.$current;
 
         if (place.model) {
-            this.$current = $('<div class="silky-bs-choices-list" style="display: none ; width:100%; height:100%"></div>');
+            this.$current = $('<div class="silky-bs-choices-list" style="display: none; width:100%; height:100%;"></div>');
             this.$current.appendTo(this.$el);
             if (this.current)
                 this.current.close();
@@ -1193,6 +1228,9 @@ var BackstageChoices = SilkyView.extend({
             $old.fadeOut(200);
             setTimeout(function() { old.remove(); }, 200);
         }
+
+        if ('action' in place)
+            place.action();
     }
 });
 
