@@ -97,8 +97,8 @@ $(document).ready(() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
-    ribbonModel.on('change:selectedTab', function(event) {
-        if (event.changed.selectedTab === 'file')
+    ribbonModel.on('tabClicked', function(tabName) {
+        if (tabName === 'file')
             backstage.activate();
     });
 
@@ -147,8 +147,6 @@ $(document).ready(() => {
 
     backstageModel.on('change:activated', function(event) {
         mainTable.setActive( ! event.changed.activated);
-        if (event.changed.activated === false)
-            ribbonModel.set('selectedTab', 'analyse');
     });
 
     ribbonModel.on('actionRequest', (action) => {
