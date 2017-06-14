@@ -191,7 +191,11 @@ const RibbonView = Backbone.View.extend({
     _ribbonClicked : function(event) {
         this._closeMenus();
         let index = this.$tabs.index(event.target);
-        this.model.set('selectedTab', this.model.getTabName(index));
+        let tab = this.model.getTab(index);
+        if (tab.getRibbonItems)
+            this.model.set('selectedTab', tab.name);
+
+        this.model.trigger('tabClicked', tab.name);
     },
     _buttonClicked : function(action) {
         this._menuClosed();
