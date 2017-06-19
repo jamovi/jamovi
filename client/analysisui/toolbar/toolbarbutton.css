@@ -1,0 +1,114 @@
+
+.jmv-toolbar-group-body .jmv-toolbar-button {
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 5px;
+    margin-bottom: 0;
+    flex-direction: column;
+    position: relative;
+}
+
+.jmv-toolbar-disabled.jmv-toolbar-button {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+    /*background-color: rgb(200, 200, 200);*/
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button .jmv-toolbar-button-menu > .jmv-toolbar-button:hover {
+    background-color: #d8d8d8;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button .jmv-toolbar-button-menu {
+    top: 100%;
+    left: 0px;
+    margin-top: 0px;
+    border: 1px solid #bebebe;
+    border-radius: 0px;
+    background-color: #e6e6e6;
+    position: absolute;
+}
+
+.jmv-toolbar-button .jmv-toolbar-button {
+    font-size: unset;
+}
+
+.jmv-toolbar-menu-arrow {
+    width: 5.5px;
+    height: 5.5px;
+    background-image: url('assets/menu-button-arrow.svg');
+    background-position: center;
+    background-repeat: no-repeat ;
+    background-size: contain;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button-icon {
+    padding: 0px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button-label {
+    margin-top: 3px;
+}
+
+/*huge button*/
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-huge {
+    width: 45px;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button-size-huge .jmv-toolbar-button-icon {
+    height: 30px;
+}
+
+/*large button*/
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-large {
+    width: 40px;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button-size-large .jmv-toolbar-button-icon {
+    height: 25px;
+}
+
+/*medium button*/
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-medium {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+}
+
+.jmv-toolbar-button-size-medium .jmv-toolbar-button-icon {
+    height: 15px;
+    width: 20px;
+}
+
+.jmv-toolbar-button-size-medium .jmv-toolbar-button-label {
+    margin-left: 3px;
+    margin-top: 0px;
+    white-space: nowrap;
+}
+
+.jmv-toolbar-button-size-medium .jmv-toolbar-menu-arrow {
+    margin: 0 2px 0 6px;
+}
+
+/*small button*/
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-small {
+    /*width: 18px ;*/
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.jmv-toolbar-button-size-small .jmv-toolbar-button-icon {
+    height: 15px;
+    width: 18px;
+}
+
+/*.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-small.jmv-toolbar-dropdown {
+    width: 25px;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-small.jmv-toolbar-dropdown .jmv-toolbar-button-icon {
+    width: 25px;
+}*/

@@ -1,0 +1,15 @@
+
+.jmv-toolbar {
+    -webkit-app-region: no-drag;
+    display: flex ;
+}
+
+.jmv-toolbar-button-separator {
+    flex: 1 1 auto ;
+}
+
+.jmv-toolbar-disabled .jmv-toolbar-button {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+    background-color: rgb(200, 200, 200);
+}

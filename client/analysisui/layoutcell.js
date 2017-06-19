@@ -515,7 +515,6 @@ const LayoutCell = function(parent) {
             else
                 this.$el.addClass("cell-invisible");
             data.opacity = (this._visible ? 1 : 0);
-            data['z-index'] = this._visible ? 1 : 0;
         }
 
         if (this._initialized === false)
