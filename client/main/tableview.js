@@ -618,6 +618,7 @@ const TableView = SilkyView.extend({
                             throw {
                                 title: 'Numeric value required',
                                 message: 'Variables of type Continuous only accept numeric values',
+                                type: 'error',
                             };
                         break;
                     case 'nominal':
@@ -628,6 +629,7 @@ const TableView = SilkyView.extend({
                             throw {
                                 title: 'Integer value required',
                                 message: 'Nominal and Ordinal variables only accept integer values',
+                                type: 'error'
                             };
                         else if ( ! Number.isNaN(number))
                             value = number;

@@ -12,6 +12,7 @@ const Notify = Backbone.Model.extend({
         title : '(no title)',
         message : null,
         visible : true,
+        type: 'info',
     }
 });
 

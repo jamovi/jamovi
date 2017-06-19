@@ -8,22 +8,65 @@
 
 .silky-notification {
     margin: 6px ;
-    padding: 0 12px ;
+    padding: 0 12px 0 0 ;
     background-color : #F0F0F0 ;
     border: 1px solid #ACACAC;
-    box-shadow: 0 0 1px 1px rgba(172, 172, 172, 0.5);
+    border-radius: 2px;
+    /*box-shadow: 0 0 1px 1px rgba(172, 172, 172, 0.5);*/
     transition: all .5s ;
     height: 85px ;
     overflow: hidden ;
     box-sizing: border-box ;
     pointer-events: auto ;
+    display: flex ;
+    flex-direction: row;
 }
 
-.silky-notification.hidden {
+.silky-notification.hidden:not(:hover) {
     height: 0 ;
     opacity: 0 ;
     margin-top: 0 ;
     margin-bottom: 0 ;
+}
+
+.silky-notification-icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: 50px;
+    padding: 5px;
+    flex: 1;
+    box-sizing: border-box ;
+    line-height: 50px;
+    text-align: center;
+    height: 85px ;
+}
+
+[data-type='info'] .silky-notification-icon {
+    mask: url('assets/action-info.svg') 0 0/50px 50px no-repeat;
+    background-color: #81B2F5;
+    -webkit-mask-image: url('assets/action-info.svg');
+}
+
+[data-type='error'] .silky-notification-icon {
+    mask: url('assets/action-error.svg') 0 0/50px 50px no-repeat;
+    background-color: #ce3d3d;
+    -webkit-mask-image: url('assets/action-error.svg');
+}
+
+[data-type='warning'] .silky-notification-icon {
+    mask: url('assets/action-warning.svg') 0 0/50px 50px no-repeat;
+    background-color: #FFA500;
+    -webkit-mask-image: url('assets/action-warning.svg');
+}
+
+[data-type='success'] .silky-notification-icon {
+    mask: url('assets/action-check.svg') 0 0/50px 50px no-repeat;
+    background-color: #399b3f;
+    -webkit-mask-image: url('assets/action-check.svg');
+}
+
+.silky-notification-info {
+    flex: 4;
 }
 
 .silky-notification-title {

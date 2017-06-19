@@ -15,20 +15,24 @@ const NotificationView = SilkyView.extend({
     initialize: function() {
 
         this.$el.addClass("silky-notification hidden");
+        this.$el.attr("data-type", this.model.get('type'));
 
         this.model.on("change", () => this._update());
         this.handlers = [];
 
-        this.$title = $('<div class="silky-notification-title"></div>').appendTo(this.$el);
-        this.$body  = $('<div class="silky-notification-body"></div>').appendTo(this.$el);
+        this.$icon  = $('<div class="silky-notification-icon"></div>').appendTo(this.$el);
+        this.$info = $('<div class="silky-notification-info"></div>').appendTo(this.$el);
+
+        this.$title = $('<div class="silky-notification-title"></div>').appendTo(this.$info);
+        this.$body  = $('<div class="silky-notification-body"></div>').appendTo(this.$info);
 
         this.$content = $('<div class="silky-notification-content"></div>').appendTo(this.$body);
 
         this.$message = $('<div class="silky-notification-message"></div>').appendTo(this.$content);
 
-        this.$buttons = $('<div class="silky-notification-buttons"></div>').appendTo(this.$body);
-
-        this.$ok = $('<div class="silky-notification-button-ok">OK</div>').appendTo(this.$buttons);
+        // this.$buttons = $('<div class="silky-notification-buttons"></div>').appendTo(this.$body);
+        //
+        // this.$ok = $('<div class="silky-notification-button-ok">OK</div>').appendTo(this.$buttons);
 
         this._finished = () => {
             this.trigger('finished');

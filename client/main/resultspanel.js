@@ -264,7 +264,9 @@ const ResultsPanel = Backbone.View.extend({
                 let note = new Notify({
                     title: 'Copied',
                     message: 'The content has been copied to the clipboard',
-                    duration: 2000 });
+                    duration: 2000,
+                    type: 'success'
+                });
 
                 this.model.trigger('notification', note);
             });
