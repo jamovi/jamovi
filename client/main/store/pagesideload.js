@@ -47,7 +47,8 @@ const PageSideload = Backbone.View.extend({
         this.trigger('notification', new Notify({
             title: 'Module installed successfully',
             message: '',
-            duration: 3000
+            duration: 3000,
+            type: 'success'
         }));
         this.trigger('close');
     },
@@ -55,7 +56,8 @@ const PageSideload = Backbone.View.extend({
         this.trigger('notification', new Notify({
             message: error.message,
             title: 'Unable to install module',
-            duration: 4000
+            duration: 4000,
+            type: 'error'
         }));
     },
 });

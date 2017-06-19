@@ -346,6 +346,7 @@ const Instance = Backbone.Model.extend({
             title: error.message,
             message: error.cause,
             duration: 3000,
+            type: error.type ? error.type : 'info',
         });
         this.trigger('notification', notification);
     },

@@ -99,12 +99,16 @@ const PageModules = Backbone.View.extend({
                 this._notify({
                     title: 'Module installed',
                     message: 'module was installed successfully',
-                    duration: 3000 });
+                    duration: 3000,
+                    type: 'success'
+                });
             }, error => {
                 this._notify({
                     title: 'Unable to install module',
                     message: error.cause,
-                    duration: 4000 });
+                    duration: 4000,
+                    type: 'error'
+                 });
             });
     },
     _uninstallClicked(event) {
@@ -120,12 +124,16 @@ const PageModules = Backbone.View.extend({
                 this._notify({
                     title: 'Module uninstalled',
                     message: '' + moduleName + ' was uninstalled successfully',
-                    duration: 3000 });
+                    duration: 3000,
+                    type: 'success'
+                });
             }, error => {
                 this._notify({
                     title: 'Unable to uninstall module',
                     message: error.message,
-                    duration: 4000 });
+                    duration: 4000,
+                    type: 'error'
+                });
             });
     },
     _notify(note) {
