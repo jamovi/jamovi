@@ -10,6 +10,10 @@ const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
 const Backbone = require('backbone');
 const ControlContainer = require('./controlcontainer').container;
+const Toolbar = require('./toolbar/toolbar');
+const ToolbarButton = require('./toolbar/toolbarbutton');
+const ToolbarGroup = require('./toolbar/toolbargroup');
+const ToolbarSeparator = require('./toolbar/toolbarseparator');
 
 const TargetListSupport = function(supplier) {
     DragNDrop.extendTo(this);
@@ -229,8 +233,16 @@ const TargetListSupport = function(supplier) {
         return $dropArea;
     };
 
-    this.preprocessItems = function(items, intoSelf) {
-        let data = { items: items, intoSelf: intoSelf };
+    this.preprocessItems = function(items, intoSelf, action) {
+
+        if (intoSelf === false) {
+            if (action === undefined)
+                action = this.getDefaultTransferAction();
+
+            items = this.applyTransferActionToItems(items, action);
+        }
+
+        let data = { items: items, intoSelf: intoSelf, action: action };
         this.trigger("preprocess", data);
 
         let testedItems = [];
@@ -267,6 +279,7 @@ const GridTargetContainer = function(params) {
     this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
     this.registerSimpleProperty("dropOverflow", "tryNext", new EnumPropertyFilter(["discard", "tryNext"], "tryNext"));
+    this.registerSimpleProperty("transferAction", "none", new EnumPropertyFilter(["none", "interactions"], "none"));
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -348,8 +361,16 @@ const GridTargetContainer = function(params) {
                 return this.targetGrids.length - 1;
             };
 
-            listbox.blockActionButtons = ($except) => {
-                this.blockActionButtons($except);
+            listbox.getDefaultTransferAction = () => {
+                return this.getDefaultTransferAction();
+            };
+
+            listbox.applyTransferActionToItems = (items, action) => {
+                return this.applyTransferActionToItems(items, action);
+            };
+
+            listbox.blockActionButtons = ($except, targetIsSelf) => {
+                this.blockActionButtons($except, targetIsSelf);
             };
 
             listbox.unblockActionButtons = () => {
@@ -489,12 +510,11 @@ const GridTargetContainer = function(params) {
     });
 
     this.onSelectionChanged = function(listbox) {
-        if (this.$button && listbox === this.targetGrid) {
+        if (this.$buttons && listbox === this.targetGrid) {
             let gainOnClick = listbox.hasFocus === false;
             this.gainOnClick = gainOnClick;
-            let $span = this.$button.find('span');
-            $span.addClass(gainOnClick ? 'mif-arrow-right' : 'mif-arrow-left');
-            $span.removeClass(gainOnClick ? 'mif-arrow-left' : 'mif-arrow-right');
+            this.$buttons.addClass(gainOnClick ? 'arrow-right' : 'arrow-left');
+            this.$buttons.removeClass(gainOnClick ? 'arrow-left' : 'arrow-right');
         }
     };
 
@@ -507,11 +527,112 @@ const GridTargetContainer = function(params) {
         this.unblockActionButtons();
     };
 
-    this.getSupplierItems = function() {
+    this.applyTransferActionToItems = function(items, action) {
+        if (action === undefined || action.resultFormat === null)
+            return items;
+
+        let values = this.itemsToValues(items);
+
+        switch (action.name) {
+            case 'none':
+            case 'maineffects':
+                return this.convertItems(items, action.resultFormat);
+            case 'interaction':
+                return this.valuesToItems([values], action.resultFormat);
+            case 'all2way':
+                return this.valuesToItems(this.getInteractions(values, 2, 2), action.resultFormat);
+            case 'all3way':
+                return this.valuesToItems(this.getInteractions(values, 3, 3), action.resultFormat);
+            case 'all4way':
+                return this.valuesToItems(this.getInteractions(values, 4, 4), action.resultFormat);
+            case 'all5way':
+                return this.valuesToItems(this.getInteractions(values, 5, 5), action.resultFormat);
+            case 'interactions':
+                return this.valuesToItems(this.getInteractions(values), action.resultFormat);
+        }
+
+        return items;
+    };
+
+    this.getInteractions = function(values, minLength, maxLength) {
+        if (maxLength === undefined)
+            maxLength = -1;
+
+        if (minLength === undefined)
+            minLength = 1;
+
+        let counts = [0];
+        let findPosition = (length) => {
+            let pos = 0;
+            for (let k = 0; k < length; k++)
+                pos += counts[k];
+            return pos;
+        };
+
+        let list = [];
+        for (let i = 0; i < values.length; i++) {
+            let listLength = list.length;
+            let rawVar = values[i];
+
+            for (let j = 0; j < listLength; j++) {
+                let f = list[j];
+                if (maxLength > 1 && f.length === maxLength)
+                    break;
+
+                let newVar = JSON.parse(JSON.stringify(f));
+
+                newVar.push(rawVar);
+
+                if (counts[newVar.length - 1] === undefined)
+                    counts[newVar.length - 1] = 1;
+                else
+                    counts[newVar.length - 1] += 1;
+                list.splice(findPosition(newVar.length), 0, newVar);
+            }
+            list.splice(i, 0, [rawVar]);
+            counts[0] += 1;
+        }
+
+        if (minLength > 1)
+            list.splice(0, findPosition(minLength - 1));
+
+        return list;
+    };
+
+    this.convertItems = function(items, toFormat) {
+        let newItems = [];
+        for (let i = 0; i < items.length; i++)
+            newItems.push({ value: items[i].value.convert(toFormat) });
+
+        return newItems;
+    };
+
+    this.valuesToItems = function(values, format) {
+        var list = [];
+        for (var i = 0; i < values.length; i++) {
+            let value = values[i];
+            if (format !== undefined)
+                value = new FormatDef.constructor(value, format);
+
+            list.push({ value: value });
+        }
+        return list;
+    };
+
+    this.itemsToValues = function(items) {
+        var list = [];
+        for (var i = 0; i < items.length; i++)
+            list.push(items[i].value.raw);
+        return list;
+    };
+
+
+    this.getSupplierItems = function(action) {
         let items = this._supplier.getSelectedItems();
-        if (this.targetGrid.isSingleItem && this.targetGrids.length === 1)
+
+        if (items.length > 0 && this.targetGrid.isSingleItem && this.targetGrids.length === 1)
             items = [items[0]];
-        return this.targetGrid.preprocessItems(items, false);
+        return this.targetGrid.preprocessItems(items, false, action);
     };
 
     this.addRawToOption = function(item, key, insert) {
@@ -548,7 +669,11 @@ const GridTargetContainer = function(params) {
         return null;
     };
 
-    this.onAddButtonClick = function() {
+    this.onAddButtonClick = function(action) {
+
+        if (action === undefined)
+            action = this.getDefaultTransferAction();
+
         if (this.targetGrid === null)
             return;
 
@@ -560,7 +685,7 @@ const GridTargetContainer = function(params) {
         let postProcessSelectionIndex = null;
         let postProcessList = null;
         if (this.gainOnClick) {
-            let selectedItems = this.getSupplierItems();
+            let selectedItems = this.getSupplierItems(action);
             let selectedCount = selectedItems.length;
             if (selectedCount > 0) {
                 for (let i = 0; i < selectedCount; i++) {
@@ -615,29 +740,67 @@ const GridTargetContainer = function(params) {
             postProcessList.selectNextAvaliableItem(postProcessSelectionIndex);
     };
 
-    this.blockActionButtons = function($except) {
+    this._enableButtons = function(toolbar, value, disableSupplyOnly) {
 
-        let fullBlock = $except !== this.$button;
+        for (let i = 0; i < toolbar.items.length; i++) {
+            let button = toolbar.items[i];
 
-        if (fullBlock) {
-            this.$button.prop('disabled', true);
-            this._actionsBlocked = true;
+            if (button.setEnabled) {
+                if (value === false || this.checkEnableState(button, disableSupplyOnly) === false)
+                    button.setEnabled(false);
+                else
+                    button.setEnabled(true);
+            }
+
+            if (button.items && button.items.length > 0)
+                this._enableButtons(button, value, disableSupplyOnly);
         }
+
+
+    };
+
+    this.checkEnableState = function(button, disableSupplyOnly) {
+        if (disableSupplyOnly) {
+            if (button.name === 'interactions')
+                return false;
+        }
+
+        let selectedCount = this._supplier.getSelectionCount();
+
+        switch (button.name) {
+            case 'interaction':
+            case 'all2way':
+                return selectedCount >= 2;
+            case 'all3way':
+                return selectedCount >= 3;
+            case 'all4way':
+                return selectedCount >= 4;
+            case 'all5way':
+                return selectedCount >= 5;
+        }
+
+        return true;
+    };
+
+    this.blockActionButtons = function($except, targetIsSelf) {
+
+        let fullBlock = $except !== this.$buttons;
+
+        this._enableButtons(this.toolbar, fullBlock === false, targetIsSelf);
+        this._actionsBlocked = fullBlock;
 
         for (let a = 0; a < this.targetGrids.length; a++) {
             let targetlist = this.targetGrids[a];
             if (fullBlock || targetlist !== this.targetGrid)
                 targetlist.clearSelection();
         }
-
-
     };
 
     this.unblockActionButtons = function() {
-        if (this.$button)
-            this.$button.prop('disabled', false);
+        if (this.toolbar)
+            this._enableButtons(this.toolbar, true);
         this._actionsBlocked = false;
-        return this.$button;
+        return this.$buttons;
     };
 
     this.pushRowsBackToSupplier = function(list, rowIndex, count) {
@@ -729,6 +892,19 @@ const GridTargetContainer = function(params) {
         return this.controls;
     };
 
+    this.getDefaultTransferAction = function() {
+        if (this._normalAction === undefined) {
+            let transferAction = this.getPropertyValue('transferAction');
+            let transferFormat = null;
+            if (transferAction === 'interactions')
+                transferFormat = FormatDef.term;
+
+            this._normalAction = { name: transferAction, resultFormat: transferFormat };
+        }
+
+        return this._normalAction;
+    };
+
     this.onRenderToGrid = function(grid, row, column) {
 
         let label = this.getPropertyValue('label');
@@ -738,14 +914,53 @@ const GridTargetContainer = function(params) {
         }
 
         if (grid.addTarget) {
-            this.$button = $('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
-            this.$button.click((event) => {
+            let transferAction = this.getPropertyValue('transferAction');
+
+            let buttons = [
+                new ToolbarButton({ title: '', name: 'normal', size: 'small', classes: 'jmv-variable-transfer' })
+            ];
+
+            if (transferAction === 'interactions') {
+                buttons.push(
+                    new ToolbarButton({ title: '', name: 'interactions', size: 'small', classes: 'jmv-variable-transfer-collection jmv-variable-interaction-transfer', items: [
+                        new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarSeparator({ orientation: 'vertical' }),
+                        new ToolbarButton({ title: 'Main Effects', name: 'maineffects', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: 'All 2 way', name: 'all2way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: 'All 3 way', name: 'all3way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: 'All 4 way', name: 'all4way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: 'All 5 way', name: 'all5way', hasIcon: false, resultFormat: FormatDef.term })
+                    ]})
+                );
+            }
+
+            this.toolbar = new Toolbar([
+                new ToolbarGroup({ orientation: 'vertical', items: buttons })
+            ]);
+
+
+            this.toolbar.$el.addClass();
+            this.$buttons = this.toolbar.$el;//$('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
+            this.$buttons.addClass('arrow-right');
+            this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0)
                     this.targetGrid = this.targetGrids[0];
-                if (this._actionsBlocked === false)
-                    this.onAddButtonClick();
+                if (this._actionsBlocked === false) {
+                    switch (item.name) {
+                        case 'normal':
+                            this.onAddButtonClick();
+                            break;
+                        case 'interactions':
+                            this._enableButtons(item, true);
+                            break;
+                        default:
+                            this.onAddButtonClick({ name: item.name, resultFormat: item.params.resultFormat });
+                            break;
+                    }
+                }
             });
-            grid.addCell('aux', row + 1, true, this.$button);
+
+            grid.addCell('aux', row + 1, true, this.$buttons);
 
             this.setSupplier(grid);
         }

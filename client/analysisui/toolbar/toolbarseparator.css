@@ -1,0 +1,16 @@
+
+.jmv-toolbar-separator-horizontal {
+    border-left-style: solid;
+    border-left-color: #cdcdcd;
+    border-left-width: 1px;
+    margin: 0 3px 0 3px;
+    width: 1px;
+}
+
+.jmv-toolbar-separator-vertical {
+    border-top-style: solid;
+    border-top-color: #cdcdcd;
+    border-top-width: 1px;
+    margin: 3px 0 3px 0;
+    height: 1px;
+}

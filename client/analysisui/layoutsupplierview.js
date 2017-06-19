@@ -158,6 +158,10 @@ const LayoutSupplierView = function(params) {
         return this._items[index];
     };
 
+    this.getSelectionCount = function() {
+        return this.supplierGrid.selectedCellCount();
+    };
+
     this.getSelectedItems = function() {
         let items = [];
         let selectionCount = this.supplierGrid.selectedCellCount();
@@ -265,8 +269,8 @@ const LayoutSupplierView = function(params) {
             let $activeButton =  this._targets[id].unblockActionButtons();
             this.supplierGrid.clearSelection();
             for (let tid in this._targets) {
-                if (tid !== id)
-                    this._targets[tid].blockActionButtons($activeButton);
+                let targetIsSelf = tid === id;
+                this._targets[tid].blockActionButtons($activeButton, targetIsSelf);
             }
         };
 

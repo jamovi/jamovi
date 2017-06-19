@@ -64,6 +64,13 @@ const FormatDef = {
         this.isPrimitive = function() {
             return this.format !== null;
         };
+
+        this.convert = function(format) {
+            if (format.from === undefined)
+                throw 'Format "' + format.name + '" does not have a "from" converter function.';
+
+            return new FormatDef.constructor(format.from(this), format);
+        };
     }
 };
 
@@ -141,22 +148,53 @@ FormatDef.variable = new Format ({
         return raw === null;
     },
 
-    interactions: function(variables) {
+    interactions: function(values, minLength, maxLength) {
+
+        if (maxLength === undefined)
+            maxLength = -1;
+
+        if (minLength === undefined)
+            minLength = 1;
+
+        let counts = [0];
+        let findPosition = (length) => {
+            let pos = 0;
+            for (let k = 0; k < length; k++)
+                pos += counts[k];
+            return pos;
+        };
+
         let list = [];
-        for (let i = 0; i < variables.length; i++) {
+        for (let i = 0; i < values.length; i++) {
             let listLength = list.length;
-            let rawVar = variables[i];
-            if (variables[i].raw)
-                rawVar = variables[i].raw;
+            let rawVar = values[i];
+            let isFormatted = false;
+            if (values[i].raw) {
+                rawVar = values[i].raw;
+                isFormatted = true;
+            }
 
             for (let j = 0; j < listLength; j++) {
-                let newVar = JSON.parse(JSON.stringify(list[j]));
+                let f = list[j];
+                if (maxLength > 1 && f.length === maxLength)
+                    break;
+
+                let newVar = JSON.parse(JSON.stringify(f));
 
                 newVar.push(rawVar);
-                list.push(FormatDef.constructor(newVar, FormatDef.term));
+
+                if (counts[newVar.length - 1] === undefined)
+                    counts[newVar.length - 1] = 1;
+                else
+                    counts[newVar.length - 1] += 1;
+                list.splice(findPosition(newVar.length), 0, isFormatted ? new FormatDef.constructor(newVar, FormatDef.term) : newVar);
             }
-            list.push(FormatDef.constructor([rawVar], FormatDef.term));
+            list.splice(i, 0, isFormatted ? new FormatDef.constructor([rawVar], FormatDef.term) : [rawVar]);
+            counts[0] += 1;
         }
+
+        if (minLength > 1)
+            list.splice(0, findPosition(minLength - 1));
 
         return list;
     }
@@ -291,6 +329,21 @@ FormatDef.term = new Format ({
         }
 
         return true;
+    },
+
+    from: function(raw, format) {
+        if (format === undefined) {
+            format = raw.format;
+            raw = raw.raw;
+        }
+
+        if (format.name === 'term')
+            return raw;
+
+        if (format.name === 'variable')
+            return [raw];
+
+        throw 'Cannot convert format "' + format.name + '" to a "term" format';
     }
 });
 
