@@ -131,6 +131,10 @@ input.silky-table-cell-selected {
     top: -100px ;
 }
 
+input.silky-table-cell-selected.copying {
+    border: 1px dashed #5E8BC4 ;
+}
+
 .silky-table-cell-selected:not(.editing) {
     cursor: default ;
     pointer-events: none ;

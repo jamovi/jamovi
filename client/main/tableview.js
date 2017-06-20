@@ -1167,6 +1167,8 @@ const TableView = SilkyView.extend({
                     text: csvifyCells(cells),
                     html: htmlifyCells(cells),
                 });
+                this.$selection.addClass('copying');
+                setTimeout(() => this.$selection.removeClass('copying'), 100);
             });
     },
     _pasteClipboardToSelection() {
@@ -1184,6 +1186,9 @@ const TableView = SilkyView.extend({
                 range.rowNo = range.top;
                 range.colNo = range.left;
                 this._setSelectedRange(range);
+
+                this.$selection.addClass('copying');
+                setTimeout(() => this.$selection.removeClass('copying'), 100);
 
             }, error => {
                 let notification = new Notify({
