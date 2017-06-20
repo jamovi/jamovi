@@ -13,7 +13,6 @@ const keyboardJS = require('keyboardjs');
 const dialogs = require('dialogs')({cancel:false});
 
 const SilkyView = require('./view');
-const DataSetModel = require('./dataset').Model;
 const Notify = require('./notification');
 const { csvifyCells, htmlifyCells } = require('./utils/formatio');
 const host = require('./host');
@@ -68,8 +67,8 @@ const TableView = SilkyView.extend({
 
         this.selection = null;
 
-        this.$body.on('mousedown', event => this._mouseDown(event));
-        this.$body.on('mousemove', event => this._mouseMove(event));
+        this.$el.on('mousedown', event => this._mouseDown(event));
+        this.$el.on('mousemove', event => this._mouseMove(event));
         $(document).on('mouseup', event => this._mouseUp(event));
         this.$el.on('dblclick', event => this._dblClickHandler(event));
 
@@ -87,13 +86,16 @@ const TableView = SilkyView.extend({
         ActionHub.get('cut').on('request', this._cutSelectionToClipboard, this);
         ActionHub.get('copy').on('request', this._copySelectionToClipboard, this);
         ActionHub.get('paste').on('request', this._pasteClipboardToSelection, this);
+
         ActionHub.get('editVar').on('request', this._toggleVariableEditor, this);
-        ActionHub.get('appendVar').on('request', this._appendVariable, this);
-        ActionHub.get('appendCase').on('request', this._appendRows, this);
-        ActionHub.get('delCase').on('request', this._deleteRows, this);
-        ActionHub.get('delVar').on('request', this._deleteVariables, this);
-        ActionHub.get('insertVar').on('request', this._insertVariable, this);
-        ActionHub.get('insertCase').on('request', this._insertRows, this);
+
+        ActionHub.get('insertVar').on('request', this._insertColumn, this);
+        ActionHub.get('appendVar').on('request', this._appendColumn, this);
+        ActionHub.get('delVar').on('request', this._deleteColumns, this);
+
+        ActionHub.get('insertRow').on('request', this._insertRows, this);
+        ActionHub.get('appendRow').on('request', this._appendRows, this);
+        ActionHub.get('delRow').on('request', this._deleteRows, this);
     },
     setActive(active) {
         this._active = active;
@@ -102,7 +104,7 @@ const TableView = SilkyView.extend({
         else
             keyboardJS.setContext('');
     },
-    _appendColumn(column) {
+    _addColumnToView(column) {
         let width  = column.width;
         let left = this._bodyWidth;
 
@@ -111,22 +113,6 @@ const TableView = SilkyView.extend({
         let $header = $(html);
         this.$header.append($header);
         this.$headers.push($header);
-        /*let columnIndex = this.$columns.length;
-        $header.on('click', null, this, (event) =>{
-            let vRowCount = this.model.get('vRowCount');
-            let topVisibleCell = this.viewport.top + 1;
-            if (this.$container.scrollTop() === 0)
-                topVisibleCell = 0;
-            let range = {
-                rowNo: topVisibleCell,
-                colNo: columnIndex,
-                left: columnIndex,
-                right: columnIndex,
-                top: 0,
-                bottom: vRowCount - 1 };
-
-            this._setSelectedRange(range);
-        });*/
 
         let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
@@ -137,6 +123,8 @@ const TableView = SilkyView.extend({
         this._bodyWidth += width;
 
         this.$body.css('width',  this._bodyWidth);
+
+        this._enableDisableActions();
     },
     _dataSetLoaded() {
 
@@ -153,7 +141,7 @@ const TableView = SilkyView.extend({
 
         for (let colNo = 0; colNo < columns.length; colNo++) {
             let column = columns[colNo];
-            this._appendColumn(column);
+            this._addColumnToView(column);
         }
 
         this.$rhColumn = $('<div class="silky-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
@@ -248,15 +236,26 @@ const TableView = SilkyView.extend({
     },
     _columnsChanged(event) {
 
+        let editingVar = this.model.get('editingVar');
+        let editingVarCleared = false;
+
         for (let changes of event.changes) {
 
-            if (changes.deleted) // handled elsewhere
+            if (changes.deleted) {
+                if (editingVarCleared === false && editingVar !== null) {
+                    this.model.set('editingVar', changes.index + 1, { silent: true });
+                    this.model.set('editingVar', changes.index);
+                    editingVarCleared = true;
+                }
                 continue;
+            }
+
+            if (changes.created && changes.index === editingVar) {
+                this.model.set('editingVar', changes.index + 1, { silent: true });
+                this.model.set('editingVar', changes.index);
+            }
 
             let column = this.model.getColumnById(changes.id);
-
-            if (changes.created)
-                this._appendColumn(column);
 
             if (changes.levelsChanged || changes.measureTypeChanged) {
                 let $header = $(this.$headers[column.index]);
@@ -272,6 +271,7 @@ const TableView = SilkyView.extend({
             }
         }
 
+        this._enableDisableActions();
         this._updateViewRange();
     },
     _getPos(x, y) {
@@ -279,7 +279,7 @@ const TableView = SilkyView.extend({
         let vx = x - bounds.left;
         let vy = y - bounds.top;
 
-        let rowNo = parseInt(vy / this._rowHeight);
+        let rowNo = Math.floor(vy / this._rowHeight);
         let colNo;
         for (colNo = -1; colNo < this._lefts.length - 1; colNo++) {
             if (vx < this._lefts[colNo+1])
@@ -299,25 +299,74 @@ const TableView = SilkyView.extend({
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
-        if (colNo < 0)
-            return;
-
         if (this._editing &&
             rowNo === this.selection.rowNo &&
             colNo === this.selection.colNo)
                 return;
 
         this._endEditing().then(() => {
-            this._isDragging = true;
-            this._isClicking = true;
 
-            if (event.shiftKey) {
-                this._clickCoords = Object.assign({}, this.selection);
-                this._mouseMove(event);
+            if (rowNo >= 0 && colNo >= 0) {
+
+                this._isDragging = true;
+                this._isClicking = true;
+
+                if (event.shiftKey) {
+                    this._clickCoords = Object.assign({}, this.selection);
+                    this._mouseMove(event);
+                }
+                else {
+                    this._clickCoords = pos;
+                }
+
             }
-            else {
-                this._clickCoords = pos;
+            else if (rowNo < 0 && colNo >= 0) {
+
+                let left = colNo;
+                let right = colNo;
+
+                if (event.shiftKey) {
+                    if (this.selection.colNo > colNo)
+                        right = this.selection.colNo;
+                    else if (this.selection.colNo < colNo)
+                        left = this.selection.colNo;
+                    colNo = this.selection.colNo;
+                }
+
+                let range = {
+                    rowNo: this.selection.rowNo,
+                    colNo: colNo,
+                    left: left,
+                    right: right,
+                    top: 0,
+                    bottom: this.model.attributes.rowCount - 1 };
+
+                this._setSelectedRange(range);
             }
+            else if (rowNo >= 0 && colNo < 0) {
+
+                let top = rowNo;
+                let bot = rowNo;
+
+                if (event.shiftKey) {
+                    if (this.selection.rowNo > rowNo)
+                        bot = this.selection.rowNo;
+                    else if (this.selection.rowNo < rowNo)
+                        top = this.selection.rowNo;
+                    rowNo = this.selection.rowNo;
+                }
+
+                let range = {
+                    rowNo: rowNo,
+                    colNo: this.selection.colNo,
+                    left: 0,
+                    right: this.model.attributes.columnCount - 1,
+                    top: top,
+                    bottom: bot };
+
+                this._setSelectedRange(range);
+            }
+
         }, () => {});
     },
     _mouseUp(event) {
@@ -337,8 +386,11 @@ const TableView = SilkyView.extend({
 
         let pos = this._getPos(event.clientX, event.clientY);
 
+        if (pos.rowNo < 0 || pos.colNo < 0)
+            return;
         if (this._lastPos && pos.rowNo === this._lastPos.rowNo && pos.colNo === this._lastPos.colNo)
             return;
+
         this._lastPos = pos;
 
         let rowNo = pos.rowNo;
@@ -557,17 +609,6 @@ const TableView = SilkyView.extend({
         let rowNo = range.rowNo;
         let colNo = range.colNo;
 
-        let dataSetBounds = {
-            left: 0,
-            right: this.model.attributes.columnCount - 1,
-            top: 0,
-            bottom: this.model.attributes.rowCount - 1 };
-
-        ActionHub.get('delCase').set('enabled', range.top <= dataSetBounds.bottom);
-        ActionHub.get('delVar').set('enabled', range.left <= dataSetBounds.right);
-        ActionHub.get('insertVar').set('enabled', range.left === range.right && range.colNo <= dataSetBounds.right);
-        ActionHub.get('insertCase').set('enabled', range.top === range.bottom && range.rowNo <= dataSetBounds.bottom);
-
         if (this.selection !== null) {
 
             // remove row/column highlights from last time
@@ -591,6 +632,8 @@ const TableView = SilkyView.extend({
         let oldSel = Object.assign({}, this.selection);
 
         Object.assign(this.selection, range);
+
+        this._enableDisableActions();
 
         this.currentColumn = this.model.attributes.columns[colNo];
         if (this.model.get('editingVar') !== null)
@@ -863,7 +906,7 @@ const TableView = SilkyView.extend({
             break;
         }
     },
-    _deleteVariables() {
+    _deleteColumns() {
         let start = this.selection.left;
         let end = this.selection.right;
 
@@ -888,10 +931,13 @@ const TableView = SilkyView.extend({
                         reject();
                 };
 
-                if (start === end)
-                    dialogs.confirm('Delete column ' + (newSelection.left+1) + '?', cb);
-                else
+                if (newSelection.left === newSelection.right) {
+                    let column = this.model.getColumn(newSelection.left);
+                    dialogs.confirm('Delete column \'' + column.name + '\' ?', cb);
+                }
+                else {
                     dialogs.confirm('Delete columns ' + (newSelection.left+1) + ' - ' + (newSelection.right+1) + '?', cb);
+                }
             });
 
         }).then(() => {
@@ -903,9 +949,8 @@ const TableView = SilkyView.extend({
             return this._setSelection(oldSelection.top, oldSelection.left);
 
         }).then(undefined, (error) => {
-
-            // when cancelled
-            console.log(error);
+            if (error)
+                console.log(error);
             return this._setSelectedRange(oldSelection);
         });
 
@@ -953,17 +998,24 @@ const TableView = SilkyView.extend({
 
             return this._setSelection(oldSelection.top, oldSelection.left);
 
-        }, (error) => {
-            console.log(error);
+        }).then(undefined, (error) => {
+            if (error)
+                console.log(error);
             return this._setSelectedRange(oldSelection);
         });
     },
-    _insertVariable() {
+    _insertColumn() {
         return this.model.insertColumn(this.selection.colNo);
     },
     _columnsInserted(event) {
 
-        let column = this.model.get('columns')[event.index];
+        let column = this.model.getColumn(event.index);
+
+        if (event.index >= this._lefts.length) {  // append
+            this._addColumnToView(column);
+            return;
+        }
+
         let left = this._lefts[event.index];
         let html = this._createHeaderHTML(event.index, left);
 
@@ -1001,6 +1053,14 @@ const TableView = SilkyView.extend({
 
         this._bodyWidth += widthIncrease;
         this.$body.css('width', this._bodyWidth);
+
+        let selection = Object.assign({}, this.selection);
+        if (column.index <= this.selection.colNo) {
+            this.selection.colNo++;
+            this.selection.left++;
+            this.selection.right++;
+            this._setSelectedRange(selection);
+        }
 
         this._updateViewRange();
     },
@@ -1044,34 +1104,51 @@ const TableView = SilkyView.extend({
 
         }).then(n => {
 
-            let colNo = this.selection.colNo;
-            let rowNo = this.model.get('rowCount');
+            let rowStart = this.model.attributes.rowCount;
+            let rowEnd = rowStart + n - 1;
+            return this.model.insertRows(rowStart, rowEnd);
 
-            let range = { left: colNo, right: colNo, top: rowNo, bottom: rowNo + n - 1 };
-            this.model.changeCells(range, null);
-
-            let selBottom = (rowNo + 1) * this._rowHeight;
-            let scrollY = this.$container.scrollTop();
-            let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
-
-            if (selBottom > containerBottom)
-                this.$container.scrollTop(scrollY + selBottom - containerBottom);
-
-        }, (error) => {});
+        }).then(undefined, (error) => {
+            if (error)
+                console.log(error);
+        });
     },
-    _appendVariable() {
+    _appendColumn() {
+
         let rowNo = this.selection.rowNo;
         let colNo = this.model.get('columnCount');
         let column = this.model.getColumn(colNo);
 
-        this.model.changeColumn(column.id, { name: '', measureType: 'nominal' });
-        this._setSelection(rowNo, colNo);
+        this._setSelection(rowNo, colNo).then(() => {
 
-        let selRight = this._lefts[colNo] + this._widths[colNo];
-        let scrollX = this.$container.scrollLeft();
-        let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
-        if (selRight > containerRight)
-            this.$container.scrollLeft(scrollX + selRight - containerRight);
+            return this.model.changeColumn(column.id, { name: '', measureType: 'nominal' });
+
+        }).then(() => {
+
+            let selRight = this._lefts[colNo] + this._widths[colNo];
+            let scrollX = this.$container.scrollLeft();
+            let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
+            if (selRight > containerRight)
+                this.$container.scrollLeft(scrollX + selRight - containerRight);
+        });
+    },
+    _enableDisableActions() {
+
+        let selection = this.selection;
+
+        if (selection === null)
+            return;
+
+        let dataSetBounds = {
+            left: 0,
+            right: this.model.attributes.columnCount - 1,
+            top: 0,
+            bottom: this.model.attributes.rowCount - 1 };
+
+        ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom);
+        ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
+        ActionHub.get('insertVar').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right);
+        ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
     },
     _toggleVariableEditor() {
         if (this.model.get('editingVar') === null)
@@ -1362,21 +1439,7 @@ const TableView = SilkyView.extend({
             virtual = ' virtual';
 
         let $cell = $('<div class="silky-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>');
-        $cell.on('click', null, this, (event) =>{
-            let vColCount = this.$columns.length - 1;
-            let leftVisibleCell = this.viewport.left + 1;
-            if (this.$container.scrollLeft() === 0)
-                leftVisibleCell = 0;
-            let range = {
-                rowNo: rowNo,
-                colNo: leftVisibleCell,
-                left: 0,
-                right: vColCount,
-                top: rowNo,
-                bottom: rowNo };
 
-            this._setSelectedRange(range);
-        });
         return $cell;
     },
     _refreshRHCells(v) {

@@ -141,7 +141,6 @@ const DataSetModel = Backbone.Model.extend({
 
                 let changed = Array(datasetPB.schema.columns.length);
                 let changes = Array(datasetPB.schema.columns.length);
-                let nCreated = 0;
 
                 for (let i = 0; i < datasetPB.schema.columns.length; i++) {
                     let columnPB = datasetPB.schema.columns[i];
@@ -206,7 +205,7 @@ const DataSetModel = Backbone.Model.extend({
 
                 this.trigger('columnsInserted', { index: index });
 
-                /*let changed = Array(datasetPB.schema.columns.length);
+                let changed = Array(datasetPB.schema.columns.length);
                 let changes = Array(datasetPB.schema.columns.length);
 
                 for (let i = 0; i < datasetPB.schema.columns.length; i++) {
@@ -215,10 +214,15 @@ const DataSetModel = Backbone.Model.extend({
                     let column = this.getColumnById(id);
 
                     changed[i] = columnPB.name;
-                    changes[i] = { id: id, dataChanged: true };
+                    changes[i] = {
+                        id: id,
+                        name: columnPB.name,
+                        index: index,
+                        created: true,
+                        dataChanged: true };
                 }
 
-                this.trigger('columnsChanged', { changed, changes });*/
+                this.trigger('columnsChanged', { changed, changes });
             }
 
         });
@@ -395,6 +399,8 @@ const DataSetModel = Backbone.Model.extend({
                     changed[i] = columnPB.name;
                     changes[i] = {
                         id: id,
+                        name: column.name,
+                        index: column.index,
                         oldName: oldName,
                         levelsChanged: true,
                         measureTypeChanged: true,
@@ -404,12 +410,17 @@ const DataSetModel = Backbone.Model.extend({
                     };
                 }
 
-                this.trigger('columnsChanged', { changed, changes });
-
                 if (nCreated > 0) {
                     this.set('columnCount', this.attributes.columnCount + nCreated);
                     this.set('vColumnCount', this.attributes.vColumnCount + nCreated);
                 }
+
+                for (let change of changes) {
+                    if (change.created)
+                        this.trigger('columnsInserted', { index: change.index });
+                }
+
+                this.trigger('columnsChanged', { changed, changes });
             }
         });
     },
@@ -793,6 +804,7 @@ const DataSetViewModel = DataSetModel.extend({
                         id: id,
                         oldName: oldName,
                         name: newName,
+                        index: column.index,
                         levelsChanged: true,
                         measureTypeChanged: true,
                         nameChanged: oldName !== newName,
@@ -819,6 +831,11 @@ const DataSetViewModel = DataSetModel.extend({
             if (datasetPB.schema) {
                 this.set('rowCount', datasetPB.schema.rowCount);
                 this.set('vRowCount', datasetPB.schema.vRowCount);
+            }
+
+            for (let change of changes) {
+                if (change.created)
+                    this.trigger('columnsInserted', { index: change.index });
             }
 
             this.set('edited', true);
@@ -897,4 +914,4 @@ const genColName = function(index) {
 };
 
 
-module.exports = { DataSetModel : DataSetModel, DataSetViewModel : DataSetViewModel };
+module.exports = DataSetViewModel;

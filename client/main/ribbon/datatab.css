@@ -12,12 +12,12 @@
     background-image: url('assets/menu-variable-append.svg');
 }
 
-.jmv-ribbon-button[data-name=appendcase] > .jmv-ribbon-button-icon {
-    background-image: url('assets/menu-case-append.svg');
+.jmv-ribbon-button[data-name=appendrow] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-row-append.svg');
 }
 
-.jmv-ribbon-button[data-name=delcase] > .jmv-ribbon-button-icon {
-    background-image: url('assets/menu-case-remove.svg');
+.jmv-ribbon-button[data-name=delrow] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-row-remove.svg');
 }
 
 .jmv-ribbon-button[data-name=delvar] > .jmv-ribbon-button-icon {
@@ -40,10 +40,10 @@
     background-image: url('assets/menu-variable-insert.svg');
 }
 
-.jmv-ribbon-button[data-name=insertcase] > .jmv-ribbon-button-icon {
-    background-image: url('assets/menu-case-insert.svg');
+.jmv-ribbon-button[data-name=insertrow] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-row-insert.svg');
 }
 
-.jmv-ribbon-button[data-name=addcase] > .jmv-ribbon-button-icon {
-    background-image: url('assets/menu-case-add.svg');
+.jmv-ribbon-button[data-name=addrow] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-row-add.svg');
 }

@@ -27,7 +27,7 @@ const DataTab = function() {
                 new RibbonGroup({ orientation: 'vertical', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonButton({ title: 'Insert', name: 'insertVar' }),
-                        new RibbonButton({ title: 'Append', name: 'appendVar' })
+                        new RibbonButton({ title: 'Append', name: 'appendVar' }),
                     ]}),
                     new RibbonButton({ title: 'Delete', name: 'delVar' }),
                 ]})
@@ -35,11 +35,11 @@ const DataTab = function() {
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Rows', items : [
                 new RibbonGroup({ orientation: 'vertical', items: [
-                    new RibbonButton({ title: 'Add', name: 'addCase', subItems: [
-                        new RibbonButton({ title: 'Insert', name: 'insertCase' }),
-                        new RibbonButton({ title: 'Append', name: 'appendCase' })
+                    new RibbonButton({ title: 'Add', name: 'addRow', subItems: [
+                        new RibbonButton({ title: 'Insert', name: 'insertRow' }),
+                        new RibbonButton({ title: 'Append', name: 'appendRow' }),
                     ]}),
-                    new RibbonButton({ title: 'Delete', name: 'delCase' }),
+                    new RibbonButton({ title: 'Delete', name: 'delRow' }),
                 ]})
             ]})
         ];

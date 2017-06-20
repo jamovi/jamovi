@@ -14,7 +14,7 @@ const host = require('./host');
 const Notify = require('./notification');
 
 const Analyses = require('./analyses');
-const DataSetViewModel = require('./dataset').DataSetViewModel;
+const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
 
 const Settings = require('./settings');
@@ -487,8 +487,9 @@ const Instance = Backbone.Model.extend({
 
             for (let changes of event.changes) {
 
-                if (changes.deleted && using.includes(changes.name)) {
-                    columnDeleted = true;
+                if (changes.deleted) {
+                    if (using.includes(changes.name))
+                        columnDeleted = true;
                 }
                 else {
                     let column = this._dataSetModel.getColumnById(changes.id);

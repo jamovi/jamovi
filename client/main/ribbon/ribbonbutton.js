@@ -85,16 +85,19 @@ const RibbonButton = Backbone.View.extend({
             this.$el.attr('disabled', '');
     },
     _clicked(event) {
-        let action = { name: this.name, tabName: this.tabName };
 
         let $target = $(event.target);
         if ($target.closest(this.$menu).length !== 0)
             return;
 
-        if (this._menuGroup !== undefined)
+        let action = ActionHub.get(this.name);
+
+        if ( ! action.attributes.enabled)
+            ; // do nothing
+        else if (this._menuGroup !== undefined)
             this._toggleMenu();
         else
-            ActionHub.get(this.name).do();
+            action.do();
 
         event.stopPropagation();
     },
