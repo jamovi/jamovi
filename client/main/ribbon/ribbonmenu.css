@@ -4,12 +4,11 @@
     position: relative ;
     border: 0 ;
     width: 74px ;
-    padding: 3px 0 2px 0;
+    padding: 6px 0;
     font-size: 80% ;
     text-align: center ;
     color: #555555 ;
     border-radius: 1px ;
-    margin: 0 0 5px 0;
 
     display: flex;
     flex-wrap: nowrap;

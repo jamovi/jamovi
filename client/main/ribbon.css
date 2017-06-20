@@ -37,6 +37,7 @@ body.windows .jmv-ribbon-appmenu {
 
 .jmv-ribbon-tab:hover {
     color: #EEEEEE ;
+    background-color: #4675B1 ;
 }
 
 .jmv-ribbon-tab.selected {
@@ -47,7 +48,7 @@ body.windows .jmv-ribbon-appmenu {
 .jmv-ribbon-body {
     background-color : #F0F0F0 ;
     height: 58px ;
-    padding: 6px 6px 2px 6px ;
+    padding: 6px ;
     -webkit-app-region: no-drag;
     display: flex ;
 }
