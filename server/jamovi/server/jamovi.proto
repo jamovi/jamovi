@@ -384,6 +384,10 @@ message DataSetSchema {
 enum GetSet {
     GET = 0;
     SET = 1;
+    DEL_ROWS = 2;
+    DEL_COLS = 3;
+    INS_ROWS = 4;
+    INS_COLS = 5;
 }
 
 message InfoRequest {

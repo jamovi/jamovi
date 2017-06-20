@@ -480,26 +480,34 @@ const Instance = Backbone.Model.extend({
         for (let analysis of this._analyses) {
             let using = analysis.getUsing();
 
-            let changeFound = false;
+            let columnDataChanged = false;
+            let columnDeleted = false;
+            let columnRenamed = false;
             let columnRenames = [];
+
             for (let changes of event.changes) {
-                let column = this._dataSetModel.getColumnById(changes.id);
-                let name = column.name;
-                if (changes.nameChanged)
-                    name = changes.oldName;
-                if (using.includes(name)) {
-                    if (changes.nameChanged)
+
+                if (changes.deleted && using.includes(changes.name)) {
+                    columnDeleted = true;
+                }
+                else {
+                    let column = this._dataSetModel.getColumnById(changes.id);
+                    if (using.includes(column.name))
+                        columnDataChanged = true;
+                    if (changes.nameChanged && using.includes(changes.oldName)) {
+                        columnRenamed = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
-                    changeFound = true;
+                    }
                 }
             }
-            if (changeFound) {
-                if (columnRenames.length > 0) {
-                    analysis.renameColumns(columnRenames);
-                    let selectedAnalysis = this.get('selectedAnalysis');
-                    if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
-                        this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
-                }
+
+            if (columnRenamed)
+                analysis.renameColumns(columnRenames);
+
+            if (columnDataChanged || columnRenamed || columnDeleted) {
+                let selectedAnalysis = this.get('selectedAnalysis');
+                if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
+                    this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
                 this._runAnalysis(analysis, event.changed);
             }
         }

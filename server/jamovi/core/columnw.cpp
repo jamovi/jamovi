@@ -17,6 +17,11 @@ ColumnW::ColumnW(DataSetW *parent, MemoryMapW *mm, ColumnStruct *rel)
     _mm = mm;
 }
 
+void ColumnW::setId(int id)
+{
+    struc()->id = id;
+}
+
 void ColumnW::setName(const char *name)
 {
     int length = strlen(name)+1;
@@ -52,6 +57,34 @@ void ColumnW::setDPs(int dps)
     ColumnStruct *s = struc();
     s->dps = dps;
     s->changes++;
+}
+
+void ColumnW::insertRows(int insStart, int insEnd)
+{
+    int insCount = insEnd - insStart + 1;
+    int startCount = rowCount();
+    int finalCount = startCount + insCount;
+
+    if (measureType() == MeasureType::CONTINUOUS)
+    {
+        setRowCount<double>(finalCount);
+
+        for (int j = finalCount - 1; j > insEnd; j--)
+            cellAt<double>(j) = cellAt<double>(j - insCount);
+
+        for (int j = insStart; j <= insEnd; j++)
+            cellAt<double>(j) = NAN;
+    }
+    else
+    {
+        setRowCount<int>(finalCount);
+
+        for (int j = finalCount - 1; j > insEnd; j--)
+            cellAt<int>(j) = cellAt<int>(j - insCount);
+
+        for (int j = insStart; j <= insEnd; j++)
+            cellAt<int>(j) = INT_MIN;
+    }
 }
 
 void ColumnW::appendLevel(int value, const char *label)

@@ -481,8 +481,18 @@ class Instance:
 
             if request.op == jcoms.GetSet.Value('SET'):
                 self._on_dataset_set(request, response)
-            else:
+            elif request.op == jcoms.GetSet.Value('GET'):
                 self._on_dataset_get(request, response)
+            elif request.op == jcoms.GetSet.Value('INS_ROWS'):
+                self._on_dataset_ins_rows(request, response)
+            elif request.op == jcoms.GetSet.Value('INS_COLS'):
+                self._on_dataset_ins_cols(request, response)
+            elif request.op == jcoms.GetSet.Value('DEL_ROWS'):
+                self._on_dataset_del_rows(request, response)
+            elif request.op == jcoms.GetSet.Value('DEL_COLS'):
+                self._on_dataset_del_cols(request, response)
+            else:
+                raise ValueError()
 
             self._coms.send(response, self._instance_id, request)
 
@@ -567,6 +577,31 @@ class Instance:
             self._populate_schema(request, response)
         if request.incData:
             self._populate_cells(request, response)
+
+    def _on_dataset_ins_rows(self, request, response):
+        self._data.insert_rows(request.rowStart, request.rowEnd)
+        self._populate_schema(request, response)
+
+    def _on_dataset_ins_cols(self, request, response):
+        self._data.insert_column(request.columnStart)
+        column = self._data[request.columnStart]
+
+        response.schema.rowCount = self._data.row_count
+        response.schema.vRowCount = self._data.virtual_row_count
+        response.schema.columnCount = self._data.column_count
+        response.schema.vColumnCount = self._data.virtual_column_count
+
+        response.incSchema = True
+        column_schema = response.schema.columns.add()
+        self._populate_column_schema(column, column_schema)
+
+    def _on_dataset_del_rows(self, request, response):
+        self._data.delete_rows(request.rowStart, request.rowEnd)
+        self._populate_schema(request, response)
+
+    def _on_dataset_del_cols(self, request, response):
+        self._data.delete_columns(request.columnStart, request.columnEnd)
+        self._populate_schema(request, response)
 
     def _apply_schema(self, request, response):
 

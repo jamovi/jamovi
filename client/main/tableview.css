@@ -2,6 +2,15 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
+.dialog-widget.background {
+    background-color: rgba(0, 0, 0, .2);
+}
+
+.dialog-widget.prompt,
+.dialog-widget.confirm {
+    top: calc(33% - 115px);
+}
+
 .silky-tableview {
 
 }
@@ -19,6 +28,11 @@
 .silky-column {
     position: absolute ;
     background-color: white ;
+}
+
+.silky-column,
+.silky-column-header {
+    transition: .2s left ;
 }
 
 .silky-column-row-header {

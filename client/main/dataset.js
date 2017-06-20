@@ -63,7 +63,7 @@ const DataSetModel = Backbone.Model.extend({
         }
     },
     getColumn(indexOrName) {
-        if (typeof(indexOfName) === 'number') {
+        if (typeof(indexOrName) === 'number') {
             return this.attributes.columns[indexOrName];
         }
         else {
@@ -72,7 +72,226 @@ const DataSetModel = Backbone.Model.extend({
                     return column;
             }
         }
-        return null;
+        return undefined;
+    },
+    insertRows(rowStart, rowEnd) {
+
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.INS_ROWS;
+        datasetPB.rowStart = rowStart;
+        datasetPB.rowEnd = rowEnd;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            if (datasetPB.incSchema) {
+
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+                this.set('columnCount', datasetPB.schema.columnCount);
+                this.set('vColumnCount', datasetPB.schema.vColumnCount);
+
+                let changed = Array(datasetPB.schema.columns.length);
+                let changes = Array(datasetPB.schema.columns.length);
+
+                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
+                    let columnPB = datasetPB.schema.columns[i];
+                    let id = columnPB.id;
+                    let column = this.getColumnById(id);
+
+                    changed[i] = columnPB.name;
+                    changes[i] = { id: id, dataChanged: true };
+                }
+
+                this.trigger('columnsChanged', { changed, changes });
+            }
+
+        });
+    },
+    deleteRows(rowStart, rowEnd) {
+
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.DEL_ROWS;
+        datasetPB.rowStart = rowStart;
+        datasetPB.rowEnd = rowEnd;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            if (datasetPB.incSchema) {
+
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+                this.set('columnCount', datasetPB.schema.columnCount);
+                this.set('vColumnCount', datasetPB.schema.vColumnCount);
+
+                let changed = Array(datasetPB.schema.columns.length);
+                let changes = Array(datasetPB.schema.columns.length);
+                let nCreated = 0;
+
+                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
+                    let columnPB = datasetPB.schema.columns[i];
+                    let id = columnPB.id;
+                    let column = this.getColumnById(id);
+
+                    changed[i] = columnPB.name;
+                    changes[i] = {
+                        id: id,
+                        levelsChanged: true,
+                        measureTypeChanged: true,
+                        nameChanged: false,
+                        dataChanged: true,
+                        created: false,
+                    };
+                }
+
+                this.trigger('columnsChanged', { changed, changes });
+            }
+        });
+    },
+    insertColumn(index) {
+
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.INS_COLS;
+        datasetPB.columnStart = index;
+        datasetPB.columnEnd = index;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            if (datasetPB.incSchema) {
+
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+                this.set('columnCount', datasetPB.schema.columnCount);
+                this.set('vColumnCount', datasetPB.schema.vColumnCount);
+
+                let viewport = this.attributes.viewport;
+
+                if (viewport.left <= index && viewport.right >= index)
+                    viewport.right++;
+
+                let columns = this.attributes.columns;
+                let column = { };
+                this._readColumnPB(column, datasetPB.schema.columns[0]);
+                columns.splice(index, 0, column);
+
+                for (let i = index; i < columns.length; i++)
+                    columns[i].index = i;
+
+                // add the cells, this should be in DataSetViewModel
+                let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
+                this.attributes.cells.splice(column.index - viewport.left, 0, cells);
+
+                this.trigger('columnsInserted', { index: index });
+
+                /*let changed = Array(datasetPB.schema.columns.length);
+                let changes = Array(datasetPB.schema.columns.length);
+
+                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
+                    let columnPB = datasetPB.schema.columns[i];
+                    let id = columnPB.id;
+                    let column = this.getColumnById(id);
+
+                    changed[i] = columnPB.name;
+                    changes[i] = { id: id, dataChanged: true };
+                }
+
+                this.trigger('columnsChanged', { changed, changes });*/
+            }
+
+        });
+    },
+    deleteColumns(start, end) {
+
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.DEL_COLS;
+        datasetPB.columnStart = start;
+        datasetPB.columnEnd = end;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(() => {
+
+            let nDeleted = end - start + 1;
+            let changed = Array(nDeleted);
+            let changes = Array(nDeleted);
+
+            for (let i = 0; i < nDeleted; i++) {
+                let column = this.attributes.columns[start + i];
+                changed[i] = column.name;
+                changes[i] = { id: column.id, name: column.name, index: column.index, deleted: true };
+            }
+
+            let before = this.attributes.columns.slice(0, start);
+            let after = this.attributes.columns.slice(end + 1);
+            for (let i = 0; i < after.length; i++)
+                after[i].index = start + i;
+
+            this.attributes.columns = before.concat(after);
+
+            let viewport = this.attributes.viewport;
+
+            if (start > viewport.right) {  // to the right of the view
+                // do nothing
+            }
+            else if (end < viewport.left) {  // to the left of the view
+                viewport.left  -= nDeleted;
+                viewport.right -= nDeleted;
+            }
+            else if (start >= viewport.left && end >= viewport.right) {
+                // overlapping the left side of the view
+                viewport.right = start - 1;
+            }
+            else if (start <= viewport.left && end <= viewport.right) {
+                // overlapping the right side of the view
+                viewport.left = end + 1 - nDeleted;
+                viewport.right -= nDeleted;
+            }
+            else if (start >= viewport.left && end <= viewport.right) {
+                // contained in the view
+                viewport.right -= nDeleted;
+            }
+            else {
+                // starting before the view, extending after
+                viewport.right -= nDeleted;
+                viewport.left = viewport.right + 1;
+            }
+
+            this.set('edited', true);
+
+            this.set('columnCount', this.attributes.columnCount - nDeleted);
+            this.set('vColumnCount', this.attributes.vColumnCount - nDeleted);
+
+            this.trigger('columnsDeleted', { start: start, end: end });
+            this.trigger('columnsChanged', { changed, changes });
+        });
     },
     changeColumn(id, values) {
 
@@ -294,7 +513,7 @@ const DataSetViewModel = DataSetModel.extend({
         this.trigger("viewportReset");
 
         if (nRows !== 0 && nCols !== 0)
-            this._requestCells(viewport);
+            this.readCells(viewport);
     },
     reshape(left, top, right, bottom) {
 
@@ -304,7 +523,7 @@ const DataSetViewModel = DataSetModel.extend({
         let cells = this.attributes.cells;
         let delta = { left: left, top: top, right: right, bottom: bottom };
 
-        let nv = _.clone(viewport);
+        let nv = Object.assign({}, viewport);
 
         nv.left  -= left;
         nv.right += right;
@@ -344,13 +563,13 @@ const DataSetViewModel = DataSetModel.extend({
             for (let i = 0; i < left; i++)
                 cells.unshift(new Array(nRows));
 
-            this._requestCells({ left : nv.left, right : viewport.left - 1, top : nv.top, bottom : nv.bottom });
+            this.readCells({ left : nv.left, right : viewport.left - 1, top : nv.top, bottom : nv.bottom });
         }
         if (right > 0) {
             for (let i = 0; i < right; i++)
                 cells.push(new Array(nRows));
 
-            this._requestCells({ left : viewport.right + 1, right : nv.right, top : nv.top, bottom : nv.bottom });
+            this.readCells({ left : viewport.right + 1, right : nv.right, top : nv.top, bottom : nv.bottom });
         }
         if (top > 0) {
             for (let i = 0; i < innerNCols; i++) {
@@ -358,7 +577,7 @@ const DataSetViewModel = DataSetModel.extend({
                     cells[i].unshift(".");
             }
 
-            this._requestCells({ left : innerLeft, right : innerRight, top : nv.top, bottom : viewport.top });
+            this.readCells({ left : innerLeft, right : innerRight, top : nv.top, bottom : viewport.top });
         }
         if (bottom > 0) {
             for (let i = 0; i < innerNCols; i++) {
@@ -366,7 +585,7 @@ const DataSetViewModel = DataSetModel.extend({
                     cells[i].push(".");
             }
 
-            this._requestCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });
+            this.readCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });
         }
 
         this.attributes.viewport = nv;
@@ -374,7 +593,7 @@ const DataSetViewModel = DataSetModel.extend({
 
         this.trigger("viewportChanged");
     },
-    _requestCells(viewport) {
+    readCells(viewport) {
         this.requestCells(viewport).then(cells => {
             this.setCells(viewport, cells);
         }).done();
@@ -641,7 +860,7 @@ const DataSetViewModel = DataSetModel.extend({
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
-            if (changes.dataChanged === false)
+            if ( ! changes.dataChanged)
                 continue;
 
             let index = this.getColumnById(changes.id).index;
@@ -651,7 +870,7 @@ const DataSetViewModel = DataSetModel.extend({
                 right: index,
                 bottom: this.attributes.viewport.bottom
             };
-            this._requestCells(viewport);
+            this.readCells(viewport);
         }
     }
 });

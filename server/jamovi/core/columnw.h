@@ -22,6 +22,7 @@ public:
 
     ColumnW(DataSetW *parent = 0, MemoryMapW *mm = 0, ColumnStruct *rel = 0);
 
+    void setId(int id);
     void setName(const char *name);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
@@ -29,14 +30,13 @@ public:
     void insertLevel(int value, const char *label);
     void removeLevel(int value);
     void clearLevels();
+    void insertRows(int from, int to);
     void setDPs(int dps);
 
     int changes() const;
 
     template<typename T> void setValue(int rowIndex, T value, bool initing = false)
     {
-        ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
-
         if (measureType() != MeasureType::CONTINUOUS)
         {
             assert(sizeof(T) == 4);

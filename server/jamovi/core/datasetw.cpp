@@ -102,6 +102,30 @@ ColumnW DataSetW::getColumnById(int id)
     throw runtime_error("no such column");
 }
 
+ColumnW DataSetW::insertColumn(int index, const char *name, const char *importName)
+{
+    appendColumn(name, importName);
+
+    ColumnStruct temp;
+    ColumnStruct *src = strucC(columnCount() - 1);
+    temp = *src;
+
+    for (int i = columnCount() - 1; i > index; i--)
+    {
+        ColumnStruct *fc = strucC(i - 1);
+        ColumnStruct *tc = strucC(i);
+        memcpy(tc, fc, sizeof(ColumnStruct));
+    }
+
+    ColumnStruct *column = strucC(index);
+    memcpy(column, &temp, sizeof(ColumnStruct));
+
+    ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
+    wrapper.setRowCount<int>(rowCount());
+
+    return wrapper;
+}
+
 ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
@@ -175,7 +199,7 @@ void DataSetW::setRowCount(size_t count)
     dss->rowCount = count;
 }
 
-void DataSetW::appendRow()
+void DataSetW::appendRows(int n)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
     ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
@@ -186,13 +210,103 @@ void DataSetW::appendRow()
         ColumnW column(this, _mm, c);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
-            column.append<double>(NAN);
+        {
+            for (int j = 0; j < n; j++)
+                column.append<double>(NAN);
+        }
         else
-            column.append<int>(INT_MIN);
+        {
+            for (int j = 0; j < n; j++)
+                column.append<int>(INT_MIN);
+        }
 
         dss     = _mm->resolve(_rel);
         columns = _mm->resolve(dss->columns);
     }
 
-    dss->rowCount++;
+    dss->rowCount += n;
+}
+
+void DataSetW::insertRows(int insStart, int insEnd)
+{
+    int insCount = insEnd - insStart + 1;
+    int finalCount = rowCount() + insCount;
+
+    for (int i = 0; i < columnCount(); i++)
+        (*this)[i].insertRows(insStart, insEnd);
+
+    setRowCount(finalCount);
+}
+
+void DataSetW::deleteRows(int delStart, int delEnd)
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
+
+    int delCount = delEnd - delStart + 1;
+    int startCount = dss->rowCount;
+    int finalCount = dss->rowCount - delCount;
+
+    for (int i = 0; i < dss->columnCount; i++)
+    {
+        ColumnStruct *c = _mm->base(&columns[i]);
+        ColumnW column(this, _mm, c);
+
+        if (column.measureType() == MeasureType::CONTINUOUS)
+        {
+            for (int j = delStart; j < finalCount; j++)
+            {
+                int from = j + delCount;
+                int to = j;
+                double value = column.value<double>(from);
+                column.setValue<double>(to, value);
+            }
+
+            for (int j = finalCount; j < startCount; j++)
+            {
+                column.setValue<double>(j, NAN);
+            }
+
+            column.setRowCount<double>(finalCount);
+        }
+        else
+        {
+            for (int j = delStart; j < finalCount; j++)
+            {
+                int from = j + delCount;
+                int to = j;
+                column.setValue<int>(to, INT_MIN);
+                int value = column.value<int>(from);
+                column.setValue<int>(to, value);
+            }
+
+            for (int j = finalCount; j < startCount; j++)
+            {
+                column.setValue<int>(j, INT_MIN);
+            }
+
+            column.setRowCount<int>(finalCount);
+        }
+    }
+
+    dss->rowCount = finalCount;
+}
+
+void DataSetW::deleteColumns(int delStart, int delEnd)
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    int delCount = delEnd - delStart + 1;
+    int startCount = dss->columnCount;
+    int finalCount = dss->columnCount - delCount;
+
+    for (int to = delStart; to < finalCount; to++)
+    {
+        int from = to + delCount;
+        ColumnStruct *fc = strucC(from);
+        ColumnStruct *tc = strucC(to);
+        memcpy(tc, fc, sizeof(ColumnStruct));
+    }
+
+    dss->columnCount -= delCount;
 }

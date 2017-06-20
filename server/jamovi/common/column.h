@@ -13,15 +13,24 @@
 
 class DataSet;
 
+#ifdef _WIN32
+#define PRE_ALIGN  __declspec(align(8))
+#define POST_ALIGN
+#else
+#define PRE_ALIGN
+#define POST_ALIGN __attribute__ ((aligned (8)))
+#endif
+
 typedef struct
 {
     int start;
     int length;
     int capacity;
 
-    char values[8];
+    PRE_ALIGN char values[8] POST_ALIGN;
 
 } Block;
+
 
 #define BLOCK_SIZE 32768
 #define VALUES_SPACE (BLOCK_SIZE - sizeof(Block) + 8)

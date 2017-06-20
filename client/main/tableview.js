@@ -10,12 +10,14 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 
 const keyboardJS = require('keyboardjs');
+const dialogs = require('dialogs')({cancel:false});
 
 const SilkyView = require('./view');
 const DataSetModel = require('./dataset').Model;
 const Notify = require('./notification');
 const { csvifyCells, htmlifyCells } = require('./utils/formatio');
 const host = require('./host');
+const ActionHub = require('./actionhub');
 
 const TableView = SilkyView.extend({
     className: "tableview",
@@ -28,6 +30,8 @@ const TableView = SilkyView.extend({
         this.model.on('change:cells',  this._updateCells, this);
         this.model.on('cellsChanged', this._cellsChanged, this);
         this.model.on('columnsChanged', event => this._columnsChanged(event));
+        this.model.on('columnsDeleted', event => this._columnsDeleted(event));
+        this.model.on('columnsInserted', event => this._columnsInserted(event));
 
         this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
@@ -79,6 +83,17 @@ const TableView = SilkyView.extend({
         this._edited = false;
         this._editing = false;
         this._editNote = new Notify({ duration: 3000 });
+
+        ActionHub.get('cut').on('request', this._cutSelectionToClipboard, this);
+        ActionHub.get('copy').on('request', this._copySelectionToClipboard, this);
+        ActionHub.get('paste').on('request', this._pasteClipboardToSelection, this);
+        ActionHub.get('editVar').on('request', this._toggleVariableEditor, this);
+        ActionHub.get('appendVar').on('request', this._appendVariable, this);
+        ActionHub.get('appendCase').on('request', this._appendRows, this);
+        ActionHub.get('delCase').on('request', this._deleteRows, this);
+        ActionHub.get('delVar').on('request', this._deleteVariables, this);
+        ActionHub.get('insertVar').on('request', this._insertVariable, this);
+        ActionHub.get('insertCase').on('request', this._insertRows, this);
     },
     setActive(active) {
         this._active = active;
@@ -91,16 +106,12 @@ const TableView = SilkyView.extend({
         let width  = column.width;
         let left = this._bodyWidth;
 
-        let html = '';
-        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
-        html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
-        html +=     '<div class="silky-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
-        html += '</div>';
+        let html = this._createHeaderHTML(column.index, left);
 
         let $header = $(html);
         this.$header.append($header);
         this.$headers.push($header);
-        let columnIndex = this.$columns.length;
+        /*let columnIndex = this.$columns.length;
         $header.on('click', null, this, (event) =>{
             let vRowCount = this.model.get('vRowCount');
             let topVisibleCell = this.viewport.top + 1;
@@ -115,7 +126,7 @@ const TableView = SilkyView.extend({
                 bottom: vRowCount - 1 };
 
             this._setSelectedRange(range);
-        });
+        });*/
 
         let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
@@ -198,14 +209,54 @@ const TableView = SilkyView.extend({
         this.$body.css('height', totalHeight);
         this._refreshRHCells(this.viewport);
     },
+    _columnsDeleted(event) {
+
+        let nToRemove = event.end - event.start + 1;
+        let headersToRemove = this.$headers.slice(event.start, event.end + 1);
+        let columnsToRemove = this.$columns.slice(event.start, event.end + 1);
+
+        for (let header of headersToRemove)
+            $(header).remove();
+        for (let column of columnsToRemove)
+            $(column).remove();
+
+        let widthReduction = this._widths.slice(event.start, event.end + 1).reduce((acc, val) => acc + val, 0);
+
+        let exclude = (elem, index) => index < event.start || index > event.end;
+
+        this.$headers = this.$headers.filter(exclude);
+        this.$columns = this.$columns.filter(exclude);
+        this._lefts  = this._lefts.filter(exclude);
+        this._widths = this._widths.filter(exclude);
+
+        for (let i = event.start; i < this.model.attributes.vColumnCount; i++) {
+            this._lefts[i] -= widthReduction;
+            let $header = $(this.$headers[i]);
+            let $column = $(this.$columns[i]);
+            $header.attr('data-index', i);
+            $header.children().attr('data-index', i);
+            $header.css('left', '' + this._lefts[i] + 'px');
+            $column.css('left', '' + this._lefts[i] + 'px');
+        }
+
+        this._bodyWidth -= widthReduction;
+        this.$body.css('width', this._bodyWidth);
+
+        this.viewport = this.model.attributes.viewport;
+
+        this._updateViewRange();
+    },
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
+
+            if (changes.deleted) // handled elsewhere
+                continue;
+
             let column = this.model.getColumnById(changes.id);
 
-            if (changes.created) {
+            if (changes.created)
                 this._appendColumn(column);
-            }
 
             if (changes.levelsChanged || changes.measureTypeChanged) {
                 let $header = $(this.$headers[column.index]);
@@ -493,7 +544,7 @@ const TableView = SilkyView.extend({
 
     },
     _setSelection(rowNo, colNo) {
-        this._setSelectedRange({
+        return this._setSelectedRange({
             rowNo: rowNo,
             colNo: colNo,
             top:   rowNo,
@@ -505,6 +556,17 @@ const TableView = SilkyView.extend({
 
         let rowNo = range.rowNo;
         let colNo = range.colNo;
+
+        let dataSetBounds = {
+            left: 0,
+            right: this.model.attributes.columnCount - 1,
+            top: 0,
+            bottom: this.model.attributes.rowCount - 1 };
+
+        ActionHub.get('delCase').set('enabled', range.top <= dataSetBounds.bottom);
+        ActionHub.get('delVar').set('enabled', range.left <= dataSetBounds.right);
+        ActionHub.get('insertVar').set('enabled', range.left === range.right && range.colNo <= dataSetBounds.right);
+        ActionHub.get('insertCase').set('enabled', range.top === range.bottom && range.rowNo <= dataSetBounds.bottom);
 
         if (this.selection !== null) {
 
@@ -525,6 +587,8 @@ const TableView = SilkyView.extend({
 
             this.selection = {};
         }
+
+        let oldSel = Object.assign({}, this.selection);
 
         Object.assign(this.selection, range);
 
@@ -560,6 +624,12 @@ const TableView = SilkyView.extend({
         // slide row/column highlight *lines* into position
         this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
         this.$selectionColumnHighlight.css({ left: x, width: width, height: this._rowHeight });
+
+        if (oldSel.left === range.left &&
+            oldSel.right === range.right &&
+            oldSel.top === range.top &&
+            oldSel.bottom === range.bottom)
+                return Promise.resolve();
 
         return new Promise((resolve, reject) => {
             this.$selection.one('transitionend', resolve);
@@ -730,9 +800,9 @@ const TableView = SilkyView.extend({
                 event.preventDefault();
             }
             else if (event.key === 'x') {
-                this._copySelectionToClipboard()
-                    .then(() => this.model.changeCells(this.selection, null))
+                this._cutSelectionToClipboard()
                     .done();
+                event.preventDefault();
             }
         }
 
@@ -781,10 +851,7 @@ const TableView = SilkyView.extend({
             this._beginEditing();
             break;
         case 'F3':
-            if (this.model.get('editingVar') === null)
-                this.model.set('editingVar', this.selection.colNo);
-            else
-                this.model.set('editingVar', null);
+            this._toggleVariableEditor();
             event.preventDefault();
             break;
         case ' ':
@@ -795,6 +862,226 @@ const TableView = SilkyView.extend({
                 this._beginEditing(event.key);
             break;
         }
+    },
+    _deleteVariables() {
+        let start = this.selection.left;
+        let end = this.selection.right;
+
+        let oldSelection = Object.assign({}, this.selection);
+        let newSelection = Object.assign({}, this.selection);
+
+        newSelection.rowNo = 0;
+        newSelection.top = 0;
+        newSelection.bottom = this.model.attributes.vRowCount - 1;
+
+        if (newSelection.right >= this.model.attributes.columnCount)
+            newSelection.right = this.model.attributes.columnCount - 1;
+
+        return this._setSelectedRange(newSelection).then(() => {
+
+            return new Promise((resolve, reject) => {
+
+                let cb = (result) => {
+                    if (result)
+                        resolve();
+                    else
+                        reject();
+                };
+
+                if (start === end)
+                    dialogs.confirm('Delete column ' + (newSelection.left+1) + '?', cb);
+                else
+                    dialogs.confirm('Delete columns ' + (newSelection.left+1) + ' - ' + (newSelection.right+1) + '?', cb);
+            });
+
+        }).then(() => {
+
+            return this.model.deleteColumns(newSelection.left, newSelection.right);
+
+        }).then(() => {
+
+            return this._setSelection(oldSelection.top, oldSelection.left);
+
+        }).then(undefined, (error) => {
+
+            // when cancelled
+            console.log(error);
+            return this._setSelectedRange(oldSelection);
+        });
+
+    },
+    _deleteRows() {
+        let start = this.selection.top;
+        let end = this.selection.bottom;
+
+        let oldSelection = Object.assign({}, this.selection);
+        let newSelection = Object.assign({}, this.selection);
+
+        newSelection.colNo = 0;
+        newSelection.left = 0;
+        newSelection.right = this.model.attributes.vColumnCount - 1;
+
+        if (newSelection.bottom >= this.model.attributes.rowCount)
+            newSelection.bottom = this.model.attributes.rowCount - 1;
+
+        return this._setSelectedRange(newSelection).then(() => {
+
+            return new Promise((resolve, reject) => {
+
+                let cb = (result) => {
+                    if (result)
+                        resolve();
+                    else
+                        reject();
+                };
+
+                if (newSelection.top === newSelection.bottom)
+                    dialogs.confirm('Delete row ' + (newSelection.top+1) + '?', cb);
+                else
+                    dialogs.confirm('Delete rows ' + (newSelection.top+1) + ' - ' + (newSelection.bottom+1) + '?', cb);
+            });
+
+        }).then(() => {
+
+            return this.model.deleteRows(newSelection.top, newSelection.bottom);
+
+        }).then(() => {
+
+            this._updateViewRange();
+            this._refreshRHCells(this.viewport);
+            this.model.readCells(this.viewport);
+
+            return this._setSelection(oldSelection.top, oldSelection.left);
+
+        }, (error) => {
+            console.log(error);
+            return this._setSelectedRange(oldSelection);
+        });
+    },
+    _insertVariable() {
+        return this.model.insertColumn(this.selection.colNo);
+    },
+    _columnsInserted(event) {
+
+        let column = this.model.get('columns')[event.index];
+        let left = this._lefts[event.index];
+        let html = this._createHeaderHTML(event.index, left);
+
+        let $after = $(this.$headers[column.index]);
+        let $header = $(html);
+        $header.insertBefore($after);
+        this.$headers.splice(column.index, 0, $header);
+
+        $after = $(this.$columns[column.index]);
+        let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        $column.insertBefore($after);
+        this.$columns.splice(column.index, 0, $column);
+
+        this.viewport = this.model.attributes.viewport;
+        for (let rowNo = this.viewport.top; rowNo < this.viewport.bottom; rowNo++) {
+            let top   = rowNo * this._rowHeight;
+            let $cell = this._createCell(top, this._rowHeight, rowNo, column.index);
+            $column.append($cell);
+        }
+
+        this._lefts.splice(column.index, 0, this._lefts[column.index]);
+        this._widths.splice(column.index, 0, column.width);
+
+        let widthIncrease = column.width;
+
+        for (let i = column.index + 1; i < this.model.attributes.vColumnCount; i++) {
+            this._lefts[i] += widthIncrease;
+            let $header = $(this.$headers[i]);
+            let $column = $(this.$columns[i]);
+            $header.attr('data-index', i);
+            $header.children().attr('data-index', i);
+            $header.css('left', '' + this._lefts[i] + 'px');
+            $column.css('left', '' + this._lefts[i] + 'px');
+        }
+
+        this._bodyWidth += widthIncrease;
+        this.$body.css('width', this._bodyWidth);
+
+        this._updateViewRange();
+    },
+    _insertRows() {
+
+        return new Promise((resolve, reject) => {
+
+            keyboardJS.setContext('');
+            dialogs.prompt('Insert how many rows?', '1', (result) => {
+                keyboardJS.setContext('spreadsheet');
+                if (result === undefined)
+                    reject('cancelled by user');
+                let n = parseInt(result);
+                if (isNaN(n) || n <= 0)
+                    reject('' + result + ' is not a positive integer');
+                else
+                    resolve(n);
+            });
+
+        }).then(n => {
+
+            return this.model.insertRows(this.selection.top, this.selection.top + n - 1);
+
+        });
+    },
+    _appendRows() {
+
+        return new Promise((resolve, reject) => {
+
+            keyboardJS.setContext('');
+            dialogs.prompt('Append how many rows?', '1', (result) => {
+                keyboardJS.setContext('spreadsheet');
+                if (result === undefined)
+                    reject('cancelled by user');
+                let n = parseInt(result);
+                if (isNaN(n) || n <= 0)
+                    reject('' + result + ' is not a positive integer');
+                else
+                    resolve(n);
+            });
+
+        }).then(n => {
+
+            let colNo = this.selection.colNo;
+            let rowNo = this.model.get('rowCount');
+
+            let range = { left: colNo, right: colNo, top: rowNo, bottom: rowNo + n - 1 };
+            this.model.changeCells(range, null);
+
+            let selBottom = (rowNo + 1) * this._rowHeight;
+            let scrollY = this.$container.scrollTop();
+            let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
+
+            if (selBottom > containerBottom)
+                this.$container.scrollTop(scrollY + selBottom - containerBottom);
+
+        }, (error) => {});
+    },
+    _appendVariable() {
+        let rowNo = this.selection.rowNo;
+        let colNo = this.model.get('columnCount');
+        let column = this.model.getColumn(colNo);
+
+        this.model.changeColumn(column.id, { name: '', measureType: 'nominal' });
+        this._setSelection(rowNo, colNo);
+
+        let selRight = this._lefts[colNo] + this._widths[colNo];
+        let scrollX = this.$container.scrollLeft();
+        let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
+        if (selRight > containerRight)
+            this.$container.scrollLeft(scrollX + selRight - containerRight);
+    },
+    _toggleVariableEditor() {
+        if (this.model.get('editingVar') === null)
+            this.model.set('editingVar', this.selection.colNo);
+        else
+            this.model.set('editingVar', null);
+    },
+    _cutSelectionToClipboard() {
+        return this._copySelectionToClipboard()
+            .then(() => this.model.changeCells(this.selection, null));
     },
     _copySelectionToClipboard() {
         return this.model.requestCells(this.selection)
@@ -1039,6 +1326,19 @@ const TableView = SilkyView.extend({
         //console.log(this.viewOuterRange);
 
         this.refreshCells(oldViewport, this.viewport);
+    },
+    _createHeaderHTML(colNo, left) {
+
+        let column = this.model.get('columns')[colNo];
+
+        let html = '';
+
+        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
+        html +=     '<div class="silky-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
+        html += '</div>';
+
+        return html;
     },
     _createCell(top, height, rowNo, colNo) {
 

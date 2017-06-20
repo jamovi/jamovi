@@ -21,7 +21,11 @@ public:
     static DataSetW *retrieve(MemoryMapW *mm);
 
     ColumnW appendColumn(const char *name, const char *importName);
-    void appendRow();
+    ColumnW insertColumn(int index, const char *name, const char *importName);
+    void appendRows(int n);
+    void insertRows(int rowStart, int rowEnd);
+    void deleteRows(int rowStart, int rowEnd);
+    void deleteColumns(int rowStart, int rowEnd);
     void setRowCount(size_t count);
 
     ColumnW operator[](int index);
@@ -37,6 +41,7 @@ public:
 protected:
 
     DataSetW(MemoryMapW *memoryMap);
+    void initColumn(int index);
 
 private:
 

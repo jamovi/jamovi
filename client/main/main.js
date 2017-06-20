@@ -149,31 +149,6 @@ $(document).ready(() => {
         mainTable.setActive( ! event.changed.activated);
     });
 
-    ribbonModel.on('actionRequest', (action) => {
-        if (action.tabName === 'data') {
-            if (action.name === 'editVar') {
-                if (dataSetModel.get('editingVar') === null)
-                    dataSetModel.set('editingVar', mainTable.selection.colNo);
-                else
-                    dataSetModel.set('editingVar', null);
-            }
-            else if (action.name === 'paste') {
-                let promise = mainTable._pasteClipboardToSelection();
-                if (promise)
-                    promise.done();
-            }
-            else if (action.name === 'copy') {
-                mainTable._copySelectionToClipboard()
-                    .done();
-            }
-            else if (action.name === 'cut') {
-                mainTable._copySelectionToClipboard()
-                    .then(() => dataSetModel.changeCells(mainTable.selection, null))
-                    .done();
-            }
-        }
-    });
-
     let resultsView = new ResultsView({ el : "#results", iframeUrl : host.resultsViewUrl, model : instance });
     let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : host.analysisUIUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);

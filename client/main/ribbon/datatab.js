@@ -22,17 +22,14 @@ const DataTab = function() {
                 ]})
             ]}),
             new RibbonSeparator(),
-            new RibbonGroup({ title: 'Setup', items: [
-                new RibbonButton({ title: 'Setup', name: 'editVar', size: 'huge' })
-            ]}),
-            new RibbonSeparator(),
             new RibbonGroup({ title: 'Variables', items: [
+                new RibbonButton({ title: 'Setup', name: 'editVar', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonButton({ title: 'Insert', name: 'insertVar' }),
                         new RibbonButton({ title: 'Append', name: 'appendVar' })
                     ]}),
-                    new RibbonButton({ title: 'Delete', name: 'delVar' })
+                    new RibbonButton({ title: 'Delete', name: 'delVar' }),
                 ]})
             ]}),
             new RibbonSeparator(),
@@ -42,7 +39,7 @@ const DataTab = function() {
                         new RibbonButton({ title: 'Insert', name: 'insertCase' }),
                         new RibbonButton({ title: 'Append', name: 'appendCase' })
                     ]}),
-                    new RibbonButton({ title: 'Delete', name: 'delCase' })
+                    new RibbonButton({ title: 'Delete', name: 'delCase' }),
                 ]})
             ]})
         ];

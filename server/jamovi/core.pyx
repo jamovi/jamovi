@@ -25,8 +25,11 @@ cdef extern from "datasetw.h":
         int rowCount() const
         int columnCount() const
         CColumn appendColumn(const char *name, const char *importName) except +
+        CColumn insertColumn(int index, const char *name, const char *importName) except +
         void setRowCount(size_t count) except +
-        void appendRow() except +
+        void insertRows(int start, int end) except +
+        void deleteRows(int start, int end) except +
+        void deleteColumns(int start, int end) except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
@@ -87,11 +90,24 @@ cdef class DataSet:
         c._this = self._this.appendColumn(name.encode('utf-8'), import_name.encode('utf-8'))
         return c
 
+    def insert_column(self, index, name, import_name=None):
+        c = Column()
+        if import_name is None:
+            import_name = name
+        c._this = self._this.insertColumn(index, name.encode('utf-8'), import_name.encode('utf-8'))
+        return c
+
     def set_row_count(self, count):
         self._this.setRowCount(count)
 
-    def append_row(self):
-        self._this.appendRow()
+    def insert_rows(self, row_start, row_end):
+        self._this.insertRows(row_start, row_end)
+
+    def delete_rows(self, row_start, row_end):
+        self._this.deleteRows(row_start, row_end)
+
+    def delete_columns(self, col_start, col_end):
+        self._this.deleteColumns(col_start, col_end)
 
     @property
     def row_count(self):
@@ -121,6 +137,7 @@ cdef extern from "columnw.h":
         void setName(const char *name)
         const char *importName() const
         int id() const
+        void setId(int id)
         void setMeasureType(CMeasureType measureType)
         CMeasureType measureType() const
         void setAutoMeasure(bool auto)
@@ -163,6 +180,13 @@ class CellIterator:
 
 cdef class Column:
     cdef CColumn _this
+
+    property id:
+        def __get__(self):
+            return self._this.id();
+
+        def __set__(self, id):
+            self._this.setId(id)
 
     property name:
         def __get__(self):
@@ -535,7 +559,7 @@ cdef class MemoryMap:
     cdef CMemoryMap *_this
 
     @staticmethod
-    def create(path, size=32768):
+    def create(path, size=4194304):
         mm = MemoryMap()
         mm._this = CMemoryMap.create(path.encode('utf-8'), size=size)
         return mm

@@ -1,4 +1,13 @@
 
+.jmv-ribbon-body {
+    padding: 6px 2px ;
+}
+
+.jmv-ribbon-body > .jmv-ribbon-group {
+    margin-left: 6px ;
+    margin-right: 6px ;
+}
+
 .jmv-ribbon-group-body {
     -webkit-app-region: no-drag;
     display: flex ;

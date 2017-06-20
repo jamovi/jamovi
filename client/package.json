@@ -20,6 +20,7 @@
     "browserify": "^13.1.1",
     "chai": "^3.5.0",
     "clipboard-js": "^0.3.1",
+    "dialogs": "^1.1.19",
     "element-resize-detector": "^1.1.10",
     "framesg": "^0.1.3",
     "jquery": "^3.1.1",

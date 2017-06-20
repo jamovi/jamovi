@@ -38,16 +38,51 @@ class InstanceModel:
             if column.id == id:
                 return column
         else:
-            raise KeyError()
+            raise KeyError('No such column: ' + str(id))
 
     def append_column(self, name, import_name=None):
-        return self._dataset.append_column(name, import_name)
+        column = self._dataset.append_column(name, import_name)
+        column.id = self._next_id
+        self._next_id += 1
+        return column
 
     def set_row_count(self, count):
         self._dataset.set_row_count(count)
 
-    def append_row(self):
-        self._dataset.append_row()
+    def delete_rows(self, start, end):
+        self._dataset.delete_rows(start, end)
+
+    def insert_rows(self, start, end):
+        self._dataset.insert_rows(start, end)
+
+    def insert_column(self, index):
+        name = self._gen_column_name(index)
+        ins = self._dataset.insert_column(index, name)
+        ins.auto_measure = True
+        ins.id = self._next_id
+        self._next_id += 1
+
+        child = self._dataset[self._dataset.column_count - 1]
+        column = Column(self, child)
+        self._columns.insert(self._dataset.column_count - 1, column)
+
+        index = 0
+        for column in self:
+            column.index = index
+            index += 1
+
+    def delete_columns(self, start, end):
+
+        rm_n = end - start + 1
+        rm_t = self._dataset.column_count
+        rm_f = self._dataset.column_count - rm_n
+
+        self._dataset.delete_columns(start, end)
+
+        del self._columns[rm_f:rm_t]
+
+        for i in range(start, len(self._columns)):
+            self._columns[i].index = i
 
     @property
     def title(self):
@@ -76,14 +111,17 @@ class InstanceModel:
     def refresh(self):
 
         self._columns = [ ]
+        self._next_id = 0
 
         index = 0
         for child in self._dataset:
             column = Column(self, child)
-            column.id = index
             column.index = index
             self._columns.append(column)
             index += 1
+
+            if column.id >= self._next_id:
+                self._next_id = column.id + 1
 
         self._add_virtual_columns()
 
@@ -92,10 +130,11 @@ class InstanceModel:
         for i in range(n_virtual, InstanceModel.N_VIRTUAL_COLS):
             index = self.virtual_column_count
             column = Column(self)
-            column.id = index
+            column.id = self._next_id
             column.index = index
             self._columns.append(column)
             index += 1
+            self._next_id += 1
 
     @property
     def path(self):
@@ -167,6 +206,7 @@ class InstanceModel:
             name = self._gen_column_name(i)
             child = self._dataset.append_column(name)
             wrapper = self[i]
+            child.id = wrapper.id
             wrapper._child = child
             wrapper.auto_measure = True
         self._add_virtual_columns()
@@ -210,11 +250,15 @@ class Column:
 
     @property
     def id(self):
+        if self._child is not None:
+            return self._child.id
         return self._id
 
     @id.setter
     def id(self, id):
         self._id = id
+        if self._child is not None:
+            self._child.id = id
 
     @property
     def index(self):

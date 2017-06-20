@@ -5,6 +5,8 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 const RibbonGroup = require('./ribbongroup');
 
+const ActionHub = require('../actionhub');
+
 const RibbonButton = Backbone.View.extend({
 
     /*
@@ -56,6 +58,12 @@ const RibbonButton = Backbone.View.extend({
             for (let i = 0; i < params.subItems.length; i++)
                 this.addItem(params.subItems[i]);
         }
+
+        let action = ActionHub.get(name);
+        this.setEnabled(action.get('enabled'));
+        action.on('change:enabled', (event) => {
+            this.setEnabled(event.changed.enabled);
+        });
     },
     setParent(parent) {
         this.parent = parent;
@@ -71,16 +79,22 @@ const RibbonButton = Backbone.View.extend({
             this._menuGroup.setTabName(name);
     },
     setEnabled(enabled) {
-        this.$el.prop('disabled', ! enabled);
+        if (enabled)
+            this.$el.removeAttr('disabled');
+        else
+            this.$el.attr('disabled', '');
     },
     _clicked(event) {
         let action = { name: this.name, tabName: this.tabName };
-        this.parent._buttonClicked(action);
 
         let $target = $(event.target);
         if ($target.closest(this.$menu).length !== 0)
             return;
-        this._toggleMenu();
+
+        if (this._menuGroup !== undefined)
+            this._toggleMenu();
+        else
+            ActionHub.get(this.name).do();
 
         event.stopPropagation();
     },

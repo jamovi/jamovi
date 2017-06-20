@@ -96,16 +96,16 @@ setup(
         extensions,
         language="c++"),
 
-    install_requires=[
-        'tornado',
-        'protobuf',
-        'nanomsg',
-        'PyYAML'],
+    # install_requires=[
+    #     'tornado',
+    #     'protobuf',
+    #     'nanomsg',
+    #     'PyYAML'],
 
-    extras_require={
-        'dev': ['cython'],
-        'test': ['flake8'],
-    },
+    # extras_require={
+    #     'dev': ['cython'],
+    #     'test': ['flake8'],
+    # },
 
     package_data={
         'jamovi.server': [ 'jamovi.proto' ]
@@ -116,9 +116,9 @@ setup(
         ('jamovi/server/resources/client/assets', glob.glob('jamovi/server/resources/client/assets/*.*'))
     ],
 
-    entry_points={
-        'console_scripts': [
-            'jamovi-server=jamovi.server:start',
-        ],
-    },
+    # entry_points={
+    #     'console_scripts': [
+    #         'jamovi-server=jamovi.server:start',
+    #     ],
+    # },
 )

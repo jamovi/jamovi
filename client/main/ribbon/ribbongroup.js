@@ -24,8 +24,6 @@ const RibbonGroup = Backbone.View.extend({
         let right = params.right === undefined ? false : params.right;
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
 
-
-
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
 

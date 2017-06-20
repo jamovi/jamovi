@@ -33,7 +33,7 @@ ColumnStruct *DataSet::strucC(int index) const
 {
     DataSetStruct *dss = struc();
     ColumnStruct *columns = _mm->resolve(dss->columns);
-    ColumnStruct *column  = &columns[dss->columnCount];
+    ColumnStruct *column  = &columns[index];
 
     return column;
 }
