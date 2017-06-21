@@ -15,11 +15,15 @@ const TermLabel = function(params) {
     this.registerSimpleProperty("format", FormatDef.term);
 
     this.createItem = function() {
-        let displayValue = FormatDef.term.toString(this.getValue());
+        let value = this.getValue();
+        let displayValue = FormatDef.term.toString(value);
 
         this.$label = $('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
 
         this.$el.append(this.$label);
+        if (value !== null)
+            this.updateView(value);
+
     };
 
     this.onOptionValueChanged = function(key, data) {
