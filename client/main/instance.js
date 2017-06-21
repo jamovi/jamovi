@@ -508,8 +508,6 @@ const Instance = Backbone.Model.extend({
             if (columnRenamed)
                 analysis.renameColumns(columnRenames);
 
-            if (columnDeleted)
-                analysis.clearColumnUse(columnDeletes);
 
             if (columnDataChanged || columnRenamed || columnDeleted) {
                 let selectedAnalysis = this.get('selectedAnalysis');
