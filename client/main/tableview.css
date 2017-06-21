@@ -9,6 +9,48 @@
 .dialog-widget.prompt,
 .dialog-widget.confirm {
     top: calc(33% - 115px);
+    background-color: #F0F0F0;
+    border: 1px solid #ACACAC;
+    border-radius: 2px;
+    box-shadow: none;
+}
+
+.dialog-widget .divider {
+    border-top: none;
+}
+
+.dialog-widget input {
+    border-radius: 2px;
+    border-color: #D0D0D0;
+}
+
+.dialog-widget input:focus {
+    outline: none !important;
+    border: 1px solid #3E6DA9;
+}
+
+.dialog-widget .ok, .dialog-widget .cancel {
+    border-radius: 2px;
+    color: inherit;
+    background-color: #a9c6f2;
+    width: calc(50% - 5px);
+}
+
+.dialog-widget .ok:hover, .dialog-widget .cancel:hover {
+    background-color: #7faaec;
+}
+
+.dialog-widget .ok:focus, .dialog-widget .cancel:focus {
+    outline: none !important;
+    border: 1px solid #3E6DA9;
+}
+
+.dialog-widget .url {
+    display: none;
+}
+
+.dialog-widget .title {
+    margin-top: 10px;
 }
 
 .silky-tableview {
