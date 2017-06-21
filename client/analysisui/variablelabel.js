@@ -23,7 +23,7 @@ const VariableLabel = function(params) {
         if (data.dataType !== "columns")
             return;
 
-        if (data.dataInfo.measureTypeChanged)
+        if (data.dataInfo.measureTypeChanged || data.dataInfo.countChanged)
             this.updateView();
     });
 
@@ -51,6 +51,12 @@ const VariableLabel = function(params) {
         let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType" ] });
         promise.then(rData => {
             this.$icon.removeClass();
+
+            if (rData.columnFound === false)
+               this.$el.addClass('unavaliable_variable');
+           else
+               this.$el.removeClass('unavaliable_variable');
+
             let measureType = rData.measureType;
             if (measureType === undefined)
                 measureType = "none";
