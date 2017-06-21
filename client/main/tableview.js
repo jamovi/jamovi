@@ -1174,7 +1174,7 @@ const TableView = SilkyView.extend({
                     html: htmlifyCells(cells),
                 });
                 this.$selection.addClass('copying');
-                setTimeout(() => this.$selection.removeClass('copying'), 100);
+                setTimeout(() => this.$selection.removeClass('copying'), 200);
             });
     },
     _pasteClipboardToSelection() {
@@ -1194,7 +1194,7 @@ const TableView = SilkyView.extend({
                 this._setSelectedRange(range);
 
                 this.$selection.addClass('copying');
-                setTimeout(() => this.$selection.removeClass('copying'), 100);
+                setTimeout(() => this.$selection.removeClass('copying'), 200);
 
             }, error => {
                 let notification = new Notify({
