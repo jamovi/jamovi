@@ -275,15 +275,34 @@ const TableView = SilkyView.extend({
         this._updateViewRange();
     },
     _getPos(x, y) {
-        let bounds = this.$body[0].getBoundingClientRect();
-        let vx = x - bounds.left;
-        let vy = y - bounds.top;
 
-        let rowNo = Math.floor(vy / this._rowHeight);
-        let colNo;
-        for (colNo = -1; colNo < this._lefts.length - 1; colNo++) {
-            if (vx < this._lefts[colNo+1])
-                break;
+        let rowNo, colNo, vx, vy;
+
+        let bounds = this.$el[0].getBoundingClientRect();
+        let bodyBounds = this.$body[0].getBoundingClientRect();
+
+        vx = x - bounds.left;
+        vy = y - bounds.top;
+
+        if (vy < this._rowHeight) { // on column header
+            rowNo = -1;
+            vy = y - bodyBounds.top;
+        }
+        else {
+            vy = y - bodyBounds.top;
+            rowNo = Math.floor(vy / this._rowHeight);
+        }
+
+        if (vx < this.rowHeaderWidth) { // on row header
+            colNo = -1;
+            vx = x - bodyBounds.left;
+        }
+        else {
+            vx = x - bodyBounds.left;
+            for (colNo = -1; colNo < this._lefts.length - 1; colNo++) {
+                if (vx < this._lefts[colNo+1])
+                    break;
+            }
         }
 
         return { rowNo: rowNo, colNo: colNo, x: vx, y: vy };
