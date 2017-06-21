@@ -924,7 +924,10 @@ const TableView = SilkyView.extend({
 
             return new Promise((resolve, reject) => {
 
+                keyboardJS.setContext('');
+
                 let cb = (result) => {
+                    keyboardJS.setContext('spreadsheet');
                     if (result)
                         resolve();
                     else
@@ -973,7 +976,10 @@ const TableView = SilkyView.extend({
 
             return new Promise((resolve, reject) => {
 
+                keyboardJS.setContext('');
+
                 let cb = (result) => {
+                    keyboardJS.setContext('spreadsheet');
                     if (result)
                         resolve();
                     else
