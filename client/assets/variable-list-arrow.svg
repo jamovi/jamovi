@@ -1,17 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-<svg id="svg2" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="260" width="340" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 339.99999 259.99999">
- <metadata id="metadata7">
-  <rdf:RDF>
-   <cc:Work rdf:about="">
-    <dc:format>image/svg+xml</dc:format>
-    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:title/>
-   </cc:Work>
-  </rdf:RDF>
- </metadata>
- <g id="layer1" stroke-linejoin="round" transform="translate(0 -792.36)" stroke="#292929" fill="#292929">
-  <rect id="rect3336" fill-rule="evenodd" height="49.439" width="209.32" y="896.81" x="86.88" stroke-width="9.6423"/>
-  <path id="path4138" stroke-width="17.3" d="m209.27 984.58-99.161-52.889-99.161-52.889 95.384-59.431 95.384-59.431 3.7772 112.32z" transform="matrix(.39235 0 0 .74927 58.509 267.96)"/>
- </g>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 21.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1"
+	 id="svg2" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 340 260"
+	 style="enable-background:new 0 0 340 260;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#333333;}
+</style>
+<path class="st0" d="M281.3,149.5H114.6l51.4,51.3c1.2,1.2,1.2,3.1,0,4.2L149.1,222c-1.2,1.2-3.1,1.2-4.2,0l-85.3-85.3
+	c-1.2-1.2-1.2-3.1,0-4.2l85.3-85.3c1.2-1.2,3.1-1.2,4.2,0l16.9,16.9c1.2,1.2,1.2,3.1,0,4.2l-51.4,51.3h166.7"/>
 </svg>
