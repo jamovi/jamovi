@@ -41,6 +41,8 @@ def write(data, path):
 def calc_dps(value, max_dp=3):
     if math.isnan(value):
         return 0
+    if not math.isfinite(value):
+        return 0
 
     max_dp_required = 0
     value %= 1
