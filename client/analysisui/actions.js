@@ -73,6 +73,39 @@ function View() {
         return diff;
     };
 
+    this.checkPairsValue = function(ctrl, variables) {
+        let changed = false;
+        let pairs = this.cloneArray(ctrl.value());
+        if (pairs !== null && pairs.length > 0) {
+            for (let i = 0; i < pairs.length; i++) {
+                let pair = pairs[i];
+                let found = 0;
+                for (let j = 0; j < variables.length; j++) {
+                    let variable = variables[j];
+                    if (pair.i1 === variable)
+                        found += 1;
+                    if (pair.i2 === variable)
+                        found += 2;
+                    if (found === 3)
+                        break;
+                }
+                if (found !== 3) {
+                    changed = true;
+                    if (found === 0) {
+                        pairs.splice(i, 1);
+                        i -= 1;
+                    }
+                    else if (found === 1)
+                        pair.i2 = null;
+                    else if (found === 2)
+                        pair.i1 = null;
+                }
+            }
+            if (changed)
+                ctrl.setValue(pairs);
+        }
+    };
+
     this.checkValue = function(ctrl, valueIsList, validValues, format) {
         let value = this.clone(ctrl.value());
         if (valueIsList && value === null)

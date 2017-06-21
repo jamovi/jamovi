@@ -193,12 +193,24 @@ let OptionsPanel = SilkyView.extend({
         this.dataSetModel = dataSetModel;
 
         this.dataSetModel.on('columnsChanged', event => {
+
+            let data = { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true };
             for (let changes of event.changes) {
-                if (changes.measureTypeChanged || changes.nameChanged || changes.levelsChanged) {
-                    for (let analysesKey in this._analysesResources)
-                        this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', { measureTypeChanged: changes.measureTypeChanged, nameChanged: changes.nameChanged , levelsChanged: changes.levelsChanged });
-                }
+                if (changes.measureTypeChanged)
+                    data.measureTypeChanged = true;
+                if (changes.nameChanged)
+                    data.nameChanged = true;
+                if (changes.levelsChanged)
+                    data.levelsChanged = true;
+                if (changes.deleted || changes.created)
+                    data.countChanged = true;
             }
+
+                if (data.measureTypeChanged || data.nameChanged || data.levelsChanged || data.countChanged) {
+                    for (let analysesKey in this._analysesResources)
+                        this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', data);
+                }
+
         });
     },
 

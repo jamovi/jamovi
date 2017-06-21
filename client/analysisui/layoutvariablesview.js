@@ -5,6 +5,7 @@ const LayoutSupplierView = require('./layoutsupplierview');
 const FormatDef = require('./formatdef');
 const EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
 const RequestDataSupport = require('./requestdatasupport');
+const EnumPropertyFilter = require('./enumpropertyfilter');
 
 const LayoutVariablesView = function(params) {
 
@@ -15,6 +16,7 @@ const LayoutVariablesView = function(params) {
 
     this.registerSimpleProperty("suggested", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
     this.registerSimpleProperty("permitted", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
+    this.registerSimpleProperty("populate", "auto", new EnumPropertyFilter(["auto", "manual"], "auto"));
     this.registerSimpleProperty("format", FormatDef.variable);
 
     this._override("onContainerRendering", function(baseFunction, context) {
@@ -36,7 +38,7 @@ const LayoutVariablesView = function(params) {
         if (data.dataType !== "columns")
             return;
 
-        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged) {
+        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.countChanged) {
             let promise = this.requestData("columns", null);
             promise.then(columnInfo => {
                 this.resources = columnInfo;
@@ -60,6 +62,10 @@ const LayoutVariablesView = function(params) {
     this._waitingFor = 0;
 
     this.populateItemList = function() {
+
+        let populateMethod = this.getPropertyValue('populate');
+        if (populateMethod === "manual")
+            return;
 
         let suggested = this.getPropertyValue("suggested");
         let permitted = this.getPropertyValue("permitted");

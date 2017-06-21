@@ -484,12 +484,15 @@ const Instance = Backbone.Model.extend({
             let columnDeleted = false;
             let columnRenamed = false;
             let columnRenames = [];
+            let columnDeletes = [];
 
             for (let changes of event.changes) {
 
                 if (changes.deleted) {
-                    if (using.includes(changes.name))
+                    if (using.includes(changes.name)) {
                         columnDeleted = true;
+                        columnDeletes.push(changes.name);
+                    }
                 }
                 else {
                     let column = this._dataSetModel.getColumnById(changes.id);
@@ -504,6 +507,9 @@ const Instance = Backbone.Model.extend({
 
             if (columnRenamed)
                 analysis.renameColumns(columnRenames);
+
+            if (columnDeleted)
+                analysis.clearColumnUse(columnDeletes);
 
             if (columnDataChanged || columnRenamed || columnDeleted) {
                 let selectedAnalysis = this.get('selectedAnalysis');

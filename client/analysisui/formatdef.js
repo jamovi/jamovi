@@ -309,6 +309,9 @@ FormatDef.term = new Format ({
         if (typeof item === 'string')
             return item;
 
+        if (item.length === 0)
+            return '';
+
         let joiner = FormatDef.term._getJoiner(level);
         let combined = FormatDef.term._itemToString(item[0], level + 1);
         for (let i = 1; i < item.length; i++)
