@@ -53,22 +53,23 @@ const TermLabel = function(params) {
     this.updateView = function(columnNames) {
         let promises = [];
         let count = 0;
-        let columnFound = true
+        let columnFound = true;
+        let process = rData => {
+            if (columnFound && rData.columnFound === false)
+               columnFound = false;
+
+            count += 1;
+            if (count === columnNames.length) {
+                if (columnFound === false)
+                   this.$el.addClass('unavaliable_variable');
+               else
+                   this.$el.removeClass('unavaliable_variable');
+            }
+        };
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
             let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType" ] });
-            promise.then(rData => {
-                if (columnFound && rData.columnFound === false)
-                   columnFound = false;
-
-                count += 1;
-                if (count === columnNames.length) {
-                    if (columnFound === false)
-                       this.$el.addClass('unavaliable_variable');
-                   else
-                       this.$el.removeClass('unavaliable_variable');
-                }
-            });
+            promise.then(process);
         }
     };
 };
