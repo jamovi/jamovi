@@ -75,11 +75,22 @@ OptionTypes.Option = function(template, value, isLeaf) {
         }
      };
 
+     this.clearColumnUse = function(columnName) {
+         if (this._isLeaf)
+             this._onClearColumnUse(columnName);
+         else {
+             for (let i = 0; i < this.children.length; i++)
+                 this.children[i].clearColumnUse(columnName);
+         }
+     };
+
      this._onGetUsedColumns = function() {
          return [];
      };
 
-     this._onRenameColumn = function() {  };
+     this._onClearColumnUse = function(columnName) {  };
+
+     this._onRenameColumn = function(oldName, newName) {  };
 
     this.setValue(value);
 };
@@ -99,6 +110,11 @@ SuperClass.create(OptionTypes.number);
 
 OptionTypes.Variable = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
+
+    this._override('_onClearColumnUse', (baseFunction, columnName) => {
+        if (this._value === columnName)
+            this._value = null;
+    });
 
     this._override('_onGetUsedColumns', (baseFunction) => {
         if (this._value !== null)
@@ -126,6 +142,17 @@ OptionTypes.Variables = function(template, value) {
         return r;
     });
 
+    this._override('_onClearColumnUse', (baseFunction, columnName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] === columnName) {
+                    this._value.splice(i, 1);
+                    i -= 1;
+                }
+            }
+        }
+    });
+
     this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
@@ -138,17 +165,129 @@ OptionTypes.Variables = function(template, value) {
 SuperClass.create(OptionTypes.Variables);
 
 OptionTypes.Terms = function(template, value) {
-    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Variables" } }, value);
+    OptionTypes.Option.extendTo(this, template, value, true);
+
+    this._override('_onGetUsedColumns', (baseFunction) => {
+        let t = [];
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] !== null && this._value[i].length > 0)
+                    t = _.uniq(t.concat(this._value[i]));
+            }
+        }
+        return t;
+    });
+
+    this._override('_onClearColumnUse', (baseFunction, columnName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                for (let j = 0; j < this._value[i].length; j++) {
+                    if (this._value[i][j] === columnName) {
+                        this._value.splice(i, 1);
+                        i -= 1;
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                for (let j = 0; j < this._value[i].length; j++) {
+                    if (this._value[i][j] === oldName)
+                        this._value[i][j] = newName;
+                }
+            }
+        }
+    });
+
 };
 SuperClass.create(OptionTypes.Terms);
 
 OptionTypes.Term = function(template, value) {
-    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Variable" } }, value);
+    OptionTypes.Option.extendTo(this, template, value, true);
+
+    this._override('_onGetUsedColumns', (baseFunction) => {
+        let r = [];
+        if (this._value !== null)
+            r = this._value;
+
+        r = _.uniq(r);
+        return r;
+    });
+
+    this._override('_onClearColumnUse', (baseFunction, columnName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] === columnName) {
+                    this._value = null;
+                    return;
+                }
+            }
+        }
+    });
+
+    this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] === oldName)
+                    this._value[i] = newName;
+            }
+        }
+    });
+
 };
 SuperClass.create(OptionTypes.Term);
 
 OptionTypes.Pairs = function(template, value) {
-    OptionTypes.Array.extendTo(this, { type:"Array", template: { type: "Pair" } }, value);
+    OptionTypes.Option.extendTo(this, template, value, true);
+
+    this._override('_onGetUsedColumns', (baseFunction) => {
+        let r = [];
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] !== null) {
+                    r.push(this._value[i].i1);
+                    r.push(this._value[i].i2);
+                }
+            }
+        }
+
+        r = _.uniq(r);
+        return r;
+    });
+
+    this._override('_onClearColumnUse', (baseFunction, columnName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] !== null) {
+                    if (this._value[i].i1 === columnName)
+                        this._value[i].i1 = null;
+                    if (this._value[i].i2 === columnName)
+                        this._value[i].i2 = null;
+                    if (this._value[i].i1 === null && this._value[i].i2 === null) {
+                        this._value.splice(i, 1);
+                        i -= 1;
+                    }
+                }
+            }
+        }
+    });
+
+    this._override('_onRenameColumn', (baseFunction, oldName, newName) => {
+        if (this._value !== null) {
+            for (let i = 0; i < this._value.length; i++) {
+                if (this._value[i] !== null) {
+                    if (this._value[i].i1 === oldName)
+                        this._value[i].i1 = newName;
+                    if (this._value[i].i2 === oldName)
+                        this._value[i].i2 = newName;
+                }
+            }
+        }
+    });
 };
 SuperClass.create(OptionTypes.Pairs);
 
@@ -228,6 +367,13 @@ const Options = function(def) {
         }
         r = _.uniq(r);
         return r;
+    };
+
+    this.clearColumnUse = function(columnName) {
+        for (let name in this._options) {
+            let option = this._options[name];
+            option.clearColumnUse(columnName);
+        }
     };
 
     this.renameColumn = function(oldName, newName) {

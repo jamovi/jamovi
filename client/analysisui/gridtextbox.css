@@ -13,6 +13,10 @@
     width: 150px;
 }
 
+.silky-option-text-input {
+    padding-left: 3px;
+}
+
 .silky-option-text-input.frameless-textbox {
   -webkit-transition: all 0.30s ease-in-out;
   -moz-transition: all 0.30s ease-in-out;

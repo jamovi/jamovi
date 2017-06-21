@@ -72,6 +72,14 @@ Analysis.prototype.renameColumns = function(columnRenames) {
         this._parent._notifyOptionsChanged(this);
 };
 
+Analysis.prototype.clearColumnUse = function(columnNames) {
+    for (let i = 0; i < columnNames.length; i++)
+        this.options.clearColumnUse(columnNames[i]);
+    this.revision++;
+    if (this.deleted === false && this._parent !== null)
+        this._parent._notifyOptionsChanged(this);
+};
+
 Analysis.prototype.getUsing = function() {
     return this.options.getUsedColumns();
 };
