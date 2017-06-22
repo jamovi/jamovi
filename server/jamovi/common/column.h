@@ -11,15 +11,13 @@
 #include <vector>
 #include <utility>
 
-class DataSet;
-
-#ifdef _WIN32
-#define PRE_ALIGN  __declspec(align(8))
-#define POST_ALIGN
+#ifdef __APPLE__
+#define ALIGN_8 __attribute__ ((aligned (8)))
 #else
-#define PRE_ALIGN
-#define POST_ALIGN __attribute__ ((aligned (8)))
+#define ALIGN_8 alignas(8)
 #endif
+
+class DataSet;
 
 typedef struct
 {
@@ -27,7 +25,7 @@ typedef struct
     int length;
     int capacity;
 
-    PRE_ALIGN char values[8] POST_ALIGN;
+    char values[8] ALIGN_8;
 
 } Block;
 
