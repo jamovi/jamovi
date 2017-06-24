@@ -11,10 +11,10 @@
 #include <vector>
 #include <utility>
 
-#ifdef __APPLE__
-#define ALIGN_8 __attribute__ ((aligned (8)))
-#else
+#ifdef _WIN32
 #define ALIGN_8 alignas(8)
+#else
+#define ALIGN_8 __attribute__ ((aligned (8)))
 #endif
 
 class DataSet;
