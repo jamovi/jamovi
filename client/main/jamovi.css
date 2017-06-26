@@ -60,9 +60,12 @@ body.windows #header {
     display: none ;
 }
 
+.app-dragable:not(.ignore) {
+    -webkit-app-region: drag;
+}
+
 body.windows #header-text {
     display: block ;
-    -webkit-app-region: drag;
     margin-left: 80px ;
     margin-right: 150px ;
     display: block;

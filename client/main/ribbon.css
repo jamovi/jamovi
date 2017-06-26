@@ -2,7 +2,6 @@
 .jmv-ribbon {
     width: 100% ;
     color: #777777 ;
-    -webkit-app-region: drag ;
 }
 
 .jmv-ribbon-tab {

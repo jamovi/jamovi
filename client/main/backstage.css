@@ -36,6 +36,7 @@
     display: flex;
     flex: 1;
     position: relative;
+    -webkit-app-region: no-drag;
 }
 
 .silky-bs-header {
@@ -90,31 +91,54 @@
     pointer-events: none;
 }
 
-.silky-bs-op-button {
+.silky-bs-op-button, .silky-bs-op-header {
     padding: 12px 24px 12px 18px;
     cursor: default ;
-    font-weight: bold;
+    /*font-weight: bold;*/
+    font-size: 120%;
+    font-weight: 400;
 }
 
 .silky-bs-op-button:hover {
     background-color: #f3f6fb ;
 }
 
-.silky-bs-op-button.selected {
+.selected > .silky-bs-op-button {
     background-color: #F0F0F0 ;
+    font-weight: 500;
     /*color: #cf901b;*/
 }
 
+.silky-bs-menu-item.selected {
+    padding: 10px 0px 10px 0px;
+}
+
+.silky-bs-menu-item {
+    transition: .2s padding ease-out;
+}
+
 .silky-bs-op-places {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
     padding: 0px 0px 0px 0px;
+    transition: .2s height ease-out, .2s opacity ease-out;
+}
+
+.silky-bs-op-place.selected-place {
+    background-color: #e1e9f4 ;
+    padding: 8px 0px 8px 28px;
+    /*font-weight: 500;*/
+
 }
 
 .silky-bs-op-place {
-    padding: 5px 0px 5px 28px;
+    padding: 8px 0px 8px 28px;
+    transition: .2s padding ease-out;
 }
 
-.silky-bs-op-place:hover {
-    background-color: #e1e9f4 ;
+.silky-bs-op-place:not(.selected-place):hover {
+    background-color: #f6f9fd ;
 }
 
 .silky-bs-op-recents-main {
@@ -374,10 +398,11 @@
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
+    border-top: #e1e1e1 solid 2px;
 }
 
 .silky-bs-fslist-header {
-    padding-bottom: 5px;
+    /*padding-bottom: 5px;*/
     margin-bottom: 5px;
     border-bottom-style: solid;
     border-bottom-width: 2px;
@@ -415,7 +440,7 @@
 }
 
 .silky-bs-fslist-save-options {
-    margin-bottom: 7px;
+    margin-bottom: 10px;
 }
 
 .silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
@@ -453,8 +478,27 @@
 
 .silky-bs-fslist-browser-location {
     font-size: 120% ;
+    height: 19px;
     overflow: hidden;
     white-space: nowrap ;
+    margin-left: 5px;
+    /*padding: 3px 0px 3px 5px;
+    background-color: white;
+    border: #c1c1c1 solid 1px;
+    border-right-style: none;*/
+}
+
+.silky-bs-fslist-browse-button {
+    font-weight: 300;
+    font-size: 120%;
+    height: 19px;
+    padding: 3px 10px;
+    border-left: #e1e1e1 solid 1px;
+}
+
+.silky-bs-fslist-browse-button:hover {
+    /*border-color: #B1C5DE ;*/
+    background-color: #DBE4F3 ;
 }
 
 .silky-bs-fslist-browser-location-icon {
@@ -466,7 +510,7 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-right: 3px ;
+    margin: 0px 3px ;
 }
 
 .silky-bs-fslist-browser-back-button {
@@ -480,8 +524,8 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-top: 6px ;
-    margin-bottom: 6px ;
+    /*margin-top: 6px ;
+    margin-bottom: 6px ;*/
     margin-left: 0px ;
 
     color: #3E6DA9 ;
