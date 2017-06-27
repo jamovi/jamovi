@@ -126,8 +126,11 @@
 }
 
 .silky-bs-op-place.selected-place {
-    background-color: #e1e9f4 ;
+    /*background-color: #e1e9f4 ;*/
     padding: 8px 0px 8px 28px;
+    font-weight: bold;
+    color: #3E6DA9;
+    font-size: 105%;
     /*font-weight: 500;*/
 
 }
@@ -440,7 +443,7 @@
 }
 
 .silky-bs-fslist-save-options {
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
@@ -489,11 +492,23 @@
 }
 
 .silky-bs-fslist-browse-button {
-    font-weight: 300;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    height: 30px;
+    font-size: 15px;
+    margin-left: 10px;
+    /*border-style: solid;*/
+    /*border-width: 1px;*/
+    /*border-color: #AAAAAA;*/
+    /*background-color: #FFFFFF;*/
+    box-sizing: border-box;
+    padding: 3px 12px 3px 10px;
+    /*font-weight: 300;
     font-size: 120%;
     height: 19px;
-    padding: 3px 10px;
-    border-left: #e1e1e1 solid 1px;
+    padding: 3px 10px;*/
+    /*border-left: #e1e1e1 solid 1px;*/
 }
 
 .silky-bs-fslist-browse-button:hover {
@@ -510,7 +525,7 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin: 0px 3px ;
+    margin-right: 5px ;
 }
 
 .silky-bs-fslist-browser-back-button {
@@ -527,15 +542,14 @@
     /*margin-top: 6px ;
     margin-bottom: 6px ;*/
     margin-left: 0px ;
-
     color: #3E6DA9 ;
     flex: 0 1 auto;
 }
 
 .silky-bs-fslist-browser-back-button:hover {
-    border-style: solid;
-    border-width: 1px;
-    border-color: #B1C5DE ;
+    /*border-style: solid;*/
+    /*border-width: 1px;*/
+    /*border-color: #B1C5DE ;*/
     background-color: #DBE4F3 ;
 }
 

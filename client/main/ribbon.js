@@ -18,7 +18,7 @@ const RibbonModel = Backbone.Model.extend({
     initialize(args) {
         this._modules = args.modules;
         this._settings = args.settings;
-        this.set('tabs', [ { name: 'file', title: '<span style="font-size: 150%; padding: 0; pointer-events: none;" class="mif-menu"></span>' },  /* new DataTab(),*/ new AnalyseTab(this._modules) ]);
+        this.set('tabs', [ { name: 'file', title: '<span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span>' },  /* new DataTab(),*/ new AnalyseTab(this._modules) ]);
     },
     modules() {
         return this._modules;
@@ -112,7 +112,7 @@ const RibbonView = Backbone.View.extend({
                 this.selectedTab = tab;
             }
 
-            let $tab = $('<div class="' + classes + '">' + tab.title + '</div>');
+            let $tab = $('<div class="' + classes + '" data-tabname="' + tab.name.toLowerCase() + '">' + tab.title + '</div>');
             this.$header.append($tab);
             tab.$el = $tab;
         }

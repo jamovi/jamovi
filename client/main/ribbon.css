@@ -10,6 +10,7 @@
     color: white ;
     padding: 8px 20px ;
     -webkit-app-region: no-drag;
+    line-height: 100%;
 }
 
 .jmv-ribbon-appmenu {
@@ -41,6 +42,10 @@ body.windows .jmv-ribbon-appmenu {
 .jmv-ribbon-tab.selected {
     background-color : #EDEDED ;
     color: #3E6DA9 ;
+}
+
+.jmv-ribbon-tab[data-tabname="file"] {
+    padding: 7px 20px;
 }
 
 .jmv-ribbon-body {

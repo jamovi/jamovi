@@ -277,9 +277,11 @@ var FSEntryBrowserView = SilkyView.extend({
 
         html += '   <div class="silky-bs-fslist-path-browser">';
         html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
-        html += '       <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
-        html += '       <div class="silky-bs-fslist-browse-button">Browse</div>';
+        html += '       <div class="silky-bs-fslist-browse-button">';
+        html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
+        html += '           <span>Browse</span>';
+        html += '       </div>';
         html += '   </div>';
 
         html += '</div>';
