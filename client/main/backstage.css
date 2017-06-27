@@ -401,14 +401,14 @@
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
-    border-top: #e1e1e1 solid 2px;
+    /*border-top: #e1e1e1 solid 2px;*/
 }
 
 .silky-bs-fslist-header {
     /*padding-bottom: 5px;*/
     margin-bottom: 5px;
     border-bottom-style: solid;
-    border-bottom-width: 2px;
+    border-bottom-width: 1px;
     border-bottom-color: #DDDDDD ;
 }
 
