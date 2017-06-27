@@ -18,8 +18,9 @@ const RibbonModel = Backbone.Model.extend({
     initialize(args) {
         this._modules = args.modules;
         this._settings = args.settings;
+
         this.set('tabs', [
-            { name: 'file', title: 'File' },
+            { name: 'file', title: '<span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span>' },
             new DataTab(),
             new AnalyseTab(this._modules),
         ]);
@@ -87,7 +88,7 @@ const RibbonView = Backbone.View.extend({
                 this.selectedTab.$el.addClass('selected');
         }, this);
 
-        this.$el.addClass('jmv-ribbon');
+        this.$el.addClass('jmv-ribbon app-dragable');
 
         let html = '';
         html += '<div class="jmv-ribbon-header">';
@@ -116,7 +117,7 @@ const RibbonView = Backbone.View.extend({
                 this.selectedTab = tab;
             }
 
-            let $tab = $('<div class="' + classes + '">' + tab.title + '</div>');
+            let $tab = $('<div class="' + classes + '" data-tabname="' + tab.name.toLowerCase() + '">' + tab.title + '</div>');
             this.$header.append($tab);
             tab.$el = $tab;
         }

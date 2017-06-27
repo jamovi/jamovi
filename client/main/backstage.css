@@ -1,49 +1,88 @@
 
 .silky-bs {
+    display: flex ;
     position: fixed ;
+    overflow: hidden;
     left: 0 ;
     top: 0 ;
     background-color: #F0F0F0 ;
     z-index: 100 ;
-    width: 100% ;
+    width: 0px;
     height: 100% ;
+    transition: .2s width ease-out;
+}
+
+.silky-bs.activated {
+    width: 250px;
+}
+
+.silky-bs.activated-sub {
+    width: 750px;
 }
 
 .silky-bs-op-panel {
-    width: 100px;
-    position: fixed ;
+    width: 250px;
     left: 0;
     top: 0 ;
     height: 100% ;
-    z-index: 10 ;
+    z-index: 0 ;
+    background-color: #FFFFFF ;
+    color: #333333 ;
+    display: flex;
+    flex-direction: column;
+}
+
+.silky-bs-main {
+    display: flex;
+    flex: 1;
+    position: relative;
+    -webkit-app-region: no-drag;
+}
+
+.silky-bs-header {
+    display: flex ;
+    height: 100px;
     background-color: #3E6DA9 ;
-    color: #FFFFFF ;
-    padding: 20px 0px;
 }
 
 .silky-bs-logo {
-    position: absolute;
-    bottom: 70px ;
-    right: -20px ;
-    width: 100px ;
-    height: 100px ;
-    background-image: url('assets/logo-v.svg');
-    background-size: cover;
+    flex: 4;
+    background-image: url('assets/logo-store.svg');
+    background-size: 120px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .silky-bs-back-button {
-    font-size: 24px ;
-    width: 40px ;
-    height: 40px ;
+    flex: 1;
+    margin-left: 10px;
+}
+
+.silky-bs-back-button > div {
+    mask: url('assets/action-back.svg') 0 0/30px 30px no-repeat;
+    background-color: #FFFFFF;
+    -webkit-mask: url('assets/action-back.svg');
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: 30px;
+    height: 100px;
+    padding: 10px;
+    transition: .2s background-color ease-out;
     box-sizing: border-box ;
-    border: 3px solid white ;
-    border-radius: 50% ;
-    text-align: center ;
-    vertical-align: middle ;
-    cursor: default ;
-    margin-top: 6px ;
-    margin-bottom: 12px ;
-    margin-left: 18px ;
+    line-height: 30px;
+    text-align: center;
+}
+
+.silky-bs-back-button > div:hover  {
+    background-color: #DBE4F3;
+}
+
+.silky-bs-op-list {
+    margin-top: 20px;
+}
+
+.silky-bs-op-separator {
+    flex: 1;
 }
 
 .disabled-div {
@@ -52,36 +91,96 @@
     pointer-events: none;
 }
 
-.silky-bs-back-button:hover {
-
-    border-color: #DDDDDD ;
-    color: #DDDDDD ;
-}
-
-.silky-bs-back-button span {
-    line-height: 34px ;
-}
-
-.silky-bs-op-button {
+.silky-bs-op-button, .silky-bs-op-header {
     padding: 12px 24px 12px 18px;
     cursor: default ;
+    /*font-weight: bold;*/
+    font-size: 120%;
+    font-weight: 400;
 }
 
 .silky-bs-op-button:hover {
-    background-color: #325787 ;
+    background-color: #f3f6fb ;
 }
 
-.silky-bs-op-button.selected {
-    background-color: #6E96CA ;
+.selected > .silky-bs-op-button {
+    background-color: #F0F0F0 ;
+    font-weight: 500;
+    /*color: #cf901b;*/
+}
+
+.silky-bs-menu-item.selected {
+    padding: 10px 0px 10px 0px;
+}
+
+.silky-bs-menu-item {
+    transition: .2s padding ease-out;
+}
+
+.silky-bs-op-places {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0px 0px 0px 0px;
+    transition: .2s height ease-out, .2s opacity ease-out;
+}
+
+.silky-bs-op-place.selected-place {
+    /*background-color: #e1e9f4 ;*/
+    padding: 8px 0px 8px 28px;
+    font-weight: bold;
+    color: #3E6DA9;
+    font-size: 105%;
+    /*font-weight: 500;*/
+
+}
+
+.silky-bs-op-place {
+    padding: 8px 0px 8px 28px;
+    transition: .2s padding ease-out;
+}
+
+.silky-bs-op-place:not(.selected-place):hover {
+    background-color: #f6f9fd ;
+}
+
+.silky-bs-op-recents-main {
+    margin-bottom: 20px;
+}
+
+.silky-bs-op-recents.silky-bs-fslist {
+    padding-left: 0px;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-item {
+    height: 20px ;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry {
+    padding-left: 25px;
+    width: auto;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry:hover {
+    background-color: #f3f6fb ;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry-location {
+    display: none;
+}
+
+.silky-bs-op-recents .silky-bs-fslist-entry-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .silky-bs-mid {
     color: #555555 ;
+    flex: 1;
 }
 
 .silky-bs-places-panel {
     padding-top: 50px ;
-    position: absolute ;
     top: 0 ;
     width: 300px ;
     height: 100% ;
@@ -163,11 +262,13 @@
 }
 
 .silky-bs-choices-list {
+    flex: 1;
     position: absolute ;
     top: 0 ;
     min-height: 100px ;
     min-width: 100px ;
     overflow: hidden;
+    padding: 20px;
 }
 
 .silky-bs-fslist {
@@ -300,10 +401,11 @@
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
+    border-top: #e1e1e1 solid 2px;
 }
 
 .silky-bs-fslist-header {
-    padding-bottom: 5px;
+    /*padding-bottom: 5px;*/
     margin-bottom: 5px;
     border-bottom-style: solid;
     border-bottom-width: 2px;
@@ -341,7 +443,7 @@
 }
 
 .silky-bs-fslist-save-options {
-    margin-bottom: 7px;
+    margin-bottom: 20px;
 }
 
 .silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
@@ -379,8 +481,39 @@
 
 .silky-bs-fslist-browser-location {
     font-size: 120% ;
+    height: 19px;
     overflow: hidden;
     white-space: nowrap ;
+    margin-left: 5px;
+    /*padding: 3px 0px 3px 5px;
+    background-color: white;
+    border: #c1c1c1 solid 1px;
+    border-right-style: none;*/
+}
+
+.silky-bs-fslist-browse-button {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    height: 30px;
+    font-size: 15px;
+    margin-left: 10px;
+    /*border-style: solid;*/
+    /*border-width: 1px;*/
+    /*border-color: #AAAAAA;*/
+    /*background-color: #FFFFFF;*/
+    box-sizing: border-box;
+    padding: 3px 12px 3px 10px;
+    /*font-weight: 300;
+    font-size: 120%;
+    height: 19px;
+    padding: 3px 10px;*/
+    /*border-left: #e1e1e1 solid 1px;*/
+}
+
+.silky-bs-fslist-browse-button:hover {
+    /*border-color: #B1C5DE ;*/
+    background-color: #DBE4F3 ;
 }
 
 .silky-bs-fslist-browser-location-icon {
@@ -392,7 +525,7 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-right: 3px ;
+    margin-right: 5px ;
 }
 
 .silky-bs-fslist-browser-back-button {
@@ -406,18 +539,17 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-top: 6px ;
-    margin-bottom: 6px ;
+    /*margin-top: 6px ;
+    margin-bottom: 6px ;*/
     margin-left: 0px ;
-
     color: #3E6DA9 ;
     flex: 0 1 auto;
 }
 
 .silky-bs-fslist-browser-back-button:hover {
-    border-style: solid;
-    border-width: 1px;
-    border-color: #B1C5DE ;
+    /*border-style: solid;*/
+    /*border-width: 1px;*/
+    /*border-color: #B1C5DE ;*/
     background-color: #DBE4F3 ;
 }
 
