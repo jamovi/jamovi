@@ -404,6 +404,22 @@
     /*border-top: #e1e1e1 solid 2px;*/
 }
 
+.silky-bs-header {
+    -webkit-app-region: drag;
+}
+
+.silky-bs-header .silky-bs-back-button div {
+    -webkit-app-region: no-drag;
+}
+
+.silky-bs-fslist-footer {
+    margin-top: 5px;
+    border-top-style: solid;
+    border-top-width: 1px;
+    border-top-color: #DDDDDD ;
+    padding-top: 5px;
+}
+
 .silky-bs-fslist-header {
     /*padding-bottom: 5px;*/
     margin-bottom: 5px;

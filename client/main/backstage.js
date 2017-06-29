@@ -174,15 +174,15 @@ var FSEntryBrowserView = SilkyView.extend({
         this._render();
     },
     _validExtension : function(ext) {
-        var extOptions = this.$header.find('.silky-bs-fslist-browser-save-filetype option');
+        var extOptions = this.$el.find('.silky-bs-fslist-browser-save-filetype option');
         for (let i = 0; i < extOptions.length; i++) {
             let exts = $(extOptions[i]).data('extensions');
             for (let j = 0; j < exts.length; j++) {
                 if (("." + exts[j]) === ext)
-                    return true;
+                    return i;
             }
         }
-        return false;
+        return -1;
     },
     _nameGotFocus: function(event) {
         keyboardJS.setContext('save_name_textbox');
@@ -231,14 +231,52 @@ var FSEntryBrowserView = SilkyView.extend({
 
         this.model.requestBrowse(this.model.fileExtensions, type, directory, filename);
     },
+    _createFileTypeSelector: function() {
+        let html = "";
+        html += '           <div class="silky-bs-fslist-browser-save-filetype">';
+        html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
+        for (let i = 0; i < this.model.fileExtensions.length; i++) {
+            let exts = this.model.fileExtensions[i].extensions;
+            let desc = this.model.fileExtensions[i].description;
+            let selected = "";
+            if (i === 0)
+                selected = "selected";
+            html += "                   <option data-extensions='" + JSON.stringify(exts) + "' " + selected + " value=" + i + ">" + desc + "</option>";
+        }
+        //html += '                   <option data-extensions="[jasp]" value=".jasp">JASP File (*.jasp)</option>';
+        html += '               </select>';
+        html += '           </div>';
+        html += '       </div>';
+        return html;
+    },
+    _createFooter: function() {
+        let isSaving = this.model.clickProcess === "save" || this.model.clickProcess === "export";
+        var html = '';
+        html += '<div class="silky-bs-fslist-footer">';
+
+        if (isSaving === false) {
+            html += this._createFileTypeSelector();
+        }
+
+        html += '</div>';
+        this.$footer = $(html);
+
+        this.$el.append(this.$footer);
+    },
     _createHeader: function() {
         var html = '';
         html += '<div class="silky-bs-fslist-header">';
 
 
+        let isSaving = this.model.clickProcess === "save" || this.model.clickProcess === "export";
+
         /////////////////////////////////////////////////////
         var extension = null;
-        if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
+
+        if (isSaving) {
+            html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
+            html += '       <div style="flex: 1 1 auto;">';
+
             var path = this.model.currentActivePath;
             var insert = "";
             if (path) {
@@ -246,23 +284,10 @@ var FSEntryBrowserView = SilkyView.extend({
                 insert = ' value="' + Path.basename(path, extension) + '"';
             }
 
-            html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
-            html += '       <div style="flex: 1 1 auto;">';
             html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here"' + insert + ' />';
-            html += '           <div class="silky-bs-fslist-browser-save-filetype">';
-            html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
-            for (let i = 0; i < this.model.fileExtensions.length; i++) {
-                let exts = this.model.fileExtensions[i].extensions;
-                let desc = this.model.fileExtensions[i].description;
-                let selected = "";
-                if (i === 0)
-                    selected = "selected";
-                html += "                   <option data-extensions='" + JSON.stringify(exts) + "' " + selected + ">" + desc + "</option>";
-            }
-            //html += '                   <option data-extensions="[jasp]" value=".jasp">JASP File (*.jasp)</option>';
-            html += '               </select>';
-            html += '           </div>';
-            html += '       </div>';
+
+            html += this._createFileTypeSelector();
+
             html += '       <div class="silky-bs-fslist-browser-save-button' + (path ? "" : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
             if (this.model.clickProcess === "save")
@@ -272,8 +297,8 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '       </div>';
             html += '   </div>';
         }
-        ////////////////////////////////////////////////
 
+        ////////////////////////////////////////////////
 
         html += '   <div class="silky-bs-fslist-path-browser">';
         html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
@@ -287,21 +312,26 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '</div>';
         this.$header = $(html);
         this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
-        if (this._validExtension(extension))
-            this.$header.find('.silky-bs-fslist-browser-save-filetype-inner').val(extension);
+
         this.$el.append(this.$header);
 
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
+        this.filterExtensions = this.model.fileExtensions[0].extensions;
         if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
-            this.filterExtensions = this.model.fileExtensions[0].extensions;
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
                 keyboardJS.setContext('save_name_textbox');
                 keyboardJS.bind('', event => this._nameBoxFocused(event));
             }, 50);
         }
+
+        this._createFooter();
+
+        let extValue = this._validExtension(extension);
+        if (extValue != -1)
+            this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
     },
     _nameBoxFocused: function(event) {
 
@@ -501,7 +531,7 @@ var FSEntryBrowserView = SilkyView.extend({
                 this.model.requestSave(path, FSItemType.File);
             else if (this.model.clickProcess === "export")
                 this.model.requestExport(path, FSItemType.File);
-            var items = this.model.get('items');
+            /*var items = this.model.get('items');
             let foundItem = false;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type === FSItemType.File && items[i].name === name && items[i].path === path) {
@@ -511,7 +541,7 @@ var FSEntryBrowserView = SilkyView.extend({
             }
             if (foundItem === false)
                 items.push({ name: name, path: path, type: FSItemType.File });
-            this._render();
+            this._render();*/
         }
     },
     _backClicked : function(event) {
@@ -582,10 +612,10 @@ var BackstageModel = Backbone.Model.extend({
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = "open";
         this._pcListModel.fileExtensions = [
-            { description: 'Data files', extensions: ['omv', 'csv', 'txt', 'jasp']},
-            { description: 'jamovi file', extensions: ['omv'] },
-            { description: 'CSV (Comma delimited)', extensions: ['csv', 'txt'] },
-            { description: 'JASP', extensions: ['jasp'] }
+            { description: 'All Data files (*.omv, *.csv, *.txt, *.jasp)', extensions: ['omv', 'csv', 'txt', 'jasp']},
+            { description: 'jamovi files (*.omv)', extensions: ['omv'] },
+            { description: 'CSV (Comma delimited) (*.csv, *.txt)', extensions: ['csv', 'txt'] },
+            { description: 'JASP files (*.jasp)', extensions: ['jasp'] }
         ];
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcListModel.on('browseRequested', this.tryBrowse, this);
@@ -688,9 +718,10 @@ var BackstageModel = Backbone.Model.extend({
             for (let i = 0; i < list.length; i++)
                 filters.push({ name: list[i].description, extensions: list[i].extensions });
 
+            console.log(directory);
             if (type === 'open') {
 
-                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ], defaultPath: directory }, (fileNames) => {
+                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]/*, defaultPath: directory + "/"*/ }, (fileNames) => {
                     if (fileNames) {
                         var path = fileNames[0].replace(/\\/g, '/');
                         this.requestOpen(path);
@@ -699,7 +730,7 @@ var BackstageModel = Backbone.Model.extend({
             }
             else if (type === 'save') {
 
-                dialog.showSaveDialog({ filters : filters, defaultPath: directory + "/" + filename }, (fileName) => {
+                dialog.showSaveDialog({ filters : filters, defaultPath: /*directory +*/ "/" + filename }, (fileName) => {
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
                         this.requestSave(fileName, true);
@@ -920,6 +951,7 @@ var BackstageModel = Backbone.Model.extend({
             .then(() => {
                 this.setSavingState(false);
                 this._updateExportPath(path);
+                this.setCurrentDirectory(Path.dirname(path));
                 this.set('activated', false);
             }).catch(() => {
                 this.setSavingState(false);
@@ -935,12 +967,12 @@ var BackstageModel = Backbone.Model.extend({
 
         let $saveIcon = $button.find(".silky-bs-flist-save-icon");
         if (saving) {
-            tarp.show(false, 0, 299);
+            tarp.show('saving', false, 0, 299);
             $button.addClass("disabled-div");
             $saveIcon.addClass('saving-file');
         }
         else {
-            tarp.hide();
+            tarp.hide('saving');
             $button.removeClass("disabled-div");
             $saveIcon.removeClass('saving-file');
         }
@@ -975,6 +1007,7 @@ var BackstageModel = Backbone.Model.extend({
                 .then(() => {
                     this.setSavingState(false);
                     this._updateSavePath(path);
+                    this.setCurrentDirectory(Path.dirname(path));
                     if (this._savePromiseResolve !== null)
                         this._savePromiseResolve();
                     this.set('activated', false);
@@ -1121,7 +1154,7 @@ var BackstageView = SilkyView.extend({
 
         this.$el.addClass('activated');
 
-        tarp.show(true, 0.3).then(
+        tarp.show('backstage', true, 0.3).then(
             undefined,
             () => this.deactivate());
 
@@ -1131,7 +1164,7 @@ var BackstageView = SilkyView.extend({
     },
     deactivate : function() {
 
-        tarp.hide();
+        tarp.hide('backstage');
         this.$el.removeClass('activated');
         this.$el.removeClass('activated-sub');
 

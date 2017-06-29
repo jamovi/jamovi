@@ -30,7 +30,7 @@ Menu.prototype._entryClicked = function(event) {
     let nextEvent;
     if (entry.op) {
         nextEvent = { type: 'selected', address: entry.address, op: entry.op, target: entry };
-        tarp.hide();
+        tarp.hide('menu');
     }
     else {
         nextEvent = { type: 'activated', address: entry.address };
@@ -87,7 +87,7 @@ Menu.prototype.show = function(pos) {
     this.$el.show();
 
     if ( ! this.parent)
-        tarp.show().then(() => {}, () => this.hide());
+        tarp.show('menu').then(() => {}, () => this.hide());
 
     this._showSubMenu();
 };

@@ -171,14 +171,14 @@ const RibbonView = Backbone.View.extend({
         }
 
         if ( ! this._tarpVisible) {
-            tarp.show(true, 0, 40)
+            tarp.show('ribbon', true, 0, 40)
                 .then(() => this._menuClosed(), () => this._menuClosed());
             this.$el.css('z-index', '50');
             this._tarpVisible = true;
         }
     },
     _closeMenus() {
-        tarp.hide();
+        tarp.hide('ribbon');
     },
     _menuClosed() {
         if (this._tarpVisible === false)

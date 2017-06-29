@@ -3,15 +3,14 @@
 
 const $ = require('jquery');
 
-let $tarp;
-let canCancel = true;
-let promise;
-let resolvePromise;
-let rejectPromise;
+let $tarps = { };
+let $params = { };
 
-const init = function() {
-    if ($tarp === undefined) {
-        $tarp = $(`<div style="
+const init = function(name) {
+    if ($tarps[name] !== undefined)
+        return $tarps[name];
+
+    let $tarp = $(`<div style="
             width: 100% ;
             height: 100% ;
             position: absolute ;
@@ -27,36 +26,71 @@ const init = function() {
             event.preventDefault();
             event.stopPropagation();
         });
+
+    $tarps[name] = $tarp;
+
+    return $tarp;
+};
+
+const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
+
+    let $tarp = init(name);
+
+    let params = $params[name];
+    if (params === undefined) {
+        params = {
+            name: name,
+            canCancel: true,
+            promise: null,
+            resolvePromise: null,
+            rejectPromise: null,
+            opacity: opacity,
+            zIndex: zIndex,
+            onMouseDown: null
+        };
+
+        $params[name] = params;
     }
-};
 
-const show = function(cancellable = true, opacity = 0, zIndex = 99) {
+    params.canCancel = cancellable;
 
-    init();
+    if (params.promise === null) {
+        params.promise = new Promise((resolve, reject) => {
+            params.resolvePromise = resolve;
+            params.rejectPromise = reject;
+            $tarp.css('opacity', params.opacity);
+            $tarp.css('z-index', params.zIndex);
+            params.onMouseDown =  event => {
+                if (params.canCancel) {
+                    setTimeout(() => $tarp.hide());
+                    params.rejectPromise();
+                    delete $tarps[params.name];
+                    delete $params[params.name];
+                }
+            };
+            $tarp.one('mousedown', params.onMouseDown);
 
-    canCancel = cancellable;
-    promise = new Promise((resolve, reject) => {
-        resolvePromise = resolve;
-        rejectPromise = reject;
-        $tarp.css('opacity', opacity);
-        $tarp.css('z-index', zIndex);
-        $tarp.one('mousedown', event => {
-            if (canCancel) {
-                setTimeout(() => $tarp.hide());
-                rejectPromise();
-            }
+            $tarp.show();
         });
+    }
 
-        $tarp.show();
-    });
-    return promise;
+    return params.promise;
 };
 
-const hide = function() {
+const hide = function(name) {
+    let $tarp = $tarps[name];
+
     if ($tarp !== undefined) {
-        $tarp.hide();
+
+        let params = $params[name];
+
         $tarp.off('mousedown');
-        resolvePromise();
+        $tarp.hide();
+
+        params.resolvePromise();
+
+        delete $tarps[name];
+        delete $params[name];
     }
 };
 

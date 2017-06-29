@@ -279,7 +279,7 @@ const SplitPanel = SilkyView.extend({
         if (this._resizing === true || event.data === null)
             return;
 
-        tarp.show();
+        tarp.show('splitPanel');
         let data = event.data;
         let self = data.self;
 
@@ -298,7 +298,7 @@ const SplitPanel = SilkyView.extend({
 
         self._sizingData = null;
         self._resizing = false;
-        tarp.hide();
+        tarp.hide('splitPanel');
     },
 
     _mouseMoveGeneral: function(event) {
