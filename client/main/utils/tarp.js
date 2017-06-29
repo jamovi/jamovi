@@ -66,6 +66,7 @@ const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
                     params.rejectPromise();
                     delete $tarps[params.name];
                     delete $params[params.name];
+                    $tarp.remove();
                 }
             };
             $tarp.one('mousedown', params.onMouseDown);
@@ -91,6 +92,8 @@ const hide = function(name) {
 
         delete $tarps[name];
         delete $params[name];
+
+        $tarp.remove();
     }
 };
 
