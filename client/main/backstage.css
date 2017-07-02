@@ -21,7 +21,7 @@
 }
 
 .silky-bs-op-panel {
-    width: 250px;
+    min-width: 250px;
     left: 0;
     top: 0 ;
     height: 100% ;
