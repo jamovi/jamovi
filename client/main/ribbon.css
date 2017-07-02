@@ -47,6 +47,7 @@ body.windows .jmv-ribbon-appmenu {
 
 .jmv-ribbon-tab[data-tabname="file"] {
     padding: 7px 20px;
+    width: 20px;
 }
 
 .jmv-ribbon-body {
