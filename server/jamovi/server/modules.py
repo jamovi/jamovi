@@ -168,8 +168,7 @@ class Modules:
                 with ZipFile(result) as zip:
                     zip.extractall(module_dir)
 
-                module_name = os.path.basename(result)
-                module_name = os.path.splitext(module_name)[0]
+                module_name = zip.namelist()[0].strip('/')
                 module_path = os.path.join(module_dir, module_name)
                 meta = self._read_module(module_path)
 
