@@ -250,7 +250,7 @@ const Instance = Backbone.Model.extend({
             return message;
         }).catch(error => {
             if ( ! recursed && error) // if not cancelled
-                this._notify({ message: 'Save failed', cause: error });
+                this._notify({ message: 'Save failed', cause: error, type: 'error' });
             throw error;
         });
     },
