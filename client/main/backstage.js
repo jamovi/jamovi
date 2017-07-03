@@ -1056,7 +1056,7 @@ var BackstageView = SilkyView.extend({
         this.model.on('change:place',     this._placeChanged, this);
     },
     events: {
-        'click .silky-bs-back-button' : 'deactivate'
+        'click .silky-bs-back-button div' : 'deactivate'
     },
     render: function() {
 

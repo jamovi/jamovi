@@ -56,6 +56,9 @@
 .silky-bs-back-button {
     flex: 1;
     margin-left: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .silky-bs-back-button > div {
@@ -65,16 +68,13 @@
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: 30px;
-    height: 100px;
-    padding: 10px;
-    transition: .2s background-color ease-out;
-    box-sizing: border-box ;
-    line-height: 30px;
-    text-align: center;
+    width: 40px;
+    height: 40px;
+    transition: .15s -webkit-mask-size ease-out;
 }
 
 .silky-bs-back-button > div:hover  {
-    background-color: #DBE4F3;
+    -webkit-mask-size: 33px;
 }
 
 .silky-bs-op-list {
