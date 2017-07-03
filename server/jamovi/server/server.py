@@ -306,7 +306,9 @@ class Server:
         assets_path = os.path.join(client_path, 'assets')
 
         self._analysisui_app = tornado.web.Application([
-            (r'/.*/', SingleFileHandler, { 'path': analysisui_path }),
+            (r'/.*/', SingleFileHandler, {
+                'path': analysisui_path,
+                'no_cache': True }),
             (r'/.*/analysisui.js',  SingleFileHandler, {
                 'path': analysisuijs_path,
                 'mime_type': 'text/javascript',

@@ -167,7 +167,14 @@ class Modules:
                 module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
                 with ZipFile(result) as zip:
                     zip.extractall(module_dir)
+
+                module_name = os.path.basename(result)
+                module_name = os.path.splitext(module_name)[0]
+                module_path = os.path.join(module_dir, module_name)
+                meta = self._read_module(module_path)
+
                 self.reread()
+                self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
                 self._notify_listeners({ 'type': 'modulesChanged' })
                 callback('success', None)
             except Exception as e:
@@ -175,7 +182,7 @@ class Modules:
         else:
             log.error("Modules._on_install(): shouldn't get here.")
 
-    def _read_module(self, path, is_sys):
+    def _read_module(self, path, is_sys=False):
         meta_path = os.path.join(path, 'jamovi.yaml')
         with open(meta_path, encoding='utf-8') as stream:
             defn = yaml.safe_load(stream)

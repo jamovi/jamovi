@@ -134,6 +134,10 @@ const Modules = ModulesBase.extend({
         this._instance.settings().on('change:modules', (modules) => {
             this._setup(modules.changed.modules);
         });
+
+        this._instance.on('moduleInstalled', (module) => {
+            this.trigger('moduleInstalled', module);
+        });
     },
     available() {
         return this._available;

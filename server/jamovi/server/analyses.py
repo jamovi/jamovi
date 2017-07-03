@@ -155,6 +155,19 @@ class Analyses:
         self._options_changed_listeners = []
         self._results_changed_listeners = []
 
+        Modules.instance().add_listener(self._module_event)
+
+    def _module_event(self, event):
+        if event['type'] == 'moduleInstalled':
+            module_name = event['data']['name']
+            ids = [ ]
+            for analysis in self._analyses:
+                if analysis.ns == module_name:
+                    ids.append(analysis.id)
+
+            for id in ids:
+                self.recreate(id).rerun()
+
     def create_from_serial(self, serial):
         analysis_pb = jcoms.AnalysisResponse()
         analysis_pb.ParseFromString(serial)
@@ -187,6 +200,11 @@ class Analyses:
             self._notify_options_changed(analysis)
 
             return analysis
+
+    def recreate(self, id):
+        o = self[id]
+        del self[id]
+        return self.create(id, o.name, o.ns, o.options.as_pb())
 
     @property
     def needs_init(self):

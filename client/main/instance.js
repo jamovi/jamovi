@@ -307,13 +307,13 @@ const Instance = Backbone.Model.extend({
 
         let coms = this.attributes.coms;
 
-        let moduleRequest = new coms.Messages.ModuleRequest();
-        moduleRequest.command = coms.Messages.ModuleRequest.ModuleCommand.INSTALL;
+        let moduleRequest = new coms.Messages.ModuleRR();
+        moduleRequest.command = coms.Messages.ModuleRR.ModuleCommand.INSTALL;
         moduleRequest.path = filePath;
 
         let request = new coms.Messages.ComsMessage();
         request.payload = moduleRequest.toArrayBuffer();
-        request.payloadType = 'ModuleRequest';
+        request.payloadType = 'ModuleRR';
         request.instanceId = this._instanceId;
 
         return coms.send(request)
@@ -326,13 +326,13 @@ const Instance = Backbone.Model.extend({
 
         let coms = this.attributes.coms;
 
-        let moduleRequest = new coms.Messages.ModuleRequest();
-        moduleRequest.command = coms.Messages.ModuleRequest.ModuleCommand.UNINSTALL;
+        let moduleRequest = new coms.Messages.ModuleRR();
+        moduleRequest.command = coms.Messages.ModuleRR.ModuleCommand.UNINSTALL;
         moduleRequest.name = name;
 
         let request = new coms.Messages.ComsMessage();
         request.payload = moduleRequest.toArrayBuffer();
-        request.payloadType = 'ModuleRequest';
+        request.payloadType = 'ModuleRR';
         request.instanceId = this._instanceId;
 
         return coms.send(request);
@@ -471,6 +471,11 @@ const Instance = Backbone.Model.extend({
                 console.log("Unexpected analysis results received");
                 console.log(response);
             }
+        }
+        else if (message.payloadType === 'ModuleRR') {
+            let response = coms.Messages.ModuleRR.decode(message.payload);
+            let name = response.name;
+            this.trigger('moduleInstalled', { name: name });
         }
     },
     _columnsChanged(event) {

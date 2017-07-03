@@ -442,7 +442,7 @@ message DataSetRR {
     string cbHtml = 12;
 }
 
-message ModuleRequest {
+message ModuleRR {
 
     enum ModuleCommand {
         INSTALL = 0;

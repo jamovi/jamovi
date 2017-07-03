@@ -131,6 +131,13 @@ class Instance:
 
         Instance.instances[self._instance_id] = self
 
+        Modules.instance().add_listener(self._module_event)
+
+    def _module_event(self, event):
+        if event['type'] == 'moduleInstalled':
+            module_name = event['data']['name']
+            self._notify_module_installed(module_name)
+
     @property
     def id(self):
         return self._instance_id
@@ -185,7 +192,7 @@ class Instance:
             self._on_analysis(request)
         elif type(request) == jcoms.FSRequest:
             self._on_fs_request(request)
-        elif type(request) == jcoms.ModuleRequest:
+        elif type(request) == jcoms.ModuleRR:
             self._on_module(request)
         elif type(request) == jcoms.StoreRequest:
             self._on_store(request)
@@ -506,11 +513,11 @@ class Instance:
 
         modules = Modules.instance()
 
-        if request.command == jcoms.ModuleRequest.ModuleCommand.Value('INSTALL'):
+        if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
             modules.install(
                 request.path,
                 lambda t, result: self._on_module_callback(t, result, request))
-        elif request.command == jcoms.ModuleRequest.ModuleCommand.Value('UNINSTALL'):
+        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
             try:
                 modules.uninstall(request.name)
                 self._coms.send(None, self._instance_id, request)
@@ -565,6 +572,18 @@ class Instance:
         for instanceId, instance in Instance.instances.items():
             if instance.is_active:
                 instance._on_settings()
+
+    def _notify_module_installed(self, name):
+
+        for instance_id, instance in Instance.instances.items():
+            if not instance.is_active:
+                continue
+
+            broadcast = jcoms.ModuleRR()
+            broadcast.command = jcoms.ModuleRR.ModuleCommand.Value('INSTALL')
+            broadcast.name = name
+
+            self._coms.send(broadcast, instance_id)
 
     def _on_dataset_set(self, request, response):
         if request.incData or request.incCBData:
