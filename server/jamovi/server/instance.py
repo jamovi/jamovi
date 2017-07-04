@@ -150,6 +150,7 @@ class Instance:
         self._inactive_since = None
 
     def close(self):
+        Modules.instance().remove_listener(self._module_event)
         if self._mm is not None:
             self._mm.close()
         self._em.stop()
@@ -575,15 +576,12 @@ class Instance:
 
     def _notify_module_installed(self, name):
 
-        for instance_id, instance in Instance.instances.items():
-            if not instance.is_active:
-                continue
+        broadcast = jcoms.ModuleRR()
+        broadcast.command = jcoms.ModuleRR.ModuleCommand.Value('INSTALL')
+        broadcast.name = name
 
-            broadcast = jcoms.ModuleRR()
-            broadcast.command = jcoms.ModuleRR.ModuleCommand.Value('INSTALL')
-            broadcast.name = name
-
-            self._coms.send(broadcast, instance_id)
+        if self._coms is not None:
+            self._coms.send(broadcast, self._instance_id)
 
     def _on_dataset_set(self, request, response):
         if request.incData or request.incCBData:
