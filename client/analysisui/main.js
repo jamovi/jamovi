@@ -107,7 +107,7 @@ const Analysis = function(def) {
 
     this.viewTemplate.setRequestedDataSource(this);
 
-    this.viewTemplate.addEventListener("customVariablesChanged", (event) => {
+    this.viewTemplate.on("customVariablesChanged", (event) => {
         setTimeout(() => {
             this.dataChanged(event);
         }, 0);

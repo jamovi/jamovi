@@ -5,12 +5,13 @@ const _ = require('underscore');
 const FormatDef = require('./formatdef');
 const SuperClass = require('../common/superclass');
 const RequestDataSupport = require('./requestdatasupport');
-const Events = require('./events');
+const EventEmitter = require('events');
 
 function View() {
 
     RequestDataSupport.extendTo(this);
-    Events.extendTo(this);
+    EventEmitter.call(this);
+    Object.assign(this, EventEmitter.prototype);
 
     this._loaded = true;
     this._updating = false;
@@ -21,7 +22,8 @@ function View() {
     this.setCustomVariables = function(variables) {
         this.customVariables = variables;
         let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
-        this._fireEvent("customVariablesChanged", event);
+        this.emit('customVariablesChanged', event);
+        //this._fireEvent("customVariablesChanged", event);
     };
 
     this.setCustomVariable = function(name, measureType, levels) {
@@ -68,7 +70,7 @@ function View() {
         }
 
         if (changed)
-            this._fireEvent("customVariablesChanged", event);
+            this.emit('customVariablesChanged', event);
     };
 
     this.removeCustomVariable = function(name) {
@@ -83,7 +85,7 @@ function View() {
 
         if (found) {
             let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
-            this._fireEvent("customVariablesChanged", event);
+            this.emit('customVariablesChanged', event);
         }
     };
 
@@ -91,7 +93,7 @@ function View() {
         if (this.customVariables.length > 0) {
             let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
             this.customVariables = [];
-            this._fireEvent("customVariablesChanged", event);
+            this.emit('customVariablesChanged', event);
         }
     };
 
