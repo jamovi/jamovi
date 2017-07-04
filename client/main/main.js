@@ -124,6 +124,10 @@ $(document).ready(() => {
         }
     });
 
+    instance.on("moduleInstalled", (event) => {
+        optionspanel.reloadAnalyses(event.name);
+    });
+
     let $fileName = $('.header-file-name');
     instance.on('change:title', function(event) {
         let title = event.changed.title;

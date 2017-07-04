@@ -90,6 +90,13 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.frameComms = new Framesg(this.$frame[0].contentWindow, this.key, this.frameCommsApi);
 
+    this.destroy = function() {
+        this.$frame.remove();
+        //this.frameComms.disconnect(); //This function doesn't yet exist which is a problem and a slight memory leak, i have submitted an issue to the project.
+        //Temp work around, kind of.
+        this.frameComms.receiveNamespace = "deleted"; //this will result in the internal message function exiting without executing any potentially problematic commands. However, the event handler is still attached and this is a problem.
+    };
+
     this.setDataModel = function(dataSetModel) {
         this.dataSetModel = dataSetModel;
     };
@@ -143,6 +150,27 @@ let OptionsPanel = SilkyView.extend({
         this.$el.on('resized', () => { this.resizeHandler(); });
 
         this.render();
+    },
+
+    reloadAnalyses: function(moduleName) {
+        let analysis = null;
+        if (this._currentResources !== null && this._currentResources.analysis.ns === moduleName) {
+            analysis = this._currentResources.analysis;
+            this.removeMsgListeners(this._currentResources);
+            this._currentResources.abort();
+            this._currentResources.$frame.addClass('silky-hidden-options-control');
+            this._currentResources = null;
+        }
+
+        for (let analysesKey in this._analysesResources) {
+            if (this._analysesResources[analysesKey].analysis.ns === moduleName) {
+                this._analysesResources[analysesKey].destroy();
+                delete this._analysesResources[analysesKey];
+            }
+        }
+
+        if (analysis !== null)
+            this.setAnalysis(analysis);
     },
 
     setAnalysis: function(analysis) {
