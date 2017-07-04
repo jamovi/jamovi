@@ -66,6 +66,9 @@ const OptionsView = function(uiModel) {
     this.dataChanged = function(data) {
         for (let i = 0; i < this._allCtrls.length; i++) {
             let ctrl = this._allCtrls[i];
+            if (ctrl.isDisposed)
+                continue;
+
             if (ctrl.onDataChanged)
                 ctrl.onDataChanged(data);
         }

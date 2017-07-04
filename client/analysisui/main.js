@@ -67,7 +67,7 @@ var requestData = function(requestType, requestData, getRemote) {
 };
 
 var requestLocalColumnData = function(data) {
-    var columns = dataResources.columns;
+    var columns = dataResources.columns.concat(analysis.viewTemplate.customVariables);
     let found = false;
     let foundAll = true;
     for (let i = 0; i < columns.length; i++) {
@@ -106,6 +106,13 @@ const Analysis = function(def) {
     LayoutUpdateCheck(layoutDef);
 
     this.viewTemplate.setRequestedDataSource(this);
+
+    this.viewTemplate.on("customVariablesChanged", (event) => {
+        setTimeout(() => {
+            this.dataChanged(event);
+        }, 0);
+    });
+
     let actionManager = new LayoutActionManager(this.viewTemplate);
     let optionsManager = new Options(options);
     actionManager.onExecutingStateChanged = function(state) {

@@ -2,17 +2,101 @@
 'use strict';
 
 const _ = require('underscore');
-var FormatDef = require('./formatdef');
-var SuperClass = require('../common/superclass');
+const FormatDef = require('./formatdef');
+const SuperClass = require('../common/superclass');
 const RequestDataSupport = require('./requestdatasupport');
+const EventEmitter = require('events');
 
 function View() {
 
     RequestDataSupport.extendTo(this);
+    EventEmitter.call(this);
+    Object.assign(this, EventEmitter.prototype);
 
     this._loaded = true;
     this._updating = false;
     this.workspace = {};
+
+    this.customVariables = [];
+
+    this.setCustomVariables = function(variables) {
+        this.customVariables = variables;
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+        this.emit('customVariablesChanged', event);
+        //this._fireEvent("customVariablesChanged", event);
+    };
+
+    this.setCustomVariable = function(name, measureType, levels) {
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: false } };
+
+        let found = false;
+        let changed = false;
+        for (let i = 0; i < this.customVariables.length; i++) {
+            if (this.customVariables[i].name === name) {
+
+                if (measureType !== this.customVariables[i].measureType) {
+                    changed = true;
+                    event.dataInfo.measureTypeChanged = true;
+                    this.customVariables[i].measureType = measureType;
+                }
+
+
+                if (levels !== this.customVariables[i].levels) {
+                    if (levels === undefined || this.customVariables[i].levels === undefined || levels.length !== this.customVariables[i].levels.length) {
+                        changed = true;
+                        event.dataInfo.levelsChanged = true;
+                        this.customVariables[i].levels = levels;
+                    }
+                    else {
+                        for (let j = 0; j < levels.length; j++) {
+                            if (levels[j] !== this.customVariables[i].levels[j]) {
+                                changed = true;
+                                event.dataInfo.levelsChanged = true;
+                                this.customVariables[i].levels = levels;
+                                break;
+                            }
+                        }
+                    }
+                }
+                found = true;
+                break;
+            }
+        }
+
+        if (found === false) {
+            changed = true;
+            event.dataInfo.countChanged = true;
+            this.customVariables.push( { name: name, measureType: measureType, levels: levels });
+        }
+
+        if (changed)
+            this.emit('customVariablesChanged', event);
+    };
+
+    this.removeCustomVariable = function(name) {
+        let found = false;
+        for (let i = 0; i < this.customVariables.length; i++) {
+            if (this.customVariables[i].name === name) {
+                this.customVariables.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            this.emit('customVariablesChanged', event);
+        }
+    };
+
+    this.clearCustomVariables = function(name, measureType, levels) {
+        if (this.customVariables.length > 0) {
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            this.customVariables = [];
+            this.emit('customVariablesChanged', event);
+        }
+    };
+
 
     this._baseEvents = [
         {
