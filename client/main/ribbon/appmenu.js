@@ -16,27 +16,52 @@ const AppMenuButton = Backbone.View.extend({
         let $decoration = $('<span class="mif-more-vert"></span>').appendTo(this.$el);
         let $positioner = $('<div class="jmv-ribbon-appmenu-positioner"></div>').appendTo(this.$el);
 
-        this.$menu = $('<div class="jmv-ribbon-appmenu-menu"></div>').appendTo($positioner);
+        this.$menuPanel = $('<div class="jmv-ribbon-appmenu-menu-panel"></div>').appendTo($positioner);
+        this.$menu = $('<div class="jmv-ribbon-appmenu-menu"></div>').appendTo(this.$menuPanel);
 
         this.menuVisible = false;
         this.$el.on('click', event => {
             this.toggleMenu();
             event.stopPropagation();
         });
+        this.$menuPanel.on('click', event => {
+            event.stopPropagation();
+        });
 
-        this.$zoom = $('<div class="jmv-ribbon-appmenu-zoom"></div>').appendTo(this.$menu);
-        this.$zoomOut = $('<div class="jmv-ribbon-appmenu-zoomout">&minus;</div>').appendTo(this.$zoom);
-        this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoom);
-        this.$zoomIn = $('<div class="jmv-ribbon-appmenu-zoomin">+</div>').appendTo(this.$zoom);
+        this.$header = $('<div class="jmv-ribbon-appmenu-header"></div>').appendTo(this.$menu);
+        this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
+        this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
+        this.$back = $('<div class="jmv-ribbon-appmenu-back-button"></div>').appendTo(this.$backOuter);
+        this.$backButton = $('<div></div>').appendTo(this.$back);
 
-        this.$syntaxMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-syntaxmode"><input type="checkbox">Syntax mode</label>').appendTo(this.$menu);
-        this.$syntaxModeCheck = this.$syntaxMode.find('input');
+        this.$back.on('click', event => {
+            this.toggleMenu();
+            event.stopPropagation();
+        });
 
-        this.$devMode = $('<label class="jmv-ribbon-appmenu-checkbox jmv-ribbon-appmenu-devmode"><input type="checkbox">Dev mode</label>').appendTo(this.$menu);
-        this.$devModeCheck = this.$devMode.find('input');
+        this.$content = $('<div class="jmv-ribbon-appmenu-content"></div>').appendTo(this.$menu);
 
-        this.$theme = $('<div class="jmv-ribbon-appmenu-list">Plot theme </div>')
-            .appendTo(this.$menu);
+        this.$zoom = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$zoom.append($('<div>Zoom</div>'));
+        this.$zoomButtons = $('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>').appendTo(this.$zoom);
+        this.$zoomOut = $('<div class="jmv-ribbon-appmenu-zoomout">&minus;</div>').appendTo(this.$zoomButtons);
+        this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoomButtons);
+        this.$zoomIn = $('<div class="jmv-ribbon-appmenu-zoomin">+</div>').appendTo(this.$zoomButtons);
+
+        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
+        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
+        this.$syntax.append($('<div>Syntax mode</div>'));
+        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
+
+        this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox" for="devMode"></label>').appendTo(this.$content);
+        this.$dev.append($('<div>Developer mode</div>'));
+        this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
+
+        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
+        this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$theme.append($('<div>Plot theme</div>'));
         this.$themeList = $('<select><option value="default">Default</option><option value="minimal">Minimal</option><option value="iheartspss">I ♥ SPSS</option><option value="liberace">Liberace</option><option value="hadley">Hadley</option></select>')
             .appendTo(this.$theme)
             .click(event => event.stopPropagation())
@@ -49,6 +74,8 @@ const AppMenuButton = Backbone.View.extend({
             let z = '' + parseInt(event.zoom * 100) + '%';
             this.$zoomLevel.text(z);
         });
+
+        this.$version = $('<div class="jmv-ribbon-appmenu-version">Version ' + host.version + '</div>').appendTo(this.$menu);
 
         this.$syntaxModeCheck.on('change', event => this.model.settings().setSetting('syntaxMode', this.$syntaxModeCheck.prop('checked')));
         this.$devModeCheck.on('change', event => {
@@ -82,11 +109,12 @@ const AppMenuButton = Backbone.View.extend({
             return;
         this.menuVisible = true;
         this.trigger('shown', this);
-        this.$menu.show();
+        this.$menuPanel.addClass('activated');
     },
     hide() {
         this.menuVisible = false;
-        this.$menu.hide();
+        this.$menuPanel.removeClass('activated');
+        this.trigger('hidden');
     }
 });
 

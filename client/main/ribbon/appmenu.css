@@ -5,24 +5,117 @@
     z-index: 101 ;
 }
 
-.jmv-ribbon-appmenu-menu {
-    position: absolute ;
-    display: none ;
+.jmv-ribbon-appmenu-menu-panel {
+    position: fixed ;
     right: 0px ;
-    top: 3px ;
+    top: 0px ;
+    width: 0px;
+    height: 100% ;
     background-color: #F4F4F4 ;
     color: #555555 ;
     margin: 0 ;
-    box-shadow: 0px 1px 1px 1px rgba(172, 172, 172, 1);
-    margin-top: 2px ;
+    transition: .15s width ease-out;
+    border-left: 1px solid #D0D0D0;
+}
+
+.jmv-ribbon-appmenu-menu-panel.activated {
+    width: 250px;
+}
+
+.jmv-ribbon-appmenu-menu {
+    display: flex ;
+    position: fixed ;
+    overflow: hidden;
+    margin: 0 ;
+    height: 100% ;
     font-size: 70% ;
-    border-radius: 1px ;
     text-align: left ;
+    flex-direction: column;
+    min-width: 250px;
+}
+
+.jmv-ribbon-appmenu-header {
+    display: flex ;
+    justify-content: space-between;
+    height: 50px;
+    /*background-color: #D0D0D0 ;*/
+}
+
+.jmv-ribbon-appmenu-icon {
+    width: 45px;
+    background-image: url('assets/logo-v-naked.svg');
+    background-size: 30px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.jmv-ribbon-appmenu-back {
+    width: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.jmv-ribbon-appmenu-back-button {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    font-size: 15px;
+    height: 30px;
+    width: 30px;
+    box-sizing: border-box;
+    border-radius: 100%;
+    border: solid 2px #F4F4F4;
+    transition: .15s border-color ease-out, .15s height ease-out, .15s width ease-out;
+}
+
+.jmv-ribbon-appmenu-back-button:hover {
+    border-color: #333333;
+    height: 35px;
+    width: 35px;
+}
+
+.jmv-ribbon-appmenu-back-button > div {
+    flex: 1;
+    mask: url('assets/action-back.svg') 0 0/25px 25px no-repeat;
+    background-color: #333333;
+    -webkit-mask: url('assets/action-back.svg');
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: 25px;
+    transform: rotate(180deg);
+    min-width: 25px;
+    height: 25px;
+}
+
+.jmv-ribbon-appmenu-content {
+    height: 100%;
+    margin: 15px 0px;
+}
+
+.jmv-ribbon-appmenu-item {
+    display: flex ;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 16px ;
+}
+
+.jmv-ribbon-appmenu-item.checkbox:hover {
+    background-color: #E0E0E0;
+}
+
+.jmv-ribbon-appmenu-separator {
+    display: block ;
+    margin: 6px 8px ;
+    border-bottom: 1px solid #D0D0D0 ;
 }
 
 .jmv-ribbon-appmenu-checkbox {
     display: block ;
-    padding: 6px 12px ;
+}
+
+input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
+    margin-right: 0px;
 }
 
 .jmv-ribbon-appmenu-list {
@@ -33,19 +126,19 @@
     margin: 6px ;
 }
 
-.jmv-ribbon-appmenu-zoom {
+.jmv-ribbon-appmenu-zoom-buttons {
     display: flex ;
     justify-content: center;
-    border-bottom: 1px solid #ACACAC ;
-    padding: 8px 6px ;
-    margin-bottom: 6px ;
 }
 
-.jmv-ribbon-appmenu-zoom > * {
-    margin-left: 4px ;
-    margin-right: 4px ;
+.jmv-ribbon-appmenu-zoom-buttons > * {
     height: 24px ;
     line-height: 24px ;
+}
+
+.jmv-ribbon-appmenu-zoomlevel {
+    margin-left: 8px ;
+    margin-right: 8px ;
 }
 
 .jmv-ribbon-appmenu-zoomin,
@@ -60,4 +153,12 @@
 .jmv-ribbon-appmenu-zoomout:hover,
 .jmv-ribbon-appmenu-checkbox:hover {
     background-color: #E0E0E0 ;
+}
+
+.jmv-ribbon-appmenu-version {
+    height: 45px;
+    flex-grow: 1;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 45px;
 }

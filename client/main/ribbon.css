@@ -16,12 +16,12 @@
 .jmv-ribbon-appmenu {
     position: absolute ;
     right: 6px ;
-    top: 8px ;
-    font-size: 125% ;
+    /*top: 8px ;*/
+    font-size: 150% ;
     text-align: center ;
     width: 24px ;
-    height: 20px ;
-    background-color : #EDEDED ;
+    height: 24px ;
+    color : #FFFFFF ;
     border-radius: 1px ;
     padding: 0 ;
     -webkit-app-region: no-drag;
@@ -32,7 +32,8 @@ body.windows .jmv-ribbon-appmenu {
 }
 
 .jmv-ribbon-appmenu:hover {
-    color: #999999 ;
+    color: #EEEEEE ;
+    background-color: #4675B1 ;
 }
 
 .jmv-ribbon-tab:hover {

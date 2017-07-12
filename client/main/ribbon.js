@@ -126,6 +126,7 @@ const RibbonView = Backbone.View.extend({
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
         this.appMenu.on('shown', event => this._menuShown(event));
+        this.appMenu.on('hidden', event => this._closeMenus());
 
         this.$header.on('click', event => this._closeMenus());
 
