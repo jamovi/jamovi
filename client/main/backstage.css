@@ -22,6 +22,7 @@
 
 .silky-bs-op-panel {
     min-width: 250px;
+    max-width: 250px;
     left: 0;
     top: 0 ;
     height: 100% ;
@@ -161,6 +162,7 @@
 
 .silky-bs-op-recents-main {
     margin-bottom: 20px;
+    overflow: hidden;
 }
 
 .silky-bs-op-recents.silky-bs-fslist {
