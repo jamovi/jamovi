@@ -168,7 +168,7 @@ class Modules:
                 with ZipFile(result) as zip:
                     zip.extractall(module_dir)
 
-                module_name = zip.namelist()[0].strip('/')
+                module_name = zip.namelist()[0].split('/')[0]
                 module_path = os.path.join(module_dir, module_name)
                 meta = self._read_module(module_path)
 
@@ -177,6 +177,7 @@ class Modules:
                 self._notify_listeners({ 'type': 'modulesChanged' })
                 callback('success', None)
             except Exception as e:
+                log.exception(e)
                 callback('error', e)
         else:
             log.error("Modules._on_install(): shouldn't get here.")
