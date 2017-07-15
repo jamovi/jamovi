@@ -125,8 +125,14 @@ const RibbonView = Backbone.View.extend({
         this.$tabs = this.$header.find('.jmv-ribbon-tab');
 
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
-        this.appMenu.on('shown', event => this._menuShown(event));
-        this.appMenu.on('hidden', event => this._closeMenus());
+        this.appMenu.on('shown', event => {
+            this._menuShown(event);
+            $('#header-buttons').hide();
+        });
+        this.appMenu.on('hidden', event => {
+            this._closeMenus();
+            $('#header-buttons').show();
+        });
 
         this.$header.on('click', event => this._closeMenus());
 
