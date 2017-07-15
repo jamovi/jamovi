@@ -18,6 +18,10 @@
     border-left: 1px solid #D0D0D0;
 }
 
+body.windows .jmv-ribbon-appmenu-menu-panel {
+    top: 33px ;
+}
+
 .jmv-ribbon-appmenu-menu-panel.activated {
     width: 250px;
 }
