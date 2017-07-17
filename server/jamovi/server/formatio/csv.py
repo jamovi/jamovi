@@ -9,6 +9,10 @@ from io import TextIOWrapper
 from ...core import MeasureType
 import chardet
 
+import logging
+
+log = logging.getLogger('jamovi')
+
 
 def write(data, path):
 
@@ -88,8 +92,12 @@ def read(data, path):
         csvfile = TextIOWrapper(file, encoding=encoding, errors='replace')
 
         try:
-            dialect = csv.Sniffer().sniff(csvfile.read(4096), ', \t;')
-        except csv.Error:
+            some_data = csvfile.read(4096)
+            if len(some_data) == 4096:  # csv sniffer doesn't like partial lines
+                some_data = trim_after_last_newline(some_data)
+            dialect = csv.Sniffer().sniff(some_data, ', \t;')
+        except csv.Error as e:
+            log.exception(e)
             dialect = csv.excel
 
         csvfile.seek(0)
@@ -143,6 +151,20 @@ def read(data, path):
                 for i in range(column_count):
                     column_writers[i].parse_row(row, row_no)
                 row_no += 1
+
+
+def trim_after_last_newline(text):
+
+    index = text.rfind('\r\n')
+    if index == -1:
+        index = text.rfind('\n')
+        if index == -1:
+            index = text.rfind('\r')
+
+    if index != -1:
+        text = text[:index]
+
+    return text
 
 
 class ColumnWriter:
