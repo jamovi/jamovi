@@ -166,14 +166,21 @@ void EngineR::setLibPaths(const std::string &moduleName)
 {
     stringstream ss;
 
+    char *cPath;
     string path;
     vector<string> sysR;
     vector<string> moduleR;
 
-    path = nowide::getenv("R_LIBS");
+    cPath = nowide::getenv("R_LIBS");
+    if (cPath != NULL)
+        path = cPath;
+
     algorithm::split(sysR, path, algorithm::is_any_of(";:"), token_compress_on);
 
-    path = nowide::getenv("JAMOVI_MODULES_PATH");
+    cPath = nowide::getenv("JAMOVI_MODULES_PATH");
+    if (cPath != NULL)
+        path = cPath;
+
     algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
 
     ss << "base::.libPaths(c(";
