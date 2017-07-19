@@ -5,6 +5,7 @@ const _ = require('underscore');
 const OptionControl = require('./optioncontrol');
 const GridControl = require('./gridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
+const FormatDef = require('./formatdef');
 
 const GridCheckbox = function(params) {
 
@@ -14,6 +15,11 @@ const GridCheckbox = function(params) {
     this.$_subel = $('<label class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></label>');
     this.$el = this.$_subel;
 
+    this.registerSimpleProperty("format", FormatDef.bool);
+
+    let horizontalAlign = this.getPropertyValue("horizontalAlignment");
+    this.$_subel.addClass("jmv-option-halign-" + horizontalAlign);
+    
     this.createItem = function() {
         let type = "checkbox";
         this.checkedValue = this.getPropertyValue('optionPart');

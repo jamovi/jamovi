@@ -26,6 +26,14 @@
     margin-bottom: 0px;
 }
 
+.silky-option-checkbox .jmv-option-halign-center {
+    text-align: center;
+}
+
+.silky-option-checkbox .jmv-option-halign-right {
+    text-align: right;
+}
+
 /*Checkbox tick square*/
 input[type="checkbox"] {
     position: relative;
