@@ -18,8 +18,8 @@ const GridCheckbox = function(params) {
     this.registerSimpleProperty("format", FormatDef.bool);
 
     let horizontalAlign = this.getPropertyValue("horizontalAlignment");
-    this.$_subel.addClass("jmv-option-halign-" + horizontalAlign);
-    
+    this.$_subel.attr('data-horizontal-align', horizontalAlign);
+
     this.createItem = function() {
         let type = "checkbox";
         this.checkedValue = this.getPropertyValue('optionPart');
