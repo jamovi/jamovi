@@ -26,6 +26,14 @@
     margin-bottom: 0px;
 }
 
+.silky-option-checkbox .class[data-horizontal-align='center'] {
+    text-align: center;
+}
+
+.silky-option-checkbox .class[data-horizontal-align='right'] {
+    text-align: right;
+}
+
 /*Checkbox tick square*/
 input[type="checkbox"] {
     position: relative;

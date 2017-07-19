@@ -150,6 +150,7 @@ const OptionListControl = function(params) {
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
                     hCell.setVerticalAlign('center');
+                    hCell.$el.addClass('silky-option-list-header-cell');
                     hCell.minimumWidth = columnInfo.minWidth;
                     hCell.maximumWidth = columnInfo.maxWidth;
                     hCell.minimumHeight = columnInfo.maxHeight;
@@ -466,7 +467,15 @@ const OptionListControl = function(params) {
             else
                 key = columns[i].name;
 
-            itemPrototype[key] = null;
+            let defaultValue = columns[i].template.default;
+
+            if (defaultValue === undefined)
+                defaultValue = columns[i].format.default;
+
+            if (defaultValue === undefined)
+                defaultValue = null;
+
+            itemPrototype[key] = defaultValue;
         }
 
         return itemPrototype;
@@ -789,7 +798,7 @@ const OptionListControl = function(params) {
         let displayIndex = this.rowIndexToDisplayIndex(rowIndex);
         if (callback === undefined) {
             callback = count;
-            count = this.contentRowCount() - displayIndex;
+            count = this.contentRowCount() - rowIndex;
         }
 
         for (let r = displayIndex; r < displayIndex + count; r++) {

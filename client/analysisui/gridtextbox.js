@@ -18,6 +18,7 @@ const GridTextbox = function(params) {
     this.registerSimpleProperty("inputPattern", null);
     this.registerSimpleProperty("borderless", false);
     this.registerSimpleProperty("alignText", "left", new EnumPropertyFilter(["left", "center", "right"], "left"));
+    this.registerSimpleProperty("suggestedValues", null);
 
 
     this.$suffix = null;
@@ -49,11 +50,32 @@ const GridTextbox = function(params) {
         startClass = label === "" ? 'silky-option-text-start' : "";
         startClass = startClass + " " + (suffix === "" ? 'silky-option-text-end' : "");
 
+        let dd = '';
+        let suggestedValues = this.getPropertyValue('suggestedValues');
+        let optionsName = suggestedValues === null ? null : this.getPropertyValue('name') + "_suggestedValues";
+        if (suggestedValues !== null) {
+            dd = '<div class="jmv-option-text-input-suggested silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" id="'+ optionsName + '" style="display: none;">';
+            for (let i = 0; i < suggestedValues.length; i++) {
+                let isObject = false;
+                let value = suggestedValues[i];
+                if (suggestedValues[i].value !== undefined) {
+                    value = suggestedValues[i].value;
+                    isObject = true;
+                }
+                dd = dd + '<div class="jmv-option-text-input-suggested-option" data-value="' + value + '">';
+                dd = dd + '    <div class="jmv-option-text-input-suggested-option-value">' + value + '</div>';
+                if (isObject)
+                    dd = dd + '    <div class="jmv-option-text-input-suggested-option-label">' + suggestedValues[i].label + '</div>';
+                dd = dd + '</div>';
+            }
+            dd = dd + '</div>';
+        }
+        this.$suggestValues = $(dd);
 
         let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue("margin") + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
         let inputPattern = this.getPropertyValue("inputPattern");
         if (inputPattern !== null)
-            t += ' pattern="'+ inputPattern +'"';
+            t += ' pattern="'+ inputPattern + '"';
         t += '>';
 
         this.$input = $(t);
@@ -70,6 +92,12 @@ const GridTextbox = function(params) {
                 this.$input.blur();
             }
         });
+        this.$input.on('focus', (event) => {
+            this.$suggestValues.show();
+        });
+        this.$input.on('blur', (event) => {
+            this.$suggestValues.hide();
+        });
         this.$input.change((event) => {
 
             if (this.$input[0].validity.valid === false)
@@ -82,7 +110,21 @@ const GridTextbox = function(params) {
             this.setValue(value);
         });
 
-        cell = subgrid.addCell(0, 0, true, this.$input);
+        this.$suggestValues.find('.jmv-option-text-input-suggested-option').on('mousedown', null, this,  function (event) {
+            let value = $(this).data("value");
+            let self = event.data;
+            value = self.parse(value);
+            self.setValue(value);
+        });
+
+        let $ctrl = this.$input;
+        if (suggestedValues !== null) {
+            $ctrl = $('<div style="z-index: 100;"></div>');
+            $ctrl.append(this.$input);
+            $ctrl.append(this.$suggestValues);
+        }
+
+        cell = subgrid.addCell(0, 0, true, $ctrl);
         cell.blockInsert("left");
         cell.setAlignment("left", "center");
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));

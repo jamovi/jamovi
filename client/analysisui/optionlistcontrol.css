@@ -85,3 +85,12 @@
 .list-item-delete-button:hover {
     border: 1px solid #555555;
 }
+
+.silky-option-list-header {
+    padding: 5px;
+    color: white;
+}
+
+.silky-option-list-header-cell {
+    background-color: #adadad;
+}

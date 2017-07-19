@@ -47,6 +47,10 @@
     margin-right: 1ex;
 }
 
+.jmv-option-text-input-suggested:not(.silky-option-text-start)  {
+    margin-left: 1ex;
+}
+
 .silky-option-text-start.silky-control-margin-small:not(.frameless-textbox) {
     margin-left: 2px;
 }
@@ -58,6 +62,10 @@
 .silky-option-text-input.silky-control-margin-small:not(.frameless-textbox) {
     margin-top: 2px;
     margin-bottom: 2px;
+}
+
+.jmv-option-text-input-suggested.silky-control-margin-small:not(.frameless-textbox) {
+    margin-top: -2px;
 }
 
 .silky-option-text-start.silky-control-margin-normal {
@@ -73,6 +81,10 @@
     margin-bottom: 5px;
 }
 
+.jmv-option-text-input-suggested.silky-control-margin-normal {
+    margin-top: -5px;
+}
+
 .silky-option-text-start.silky-control-margin-large {
     margin-left: 10px;
 }
@@ -86,10 +98,43 @@
     margin-bottom: 10px;
 }
 
+.jmv-option-text-input-suggested.silky-control-margin-large {
+    margin-top: -10px;
+}
+
 .silky-layout-container > .first-cell > .silky-option-text-start:not(.frameless-textbox) {
     margin-left: 0px;
 }
 
 .silky-layout-container > .last-cell > .silky-option-text-end:not(.frameless-textbox) {
     margin-right: 0px;
+}
+
+.jmv-option-text-input-suggested {
+    background-color: white;
+    border: 1px solid #bebebe;
+    min-width: 100px;
+    max-width: 300px;
+    max-height: 200px;
+}
+
+.jmv-option-text-input-suggested-option {
+    padding: 4px;
+    white-space: nowrap;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.jmv-option-text-input-suggested-option-label {
+    display: inline;
+    font-size: 80%;
+    color: #808080;
+    float: right;
+}
+
+.jmv-option-text-input-suggested-option-value {
+    display: inline;
+}
+
+.jmv-option-text-input-suggested-option:hover {
+    background-color: #F2F2F2;
 }
