@@ -56,7 +56,7 @@ var HtmlView = Elem.View.extend({
     _insertSS(url) {
         return new Promise((resolve) => {
             $.get(url, (data) => {
-                this.$head.append('<style>' + data + '</style>');
+                this.$head.append('<style class="module-asset">' + data + '</style>');
                 resolve(data);
             }, 'text');
         });
