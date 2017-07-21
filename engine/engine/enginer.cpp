@@ -393,7 +393,19 @@ void EngineR::initR()
 
     _rInside = new RInside();
 
+    char *pandoc = nowide::getenv("PANDOCHOME");
+
+    if (pandoc != NULL)
+    {
+        stringstream ss;
+        ss << "Sys.setenv(RSTUDIO_PANDOC='" << pandoc << "')\n";
+        _rInside->parseEvalQNT(ss.str());
+    }
+
     setLibPaths("jmv");
+
+    // without this, on macOS, knitr tries to load X11
+    _rInside->parseEvalQNT("env <- knitr::knit_global();env$CairoPNG <- grDevices::png\n");
 
     // change the interaction component separator to an asterisk
     _rInside->parseEvalQNT("sep <- ' \u273B '; base::Encoding(sep) <- 'UTF-8'; options(jmvTermSep=sep); rm(list='sep')\n");
