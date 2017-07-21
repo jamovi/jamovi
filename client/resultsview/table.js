@@ -608,7 +608,10 @@ const TableView = Elem.View.extend({
             let $row = $(event.target).closest(this._trs);
             let rowNo = this._trs.index($row);
             rowNo = this.model.attributes.sortTransform[rowNo];
-            window.setOption(table.rowSelect, rowNo);
+            if (rowNo === table.rowSelected)
+                window.setOption(table.rowSelect, -1);
+            else
+                window.setOption(table.rowSelect, rowNo);
         });
     },
     makeFormatClasses(column) {
