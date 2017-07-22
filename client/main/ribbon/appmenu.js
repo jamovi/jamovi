@@ -112,6 +112,8 @@ const AppMenuButton = Backbone.View.extend({
         this.$menuPanel.addClass('activated');
     },
     hide() {
+        if ( ! this.menuVisible)
+            return;
         this.menuVisible = false;
         this.$menuPanel.removeClass('activated');
         this.trigger('hidden');
