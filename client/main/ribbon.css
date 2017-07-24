@@ -4,8 +4,12 @@
     color: #777777 ;
 }
 
+.jmv-ribbon-header {
+    display: flex ;
+    flex-direction: row ;
+}
+
 .jmv-ribbon-tab {
-    display: inline-block ;
     background-color : inherit ;
     color: white ;
     padding: 8px 20px ;
@@ -42,7 +46,7 @@ body.windows .jmv-ribbon-appmenu {
 }
 
 .jmv-ribbon-tab.selected {
-    background-color : #EDEDED ;
+    background-color : #F0F0F0 ;
     color: #3E6DA9 ;
 }
 
