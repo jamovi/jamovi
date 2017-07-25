@@ -69,15 +69,6 @@
     height: 35px;
     width: 35px;
     box-sizing: border-box;
-    border-radius: 100%;
-    border: solid 2px #3E6DA9;
-    transition: .15s border-color ease-out, .15s height ease-out, .15s width ease-out;
-}
-
-.silky-bs-back-button:hover {
-    border-color: #FFFFFF;
-    height: 40px;
-    width: 40px;
 }
 
 .silky-bs-back-button > div {
@@ -90,7 +81,10 @@
     -webkit-mask-size: 30px;
     width: 40px;
     height: 40px;
-    transition: .15s -webkit-mask-size ease-out;
+}
+
+.silky-bs-back-button:hover > div {
+    background-color: #B2C2D7 ;
 }
 
 .silky-bs-op-list {

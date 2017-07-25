@@ -68,15 +68,10 @@ body.windows .jmv-ribbon-appmenu-menu-panel {
     height: 30px;
     width: 30px;
     box-sizing: border-box;
-    border-radius: 100%;
-    border: solid 2px #F4F4F4;
-    transition: .15s border-color ease-out, .15s height ease-out, .15s width ease-out;
 }
 
-.jmv-ribbon-appmenu-back-button:hover {
-    border-color: #333333;
-    height: 35px;
-    width: 35px;
+.jmv-ribbon-appmenu-back-button:hover > div {
+    background-color: #888888 ;
 }
 
 .jmv-ribbon-appmenu-back-button > div {
