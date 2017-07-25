@@ -204,6 +204,8 @@ class Engine:
                 complete = False
                 if results.incAsText and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'):
                     complete = True
+                elif results.incAsText and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_ERROR'):
+                    complete = True
                 elif self.status == Engine.Status.INITING and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_INITED'):
                     complete = True
 
