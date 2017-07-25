@@ -27,8 +27,14 @@ const Analysis = function(id, name, ns) {
     this._parent = null;
     this._defn = null;
 
-    let url = host.baseUrl + 'analyses/' + ns + '/' + name + '/a.yaml';
+    this.reload();
+};
 
+Analysis.prototype.reload = function() {
+
+    let url = host.baseUrl + 'analyses/' + this.ns + '/' + this.name + '/a.yaml';
+
+    this.isReady = false;
     this.ready = Promise.all([
         Promise.resolve($.get(url, null, null, 'text')).then(response => {
             this._defn = yaml.safeLoad(response);

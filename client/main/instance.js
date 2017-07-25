@@ -452,30 +452,26 @@ const Instance = Backbone.Model.extend({
 
         if (message.payloadType === 'AnalysisResponse') {
             let response = coms.Messages.AnalysisResponse.decode(message.payload);
-            let ok = false;
 
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
 
-            if (analysis.isReady === false && _.has(response, "options")) {
+            if (analysis.isReady === false && response.options)
                 analysis.setup(OptionsPB.fromPB(response.options, coms.Messages));
-                ok = true;
-            }
 
-            if (analysis.isReady && _.has(response, "results") && response.results !== null) {
+            if (response.results)
                 analysis.setResults(response.results, response.incAsText, response.syntax);
-                ok = true;
-            }
-
-            if (ok === false) {
-                console.log("Unexpected analysis results received");
-                console.log(response);
-            }
         }
         else if (message.payloadType === 'ModuleRR') {
             let response = coms.Messages.ModuleRR.decode(message.payload);
-            let name = response.name;
-            this.trigger('moduleInstalled', { name: name });
+            let moduleName = response.name;
+
+            for (let analysis of this._analyses) {
+                if (analysis.ns === moduleName)
+                    analysis.reload();
+            }
+
+            this.trigger('moduleInstalled', { name: moduleName });
         }
     },
     _columnsChanged(event) {

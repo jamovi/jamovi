@@ -169,8 +169,11 @@ let OptionsPanel = SilkyView.extend({
             }
         }
 
-        if (analysis !== null)
-            this.setAnalysis(analysis);
+        if (analysis !== null) {
+            analysis.ready.then(() => {
+                this.setAnalysis(analysis);
+            });
+        }
     },
 
     setAnalysis: function(analysis) {
