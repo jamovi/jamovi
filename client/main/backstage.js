@@ -1201,7 +1201,6 @@ var BackstageView = SilkyView.extend({
     _opClicked : function(event) {
         var op = event.data;
         this.model.set('operation', op.name);
-        this.$el.addClass('activated-sub');
     },
     _hideSubMenus : function() {
         if (this.$ops) {
@@ -1242,6 +1241,11 @@ var BackstageView = SilkyView.extend({
         $subOps.css("height", height);
         $subOps.css("opacity", 1);
         $op.addClass('selected');
+
+        if (operation && this.model.get('activated'))
+            this.$el.addClass('activated-sub');
+        else
+            this.$el.removeClass('activated-sub');
     }
 });
 
