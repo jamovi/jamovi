@@ -1,17 +1,17 @@
 /*textbox sizing*/
-.jmv-option-icon[data-icon=ContinuousVariable] {
+.jmv-option-icon[data-icon='variable-continuous'] {
     background-image: url('assets/variable-continuous.svg');
 }
 
-.jmv-option-icon[data-icon=NominalVariable] {
+.jmv-option-icon[data-icon='variable-nominal'] {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.jmv-option-icon[data-icon=OrdinalVariable] {
+.jmv-option-icon[data-icon='variable-ordinal'] {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.jmv-option-icon[data-icon=NominalTextVariable] {
+.jmv-option-icon[data-icon='variable-nominaltext'] {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
