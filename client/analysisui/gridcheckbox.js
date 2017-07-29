@@ -6,16 +6,21 @@ const OptionControl = require('./optioncontrol');
 const GridControl = require('./gridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
 const FormatDef = require('./formatdef');
+const Icons = require('./iconsupport');
 
 const GridCheckbox = function(params) {
 
     OptionControl.extendTo(this, params);
     GridControl.extendTo(this, params);
 
-    this.$_subel = $('<label class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></label>');
+    this.registerSimpleProperty("format", FormatDef.bool);
+    Icons.addSupport(this);
+
+    this.$_subel = $('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
+
     this.$el = this.$_subel;
 
-    this.registerSimpleProperty("format", FormatDef.bool);
+
 
     let horizontalAlign = this.getPropertyValue("horizontalAlignment");
     this.$_subel.attr('data-horizontal-align', horizontalAlign);
@@ -29,10 +34,21 @@ const GridCheckbox = function(params) {
         if (label === null)
             label = this.getPropertyValue('name');
 
+        let $checkbox = $('<label style="white-space: nowrap;"></label>');
         this.$input = $('<input class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
-        this.$_subel.append(this.$input);
-        this.$_subel.append(this.$label);
+        $checkbox.append(this.$input);
+        $checkbox.append(this.$label);
+        this.$_subel.append($checkbox);
+
+        if (Icons.exists(this)) {
+            this.$icons = Icons.get(this);
+            let iconPosition = Icons.position(this);
+            if (iconPosition === 'right')
+                this.$_subel.append(this.$icons);
+            else
+                this.$_subel.prepend(this.$icons);
+        }
 
         this.$input.change((event) => {
             let value = this.$input[0].checked;
