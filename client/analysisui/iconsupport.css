@@ -1,0 +1,40 @@
+/*textbox sizing*/
+.jmv-option-icon[data-icon=ContinuousVariable] {
+    background-image: url('assets/variable-continuous.svg');
+}
+
+.jmv-option-icon[data-icon=NominalVariable] {
+    background-image: url('assets/variable-nominal.svg');
+}
+
+.jmv-option-icon[data-icon=OrdinalVariable] {
+    background-image: url('assets/variable-ordinal.svg');
+}
+
+.jmv-option-icon[data-icon=NominalTextVariable] {
+    background-image: url('assets/variable-nominal-text.svg');
+}
+
+.jmv-option-icons[data-icon-position='right'] {
+    margin-left: 5px;
+}
+
+.jmv-option-icons[data-icon-position='left'] {
+    margin-right: 5px;
+}
+
+.jmv-option-icon {
+    background-position: center;
+    background-repeat: no-repeat ;
+    background-size: contain;
+    width: 18px;
+    height: 18px;
+    margin: 0px 2px;
+}
+
+.jmv-option-icons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+}

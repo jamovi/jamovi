@@ -1,5 +1,10 @@
 
-/*silky-options-group-header silky-options-label-group-header*/
+.silky-control-label {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+}
 
 .silky-control-label.silky-control-margin-small {
     margin: 2px;
@@ -38,7 +43,7 @@
     margin-right: 1ex;
 }
 
-.silky-control-label {
+.silky-control-label span {
     font-size: 100% ;
     font-weight: bold;
     white-space: nowrap;

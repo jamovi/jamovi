@@ -9,6 +9,7 @@ const ChildLayoutSupport = require('./childlayoutsupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const FormatDef = require('./formatdef');
 const GridOptionControl = require('./gridoptioncontrol');
+const Icons = require('./iconsupport');
 
 const LayoutGroupView = function(params) {
 
@@ -24,6 +25,7 @@ const LayoutGroupView = function(params) {
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
     this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
     this.registerSimpleProperty("format", FormatDef.string);
+    Icons.addSupport(this);
 
     this.style = this.getPropertyValue('style');
 
@@ -35,8 +37,17 @@ const LayoutGroupView = function(params) {
         groupText = "";
 
     let classes = groupText === "" ? "silky-control-label-empty" : "";
-    this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;">' + groupText + '</div>');
+    this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;"><span>' + groupText + '</span></div>');
     this.$el = this.$_subel;
+
+    if (Icons.exists(this)) {
+        this.$icons = Icons.get(this);
+        let iconPosition = Icons.position(this);
+        if (iconPosition === 'right')
+            this.$_subel.append(this.$icons);
+        else
+            this.$_subel.prepend(this.$icons);
+    }
 
     this.onPropertyChanged = function(name) {
         if (isOptionControl === false) {
