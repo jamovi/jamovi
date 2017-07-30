@@ -252,8 +252,6 @@ const TableView = Elem.View.extend({
             colNo++;
         }
 
-        let group = 0;
-
         for (let rowNo = 0; rowNo < rowCount; rowNo++) {
 
             cells.body[rowNo] = new Array(columnCount);
@@ -262,10 +260,6 @@ const TableView = Elem.View.extend({
                 break;
 
             let rowFormat = '';
-
-            let firstCell = sortedCells[0][rowNo];
-            if ((firstCell.format & Format.BEGIN_GROUP) == Format.BEGIN_GROUP)
-                group++;
 
             let colNo = 0;
             for (let sourceColNo = 0; sourceColNo < columns.length; sourceColNo++) {
@@ -276,10 +270,13 @@ const TableView = Elem.View.extend({
 
                 let sourceCell = sourceCells[rowNo];
 
-                let cell = { value : null, classes : rowFormat, sups : '', group : group };
+                let cell = { value : null, classes : rowFormat, sups : '' };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' silky-results-table-cell-negative';
+
+                if ((sourceCell.format & Format.BEGIN_GROUP) === Format.BEGIN_GROUP)
+                    cell.beginGroup = true;
 
                 cell.visible = isVis(sourceColumn);
 
@@ -326,9 +323,6 @@ const TableView = Elem.View.extend({
 
                 colNo++;
             }
-
-            if ((firstCell.format & Format.END_GROUP) == Format.END_GROUP)
-                group++;
         }
 
         let rowPlan = {};
@@ -391,16 +385,37 @@ const TableView = Elem.View.extend({
                         let index = foldedIndices[fold];
                         let row = folded.body[rowNo * nFolds + fold];
                         let cell = cells.body[rowNo][index];
-                        if (cell.group === 0)
-                            cell.group = rowNo;
                         row[colNo] = cell;
                     }
+                }
+            }
+
+            // add spacing around the folds
+
+            for (let rowNo = 0; rowNo < folded.body.length; rowNo += nFolds) {
+                let row = folded.body[rowNo];
+                for (let colNo = 0; colNo < row.length; colNo++) {
+                    let cell = row[colNo];
+                    if (cell)
+                        cell.beginGroup = true;
                 }
             }
 
             cells.header = folded.header;
             cells.superHeader = folded.superHeader;
             cells.body = folded.body;
+        }
+
+        for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
+            let row = cells.body[rowNo];
+            let first = row[0];
+            if (first && first.beginGroup) {
+                for (let colNo = 1; colNo < row.length; colNo++) {
+                    let cell = row[colNo];
+                    if (cell)
+                        cell.beginGroup = true;
+                }
+            }
         }
 
         if (cells.body.length > 1 && cells.body[0].length > 0) {
@@ -439,14 +454,12 @@ const TableView = Elem.View.extend({
             for (let colNo = 0; colNo < cells.header.length - 1; colNo++) {
                 swapped.body[colNo] = new Array(cells.body.length + 1);
                 let cell = cells.header[colNo + 1];
-                cell.group = 0;
                 swapped.body[colNo][0] = cell;
             }
             //fix body
             for (let rowNo = 0; rowNo < swapped.body.length; rowNo++) {
-                for (let colNo = 1; colNo < swapped.body[rowNo].length; colNo++) {
+                for (let colNo = 1; colNo < swapped.body[rowNo].length; colNo++)
                     swapped.body[rowNo][colNo] = cells.body[colNo - 1][rowNo + 1];
-                }
             }
 
             cells.header = swapped.header;
@@ -528,9 +541,6 @@ const TableView = Elem.View.extend({
 
         html = '';
 
-        let currentGroup = -1;
-        let prevGroup = -1;
-
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
             let rowHtml = '';
@@ -543,10 +553,8 @@ const TableView = Elem.View.extend({
                     let content = cell.value;
                     let classes = cell.classes;
 
-                    if (cell.group !== prevGroup) {
-                        currentGroup = cell.group;
+                    if (cell.beginGroup)
                         classes += ' silky-results-table-cell-group-begin';
-                    }
 
                     if (content === '')
                         content = '&nbsp;';
@@ -564,8 +572,6 @@ const TableView = Elem.View.extend({
                     rowHtml += '<td colspan="2">&nbsp;</td>';
                 }
             }
-
-            prevGroup = currentGroup;
 
             let selected = '';
             let trans = this.model.attributes.sortTransform;
