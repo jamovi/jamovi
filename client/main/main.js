@@ -216,8 +216,10 @@ $(document).ready(() => {
     }).then(instanceId => {
 
         let toOpen = '';  // '' denotes blank data set
-        if (window.location.search.indexOf('?open=') !== -1)
+        if (window.location.search.indexOf('?open=') !== -1) {
             toOpen = window.location.search.split('?open=')[1];
+            toOpen = decodeURI(toOpen);
+        }
 
         let newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
         history.replaceState({}, '', newUrl);

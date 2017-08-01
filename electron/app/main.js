@@ -18,7 +18,7 @@ const version = function() {
 
 const marshallArgs = function(argv, wd, first) {
 
-    let cmd = { first: first };
+    let cmd = { first: decodeURI(first) };
 
     if (argv.length < 2) {
         cmd.open = '';
@@ -227,7 +227,7 @@ app.on('window-all-closed', () => app.quit());
 app.on('will-finish-launching', () => {
     // macOS file open events
     app.on('open-file', (event, path) => {
-        let cmd = { open: path };
+        let cmd = { open: decodeURI(path) };
         if (app.isReady())
             createWindow(cmd);
         else

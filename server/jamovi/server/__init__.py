@@ -11,6 +11,13 @@ if not sys.executable.endswith('pythonw.exe'):
     log.setLevel(logging.INFO)
     log.addHandler(logging.StreamHandler(sys.stdout))
 
+log.info('PYTHONIOENCODING is ' + str(sys.stdout.encoding))
+
+# import os.path
+# logpath = os.path.expanduser('~/jamovi-log.txt')
+# handler = logging.FileHandler(logpath)
+# log.addHandler(logpath)
+
 
 def _ports_opened(ports):
     sys.stdout.write('ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
