@@ -5,6 +5,7 @@ const electron = require('electron');
 const app = electron.app;
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const version = function() {
     let versionPath = path.join(path.dirname(process.execPath), '..', 'Resources', 'jamovi', 'version');
@@ -16,20 +17,20 @@ const version = function() {
     }
 }
 
-const marshallArgs = function(argv, wd, first) {
+const marshallArgs = function(args, wd, first) {
 
-    let cmd = { first: decodeURI(first) };
+    let cmd = { first: first };
 
-    if (argv.length < 2) {
+    if (args.length < 1) {
         cmd.open = '';
     }
-    else if (argv[1] === '--version') {
+    else if (args[0] === '--version') {
         console.log(version());
         cmd.exit = true;
     }
-    else if (argv[1] === '--install') {
-        if (argv.length > 2) {
-            let p = path.resolve(wd, argv[2]);
+    else if (args[0] === '--install') {
+        if (args.length > 1) {
+            let p = path.resolve(wd, args[1]);
             if (fs.existsSync(p))
                 cmd.install = p;
             else
@@ -39,18 +40,33 @@ const marshallArgs = function(argv, wd, first) {
             cmd.error = 'You must specify a .jmo file to install';
         }
     }
-    else if (argv[1].startsWith('-psn')) {
+    else if (args[0].startsWith('-psn')) {
         // https://github.com/electron/electron/issues/3657
         cmd.open = '';
     }
     else {
-        cmd.open = path.resolve(wd, argv[1]);
+        cmd.open = path.resolve(wd, args[0]);
     }
 
     return cmd;
 }
 
-let argvCmd = marshallArgs(process.argv, '.', true)
+let argv = process.argv;
+let debug;
+if (argv.length >= 2 && argv[1] === '--py-debug') {
+    argv.shift(); // remove exe
+    argv.shift(); // remove --py-debug
+    let pth = path.join(os.homedir(), 'jamovi-log.txt');
+    debug = fs.createWriteStream(pth);
+    
+    console.log('Logging to: ' + pth);
+    console.log();
+}
+else {
+    argv.shift(); // remove exe
+}
+
+let argvCmd = marshallArgs(argv, '.', true)
 if (argvCmd.error)
     console.log(argvCmd.error);
 if (argvCmd.exit) {
@@ -87,6 +103,10 @@ let rootPath = path.resolve(path.dirname(process.execPath), conf.ENV.JAMOVI_CLIE
 let serverCMD = conf.ENV.JAMOVI_SERVER_CMD.split(' ')
 let cmd = path.resolve(path.dirname(process.execPath), serverCMD[0]);
 let args = serverCMD.slice(1);
+
+if (debug)
+    args.unshift('-vvv');
+
 global.version = version();
 
 let env = { };
@@ -101,12 +121,14 @@ else if (process.platform === 'darwin') {
 }
 Object.assign(env, conf.ENV);
 
+let bin = path.dirname(process.execPath);
+
 for (let name in env) {
     // expand paths
-    if (name.endsWith('PATH') || name.endsWith('HOME')) {
+    if (name.endsWith('PATH') || name.endsWith('HOME') || name.endsWith('LIBS')) {
         let value = env[name];
         let paths = value.split(path.delimiter);
-        paths = paths.map(p => path.resolve(path.dirname(process.execPath), p));
+        paths = paths.map(p => path.resolve(bin, p));
         value = paths.join(path.delimiter);
         env[name] = value;
     }
@@ -160,7 +182,12 @@ let spawn = new Promise((resolve, reject) => {
     // detached, because weird stuff happens on windows if not detached
 
     let dataListener = (chunk) => {
-        console.log(chunk);
+        
+        if (debug)
+            debug.write(chunk);
+        else
+            console.log(chunk);
+        
         if (ports === null) {
             // the server sends back the ports it has opened through stdout
             ports = /ports: ([0-9]*), ([0-9]*), ([0-9]*)/.exec(chunk);
