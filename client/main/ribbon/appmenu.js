@@ -75,6 +75,7 @@ const AppMenuButton = Backbone.View.extend({
             this.$zoomLevel.text(z);
         });
 
+        this.$spacer = $('<div class="jmv-ribbon-appmenu-spacer"></div>').appendTo(this.$menu);
         this.$version = $('<div class="jmv-ribbon-appmenu-version">Version ' + host.version + '</div>').appendTo(this.$menu);
 
         this.$syntaxModeCheck.on('change', event => this.model.settings().setSetting('syntaxMode', this.$syntaxModeCheck.prop('checked')));
