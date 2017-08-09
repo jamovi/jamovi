@@ -243,7 +243,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     Rcpp::CharacterVector rowNames(rowCount);
 
     for (int i = 0; i < rowCount; i++)
-        rowNames[i] = std::to_string(i);
+        rowNames[i] = Rcpp::String(std::to_string(i));
 
     int index = 0;
 
@@ -263,7 +263,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
         if ( ! required)
             continue;
 
-        columnNames[index] = columnName;
+        columnNames[index] = Rcpp::String(columnName);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
         {
@@ -291,7 +291,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
             for (auto p : m)
             {
                 values[j] = p.first;
-                levels[j] = p.second;
+                levels[j] = Rcpp::String(p.second);
                 j++;
                 indexes[p.first] = j;
             }
