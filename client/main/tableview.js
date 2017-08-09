@@ -93,6 +93,8 @@ const TableView = SilkyView.extend({
         ActionHub.get('appendVar').on('request', this._appendColumn, this);
         ActionHub.get('delVar').on('request', this._deleteColumns, this);
 
+        ActionHub.get('appendComputed').on('request', this._appendComputed, this);
+
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);
         ActionHub.get('delRow').on('request', this._deleteRows, this);
@@ -1138,15 +1140,25 @@ const TableView = SilkyView.extend({
                 console.log(error);
         });
     },
-    _appendColumn() {
+    _appendComputed() {
+        this._appendColumn({ columnType: 'computed' });
+    },
+    _appendColumn(args) {
 
         let rowNo = this.selection.rowNo;
         let colNo = this.model.get('columnCount');
         let column = this.model.getColumn(colNo);
 
-        this._setSelection(rowNo, colNo).then(() => {
+        Promise.resolve().then(() => {
 
-            return this.model.changeColumn(column.id, { name: '', measureType: 'nominal' });
+            let fields = { name: '', measureType: 'nominal' };
+            Object.assign(fields, args);
+
+            return this.model.changeColumn(column.id, fields);
+
+        }).then(() => {
+
+            return this._setSelection(rowNo, colNo);
 
         }).then(() => {
 

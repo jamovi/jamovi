@@ -352,6 +352,12 @@ message VariableLevel {
     int32 value = 2;
 }
 
+enum ColumnType {
+    DATA = 0;
+    NONE = 1;
+    COMPUTED = 2;
+}
+
 message DataSetSchema {
     message ColumnSchema {
         int32 id = 1;
@@ -373,6 +379,8 @@ message DataSetSchema {
         repeated VariableLevel levels = 8;
         int32 dps = 9;
         string importName = 10;
+
+        ColumnType columnType = 11;
     }
     repeated ColumnSchema columns = 1;
     uint32 rowCount = 5;

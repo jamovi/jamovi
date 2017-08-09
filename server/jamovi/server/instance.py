@@ -647,7 +647,12 @@ class Instance:
                 for level in column_schema.levels:
                     levels.append((level.value, level.label))
 
-            column.change(column_schema.measureType, column_schema.name, levels, auto_measure=column_schema.autoMeasure)
+            column.change(
+                measure_type=column_schema.measureType,
+                name=column_schema.name,
+                levels=levels,
+                auto_measure=column_schema.autoMeasure,
+                column_type=column_schema.columnType)
 
             response.incSchema = True
             schema = response.schema.columns.add()
@@ -990,6 +995,8 @@ class Instance:
         column_schema.dps = column.dps
 
         column_schema.hasLevels = True
+
+        column_schema.columnType = column.column_type.value
 
         if column.measure_type is MeasureType.NOMINAL_TEXT:
             for level in column.levels:

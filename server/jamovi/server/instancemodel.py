@@ -1,4 +1,6 @@
 
+from enum import Enum
+
 from .analyses import Analyses
 
 from ..core import MeasureType
@@ -214,11 +216,17 @@ class InstanceModel:
 
 class Column:
 
+    class ColumnType(Enum):
+        DATA = 0
+        NONE = 1
+        COMPUTED = 2
+
     def __init__(self, parent, child=None):
         self._parent = parent
         self._child = child
         self._id = -1
         self._index = -1
+        self._column_type = Column.ColumnType.NONE
 
     def _create_child(self):
         if self._child is None:
@@ -291,6 +299,10 @@ class Column:
         if self._child is not None:
             return self._child.measure_type
         return MeasureType.NONE
+
+    @property
+    def column_type(self):
+        return self._column_type
 
     @measure_type.setter
     def measure_type(self, measure_type):
@@ -397,7 +409,13 @@ class Column:
             return self._child.raw(index)
         return -2147483648
 
-    def change(self, measure_type, name=None, levels=None, dps=None, auto_measure=None):
+    def change(self, measure_type, name=None, levels=None, dps=None, auto_measure=None, column_type=None):
+        if column_type is not None:
+            if not isinstance(column_type, Column.ColumnType):
+                column_type = Column.ColumnType(column_type)
+            self._column_type = column_type
+
         if self._child is None:
             self._create_child()
+
         self._child.change(measure_type, name, levels, dps, auto_measure)

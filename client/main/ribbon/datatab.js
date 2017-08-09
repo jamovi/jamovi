@@ -28,9 +28,10 @@ const DataTab = function() {
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonButton({ title: 'Insert', name: 'insertVar' }),
                         new RibbonButton({ title: 'Append', name: 'appendVar' }),
+                        new RibbonButton({ title: 'Compute', name: 'appendComputed' }),
                     ]}),
                     new RibbonButton({ title: 'Delete', name: 'delVar' }),
-                ]})
+                ]}),
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Rows', items : [

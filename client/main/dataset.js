@@ -325,6 +325,11 @@ const DataSetModel = Backbone.Model.extend({
 
         columnPB.name = newName;
 
+        if ('columnType' in values)
+            columnPB.columnType = DataSetModel.parseColumnType(values.columnType);
+        else
+            columnPB.columnType = DataSetModel.parseColumnType(column.columnType);
+
         if ('autoMeasure' in values)
             columnPB.autoMeasure = values.autoMeasure;
         else
@@ -428,6 +433,7 @@ const DataSetModel = Backbone.Model.extend({
         column.id = columnPB.id;
         column.name = columnPB.name;
         column.index = columnPB.index;
+        column.columnType = DataSetModel.stringifyColumnType(columnPB.columnType);
         column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
         column.autoMeasure = columnPB.autoMeasure;
         column.dps = columnPB.dps;
@@ -473,6 +479,29 @@ DataSetModel.parseMeasureType = function(str) {
             return 3;
         case 'continuous':
             return 4;
+        default:
+            return 0;
+    }
+};
+
+
+DataSetModel.stringifyColumnType = function(type) {
+    switch (type) {
+        case 0:
+            return 'data';
+        case 2:
+            return 'computed';
+        default:
+            return 'data';
+    }
+};
+
+DataSetModel.parseColumnType = function(str) {
+    switch (str) {
+        case 'data':
+            return 0;
+        case 'computed':
+            return 2;
         default:
             return 0;
     }
