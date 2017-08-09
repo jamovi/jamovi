@@ -94,9 +94,13 @@ const GridTextbox = function(params) {
         });
         this.$input.on('focus', (event) => {
             this.$suggestValues.show();
+            if (this.$fullCtrl)
+                this.$fullCtrl.addClass('float-up');
         });
         this.$input.on('blur', (event) => {
             this.$suggestValues.hide();
+            if (this.$fullCtrl)
+                this.$fullCtrl.removeClass('float-up');
         });
         this.$input.change((event) => {
 
@@ -119,9 +123,10 @@ const GridTextbox = function(params) {
 
         let $ctrl = this.$input;
         if (suggestedValues !== null) {
-            $ctrl = $('<div style="z-index: 100;"></div>');
+            $ctrl = $('<div></div>');
             $ctrl.append(this.$input);
             $ctrl.append(this.$suggestValues);
+            this.$fullCtrl = $ctrl;
         }
 
         cell = subgrid.addCell(0, 0, true, $ctrl);

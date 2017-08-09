@@ -309,7 +309,7 @@ FormatDef.term = new Format ({
         if (typeof item === 'string')
             return item;
 
-        if (item.length === 0)
+        if (item === null || item.length === 0)
             return '';
 
         let joiner = FormatDef.term._getJoiner(level);
@@ -346,7 +346,7 @@ FormatDef.term = new Format ({
         if (format.name === 'variable')
             return [raw];
 
-        throw 'Cannot convert format "' + format.name + '" to a "term" format';
+        return null;
     }
 });
 

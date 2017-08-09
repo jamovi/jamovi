@@ -35,6 +35,10 @@
   z-index: 99;
 }
 
+.float-up {
+    z-index: 100;
+}
+
 .centre-text {
     text-align: center
 }
