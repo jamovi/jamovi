@@ -75,6 +75,7 @@ if (argvCmd.exit) {
 }
 
 let alreadyRunning = app.makeSingleInstance((argv, wd) => {
+    argv.shift(); // remove exe
     let cmd = marshallArgs(argv, wd);
     handleCommand(cmd);
 });
