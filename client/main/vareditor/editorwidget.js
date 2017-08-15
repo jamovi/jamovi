@@ -64,6 +64,9 @@ const EditorWidget = Backbone.View.extend({
     detach() {
         this.model.apply();
         this.attached = false;
+
+        this.dataVarWidget.detach();
+        this.computedVarWidget.detach();
     },
     attach() {
         this.attached = true;
@@ -73,12 +76,14 @@ const EditorWidget = Backbone.View.extend({
 
         let type = this.model.get('columnType');
         if (type === 'data') {
+            this.dataVarWidget.attach();
             this.$dataVarWidget.show();
             this.$computedVarWidget.hide();
         }
         else {
-            this.$dataVarWidget.hide();
+            this.computedVarWidget.attach();
             this.$computedVarWidget.show();
+            this.$dataVarWidget.hide();
         }
     }
 });
