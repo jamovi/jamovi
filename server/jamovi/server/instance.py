@@ -16,6 +16,7 @@ from .settings import Settings
 from . import jamovi_pb2 as jcoms
 
 from .utils import conf
+from .utils import FileEntry
 from .utils.csvparser import CSVParser
 from .utils.htmlparser import HTMLParser
 from .enginemanager import EngineManager
@@ -243,23 +244,40 @@ class Instance:
         else:
             try:
                 for direntry in os.scandir(path + '/'):  # add a / in case we get C:
+
+                    entries = [ ]
+
                     if fs.is_hidden(direntry.path):
                         show = False
                     elif direntry.is_dir():
-                        entry_type = jcoms.FSEntry.Type.Value('FOLDER')
+                        entry_type = FileEntry.Type.FOLDER
                         if fs.is_link(direntry.path):
                             show = False
                         else:
                             show = True
                     else:
-                        entry_type = jcoms.FSEntry.Type.Value('FILE')
+                        entry_type = FileEntry.Type.FILE
                         show = formatio.is_supported(direntry.name)
 
                     if show:
-                        entry = response.contents.add()
+                        entry = FileEntry()
                         entry.name = direntry.name
                         entry.type = entry_type
                         entry.path = posixpath.join(location, direntry.name)
+                        entries.append(entry)
+
+                    entries = sorted(entries)
+
+                    for entry in entries:
+
+                        entry_type = jcoms.FSEntry.Type.Value('FILE')
+                        if entry.type is FileEntry.Type.FOLDER:
+                            entry_type = jcoms.FSEntry.Type.Value('FOLDER')
+
+                        entry_pb = response.contents.add()
+                        entry_pb.name = entry.name
+                        entry_pb.type = entry_type
+                        entry_pb.path = entry.path
 
                 self._coms.send(response, self._instance_id, request)
 
