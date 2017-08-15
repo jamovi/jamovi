@@ -11,6 +11,8 @@ const Menu = require('./menu');
 const Notify = require('./notification');
 const host = require('./host');
 
+const b64 = require('../common/utils/b64');
+
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
     initialize(args) {
@@ -235,7 +237,7 @@ const ResultsPanel = Backbone.View.extend({
             id = this._menuId;
         let $results = $(this.resources[id].iframe.contentWindow.document).find('#results');
         for (let i = 0; i < address.length; i++)
-            $results = $results.find('[data-name="' + btoa(address[i]) + '"]').first();
+            $results = $results.find('[data-name="' + b64.enc(address[i]) + '"]').first();
         return $results;
     },
     getAsHTML(options, part) {

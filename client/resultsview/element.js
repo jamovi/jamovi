@@ -5,6 +5,8 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
+const b64 = require('../common/utils/b64');
+
 const ElementView = Backbone.View.extend({
     initialize(data) {
 
@@ -12,7 +14,7 @@ const ElementView = Backbone.View.extend({
         this.level = ('level' in data) ? data.level : 0;
 
         this.$el.addClass('silky-results-item');
-        this.$el.attr('data-name', btoa(this.model.attributes.name));
+        this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
         this.$el.on('contextmenu', event => {
             event.stopPropagation();
