@@ -8,7 +8,7 @@ const RibbonMenu = require('./ribbonmenu');
 const AnalyseTab = function(modules) {
     this.name = "analyse";
 
-    this.title = "Analyse";
+    this.title = "Analyses";
 
     this.modules = modules;
 
