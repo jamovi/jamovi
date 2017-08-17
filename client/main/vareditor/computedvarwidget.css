@@ -1,5 +1,138 @@
 
 .jmv-variable-computed-widget {
     width: 100% ;
-    background-color: pink ;
+    display: flex;
+}
+
+.jmv-variable-computed-methods {
+    display: flex;
+    flex-direction: column;
+    margin: 0px 20px 50px 0px;
+    width: 100px;
+    background-color: white;
+    border: 1px solid #CCCCCC;
+}
+
+.jmv-variable-computed-methods > .top {
+    margin: 5px 0px;
+}
+
+.jmv-variable-computed-methods > .separator {
+    border-bottom: 1px solid #CCCCCC;
+    margin: 0px 5px;
+}
+
+.jmv-variable-computed-methods > .bottom {
+    flex: 1;
+    margin: 5px 0px;
+}
+
+.jmv-variable-computed-methods .item {
+    padding: 5px 10px;
+}
+
+.jmv-variable-computed-methods .item:hover {
+    background-color: #F0F0F0;
+}
+
+.jmv-variable-computed-options {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+}
+
+.jmv-variable-computed-options > .formula-box {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+}
+
+.jmv-variable-computed-options > .formula-box > .equal {
+    padding: 3px 5px 0px 5px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.jmv-variable-computed-options > .error {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    flex: 1;
+    flex-grow: 1;
+    height: 50px;
+    background-color: red;
+}
+
+.jmv-variable-computed-options > .formula-box > .formula {
+    height: 90px;
+    flex: 1;
+    resize: none;
+    text-indent: 1em;
+    font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 12px;
+}
+
+.jmv-variable-computed-options > .formula-box > .caret {
+    border-left: 1px solid #888888;
+    top: 2px;
+    left: 15px;
+    height: calc(1em + 2px);
+    position: absolute;
+    transition: .05s left ease-out, .05s top ease-out;
+    pointer-events: none;
+}
+
+.jmv-variable-computed-options > .ops-box {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.jmv-variable-computed-options > .ops-box > .op {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+}
+
+.jmv-variable-computed-options > .ops-box > .op:nth-child(2) {
+    margin: 0 10px;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .title {
+    background-color: #E8E8E8;
+    border-bottom: 1px solid #CCCCCC;
+    text-align: center;
+    padding: 3px 0px;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .content {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .content > .item {
+    flex-grow: 1;
+    text-align: left;
+    padding: 3px 6px;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .content > .item:hover {
+    background-color: #F0F0F0;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .content > .item-activated {
+    background-color: #E8E8E8;
+}
+
+.jmv-variable-computed-options > .ops-box > .op > .content > .item-grayed-out {
+    -webkit-filter: grayscale(100%);
+    filter: grayscale(100%);
+    opacity: 0.6;
+    filter: alpha(opacity = 60);
 }
