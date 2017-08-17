@@ -11,6 +11,6 @@
   path: Bugs (Ryan, Wilde & Crist, 2013).csv
   description: A repeated measures ANOVA data set
 
-- name: Motor Trend Car Road Tests
-  path: Motor Trend Car Road Tests.csv
-  description: The 'mtcars' data set from R
+- name: Anderson's Iris Data
+  path: iris.csv
+  description: The 'iris' data set from R
