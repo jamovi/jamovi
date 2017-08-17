@@ -18,16 +18,16 @@ class FileEntry:
     def __lt__(self, other):
         if self.type is FileEntry.Type.DRIVE:
             if other.type is FileEntry.Type.DRIVE:
-                return self.lower() < other.lower()
+                return self.name.lower() < other.name.lower()
             else:
                 return True
         if self.type is not FileEntry.FILE:
             if other.type is FileEntry.FILE:
                 return True
             else:
-                return self.lower() < other.lower()
+                return self.name.lower() < other.name.lower()
         if self.type is FileEntry.FILE:
             if other.type is not FileEntry.FILE:
                 return False
             else:
-                return self.lower() < other.lower()
+                return self.name.lower() < other.name.lower()
