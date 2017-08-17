@@ -121,15 +121,7 @@ const VariableEditor = Backbone.View.extend({
     _update() {
         let columnName = this.model.attributes.editingVar;
         let column = this.model.attributes.columns[columnName];
-
-        this.editorModel.setup({
-            name : column.name,
-            id : column.id,
-            columnType: column.columnType,
-            measureType : column.measureType,
-            autoMeasure : column.autoMeasure,
-            levels : column.levels,
-        });
+        this.editorModel.setColumn(column.id);
     },
     _editingVarChanged(event) {
         let prev = this.model.previous('editingVar');

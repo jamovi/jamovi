@@ -666,11 +666,12 @@ class Instance:
                     levels.append((level.value, level.label))
 
             column.change(
-                measure_type=column_schema.measureType,
                 name=column_schema.name,
+                column_type=column_schema.columnType,
+                measure_type=column_schema.measureType,
                 levels=levels,
                 auto_measure=column_schema.autoMeasure,
-                column_type=column_schema.columnType)
+                formula=column_schema.formula)
 
             response.incSchema = True
             schema = response.schema.columns.add()
@@ -829,7 +830,7 @@ class Instance:
                         mt = MeasureType.NOMINAL_TEXT
 
                 if mt != column.measure_type:
-                    column.change(mt)
+                    column.change(measure_type=mt)
 
             if column.measure_type == MeasureType.CONTINUOUS:
                 nan = float('nan')
@@ -842,7 +843,7 @@ class Instance:
                     elif isinstance(value, int):
                         column[row_start + j] = value
                     elif isinstance(value, str) and column.auto_measure:
-                        column.change(MeasureType.NOMINAL_TEXT)
+                        column.change(measure_type=MeasureType.NOMINAL_TEXT)
                         index = column.level_count
                         column.insert_level(index, value)
                         column[row_start + j] = index
@@ -887,10 +888,10 @@ class Instance:
                             column.insert_level(value, str(value))
                         column[row_start + j] = value
                     elif isinstance(value, float) and column.auto_measure:
-                        column.change(MeasureType.CONTINUOUS)
+                        column.change(measure_type=MeasureType.CONTINUOUS)
                         column[row_start + j] = value
                     elif isinstance(value, str) and column.auto_measure:
-                        column.change(MeasureType.NOMINAL_TEXT)
+                        column.change(measure_type=MeasureType.NOMINAL_TEXT)
                         column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
                         index = column.level_count
                         column.insert_level(index, value)
@@ -928,7 +929,7 @@ class Instance:
                 except ValueError:
                     break
             else:
-                column.change(MeasureType.NOMINAL)
+                column.change(measure_type=MeasureType.NOMINAL)
                 return
 
             for level in column.levels:
@@ -937,7 +938,7 @@ class Instance:
                 except ValueError:
                     break
             else:
-                column.change(MeasureType.CONTINUOUS)
+                column.change(measure_type=MeasureType.CONTINUOUS)
                 return
 
         elif column.measure_type == MeasureType.CONTINUOUS:
@@ -947,7 +948,7 @@ class Instance:
                 if round(value) != round(value, 6):
                     break
             else:
-                column.change(MeasureType.NOMINAL)
+                column.change(measure_type=MeasureType.NOMINAL)
                 return
 
             column.determine_dps()
@@ -1015,6 +1016,8 @@ class Instance:
         column_schema.hasLevels = True
 
         column_schema.columnType = column.column_type.value
+        column_schema.formula = column.formula
+        column_schema.formulaMessage = column.formula_message
 
         if column.measure_type is MeasureType.NOMINAL_TEXT:
             for level in column.levels:

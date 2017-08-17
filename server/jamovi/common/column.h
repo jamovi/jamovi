@@ -47,6 +47,7 @@ typedef struct
     int id;
     char *name;
     char *importName;
+    char columnType;
     char measureType;
     char autoMeasure;
     int rowCount;
@@ -59,6 +60,11 @@ typedef struct
     int levelsUsed;
     int levelsCapacity;
     Level *levels;
+
+    char *formula;
+    int formulaCapacity;
+    char *formulaMessage;
+    int formulaMessageCapacity;
 
     char dps;
 
@@ -78,6 +84,16 @@ namespace MeasureType
     };
 }
 
+namespace ColumnType
+{
+    enum Type
+    {
+        NONE = 0,
+        DATA = 1,
+        COMPUTED = 2
+    };
+}
+
 class Column
 {
 public:
@@ -90,6 +106,7 @@ public:
     int rowCount() const;
     int dps() const;
 
+    ColumnType::Type columnType() const;
     MeasureType::Type measureType() const;
     bool autoMeasure() const;
     int levelCount() const;
@@ -98,6 +115,8 @@ public:
     int valueForLabel(const char *label) const;
     bool hasLevel(const char *label) const;
     bool hasLevel(int value) const;
+    const char *formula() const;
+    const char *formulaMessage() const;
 
     template<typename T> T value(int rowIndex)
     {

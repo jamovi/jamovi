@@ -1,8 +1,7 @@
 
-from enum import Enum
-
 from .analyses import Analyses
 
+from ..core import ColumnType
 from ..core import MeasureType
 
 
@@ -216,17 +215,11 @@ class InstanceModel:
 
 class Column:
 
-    class ColumnType(Enum):
-        DATA = 0
-        NONE = 1
-        COMPUTED = 2
-
     def __init__(self, parent, child=None):
         self._parent = parent
         self._child = child
         self._id = -1
         self._index = -1
-        self._column_type = Column.ColumnType.NONE
 
     def _create_child(self):
         if self._child is None:
@@ -302,7 +295,9 @@ class Column:
 
     @property
     def column_type(self):
-        return self._column_type
+        if self._child is not None:
+            return self._child.column_type
+        return ColumnType.NONE
 
     @measure_type.setter
     def measure_type(self, measure_type):
@@ -333,6 +328,18 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.dps = dps
+
+    @property
+    def formula(self):
+        if self._child is not None:
+            return self._child.formula
+        return ''
+
+    @property
+    def formula_message(self):
+        if self._child is not None:
+            return self._child.formula_message
+        return ''
 
     def determine_dps(self):
         if self._child is not None:
@@ -409,13 +416,29 @@ class Column:
             return self._child.raw(index)
         return -2147483648
 
-    def change(self, measure_type, name=None, levels=None, dps=None, auto_measure=None, column_type=None):
-        if column_type is not None:
-            if not isinstance(column_type, Column.ColumnType):
-                column_type = Column.ColumnType(column_type)
-            self._column_type = column_type
+    def change(self,
+               name=None,
+               column_type=None,
+               measure_type=None,
+               levels=None,
+               dps=None,
+               auto_measure=None,
+               formula=None):
 
         if self._child is None:
             self._create_child()
 
-        self._child.change(measure_type, name, levels, dps, auto_measure)
+        self._child.change(
+            name=name,
+            column_type=column_type,
+            measure_type=measure_type,
+            levels=levels,
+            dps=dps,
+            auto_measure=auto_measure,
+            formula=formula)
+
+        # this just for testing
+        if formula is not None and 'error' in formula:
+            self._child.formula_message = formula
+        else:
+            self._child.formula_message = ''

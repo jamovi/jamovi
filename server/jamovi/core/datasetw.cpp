@@ -169,6 +169,11 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     column->dps = 0;
     column->changes = 0;
 
+    column->formula = NULL;
+    column->formulaCapacity = 0;
+    column->formulaMessage = NULL;
+    column->formulaMessageCapacity = 0;
+
     struc()->columnCount++;
 
     ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));

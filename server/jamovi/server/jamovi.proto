@@ -353,8 +353,8 @@ message VariableLevel {
 }
 
 enum ColumnType {
-    DATA = 0;
-    NONE = 1;
+    NONE = 0;
+    DATA = 1;
     COMPUTED = 2;
 }
 
@@ -381,6 +381,8 @@ message DataSetSchema {
         string importName = 10;
 
         ColumnType columnType = 11;
+        string formula = 12;
+        string formulaMessage = 13;
     }
     repeated ColumnSchema columns = 1;
     uint32 rowCount = 5;
