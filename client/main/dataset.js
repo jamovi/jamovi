@@ -27,6 +27,8 @@ const DataSetModel = Backbone.Model.extend({
         editingVar : null,
         varEdited : false,
         edited : false,
+        formula : '',
+        formulaMessage : '',
     },
     setup(infoPB) {
 
@@ -150,8 +152,9 @@ const DataSetModel = Backbone.Model.extend({
                     changed[i] = columnPB.name;
                     changes[i] = {
                         id: id,
-                        levelsChanged: true,
+                        columnTypeChanged: true,
                         measureTypeChanged: true,
+                        levelsChanged: true,
                         nameChanged: false,
                         dataChanged: true,
                         created: false,
@@ -340,6 +343,11 @@ const DataSetModel = Backbone.Model.extend({
         else
             columnPB.dps = column.dps;
 
+        if ('formula' in values)
+            columnPB.formula = values.formula;
+        else
+            columnPB.formula = column.formula;
+
         if (values.measureType !== 'continuous' && values.levels) {
             columnPB.hasLevels = true;
             for (let i = 0; i < values.levels.length; i++) {
@@ -407,8 +415,9 @@ const DataSetModel = Backbone.Model.extend({
                         name: column.name,
                         index: column.index,
                         oldName: oldName,
-                        levelsChanged: true,
+                        columnTypeChanged: true,
                         measureTypeChanged: true,
+                        levelsChanged: true,
                         nameChanged: nameChanged,
                         dataChanged: true,
                         created: created,
@@ -438,6 +447,8 @@ const DataSetModel = Backbone.Model.extend({
         column.autoMeasure = columnPB.autoMeasure;
         column.dps = columnPB.dps;
         column.width = columnPB.width;
+        column.formula = columnPB.formula;
+        column.formulaMessage = columnPB.formulaMessage;
 
         let levels = null;
         if (columnPB.hasLevels) {
@@ -834,8 +845,9 @@ const DataSetViewModel = DataSetModel.extend({
                         oldName: oldName,
                         name: newName,
                         index: column.index,
-                        levelsChanged: true,
+                        columnTypeChanged: true,
                         measureTypeChanged: true,
+                        levelsChanged: true,
                         nameChanged: oldName !== newName,
                         dataChanged: true,
                         created: created,

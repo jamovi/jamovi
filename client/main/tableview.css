@@ -217,19 +217,23 @@ input.silky-table-cell-selected.copying {
     pointer-events: none ;
 }
 
-.silky-column-header[data-measuretype="nominaltext"] {
+.silky-column-header[data-columntype="computed"] {
+    background-image: url('assets/variable-computed.svg');
+}
+
+.silky-column-header[data-columntype="data"][data-measuretype="nominaltext"] {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.silky-column-header[data-measuretype="nominal"] {
+.silky-column-header[data-columntype="data"][data-measuretype="nominal"] {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.silky-column-header[data-measuretype="ordinal"] {
+.silky-column-header[data-columntype="data"][data-measuretype="ordinal"] {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.silky-column-header[data-measuretype="continuous"] {
+.silky-column-header[data-columntype="data"][data-measuretype="continuous"] {
     background-image: url('assets/variable-continuous.svg');
 }
 

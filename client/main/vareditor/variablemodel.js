@@ -33,10 +33,22 @@ const VariableModel = Backbone.Model.extend({
         levels : null,
         dps : 0,
         changes : false,
+        formula : '',
+        formulaMessage : '',
     },
-    setup(dict) {
-        this.original = dict;
-        this.set(dict);
+    setColumn(id) {
+        let column = this.dataset.getColumnById(id);
+        this.original = {
+            name : column.name,
+            id : column.id,
+            columnType: column.columnType,
+            measureType : column.measureType,
+            autoMeasure : column.autoMeasure,
+            levels : column.levels,
+            formula : column.formula,
+        };
+        this.set(this.original);
+        this.set('formulaMessage', column.formulaMessage);
     },
     apply() {
 
@@ -49,17 +61,22 @@ const VariableModel = Backbone.Model.extend({
             autoMeasure: this.attributes.autoMeasure,
             levels: this.attributes.levels,
             dps: this.attributes.dps,
+            formula: this.attributes.formula,
         };
 
-        this.dataset.changeColumn(this.attributes.id, values);
+        this.dataset.changeColumn(this.attributes.id, values)
+            .then(() => {
+                this.original = values;
+                this.set(this.original);
+                this.set('changes', false);
+                this.dataset.set('varEdited', false);
 
-        this.original = values;
-        this.set(this.original);
-        this.set('changes', false);
-        this.dataset.set('varEdited', false);
+                let column = this.dataset.getColumnById(this.attributes.id);
+                this.set('formulaMessage', column.formulaMessage);
+            });
     },
     revert() {
-        this.setup(this.original);
+        this.set(this.original);
     }
 });
 

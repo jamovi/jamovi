@@ -138,6 +138,8 @@ cdef extern from "columnw.h":
         const char *importName() const
         int id() const
         void setId(int id)
+        void setColumnType(CColumnType columnType)
+        CColumnType columnType() const
         void setMeasureType(CMeasureType measureType)
         CMeasureType measureType() const
         void setAutoMeasure(bool auto)
@@ -158,6 +160,10 @@ cdef extern from "columnw.h":
         int dps() const
         int rowCount() const;
         int changes() const;
+        const char *formula() const;
+        void setFormula(const char *value);
+        const char *formulaMessage() const;
+        void setFormulaMessage(const char *value);
 
 cdef extern from "column.h":
     ctypedef enum CMeasureType  "MeasureType::Type":
@@ -166,6 +172,11 @@ cdef extern from "column.h":
         CMeasureTypeNominal     "MeasureType::NOMINAL"
         CMeasureTypeOrdinal     "MeasureType::ORDINAL"
         CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
+
+    ctypedef enum CColumnType "ColumnType::Type":
+        CColumnTypeNone       "ColumnType::NONE"
+        CColumnTypeData       "ColumnType::DATA"
+        CColumnTypeComputed   "ColumnType::COMPUTED"
 
 class CellIterator:
     def __init__(self, column):
@@ -200,6 +211,15 @@ cdef class Column:
         def __get__(self):
             return self._this.importName().decode('utf-8')
 
+    property column_type:
+        def __get__(self):
+            return ColumnType(self._this.columnType())
+
+        def __set__(self, column_type):
+            if type(column_type) is ColumnType:
+                column_type = column_type.value
+            self._this.setColumnType(column_type)
+
     property measure_type:
         def __get__(self):
             return MeasureType(self._this.measureType())
@@ -215,6 +235,20 @@ cdef class Column:
 
         def __set__(self, auto):
             self._this.setAutoMeasure(auto)
+
+    property formula:
+        def __get__(self):
+            return self._this.formula().decode('utf-8')
+
+        def __set__(self, value):
+            self._this.setFormula(value.encode('utf-8'))
+
+    property formula_message:
+        def __get__(self):
+            return self._this.formulaMessage().decode('utf-8')
+
+        def __set__(self, value):
+            self._this.setFormulaMessage(value.encode('utf-8'))
 
     property dps:
         def __get__(self):
@@ -335,19 +369,37 @@ cdef class Column:
         else:
             return self._this.value[int](index)
 
-    def change(self, measure_type, name=None, levels=None, dps=None, auto_measure=None):
+    def change(self,
+        name=None,
+        column_type=None,
+        measure_type=None,
+        levels=None,
+        dps=None,
+        auto_measure=None,
+        formula=None):
 
         if name is not None:
             self.name = name
 
-        if type(measure_type) is not MeasureType:
-            measure_type = MeasureType(measure_type)
+        if column_type is not None:
+            if column_type is not ColumnType:
+                column_type = ColumnType(column_type)
+            self.column_type = column_type
 
         if dps is not None:
             self.dps = dps
 
         if auto_measure is not None:
             self.auto_measure = auto_measure
+
+        if formula is not None:
+            self.formula = formula
+
+        if measure_type is None:
+            return
+
+        if type(measure_type) is not MeasureType:
+            measure_type = MeasureType(measure_type)
 
         new_type = measure_type
         old_type = self.measure_type
@@ -606,6 +658,29 @@ class MeasureType(Enum):
             return MeasureType.NOMINAL_TEXT
         else:
             return MeasureType.NONE
+
+class ColumnType(Enum):
+    NONE     = CColumnTypeNone
+    DATA     = CColumnTypeData
+    COMPUTED = CColumnTypeComputed
+
+    @staticmethod
+    def stringify(value):
+        if value == ColumnType.DATA:
+            return "Data"
+        elif value == ColumnType.COMPUTED:
+            return "Computed"
+        else:
+            return "None"
+
+    @staticmethod
+    def parse(value):
+        if value == "Data":
+            return ColumnType.DATA
+        elif value == "Computed":
+            return ColumnType.COMPUTED
+        else:
+            return ColumnType.NONE
 
 cdef extern from "platforminfo.h":
     cdef cppclass CPlatformInfo "PlatformInfo":

@@ -35,6 +35,13 @@ void ColumnW::setName(const char *name)
     s->changes++;
 }
 
+void ColumnW::setColumnType(ColumnType::Type columnType)
+{
+    ColumnStruct *s = struc();
+    s->columnType = (char)columnType;
+    s->changes++;
+}
+
 void ColumnW::setMeasureType(MeasureType::Type measureType)
 {
     ColumnStruct *s = struc();
@@ -56,6 +63,52 @@ void ColumnW::setDPs(int dps)
 {
     ColumnStruct *s = struc();
     s->dps = dps;
+    s->changes++;
+}
+
+void ColumnW::setFormula(const char *value)
+{
+    ColumnStruct *s = struc();
+    int capacity = s->formulaCapacity;
+    int needed = strlen(value) + 1;
+    if (needed > capacity)
+    {
+        size_t allocated;
+        char *space = _mm->allocateSize<char>(needed, &allocated);
+        std::memcpy(space, value, needed);
+        s = struc();
+        s->formula = _mm->base<char>(space);
+        s->formulaCapacity = allocated;
+    }
+    else
+    {
+        char *space = _mm->resolve<char>(s->formula);
+        std::memcpy(space, value, needed);
+    }
+
+    s->changes++;
+}
+
+void ColumnW::setFormulaMessage(const char *value)
+{
+    ColumnStruct *s = struc();
+    int capacity = s->formulaMessageCapacity;
+    int needed = strlen(value) + 1;
+    if (needed > capacity)
+    {
+        size_t allocated;
+        char *space = _mm->allocateSize<char>(needed, &allocated);
+        std::memcpy(space, value, needed);
+        s = struc();
+        s->formulaMessage = _mm->base<char>(space);
+        s->formulaMessageCapacity = allocated;
+    }
+    else
+    {
+        char *space = _mm->resolve<char>(s->formulaMessage);
+        std::memcpy(space, value, needed);
+    }
+
     s->changes++;
 }
 

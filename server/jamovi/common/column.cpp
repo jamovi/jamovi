@@ -34,6 +34,11 @@ const char *Column::importName() const
     return _mm->resolve(struc()->importName);
 }
 
+ColumnType::Type Column::columnType() const
+{
+    return (ColumnType::Type) struc()->columnType;
+}
+
 MeasureType::Type Column::measureType() const
 {
     return (MeasureType::Type) struc()->measureType;
@@ -50,6 +55,16 @@ int Column::rowCount() const {
 int Column::dps() const
 {
     return struc()->dps;
+}
+
+const char *Column::formula() const
+{
+    return _mm->resolve(struc()->formula);
+}
+
+const char *Column::formulaMessage() const
+{
+    return _mm->resolve(struc()->formulaMessage);
 }
 
 ColumnStruct *Column::struc() const

@@ -116,7 +116,7 @@ const TableView = SilkyView.extend({
         this.$header.append($header);
         this.$headers.push($header);
 
-        let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
         this.$columns.push($column);
 
@@ -259,11 +259,13 @@ const TableView = SilkyView.extend({
 
             let column = this.model.getColumnById(changes.id);
 
-            if (changes.levelsChanged || changes.measureTypeChanged) {
+            if (changes.levelsChanged || changes.measureTypeChanged || changes.columnTypeChanged) {
                 let $header = $(this.$headers[column.index]);
                 $header.attr('data-measuretype', column.measureType);
+                $header.attr('data-columntype', column.columnType);
                 let $column = $(this.$columns[column.index]);
                 $column.attr('data-measuretype', column.measureType);
+                $column.attr('data-columntype', column.columnType);
             }
 
             if (changes.nameChanged) {
@@ -1052,7 +1054,7 @@ const TableView = SilkyView.extend({
         this.$headers.splice(column.index, 0, $header);
 
         $after = $(this.$columns[column.index]);
-        let $column = $('<div data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         $column.insertBefore($after);
         this.$columns.splice(column.index, 0, $column);
 
@@ -1452,7 +1454,7 @@ const TableView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
         html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
         html +=     '<div class="silky-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
         html += '</div>';

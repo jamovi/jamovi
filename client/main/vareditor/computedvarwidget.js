@@ -63,14 +63,26 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$formulaBox = $('<div class="formula-box"></div>').appendTo(this.$options);
         this.$equal = $('<div class="equal">=</div>').appendTo(this.$formulaBox);
         this.$formula = $('<textarea class="formula" type="text" placeholder="Type formula here\u2026">').appendTo(this.$formulaBox);
+        this.$formulaMessage = $('<div style="background-color: pink ;"></div>').appendTo(this.$formulaBox);
 
         this.$formula.focus(() => {
             keyboardJS.pause();
-        } );
+        });
         this.$formula.blur((event) => {
             keyboardJS.resume();
-        } );
+        });
+        this.$formula.on('keydown', (event) => {
+            if (event.keyCode === 13 && event.shiftKey === false) {
+                this.model.apply();
+                event.preventDefault();
+            }
+        });
+        this.$formula.on('input', (event) => {
+            this.model.set('formula', this.$formula[0].value);
+        });
 
+        this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
+        this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
 
         this.$ops = $('<div class="ops-box"></div>').appendTo(this.$options);
 
@@ -132,13 +144,25 @@ const ComputedVarWidget = Backbone.View.extend({
         });
 
     },
+    _setFormula(formula) {
+        if ( ! this.attached)
+            return;
+        this.$formula[0].value = formula;
+    },
+    _setFormulaMessage(formulaMessage) {
+        if ( ! this.attached)
+            return;
+        this.$formulaMessage.text(formulaMessage);
+    },
     detach() {
         this.model.apply();
         this.attached = false;
     },
     attach() {
         this.attached = true;
-        // update displayed values from model
+
+        this._setFormula(this.model.attributes.formula);
+        this._setFormulaMessage(this.model.attributes.formulaMessage);
 
         this.$varsContent.empty();
         let dataset = this.model.dataset;

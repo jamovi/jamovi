@@ -24,6 +24,7 @@ public:
 
     void setId(int id);
     void setName(const char *name);
+    void setColumnType(ColumnType::Type columnType);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
     void appendLevel(int value, const char *label);
@@ -32,6 +33,8 @@ public:
     void clearLevels();
     void insertRows(int from, int to);
     void setDPs(int dps);
+    void setFormula(const char *value);
+    void setFormulaMessage(const char *value);
 
     int changes() const;
 
