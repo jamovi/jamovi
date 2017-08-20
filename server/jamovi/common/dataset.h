@@ -12,10 +12,10 @@
 
 typedef struct
 {
-    int columnCount;
+    int columnCount; // columns used
     int rowCount;
-    ColumnStruct *columns;
-    int capacity;
+    ColumnStruct **columns;
+    int capacity;  // size of columns array
     int nextColumnId;
 
 } DataSetStruct;

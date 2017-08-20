@@ -17,11 +17,11 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     DataSetStruct *rel = mm->allocateBase<DataSetStruct>();
     ds->_rel = rel;
 
-    ColumnStruct *columns = mm->allocateBase<ColumnStruct>(1024);
+    ColumnStruct **columns = mm->allocateBase<ColumnStruct *>(65536);
     DataSetStruct *dss = mm->resolve(rel);
 
     dss->columns = columns;
-    dss->capacity = 1024;
+    dss->capacity = 65536;  // "ought to be enough for anybody"
     dss->columnCount = 0;
     dss->nextColumnId = 0;
 
@@ -84,8 +84,8 @@ ColumnW DataSetW::operator[](int index)
     if (index >= dss->columnCount)
         throw runtime_error("index out of bounds");
 
-    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
-    ColumnStruct *rel = _mm->base<ColumnStruct>(&columns[index]);
+    ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
+    ColumnStruct *rel = columns[index];
 
     return ColumnW(this, _mm, rel);
 }
@@ -106,21 +106,16 @@ ColumnW DataSetW::insertColumn(int index, const char *name, const char *importNa
 {
     appendColumn(name, importName);
 
-    ColumnStruct temp;
-    ColumnStruct *src = strucC(columnCount() - 1);
-    temp = *src;
+    int nCols = columnCount();
+    ColumnStruct **columns = _mm->resolve(struc()->columns);
+    ColumnStruct *toMove = columns[nCols - 1];
+    int nMove = nCols - index - 1;
+    size_t szMove = nMove * sizeof(ColumnStruct*);
 
-    for (int i = columnCount() - 1; i > index; i--)
-    {
-        ColumnStruct *fc = strucC(i - 1);
-        ColumnStruct *tc = strucC(i);
-        memcpy(tc, fc, sizeof(ColumnStruct));
-    }
+    memmove(&columns[index+1], &columns[index], szMove);
+    columns[index] = toMove;
 
-    ColumnStruct *column = strucC(index);
-    memcpy(column, &temp, sizeof(ColumnStruct));
-
-    ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
+    ColumnW wrapper = ColumnW(this, _mm, toMove);
     wrapper.setRowCount<int>(rowCount());
 
     return wrapper;
@@ -128,7 +123,7 @@ ColumnW DataSetW::insertColumn(int index, const char *name, const char *importNa
 
 ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 {
-    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    DataSetStruct *dss = struc();
     int columnId = dss->nextColumnId;
     dss->nextColumnId += 1;
 
@@ -145,9 +140,16 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     char *chars2 = _mm->allocate<char>(n + 1);  // +1 for null terminator
     memcpy(chars2, importName, n2 + 1);
 
+    ColumnStruct **columns;
     ColumnStruct *column;
 
+    column = _mm->allocateBase<ColumnStruct>();
+    dss = struc();
+    columns = _mm->resolve(dss->columns);
+    columns[columnCount] = column;
+
     column = strucC(columnCount);
+
     column->name = _mm->base<char>(chars);
     column->importName = _mm->base<char>(chars2);
     column->id = columnId;
@@ -185,11 +187,11 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 void DataSetW::setRowCount(size_t count)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
+    ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
 
     for (int i = 0; i < dss->columnCount; i++)
     {
-        ColumnStruct *c = _mm->base(&columns[i]);
+        ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
@@ -207,11 +209,11 @@ void DataSetW::setRowCount(size_t count)
 void DataSetW::appendRows(int n)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
+    ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
 
     for (int i = 0; i < dss->columnCount; i++)
     {
-        ColumnStruct *c = _mm->base(&columns[i]);
+        ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
@@ -246,7 +248,7 @@ void DataSetW::insertRows(int insStart, int insEnd)
 void DataSetW::deleteRows(int delStart, int delEnd)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
+    ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
 
     int delCount = delEnd - delStart + 1;
     int startCount = dss->rowCount;
@@ -254,7 +256,7 @@ void DataSetW::deleteRows(int delStart, int delEnd)
 
     for (int i = 0; i < dss->columnCount; i++)
     {
-        ColumnStruct *c = _mm->base(&columns[i]);
+        ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
@@ -299,19 +301,18 @@ void DataSetW::deleteRows(int delStart, int delEnd)
 
 void DataSetW::deleteColumns(int delStart, int delEnd)
 {
+    // at the moment this just leaks memory, but we
+    // should store the deleted columns for re-use
+
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
 
     int delCount = delEnd - delStart + 1;
     int startCount = dss->columnCount;
     int finalCount = dss->columnCount - delCount;
+    int nToMove = startCount - delStart - delCount;
 
-    for (int to = delStart; to < finalCount; to++)
-    {
-        int from = to + delCount;
-        ColumnStruct *fc = strucC(from);
-        ColumnStruct *tc = strucC(to);
-        memcpy(tc, fc, sizeof(ColumnStruct));
-    }
+    ColumnStruct **columns = _mm->resolve(struc()->columns);
+    memmove(&columns[delStart], &columns[delEnd], nToMove * sizeof(ColumnStruct*));
 
     dss->columnCount -= delCount;
 }

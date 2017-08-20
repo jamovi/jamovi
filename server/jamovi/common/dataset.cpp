@@ -32,8 +32,8 @@ DataSetStruct *DataSet::struc() const
 ColumnStruct *DataSet::strucC(int index) const
 {
     DataSetStruct *dss = struc();
-    ColumnStruct *columns = _mm->resolve(dss->columns);
-    ColumnStruct *column  = &columns[index];
+    ColumnStruct **columns = _mm->resolve(dss->columns);
+    ColumnStruct *column  = _mm->resolve(columns[index]);
 
     return column;
 }
@@ -52,8 +52,6 @@ Column DataSet::getColumnById(int id)
 
 Column DataSet::operator[](const char *name)
 {
-    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-
     for (int i = 0; i < columnCount(); i++)
     {
         Column column = (*this)[i];
@@ -71,8 +69,8 @@ Column DataSet::operator[](int index)
     if (index >= dss->columnCount)
         throw runtime_error("index out of bounds");
 
-    ColumnStruct *columns = _mm->resolve<ColumnStruct>(dss->columns);
-    ColumnStruct *rel = _mm->base<ColumnStruct>(&columns[index]);
+    ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
+    ColumnStruct *rel = columns[index];
 
     return Column(this, _mm, rel);
 }

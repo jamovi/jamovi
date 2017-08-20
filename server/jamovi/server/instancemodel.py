@@ -63,9 +63,9 @@ class InstanceModel:
         ins.id = self._next_id
         self._next_id += 1
 
-        child = self._dataset[self._dataset.column_count - 1]
+        child = self._dataset[index]
         column = Column(self, child)
-        self._columns.insert(self._dataset.column_count - 1, column)
+        self._columns.insert(index, column)
 
         index = 0
         for column in self:
@@ -74,13 +74,8 @@ class InstanceModel:
 
     def delete_columns(self, start, end):
 
-        rm_n = end - start + 1
-        rm_t = self._dataset.column_count
-        rm_f = self._dataset.column_count - rm_n
-
         self._dataset.delete_columns(start, end)
-
-        del self._columns[rm_f:rm_t]
+        del self._columns[start:end + 1]
 
         for i in range(start, len(self._columns)):
             self._columns[i].index = i
