@@ -4,6 +4,12 @@ from .analyses import Analyses
 from ..core import ColumnType
 from ..core import MeasureType
 
+from .compute import Parser
+from .compute import FormulaStatus
+from .compute import Transmogrifier
+from .compute import Reticulator
+from .compute import Evaluator
+
 
 class InstanceModel:
 
@@ -216,6 +222,10 @@ class Column:
         self._id = -1
         self._index = -1
 
+        self._formula_vars = None
+        self._formula_tree = None
+        self._formula_status = None
+
     def _create_child(self):
         if self._child is None:
             self._parent._realise_column(self)
@@ -396,6 +406,10 @@ class Column:
             return self._child.changes
         return False
 
+    @property
+    def formula_vars(self):
+        return self._formula_vars
+
     def clear_at(self, index):
         if self._child is None:
             self._create_child()
@@ -423,6 +437,11 @@ class Column:
         if self._child is None:
             self._create_child()
 
+        formula_change = False
+        if formula is not None:
+            if formula != self._child.formula:
+                formula_change = True
+
         self._child.change(
             name=name,
             column_type=column_type,
@@ -432,8 +451,51 @@ class Column:
             auto_measure=auto_measure,
             formula=formula)
 
-        # this just for testing
-        if formula is not None and 'error' in formula:
-            self._child.formula_message = formula
-        else:
+        if formula_change:
+            self._parse_formula()
+
+    def _parse_formula(self):
+        try:
+            # 1. construct the tree
+            tree, vars = Parser.parse(self.formula)
+
+            self._formula_vars = vars
+            self._formula_tree = tree
             self._child.formula_message = ''
+            if len(tree.body) == 0:
+                self.formula_status = FormulaStatus.EMPTY
+            else:
+                self.formula_status = FormulaStatus.OK
+
+            # 2. substitute all strings for names
+            tree = Transmogrifier(self).visit(tree)
+
+            # 3. check tree is ok
+            if self.name in vars:
+                raise RecursionError()
+
+            # 4. calc and substitute column-wise values
+            tree = Reticulator(self).visit(tree)
+
+            # 5. calc the remaining row-wise values
+            evor = Evaluator(self)
+            for row_no in range(self.row_count):
+                evor.row_no = row_no
+                evor.visit(self._formula_tree)
+
+            self.determine_dps()
+        except RecursionError as e:
+            self.formula_status = FormulaStatus.ERROR
+            self._child.formula_message = 'Circular reference detected'
+        except SyntaxError as e:
+            self.formula_status = FormulaStatus.ERROR
+            self._child.formula_message = 'The formula is mis-specified'
+        except NameError as e:
+            self.formula_status = FormulaStatus.ERROR
+            self._child.formula_message = str(e)
+        except TypeError as e:
+            self.formula_status = FormulaStatus.ERROR
+            self._child.formula_message = str(e)
+        except Exception as e:
+            self.formula_status = FormulaStatus.ERROR
+            self._child.formula_message = 'Unexpected error ({})'.format(str(e))

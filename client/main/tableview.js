@@ -1143,7 +1143,7 @@ const TableView = SilkyView.extend({
         });
     },
     _appendComputed() {
-        this._appendColumn({ columnType: 'computed' });
+        this._appendColumn({ columnType: 'computed', measureType: 'continuous' });
     },
     _appendColumn(args) {
 
