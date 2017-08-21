@@ -9,32 +9,34 @@ Backbone.$ = $;
 const keyboardJS = require('keyboardjs');
 
 function insertText(el, newText, cursorOffset = 0) {
-    let start = el.selectionStart;
-    let end = el.selectionEnd;
-    let text = el.value;
+
+    let sel = window.getSelection();
+    let range = sel.getRangeAt(0);
+    let start = range.startOffset;
+    let end = range.endOffset;
+    let text = el.innerHTML;
     let before = text.substring(0, start);
     let after  = text.substring(end, text.length);
 
     if (cursorOffset === -1 && start !== end) {
         let textSelected = text.substring(start, end);
-        el.value = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
-        el.selectionStart = start + newText.length + cursorOffset;
-        el.selectionEnd = start + newText.length + textSelected.length + cursorOffset;
+        el.innerHTML = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
+        sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
     } else {
-        el.value = (before + newText + after);
-        el.selectionStart = el.selectionEnd = start + newText.length + cursorOffset;
+        el.innerHTML = (before + newText + after);
+        sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + cursorOffset);
     }
     el.focus();
 }
 
 function insertInto(open, close, input){
-    let val = input.value, s = input.selectionStart, e = input.selectionEnd;
+    let val = input.innerHTML, s = input.selectionStart, e = input.selectionEnd;
     if (e==s) {
-        input.value = val.slice(0,e) + open + close + val.slice(e);
+        input.innerHTML = val.slice(0,e) + open + close + val.slice(e);
         input.selectionStart += close.length;
         input.selectionEnd = e + close.length;
     } else {
-        input.value = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
+        input.innerHTML = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
         input.selectionStart += close.length + 1;
         input.selectionEnd = e + close.length;
     }
@@ -59,11 +61,12 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$bottom = $('<div class="bottom"></div>').appendTo(this.$methods);
 
         this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
-        this.$error = $('<div class="error"></div>').appendTo(this.$options);
         this.$formulaBox = $('<div class="formula-box"></div>').appendTo(this.$options);
         this.$equal = $('<div class="equal">=</div>').appendTo(this.$formulaBox);
-        this.$formula = $('<textarea class="formula" type="text" placeholder="Type formula here\u2026">').appendTo(this.$formulaBox);
-        this.$formulaMessage = $('<div style="background-color: pink ;"></div>').appendTo(this.$formulaBox);
+        this.$formula = $('<div contenteditable="true" class="formula" type="text" placeholder="Type formula here\u2026"></div>').appendTo(this.$formulaBox);
+        this.$formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo(this.$formulaBox);
+        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo(this.$formulaMessageBox);
+
 
         this.$formula.focus(() => {
             keyboardJS.pause();
@@ -78,11 +81,12 @@ const ComputedVarWidget = Backbone.View.extend({
             }
         });
         this.$formula.on('input', (event) => {
-            this.model.set('formula', this.$formula[0].value);
+            this.model.set('formula', this.$formula[0].innerHTML);
         });
 
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
         this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
+
 
         this.$ops = $('<div class="ops-box"></div>').appendTo(this.$options);
 
@@ -99,8 +103,10 @@ const ComputedVarWidget = Backbone.View.extend({
 
 
         this.$functionsContent.on("dblclick", (event) => {
-            if ($(event.target).hasClass('item'))
+            if ($(event.target).hasClass('item')) {
                 insertText(this.$formula[0], event.target.dataset.name + "()", -1);
+                this.model.set('formula', this.$formula[0].innerHTML);
+            }
         });
 
         this.$functionsContent.on("click", (event) => {
@@ -114,8 +120,10 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$varsContent = $('<div class="content"></div>').appendTo(this.$vars);
 
         this.$varsContent.on("dblclick", (event) => {
-            if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item'))
+            if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
                 insertText(this.$formula[0], event.target.dataset.name);
+                this.model.set('formula', this.$formula[0].innerHTML);
+            }
         });
 
         this.$varsContent.on("click", (event) => {
@@ -134,8 +142,10 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$mathContent.append($('<div class="item" data-name="^">^</div>'));
 
         this.$mathContent.on("dblclick", (event) => {
-            if ($(event.target).hasClass('item'))
+            if ($(event.target).hasClass('item')) {
                 insertText(this.$formula[0], " " + event.target.dataset.name + " ");
+                this.model.set('formula', this.$formula[0].innerHTML);
+            }
         });
         this.$mathContent.on("click", (event) => {
             this.$formula.focus();
