@@ -48,21 +48,31 @@
 }
 
 .jmv-variable-computed-options > .formula-box > .equal {
-    padding: 3px 5px 0px 5px;
+    padding: 5px 5px 0px 5px;
     position: absolute;
     top: 0;
     left: 0;
     pointer-events: none;
+    font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 12px;
 }
 
-.jmv-variable-computed-options > .error {
+.jmv-variable-computed-options > .formula-box > .formulaMessageBox {
     position: absolute;
     bottom: 0;
     left: 0;
+    width: 100%;
+    background-color: pink;
+}
+
+.jmv-variable-computed-options > .formula-box > .formulaMessageBox > .formulaMessage {
     flex: 1;
     flex-grow: 1;
-    height: 50px;
-    background-color: red;
+    margin: 5px;
+}
+
+.jmv-variable-computed-options > .formula-box > .formulaMessageBox > .formulaMessage:empty {
+    display: none;
 }
 
 .jmv-variable-computed-options > .formula-box > .formula {
@@ -72,6 +82,17 @@
     text-indent: 1em;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
+    padding: 5px;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    cursor: text;
+    overflow-y: auto;
+}
+
+[contenteditable=true]:empty:before {
+    content: attr(placeholder);
+    display: block; /* For Firefox */
+    color: #CCCCCC;
 }
 
 .jmv-variable-computed-options > .formula-box > .caret {
@@ -95,7 +116,7 @@
 .jmv-variable-computed-options > .ops-box > .op {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    flex: 1;
     background-color: #FFFFFF;
     border: 1px solid #CCCCCC;
 }
