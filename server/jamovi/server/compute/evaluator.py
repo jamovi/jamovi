@@ -4,12 +4,14 @@ import ast
 from .functions import RowFunctions
 
 
+NaN = float('nan')
+
+
 class Evaluator(ast.NodeVisitor):
 
-    def __init__(self, column):
+    def __init__(self, dataset):
         self._row_no = None
-        self._column = column
-        self._dataset = column._parent
+        self._dataset = dataset
 
     @property
     def row_no(self):
@@ -21,9 +23,9 @@ class Evaluator(ast.NodeVisitor):
 
     def visit_Module(self, node):
         if len(node.body) == 0:
-            self._column[self._row_no] = float('nan')
+            return NaN
         else:
-            self._column[self._row_no] = self.visit(node.body[0])
+            return self.visit(node.body[0])
 
     def visit_Num(self, node):
         return node.n
@@ -57,7 +59,10 @@ class Evaluator(ast.NodeVisitor):
         elif isinstance(op, ast.Mult):
             return lv * rv
         elif isinstance(op, ast.Div):
-            return lv / rv
+            try:
+                return lv / rv
+            except ZeroDivisionError:
+                return NaN
         elif isinstance(op, ast.Mod):
             return lv % rv
         elif isinstance(op, ast.Pow):
@@ -65,4 +70,11 @@ class Evaluator(ast.NodeVisitor):
         elif isinstance(op, ast.BitXor):
             return lv ** rv
         else:
-            return float('nan')
+            return NaN
+
+    def visit_UnaryOp(self, node):
+        v = self.visit(node.operand)
+        if isinstance(node.op, ast.USub):
+            return -v
+        else:
+            return v

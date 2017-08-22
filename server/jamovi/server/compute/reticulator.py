@@ -5,6 +5,7 @@ from ast import Num
 from ast import copy_location
 
 from .functions import ColumnFunctions
+from .functions import RowFunctions
 
 
 class Reticulator(NodeTransformer):
@@ -31,7 +32,9 @@ class Reticulator(NodeTransformer):
             literal = Num(value)
             literal = copy_location(literal, node)
             return literal
-        else:
+        elif hasattr(RowFunctions, name):
             for child in node.args:
                 self.visit(child)
+        else:
+            raise NameError('{}() is not a function'.format(name))
         return node

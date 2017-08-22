@@ -1,23 +1,12 @@
 
 import ast
-import keyword
-
-from .varextractor import VarExtractor
-
-
-_ESCAPED_KW = list(map(lambda x: '_' + x[1:], keyword.kwlist))
-
-_LEGAL_NODES = [ 'Module', 'Num', 'Str', 'Name', 'Load', 'Expr', 'UnaryOp',
-                 'UAdd', 'USub', 'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod',
-                 'Pow', 'BitXor', 'Call' ]
-
-
-def is_kw(word):
-    word = ''.join(word)
-    return word in keyword.kwlist
+import base64
+import re
 
 
 class Parser:
+
+    _SPECIAL_CHARS = ' ~!@#$%^&*()+=-[]{};,<>?/\\'
 
     @staticmethod
     def parse(str):
@@ -27,27 +16,29 @@ class Parser:
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Name):
-                try:
-                    # substitute unescaped node names back in
-                    index = _ESCAPED_KW.index(node.id)
-                    node.id = keyword.kwlist[index]
-                except ValueError:
-                    pass
+                node.id = Parser.unescape_chunk(node.id)
 
-        Parser.check_tree(tree)
-        vars = VarExtractor().visit(tree)
-
-        return (tree, vars)
+        return tree
 
     @staticmethod
-    def check_tree(tree):
+    def escape_chunk(chunk):
+        if len(chunk) == 0:
+            return chunk
+        elif len(chunk) == 1 and chunk in Parser._SPECIAL_CHARS:
+            return chunk
+        elif chunk.startswith('"') and chunk.endswith('"'):
+            return chunk
+        elif re.match(r'^[0-9]*\.?[0-9]+$', chunk):
+            return chunk
+        else:
+            return '_' + base64.b16encode(chunk.encode('utf-8')).decode('utf-8')
 
-        if len(tree.body) >= 2:
-            raise SyntaxError('Multiple expressions specified')
-
-        for node in ast.walk(tree):
-            if node.__class__.__name__ not in _LEGAL_NODES:
-                raise SyntaxError('Formula contains illegal node')
+    @staticmethod
+    def unescape_chunk(chunk):
+        if not chunk.startswith('_'):
+            raise ValueError()
+        chunk = chunk[1:]
+        return base64.b16decode(chunk.encode('utf-8')).decode('utf-8')
 
     @staticmethod
     def escape(str):
@@ -59,41 +50,49 @@ class Parser:
         l = len(str)
         q = ''
 
-        str = list(str)
+        chunks = list()
 
         while True:
 
             while s < l:
                 sc = str[s]
-                if sc in '"\'':
+                if sc in '"\'`':
                     q = sc
                     break
-                if sc not in ' !=><\t\r\n+-,;()':
+                if sc not in Parser._SPECIAL_CHARS:
                     break
                 else:
+                    chunks.append(sc)
                     s += 1
 
             e = s + 1
 
-            if e >= l:
-                break
-
             while e < l:
                 ec = str[e]
                 if ec == q:
-                    # skip quoted items
+                    if q == '`':
+                        term = ''.join(str[s + 1:e])
+                    else:
+                        term = '"' + ''.join(str[s + 1:e]) + '"'
+                    chunks.append(term)
                     q = ''
                     break
-                elif q is '' and ec in ' !=><\t\r\n+-,;()':
-                    if is_kw(str[s:e]):
-                        str[s] = '_'
+                elif q is '' and ec in Parser._SPECIAL_CHARS:
+                    term = ''.join(str[s:e])
+                    chunks.append(term)
+                    chunks.append(ec)
                     break
                 else:
                     e += 1
             else:
-                if is_kw(str[s:e]):
-                    str[s] = '_'
+                term = ''.join(str[s:e])
+                chunks.append(term)
+
+            if e >= l:
+                break
 
             s = e + 1
 
-        return ''.join(str)
+        chunks = map(Parser.escape_chunk, chunks)
+
+        return ''.join(chunks)

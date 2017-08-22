@@ -7,8 +7,13 @@ from ..core import MeasureType
 from .compute import Parser
 from .compute import FormulaStatus
 from .compute import Transmogrifier
+from .compute import Exfiltrator
+from .compute import Checker
 from .compute import Reticulator
 from .compute import Evaluator
+
+
+NaN = float('nan')
 
 
 class InstanceModel:
@@ -222,9 +227,13 @@ class Column:
         self._id = -1
         self._index = -1
 
-        self._formula_vars = None
         self._formula_tree = None
         self._formula_status = None
+
+        self.fun_column_deps = set()  # dependencies
+        self.fun_row_deps = set()
+        self.fun_column_subs = set()  # subscribers
+        self.fun_row_subs = set()
 
     def _create_child(self):
         if self._child is None:
@@ -346,6 +355,10 @@ class Column:
             return self._child.formula_message
         return ''
 
+    @property
+    def has_formula(self):
+        return self.formula != ''
+
     def determine_dps(self):
         if self._child is not None:
             self._child.determine_dps()
@@ -406,10 +419,6 @@ class Column:
             return self._child.changes
         return False
 
-    @property
-    def formula_vars(self):
-        return self._formula_vars
-
     def clear_at(self, index):
         if self._child is None:
             self._create_child()
@@ -454,36 +463,88 @@ class Column:
         if formula_change:
             self._parse_formula()
 
+    def recalc(self, start=None, end=None):
+        if start is None:
+            start = 0
+        if end is None:
+            end = self.row_count
+
+        if self._row_formula_tree is None:
+            for row_no in range(start, end):
+                self[row_no] = NaN
+        else:
+            evor = Evaluator(self._parent)
+            for row_no in range(start, end):
+                try:
+                    evor.row_no = row_no
+                    value = evor.visit(self._row_formula_tree)
+                    value = float(value)
+                except:
+                    value = NaN
+                self[row_no] = value
+            self.determine_dps()
+
     def _parse_formula(self):
         try:
-            # 1. construct the tree
-            tree, vars = Parser.parse(self.formula)
 
-            self._formula_vars = vars
-            self._formula_tree = tree
+            dataset = self._parent
+
+            # clear this column's subscriptions and dependencies
+            for dep in self.fun_column_deps:
+                dep_column = dataset[dep]
+                dep_column.fun_column_subs.discard(self.name)
+
+            for dep in self.fun_row_deps:
+                dep_column = dataset[dep]
+                dep_column.fun_row_subs.discard(self.name)
+
+            self.fun_column_deps = set()  # dependencies
+            self.fun_row_deps = set()
+
+            self._column_formula_tree = None
+            self._row_formula_tree = None
+
+            # construct the tree
+            tree = Parser.parse(self.formula)
+
             self._child.formula_message = ''
             if len(tree.body) == 0:
                 self.formula_status = FormulaStatus.EMPTY
             else:
                 self.formula_status = FormulaStatus.OK
 
-            # 2. substitute all strings for names
+            # substitute all strings for names
             tree = Transmogrifier(self).visit(tree)
 
-            # 3. check tree is ok
-            if self.name in vars:
+            # extract dependencies
+            col_vars, row_vars = Exfiltrator().visit(tree)
+
+            # check tree is ok
+            if self.name in col_vars:
+                raise RecursionError()
+            if self.name in row_vars:
                 raise RecursionError()
 
-            # 4. calc and substitute column-wise values
+            Checker.check_tree(tree)
+
+            # subscribe to dependencies (get notified of changes)
+            self.fun_column_deps = col_vars
+            self.fun_row_deps = row_vars
+
+            for dep in self.fun_column_deps:
+                dep_column = dataset[dep]
+                dep_column.fun_column_subs.add(self.name)
+
+            for dep in self.fun_row_deps:
+                dep_column = dataset[dep]
+                dep_column.fun_row_subs.add(self.name)
+
+            self._column_formula_tree = tree
+
+            # 5. calc and substitute column-wise values
             tree = Reticulator(self).visit(tree)
+            self._row_formula_tree = tree
 
-            # 5. calc the remaining row-wise values
-            evor = Evaluator(self)
-            for row_no in range(self.row_count):
-                evor.row_no = row_no
-                evor.visit(self._formula_tree)
-
-            self.determine_dps()
         except RecursionError as e:
             self.formula_status = FormulaStatus.ERROR
             self._child.formula_message = 'Circular reference detected'
@@ -498,4 +559,7 @@ class Column:
             self._child.formula_message = str(e)
         except Exception as e:
             self.formula_status = FormulaStatus.ERROR
-            self._child.formula_message = 'Unexpected error ({})'.format(str(e))
+            self._child.formula_message = 'Unexpected error ({}, {})'.format(str(e), type(e).__name__)
+
+        # recalc !
+        self.recalc()
