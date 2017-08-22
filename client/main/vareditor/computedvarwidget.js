@@ -157,7 +157,7 @@ const ComputedVarWidget = Backbone.View.extend({
     _setFormula(formula) {
         if ( ! this.attached)
             return;
-        this.$formula[0].value = formula;
+        this.$formula[0].innerHTML = formula;
     },
     _setFormulaMessage(formulaMessage) {
         if ( ! this.attached)
