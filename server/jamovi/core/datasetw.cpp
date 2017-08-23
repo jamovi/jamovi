@@ -312,7 +312,7 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     int nToMove = startCount - delStart - delCount;
 
     ColumnStruct **columns = _mm->resolve(struc()->columns);
-    memmove(&columns[delStart], &columns[delEnd], nToMove * sizeof(ColumnStruct*));
+    memmove(&columns[delStart], &columns[delEnd+1], nToMove * sizeof(ColumnStruct*));
 
     dss->columnCount -= delCount;
 }
