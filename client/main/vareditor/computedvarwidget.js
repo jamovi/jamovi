@@ -63,7 +63,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
         this.$formulaBox = $('<div class="formula-box"></div>').appendTo(this.$options);
         this.$equal = $('<div class="equal">=</div>').appendTo(this.$formulaBox);
-        this.$formula = $('<div contenteditable="true" class="formula" type="text" placeholder="Type formula here\u2026"></div>').appendTo(this.$formulaBox);
+        this.$formula = $('<div class="formula" type="text" placeholder="Type formula here\u2026"></div>').appendTo(this.$formulaBox);
         this.$formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo(this.$formulaBox);
         this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo(this.$formulaMessageBox);
 
@@ -165,7 +165,10 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$formulaMessage.text(formulaMessage);
     },
     detach() {
+        if ( ! this.attached)
+            return;
         this.model.apply();
+        this.$formula.attr('contenteditable', 'false');
         this.attached = false;
     },
     attach() {
@@ -173,6 +176,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this._setFormula(this.model.attributes.formula);
         this._setFormulaMessage(this.model.attributes.formulaMessage);
+        this.$formula.attr('contenteditable', 'true');
 
         this.$varsContent.empty();
         let dataset = this.model.dataset;
