@@ -6,6 +6,7 @@ import os
 import os.path
 import platform
 
+from ..core import ColumnType
 from ..core import MeasureType
 from ..core import Dirs
 from ..core import MemoryMap
@@ -775,6 +776,10 @@ class Instance:
             if index >= self._data.column_count:
                 break
             column = self._data[index]
+
+            if column.column_type == ColumnType.COMPUTED:
+                raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+
             if column.auto_measure:
                 continue
 
@@ -806,6 +811,7 @@ class Instance:
 
         for i in range(col_count):
             column = self._data[col_start + i]
+            column.column_type = ColumnType.DATA
 
             values = cells[i]
 

@@ -59,11 +59,15 @@ int Column::dps() const
 
 const char *Column::formula() const
 {
+    if (struc()->formula == NULL)
+        return NULL;
     return _mm->resolve(struc()->formula);
 }
 
 const char *Column::formulaMessage() const
 {
+    if (struc()->formulaMessage == NULL)
+        return NULL;
     return _mm->resolve(struc()->formulaMessage);
 }
 

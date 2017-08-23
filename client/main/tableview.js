@@ -1153,7 +1153,7 @@ const TableView = SilkyView.extend({
 
         Promise.resolve().then(() => {
 
-            let fields = { name: '', measureType: 'nominal' };
+            let fields = { name: '', columnType: 'data', measureType: 'nominal' };
             Object.assign(fields, args);
 
             return this.model.changeColumn(column.id, fields);
@@ -1169,6 +1169,9 @@ const TableView = SilkyView.extend({
             let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
             if (selRight > containerRight)
                 this.$container.scrollLeft(scrollX + selRight - containerRight);
+        }).catch((error) => {
+            console.log(error);
+            throw error;
         });
     },
     _enableDisableActions() {

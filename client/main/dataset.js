@@ -152,7 +152,7 @@ const DataSetModel = Backbone.Model.extend({
                     changed[i] = columnPB.name;
                     changes[i] = {
                         id: id,
-                        columnTypeChanged: true,
+                        columnTypeChanged: false,
                         measureTypeChanged: true,
                         levelsChanged: true,
                         nameChanged: false,
@@ -396,12 +396,15 @@ const DataSetModel = Backbone.Model.extend({
 
                     let created = false;
                     let oldName;
+                    let oldColumnType;
                     if (column !== undefined) {
                         oldName = column.name;
+                        oldColumnType = column.columnType;
                         this._readColumnPB(column, columnPB);
                     }
                     else {
                         oldName = columnPB.name;
+                        oldColumnType = 0;
                         column = { };
                         created = true;
                         nCreated++;
@@ -415,7 +418,7 @@ const DataSetModel = Backbone.Model.extend({
                         name: column.name,
                         index: column.index,
                         oldName: oldName,
-                        columnTypeChanged: true,
+                        columnTypeChanged: column.columnType !== oldColumnType,
                         measureTypeChanged: true,
                         levelsChanged: true,
                         nameChanged: nameChanged,
@@ -436,6 +439,9 @@ const DataSetModel = Backbone.Model.extend({
 
                 this.trigger('columnsChanged', { changed, changes });
             }
+        }).catch((error) => {
+            console.log(error);
+            throw error;
         });
     },
     _readColumnPB(column, columnPB) {
@@ -498,19 +504,19 @@ DataSetModel.parseMeasureType = function(str) {
 
 DataSetModel.stringifyColumnType = function(type) {
     switch (type) {
-        case 0:
+        case 1:
             return 'data';
         case 2:
             return 'computed';
         default:
-            return 'data';
+            return 'none';
     }
 };
 
 DataSetModel.parseColumnType = function(str) {
     switch (str) {
         case 'data':
-            return 0;
+            return 1;
         case 'computed':
             return 2;
         default:
@@ -826,12 +832,15 @@ const DataSetViewModel = DataSetModel.extend({
 
                     let created = false;
                     let oldName;
+                    let oldColumnType;
                     if (column !== undefined) {
                         oldName = column.name;
+                        oldColumnType = column.columnType;
                         this._readColumnPB(column, columnPB);
                     }
                     else {
                         oldName = columnPB.name;
+                        oldColumnType = 0;
                         column = { };
                         created = true;
                         nCreated++;
@@ -845,7 +854,7 @@ const DataSetViewModel = DataSetModel.extend({
                         oldName: oldName,
                         name: newName,
                         index: column.index,
-                        columnTypeChanged: true,
+                        columnTypeChanged: oldColumnType !== column.columnType,
                         measureTypeChanged: true,
                         levelsChanged: true,
                         nameChanged: oldName !== newName,

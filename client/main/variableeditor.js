@@ -60,8 +60,15 @@ const VariableEditor = Backbone.View.extend({
             let column = this.model.attributes.columns[this.model.attributes.editingVar];
             for (let changes of event.changes) {
                 if (changes.id === column.id) {
-                    if (changes.measureTypeChanged || changes.levelsChanged || changes.nameChanged)
+                    if (changes.columnTypeChanged) {
+                        let index = column.index;
+                        this.model.set('editingVar', index - 1, { silent: true });
+                        this.model.set('editingVar', index);
                         this._update();
+                    }
+                    else if (changes.measureTypeChanged || changes.levelsChanged || changes.nameChanged) {
+                        this._update();
+                    }
                     break;
                 }
             }

@@ -154,6 +154,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     column->importName = _mm->base<char>(chars2);
     column->id = columnId;
 
+    column->columnType = ColumnType::DATA;
     column->measureType = MeasureType::NOMINAL;
     column->autoMeasure = false;
     column->rowCount = 0;

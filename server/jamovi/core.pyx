@@ -238,14 +238,20 @@ cdef class Column:
 
     property formula:
         def __get__(self):
-            return self._this.formula().decode('utf-8')
+            fmla = self._this.formula()
+            if fmla is NULL:
+                return ''
+            return fmla.decode('utf-8')
 
         def __set__(self, value):
             self._this.setFormula(value.encode('utf-8'))
 
     property formula_message:
         def __get__(self):
-            return self._this.formulaMessage().decode('utf-8')
+            fmla_msg = self._this.formulaMessage()
+            if fmla_msg is NULL:
+                return ''
+            return fmla_msg.decode('utf-8')
 
         def __set__(self, value):
             self._this.setFormulaMessage(value.encode('utf-8'))

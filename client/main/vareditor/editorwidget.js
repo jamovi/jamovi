@@ -75,7 +75,7 @@ const EditorWidget = Backbone.View.extend({
             this.$title.val(name);
 
         let type = this.model.get('columnType');
-        if (type === 'data') {
+        if (type !== 'computed') {
             this.dataVarWidget.attach();
             this.$dataVarWidget.show();
             this.$computedVarWidget.hide();

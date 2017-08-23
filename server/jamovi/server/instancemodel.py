@@ -302,16 +302,22 @@ class Column:
         return ''
 
     @property
-    def measure_type(self):
-        if self._child is not None:
-            return self._child.measure_type
-        return MeasureType.NONE
-
-    @property
     def column_type(self):
         if self._child is not None:
             return self._child.column_type
         return ColumnType.NONE
+
+    @column_type.setter
+    def column_type(self, column_type):
+        if self._child is None:
+            self._create_child()
+        self._child.column_type = column_type
+
+    @property
+    def measure_type(self):
+        if self._child is not None:
+            return self._child.measure_type
+        return MeasureType.NONE
 
     @measure_type.setter
     def measure_type(self, measure_type):
