@@ -664,7 +664,7 @@ class Instance:
             if column_schema.hasLevels:
                 levels = [ ]
                 for level in column_schema.levels:
-                    levels.append((level.value, level.label))
+                    levels.append((level.value, level.label, level.importValue))
 
             column.change(
                 name=column_schema.name,
@@ -851,7 +851,7 @@ class Instance:
                     elif isinstance(value, str) and column.auto_measure:
                         column.change(measure_type=MeasureType.NOMINAL_TEXT)
                         index = column.level_count
-                        column.insert_level(index, value)
+                        column.insert_level(index, value, value)
                         column[row_start + j] = index
                     else:
                         raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
@@ -880,7 +880,7 @@ class Instance:
                             index = -2147483648
                         elif not column.has_level(value):
                             index = column.level_count
-                            column.insert_level(index, value)
+                            column.insert_level(index, value, value)
                         else:
                             index = column.get_value_for_label(value)
                         column[row_start + j] = index
@@ -891,7 +891,7 @@ class Instance:
                         column[row_start + j] = -2147483648
                     elif isinstance(value, int):
                         if not column.has_level(value) and value != -2147483648:
-                            column.insert_level(value, str(value))
+                            column.insert_level(value, str(value), str(value))
                         column[row_start + j] = value
                     elif isinstance(value, float) and column.auto_measure:
                         column.change(measure_type=MeasureType.CONTINUOUS)
@@ -900,7 +900,7 @@ class Instance:
                         column.change(measure_type=MeasureType.NOMINAL_TEXT)
                         column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
                         index = column.level_count
-                        column.insert_level(index, value)
+                        column.insert_level(index, value, value)
                         column[row_start + j] = index
 
             if column.auto_measure:
@@ -1029,11 +1029,13 @@ class Instance:
             for level in column.levels:
                 level_pb = column_schema.levels.add()
                 level_pb.label = level[1]
+                level_pb.importValue = level[2]
         elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
             for level in column.levels:
                 level_pb = column_schema.levels.add()
                 level_pb.value = level[0]
                 level_pb.label = level[1]
+                level_pb.importValue = level[2]
 
     def _add_to_recents(self, path):
 

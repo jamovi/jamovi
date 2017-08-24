@@ -27,10 +27,11 @@ public:
     void setColumnType(ColumnType::Type columnType);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
-    void appendLevel(int value, const char *label);
-    void insertLevel(int value, const char *label);
+    void appendLevel(int value, const char *label, const char *importValue = 0);
+    void insertLevel(int value, const char *label, const char *importValue = 0);
     void removeLevel(int value);
     void clearLevels();
+    void updateLevelCounts();
     void insertRows(int from, int to);
     void setDPs(int dps);
     void setFormula(const char *value);

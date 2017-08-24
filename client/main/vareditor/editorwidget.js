@@ -18,13 +18,11 @@ const EditorWidget = Backbone.View.extend({
         this.attached = true;
 
         this.$el.empty();
-        this.$el.addClass('silky-variable-editor-widget');
+        this.$el.addClass('jmv-variable-editor-widget');
 
-        this.$title = $('<input class="silky-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$el);
-        this._currentKeyboardContext = '';
+        this.$title = $('<input class="jmv-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$el);
         this.$title.focus(() => {
-            this._currentKeyboardContext = keyboardJS.getContext();
-            keyboardJS.setContext('');
+            keyboardJS.pause('');
             this.$title.select();
         } );
         this.$title.on('change keyup paste', () => {
@@ -32,7 +30,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set({ name: newName });
         } );
         this.$title.blur(() => {
-            keyboardJS.setContext(this._currentKeyboardContext);
+            keyboardJS.resume();
         } );
 
         this.$title.keydown((event) => {
@@ -53,7 +51,7 @@ const EditorWidget = Backbone.View.extend({
             }
         });
 
-        this.$body = $('<div class="silky-variable-editor-widget-body"></div>').appendTo(this.$el);
+        this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
 
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
         this.dataVarWidget = new DataVarWidget({ el: this.$dataVarWidget, model: this.model });

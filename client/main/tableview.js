@@ -722,6 +722,12 @@ const TableView = SilkyView.extend({
 
         if (typeof(ch) === 'undefined') {
             let value = this.model.valueAt(rowNo, colNo);
+            for (let levelInfo of this.currentColumn.levels) {
+                if (value === levelInfo.value) {
+                    value = levelInfo.label;
+                    break;
+                }
+            }
             this.$selection.val(value);
         }
 
@@ -761,16 +767,82 @@ const TableView = SilkyView.extend({
                     case 'ordinal':
                         if (Number.isInteger(number))
                             value = number;
-                        else if ( ! this.currentColumn.autoMeasure)
-                            throw {
-                                title: 'Integer value required',
-                                message: 'Nominal and Ordinal variables only accept integer values',
-                                type: 'error'
-                            };
+                        else if ( ! this.currentColumn.autoMeasure) {
+                            let found = false;
+
+                            if (typeof value === 'string') {
+                                for (let levelInfo of this.currentColumn.levels) {
+                                    if (value === levelInfo.label) {
+                                        value = levelInfo.value;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if ( ! found) {
+
+                                return new Promise((resolve, reject) => {
+                                    keyboardJS.pause();
+                                    this._editing = false;
+                                    setTimeout(() => {
+                                        dialogs.prompt('Enter an integer value for the label \'' + value + '\'', '', (result) => {
+                                            keyboardJS.resume();
+                                            if (result === undefined)
+                                                reject({ title: 'Value', message: 'Editing cancelled.'});
+                                            let n = parseInt(result);
+                                            if (isNaN(n) || n <= 0)
+                                                reject({ title: 'Value', message: 'Nominal/Ordinal values must be a positive integer.'});
+                                            else
+                                                resolve(n);
+                                        });
+                                    }, 0);
+                                }).then(n => {
+
+                                    let newLevels = [];
+                                    let found = false;
+                                    for (let level of this.currentColumn.levels) {
+                                        if (n === level.value) {
+                                            found = level.label;
+                                            level = { value: n, label: value, importValue: level.importValue };
+                                        }
+                                        newLevels.push(level);
+                                    }
+                                    if ( ! found)
+                                        newLevels.push({ value: n, label: value, importValue: n.toString() });
+
+                                    return new Promise((resolve, reject) => {
+                                        if (found) {
+                                            keyboardJS.pause();
+                                            dialogs.confirm('The value ' + n + ' currently has the label \'' + found + '\'. Change?', (result) => {
+                                                keyboardJS.resume();
+                                                if (result)
+                                                    this.currentColumn.levels = newLevels;
+                                                resolve(n);
+                                            });
+                                        }
+                                        else {
+                                            this.currentColumn.levels = newLevels;
+                                            resolve(n);
+                                        }
+                                    });
+                                }).then(n => {
+                                    return this.model.changeColumn(this.selection.colNo, this.currentColumn);
+                                }).then(n => {
+                                    return this._applyEdit();
+                                });
+                            }
+                        }
                         else if ( ! Number.isNaN(number))
                             value = number;
                         break;
                     case 'nominaltext':
+                        for (let levelInfo of this.currentColumn.levels) {
+                            if (value === levelInfo.importValue) {
+                                value = levelInfo.label;
+                                break;
+                            }
+                        }
                         break;
                 }
             }
@@ -1300,11 +1372,12 @@ const TableView = SilkyView.extend({
             let $column = $(this.$columns[colOffset + colNo]);
             let $cells  = $column.children();
 
-            let dps = columns[colOffset + colNo].dps;
+            let columnInfo = columns[colOffset + colNo];
+            let dps = columnInfo.dps;
 
             for (let rowNo = 0; rowNo < column.length; rowNo++) {
                 let $cell = $($cells[rowNo]);
-                let content = column[rowNo];
+                let content = this._rawValueToDisplay(column[rowNo], columnInfo);
 
                 this._updateCell($cell, content, dps);
             }
@@ -1337,10 +1410,21 @@ const TableView = SilkyView.extend({
             for (let rowNo = 0; rowNo < nRows; rowNo++) {
 
                 let $cell = $($cells[rowOffset + rowNo]);
-                let content = column[rowOffset + rowNo];
+                let content = this._rawValueToDisplay(column[rowOffset + rowNo], columnInfo);
                 this._updateCell($cell, content, dps);
             }
         }
+    },
+    _rawValueToDisplay(raw, columnInfo) {
+        if (columnInfo.measureType !== 'continuous') {
+            for (let level of columnInfo.levels) {
+                if (raw === level.value) {
+                    return level.label;
+                }
+            }
+        }
+
+        return raw;
     },
     _updateCell($cell, content, dps) {
 

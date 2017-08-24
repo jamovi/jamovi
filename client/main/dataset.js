@@ -354,16 +354,15 @@ const DataSetModel = Backbone.Model.extend({
                 let level = values.levels[i];
                 let levelPB = new coms.Messages.VariableLevel();
                 if (values.measureType === 'nominal' || values.measureType === 'ordinal') {
-                    let value = parseInt(level.label);
-                    if ( ! isNaN(value)) {
-                        levelPB.value = value;
-                        levelPB.label = level.label;
-                        columnPB.levels.push(levelPB);
-                    }
+                    levelPB.value = level.value;
+                    levelPB.label = level.label;
+                    levelPB.importValue = '';
+                    columnPB.levels.push(levelPB);
                 }
                 else {
                     levelPB.value = i;
                     levelPB.label = level.label;
+                    levelPB.importValue = level.importValue;
                     columnPB.levels.push(levelPB);
                 }
             }
@@ -392,6 +391,8 @@ const DataSetModel = Backbone.Model.extend({
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
+
+                    let oldLevels = column.levels;
                     let newName = columnPB.name;
 
                     let created = false;
@@ -461,10 +462,20 @@ const DataSetModel = Backbone.Model.extend({
             levels = new Array(columnPB.levels.length);
             for (let i = 0; i < levels.length; i++) {
                 let levelPB = columnPB.levels[i];
-                levels[i] = {
-                    label: levelPB.label,
-                    value: levelPB.value,
-                };
+                if (column.measureType === 'nominaltext') {
+                    levels[i] = {
+                        label: levelPB.label,
+                        value: i,
+                        importValue: levelPB.importValue
+                    };
+                }
+                else {
+                    levels[i] = {
+                        label: levelPB.label,
+                        value: levelPB.value,
+                        importValue: levelPB.value.toString()
+                    };
+                }
             }
         }
         column.levels = levels;
@@ -918,8 +929,10 @@ const DataSetViewModel = DataSetModel.extend({
 
             let inCol  = cells[inColOffset + i];
             let outCol = this.attributes.cells[outColOffset + i];
-            for (let j = 0; j < nRows; j++)
+            let columnInfo = this.attributes.columns[outColOffset + i];
+            for (let j = 0; j < nRows; j++) {
                 outCol[outRowOffset + j] = inCol[inRowOffset + j];
+            }
         }
 
         this.trigger("cellsChanged", { left: left, top: top, right: right, bottom: bottom });

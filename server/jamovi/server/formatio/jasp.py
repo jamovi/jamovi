@@ -110,7 +110,7 @@ def read(data, path):
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
-                        column.append_level(meta_label[0], meta_label[1])
+                        column.append_level(meta_label[0], meta_label[1], meta_label[1])
         except:
             pass
 

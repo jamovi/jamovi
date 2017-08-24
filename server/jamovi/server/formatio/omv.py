@@ -131,7 +131,10 @@ def read(data, path, is_example=False):
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
-                        column.append_level(meta_label[0], meta_label[1])
+                        import_value = meta_label[1]
+                        if len(meta_label) > 2:
+                            import_value = meta_label[2]
+                        column.append_level(meta_label[0], meta_label[1],  import_value)
         except:
             pass
 

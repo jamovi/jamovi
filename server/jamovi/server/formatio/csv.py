@@ -251,7 +251,7 @@ class ColumnWriter:
             self._unique_values = list(map(lambda x: int(x), self._unique_values))
             self._unique_values.sort()
             for level in self._unique_values:
-                self._column.append_level(level, str(level))
+                self._column.append_level(level, str(level), str(level))
         elif self._only_floats or self._only_euro_floats:
             if self._only_floats and self._only_euro_floats:
                 self._only_euro_floats = False
@@ -264,7 +264,7 @@ class ColumnWriter:
             self._unique_values.sort()
             for i in range(0, len(self._unique_values)):
                 label = self._unique_values[i]
-                self._column.append_level(i, label)
+                self._column.append_level(i, label, label)
 
         self._ruminated = True
         self._column.measure_type = self._measure_type
