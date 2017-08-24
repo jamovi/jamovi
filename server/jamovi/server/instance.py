@@ -18,8 +18,8 @@ from . import jamovi_pb2 as jcoms
 
 from .utils import conf
 from .utils import FileEntry
-from .utils.csvparser import CSVParser
-from .utils.htmlparser import HTMLParser
+from .utils import CSVParser
+from .utils import HTMLParser
 from .enginemanager import EngineManager
 from .modules import Modules
 from .instancemodel import InstanceModel
