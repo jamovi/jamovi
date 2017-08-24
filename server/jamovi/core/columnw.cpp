@@ -140,7 +140,7 @@ void ColumnW::insertRows(int insStart, int insEnd)
     }
 }
 
-void ColumnW::appendLevel(int value, const char *label)
+void ColumnW::appendLevel(int value, const char *label, const char *importValue)
 {
     ColumnStruct *s = struc();
 
@@ -170,10 +170,15 @@ void ColumnW::appendLevel(int value, const char *label)
 
     int length = strlen(label)+1;
     size_t allocated;
-
     char *chars = _mm->allocate<char>(length, &allocated);
-
     std::memcpy(chars, label, length);
+
+    if (importValue == NULL)
+        importValue = label;
+    length = strlen(importValue)+1;
+    size_t importAllocated;
+    char *importChars = _mm->allocate<char>(length, &importAllocated);
+    std::memcpy(importChars, importValue, length);
 
     s = struc();
     Level &l = _mm->resolve(s->levels)[s->levelsUsed];
@@ -181,20 +186,45 @@ void ColumnW::appendLevel(int value, const char *label)
     l.value = value;
     l.capacity = allocated;
     l.label = _mm->base(chars);
+    l.importCapacity = importAllocated;
+    l.importValue = _mm->base(importChars);
     l.count = 0;
 
     s->levelsUsed++;
     s->changes++;
 }
 
-void ColumnW::insertLevel(int value, const char *label)
+void ColumnW::updateLevelCounts() {
+    if (measureType() != MeasureType::CONTINUOUS)
+    {
+        ColumnStruct *s = struc();
+        Level *levels = _mm->resolve(s->levels);
+        int levelCount = s->levelsUsed;
+
+        for (int i = 0; i < levelCount; i++) {
+            Level &level = levels[i];
+            level.count = 0;
+        }
+
+        for (int i = 0; i < rowCount(); i++) {
+            int &v = this->cellAt<int>(i);
+            Level *level = rawLevel(v);
+            if (level != NULL) {
+                level->count++;
+            }
+        }
+    }
+}
+
+void ColumnW::insertLevel(int value, const char *label, const char *importValue)
 {
-    appendLevel(value, label); // add to end
+    appendLevel(value, label, importValue); // add to end
 
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
     int lastIndex = s->levelsUsed - 1;
     char *baseLabel = levels[lastIndex].label;
+    char *baseImportValue = levels[lastIndex].importValue;
 
     bool ascending = true;
     bool descending = true;
@@ -218,6 +248,7 @@ void ColumnW::insertLevel(int value, const char *label)
         Level &level = levels[lastIndex];
         level.value = value;
         level.label = baseLabel;
+        level.importValue = baseImportValue;
         level.count = 0;
     }
     else
@@ -240,6 +271,7 @@ void ColumnW::insertLevel(int value, const char *label)
             {
                 nextLevel.value = value;
                 nextLevel.label = baseLabel;
+                nextLevel.importValue = baseImportValue;
                 inserted = true;
                 break;
             }
@@ -250,6 +282,7 @@ void ColumnW::insertLevel(int value, const char *label)
             Level &level = levels[0];
             level.value = value;
             level.label = baseLabel;
+            level.importValue = baseImportValue;
             level.count = 0;
         }
     }

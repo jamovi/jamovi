@@ -81,9 +81,9 @@ int Column::levelCount() const
     return struc()->levelsUsed;
 }
 
-vector<pair<int, string> > Column::levels() const
+const vector<LevelData> Column::levels() const
 {
-    vector<pair<int, string> > m;
+    vector<LevelData> m;
 
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
@@ -91,7 +91,10 @@ vector<pair<int, string> > Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        pair<int, string> v(l.value, _mm->resolve(l.label));
+        LevelData v;
+        v.value = l.value;
+        v.label = _mm->resolve(l.label);
+        v.importValue = _mm->resolve(l.importValue);
         m.push_back(v);
     }
 
@@ -118,6 +121,26 @@ const char *Column::getLabel(int value) const
     throw runtime_error(ss.str());
 }
 
+const char *Column::getImportValue(int value) const
+{
+    if (value == INT_MIN)
+        return "";
+
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &l = levels[i];
+        if (l.value == value)
+            return _mm->resolve(l.importValue);
+    }
+
+    stringstream ss;
+    ss << "level " << value << " not found";
+    throw runtime_error(ss.str());
+}
+
 int Column::valueForLabel(const char *label) const
 {
     ColumnStruct *s = struc();
@@ -129,6 +152,11 @@ int Column::valueForLabel(const char *label) const
         const char *l = _mm->resolve(level.label);
         if (strcmp(l, label) == 0)
             return level.value;
+        else {
+            const char *iv = _mm->resolve(level.importValue);
+            if (strcmp(iv, label) == 0)
+                return level.value;
+        }
     }
 
     stringstream ss;
@@ -147,6 +175,11 @@ bool Column::hasLevel(const char *label) const
         const char *l = _mm->resolve(level.label);
         if (strcmp(l, label) == 0)
             return true;
+        else {
+            const char *iv = _mm->resolve(level.importValue);
+            if (strcmp(iv, label) == 0)
+                return true;
+        }
     }
 
     return false;

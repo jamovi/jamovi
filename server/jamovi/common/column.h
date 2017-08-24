@@ -37,8 +37,10 @@ typedef struct
 {
     int value;
     int capacity;
+    int importCapacity;
     int count;
     char *label;
+    char *importValue;
 
 } Level;
 
@@ -71,6 +73,14 @@ typedef struct
     char changes;
 
 } ColumnStruct;
+
+typedef struct LevelData
+{
+    int value;
+    std::string label;
+    std::string importValue;
+
+} LevelData;
 
 namespace MeasureType
 {
@@ -110,8 +120,9 @@ public:
     MeasureType::Type measureType() const;
     bool autoMeasure() const;
     int levelCount() const;
-    std::vector<std::pair<int, std::string> > levels() const;
+    const std::vector<LevelData> levels() const;
     const char *getLabel(int value) const;
+    const char *getImportValue(int value) const;
     int valueForLabel(const char *label) const;
     bool hasLevel(const char *label) const;
     bool hasLevel(int value) const;

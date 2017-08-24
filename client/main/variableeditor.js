@@ -17,14 +17,14 @@ const VariableEditor = Backbone.View.extend({
     className: 'VariableEditor',
     initialize() {
         this.$el.empty();
-        this.$el.addClass('silky-variable-editor');
+        this.$el.addClass('jmv-variable-editor');
 
-        this.$main = $('<div class="silky-variable-editor-main"></div>').appendTo(this.$el);
+        this.$main = $('<div class="jmv-variable-editor-main"></div>').appendTo(this.$el);
 
-        this.$ok = $('<div class="silky-variable-editor-ok"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
-        this.$revert = $('<div class="silky-variable-editor-revert"><span class="mif-undo"></span></div>').appendTo(this.$main);
-        this.$left = $('<div class="silky-variable-editor-button-left"><span class="mif-chevron-left"></span></div>').appendTo(this.$main);
-        this.$right = $('<div class="silky-variable-editor-button-right"><span class="mif-chevron-right"></span></div>').appendTo(this.$main);
+        this.$ok = $('<div class="jmv-variable-editor-ok"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
+        this.$revert = $('<div class="jmv-variable-editor-revert"><span class="mif-undo"></span></div>').appendTo(this.$main);
+        this.$left = $('<div class="jmv-variable-editor-button-left"><span class="mif-chevron-left"></span></div>').appendTo(this.$main);
+        this.$right = $('<div class="jmv-variable-editor-button-right"><span class="mif-chevron-right"></span></div>').appendTo(this.$main);
 
         this.editorModel = new VariableModel(this.model);
 

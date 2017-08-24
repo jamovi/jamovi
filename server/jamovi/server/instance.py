@@ -664,7 +664,7 @@ class Instance:
             if column_schema.hasLevels:
                 levels = [ ]
                 for level in column_schema.levels:
-                    levels.append((level.value, level.label))
+                    levels.append((level.value, level.label, level.importValue))
 
             column.change(
                 name=column_schema.name,
@@ -1029,11 +1029,13 @@ class Instance:
             for level in column.levels:
                 level_pb = column_schema.levels.add()
                 level_pb.label = level[1]
+                level_pb.importValue = level[2]
         elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
             for level in column.levels:
                 level_pb = column_schema.levels.add()
                 level_pb.value = level[0]
                 level_pb.label = level[1]
+                level_pb.importValue = level[2]
 
     def _add_to_recents(self, path):
 

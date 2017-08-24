@@ -374,10 +374,10 @@ class Column:
             self._create_child()
         self._child.append(value)
 
-    def insert_level(self, raw, label):
+    def insert_level(self, raw, label, importValue=None):
         if self._child is None:
             self._create_child()
-        self._child.insert_level(raw, label)
+        self._child.insert_level(raw, label, importValue)
 
     def get_value_for_label(self, label):
         if self._child is not None:

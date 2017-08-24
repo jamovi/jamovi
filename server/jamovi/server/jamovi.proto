@@ -350,6 +350,7 @@ message StoreResponse {
 message VariableLevel {
     string label = 1;
     int32 value = 2;
+    string importValue = 3;
 }
 
 enum ColumnType {

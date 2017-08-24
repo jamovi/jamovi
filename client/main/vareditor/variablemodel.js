@@ -21,7 +21,9 @@ const VariableModel = Backbone.Model.extend({
                 }
             }
             this.set('changes', changes);
-            this.dataset.set('varEdited', changes);
+            if (changes) {
+                this.dataset.set('varEdited', changes);
+            }
         });
     },
     defaults : {
@@ -35,6 +37,36 @@ const VariableModel = Backbone.Model.extend({
         changes : false,
         formula : '',
         formulaMessage : '',
+    },
+    editLevelLabel(index, label) {
+        let newLabel = label.trim();
+        let levels = this.get('levels');
+        if (levels[index].label === newLabel)
+            return levels[index];
+
+        let newLevels = [];
+        let alterationCount = 0;
+        let desiredLabel = newLabel;
+        for (let i = 0; i < levels.length; i++) {
+            if (i === index)
+                newLevels[i] = { value: levels[i].value, label: desiredLabel, importValue: levels[i].importValue };
+            else if (levels[i].label === desiredLabel) {
+                alterationCount += 1;
+                desiredLabel = newLabel + '(' + alterationCount + ')';
+                i = -1;
+            }
+            else if (i >= newLevels.length)
+                newLevels[i] = levels[i];
+        }
+
+        this.set({ levels: newLevels, changes: true, autoMeasure: false });
+        this.dataset.set('varEdited', true);
+
+        return newLevels[index];
+    },
+    setup(dict) {
+        this.original = dict;
+        this.set(dict);
     },
     setColumn(id) {
         let column = this.dataset.getColumnById(id);

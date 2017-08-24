@@ -280,7 +280,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             // populate levels
 
-            vector<pair<int, string> > m = column.levels();
+            vector<LevelData > m = column.levels();
 
             Rcpp::CharacterVector levels(m.size());
             Rcpp::IntegerVector values(m.size());
@@ -290,10 +290,10 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             for (auto p : m)
             {
-                values[j] = p.first;
-                levels[j] = Rcpp::String(p.second);
+                values[j] = p.value;
+                levels[j] = Rcpp::String(p.label);
                 j++;
-                indexes[p.first] = j;
+                indexes[p.value] = j;
             }
 
             // populate cells

@@ -16,6 +16,18 @@ import os.path
 
 from enum import Enum
 
+cdef extern from "column.h":
+    cdef struct CLevelData "LevelData":
+        int value;
+        string label;
+        string importValue;
+    ctypedef enum CMeasureType  "MeasureType::Type":
+        CMeasureTypeNone        "MeasureType::NONE"
+        CMeasureTypeNominalText "MeasureType::NOMINAL_TEXT"
+        CMeasureTypeNominal     "MeasureType::NOMINAL"
+        CMeasureTypeOrdinal     "MeasureType::ORDINAL"
+        CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
+
 cdef extern from "datasetw.h":
     cdef cppclass CDataSet "DataSetW":
         @staticmethod
@@ -148,14 +160,18 @@ cdef extern from "columnw.h":
         void setValue[T](int index, T value)
         T value[T](int index)
         const char *getLabel(int value) const
+        const char *getImportValue(int value) const
         int valueForLabel(const char *label) const
+        void appendLevel(int value, const char *label, const char *importValue)
         void appendLevel(int value, const char *label)
+        void insertLevel(int value, const char *label, const char *importValue)
         void insertLevel(int value, const char *label)
         int levelCount() const
         bool hasLevel(const char *label) const
         bool hasLevel(int value) const
         void clearLevels()
-        vector[pair[int, string]] levels()
+        void updateLevelCounts()
+        const vector[CLevelData] levels()
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
@@ -165,13 +181,7 @@ cdef extern from "columnw.h":
         const char *formulaMessage() const;
         void setFormulaMessage(const char *value);
 
-cdef extern from "column.h":
-    ctypedef enum CMeasureType  "MeasureType::Type":
-        CMeasureTypeNone        "MeasureType::NONE"
-        CMeasureTypeNominalText "MeasureType::NOMINAL_TEXT"
-        CMeasureTypeNominal     "MeasureType::NOMINAL"
-        CMeasureTypeOrdinal     "MeasureType::ORDINAL"
-        CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
+
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
@@ -188,6 +198,7 @@ class CellIterator:
         c = self._column[self._i]
         self._i += 1
         return c
+
 
 cdef class Column:
     cdef CColumn _this
@@ -297,17 +308,24 @@ cdef class Column:
         else:
             self._this.append[int](value)
 
-    def append_level(self, raw, label):
-        self._this.appendLevel(raw, label.encode('utf-8'))
+    def append_level(self, raw, label, importValue=None):
+        if importValue is None:
+            importValue = label
+        self._this.appendLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
-    def insert_level(self, raw, label):
-        self._this.insertLevel(raw, label.encode('utf-8'))
+    def insert_level(self, raw, label, importValue=None):
+        if importValue is None:
+            importValue = label
+        self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
     def get_value_for_label(self, label):
         return self._this.valueForLabel(label.encode('utf-8'))
 
     def clear_levels(self):
         self._this.clearLevels()
+
+    def _update_level_counts(self):
+        self._this.updateLevelCounts()
 
     @property
     def has_levels(self):
@@ -334,7 +352,7 @@ cdef class Column:
         arr = [ ]
         levels = self._this.levels()
         for level in levels:
-            arr.append((level.first, level.second.decode('utf-8')))
+            arr.append((level.value, level.label.decode('utf-8'), level.importValue.decode('utf-8')))
         return arr
 
     @property
@@ -436,22 +454,12 @@ cdef class Column:
                 self.measure_type = new_type
 
                 if levels is not None:
-                    old_levels = self.levels
-                    recode = { }
-                    for old_level in old_levels:
-                        for new_level in levels:
-                            if old_level[1] == new_level[1]:
-                                recode[old_level[0]] = new_level[0]
-                                break
 
                     self.clear_levels()
                     for level in levels:
-                        self.append_level(level[0], level[1])
+                        self.append_level(level[0], level[1], str(level[0]))
 
-                    for row_no in range(self.row_count):
-                        value = self._this.value[int](row_no)
-                        value = recode.get(value, -2147483648)
-                        self._this.setValue[int](row_no, value, True)
+                    self._update_level_counts()
 
             elif old_type == MeasureType.NOMINAL_TEXT or old_type == MeasureType.CONTINUOUS:
 
@@ -487,13 +495,13 @@ cdef class Column:
                     recode = { }
                     for old_level in old_levels:
                         for new_level in levels:
-                            if old_level[1] == new_level[1]:
+                            if old_level[2] == new_level[2]:
                                 recode[old_level[0]] = new_level[0]
                                 break
 
                     self.clear_levels()
                     for level in levels:
-                        self.append_level(level[0], level[1])
+                        self.append_level(level[0], level[1], level[2])
 
                     for row_no in range(self.row_count):
                         value = self._this.value[int](row_no)
@@ -631,6 +639,7 @@ cdef class MemoryMap:
 
 def decode(string str):
     return str.c_str().decode('utf-8')
+
 
 class MeasureType(Enum):
     NONE         = CMeasureTypeNone
