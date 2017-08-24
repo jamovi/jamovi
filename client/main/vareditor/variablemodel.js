@@ -89,6 +89,7 @@ const VariableModel = Backbone.Model.extend({
 
         let values = {
             name: this.attributes.name,
+            columnType: this.attributes.columnType,
             measureType: this.attributes.measureType,
             autoMeasure: this.attributes.autoMeasure,
             levels: this.attributes.levels,

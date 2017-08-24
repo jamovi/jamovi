@@ -1,6 +1,5 @@
 
 from ast import NodeTransformer
-from ast import Name
 
 
 class Transmogrifier(NodeTransformer):
@@ -19,8 +18,6 @@ class Transmogrifier(NodeTransformer):
     def visit_Call(self, node):
         new_args = node.args
         for i in range(len(new_args)):
-            arg = new_args[i]
-            if isinstance(arg, Name):
-                new_args[i] = self.visit_Name(arg)
+            new_args[i] = self.visit(new_args[i])
         node.args = new_args
         return node
