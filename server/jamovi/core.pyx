@@ -163,7 +163,9 @@ cdef extern from "columnw.h":
         const char *getImportValue(int value) const
         int valueForLabel(const char *label) const
         void appendLevel(int value, const char *label, const char *importValue)
+        void appendLevel(int value, const char *label)
         void insertLevel(int value, const char *label, const char *importValue)
+        void insertLevel(int value, const char *label)
         int levelCount() const
         bool hasLevel(const char *label) const
         bool hasLevel(int value) const
@@ -306,10 +308,14 @@ cdef class Column:
         else:
             self._this.append[int](value)
 
-    def append_level(self, raw, label, importValue):
+    def append_level(self, raw, label, importValue=None):
+        if importValue is None:
+            importValue = label
         self._this.appendLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
-    def insert_level(self, raw, label, importValue):
+    def insert_level(self, raw, label, importValue=None):
+        if importValue is None:
+            importValue = label
         self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
     def get_value_for_label(self, label):
@@ -473,7 +479,7 @@ cdef class Column:
                         if value != nan:
                             value = round(float(value))
                             if not self.has_level(value):
-                                self.insert_level(value, str(value), str(value))
+                                self.insert_level(value, str(value))
                         else:
                             value = -2147483648
                         self._this.setValue[int](i, value, True)
@@ -522,7 +528,7 @@ cdef class Column:
                 for i in range(len(uniques)):
                     v = float(uniques[i]) / multip
                     label = '{:.{}f}'.format(v, self.dps)
-                    self.append_level(i, label, label)
+                    self.append_level(i, label)
 
                 v2i = { }
                 for i in range(len(uniques)):
@@ -550,7 +556,7 @@ cdef class Column:
 
                 self.clear_levels()
                 for i in range(len(uniques)):
-                    self.append_level(i, str(uniques[i]), str(uniques[i]))
+                    self.append_level(i, str(uniques[i]))
 
                 v2i = { }
                 for i in range(len(uniques)):

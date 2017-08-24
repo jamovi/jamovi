@@ -307,9 +307,6 @@
     margin-right: 5px;
 }
 
-.jmv-variable-editor-level[data-changed=false] > .jmv-variable-editor-level-value {
-    /*display: none*/
-}
 
 .jmv-variable-editor-level-label {
     padding: 0;

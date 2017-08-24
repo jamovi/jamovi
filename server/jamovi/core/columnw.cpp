@@ -173,6 +173,8 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     char *chars = _mm->allocate<char>(length, &allocated);
     std::memcpy(chars, label, length);
 
+    if (importValue == NULL)
+        importValue = label;
     length = strlen(importValue)+1;
     size_t importAllocated;
     char *importChars = _mm->allocate<char>(length, &importAllocated);

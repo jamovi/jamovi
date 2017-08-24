@@ -34,22 +34,20 @@ const DataVarLevelWidget = function(level, model, i) {
         }
     };
 
-    this._change = event => {
-        let level = this.model.editLevelLabel(this.index, this.$label.val());
-        let diff = level.importValue !== level.label;
-        this.$el.attr('data-changed', diff);
-    };
-
     this._focus = event => {
         keyboardJS.pause('');
         this.$label.select();
     };
 
     this._blur = event => {
+        let label = this.$label.val();
+        let level = this.model.editLevelLabel(this.index, label);
+        let diff = level.importValue !== level.label;
+        if (label !== level.label)
+            this.$label.val(level.label);
         keyboardJS.resume();
     };
 
-    this.$label.on("change keyup paste", this._change);
     this.$label.focus(this._focus);
     this.$label.blur(this._blur);
     this.$label.keydown(this._keydown);

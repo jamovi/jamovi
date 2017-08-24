@@ -781,8 +781,20 @@ const TableView = SilkyView.extend({
                             }
 
                             if ( ! found) {
+                                let newLevels = [];
+                                let largestValue = null;
+                                for (let level of this.currentColumn.levels) {
+                                    if (largestValue === null || largestValue < level.value)
+                                        largestValue = level.value;
+                                    newLevels.push(level);
+                                }
+                                newLevels.push({ value: largestValue + 1, label: value, importValue: (largestValue + 1).toString() });
+                                this.currentColumn.levels = newLevels;
+                                return this.model.changeColumn(this.selection.colNo, this.currentColumn).then(n => {
+                                    return this._applyEdit();
+                                });
 
-                                return new Promise((resolve, reject) => {
+                                /*return new Promise((resolve, reject) => {
                                     keyboardJS.pause();
                                     this._editing = false;
                                     setTimeout(() => {
@@ -791,7 +803,7 @@ const TableView = SilkyView.extend({
                                             if (result === undefined)
                                                 reject({ title: 'Value', message: 'Editing cancelled.'});
                                             let n = parseInt(result);
-                                            if (isNaN(n) || n <= 0)
+                                            if (isNaN(n))
                                                 reject({ title: 'Value', message: 'Nominal/Ordinal values must be a positive integer.'});
                                             else
                                                 resolve(n);
@@ -830,7 +842,7 @@ const TableView = SilkyView.extend({
                                     return this.model.changeColumn(this.selection.colNo, this.currentColumn);
                                 }).then(n => {
                                     return this._applyEdit();
-                                });
+                                });*/
                             }
                         }
                         else if ( ! Number.isNaN(number))

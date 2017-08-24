@@ -374,7 +374,7 @@ class Column:
             self._create_child()
         self._child.append(value)
 
-    def insert_level(self, raw, label, importValue):
+    def insert_level(self, raw, label, importValue=None):
         if self._child is None:
             self._create_child()
         self._child.insert_level(raw, label, importValue)
