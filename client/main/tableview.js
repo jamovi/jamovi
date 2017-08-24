@@ -710,24 +710,33 @@ const TableView = SilkyView.extend({
         if (this.selection.top !== this.selection.bottom)
             return;
 
+        let rowNo = this.selection.rowNo;
+        let colNo = this.selection.colNo;
+        let column = this.model.attributes.columns[colNo];
+
+        if (column.columnType === 'computed') {
+            let err = {
+                title: 'Column is not editable',
+                message: 'Computed columns may not be edited',
+                type: 'error' };
+            this._notifyEditProblem(err);
+            return;
+        }
+
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
 
-        let rowNo = this.selection.rowNo;
-        let colNo = this.selection.colNo;
-        let type = this.model.attributes.columns[colNo].measureType;
-
         this.$selection.addClass('editing');
-        this.$selection.attr('data-measuretype', type);
+        this.$selection.attr('data-measuretype', column.measureType);
 
-        if (typeof(ch) === 'undefined') {
+        if (ch === undefined) {
             let value = this.model.valueAt(rowNo, colNo);
             this.$selection.val(value);
         }
 
         setTimeout(() => {
             this.$selection.select();
-            if (typeof(ch) !== 'undefined') {
+            if (ch !== undefined) {
                 this.$selection.val(ch);
                 this._edited = true;
             }
