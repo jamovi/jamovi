@@ -76,7 +76,7 @@
 }
 
 .jmv-variable-computed-options > .formula-box > .formula {
-    height: 90px;
+    height: 5.4em;
     flex: 1;
     resize: none;
     text-indent: 1em;
@@ -122,7 +122,20 @@
 }
 
 .jmv-variable-computed-options > .ops-box > .op:nth-child(2) {
-    margin: 0 10px;
+    margin: 0 0 0 10px;
+}
+
+/*.jmv-variable-computed-options > .ops-box > .op:nth-child(3) {
+    flex: 0.5;
+}*/
+
+.jmv-variable-computed-options > .ops-box > .op > .content > .subtitle {
+    border-bottom: 1px solid #CCCCCC;
+    /*border-top: 1px solid #CCCCCC;*/
+    text-align: center;
+    padding: 5px 0px;
+    margin: 5px;
+    font-weight: bold
 }
 
 .jmv-variable-computed-options > .ops-box > .op > .title {

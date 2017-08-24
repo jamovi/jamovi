@@ -10,6 +10,7 @@ const keyboardJS = require('keyboardjs');
 
 const DataVarWidget = require('./datavarwidget');
 const ComputedVarWidget = require('./computedvarwidget');
+const NewVarWidget = require('./newvarwidget');
 
 const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
@@ -58,6 +59,9 @@ const EditorWidget = Backbone.View.extend({
 
         this.$computedVarWidget = $('<div></div>').appendTo(this.$body);
         this.computedVarWidget = new ComputedVarWidget({ el: this.$computedVarWidget, model: this.model });
+
+        this.$newVarWidget = $('<div></div>').appendTo(this.$body);
+        this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
     },
     detach() {
         this.model.apply();
@@ -65,6 +69,7 @@ const EditorWidget = Backbone.View.extend({
 
         this.dataVarWidget.detach();
         this.computedVarWidget.detach();
+        this.newVarWidget.detach();
     },
     attach() {
         this.attached = true;
@@ -73,15 +78,26 @@ const EditorWidget = Backbone.View.extend({
             this.$title.val(name);
 
         let type = this.model.get('columnType');
-        if (type !== 'computed') {
+        if (type === 'data') {
             this.dataVarWidget.attach();
             this.$dataVarWidget.show();
+            this.$title.show();
             this.$computedVarWidget.hide();
+            this.$newVarWidget.hide();
         }
-        else {
+        else if (type === 'computed') {
             this.computedVarWidget.attach();
             this.$computedVarWidget.show();
+            this.$title.show();
             this.$dataVarWidget.hide();
+            this.$newVarWidget.hide();
+        }
+        else {
+            this.newVarWidget.attach();
+            this.$newVarWidget.show();
+            this.$dataVarWidget.hide();
+            this.$computedVarWidget.hide();
+            this.$title.hide();
         }
     }
 });

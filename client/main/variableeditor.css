@@ -5,7 +5,7 @@
 .jmv-variable-editor {
     background-color: #F8F8F8 ;
     width: 100% ;
-    height: 200px ;
+    height: 300px ;
     transition: height .2s, border-top .2s ;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC ;
@@ -20,7 +20,7 @@
 .jmv-variable-editor-main {
     position: relative ;
     margin: 0 auto ;
-    width: 600px ;
+    width: 700px ;
     height: 100% ;
     box-sizing: border-box;
     overflow: hidden ;
@@ -97,7 +97,7 @@
     position: absolute ;
     width: 40px ;
     height: 40px ;
-    top: 80px ;
+    top: 130px ;
     font-size: 40px ;
     color: #BBBBBB ;
     transition: opacity .2s ;
@@ -142,182 +142,22 @@
 .jmv-variable-editor-widget-title {
     font-size: 150% ;
     color: #555555 ;
-    margin-bottom: 9px ;
-
 
     -webkit-transition: all 0.30s ease-in-out;
     -moz-transition: all 0.30s ease-in-out;
     -ms-transition: all 0.30s ease-in-out;
     -o-transition: all 0.30s ease-in-out;
-    background-color: transparent;
+    background-color: #FFFFFF;
     padding: 3px 4px 3px 4px;
-    margin: 3px 0px 3px 0px;
+    margin: 3px 0px 10px 0px;
     outline: none;
-    border: 1px solid rgba(181, 202, 239, 0);
+    /*border: 1px solid #CCCCCC;*/
 }
 
 
 .jmv-variable-editor-widget-title:focus {
-  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
-  padding: 3px 4px 3px 4px;
-  margin: 3px 1px 3px 0px;
-  border: 1px solid rgba(181, 202, 239, 1);
-}
-
-.jmv-variable-editor-widget-body {
-    flex-grow: 1 ;
-    display: flex ;
-}
-
-.jmv-variable-editor-widget-left {
-    display: flex ;
-    flex-direction: column ;
-}
-
-.jmv-variable-editor-widget-types {
-    display: inline-block ;
-    width: 150px ;
-}
-
-.jmv-variable-editor-widget-types-highlight {
-    position: absolute ;
-    top: -4px ;
-    padding: 2px ;
-    width: 32px ;
-    height: 0 ;
-    background-color: #E8E8E8 ;
-    transition: all .2s ;
-    width: 150px ;
-}
-
-.jmv-variable-editor-autotype {
-    margin: 4px 0 0 24px ;
-}
-
-.jmv-variable-editor-widget-option {
-    padding: 2px ;
-    vertical-align: middle;
-    position: relative ;
-    z-index: 1 ;
-}
-
-.jmv-variable-editor-widget-option:hover {
-    background-color: #F0F0F0 ;
-}
-
-.jmv-variable-editor-widget-option.selected:hover {
-    background-color: #E8E8E8 ;
-}
-
-.jmv-variable-editor-widget span {
-    line-height: 20px ;
-}
-
-.jmv-variable-editor-widget input {
-    vertical-align: middle ;
-}
-
-.jmv-variable-editor-variable-type {
-    display: inline-block ;
-    width: 20px ;
-    height: 20px ;
-    background-size: 100% ;
-    vertical-align: top ;
-    margin-right: 6px ;
-    vertical-align: top ;
-}
-
-.jmv-variable-editor-autotype {
-    display: inline-block ;
-}
-
-.jmv-variable-editor-variable-type[data-type="nominaltext"] {
-    background-image: url('assets/variable-nominal-text.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="nominal"] {
-    background-image: url('assets/variable-nominal.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="ordinal"] {
-    background-image: url('assets/variable-ordinal.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="continuous"] {
-    background-image: url('assets/variable-continuous.svg');
-}
-
-.jmv-variable-editor-levels {
-    display: inline-block ;
-    vertical-align: top ;
-    margin-left: 12px ;
-    height: 140px ;
-    width: 220px ;
-    background-color: white ;
-    border: 1px solid #CCCCCC ;
-    box-sizing: border-box ;
-    padding-top: 4px ;
-    padding-bottom: 4px ;
-    overflow-y: auto ;
-    overflow-x: hidden ;
-}
-
-.jmv-variable-editor-level.selected,
-.jmv-variable-editor-level.selected > .jmv-variable-editor-level-label:not(:focus) {
-    background-color: #B5CAEF ;
-}
-
-.jmv-variable-editor-widget-move {
-    display: inline-block ;
-    vertical-align: top ;
-    font-size: 150% ;
-    margin-left: 8px ;
-    color: #BBBBBB ;
-}
-
-.jmv-variable-editor-widget-move-up,
-.jmv-variable-editor-widget-move-down {
-    margin-bottom: 4px ;
-    transition: opacity .2s ;
-}
-
-.jmv-variable-editor-widget-move-up.disabled,
-.jmv-variable-editor-widget-move-down.disabled {
-    opacity: 0.4 ;
-}
-
-.jmv-variable-editor-widget-move-up:not(.disabled):hover,
-.jmv-variable-editor-widget-move-down:not(.disabled):hover {
-    color: #999999 ;
-}
-
-.jmv-variable-editor-level {
-    padding: 5px 0px 5px 12px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column-reverse;
-    border-bottom: 1px solid #e6e6e6;
-}
-
-.jmv-variable-editor-level-value {
-    padding-left: 4px;
-    padding-top: 2px;
-    font-size: 80%;
-    text-align: right;
-    margin-right: 5px;
-}
-
-
-.jmv-variable-editor-level-label {
-    padding: 0;
-    padding-left: 4px;
-    border-bottom-style: none;
-    border-right-style: none;
-    border-top-style: none;
-    border-left-style: none;
-    border-width: 1px;
-    border-color: #e6e6e6;
-    height: 100%;
-    outline: none;
-    margin-right: 5px;
+    /*box-shadow: 0 0 5px rgba(181, 202, 239, 1);*/
+    /*padding: 3px 4px 3px 4px;*/
+    /*margin: 3px 1px 10px 0px;*/
+    /*border: 1px solid rgba(181, 202, 239, 1);*/
 }

@@ -14,29 +14,29 @@ function insertText(el, newText, cursorOffset = 0) {
     let range = sel.getRangeAt(0);
     let start = range.startOffset;
     let end = range.endOffset;
-    let text = el.innerHTML;
+    let text = el.textContent;
     let before = text.substring(0, start);
     let after  = text.substring(end, text.length);
 
     if (cursorOffset === -1 && start !== end) {
         let textSelected = text.substring(start, end);
-        el.innerHTML = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
+        el.textContent = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
     } else {
-        el.innerHTML = (before + newText + after);
+        el.textContent = (before + newText + after);
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + cursorOffset);
     }
     el.focus();
 }
 
 function insertInto(open, close, input){
-    let val = input.innerHTML, s = input.selectionStart, e = input.selectionEnd;
+    let val = input.textContent, s = input.selectionStart, e = input.selectionEnd;
     if (e==s) {
-        input.innerHTML = val.slice(0,e) + open + close + val.slice(e);
+        input.textContent = val.slice(0,e) + open + close + val.slice(e);
         input.selectionStart += close.length;
         input.selectionEnd = e + close.length;
     } else {
-        input.innerHTML = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
+        input.textContent = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
         input.selectionStart += close.length + 1;
         input.selectionEnd = e + close.length;
     }
@@ -75,13 +75,17 @@ const ComputedVarWidget = Backbone.View.extend({
             keyboardJS.resume();
         });
         this.$formula.on('keydown', (event) => {
-            if (event.keyCode === 13 && event.shiftKey === false) {
+            if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 this.model.apply();
+                event.preventDefault();
+            }
+
+            if (event.keyCode === 9) {    //tab
                 event.preventDefault();
             }
         });
         this.$formula.on('input', (event) => {
-            this.model.set('formula', this.$formula[0].innerHTML);
+            this.model.set('formula', this.$formula[0].textContent);
         });
 
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
@@ -93,26 +97,44 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$functions = $('<div class="op"></div>').appendTo(this.$ops);
         this.$functionsTitle = $('<div class="title">Functions</div>').appendTo(this.$functions);
         this.$functionsContent = $('<div class="content"></div>').appendTo(this.$functions);
-        this.$functionsContent.append($('<div class="item" data-name="EXP">EXP</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="LOG">LOG</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="LOG10">LOG10</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SD">SD</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SQRT">SQRT</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
 
+        this.$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="ABS">ABS</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="EXP">EXP</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="LN">LN</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="LOG10">LOG10</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="SQRT">SQRT</div>'));
+
+        this.$functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VMODE">VMODE</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VSE">VSE</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VSTDEV">VSTDEV</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
+
+        this.$functionsContent.append($('<div class="subtitle" data-name="">Simulation</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="BETA">BETA</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="GAMMA">GAMMA</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="NORM">NORM</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="UNIF">UNIF</div>'));
 
         this.$functionsContent.on("dblclick", (event) => {
             if ($(event.target).hasClass('item')) {
                 insertText(this.$formula[0], event.target.dataset.name + "()", -1);
-                this.model.set('formula', this.$formula[0].innerHTML);
+                this.model.set('formula', this.$formula[0].textContent);
             }
         });
 
         this.$functionsContent.on("click", (event) => {
             this.$formula.focus();
             $(".content .item").removeClass("item-activated");
-            $(event.target).addClass("item-activated");
+            if ($(event.target).hasClass("item"))
+                $(event.target).addClass("item-activated");
         });
 
         this.$vars = $('<div class="op"></div>').appendTo(this.$ops);
@@ -122,7 +144,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$varsContent.on("dblclick", (event) => {
             if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
                 insertText(this.$formula[0], event.target.dataset.name);
-                this.model.set('formula', this.$formula[0].innerHTML);
+                this.model.set('formula', this.$formula[0].textContent);
             }
         });
 
@@ -132,32 +154,33 @@ const ComputedVarWidget = Backbone.View.extend({
             $(event.target).addClass("item-activated");
         });
 
-        this.$math = $('<div class="op"></div>').appendTo(this.$ops);
-        this.$mathTitle = $('<div class="title">Operators</div>').appendTo(this.$math);
-        this.$mathContent = $('<div class="content"></div>').appendTo(this.$math);
-        this.$mathContent.append($('<div class="item" data-name="+">+</div>'));
-        this.$mathContent.append($('<div class="item" data-name="-">-</div>'));
-        this.$mathContent.append($('<div class="item" data-name="*">*</div>'));
-        this.$mathContent.append($('<div class="item" data-name="/">/</div>'));
-        this.$mathContent.append($('<div class="item" data-name="^">^</div>'));
-
-        this.$mathContent.on("dblclick", (event) => {
-            if ($(event.target).hasClass('item')) {
-                insertText(this.$formula[0], " " + event.target.dataset.name + " ");
-                this.model.set('formula', this.$formula[0].innerHTML);
-            }
-        });
-        this.$mathContent.on("click", (event) => {
-            this.$formula.focus();
-            $(".content .item").removeClass("item-activated");
-            $(event.target).addClass("item-activated");
-        });
+        // this.$math = $('<div class="op"></div>').appendTo(this.$ops);
+        // this.$mathTitle = $('<div class="title">Operators</div>').appendTo(this.$math);
+        // this.$mathContent = $('<div class="content"></div>').appendTo(this.$math);
+        // this.$mathContent.append($('<div class="item" data-name="+">+</div>'));
+        // this.$mathContent.append($('<div class="item" data-name="-">-</div>'));
+        // this.$mathContent.append($('<div class="item" data-name="*">*</div>'));
+        // this.$mathContent.append($('<div class="item" data-name="/">/</div>'));
+        // this.$mathContent.append($('<div class="item" data-name="^">^</div>'));
+        // this.$mathContent.append($('<div class="item" data-name="%">%</div>'));
+        //
+        // this.$mathContent.on("dblclick", (event) => {
+        //     if ($(event.target).hasClass('item')) {
+        //         insertText(this.$formula[0], " " + event.target.dataset.name + " ");
+        //         this.model.set('formula', this.$formula[0].textContent);
+        //     }
+        // });
+        // this.$mathContent.on("click", (event) => {
+        //     this.$formula.focus();
+        //     $(".content .item").removeClass("item-activated");
+        //     $(event.target).addClass("item-activated");
+        // });
 
     },
     _setFormula(formula) {
         if ( ! this.attached)
             return;
-        this.$formula[0].innerHTML = formula;
+        this.$formula[0].textContent = formula;
     },
     _setFormulaMessage(formulaMessage) {
         if ( ! this.attached)
