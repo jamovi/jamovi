@@ -53,11 +53,14 @@
     margin-top: 10px;
 }
 
-.silky-tableview {
-
+.jmv-tableview.resizing .jmv-column,
+.jmv-tableview.resizing .jmv-column-header,
+.jmv-tableview.resizing .jmv-table-cell-selected,
+.jmv-tableview.resizing .jmv-table-column-highlight {
+    transition: none ;
 }
 
-.silky-table-container {
+.jmv-table-container {
     position: relative ;
     overflow: auto ;
     width: 100% ;
@@ -67,35 +70,45 @@
     background-color: #F8F8F8 ;
 }
 
-.silky-column {
+.jmv-column {
     position: absolute ;
     background-color: white ;
 }
 
-.silky-column,
-.silky-column-header {
+.jmv-column,
+.jmv-column-header {
     transition: .2s left ;
 }
 
-.silky-column-row-header {
+.jmv-column-row-header {
     position: absolute ;
     z-index: 20 ;
     color: #555555 ;
 }
 
-.silky-table-header {
+.jmv-table-header {
     position: absolute ;
     width: 100% ;
-    overflow: hidden ;
     z-index: 20 ;
+    overflow: hidden ;
     box-sizing: border-box ;
 }
 
-.silky-column-header:first-child {
+.jmv-table-header-background {
+    position: absolute ;
+    left: 0 ;
+    top: 0 ;
+    width: 100% ;
+    height: 100% ;
+    border-bottom: 1px solid #ACACAC ;
+    box-sizing: border-box ;
+}
+
+.jmv-column-header:first-child {
     padding-left: 0 ;
 }
 
-.silky-column-header {
+.jmv-column-header {
     position: absolute ;
 
     top: 0 ;
@@ -106,28 +119,34 @@
     background-color: #E6E6E6 ;
     border-image-slice: 1 ;
     box-sizing: border-box ;
-    overflow: hidden;
 
     background-repeat: no-repeat ;
     background-size: auto 80% ;
     background-position: 6px 1px ;
 }
 
-.silky-column-header.highlighted,
-.silky-row-header-cell.highlighted {
+.jmv-column-header.highlighted,
+.jmv-row-header-cell.highlighted {
     background-color: #CCCCCC ;
     color: #3E6DA9 ;
 }
 
-.silky-row-header-cell.virtual {
+.jmv-column-cell,
+.jmv-column-header-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.jmv-row-header-cell.virtual {
     color: #BFBFBF ;
 }
 
-.silky-column-header:first-child {
+.jmv-column-header:first-child {
     position: relative ;
 }
 
-.silky-column-header-resizer {
+.jmv-column-header-resizer {
     position: absolute ;
     top: -6px ;
     right: -6px ;
@@ -139,25 +158,25 @@
     opacity: 0 ;
 }
 
-.silky-column[data-measuretype="continuous"],
-.silky-column[data-measuretype="nominal"],
-.silky-column[data-measuretype="ordinal"],
-.silky-column[data-measuretype="nominaltext"] .silky-column-cell[data-type="number"] {
+.jmv-column[data-measuretype="continuous"],
+.jmv-column[data-measuretype="nominal"],
+.jmv-column[data-measuretype="ordinal"],
+.jmv-column[data-measuretype="nominaltext"] .jmv-column-cell[data-type="number"] {
     text-align: right ;
 }
 
-.silky-column[data-measuretype="nominaltext"] .silky-column-cell[data-type="string"] {
+.jmv-column[data-measuretype="nominaltext"] .jmv-column-cell[data-type="string"] {
     text-align: left ;
 }
 
-.silky-column-cell {
+.jmv-column-cell {
     padding-left: 10px ;
     padding-right: 10px ;
     overflow: hidden ;
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-input.silky-table-cell-selected {
+.jmv-table-cell-selected {
     position: absolute ;
     border: 1px solid #FFFFFF ;
     z-index: 10 ;
@@ -173,43 +192,43 @@ input.silky-table-cell-selected {
     top: -100px ;
 }
 
-input.silky-table-cell-selected.copying {
+input.jmv-table-cell-selected.copying {
     border: 1px dashed #5E8BC4 ;
 }
 
-.silky-table-cell-selected:not(.editing) {
+.jmv-table-cell-selected:not(.editing) {
     cursor: default ;
     pointer-events: none ;
 }
 
-.silky-table-cell-selected[data-measuretype="continuous"],
-.silky-table-cell-selected[data-measuretype="nominal"],
-.silky-table-cell-selected[data-measuretype="ordinal"] {
+.jmv-table-cell-selected[data-measuretype="continuous"],
+.jmv-table-cell-selected[data-measuretype="nominal"],
+.jmv-table-cell-selected[data-measuretype="ordinal"] {
     text-align: right ;
 }
 
-.silky-table-cell-selected br {
+.jmv-table-cell-selected br {
     display: none ;
 }
 
-.silky-table-cell-selected.editing {
+.jmv-table-cell-selected.editing {
     background-color: white ;
 }
 
-.silky-table-row-highlight,
-.silky-table-column-highlight {
+.jmv-table-row-highlight,
+.jmv-table-column-highlight {
     position: absolute ;
     z-index: 40 ;
 }
 
-.silky-table-row-highlight {
+.jmv-table-row-highlight {
     border-right: 2px solid #5E8BC4 ;
     transition: top 0.1s, width 0.1s, height 0.1s ;
     box-sizing: border-box;
     top: -100px ; /* overridden by code */
 }
 
-.silky-table-column-highlight {
+.jmv-table-column-highlight {
     top: -2px ;
     left: -100px ; /* overridden by code */
     border-bottom: 2px solid #5E8BC4 ;
@@ -217,40 +236,40 @@ input.silky-table-cell-selected.copying {
     pointer-events: none ;
 }
 
-.silky-column-header[data-columntype="computed"] {
+.jmv-column-header[data-columntype="computed"] {
     background-image: url('assets/variable-computed.svg');
 }
 
-.silky-column-header[data-columntype="data"][data-measuretype="nominaltext"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="nominaltext"] {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.silky-column-header[data-columntype="data"][data-measuretype="nominal"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="nominal"] {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.silky-column-header[data-columntype="data"][data-measuretype="ordinal"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="ordinal"] {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.silky-column-header[data-columntype="data"][data-measuretype="continuous"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] {
     background-image: url('assets/variable-continuous.svg');
 }
 
-.silky-table-body {
+.jmv-table-body {
     position: absolute ;
     background-color: white ;
 }
 
-.silky-row-header-cell,
-.silky-column-cell {
+.jmv-row-header-cell,
+.jmv-column-cell {
     position: absolute ;
     box-sizing: border-box ;
     padding: 4px 6px 2px 6px ;
     width: 100% ;
 }
 
-.silky-row-header-cell {
+.jmv-row-header-cell {
     background-color: #E6E6E6 ;
     text-align: center ;
     border-width: 0 1px 1px 0 ;
@@ -261,8 +280,7 @@ input.silky-table-cell-selected.copying {
     box-sizing: border-box ;
 }
 
-.silky-column-cell {
-    background-color: white ;
+.jmv-column-cell {
     border-right: 1px solid #DEDEDE ;
     border-bottom: 1px solid #DEDEDE ;
 }

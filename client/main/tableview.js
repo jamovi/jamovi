@@ -35,20 +35,20 @@ const TableView = SilkyView.extend({
         this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
-        this.$el.addClass("silky-tableview");
+        this.$el.addClass("jmv-tableview");
 
         let html = '';
-        html += '<div class="silky-table-header">';
-        html += '    <div class="silky-column-header" style="width: 110%">&nbsp;</div>';
+        html += '<div class="jmv-table-header">';
+        html += '    <div class="jmv-column-header" style="width: 110%">&nbsp;</div>';
         html += '</div>';
-        html += '<div class="silky-table-container">';
-        html += '    <div class="silky-table-body"></div>';
+        html += '<div class="jmv-table-container">';
+        html += '    <div class="jmv-table-body"></div>';
         html += '</div>';
 
         this.$el.html(html);
-        this.$container = this.$el.find('.silky-table-container');
-        this.$header    = this.$el.find('.silky-table-header');
-        this.$body      = this.$container.find('.silky-table-body');
+        this.$container = this.$el.find('.jmv-table-container');
+        this.$header    = this.$el.find('.jmv-table-header');
+        this.$body      = this.$container.find('.jmv-table-body');
         this.$columns   = [ ];
         this.$headers   = [ ];
 
@@ -116,7 +116,7 @@ const TableView = SilkyView.extend({
         this.$header.append($header);
         this.$headers.push($header);
 
-        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
         this.$columns.push($column);
 
@@ -133,7 +133,10 @@ const TableView = SilkyView.extend({
         this.$header.empty();  // clear the temporary cell
 
         // add the top-left corner cell
-        this.$header.append('<div class="silky-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
+        this.$header.append('<div class="jmv-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
+
+        // add a background for its border line
+        this.$header.append('<div class="jmv-table-header-background"></div>');
 
         let columns = this.model.get('columns');
         this._bodyWidth = this.rowHeaderWidth;
@@ -146,7 +149,7 @@ const TableView = SilkyView.extend({
             this._addColumnToView(column);
         }
 
-        this.$rhColumn = $('<div class="silky-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
+        this.$rhColumn = $('<div class="jmv-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
 
         let vRowCount = this.model.get('vRowCount');
         let totalHeight = vRowCount * this._rowHeight;
@@ -154,18 +157,19 @@ const TableView = SilkyView.extend({
 
         this._updateViewRange();
 
-        let $resizers = this.$header.find('.silky-column-header-resizer');
+        let $resizers = this.$header.find('.jmv-column-header-resizer');
         $resizers.on('drag', event => this._columnResizeHandler(event));
+        $resizers.on('mousedown', event => event.stopPropagation());
 
-        this.$selection = $('<input class="silky-table-cell-selected" contenteditable>');
+        this.$selection = $('<input class="jmv-table-cell-selected" contenteditable>');
         this.$selection.width(this._lefts[0]);
         this.$selection.height(this._rowHeight);
         this.$selection.appendTo(this.$body);
 
-        this.$selectionRowHighlight = $('<div class="silky-table-row-highlight"></div>');
+        this.$selectionRowHighlight = $('<div class="jmv-table-row-highlight"></div>');
         this.$selectionRowHighlight.appendTo(this.$body);
 
-        this.$selectionColumnHighlight = $('<div class="silky-table-column-highlight"></div>');
+        this.$selectionColumnHighlight = $('<div class="jmv-table-column-highlight"></div>');
         this.$selectionColumnHighlight.appendTo(this.$header);
 
         this.$selection.on('focus', event => this._beginEditing());
@@ -270,7 +274,7 @@ const TableView = SilkyView.extend({
 
             if (changes.nameChanged) {
                 let header = this.$headers[column.index];
-                let $label = $(header).find('.silky-column-header-label');
+                let $label = $(header).find('.jmv-column-header-label');
                 $label.text(column.name);
             }
         }
@@ -439,7 +443,7 @@ const TableView = SilkyView.extend({
         let element = document.elementFromPoint(event.clientX, event.clientY);
         let $element = $(element);
 
-        let $header = $element.closest('.silky-column-header');
+        let $header = $element.closest('.jmv-column-header');
         if ($header.length > 0) {
             let colNo = $header.data('index');
             this._endEditing().then(() => {
@@ -1147,7 +1151,7 @@ const TableView = SilkyView.extend({
         this.$headers.splice(column.index, 0, $header);
 
         $after = $(this.$columns[column.index]);
-        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         $column.insertBefore($after);
         this.$columns.splice(column.index, 0, $column);
 
@@ -1353,6 +1357,11 @@ const TableView = SilkyView.extend({
             x = newWidth - this._widths[colNo];
         }
 
+        this.$el.addClass('resizing');
+
+        // forcing a reflow
+        this.$el[0].offsetHeight; // jshint ignore:line
+
         this._widths[colNo] = newWidth;
         let $header = $(this.$headers[colNo]);
         let $column = $(this.$columns[colNo]);
@@ -1375,9 +1384,14 @@ const TableView = SilkyView.extend({
             let width = this._widths[this.selection.colNo];
             let height = this._rowHeight;
 
-            this.$selection.css({ left: x, top: y, width: width, height: height});
+            this.$selection.css({ left: x, top: y, width: width, height: height });
             this.$selectionColumnHighlight.css({ left: x, width: width, height: height });
         }
+
+        this._bodyWidth += x;
+        this.$body.css('width',  this._bodyWidth);
+
+        this.$el.removeClass('resizing');
 
         this._resizeHandler();
     },
@@ -1562,9 +1576,9 @@ const TableView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="silky-column-header silky-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
-        html +=     '<span class="silky-column-header-label">' + column.name + '</span>';
-        html +=     '<div class="silky-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
+        html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
+        html +=     '<div class="jmv-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
         html += '</div>';
 
         return html;
@@ -1572,7 +1586,7 @@ const TableView = SilkyView.extend({
     _createCell(top, height, rowNo, colNo) {
 
         let $cell = $('<div ' +
-            ' class="silky-column-cell"' +
+            ' class="jmv-column-cell"' +
             ' data-row="' + rowNo + '"' +
             ' data-col="' + colNo + '"' +
             ' style="top : ' + top + 'px ; height : ' + height + 'px">' +
@@ -1590,7 +1604,7 @@ const TableView = SilkyView.extend({
         if (rowNo >= this.model.attributes.rowCount)
             virtual = ' virtual';
 
-        let $cell = $('<div class="silky-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>');
+        let $cell = $('<div class="jmv-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>');
 
         return $cell;
     },
