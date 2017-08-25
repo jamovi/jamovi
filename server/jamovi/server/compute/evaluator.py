@@ -34,7 +34,16 @@ class Evaluator(ast.NodeVisitor):
         return self.visit(node.value)
 
     def visit_Name(self, node):
-        return node.column[self._row_no]
+        v = node.column[self._row_no]
+        if isinstance(v, float):
+            return v
+        elif isinstance(v, int):
+            if v == -2147483648:
+                return NaN
+            else:
+                return v
+        else:
+            return NaN
 
     def visit_Call(self, node):
         name = node.func.id
