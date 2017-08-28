@@ -142,22 +142,10 @@
 .jmv-variable-editor-widget-title {
     font-size: 150% ;
     color: #555555 ;
-    -webkit-transition: all 0.30s ease-in-out;
-    -moz-transition: all 0.30s ease-in-out;
-    -ms-transition: all 0.30s ease-in-out;
-    -o-transition: all 0.30s ease-in-out;
     background-color: white;
     padding: 3px 4px 3px 4px;
     margin: 3px 27px 3px 0px;
-    outline: none;
     border: 1px solid #CCCCCC;
-}
-
-
-.jmv-variable-editor-widget-title:focus {
-  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
-  margin: 3px 18px 3px 0px;*/
-  border: 1px solid rgba(181, 202, 239, 1);
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-title {
