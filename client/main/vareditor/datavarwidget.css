@@ -84,12 +84,25 @@
     background-image: url('assets/variable-continuous.svg');
 }
 
-.jmv-variable-editor-levels {
-    display: inline-block ;
+.jmv-variable-editor-levels-container {
     flex-grow: 1;
     vertical-align: top ;
+    display: inline-block ;
     margin-left: 30px ;
+}
+
+.jmv-variable-editor-levels-title {
+    background-color: #E8E8E8;
+    border: 1px solid #CCCCCC;
+    border-bottom-style: none;
+    text-align: center;
+    padding: 3px 0px;
+}
+
+.jmv-variable-editor-levels {
+
     margin-bottom: 30px ;
+    height: 90%;
     /*height: 140px ;*/
     /*width: 220px ;*/
     background-color: white ;
@@ -146,6 +159,9 @@
     margin-right: 5px;
 }
 
+.jmv-variable-editor-level[data-changed=false] > .jmv-variable-editor-level-value {
+    display: none
+}
 
 .jmv-variable-editor-level-label {
     padding: 0;

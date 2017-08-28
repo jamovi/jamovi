@@ -19,7 +19,7 @@ const VariableEditor = Backbone.View.extend({
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor');
 
-        this.$main = $('<div class="jmv-variable-editor-main"></div>').appendTo(this.$el);
+        this.$main = $('<div class="jmv-variable-editor-main" data-type="none"></div>').appendTo(this.$el);
 
         this.$ok = $('<div class="jmv-variable-editor-ok"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
         this.$revert = $('<div class="jmv-variable-editor-revert"><span class="mif-undo"></span></div>').appendTo(this.$main);
@@ -128,6 +128,7 @@ const VariableEditor = Backbone.View.extend({
     _update() {
         let columnName = this.model.attributes.editingVar;
         let column = this.model.attributes.columns[columnName];
+        this.$main.attr('data-type', column.columnType);
         this.editorModel.setColumn(column.id);
     },
     _editingVarChanged(event) {
