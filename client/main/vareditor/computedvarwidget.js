@@ -23,6 +23,10 @@ function insertText(el, newText, cursorOffset = 0) {
         el.textContent = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
     } else {
+
+        if (newText.search(/[ ~!@#$%^&*()+=-\[\]{};,<>?/\\]/) !== -1)
+            newText = '\`' + newText + '\`';
+
         el.textContent = (before + newText + after);
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + cursorOffset);
     }
