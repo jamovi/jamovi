@@ -87,6 +87,7 @@
     border: 1px solid #CCCCCC;
     cursor: text;
     overflow-y: auto;
+    max-width: 366px;
 }
 
 [contenteditable=true]:empty:before {
@@ -122,7 +123,7 @@
 }
 
 .jmv-variable-computed-options > .ops-box > .op:nth-child(2) {
-    margin: 0 0 0 10px;
+    margin-left: 10px;
 }
 
 /*.jmv-variable-computed-options > .ops-box > .op:nth-child(3) {

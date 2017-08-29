@@ -24,7 +24,7 @@ function insertText(el, newText, cursorOffset = 0) {
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
     } else {
 
-        if (newText.search(/[ ~!@#$%^&*()+=-\[\]{};,<>?/\\]/) !== -1)
+        if (cursorOffset !== -1 && newText.search(/[ ~!@#$%^&*\+\-\=()\[\]{};,<>?/\\]/) !== -1)
             newText = '\`' + newText + '\`';
 
         el.textContent = (before + newText + after);
