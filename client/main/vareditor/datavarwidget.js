@@ -19,8 +19,10 @@ const DataVarWidget = Backbone.View.extend({
         this.$left = $('<div class="jmv-variable-editor-widget-left"></div>').appendTo(this.$body);
         this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
-        
-        this.$levels = $('<div class="jmv-variable-editor-levels"></div>').appendTo(this.$body);
+
+        this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$body);
+        this.$levelsTitle = $('<div class="jmv-variable-editor-levels-title">Levels</div>').appendTo(this.$levelsContainer);
+        this.$levels = $('<div class="jmv-variable-editor-levels"></div>').appendTo(this.$levelsContainer);
         this.$levelItems = $();
         this.levelCtrls = [];
 
