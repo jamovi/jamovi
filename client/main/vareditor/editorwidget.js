@@ -79,18 +79,18 @@ const EditorWidget = Backbone.View.extend({
 
         let type = this.model.get('columnType');
         if (type === 'data') {
-            this.dataVarWidget.attach();
             this.$dataVarWidget.show();
             this.$title.show();
             this.$computedVarWidget.hide();
             this.$newVarWidget.hide();
+            this.dataVarWidget.attach();
         }
         else if (type === 'computed') {
-            this.computedVarWidget.attach();
             this.$computedVarWidget.show();
             this.$title.show();
             this.$dataVarWidget.hide();
             this.$newVarWidget.hide();
+            this.computedVarWidget.attach();
         }
         else {
             this.newVarWidget.attach();
