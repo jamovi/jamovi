@@ -272,6 +272,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
                 nextLevel.value = value;
                 nextLevel.label = baseLabel;
                 nextLevel.importValue = baseImportValue;
+                nextLevel.count = 0;
                 inserted = true;
                 break;
             }
