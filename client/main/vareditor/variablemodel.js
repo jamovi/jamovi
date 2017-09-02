@@ -39,30 +39,43 @@ const VariableModel = Backbone.Model.extend({
         formulaMessage : '',
     },
     editLevelLabel(index, label) {
-        let newLabel = label.trim();
-        let levels = this.get('levels');
-        if (levels[index].label === newLabel)
-            return levels[index];
 
-        let newLevels = [];
-        let alterationCount = 0;
-        let desiredLabel = newLabel;
-        for (let i = 0; i < levels.length; i++) {
-            if (i === index)
-                newLevels[i] = { value: levels[i].value, label: desiredLabel, importValue: levels[i].importValue };
-            else if (levels[i].label === desiredLabel) {
-                alterationCount += 1;
-                desiredLabel = newLabel + '(' + alterationCount + ')';
-                i = -1;
-            }
-            else if (i >= newLevels.length)
-                newLevels[i] = levels[i];
+        label = label.trim();
+        let levels = this.get('levels');
+        let level = levels[index];
+        if (level.label === label)
+            return level;
+
+        level = Object.assign({}, level);  // clones
+        levels = levels.slice();
+
+        let valueAsString = Number(level.value).toString();
+
+        if (label === '') {
+            // if empty, set back to the original
+            label = valueAsString;
+        }
+        else if (label !== valueAsString) {
+            // check that the label isn't already in use
+            let existing = levels.map(level => level.label);
+
+            if (Number.isFinite(Number(label)))
+                label = '"' + label + '"';
+
+            let newLabel = label; // modify label if already in use
+            let c = 2;
+            while (existing.includes(newLabel))
+                newLabel = label + ' (' + c++ + ')';
+            label = newLabel;
         }
 
-        this.set({ levels: newLevels, changes: true, autoMeasure: false });
+        level.label = label;
+        levels[index] = level;
+
+        this.set({ levels: levels, changes: true, autoMeasure: false });
         this.dataset.set('varEdited', true);
 
-        return newLevels[index];
+        return level;
     },
     setup(dict) {
         this.original = dict;
