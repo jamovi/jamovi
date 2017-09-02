@@ -429,6 +429,15 @@ const DataSetModel = Backbone.Model.extend({
                     };
                 }
 
+                // formula columns which have also changed
+                for (let name of datasetPB.columnsDataChanged) {
+                    if ( ! changed.includes(name)) {
+                        let column = this.getColumn(name);
+                        changed.push(name);
+                        changes.push({ id: column.id, name: column.name, dataChanged: true });
+                    }
+                }
+
                 if (nCreated > 0) {
                     this.set('columnCount', this.attributes.columnCount + nCreated);
                     this.set('vColumnCount', this.attributes.vColumnCount + nCreated);
@@ -882,6 +891,15 @@ const DataSetViewModel = DataSetModel.extend({
                 if ( ! changed.includes(name)) {
                     changed.push(name);
                     changes.push({ id: column.id, oldName: name, dataChanged: true });
+                }
+            }
+
+            // formula columns which have also changed
+            for (let name of datasetPB.columnsDataChanged) {
+                if ( ! changed.includes(name)) {
+                    let column = this.getColumn(name);
+                    changed.push(name);
+                    changes.push({ id: column.id, name: column.name, dataChanged: true });
                 }
             }
 

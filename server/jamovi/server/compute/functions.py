@@ -2,7 +2,6 @@ import statistics as stats
 import random
 import math
 
-from itertools import chain
 
 NaN = float('nan')
 
@@ -61,41 +60,40 @@ class RowFunctions:
 class ColumnFunctions:
 
     @staticmethod
-    def VMEAN(arg0, *args):
-        values = chain(arg0, *args)
+    def VMEAN(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.mean(values)
 
     @staticmethod
-    def VSTDEV(arg0, *args):
-        values = chain(arg0, *args)
+    def VSTDEV(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.stdev(values)
 
     @staticmethod
-    def VSE(arg0, *args):
-        values = chain(arg0, *args)
+    def VSE(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.pstdev(values)
 
     @staticmethod
-    def VVAR(arg0, *args):
-        values = chain(arg0, *args)
+    def VVAR(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.variance(values)
 
     @staticmethod
-    def VMED(arg0, *args):
-        values = chain(arg0, *args)
+    def VMED(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.median(values)
 
     @staticmethod
-    def VMODE(arg0, *args):
-        values = chain(arg0, *args)
+    def VMODE(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return stats.mode(values)
 
     @staticmethod
-    def VSUM(arg0, *args):
-        values = chain(arg0, *args)
+    def VSUM(values):
+        values = filter(lambda x: not math.isnan(x), values)
         return math.fsum(values)
 
     @staticmethod
-    def VROWS(arg0, *args):
-        values = chain(arg0, *args)
+    def VROWS(values):
         return sum(1 for _ in values)

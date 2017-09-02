@@ -719,12 +719,14 @@ const TableView = SilkyView.extend({
         let column = this.model.attributes.columns[colNo];
 
         if (column.columnType === 'computed') {
+
             let err = {
                 title: 'Column is not editable',
                 message: 'Computed columns may not be edited',
                 type: 'error' };
             this._notifyEditProblem(err);
-            return;
+
+            return;  // you can't edit computed columns
         }
 
         this._editing = true;
@@ -1250,7 +1252,7 @@ const TableView = SilkyView.extend({
 
         Promise.resolve().then(() => {
 
-            let fields = { name: '', columnType: 'data', measureType: 'nominal' };
+            let fields = { name: '', columnType: 'none', measureType: 'nominal' };
             Object.assign(fields, args);
 
             return this.model.changeColumn(column.id, fields);

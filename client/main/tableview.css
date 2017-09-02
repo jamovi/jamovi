@@ -158,15 +158,12 @@
     opacity: 0 ;
 }
 
-.jmv-column[data-measuretype="continuous"],
-.jmv-column[data-measuretype="nominal"],
-.jmv-column[data-measuretype="ordinal"],
-.jmv-column[data-measuretype="nominaltext"] .jmv-column-cell[data-type="number"] {
-    text-align: right ;
+.jmv-column-cell[data-type="string"] {
+    text-align: left ;
 }
 
-.jmv-column[data-measuretype="nominaltext"] .jmv-column-cell[data-type="string"] {
-    text-align: left ;
+.jmv-column-cell[data-type="number"] {
+    text-align: right ;
 }
 
 .jmv-column-cell {

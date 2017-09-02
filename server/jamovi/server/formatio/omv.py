@@ -3,12 +3,14 @@ import zipfile
 from zipfile import ZipFile
 import io
 import json
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 import struct
 import os
 import os.path
 import re
 
+from ...core import ColumnType
 from ...core import MeasureType
 
 
@@ -28,7 +30,10 @@ def write(data, path):
         for column in data.dataset:
             field = { }
             field['name'] = column.name
+            field['columnType'] = ColumnType.stringify(column.column_type)
             field['measureType'] = MeasureType.stringify(column.measure_type)
+            field['formula'] = column.formula
+            field['formulaMessage'] = column.formula_message
             if column.measure_type == MeasureType.CONTINUOUS:
                 field['type'] = 'number'
             else:
@@ -116,8 +121,13 @@ def read(data, path, is_example=False):
             import_name = meta_column.get('importName', name)
             data.dataset.append_column(name, import_name)
             column = data.dataset[data.dataset.column_count - 1]
-            measure_type = MeasureType.parse(meta_column['measureType'])
+
+            column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
+            column.column_type = column_type
+            measure_type = MeasureType.parse(meta_column.get('measureType', 'Nominal'))
             column.measure_type = measure_type
+            column.formula = meta_column.get('formula', '')
+            column.formula_message = meta_column.get('formulaMessage', '')
 
         row_count = meta_dataset['rowCount']
 
@@ -161,8 +171,6 @@ def read(data, path, is_example=False):
 
         is_analysis = re.compile('^[0-9][0-9]+ .+/analysis$')
         is_resource = re.compile('^[0-9][0-9]+ .+/resources/.+')
-
-        print(data.instance_path)
 
         for entry in zip.infolist():
             if is_analysis.match(entry.filename):

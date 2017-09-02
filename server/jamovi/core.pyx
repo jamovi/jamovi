@@ -370,12 +370,20 @@ cdef class Column:
             self._this.setValue[int](index, -2147483648)
 
     def __setitem__(self, index, value):
+
+        if index >= self.row_count:
+            raise IndexError()
+
         if self.measure_type is MeasureType.CONTINUOUS:
             self._this.setValue[double](index, value)
         else:
             self._this.setValue[int](index, value)
 
     def __getitem__(self, index):
+
+        if index >= self.row_count:
+            raise IndexError()
+
         if self.measure_type == MeasureType.CONTINUOUS:
             return self._this.value[double](index)
         elif self.measure_type == MeasureType.NOMINAL_TEXT:

@@ -49,59 +49,6 @@ class Instance:
     def get(instance_id):
         return Instance.instances.get(instance_id)
 
-    class GarbageCollector:
-
-        def __init__(self):
-            self._stopped = False
-            self._thread = Thread(target=self.run)
-            self._thread.start()
-
-        def run(self):
-            parent = threading.main_thread()
-
-            while True:
-                time.sleep(.3)
-                if self._stopped is True:
-                    break
-                if parent.is_alive() is False:
-                    break
-                for id, instance in Instance.instances.items():
-                    if instance.inactive_for > 2:
-                        log.info('cleaning up: ' + str(id))
-                        instance.close()
-                        del Instance.instances[id]
-                        break
-
-        def stop(self):
-            self._stopped = True
-
-    def _normalise_path(path):
-        nor_path = path
-        if path.startswith('{{Documents}}'):
-            nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
-        elif path.startswith('{{Desktop}}'):
-            nor_path = path.replace('{{Desktop}}', Dirs.desktop_dir())
-        elif path.startswith('{{Home}}'):
-            nor_path = path.replace('{{Home}}', Dirs.home_dir())
-        elif path.startswith('{{Examples}}'):
-            nor_path = path.replace('{{Examples}}', conf.get('examples_path'))
-        return nor_path
-
-    def _virtualise_path(path):
-        documents_dir = Dirs.documents_dir()
-        home_dir = Dirs.home_dir()
-        desktop_dir = Dirs.desktop_dir()
-
-        vir_path = path
-        if path.startswith(documents_dir):
-            vir_path = path.replace(documents_dir, '{{Documents}}')
-        elif path.startswith(desktop_dir):
-            vir_path = path.replace(desktop_dir, '{{Desktop}}')
-        elif path.startswith(home_dir):
-            vir_path = path.replace(home_dir, '{{Home}}')
-
-        return vir_path
-
     def __init__(self, session_path, instance_id=None):
 
         if Instance._garbage_collector is None:
@@ -142,6 +89,33 @@ class Instance:
         log.setLevel('DEBUG')
         log.addHandler(handler)
         self._data.set_log(log)
+
+    def _normalise_path(path):
+        nor_path = path
+        if path.startswith('{{Documents}}'):
+            nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
+        elif path.startswith('{{Desktop}}'):
+            nor_path = path.replace('{{Desktop}}', Dirs.desktop_dir())
+        elif path.startswith('{{Home}}'):
+            nor_path = path.replace('{{Home}}', Dirs.home_dir())
+        elif path.startswith('{{Examples}}'):
+            nor_path = path.replace('{{Examples}}', conf.get('examples_path'))
+        return nor_path
+
+    def _virtualise_path(path):
+        documents_dir = Dirs.documents_dir()
+        home_dir = Dirs.home_dir()
+        desktop_dir = Dirs.desktop_dir()
+
+        vir_path = path
+        if path.startswith(documents_dir):
+            vir_path = path.replace(documents_dir, '{{Documents}}')
+        elif path.startswith(desktop_dir):
+            vir_path = path.replace(desktop_dir, '{{Desktop}}')
+        elif path.startswith(home_dir):
+            vir_path = path.replace(home_dir, '{{Home}}')
+
+        return vir_path
 
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
@@ -387,6 +361,7 @@ class Instance:
 
     def _on_open(self, request):
         path = request.filename
+
         nor_path = Instance._normalise_path(path)
 
         self._mm = MemoryMap.create(self._buffer_path, 65536)
@@ -665,8 +640,12 @@ class Instance:
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
 
+        recalc = set()
+        reparse = set()
+
         for column_schema in request.schema.columns:
             column = self._data.get_column_by_id(column_schema.id)
+            old_name = column.name
 
             levels = None
             if column_schema.hasLevels:
@@ -682,9 +661,28 @@ class Instance:
                 auto_measure=column_schema.autoMeasure,
                 formula=column_schema.formula)
 
+            column.needs_recalc = True
+            column.recalc()
+
+            dependents = column.dependents
+            recalc.update(dependents)
+
+            if old_name != column.name:      # if a name has changed, then
+                reparse.update(dependents)  # dep columns need to be reparsed
+
             response.incSchema = True
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
+
+        for column in reparse:
+            column.parse_formula()
+        for column in recalc:
+            column.needs_recalc = True
+        for column in recalc:
+            column.recalc()
+
+        recalc = map(lambda x: x.name, recalc)
+        response.columnsDataChanged.extend(recalc)
 
         self._data.is_edited = True
 
@@ -817,9 +815,14 @@ class Instance:
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
 
+        recalc = set()  # columns that need to update from these changes
+
         for i in range(col_count):
             column = self._data[col_start + i]
             column.column_type = ColumnType.DATA
+            column.needs_recalc = True
+
+            recalc.update(column.dependents)
 
             values = cells[i]
 
@@ -933,6 +936,15 @@ class Instance:
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.virtual_column_count
 
+        for column in recalc:
+            column.needs_recalc = True
+
+        for column in recalc:
+            column.recalc()
+
+        recalc = list(map(lambda x: x.name, recalc))
+        response.columnsDataChanged.extend(recalc)
+
         self._populate_cells(request, response)
 
     def _auto_adjust(self, column):
@@ -984,27 +996,36 @@ class Instance:
             if column.measure_type == MeasureType.CONTINUOUS:
                 for r in range(row_start, row_start + row_count):
                     cell = col_res.values.add()
-                    value = column[r]
-                    if math.isnan(value):
+                    if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
-                        cell.d = value
+                        value = column[r]
+                        if math.isnan(value):
+                            cell.o = jcoms.SpecialValues.Value('MISSING')
+                        else:
+                            cell.d = value
             elif column.measure_type == MeasureType.NOMINAL_TEXT:
                 for r in range(row_start, row_start + row_count):
                     cell = col_res.values.add()
-                    value = column[r]
-                    if value == '':
+                    if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
-                        cell.s = value
+                        value = column[r]
+                        if value == '':
+                            cell.o = jcoms.SpecialValues.Value('MISSING')
+                        else:
+                            cell.s = value
             else:
                 for r in range(row_start, row_start + row_count):
                     cell = col_res.values.add()
-                    value = column[r]
-                    if value == -2147483648:
+                    if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')
                     else:
-                        cell.i = value
+                        value = column[r]
+                        if value == -2147483648:
+                            cell.o = jcoms.SpecialValues.Value('MISSING')
+                        else:
+                            cell.i = value
 
     def _populate_schema(self, request, response):
         response.incSchema = True
@@ -1186,3 +1207,29 @@ class Instance:
             broadcast = jcoms.LogRR(
                 content=message)
             self._instance._coms.send(broadcast, self._instance._instance_id)
+
+    class GarbageCollector:
+
+        def __init__(self):
+            self._stopped = False
+            self._thread = Thread(target=self.run)
+            self._thread.start()
+
+        def run(self):
+            parent = threading.main_thread()
+
+            while True:
+                time.sleep(.3)
+                if self._stopped is True:
+                    break
+                if parent.is_alive() is False:
+                    break
+                for id, instance in Instance.instances.items():
+                    if instance.inactive_for > 2:
+                        log.info('cleaning up: ' + str(id))
+                        instance.close()
+                        del Instance.instances[id]
+                        break
+
+        def stop(self):
+            self._stopped = True

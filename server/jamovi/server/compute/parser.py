@@ -11,8 +11,13 @@ class Parser:
     @staticmethod
     def parse(str):
 
-        escaped = Parser.escape(str)  # escape keywords
+        escaped = Parser.escape(str.strip())  # escape keywords
         tree = ast.parse(escaped)
+
+        if len(tree.body) == 0:
+            return None
+
+        tree = tree.body[0].value
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Name):
@@ -24,6 +29,8 @@ class Parser:
     def escape_chunk(chunk):
         if len(chunk) == 0:
             return chunk
+        elif chunk == '^':
+            return '**'
         elif len(chunk) == 1 and chunk in Parser._SPECIAL_CHARS:
             return chunk
         elif chunk.startswith('"') and chunk.endswith('"'):

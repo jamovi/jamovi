@@ -451,6 +451,8 @@ message DataSetRR {
     bool incCBData = 10;
     string cbText = 11;
     string cbHtml = 12;
+
+    repeated string columnsDataChanged = 13;
 }
 
 message ModuleRR {
