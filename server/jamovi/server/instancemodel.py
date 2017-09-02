@@ -1,6 +1,7 @@
 
 from .analyses import Analyses
 
+from .utils import NullLog
 from ..core import ColumnType
 from ..core import MeasureType
 
@@ -30,6 +31,8 @@ class InstanceModel:
         self._columns = [ ]
         self._next_id = 0
 
+        self._log = NullLog()
+
     def __getitem__(self, index_or_name):
         if type(index_or_name) is int:
             index = index_or_name
@@ -44,6 +47,9 @@ class InstanceModel:
 
     def __iter__(self):
         return self._columns.__iter__()
+
+    def set_log(self, log):
+        self._log = log
 
     def get_column_by_id(self, id):
         for column in self:
@@ -569,3 +575,16 @@ class Column:
 
         # recalc !
         self.recalc()
+
+    def _print_column_info(self):
+        for column in self:
+            if column.has_deps:
+                depts = list(map(lambda x: x.name, column.dependents))
+                depcs = list(map(lambda x: x.name, column.dependencies))
+
+                self._log.debug('Column: {}'.format(column.name))
+                self._log.debug('  Needs recalc: {}'.format(column.needs_recalc))
+                self._log.debug('  With dependencies:')
+                self._log.debug('    {}'.format(depcs))
+                self._log.debug('  With dependents:')
+                self._log.debug('    {}'.format(depts))

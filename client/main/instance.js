@@ -473,6 +473,10 @@ const Instance = Backbone.Model.extend({
 
             this.trigger('moduleInstalled', { name: moduleName });
         }
+        else if (message.payloadType === 'LogRR') {
+            let log = coms.Messages.LogRR.decode(message.payload);
+            console.log(log.content);
+        }
     },
     _columnsChanged(event) {
 

@@ -25,7 +25,7 @@ def read(data, path, is_example=False):
     else:
         omv.read(data, path, is_example)
 
-    data.refresh()
+    data.setup()
 
 
 def write(data, path):

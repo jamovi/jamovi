@@ -464,3 +464,7 @@ message ModuleRR {
     string name = 2;
     string path = 3;
 }
+
+message LogRR {
+    string content = 1;
+}

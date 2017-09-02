@@ -135,6 +135,14 @@ class Instance:
 
         Modules.instance().add_listener(self._module_event)
 
+        handler = Instance.LogHandler(self)
+        handler.setLevel('DEBUG')
+        log = logging.getLogger(instance_id)
+        log.propagate = False
+        log.setLevel('DEBUG')
+        log.addHandler(handler)
+        self._data.set_log(log)
+
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
             module_name = event['data']['name']
@@ -1163,3 +1171,18 @@ class Instance:
     def _on_engine_event(self, event):
         if event['type'] == 'terminated' and self._coms is not None:
             self._coms.close()
+
+    class LogHandler(logging.Handler):
+        def __init__(self, instance):
+            self._instance = instance
+            logging.Handler.__init__(self)
+
+        def emit(self, record):
+            if self._instance._coms is None:
+                return
+
+            filename = os.path.basename(record.pathname)
+            message = '{} ({}): {}'.format(filename, record.lineno, record.getMessage())
+            broadcast = jcoms.LogRR(
+                content=message)
+            self._instance._coms.send(broadcast, self._instance._instance_id)
