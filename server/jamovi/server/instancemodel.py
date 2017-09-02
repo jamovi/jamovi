@@ -58,9 +58,11 @@ class InstanceModel:
 
     def delete_rows(self, start, end):
         self._dataset.delete_rows(start, end)
+        self._recalc_all()
 
     def insert_rows(self, start, end):
         self._dataset.insert_rows(start, end)
+        self._recalc_all()
 
     def insert_column(self, index):
         name = self._gen_column_name(index)
@@ -217,6 +219,12 @@ class InstanceModel:
             wrapper._child = child
             wrapper.auto_measure = True
         self._add_virtual_columns()
+
+    def _recalc_all(self):
+        for column in self:
+            column.needs_recalc = True
+        for column in self:
+            column.recalc()
 
     def _print_column_info(self):
         for column in self:
