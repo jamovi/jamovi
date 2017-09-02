@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
         {
             int urlc  = sscanf(argv[1], "--con=%511s", url);
             int pathc = sscanf(argv[2], "--path=%511s", path);
-            
+
             if (urlc == 1 && pathc == 1)
             {
                 e.setConnection(string(url));
@@ -45,5 +45,8 @@ int main(int argc, char *argv[])
     catch (const exception &e)
     {
         cerr << e.what();
+        return 1;
     }
+
+    return 0;
 }
