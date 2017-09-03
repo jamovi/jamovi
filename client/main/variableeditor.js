@@ -100,7 +100,7 @@ const VariableEditor = Backbone.View.extend({
         this._moveRight = function() {
             let colNo = this.model.attributes.editingVar;
             colNo++;
-            if (colNo <= this.model.attributes.columnCount - 1)
+            if (colNo <= this.model.attributes.vColumnCount - 1)
                 this.model.set('editingVar', colNo);
         };
 
@@ -136,12 +136,12 @@ const VariableEditor = Backbone.View.extend({
         let now  = event.changed.editingVar;
 
         if ((prev === null || now === null) && prev !== now)
-            this.trigger("visibility-changing", prev === null && now !== null);
+            this.trigger('visibility-changing', prev === null && now !== null);
 
         if (now !== null) {
             this.$el.removeClass('hidden');
             this.$left.toggleClass('hidden', now <= 0);
-            this.$right.toggleClass('hidden', now >= this.model.attributes.columnCount - 1);
+            this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
             this._previousKeyboardContext = keyboardJS.getContext();
             keyboardJS.setContext('spreadsheet');
         }
