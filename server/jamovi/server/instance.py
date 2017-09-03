@@ -84,11 +84,11 @@ class Instance:
 
         handler = Instance.LogHandler(self)
         handler.setLevel('DEBUG')
-        log = logging.getLogger(instance_id)
-        log.propagate = False
-        log.setLevel('DEBUG')
-        log.addHandler(handler)
-        self._data.set_log(log)
+        self._log = logging.getLogger(instance_id)
+        self._log.propagate = False
+        self._log.setLevel('DEBUG')
+        self._log.addHandler(handler)
+        self._data.set_log(self._log)
 
     def _normalise_path(path):
         nor_path = path
@@ -619,7 +619,26 @@ class Instance:
         self._populate_schema(request, response)
 
     def _on_dataset_del_cols(self, request, response):
+
+        columns = [None] * (request.columnEnd - request.columnStart + 1)
+        for i in range(len(columns)):
+            columns[i] = self._data[i + request.columnStart]
+
+        reparse = set()
+        for column in columns:
+            dependents = column.dependents
+            reparse.update(dependents)
+        reparse -= set(columns)  # don't reparse columns that are being deleted
+
         self._data.delete_columns(request.columnStart, request.columnEnd)
+
+        for column in reparse:
+            column.parse_formula()
+            column.needs_recalc = True
+
+        for column in reparse:
+            column.recalc()
+
         self._populate_schema(request, response)
 
     def _apply_schema(self, request, response):
@@ -640,6 +659,7 @@ class Instance:
             schema = response.schema.columns.add()
             self._populate_column_schema(column, schema)
 
+        cols_w_schema_change = set()
         recalc = set()
         reparse = set()
 
@@ -665,14 +685,13 @@ class Instance:
             column.recalc()
 
             dependents = column.dependents
+
+            cols_w_schema_change.add(column)
+            cols_w_schema_change.update(dependents)
             recalc.update(dependents)
 
-            if old_name != column.name:      # if a name has changed, then
+            if old_name != column.name:     # if a name has changed, then
                 reparse.update(dependents)  # dep columns need to be reparsed
-
-            response.incSchema = True
-            schema = response.schema.columns.add()
-            self._populate_column_schema(column, schema)
 
         for column in reparse:
             column.parse_formula()
@@ -681,15 +700,16 @@ class Instance:
         for column in recalc:
             column.recalc()
 
-        recalc = map(lambda x: x.name, recalc)
-        response.columnsDataChanged.extend(recalc)
-
         self._data.is_edited = True
 
         for i in range(n_cols_before, self._data.virtual_column_count):  # cols added
             column = self._data[i]
-            schema = response.schema.columns.add()
-            self._populate_column_schema(column, schema)
+            cols_w_schema_change.add(column)
+
+        for column in cols_w_schema_change:
+            response.incSchema = True
+            columnPB = response.schema.columns.add()
+            self._populate_column_schema(column, columnPB)
 
     def _parse_cells(self, request):
 
@@ -804,25 +824,23 @@ class Instance:
         # assign
 
         n_cols_before = self._data.virtual_column_count
+        n_rows_before = self._data.row_count
 
         if row_end >= self._data.row_count:
             self._data.set_row_count(row_end + 1)
 
+        cols_w_schema_change = set()  # schema changes to send
+        recalc = set()  # computed columns that need to update from these changes
+
         for i in range(self._data.column_count, col_start):
             column = self._data[i]
             column.realise()
-            response.incSchema = True
-            schema = response.schema.columns.add()
-            self._populate_column_schema(column, schema)
-
-        recalc = set()  # columns that need to update from these changes
+            cols_w_schema_change.add(column)
 
         for i in range(col_count):
             column = self._data[col_start + i]
             column.column_type = ColumnType.DATA
-            column.needs_recalc = True
-
-            recalc.update(column.dependents)
+            column.needs_recalc = True  # invalidate dependent nodes
 
             values = cells[i]
 
@@ -920,30 +938,36 @@ class Instance:
                 column.determine_dps()
 
             if changes != column.changes or was_virtual:
-                response.incSchema = True
-                columnPB = response.schema.columns.add()
-                self._populate_column_schema(column, columnPB)
+                cols_w_schema_change.add(column)
+
+            dependents = column.dependents
+            recalc.update(dependents)
+            cols_w_schema_change.update(dependents)
 
         self._data.is_edited = True
 
         for i in range(n_cols_before, self._data.virtual_column_count):  # cols added
             column = self._data[i]
-            columnPB = response.schema.columns.add()
-            self._populate_column_schema(column, columnPB)
+            cols_w_schema_change.add(column)
 
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.virtual_column_count
 
+        if n_rows_before != self._data.row_count:
+            recalc = self._data  # if more rows recalc all
+            cols_w_schema_change = self._data  # send *all* column schemas
+
         for column in recalc:
             column.needs_recalc = True
-
         for column in recalc:
             column.recalc()
 
-        recalc = list(map(lambda x: x.name, recalc))
-        response.columnsDataChanged.extend(recalc)
+        for column in cols_w_schema_change:
+            response.incSchema = True
+            columnPB = response.schema.columns.add()
+            self._populate_column_schema(column, columnPB)
 
         self._populate_cells(request, response)
 

@@ -108,6 +108,9 @@ const DataSetModel = Backbone.Model.extend({
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
 
+                    // dps might have changed
+                    this._readColumnPB(column, columnPB);
+
                     changed[i] = columnPB.name;
                     changes[i] = { id: id, dataChanged: true };
                 }
@@ -148,6 +151,7 @@ const DataSetModel = Backbone.Model.extend({
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
+                    this._readColumnPB(column, columnPB);
 
                     changed[i] = columnPB.name;
                     changes[i] = {
@@ -215,6 +219,7 @@ const DataSetModel = Backbone.Model.extend({
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
+                    this._readColumnPB(column, columnPB);
 
                     changed[i] = columnPB.name;
                     changes[i] = {
@@ -244,7 +249,7 @@ const DataSetModel = Backbone.Model.extend({
         request.payloadType = 'DataSetRR';
         request.instanceId = this.attributes.instanceId;
 
-        return coms.send(request).then(() => {
+        return coms.send(request).then(response => {
 
             let nDeleted = end - start + 1;
             let changed = Array(nDeleted);
@@ -293,8 +298,26 @@ const DataSetModel = Backbone.Model.extend({
 
             this.set('edited', true);
 
-            this.set('columnCount', this.attributes.columnCount - nDeleted);
-            this.set('vColumnCount', this.attributes.vColumnCount - nDeleted);
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            if (datasetPB.incSchema) {
+
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+                this.set('columnCount', datasetPB.schema.columnCount);
+                this.set('vColumnCount', datasetPB.schema.vColumnCount);
+
+                for (let columnPB of datasetPB.schema.columns) {
+                    let id = columnPB.id;
+                    let column = this.getColumnById(id);
+                    this._readColumnPB(column, columnPB);
+
+                    changed.push(columnPB.name);
+                    changes.push({
+                        id: id,
+                        name: columnPB.name,
+                        dataChanged: true });
+                }
+            }
 
             this.trigger('columnsDeleted', { start: start, end: end });
             this.trigger('columnsChanged', { changed, changes });
@@ -427,15 +450,6 @@ const DataSetModel = Backbone.Model.extend({
                         dataChanged: true,
                         created: created,
                     };
-                }
-
-                // formula columns which have also changed
-                for (let name of datasetPB.columnsDataChanged) {
-                    if ( ! changed.includes(name)) {
-                        let column = this.getColumn(name);
-                        changed.push(name);
-                        changes.push({ id: column.id, name: column.name, dataChanged: true });
-                    }
                 }
 
                 if (nCreated > 0) {
@@ -891,15 +905,6 @@ const DataSetViewModel = DataSetModel.extend({
                 if ( ! changed.includes(name)) {
                     changed.push(name);
                     changes.push({ id: column.id, oldName: name, dataChanged: true });
-                }
-            }
-
-            // formula columns which have also changed
-            for (let name of datasetPB.columnsDataChanged) {
-                if ( ! changed.includes(name)) {
-                    let column = this.getColumn(name);
-                    changed.push(name);
-                    changes.push({ id: column.id, name: column.name, dataChanged: true });
                 }
             }
 
