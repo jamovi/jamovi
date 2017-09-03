@@ -62,21 +62,6 @@ def calc_dps(value, max_dp=3):
     return max_dp_required
 
 
-def fix_names(names):
-    if len(names) == 0:
-        return [ 'X' ]
-    for i in range(1, len(names)):
-        name = names[i]
-        names_used = names[:i - 1]
-        orig_name = name
-        c = 1
-        while name in names_used:
-            c += 1
-            name = orig_name + ' (' + str(c) + ')'
-        names[i] = name
-    return names
-
-
 def read(data, path):
 
     with open(path, mode='rb') as file:
@@ -109,7 +94,8 @@ def read(data, path):
         column_count = 0
         column_writers = [ ]
 
-        column_names = fix_names(column_names)
+        if len(column_names) == 0:
+            column_names = ['X']
 
         for i in range(len(column_names)):
             column_name = column_names[i]
