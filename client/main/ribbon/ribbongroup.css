@@ -2,7 +2,6 @@
 .jmv-ribbon-group-body {
     -webkit-app-region: no-drag;
     display: flex ;
-    position: relative;
 }
 
 .jmv-ribbon-group-label {
@@ -10,11 +9,37 @@
     width: 100%;
     font-size: 70%;
     bottom: 0px;
-    position: absolute;
 }
 
 .jmv-ribbon-group {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between
+}
+
+.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group {
+    margin: 10px;
+}
+
+.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group {
+    margin: 0;
+}
+
+.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group:first-child {
+    margin: 0 0 10px 0;
+}
+
+.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group-label {
+    order: 0;
+    font-size: 100%;
+    text-align: left;
+    font-weight: bold;
+    padding: 0px 0px 2px 0px;
+}
+
+.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group-body {
+    order: 1;
+    flex-direction: row;
 }
 
 .jmv-ribbon-group-body-vertical {
