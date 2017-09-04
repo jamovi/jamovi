@@ -138,19 +138,18 @@ const VariableEditor = Backbone.View.extend({
         if ((prev === null || now === null) && prev !== now)
             this.trigger('visibility-changing', prev === null && now !== null);
 
-        if (now !== null) {
+        if (now === null) {
+            this.$el.addClass('hidden');
+            if (prev !== null)
+                this.editors[0].detach();
+            keyboardJS.setContext(this._previousKeyboardContext);
+        }
+        else {
             this.$el.removeClass('hidden');
             this.$left.toggleClass('hidden', now <= 0);
             this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
             this._previousKeyboardContext = keyboardJS.getContext();
             keyboardJS.setContext('spreadsheet');
-        }
-        else {
-            keyboardJS.setContext(this._previousKeyboardContext);
-            this.$el.addClass('hidden');
-        }
-
-        if (now !== null) {
 
             let editor;
             let $editor;
