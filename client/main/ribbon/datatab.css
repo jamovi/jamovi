@@ -47,3 +47,11 @@
 .jmv-ribbon-button[data-name=addrow] > .jmv-ribbon-button-icon {
     background-image: url('assets/menu-row-add.svg');
 }
+
+.jmv-ribbon-button[data-name=insertcomputed] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-computed-insert.svg');
+}
+
+.jmv-ribbon-button[data-name=appendcomputed] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-computed-append.svg');
+}

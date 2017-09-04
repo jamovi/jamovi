@@ -38,6 +38,10 @@
     margin-top: 3px;
 }
 
+.jmv-ribbon-button[data-name="addrow"] .jmv-ribbon-group {
+    margin: 5px !important;
+}
+
 /*huge button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-huge {
     width: 45px;
