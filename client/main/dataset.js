@@ -169,7 +169,11 @@ const DataSetModel = Backbone.Model.extend({
             }
         });
     },
-    insertColumn(index) {
+    insertColumn(index, columnType) {
+
+        columnType = columnType || 'none';
+        let measureType = (columnType === 'computed' ? 'continuous' : 'nominal');
+        let autoMeasure = (columnType !== 'computed');
 
         let coms = this.attributes.coms;
 
@@ -177,6 +181,14 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.op = coms.Messages.GetSet.INS_COLS;
         datasetPB.columnStart = index;
         datasetPB.columnEnd = index;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.incSchema = true;
+
+        let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
+        columnPB.columnType  = DataSetModel.parseColumnType(columnType);
+        columnPB.measureType = DataSetModel.parseMeasureType(measureType);
+        columnPB.autoMeasure = autoMeasure;
+        datasetPB.schema.columns.push(columnPB);
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();

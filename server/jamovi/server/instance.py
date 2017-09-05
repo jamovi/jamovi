@@ -605,14 +605,20 @@ class Instance:
         self._data.insert_column(request.columnStart)
         column = self._data[request.columnStart]
 
+        if request.incSchema and len(request.schema.columns) == 1:
+            column_pb = request.schema.columns[0]
+            column.change(measure_type=column_pb.measureType)
+            column.column_type = column_pb.columnType
+            column.auto_measure = column_pb.autoMeasure
+
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.virtual_column_count
 
         response.incSchema = True
-        column_schema = response.schema.columns.add()
-        self._populate_column_schema(column, column_schema)
+        column_pb = response.schema.columns.add()
+        self._populate_column_schema(column, column_pb)
 
     def _on_dataset_del_rows(self, request, response):
         self._data.delete_rows(request.rowStart, request.rowEnd)

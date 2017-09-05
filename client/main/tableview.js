@@ -89,11 +89,11 @@ const TableView = SilkyView.extend({
 
         ActionHub.get('editVar').on('request', this._toggleVariableEditor, this);
 
-        ActionHub.get('insertVar').on('request', this._insertColumn, this);
-        ActionHub.get('appendVar').on('request', this._appendColumn, this);
-        ActionHub.get('delVar').on('request', this._deleteColumns, this);
-
-        ActionHub.get('appendComputed').on('request', this._appendComputed, this);
+        ActionHub.get('insertVar').on('request', () => this._insertColumn('data'));
+        ActionHub.get('appendVar').on('request', () => this._appendColumn('data'));
+        ActionHub.get('insertComputed').on('request', () => this._insertColumn('computed'));
+        ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
+        ActionHub.get('delVar').on('request', () => this._deleteColumns());
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);
@@ -1132,8 +1132,13 @@ const TableView = SilkyView.extend({
             return this._setSelectedRange(oldSelection);
         });
     },
-    _insertColumn() {
-        return this.model.insertColumn(this.selection.colNo);
+    _insertColumn(columnType) {
+
+        return this.model.insertColumn(this.selection.colNo, columnType)
+            .then(() => {
+                if (columnType === 'computed')
+                    this.model.set('editingVar', this.selection.colNo);
+            });
     },
     _columnsInserted(event) {
 
@@ -1241,10 +1246,7 @@ const TableView = SilkyView.extend({
                 console.log(error);
         });
     },
-    _appendComputed() {
-        this._appendColumn({ columnType: 'computed', measureType: 'continuous' });
-    },
-    _appendColumn(args) {
+    _appendColumn(columnType) {
 
         let rowNo = this.selection.rowNo;
         let colNo = this.model.get('columnCount');
@@ -1252,10 +1254,15 @@ const TableView = SilkyView.extend({
 
         Promise.resolve().then(() => {
 
-            let fields = { name: '', columnType: 'none', measureType: 'nominal' };
-            Object.assign(fields, args);
+            let args;
+            if (columnType === 'data')
+                args = { name: '', columnType: 'data', measureType: 'nominal' };
+            else if (columnType === 'computed')
+                args = { name: '', columnType: 'computed', measureType: 'continuous' };
+            else
+                args = { name: '', columnType: 'none', measureType: 'nominal' };
 
-            return this.model.changeColumn(column.id, fields);
+            return this.model.changeColumn(column.id, args);
 
         }).then(() => {
 
@@ -1268,6 +1275,10 @@ const TableView = SilkyView.extend({
             let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
             if (selRight > containerRight)
                 this.$container.scrollLeft(scrollX + selRight - containerRight);
+
+            if (columnType === 'computed')
+                this.model.set('editingVar', colNo);
+
         }).catch((error) => {
             console.log(error);
             throw error;
@@ -1289,6 +1300,7 @@ const TableView = SilkyView.extend({
         ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom);
         ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
         ActionHub.get('insertVar').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right);
+        ActionHub.get('insertComputed').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right);
         ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
     },
     _toggleVariableEditor() {
