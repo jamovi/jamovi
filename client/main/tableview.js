@@ -1163,7 +1163,7 @@ const TableView = SilkyView.extend({
         this.$columns.splice(column.index, 0, $column);
 
         this.viewport = this.model.attributes.viewport;
-        for (let rowNo = this.viewport.top; rowNo < this.viewport.bottom; rowNo++) {
+        for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
             let top   = rowNo * this._rowHeight;
             let $cell = this._createCell(top, this._rowHeight, rowNo, column.index);
             $column.append($cell);
