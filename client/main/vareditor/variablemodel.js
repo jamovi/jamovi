@@ -112,7 +112,17 @@ const VariableModel = Backbone.Model.extend({
 
         this.dataset.changeColumn(this.attributes.id, values)
             .then(() => {
-                this.original = values;
+                let latestValues = {
+                    name: this.attributes.name,
+                    columnType: this.attributes.columnType,
+                    measureType: this.attributes.measureType,
+                    autoMeasure: this.attributes.autoMeasure,
+                    levels: this.attributes.levels,
+                    dps: this.attributes.dps,
+                    formula: this.attributes.formula,
+                };
+
+                this.original = latestValues;
                 this.set(this.original);
                 this.set('changes', false);
                 this.dataset.set('varEdited', false);
