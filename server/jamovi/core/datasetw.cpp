@@ -137,7 +137,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     memcpy(chars, name, n + 1);
 
     int n2 = strlen(importName);
-    char *chars2 = _mm->allocate<char>(n + 1);  // +1 for null terminator
+    char *chars2 = _mm->allocate<char>(n2 + 1);  // +1 for null terminator
     memcpy(chars2, importName, n2 + 1);
 
     ColumnStruct **columns;
