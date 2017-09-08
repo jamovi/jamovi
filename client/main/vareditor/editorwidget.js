@@ -52,6 +52,12 @@ const EditorWidget = Backbone.View.extend({
             }
         });
 
+        this.model.on('change:name', event => {
+            let name = this.model.get('name');
+            if (name !== this.$title.val())
+                this.$title.val(name);
+        });
+
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
 
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
