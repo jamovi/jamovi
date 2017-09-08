@@ -2,6 +2,7 @@
 .jmv-ribbon-group-body {
     -webkit-app-region: no-drag;
     display: flex ;
+    order: 0;
 }
 
 .jmv-ribbon-group-label {
@@ -9,6 +10,7 @@
     width: 100%;
     font-size: 70%;
     bottom: 0px;
+    order: 1;
 }
 
 .jmv-ribbon-group {
@@ -30,15 +32,21 @@
 }
 
 .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group-label {
-    order: 0;
     font-size: 100%;
     text-align: left;
     font-weight: bold;
     padding: 0px 0px 2px 0px;
 }
 
-.jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group .jmv-ribbon-group-body {
+.jmv-ribbon-group[data-position="top"] > .jmv-ribbon-group-label {
+    order: 0;
+}
+
+.jmv-ribbon-group[data-position="top"] > .jmv-ribbon-group-body {
     order: 1;
+}
+
+.jmv-ribbon-group-body-horizontal {
     flex-direction: row;
 }
 
