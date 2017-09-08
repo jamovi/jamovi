@@ -26,11 +26,11 @@ const DataTab = function() {
                 new RibbonButton({ title: 'Setup', name: 'editVar', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
-                        new RibbonGroup({ title: 'Data Variable', orientation: 'vertical', items: [
+                        new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [
                             new RibbonButton({ title: 'Insert', name: 'insertVar' }),
                             new RibbonButton({ title: 'Append', name: 'appendVar' })
                         ]}),
-                        new RibbonGroup({ title: 'Computed Variable', orientation: 'vertical', items: [
+                        new RibbonGroup({ title: 'Computed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
                             new RibbonButton({ title: 'Insert', name: 'insertComputed' }),
                             new RibbonButton({ title: 'Append', name: 'appendComputed' })
                         ]}),
