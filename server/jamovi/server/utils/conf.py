@@ -13,6 +13,8 @@ def get(key):
 
     if config_values is None:
 
+        config_values = { }
+
         if 'JAMOVI_HOME' in environ:
             root = path.abspath(environ['JAMOVI_HOME'])
         else:
@@ -23,8 +25,6 @@ def get(key):
         config = ConfigParser()
         config.read(ini_path)
 
-        config_values = { }
-
         for k in environ:
             if k.startswith('JAMOVI_'):
                 config_values[k[7:].lower()] = environ[k]
@@ -34,8 +34,8 @@ def get(key):
         app_config = config['ENV']
         for k in app_config:
             value = app_config[k]
-            if k.startswith('JAMOVI_'):
-                k = k[7:].lower()
+            if k.startswith('jamovi_'):
+                k = k[7:]
             if k.endswith('_path') or k.endswith('_home'):
                 vars = re.findall(r'\$([A-Z0-9_]+)', value)
                 for v in vars:
