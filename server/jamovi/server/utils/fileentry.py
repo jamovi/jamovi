@@ -21,13 +21,13 @@ class FileEntry:
                 return self.name.lower() < other.name.lower()
             else:
                 return True
-        if self.type is not FileEntry.FILE:
-            if other.type is FileEntry.FILE:
+        if self.type is not FileEntry.Type.FILE:
+            if other.type is FileEntry.Type.FILE:
                 return True
             else:
                 return self.name.lower() < other.name.lower()
-        if self.type is FileEntry.FILE:
-            if other.type is not FileEntry.FILE:
+        if self.type is FileEntry.Type.FILE:
+            if other.type is not FileEntry.Type.FILE:
                 return False
             else:
                 return self.name.lower() < other.name.lower()

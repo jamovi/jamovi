@@ -236,9 +236,9 @@ class Instance:
 
         else:
             try:
-                for direntry in os.scandir(path + '/'):  # add a / in case we get C:
+                entries = [ ]
 
-                    entries = [ ]
+                for direntry in os.scandir(path + '/'):  # add a / in case we get C:
 
                     if fs.is_hidden(direntry.path):
                         show = False
@@ -259,18 +259,18 @@ class Instance:
                         entry.path = posixpath.join(location, direntry.name)
                         entries.append(entry)
 
-                    entries = sorted(entries)
+                entries = sorted(entries)
 
-                    for entry in entries:
+                for entry in entries:
 
-                        entry_type = jcoms.FSEntry.Type.Value('FILE')
-                        if entry.type is FileEntry.Type.FOLDER:
-                            entry_type = jcoms.FSEntry.Type.Value('FOLDER')
+                    entry_type = jcoms.FSEntry.Type.Value('FILE')
+                    if entry.type is FileEntry.Type.FOLDER:
+                        entry_type = jcoms.FSEntry.Type.Value('FOLDER')
 
-                        entry_pb = response.contents.add()
-                        entry_pb.name = entry.name
-                        entry_pb.type = entry_type
-                        entry_pb.path = entry.path
+                    entry_pb = response.contents.add()
+                    entry_pb.name = entry.name
+                    entry_pb.type = entry_type
+                    entry_pb.path = entry.path
 
                 self._coms.send(response, self._instance_id, request)
 
