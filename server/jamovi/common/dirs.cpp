@@ -6,12 +6,13 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <shlobj.h>
+#include <Shlobj.h>
 #include <shlwapi.h>
 #elif defined(__APPLE__)
 #include <pwd.h>
 #include <CoreServices/CoreServices.h>
 #include <libproc.h>
+#include "macdirs.h"
 #else
 #include <pwd.h>
 #endif
@@ -31,6 +32,7 @@ string Dirs::_exePath = "";
 string Dirs::_exeDir = "";
 string Dirs::_rHomeDir = "";
 string Dirs::_documentsDir = "";
+string Dirs::_downloadsDir = "";
 string Dirs::_homeDir = "";
 string Dirs::_desktopDir = "";
 
@@ -42,31 +44,22 @@ string Dirs::appDataDir()
         filesystem::path path;
 
 #ifdef _WIN32
-
         TCHAR buffer[MAX_PATH];
-
         HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
-
         if ( ! SUCCEEDED(ret))
-            "Could not retrieve app data directory";
-
+            throw "Could not retrieve app data directory";
         dir = nowide::narrow(buffer);
         dir += "/jamovi";
-
         path = nowide::widen(dir);
-
 #elif defined(__APPLE__)
-
-        // this appears to have stopped working in macOS sierra, so we no longer
-        // use this. i think it might be a bug in boost, but it doesn't seem to
-        // be able to create directories to this path
-
-        path = dir = homeDir() + "/Library/Application Support/jamovi";
-
+        char *cpath = macdirs_appSupportDir();
+        if (cpath == NULL)
+            throw "Could not retrieve app data directory";
+        dir = cpath;
+        dir += "/jamovi";
+        path = dir;
 #else
-
         path = dir = homeDir() + "/.jamovi";
-
 #endif
 
         if ( ! filesystem::exists(path))
@@ -123,7 +116,7 @@ string Dirs::tempDir()
             filesystem::create_directories(path, ec);
 
             if (ec)
-                throw "could not create app data dir";
+                throw "could not create temp dir";
         }
 
         Dirs::_tempDir = filesystem::path(dir).generic_string();
@@ -267,26 +260,57 @@ string Dirs::documentsDir()
         string dir;
 
 #ifdef _WIN32
-
         TCHAR buffer[MAX_PATH];
-
         HRESULT ret = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, buffer);
-
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve documents directory";
-
         dir = nowide::narrow(buffer);
-
+#elif defined(__APPLE__)
+        char *cpath = macdirs_documentsDir();
+        if (cpath == NULL)
+            throw "Could not retrieve documents directory";
+        dir = cpath;
 #else
-
         dir = homeDir() + "/Documents";
-
 #endif
 
         Dirs::_documentsDir = filesystem::path(dir).generic_string();
     }
 
     return Dirs::_documentsDir;
+}
+
+string Dirs::downloadsDir()
+{
+    if (Dirs::_downloadsDir == "")
+    {
+
+        string dir;
+
+#ifdef _WIN32
+#ifdef __MINGW32__
+        throw "Not supported under mingw-w64 as far as i can tell";
+#else
+        wchar_t* buffer;
+        HRESULT ret = SHGetKnownFolderPath(FOLDERID_Downloads, 0, NULL, &buffer);
+        if ( ! SUCCEEDED(ret))
+            throw "Could not retrieve downloads directory";
+        dir = nowide::narrow(buffer);
+        CoTaskMemFree(buffer);
+#endif
+#elif defined(__APPLE__)
+        char *cpath = macdirs_downloadsDir();
+        if (cpath == NULL)
+            throw "Could not retrieve downloads directory";
+        dir = cpath;
+#else
+        dir = homeDir() + "/Downloads";
+#endif
+
+        Dirs::_downloadsDir = filesystem::path(dir).generic_string();
+    }
+
+    return Dirs::_downloadsDir;
 }
 
 string Dirs::homeDir()
@@ -296,20 +320,18 @@ string Dirs::homeDir()
         string dir;
 
 #ifdef _WIN32
-
         TCHAR buffer[MAX_PATH];
-
         HRESULT ret = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, 0, buffer);
-
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve home directory";
-
         dir = nowide::narrow(buffer);
-
+#elif defined(__APPLE__)
+        char *cpath = macdirs_homeDir();
+        if (cpath == NULL)
+            throw "Could not retrieve home directory";
+        dir = cpath;
 #else
-
         dir = string(getpwuid(getuid())->pw_dir);
-
 #endif
 
         Dirs::_homeDir = filesystem::path(dir).generic_string();
@@ -326,20 +348,18 @@ string Dirs::desktopDir()
         string dir;
 
 #ifdef _WIN32
-
         TCHAR buffer[MAX_PATH];
-
         HRESULT ret = SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, buffer);
-
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve desktop";
-
         dir = nowide::narrow(buffer);
-
+#elif defined(__APPLE__)
+        char *cpath = macdirs_desktopDir();
+        if (cpath == NULL)
+            throw "Could not retrieve desktop directory";
+        dir = cpath;
 #else
-
-        dir = string(getpwuid(getuid())->pw_dir) + "/Desktop";
-
+        dir = homeDir() + "/Desktop";
 #endif
 
         Dirs::_desktopDir = filesystem::path(dir).generic_string();

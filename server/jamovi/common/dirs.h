@@ -17,6 +17,7 @@ public:
     static std::string exeDir();
     static std::string rHomeDir();
     static std::string documentsDir();
+    static std::string downloadsDir();
     static std::string homeDir();
     static std::string desktopDir();
 
@@ -27,6 +28,7 @@ private:
     static std::string _exeDir;
     static std::string _rHomeDir;
     static std::string _documentsDir;
+    static std::string _downloadsDir;
     static std::string _homeDir;
     static std::string _desktopDir;
 

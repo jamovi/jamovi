@@ -94,6 +94,8 @@ class Instance:
         nor_path = path
         if path.startswith('{{Documents}}'):
             nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
+        elif path.startswith('{{Downloads}}'):
+            nor_path = path.replace('{{Downloads}}', Dirs.downloads_dir())
         elif path.startswith('{{Desktop}}'):
             nor_path = path.replace('{{Desktop}}', Dirs.desktop_dir())
         elif path.startswith('{{Home}}'):
@@ -106,10 +108,13 @@ class Instance:
         documents_dir = Dirs.documents_dir()
         home_dir = Dirs.home_dir()
         desktop_dir = Dirs.desktop_dir()
+        downloads_dir = Dirs.downloads_dir()
 
         vir_path = path
         if path.startswith(documents_dir):
             vir_path = path.replace(documents_dir, '{{Documents}}')
+        elif path.startswith(downloads_dir):
+            vir_path = path.replace(downloads_dir, '{{Downloads}}')
         elif path.startswith(desktop_dir):
             vir_path = path.replace(desktop_dir, '{{Desktop}}')
         elif path.startswith(home_dir):
@@ -201,6 +206,11 @@ class Instance:
             entry = response.contents.add()
             entry.name = 'Documents'
             entry.path = '{{Documents}}'
+            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+
+            entry = response.contents.add()
+            entry.name = 'Downloads'
+            entry.path = '{{Downloads}}'
             entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             entry = response.contents.add()

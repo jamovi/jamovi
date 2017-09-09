@@ -581,6 +581,8 @@ cdef extern from "dirs.h":
         @staticmethod
         string documentsDir() except +
         @staticmethod
+        string downloadsDir() except +
+        @staticmethod
         string appDataDir() except +
         @staticmethod
         string tempDir() except +
@@ -596,17 +598,7 @@ cdef extern from "dirs.h":
 cdef class Dirs:
     @staticmethod
     def app_data_dir():
-
-        # CDirs.appDataDir() seems to have stopped working under macOS sierra,
-        # hence, us handling it here.
-
-        if platform.uname().system == 'Darwin':
-            path = os.path.expanduser('~/Library/Application Support/jamovi')
-            os.makedirs(path, exist_ok=True)
-            return path
-        else:
-            return decode(CDirs.appDataDir())
-
+        return decode(CDirs.appDataDir())
     @staticmethod
     def temp_dir():
         return decode(CDirs.tempDir())
@@ -616,6 +608,9 @@ cdef class Dirs:
     @staticmethod
     def documents_dir():
         return decode(CDirs.documentsDir())
+    @staticmethod
+    def downloads_dir():
+        return decode(CDirs.downloadsDir())
     @staticmethod
     def home_dir():
         return decode(CDirs.homeDir())

@@ -11,7 +11,9 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 const Path = require('path');
 Backbone.$ = $;
+
 const tarp = require('./utils/tarp');
+const pathtools = require('./utils/pathtools');
 
 const host = require('./host');
 
@@ -43,22 +45,6 @@ const FSEntryListView = SilkyView.extend({
         this.model.on('change:directory', this._render, this);
         this._render();
     },
-    _normalisePath: function(path) {
-        var normPath = path;
-        if (path.startsWith('{{Documents}}'))
-            normPath = path.replace('{{Documents}}', 'Documents');
-        else if (path.startsWith('{{Desktop}}'))
-            normPath = path.replace('{{Desktop}}', 'Desktop');
-        else if (path.startsWith('{{Home}}'))
-            normPath = path.replace('{{Home}}', 'Home');
-        else if (path.startsWith('{{Root}}'))
-            normPath = path.replace('{{Root}}', 'This PC');
-        else if (path.startsWith('{{Examples}}'))
-            normPath = path.replace('{{Examples}}', 'Examples');
-
-        normPath = normPath.replace(/\/$/, "");
-        return normPath;
-    },
     events : {
         'click .silky-bs-fslist-entry' : '_itemClicked'
     },
@@ -78,7 +64,7 @@ const FSEntryListView = SilkyView.extend({
             var location = '';
 
             if (item.location) {
-                location = this._normalisePath(item.location);
+                location = pathtools.normalise(item.location);
                 location = location.replace(/\//g, ' \uFE65 ');
             }
             else if (item.description) {
@@ -138,22 +124,6 @@ var FSEntryBrowserView = SilkyView.extend({
             keyboardJS.reset();
         }
         keyboardJS.setContext(context);
-    },
-    _normalisePath: function(path) {
-        var normPath = path;
-        if (path.startsWith('{{Documents}}'))
-            normPath = path.replace('{{Documents}}', 'Documents');
-        else if (path.startsWith('{{Desktop}}'))
-            normPath = path.replace('{{Desktop}}', 'Desktop');
-        else if (path.startsWith('{{Home}}'))
-            normPath = path.replace('{{Home}}', 'Home');
-        else if (path.startsWith('{{Root}}'))
-            normPath = path.replace('{{Root}}', 'This PC');
-        else if (path.startsWith('{{Examples}}'))
-            normPath = path.replace('{{Examples}}', 'Examples');
-
-        normPath = normPath.replace(/\/$/, "");
-        return normPath;
     },
     events : {
         'click .silky-bs-fslist-item' : '_itemClicked',
@@ -352,7 +322,7 @@ var FSEntryBrowserView = SilkyView.extend({
 
         var path = null;
         if (_.isUndefined(dirInfo) === false)
-            path = this._normalisePath(dirInfo.path).replace(/\//g, ' \uFE65 ');
+            path = pathtools.normalise(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
         this.$header.find(".silky-bs-fslist-browser-location").text(path);
 

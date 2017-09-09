@@ -17,6 +17,10 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 source_files = glob.glob('./jamovi/core/*.cpp')
 source_files.extend(glob.glob('./jamovi/common/*.cpp'))
+
+if os.name != 'nt' and os.uname()[0] == "Darwin":  # obj c
+    source_files.extend(glob.glob('./jamovi/common/*.m'))
+
 source_files.append('./jamovi/core.pyx')
 
 # exclude the generated core.cpp (made from core.pyx)
@@ -31,16 +35,22 @@ if os.name == 'nt':  # windows
     libraries = [ "libboost_filesystem-vc140-mt-1_60", "libboost_system-vc140-mt-1_60" ]
     library_dirs = [ tld + '/lib/libvc' ]
     extra_compile_args = ["/D", "UNICODE"]
+    extra_link_args = [ ]
 
 elif os.uname()[0] == "Linux":
     libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ ]
     extra_compile_args = [ ]
+    extra_link_args = [ ]
 
-else:
+elif os.uname()[0] == "Darwin":
     libraries = [ "boost_filesystem-mt", "boost_system-mt" ]
     library_dirs = [ tld + '/../Frameworks' ]
     extra_compile_args = [ ]
+    extra_link_args = [ "-framework", "Foundation" ]
+else:
+    raise RuntimeError("Shouldn't get here!")
+
 
 extensions = [
     Extension('jamovi.core',
@@ -49,6 +59,7 @@ extensions = [
               libraries=libraries,
               library_dirs=library_dirs,
               extra_compile_args=extra_compile_args,
+              extra_link_args=extra_link_args,
               language="c++",
               undef_macros=[ "NDEBUG" ])
 ]
