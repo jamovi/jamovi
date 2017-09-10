@@ -37,11 +37,11 @@ else
 ifeq ($(os),Linux)
 	R_HOME = /usr/lib/R
 	INCLUDES += -I/usr/share/R/include
-	LIBS  = -L$(R_HOME)/library/RInside/lib -L$(R_HOME)/site-library/RInside/lib \
+	LIBS  = -L$(SRCDIR)/../../modules/base/R/RInside/lib \
 			-lboost_filesystem \
 			-lboost_system \
 			-lpthread \
-			-Wl,-R$(R_HOME)/site-library/RInside/lib
+			-Wl,-rpath,'$$ORIGIN/../Resources/modules/base/R/RInside/lib'
 else
 	R_HOME = $(SRCDIR)/../../../Frameworks/R
 	LIBS =	-L$(SRCDIR)/../../lib \
@@ -64,8 +64,10 @@ INCLUDES += \
 	-I$(SRCDIR)/../../../include \
 	-I$(SRCDIR)/../server/jamovi/common \
 	-I$(R_HOME)/include \
-	-I$(R_HOME)/library/RInside/include -I$(R_HOME)/site-library/RInside/include \
-	-I$(R_HOME)/library/Rcpp/include	-I$(R_HOME)/site-library/Rcpp/include
+	-I$(SRCDIR)/../../modules/base/R/RInside/include \
+	-I$(SRCDIR)/../../modules/base/R/Rcpp/include \
+	-I$(R_HOME)/library/RInside/include \
+	-I$(R_HOME)/library/Rcpp/include
 
 LIBS += -lR -lnanomsg -lprotobuf -lRInside
 
