@@ -3,7 +3,6 @@ import sys
 from os import path
 from os import environ
 from configparser import ConfigParser
-import re
 
 config_values = None
 
@@ -36,11 +35,8 @@ def get(key):
             value = app_config[k]
             if k.startswith('jamovi_'):
                 k = k[7:]
-            if k.endswith('_path') or k.endswith('_home'):
-                vars = re.findall(r'\$([A-Z0-9_]+)', value)
-                for v in vars:
-                    value = value.replace('$' + v, environ[v])
-                value = path.normpath(path.join(root, 'bin', value))
-            config_values[k] = value
+                if k.endswith('path') or k.endswith('home'):
+                    value = path.normpath(path.join(root, 'bin', value))
+                config_values[k] = value
 
     return config_values.get(key)
