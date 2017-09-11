@@ -76,7 +76,11 @@ const AppMenuButton = Backbone.View.extend({
         });
 
         this.$spacer = $('<div class="jmv-ribbon-appmenu-spacer"></div>').appendTo(this.$menu);
-        this.$version = $('<div class="jmv-ribbon-appmenu-version">Version ' + host.version + '</div>').appendTo(this.$menu);
+        this.$version = $('<div class="jmv-ribbon-appmenu-version"></div>').appendTo(this.$menu);
+
+        host.version.then(version => {
+            this.$version.text('Version ' + version);
+        });
 
         this.$syntaxModeCheck.on('change', event => this.model.settings().setSetting('syntaxMode', this.$syntaxModeCheck.prop('checked')));
         this.$devModeCheck.on('change', event => {

@@ -1,5 +1,6 @@
 
 import sys
+import re
 from os import path
 from os import environ
 from configparser import ConfigParser
@@ -7,7 +8,7 @@ from configparser import ConfigParser
 config_values = None
 
 
-def get(key):
+def get(key, otherwise=None):
     global config_values
 
     if config_values is None:
@@ -35,8 +36,11 @@ def get(key):
             value = app_config[k]
             if k.startswith('jamovi_'):
                 k = k[7:]
-                if k.endswith('path') or k.endswith('home'):
-                    value = path.normpath(path.join(root, 'bin', value))
-                config_values[k] = value
+            if k.endswith('path') or k.endswith('home') or k.endswith('libs'):
+                if value != '':
+                    parts = re.split('[:;]', value)
+                    parts = map(lambda x: path.normpath(path.join(root, 'bin', x)), parts)
+                    value = path.pathsep.join(parts)
+            config_values[k] = value
 
-    return config_values.get(key)
+    return config_values.get(key, otherwise)

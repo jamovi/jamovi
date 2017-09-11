@@ -208,7 +208,7 @@ class Server:
 
     ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"$')
 
-    def __init__(self, port, debug=False):
+    def __init__(self, port, host='localhost', slave=False, stdin_slave=False, debug=False):
 
         if port == 0:
             self._ports = [ 0, 0, 0 ]
@@ -217,11 +217,15 @@ class Server:
 
         self._ioloop = tornado.ioloop.IOLoop.instance()
 
+        self._host = host
+        self._slave = slave and not stdin_slave
+        self._stdin_slave = stdin_slave
         self._debug = debug
         self._ports_opened_listeners = [ ]
 
-        self._thread = threading.Thread(target=self._read_stdin)
-        self._thread.start()
+        if stdin_slave:
+            self._thread = threading.Thread(target=self._read_stdin)
+            self._thread.start()
 
         self._etron_reqs = [ ]
 
@@ -241,9 +245,12 @@ class Server:
 
     def _read_stdin(self):
         ioloop = tornado.ioloop.IOLoop.instance()
-        for line in sys.stdin:
-            line = line.strip()
-            ioloop.add_callback(self._stdin, line)
+        try:
+            for line in sys.stdin:
+                line = line.strip()
+                ioloop.add_callback(self._stdin, line)
+        except OSError:
+            pass
         ioloop.add_callback(self.stop)
 
     def _stdin(self, line):
@@ -271,18 +278,24 @@ class Server:
         else:
             print(line)
 
+    def _lonely_suicide(self):
+        if len(Instance.instances) == 0:
+            self.stop()
+
     def stop(self):
         tornado.ioloop.IOLoop.instance().stop()
 
     def start(self):
 
         client_path = conf.get('client_path')
+        version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
         session_dir = tempfile.TemporaryDirectory()
         session_path = session_dir.name
 
         self._main_app = tornado.web.Application([
+            (r'/version', SingleFileHandler, { 'path': version_path }),
             (r'/login', LoginHandler),
             (r'/coms', ClientConnection, { 'session_path': session_path }),
             (r'/upload', UploadHandler),
@@ -337,23 +350,27 @@ class Server:
             (r'/(.*)/(.*)/module/(.*)', ModuleAssetHandler),
         ])
 
-        sockets = tornado.netutil.bind_sockets(self._ports[0], 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[0], self._host)
         server = tornado.httpserver.HTTPServer(self._main_app)
         server.add_sockets(sockets)
         self._ports[0] = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._ports[1], 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[1], self._host)
         server = tornado.httpserver.HTTPServer(self._analysisui_app)
         server.add_sockets(sockets)
         self._ports[1] = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._ports[2], 'localhost')
+        sockets = tornado.netutil.bind_sockets(self._ports[2], self._host)
         server = tornado.httpserver.HTTPServer(self._resultsview_app)
         server.add_sockets(sockets)
         self._ports[2] = sockets[0].getsockname()[1]
 
         for listener in self._ports_opened_listeners:
             listener(self._ports)
+
+        if self._slave:
+            check = tornado.ioloop.PeriodicCallback(self._lonely_suicide, 1000)
+            self._ioloop.call_later(3, check.start)
 
         try:
             self._ioloop.start()

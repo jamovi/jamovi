@@ -4,31 +4,35 @@
 
 'use strict';
 
-const events = new require('events');
+const events = require('events');
+const dialogs = require('dialogs');
+const $ = require('jquery');
 
 let baseUrl;
 let analysisUIUrl;
 let resultsViewUrl;
 
 let isElectron;
-
-let openWindow;
-let toggleDevTools;
-let minimizeWindow;
-let maximizeWindow;
-let closeWindow;
-let zoom;
-let zoomIn;
-let zoomOut;
-let currentZoom;
-let setEdited;
-let showMessageBox;
-let navigate;
-let constructMenu;
-let copyToClipboard;
-let pasteFromClipboard;
-let showSaveDialog;
 let version;
+
+let doNothing = () => {};
+
+let openWindow = doNothing;
+let toggleDevTools = doNothing;
+let minimizeWindow = doNothing;
+let maximizeWindow = doNothing;
+let closeWindow = doNothing;
+let zoom = doNothing;
+let zoomIn = doNothing;
+let zoomOut = doNothing;
+let currentZoom = doNothing;
+let setEdited = doNothing;
+let showMessageBox = doNothing;
+let navigate = doNothing;
+let constructMenu = doNothing;
+let copyToClipboard = doNothing;
+let pasteFromClipboard = doNothing;
+let showSaveDialog = doNothing;
 
 let emitter = new events.EventEmitter();
 
@@ -48,7 +52,7 @@ if (window.require) {
     const Menu = remote.Menu;
     const clipboard = electron.clipboard;
 
-    version = remote.getGlobal('version');
+    version = Promise.resolve(remote.getGlobal('version'));
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
     resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
@@ -215,8 +219,30 @@ else {
     analysisUIUrl  = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 1) + '/';
     resultsViewUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 2) + '/';
 
-    openWindow = instanceId => {
-        window.location = window.location.origin + '/?id=' + instanceId;
+    openWindow = (instanceId) => {
+        window.open(window.location.origin + '/?id=' + instanceId, '_blank');
+    };
+    closeWindow = () => {
+        window.close();
+    };
+    navigate = (instanceId) => {
+        window.location = window.location.origin + window.location.pathname + '?id=' + instanceId;
+    };
+
+    version = new Promise((resolve, reject) => {
+        $.ajax('/version', { dataType: 'text'})
+            .done(data => resolve(data.trim()))
+            .fail(reject);
+    });
+
+    currentZoom = () => 100;
+
+    copyToClipboard = () => {
+        // should do something
+    };
+
+    pasteFromClipboard = () => {
+        // should do something
     };
 }
 

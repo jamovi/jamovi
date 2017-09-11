@@ -1,42 +1,84 @@
 
 import sys
 import signal
+from http.client import HTTPConnection
 
 from .server import Server
 
 import logging
+import webbrowser
 
 log = logging.getLogger('jamovi')
 if not sys.executable.endswith('pythonw.exe'):
     log.setLevel(logging.INFO)
     log.addHandler(logging.StreamHandler(sys.stdout))
 
-log.info('PYTHONIOENCODING is ' + str(sys.stdout.encoding))
-
 # import os.path
 # logpath = os.path.expanduser('~/jamovi-log.txt')
 # handler = logging.FileHandler(logpath)
 # log.addHandler(logpath)
 
+start_wb = False  # start web browser
+
 
 def _ports_opened(ports):
-    sys.stdout.write('ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]))
+
+    global start_wb
+
+    sys.stdout.write('ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]) + '\n')
     sys.stdout.flush()
+
+    if start_wb:
+        print('starting web browser')
+        webbrowser.open('http://localhost:' + str(ports[0]))
 
 
 def start():
-    port = 0
-    debug = False
-    for i in range(2, len(sys.argv)):
-        if sys.argv[i] == '--debug':
-            debug = True
 
-    sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0')
+    global start_wb
+
+    try:
+        port = int(sys.argv[1])
+    except:
+        port = 1337
+
+    debug = '--debug' in sys.argv
+    slave = '--slave' in sys.argv
+    stdin_slave = '--stdin-slave' in sys.argv
+    start_wb = '--start-wb' in sys.argv
+
+    if '--if=*' in sys.argv:
+        host = ''
+    else:
+        host = 'localhost'
+
+    sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0\n')
     sys.stdout.flush()
 
-    server = Server(port, debug=debug)
+    already_running = False
 
-    signal.signal(signal.SIGTERM, server.stop)
+    if port != 0:
+        # check to see if already running
+        try:
+            conn = HTTPConnection('localhost', port, .2)
+            conn.request('GET', '/version')
+            res = conn.getresponse()
+            already_running = (res.status == 200)
+        except:
+            already_running = False
 
-    server.add_ports_opened_listener(_ports_opened)
-    server.start()
+    if not already_running:
+        server = Server(
+            port,
+            host=host,
+            slave=slave,
+            stdin_slave=stdin_slave,
+            debug=debug)
+
+        signal.signal(signal.SIGTERM, server.stop)
+
+        server.add_ports_opened_listener(_ports_opened)
+        server.start()
+    else:
+        sys.stdout.write('server already running\n')
+        _ports_opened([port, port + 1, port + 2])

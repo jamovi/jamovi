@@ -45,11 +45,14 @@ const ResultsView = Backbone.View.extend({
         this.$welcome = $('<iframe id="main_welcome" \
                 name="welcome" \
                 sandbox="allow-scripts allow-same-origin" \
-                src="https://jamovi.org/welcome/?v=' + host.version + '" \
                 class="silky-welcome-panel" \
                 style="overflow: hidden; box-sizing: border-box;" \
                 ></iframe>');
         this.$welcome.appendTo(this.$el);
+
+        host.version.then((version) => {
+            this.$welcome.attr('src', 'https://jamovi.org/welcome/?v=' + version);
+        });
 
         this.model.analyses().once('analysisResultsChanged', (event) => {
             this.$welcome.addClass('silky-welcome-panel-hidden');

@@ -1,5 +1,6 @@
 
 import sys
+import os
 import os.path as path
 import platform
 
@@ -54,6 +55,12 @@ class Engine:
         exe_dir = path.join(conf.get('home'), 'bin')
         exe_path = path.join(exe_dir, 'jamovi-engine')
 
+        env = os.environ.copy()
+        env['R_HOME'] = conf.get('r_home', env.get('R_HOME', ''))
+        env['R_LIBS'] = conf.get('r_libs', env.get('R_LIBS', ''))
+        env['FONTCONFIG_PATH'] = conf.get('fontconfig_path', env.get('FONTCONFIG_PATH', ''))
+        env['JAMOVI_MODULES_PATH'] = conf.get('modules_path', env.get('JAMOVI_MODULES_PATH', ''))
+
         si = None
         stdout = sys.stdout
         stderr = sys.stderr
@@ -73,7 +80,8 @@ class Engine:
             [exe_path, con, pth],
             startupinfo=si,
             stdout=stdout,
-            stderr=stderr)
+            stderr=stderr,
+            env=env)
 
         self._socket = nanomsg.Socket(nanomsg.PAIR)
         self._socket._set_recv_timeout(500)
