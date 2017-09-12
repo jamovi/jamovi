@@ -187,6 +187,7 @@ cdef extern from "columnw.h":
         CColumnTypeNone       "ColumnType::NONE"
         CColumnTypeData       "ColumnType::DATA"
         CColumnTypeComputed   "ColumnType::COMPUTED"
+        CColumnTypeRecoded    "ColumnType::RECODED"
 
 class CellIterator:
     def __init__(self, column):
@@ -681,24 +682,33 @@ class ColumnType(Enum):
     NONE     = CColumnTypeNone
     DATA     = CColumnTypeData
     COMPUTED = CColumnTypeComputed
+    RECODED  = CColumnTypeRecoded
 
     @staticmethod
     def stringify(value):
         if value == ColumnType.DATA:
-            return "Data"
+            return 'Data'
         elif value == ColumnType.COMPUTED:
-            return "Computed"
+            return 'Computed'
+        elif value == ColumnType.RECODED:
+            return 'Recoded'
+        elif value == ColumnType.NONE:
+            return 'None'
         else:
-            return "None"
+            return 'Data'
 
     @staticmethod
     def parse(value):
-        if value == "Data":
+        if value == 'Data':
             return ColumnType.DATA
-        elif value == "Computed":
+        elif value == 'Computed':
             return ColumnType.COMPUTED
-        else:
+        elif value == 'Recoded':
+            return ColumnType.RECODED
+        elif value == 'None':
             return ColumnType.NONE
+        else:
+            return ColumnType.DATA
 
 cdef extern from "platforminfo.h":
     cdef cppclass CPlatformInfo "PlatformInfo":

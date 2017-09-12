@@ -8,9 +8,10 @@ Backbone.$ = $;
 
 const keyboardJS = require('keyboardjs');
 
+const NewVarWidget = require('./newvarwidget');
 const DataVarWidget = require('./datavarwidget');
 const ComputedVarWidget = require('./computedvarwidget');
-const NewVarWidget = require('./newvarwidget');
+const RecodedVarWidget = require('./recodedvarwidget');
 
 const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
@@ -66,8 +67,26 @@ const EditorWidget = Backbone.View.extend({
         this.$computedVarWidget = $('<div></div>').appendTo(this.$body);
         this.computedVarWidget = new ComputedVarWidget({ el: this.$computedVarWidget, model: this.model });
 
+        this.$recodedVarWidget = $('<div></div>').appendTo(this.$body);
+        this.recodedVarWidget = new RecodedVarWidget({ el: this.$recodedVarWidget, model: this.model });
+
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);
         this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
+
+        this.$$widgets = [
+            this.$dataVarWidget,
+            this.$computedVarWidget,
+            this.$recodedVarWidget,
+            this.$newVarWidget,
+        ];
+    },
+    _show($widget) {
+        let $$widgets = this.$$widgets;
+        for (let i = 0; i < $$widgets.length; i++) {
+            if ( ! $widget[0].isSameNode($$widgets[i][0]))
+                $$widgets[i].hide();
+        }
+        $widget.show();
     },
     detach() {
         this.model.apply();
@@ -76,6 +95,7 @@ const EditorWidget = Backbone.View.extend({
         this.dataVarWidget.detach();
         this.computedVarWidget.detach();
         this.newVarWidget.detach();
+        this.recodedVarWidget.detach();
     },
     attach() {
         this.attached = true;
@@ -85,25 +105,24 @@ const EditorWidget = Backbone.View.extend({
 
         let type = this.model.get('columnType');
         if (type === 'data') {
-            this.$dataVarWidget.show();
             this.$title.show();
-            this.$computedVarWidget.hide();
-            this.$newVarWidget.hide();
+            this._show(this.$dataVarWidget);
             this.dataVarWidget.attach();
         }
         else if (type === 'computed') {
-            this.$computedVarWidget.show();
             this.$title.show();
-            this.$dataVarWidget.hide();
-            this.$newVarWidget.hide();
+            this._show(this.$computedVarWidget);
             this.computedVarWidget.attach();
         }
+        else if (type === 'recoded') {
+            this.$title.show();
+            this._show(this.$recodedVarWidget);
+            this.recodedVarWidget.attach();
+        }
         else {
-            this.newVarWidget.attach();
-            this.$newVarWidget.show();
-            this.$dataVarWidget.hide();
-            this.$computedVarWidget.hide();
             this.$title.hide();
+            this._show(this.$newVarWidget);
+            this.newVarWidget.attach();
         }
     }
 });

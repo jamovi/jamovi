@@ -555,6 +555,10 @@ DataSetModel.stringifyColumnType = function(type) {
             return 'data';
         case 2:
             return 'computed';
+        case 3:
+            return 'recoded';
+        case 0:
+            return 'none';
         default:
             return 'none';
     }
@@ -566,8 +570,12 @@ DataSetModel.parseColumnType = function(str) {
             return 1;
         case 'computed':
             return 2;
-        default:
+        case 'recoded':
+            return 3;
+        case 'none':
             return 0;
+        default:
+            return 1;
     }
 };
 

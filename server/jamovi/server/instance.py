@@ -821,6 +821,8 @@ class Instance:
 
             if column.column_type == ColumnType.COMPUTED:
                 raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+            elif column.column_type == ColumnType.RECODED:
+                raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
 
             if column.auto_measure:
                 continue

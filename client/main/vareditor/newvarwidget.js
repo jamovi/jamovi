@@ -27,6 +27,11 @@ const NewVarWidget = Backbone.View.extend({
         this.$iconComputed.css('background-image', 'url(assets/variable-computed.svg)');
         this.$computed.append($('<div class="text">new computed variable</div>'));
 
+        this.$recoded = $('<div class="button"></div>').appendTo(this.$container);
+        this.$iconRecoded = $('<div class="icon"</div>').appendTo(this.$recoded);
+        this.$iconRecoded.css('background-image', 'url(assets/variable-recoded.svg)');
+        this.$recoded.append($('<div class="text">New recoded variable</div>'));
+
         this.$data.on('click', (event) => {
             this.model.set('columnType', 'data');
             this.model.apply();
@@ -35,6 +40,11 @@ const NewVarWidget = Backbone.View.extend({
         this.$computed.on('click', (event) => {
             this.model.set('columnType', 'computed');
             this.model.set('measureType', 'continuous');
+            this.model.apply();
+        });
+
+        this.$recoded.on('click', (event) => {
+            this.model.set('columnType', 'recoded');
             this.model.apply();
         });
 

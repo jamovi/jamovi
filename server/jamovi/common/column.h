@@ -100,7 +100,8 @@ namespace ColumnType
     {
         NONE = 0,
         DATA = 1,
-        COMPUTED = 2
+        COMPUTED = 2,
+        RECODED = 3
     };
 }
 

@@ -93,6 +93,8 @@ const TableView = SilkyView.extend({
         ActionHub.get('appendVar').on('request', () => this._appendColumn('data'));
         ActionHub.get('insertComputed').on('request', () => this._insertColumn('computed'));
         ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
+        ActionHub.get('insertRecoded').on('request', () => this._insertColumn('recoded'));
+        ActionHub.get('appendRecoded').on('request', () => this._appendColumn('recoded'));
         ActionHub.get('delVar').on('request', () => this._deleteColumns());
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
@@ -718,11 +720,13 @@ const TableView = SilkyView.extend({
         let colNo = this.selection.colNo;
         let column = this.model.attributes.columns[colNo];
 
-        if (column.columnType === 'computed') {
+        if (column.columnType === 'computed' || column.columnType === 'recoded') {
 
+            let columnType = column.columnType;
+            columnType = columnType[0].toUpperCase() + columnType.substring(1);
             let err = {
                 title: 'Column is not editable',
-                message: 'Computed columns may not be edited',
+                message: columnType + ' columns may not be edited',
                 type: 'error' };
             this._notifyEditProblem(err);
 
@@ -1133,12 +1137,7 @@ const TableView = SilkyView.extend({
         });
     },
     _insertColumn(columnType) {
-
-        return this.model.insertColumn(this.selection.colNo, columnType)
-            .then(() => {
-                if (columnType === 'computed')
-                    this.model.set('editingVar', this.selection.colNo);
-            });
+        return this.model.insertColumn(this.selection.colNo, columnType);
     },
     _columnsInserted(event) {
 
@@ -1259,6 +1258,8 @@ const TableView = SilkyView.extend({
                 args = { name: '', columnType: 'data', measureType: 'nominal' };
             else if (columnType === 'computed')
                 args = { name: '', columnType: 'computed', measureType: 'continuous' };
+            else if (columnType === 'recoded')
+                args = { name: '', columnType: 'recoded', measureType: 'nominal' };
             else
                 args = { name: '', columnType: 'none', measureType: 'nominal' };
 
@@ -1275,9 +1276,6 @@ const TableView = SilkyView.extend({
             let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
             if (selRight > containerRight)
                 this.$container.scrollLeft(scrollX + selRight - containerRight);
-
-            if (columnType === 'computed')
-                this.model.set('editingVar', colNo);
 
         }).catch((error) => {
             console.log(error);
