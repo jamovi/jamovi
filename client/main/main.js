@@ -63,6 +63,13 @@ if (window.navigator.platform === 'MacIntel') {
     ]);
 }
 
+// prevent back navigation
+history.pushState(null, null, document.URL);
+window.addEventListener('popstate', function () {
+    history.pushState(null, null, document.URL);
+});
+
+
 $(document).ready(() => {
 
     if (navigator.platform === "Win32")
