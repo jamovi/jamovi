@@ -287,7 +287,9 @@ class Instance:
         try:
             file_exists = os.path.isfile(path)
             if file_exists is False or request.overwrite is True:
-                if request.incContent:
+                if path.endswith('.omv'):
+                    self._on_save_everything(request)
+                elif request.incContent:
                     self._on_save_content(request)
                 elif request.part != '':
                     self._on_save_part(request)
@@ -328,8 +330,9 @@ class Instance:
         path = request.filename
         path = Instance._normalise_path(path)
         is_export = request.export
+        content = request.content
 
-        formatio.write(self._data, path)
+        formatio.write(self._data, path, content)
 
         if not is_export:
             self._data.title = os.path.splitext(os.path.basename(path))[0]

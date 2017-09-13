@@ -8,12 +8,15 @@ const events = require('events');
 const dialogs = require('dialogs');
 const $ = require('jquery');
 
+const APP_NAME = 'jamovi';
+
 let baseUrl;
 let analysisUIUrl;
 let resultsViewUrl;
 
 let isElectron;
 let version;
+let nameAndVersion;
 
 let doNothing = () => {};
 
@@ -53,6 +56,7 @@ if (window.require) {
     const clipboard = electron.clipboard;
 
     version = Promise.resolve(remote.getGlobal('version'));
+    nameAndVersion = Promise.resolve(APP_NAME + ' ' + remote.getGlobal('version'));
     baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
     analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
     resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
@@ -235,6 +239,10 @@ else {
             .fail(reject);
     });
 
+    nameAndVersion = version.then(version => {
+        return APP_NAME + ' ' + version;
+    });
+
     currentZoom = () => 100;
 
     copyToClipboard = () => {
@@ -248,6 +256,7 @@ else {
 
 module.exports = {
     version,
+    nameAndVersion,
     baseUrl,
     analysisUIUrl,
     resultsViewUrl,

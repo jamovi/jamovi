@@ -31,14 +31,14 @@ def read(data, path, is_example=False):
     data.setup()
 
 
-def write(data, path):
+def write(data, path, content=None):
 
     ext = os.path.splitext(path)[1].lower()
 
     if ext == '.csv':
         csv.write(data, path)
     else:
-        omv.write(data, path)
+        omv.write(data, path, content)
 
 
 def is_supported(path):

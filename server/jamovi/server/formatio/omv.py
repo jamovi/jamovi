@@ -14,9 +14,13 @@ from ...core import ColumnType
 from ...core import MeasureType
 
 
-def write(data, path):
+def write(data, path, html=None):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
+
+        if html is not None:
+            zip.writestr('index.html', html)
+
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Created-By: jamovi\n')

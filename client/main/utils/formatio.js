@@ -28,7 +28,7 @@ const csvifyCells = function(cells) {
     return rows.join('\n');
 };
 
-const htmlifyCells = function(cells) {
+const htmlifyCells = function(cells, options) {
     if (cells.length === 0)
         return '';
 
@@ -51,20 +51,29 @@ const htmlifyCells = function(cells) {
         rows[rowNo] = row;
     }
 
-    return '<!DOCTYPE html>\n<html><head><meta charset="utf-8"></head><body><table>' + rows.join('\n') + '</table></body></html>';
+    let generator = '';
+    if (options.generator)
+        generator = '<meta name="generator" content="' + options.generator + '" />';
+
+    return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">' + generator + '</head><body><table>' + rows.join('\n') + '</table></body></html>';
 };
 
-const exportElem = function($el, format, options={inline:false}) {
+const exportElem = function($el, format, options={images:'absolute'}) {
     if (format === 'text/plain') {
         return Promise.resolve(_textify($el[0]));
     }
     else {
         return _htmlify($el[0], options).then((content) => {
 
+            let generator = '';
+            if (options.generator)
+                generator = '        <meta name="generator" content="' + options.generator + '" />';
+
             let html = `<!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8" />
+` + generator + `
         <title>Results</title>
         <style>
 
@@ -101,6 +110,7 @@ const exportElem = function($el, format, options={inline:false}) {
 
     table tr td, table tr th {
         page-break-inside: avoid;
+        font-size: 12px ;
     }
         </style>
 </head>
@@ -137,7 +147,7 @@ const _htmlify = function(el, options) {
     if (el.nodeType !== Node.ELEMENT_NODE)
         return Promise.resolve('');
 
-    let tag = el.tagName;
+    let tag = el.tagName.toLowerCase();
     let include = false;
     let includeChildren = true;
     let styles = [ ];
@@ -147,7 +157,7 @@ const _htmlify = function(el, options) {
     return Promise.resolve().then(() => {
 
         switch (tag) {
-        case 'DIV':
+        case 'div':
             if ($(el).css('display') === 'none') { // is display: none ;
                 include = false;
                 includeChildren = false;
@@ -156,27 +166,27 @@ const _htmlify = function(el, options) {
                 return _htmlifyDiv(el, options);
             }
             break;
-        case 'IFRAME':
+        case 'iframe':
             return _htmlifyIFrame(el, options);
-        case 'TABLE':
+        case 'table':
             include = true;
             prepend = '';
             append = '<p>&nbsp;</p>';
             break;
-        case 'H1':
-        case 'H2':
-        case 'H3':
-        case 'H4':
-        case 'H5':
-        case 'THEAD':
-        case 'TBODY':
-        case 'TFOOT':
-        case 'TR':
-        case 'PRE':
+        case 'h1':
+        case 'h2':
+        case 'h3':
+        case 'h4':
+        case 'h5':
+        case 'thead':
+        case 'tbody':
+        case 'tfoot':
+        case 'tr':
+        case 'pre':
             include = true;
             break;
-        case 'TD':
-        case 'TH':
+        case 'td':
+        case 'th':
             include = true;
             styles = [
                 'text-align',
@@ -248,10 +258,23 @@ const _htmlifyDiv = function(el, options) {
     let width = $(el).css('width');
     let height = $(el).css('height');
     let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
-    bgi = decodeURI(bgi);
 
-    if ( ! options.inline)
+    if (options.images === 'absolute') {
         return '<img src="' + bgi + '" style="width:' + width + ';height:' + height + ';">';
+    }
+
+    if (options.images === 'relative') {
+        let dbgi = decodeURI(bgi);
+        if (dbgi.startsWith(el.baseURI + 'res/')) {
+            dbgi = dbgi.substring(el.baseURI.length + 4);
+            bgi = encodeURI(dbgi);
+        }
+        else {
+            console.log('Unable to resolve relative address');
+            bgi = '';
+        }
+        return '<img src="' + bgi + '" style="width:' + width + ';height:' + height + ';" alt="">';
+    }
 
     return new Promise((resolve, reject) => {
 

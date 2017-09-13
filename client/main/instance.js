@@ -167,6 +167,10 @@ const Instance = Backbone.Model.extend({
 
         return Promise.resolve().then(() => {
 
+            return host.nameAndVersion;
+
+        }).then(app => {
+
             // Generate content if necessary
 
             if (options.content) {
@@ -176,11 +180,14 @@ const Instance = Backbone.Model.extend({
                 // images are handled specially below
                 return undefined;
             }
+            else if (filePath.endsWith('.omv')) {
+                return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
+            }
             else if (filePath.endsWith('.html')) {
-                return this.attributes.resultsSupplier.getAsHTML({inline:true}, options.part);
+                return this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
             }
             else if (filePath.endsWith('.pdf')) {
-                return this.attributes.resultsSupplier.getAsHTML({}, options.part)
+                return this.attributes.resultsSupplier.getAsHTML({images:'absolute', generator:app}, options.part)
                     .then(html => this._requestPDF(html));
             }
             else {
