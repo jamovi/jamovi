@@ -325,7 +325,7 @@ var FSEntryBrowserView = SilkyView.extend({
         var dirInfo = this.model.get('dirInfo');
 
         var path = null;
-        if (_.isUndefined(dirInfo) === false)
+        if (dirInfo !== undefined)
             path = pathtools.normalise(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
         this.$header.find(".silky-bs-fslist-browser-location").text(path);
@@ -520,7 +520,7 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     _backClicked : function(event) {
         var dirInfo = this.model.get('dirInfo');
-        if (_.isUndefined(dirInfo) === false) {
+        if (dirInfo !== undefined) {
             var path = dirInfo.path;
             path = this._calcBackDirectory(path, dirInfo.type);
             this._goToFolder(path);
@@ -569,6 +569,7 @@ var BackstageModel = Backbone.Model.extend({
     initialize : function(args) {
 
         this.instance = args.instance;
+        this._hasCurrentDirectory = false;
 
         this.instance.settings().on('change:recents',
             (event) => this._settingsChanged(event));
@@ -809,6 +810,8 @@ var BackstageModel = Backbone.Model.extend({
     },
     setCurrentDirectory: function(path, type) {
         this.instance.browse(path).then(response => {
+            let path = response.path;
+
             this._pcListModel.set('error', response.errorMessage);
             this._pcListModel.set('items', response.contents);
             this._pcListModel.set('dirInfo', { path: path, type: type } );
@@ -825,7 +828,7 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     hasCurrentDirectory: function() {
-        return _.isUndefined(this._hasCurrentDirectory) ? false : this._hasCurrentDirectory;
+        return this._hasCurrentDirectory;
     },
     _opChanged: function() {
 
@@ -1360,7 +1363,7 @@ var BackstageChoices = SilkyView.extend({
         }
 
         if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory() === false)
-            this.model.setCurrentDirectory('{{Documents}}');
+            this.model.setCurrentDirectory('');  // empty string requests default path
 
         if (old) {
             $old.fadeOut(200);

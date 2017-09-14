@@ -196,32 +196,45 @@ class Instance:
 
     def _on_fs_request(self, request):
         path = request.path
-        location = path
 
-        path = Instance._normalise_path(path)
+        if path != '':
+            abs_path = Instance._normalise_path(path)
+        else:
+            path = '{{Documents}}'
+            abs_path = Dirs.documents_dir()
+            if os.path.exists(abs_path):
+                path = '{{Documents}}'
+            else:
+                path = '{{Root}}'
 
         response = jcoms.FSResponse()
+        response.path = path
+
         if path.startswith('{{Root}}'):
 
-            entry = response.contents.add()
-            entry.name = 'Documents'
-            entry.path = '{{Documents}}'
-            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            if os.path.exists(Dirs.documents_dir()):
+                entry = response.contents.add()
+                entry.name = 'Documents'
+                entry.path = '{{Documents}}'
+                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
-            entry = response.contents.add()
-            entry.name = 'Downloads'
-            entry.path = '{{Downloads}}'
-            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            if os.path.exists(Dirs.downloads_dir()):
+                entry = response.contents.add()
+                entry.name = 'Downloads'
+                entry.path = '{{Downloads}}'
+                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
-            entry = response.contents.add()
-            entry.name = 'Desktop'
-            entry.path = '{{Desktop}}'
-            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            if os.path.exists(Dirs.desktop_dir()):
+                entry = response.contents.add()
+                entry.name = 'Desktop'
+                entry.path = '{{Desktop}}'
+                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
-            entry = response.contents.add()
-            entry.name = 'Home'
-            entry.path = '{{Home}}'
-            entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            if os.path.exists(Dirs.home_dir()):
+                entry = response.contents.add()
+                entry.name = 'Home'
+                entry.path = '{{Home}}'
+                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
 
             if platform.uname().system == 'Windows':
                 for drive_letter in range(ord('A'), ord('Z') + 1):
@@ -231,6 +244,11 @@ class Instance:
                         entry.name = drive
                         entry.path = drive
                         entry.type = jcoms.FSEntry.Type.Value('DRIVE')
+            else:
+                entry = response.contents.add()
+                entry.name = '/'
+                entry.path = '/'
+                entry.type = jcoms.FSEntry.Type.Value('FOLDER')
 
             self._coms.send(response, self._instance_id, request)
 
@@ -238,7 +256,7 @@ class Instance:
             try:
                 entries = [ ]
 
-                for direntry in os.scandir(path + '/'):  # add a / in case we get C:
+                for direntry in os.scandir(abs_path + '/'):  # add a / in case we get C:
 
                     if fs.is_hidden(direntry.path):
                         show = False
@@ -256,7 +274,7 @@ class Instance:
                         entry = FileEntry()
                         entry.name = direntry.name
                         entry.type = entry_type
-                        entry.path = posixpath.join(location, direntry.name)
+                        entry.path = posixpath.join(path, direntry.name)
                         entries.append(entry)
 
                 entries = sorted(entries)
@@ -275,7 +293,7 @@ class Instance:
                 self._coms.send(response, self._instance_id, request)
 
             except OSError as e:
-                base    = os.path.basename(path)
+                base    = os.path.basename(abs_path)
                 message = 'Unable to open {}'.format(base)
                 cause = e.strerror
                 self._coms.send_error(message, cause, self._instance_id, request)

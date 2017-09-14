@@ -277,8 +277,9 @@ message FSRequest {
 }
 
 message FSResponse {
-    repeated FSEntry contents = 1;
-    string errorMessage = 2;
+    string path = 1;
+    repeated FSEntry contents = 2;
+    string errorMessage = 3;
 }
 
 message DataSetEntry {
