@@ -658,14 +658,16 @@ class Instance:
     def _on_dataset_del_cols(self, request, response):
 
         columns = [None] * (request.columnEnd - request.columnStart + 1)
-        for i in range(len(columns)):
-            columns[i] = self._data[i + request.columnStart]
 
-        reparse = set()
+        for i in range(len(columns)):
+            column = self._data[i + request.columnStart]
+            column.change(formula='')  # clear formula to clean up dependents
+            columns[i] = column
+
+        reparse = set(columns)
         for column in columns:
             dependents = column.dependents
             reparse.update(dependents)
-        reparse -= set(columns)  # don't reparse columns that are being deleted
 
         self._data.delete_columns(request.columnStart, request.columnEnd)
 
