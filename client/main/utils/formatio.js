@@ -28,7 +28,7 @@ const csvifyCells = function(cells) {
     return rows.join('\n');
 };
 
-const htmlifyCells = function(cells, options) {
+const htmlifyCells = function(cells, options={}) {
     if (cells.length === 0)
         return '';
 
