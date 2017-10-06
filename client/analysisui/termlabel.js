@@ -12,11 +12,14 @@ const TermLabel = function(params) {
 
     this.$el = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>');
 
-    this.registerSimpleProperty("format", FormatDef.term);
+    this.registerSimpleProperty('format', FormatDef.term);
+
+    this._format = this.getPropertyValue('format');
 
     this.createItem = function() {
         let value = this.getValue();
-        let displayValue = FormatDef.term.toString(value);
+
+        let displayValue = this._format.toString(value);
 
         this.$label = $('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
 
@@ -29,18 +32,18 @@ const TermLabel = function(params) {
     this.onOptionValueChanged = function(key, data) {
         if (this.$label) {
             let value = this.getValue();
-            let displayValue = FormatDef.term.toString(value);
+            let displayValue = this._format.toString(value);
             this.$label.text(displayValue);
             if (value !== null)
                 this.updateView(value);
         }
     };
 
-    this._override("onDataChanged", (baseFunction, data) => {
+    this._override('onDataChanged', (baseFunction, data) => {
         if (baseFunction !== null)
             baseFunction.call(this, data);
 
-        if (data.dataType !== "columns")
+        if (data.dataType !== 'columns')
             return;
 
         if (data.dataInfo.countChanged) {
@@ -68,7 +71,7 @@ const TermLabel = function(params) {
         };
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
-            let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType" ] });
+            let promise = this.requestData('column', { columnName: columnName, properties: [ 'measureType' ] });
             promise.then(process);
         }
     };
