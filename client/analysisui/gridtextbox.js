@@ -148,7 +148,7 @@ const GridTextbox = function(params) {
         if (value === undefined || value === null)
             return '';
 
-        return value.toString();
+        return this.getPropertyValue("format").toString(value);
     };
 
     this.onOptionValueChanged = function(key, data) {
