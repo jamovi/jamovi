@@ -7,13 +7,17 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+process.on('uncaughtException', (e) => {
+    console.log(e);
+});
+
 const version = function() {
     let versionPath = path.join(path.dirname(process.execPath), '..', 'Resources', 'jamovi', 'version');
     try {
         return fs.readFileSync(versionPath, { encoding: 'utf-8' }).trim();
     }
     catch(e) {
-        return 'unknown version';
+        return '0.0.0.0';
     }
 }
 
@@ -58,7 +62,7 @@ if (argv.length >= 2 && argv[1] === '--py-debug') {
     argv.shift(); // remove --py-debug
     let pth = path.join(os.homedir(), 'jamovi-log.txt');
     debug = fs.createWriteStream(pth);
-    
+
     console.log('Logging to: ' + pth);
     console.log();
 }
@@ -176,6 +180,7 @@ const convertToPDF = function(path) {
 
 let server;
 let ports = null;
+let updateUrl;
 
 let spawn = new Promise((resolve, reject) => {
 
@@ -183,12 +188,12 @@ let spawn = new Promise((resolve, reject) => {
     // detached, because weird stuff happens on windows if not detached
 
     let dataListener = (chunk) => {
-        
+
         if (debug)
             debug.write(chunk);
         else
             console.log(chunk);
-        
+
         if (ports === null) {
             // the server sends back the ports it has opened through stdout
             ports = /ports: ([0-9]*), ([0-9]*), ([0-9]*)/.exec(chunk);
@@ -199,7 +204,7 @@ let spawn = new Promise((resolve, reject) => {
             }
         }
 
-        let cmdRegex = /^request: ([a-z-]+) \(([0-9]+)\) ?(.*)$/
+        let cmdRegex = /^request: ([a-z-]+) \(([0-9]+)\) ?(.*)\n?$/
         let match = cmdRegex.exec(chunk)
         if (match !== null) {
             let id = match[2];
@@ -210,12 +215,23 @@ let spawn = new Promise((resolve, reject) => {
                     convertToPDF(match[1]).then((path) => {
                         let response = 'response: convert-to-pdf (' + id + ') 1 "' + path + '"\n';
                         server.stdin.write(response);
-                        console.log(response);
                     }).catch((err) => {
                         let response = 'response: convert-to-pdf (' + id + ') 0 "' + err + '"\n';
                         server.stdin.write(response);
-                        console.log(response);
                     });
+                }
+            case 'software-update':
+                match = /^"(.*)"$/.exec(match[3]);
+                if (match) {
+                    try {
+                        checkForUpdate(updateUrl, match[1]);
+                        let response = 'response: software-update (' + id + ') 1\n';
+                        server.stdin.write(response);
+                    }
+                    catch (e) {
+                        let response = 'response: software-update (' + id + ') 0 "' + e.message + '"\n';
+                        server.stdin.write(response);
+                    }
                 }
             }
         }
@@ -233,6 +249,19 @@ let spawn = new Promise((resolve, reject) => {
     global.mainPort = ports[0];
     global.analysisUIPort = ports[1];
     global.resultsViewPort = ports[2];
+
+    let platform;
+    if (process.platform === 'darwin')
+        platform = 'macos';
+    else if (process.platform === 'win32')
+        platform = 'win64';
+    else
+        platform = 'linux';
+
+    updateUrl = 'https://www.jamovi.org/downloads/update?p=' + platform + '&v=' + global.version + '&f=zip';
+
+    setTimeout(() => checkForUpdate(updateUrl), 500);
+    setInterval(() => checkForUpdate(updateUrl, 'checking', false), 60 * 1000);
 
 }).catch(error => {
     console.log(error)
@@ -360,3 +389,59 @@ const createWindow = function(open) {
         windows = windows.filter(w => w != wind);
     });
 };
+
+const updater = electron.autoUpdater;
+
+updater.on('error', () => {
+    notifyUpdateStatus('error');
+});
+
+updater.on('update-downloaded', () => {
+    notifyUpdateStatus('ready');
+});
+
+let lastUpdateCheck = new Date(0);
+
+const checkForUpdate = function(url, type='checking', force=true) {
+
+    if (process.platform !== 'darwin')  // only macOS for now
+        return;
+
+    let now = new Date()
+    if (force === false && (now - lastUpdateCheck) < 60 * 60 * 1000)
+        return;
+    lastUpdateCheck = now;
+
+    if (type === 'checking') {
+        const https = require('https');
+        let req = https.request(url);
+        req.end();
+        notifyUpdateStatus('checking');
+        req.on('response', (message) => {
+            if (message.statusCode === 204)
+                notifyUpdateStatus('uptodate');
+            else if (message.statusCode === 200)
+                notifyUpdateStatus('available');
+            else
+                notifyUpdateStatus('checkerror');
+        });
+        req.on('error', (error) => {
+            notifyUpdateStatus('checkerror');
+        });
+    }
+    else if (type === 'downloading') {
+        notifyUpdateStatus('downloading');
+        updater.setFeedURL(updateUrl);
+        updater.checkForUpdates();
+    }
+    else if (type === 'installing') {
+        updater.quitAndInstall();
+    }
+};
+
+const notifyUpdateStatus = function(status) {
+    setTimeout(() => {
+        let response = 'notification: update ' + status + '\n';
+        server.stdin.write(response);
+    });
+}

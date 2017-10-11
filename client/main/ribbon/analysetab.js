@@ -6,9 +6,9 @@ const $ = require('jquery');
 const RibbonMenu = require('./ribbonmenu');
 
 const AnalyseTab = function(modules) {
-    this.name = "analyse";
+    this.name = 'analyses';
 
-    this.title = "Analyses";
+    this.title = 'Analyses';
 
     this.modules = modules;
 

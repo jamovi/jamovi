@@ -90,6 +90,11 @@ body.windows .jmv-ribbon-appmenu-menu-panel {
     margin: 15px 0px;
 }
 
+.jmv-ribbon-appmenu-subheading {
+    padding: 8px 16px ;
+    font-weight: bold ;
+}
+
 .jmv-ribbon-appmenu-item {
     display: flex ;
     justify-content: space-between;

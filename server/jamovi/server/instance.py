@@ -44,6 +44,28 @@ class Instance:
 
     instances = { }
     _garbage_collector = None
+    _update_status = 'na'
+
+    def _update_status_req(x):
+        # this gets assigned to
+        pass
+
+    @staticmethod
+    def set_update_status(status):
+        Instance._update_status = status
+        for instanceId, instance in Instance.instances.items():
+            if instance.is_active:
+                instance._on_settings()
+
+        if status == 'available':
+            settings = Settings.retrieve('main')
+            settings.sync()
+            if settings.get('autoUpdate', False):
+                Instance._update_status_req('downloading')
+
+    @staticmethod
+    def set_update_request_handler(request_fun):
+        Instance._update_status_req = request_fun
 
     @staticmethod
     def get(instance_id):
@@ -1168,15 +1190,18 @@ class Instance:
                 name = setting_pb.name
                 if setting_pb.valueType is jcoms.ValueType.Value('STRING'):
                     value = setting_pb.s
-                    settings.set(name, value)
                 elif setting_pb.valueType is jcoms.ValueType.Value('INT'):
                     value = setting_pb.i
-                    settings.set(name, value)
                 elif setting_pb.valueType is jcoms.ValueType.Value('DOUBLE'):
                     value = setting_pb.d
-                    settings.set(name, value)
                 elif setting_pb.valueType is jcoms.ValueType.Value('BOOL'):
                     value = setting_pb.b
+                else:
+                    continue
+
+                if name == 'updateStatus':
+                    Instance._update_status_req(value)
+                else:
                     settings.set(name, value)
 
             settings.sync()
@@ -1186,6 +1211,10 @@ class Instance:
                     instance._on_settings()
 
         response = jcoms.SettingsResponse()
+
+        setting_pb = response.settings.add()
+        setting_pb.name = 'updateStatus'
+        setting_pb.s = Instance._update_status
 
         for name in settings:
             value = settings.get(name)

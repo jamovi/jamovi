@@ -14,7 +14,7 @@ const Settings = Backbone.Model.extend({
         this._onBC = (broadcast) => this._onSettingsReceived(broadcast);
         coms.on('broadcast', this._onBC);
 
-        this._localSettings = [ 'syntaxMode' ];
+        this._localSettings = [ 'syntaxMode' ]; // not stored
     },
 
     destroy() {
@@ -31,6 +31,7 @@ const Settings = Backbone.Model.extend({
         devMode: false,
         syntaxMode: false,
         zoom: 100,
+        updateStatus: 'na',
     },
 
     retrieve(instanceId) {
@@ -83,12 +84,12 @@ const Settings = Backbone.Model.extend({
 
     setSetting(name, value) {
 
-        if (this._localSettings.indexOf(name) !== -1) {
-            this.set(name, value);
+        this.set(name, value);
+
+        if (this._localSettings.includes(name)) {
             return Promise.resolve();
         }
         else {
-
             let coms = this.attributes.coms;
 
             let setting = new coms.Messages.SettingValue();

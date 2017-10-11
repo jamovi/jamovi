@@ -25,6 +25,10 @@ const RibbonModel = Backbone.Model.extend({
             new AnalyseTab(this._modules),
         ]);
     },
+    defaults : {
+        tabs : [ ],
+        selectedTab : 'analyses'
+    },
     modules() {
         return this._modules;
     },
@@ -52,16 +56,6 @@ const RibbonModel = Backbone.Model.extend({
 
         return null;
     },
-    defaults : {
-        tabs : [ ],
-        selectedTab : "analyse"
-    },
-    _actionRequest(action) {
-        this.trigger('actionRequest', action );
-    },
-    _activateAnalysis(ns, name) {
-        this.trigger('analysisSelected', { name : name, ns : ns } );
-    }
 });
 
 const RibbonView = Backbone.View.extend({
@@ -200,8 +194,7 @@ const RibbonView = Backbone.View.extend({
         let tab = this.model.getTab(index);
         if (tab.getRibbonItems)
             this.model.set('selectedTab', tab.name);
-
-        this.model.trigger('tabClicked', tab.name);
+        this.trigger('tabSelected', tab.name);
     },
     _buttonClicked : function(action) {
         this._menuClosed();
@@ -210,12 +203,9 @@ const RibbonView = Backbone.View.extend({
     _analysisSelected : function(analysis) {
         this._closeMenus();
         if (analysis.name === 'modules' && analysis.ns === 'app')
-            this._storeSelected();
+            this.store.show();
         else
-            this.model._activateAnalysis(analysis.ns, analysis.name);
-    },
-    _storeSelected() {
-        this.store.show();
+            this.trigger('analysisSelected', { name : analysis.name, ns : analysis.ns } );
     },
 });
 

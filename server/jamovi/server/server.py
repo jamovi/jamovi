@@ -18,7 +18,6 @@ import sys
 import os.path
 import uuid
 import mimetypes
-import random
 import re
 
 import tempfile
@@ -206,7 +205,8 @@ class PDFConverter(RequestHandler):
 
 class Server:
 
-    ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"$')
+    ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
+    ETRON_NOTF_REGEX = re.compile('^notification: ([a-z-]+) ?(.*)\n?$')
 
     def __init__(self, port, host='localhost', slave=False, stdin_slave=False, debug=False):
 
@@ -228,12 +228,20 @@ class Server:
             self._thread.start()
 
         self._etron_reqs = [ ]
+        self._etron_req_id = 0
+
+        Instance.set_update_request_handler(self._set_update_status)
+
+    def _set_update_status(self, status):
+        self._request({
+            'cmd': 'software-update',
+            'args': [ status ] })
 
     def _request(self, request):
-        id = str(random.randint(0, sys.maxsize))
-        request['id'] = id
+        request['id'] = str(self._etron_req_id)
+        self._etron_req_id += 1
         self._etron_reqs.append(request)
-        cmd = 'request: {} ({}) "{}"'.format(
+        cmd = 'request: {} ({}) "{}"\n'.format(
             request['cmd'],
             request['id'],
             request['args'][0])
@@ -266,9 +274,18 @@ class Server:
                     else:
                         request['waiting'].set_exception(RuntimeError(match.group(4)))
                     self._etron_reqs.remove(request)
-                    break
+                    return
 
-        elif line.startswith('install: '):
+        match = Server.ETRON_NOTF_REGEX.match(line)
+
+        if match:
+            notification_type = match.group(1)
+            notification_message = match.group(2)
+            if notification_type == 'update':
+                Instance.set_update_status(notification_message)
+            return
+
+        if line.startswith('install: '):
             path = line[9:]
             Modules.instance().install(path, lambda t, res: None)
             for instanceId, instance in Instance.instances.items():
@@ -276,7 +293,8 @@ class Server:
                     instance._on_settings()
                     instance.rerun()
         else:
-            print(line)
+            sys.stderr.write(line)
+            sys.stderr.flush()
 
     def _lonely_suicide(self):
         if len(Instance.instances) == 0:

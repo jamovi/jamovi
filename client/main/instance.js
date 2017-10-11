@@ -270,7 +270,7 @@ const Instance = Backbone.Model.extend({
 
         let message = new coms.Messages.ComsMessage();
         message.payload = fs.toArrayBuffer();
-        message.payloadType = "FSRequest";
+        message.payloadType = 'FSRequest';
         message.instanceId = this.instanceId();
 
         return coms.send(message)

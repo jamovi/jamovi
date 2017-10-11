@@ -33,10 +33,6 @@ let backstageModel = new BackstageModel({ instance: instance });
 let modules = new Modules({ instance: instance });
 let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
 
-ribbonModel.on('analysisSelected', function(info) {
-    analyses.createAnalysis(info.name, info.ns);
-});
-
 coms.on('close', function() {
     window.alert('Connection lost\n\nThe processing engine has ended unexpectedly.\nThis jamovi window will now close down. Sorry for the inconvenience.\n\nIf you could report your experiences to the jamovi team, that would be appreciated.');
     host.closeWindow(true);
@@ -112,7 +108,11 @@ $(document).ready(() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : "#backstage", model : backstageModel });
 
-    ribbonModel.on('tabClicked', function(tabName) {
+    ribbon.on('analysisSelected', function(analysis) {
+        analyses.createAnalysis(analysis.name, analysis.ns);
+    });
+
+    ribbon.on('tabSelected', function(tabName) {
         if (tabName === 'file')
             backstage.activate();
     });
