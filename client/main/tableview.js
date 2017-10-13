@@ -957,18 +957,18 @@ const TableView = SilkyView.extend({
     _notEditingKeyPress(event) {
 
         if (event.ctrlKey || event.metaKey) {
-            if (event.key === 'c') {
+            if (event.key.toLowerCase() === 'c') {
                 this._copySelectionToClipboard()
                     .done();
                 event.preventDefault();
             }
-            else if (event.key === 'v') {
+            else if (event.key.toLowerCase() === 'v') {
                 let promise = this._pasteClipboardToSelection();
                 if (promise)
                     promise.done();
                 event.preventDefault();
             }
-            else if (event.key === 'x') {
+            else if (event.key.toLowerCase() === 'x') {
                 this._cutSelectionToClipboard()
                     .done();
                 event.preventDefault();
