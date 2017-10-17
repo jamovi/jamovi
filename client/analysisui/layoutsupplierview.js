@@ -38,7 +38,7 @@ const LayoutSupplierView = function(params) {
         }
 
         this._items = newItems;
-        this.trigger("value_changed");
+
 
         if (_.isUndefined(this.supplierGrid) === false) {
             this.supplierGrid.suspendLayout();
@@ -46,6 +46,8 @@ const LayoutSupplierView = function(params) {
             this.filterSuppliersList();
             this.supplierGrid.resumeLayout();
         }
+
+        this.trigger("value_changed");
     };
 
     this.getList = function() {
@@ -102,6 +104,13 @@ const LayoutSupplierView = function(params) {
         cell.dockContentHeight = true;
         cell.spanAllRows = true;
         this.ignoreTransform = false;
+
+        if (this._items.length > 0) {
+            this.supplierGrid.suspendLayout();
+            this.renderItemList();
+            this.filterSuppliersList();
+            this.supplierGrid.resumeLayout();
+        }
     };
 
     this.rowTransform = function(row, column) {
