@@ -81,7 +81,7 @@ const LayoutGroupView = function(params) {
         if (value === null)
             value = '';
 
-        this.$_subel.text(value);
+        this.$_subel.html('<span>' + value + '</span>');
         this.$_subel.trigger("contentchanged");
 
         if (value === "")
