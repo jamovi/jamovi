@@ -28,7 +28,8 @@ const RibbonGroup = Backbone.View.extend({
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
-        this.$el.attr('data-position', titlePosition);
+        if (title !== null)
+            this.$el.attr('data-position', titlePosition);
 
         this.title = title;
         this.dock = right ? 'right' : 'left';
@@ -72,6 +73,18 @@ const RibbonGroup = Backbone.View.extend({
             if (item.setTabName)
                 item.setTabName(name);
         }
+    },
+    openPath(openPath) {
+        if (openPath.length > 0) {
+            for (let item of this.items) {
+                if (item.openPath) {
+                    let openedItem = item.openPath(openPath);
+                    if (openedItem !== null)
+                        return openedItem;
+                }
+            }
+        }
+        return null;
     },
     addItem(item) {
         this.items.push(item);

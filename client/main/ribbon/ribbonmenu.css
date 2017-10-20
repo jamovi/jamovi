@@ -4,16 +4,23 @@
     position: relative ;
     border: 0 ;
     width: 74px ;
-    padding: 6px 0;
-    font-size: 80% ;
+    padding: 5px;
     text-align: center ;
-    color: #555555 ;
     border-radius: 1px ;
 
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
     flex-direction: column;
+}
+
+.jmv-analyses-button {
+    padding: 6px 0;
+}
+
+.jmv-ribbon-button-label {
+    font-size: 90% ;
+    color: #555555 ;
 }
 
 .jmv-ribbon-button[disabled] {
@@ -58,28 +65,13 @@
     margin-bottom: 0px ;
 }
 
-.jmv-ribbon-button-menu {
-    position: absolute;
-    white-space: nowrap;
-    text-align: left ;
-    z-index: 100;
-    color: #555555 ;
-    background-color: white ;
-    max-width: 300px ;
-    margin-top: 0 ;
-    padding: 0 ;
-    border: 1px solid #DDDDDD ;
-    left: 0px ;
-    top: 100%;
-}
-
 .jmv-ribbon-button.right .jmv-ribbon-button-menu {
     left: unset ;
     right: 0px ;
 }
 
 .jmv-ribbon-menu-item {
-    font-size: 110% ;
+    font-size: 88% ;
     padding: 8px 18px 8px 18px ;
 }
 
@@ -95,6 +87,13 @@
     margin-bottom: 6px ;
 }
 
+.jmv-analyses-button .jmv-ribbon-button-menu {
+    padding: 0;
+    left: 0px ;
+    top: 100%;
+    margin-left: 0;
+}
+
 .jmv-ribbon-menu-item-sub {
     font-size: 85% ;
     padding-top: 3px ;
@@ -107,7 +106,7 @@
     margin-bottom: 6px ;
     background-color: #E8E8E8 ;
     color: #555555 ;
-    font-size: 90% ;
+    font-size: 72% ;
     padding: 6px 8px ;
 }
 

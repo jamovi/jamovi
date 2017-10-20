@@ -17,6 +17,8 @@ const Notify = require('./notification');
 const { csvifyCells, htmlifyCells } = require('./utils/formatio');
 const host = require('./host');
 const ActionHub = require('./actionhub');
+const ContextMenus = require('./contextmenu/contextmenus');
+const ContextMenu = require('./contextmenu');
 
 const TableView = SilkyView.extend({
     className: "tableview",
@@ -37,6 +39,8 @@ const TableView = SilkyView.extend({
 
         this.$el.addClass("jmv-tableview");
 
+
+
         let html = '';
         html += '<div class="jmv-table-header">';
         html += '    <div class="jmv-column-header" style="width: 110%">&nbsp;</div>';
@@ -46,6 +50,7 @@ const TableView = SilkyView.extend({
         html += '</div>';
 
         this.$el.html(html);
+
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
         this.$body      = this.$container.find('.jmv-table-body');
@@ -319,21 +324,22 @@ const TableView = SilkyView.extend({
     },
     _mouseDown(event) {
 
-        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
-            // right click
-            return;
-        }
-
         let pos = this._getPos(event.clientX, event.clientY);
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
+        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
+            if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
+                 colNo >= this.selection.left && colNo <= this.selection.right)
+                return Promise.resolve();
+        }
+
         if (this._editing &&
             rowNo === this.selection.rowNo &&
             colNo === this.selection.colNo)
-                return;
+                return Promise.resolve();
 
-        this._endEditing().then(() => {
+        return this._endEditing().then(() => {
 
             if (rowNo >= 0 && colNo >= 0) {
 
@@ -405,8 +411,38 @@ const TableView = SilkyView.extend({
         else if (this._isDragging) {
 
         }
+
+        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
+            let element = document.elementFromPoint(event.clientX, event.clientY);
+            let $element = $(element);
+            let $header = $element.closest('.jmv-column-header');
+            if ($header.length > 0) {
+                if (ContextMenu.isVisible)
+                    this._mouseDown(event);
+
+                ContextMenu.show(ContextMenus.getVariableMenuItems(), event.clientX, event.clientY);
+            }
+            else {
+                let $table = $element.closest('.jmv-tableview');
+                if ($table.length > 0) {
+                    if (this._isClicking === false) {
+                        this._mouseDown(event).then(() => {
+                            if (this._isClicking)
+                                this._mouseUp(event);
+                            else
+                                ContextMenu.show(ContextMenus.getRowMenuItems(), event.clientX, event.clientY);
+                        }, () => {});
+                        return;
+                    }
+                    ContextMenu.show(ContextMenus.getRowMenuItems(), event.clientX, event.clientY);
+                }
+            }
+        }
+
         this._isClicking = false;
         this._isDragging = false;
+
+
     },
     _mouseMove(event) {
         if ( ! this._isDragging)
@@ -441,7 +477,6 @@ const TableView = SilkyView.extend({
         this._setSelectedRange(range);
     },
     _dblClickHandler(event) {
-
         let element = document.elementFromPoint(event.clientX, event.clientY);
         let $element = $(element);
 
@@ -726,7 +761,7 @@ const TableView = SilkyView.extend({
             columnType = columnType[0].toUpperCase() + columnType.substring(1);
             let err = {
                 title: 'Column is not editable',
-                message: columnType + ' columns may not be edited',
+                message: columnType + ' columns may not be edited.\nPress "F3" to modify column properties.',
                 type: 'error' };
             this._notifyEditProblem(err);
 

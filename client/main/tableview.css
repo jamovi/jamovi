@@ -123,13 +123,21 @@
     background-repeat: no-repeat ;
     background-size: auto 80% ;
     background-position: 6px 1px ;
+    cursor: url(assets/column-select.svg), auto;
 }
+
 
 .jmv-column-header.highlighted,
 .jmv-row-header-cell.highlighted {
     background-color: #CCCCCC ;
     color: #3E6DA9 ;
 }
+
+.jmv-column-header:hover,
+.jmv-row-header-cell:hover {
+    background-color: #a6bede;
+}
+
 
 .jmv-column-cell,
 .jmv-column-header-label {
@@ -216,6 +224,7 @@ input.jmv-table-cell-selected.copying {
 .jmv-table-column-highlight {
     position: absolute ;
     z-index: 40 ;
+    pointer-events: none;
 }
 
 .jmv-table-row-highlight {
@@ -256,6 +265,7 @@ input.jmv-table-cell-selected.copying {
 .jmv-table-body {
     position: absolute ;
     background-color: white ;
+    cursor: cell;
 }
 
 .jmv-row-header-cell,
@@ -275,6 +285,7 @@ input.jmv-table-cell-selected.copying {
     border-image: linear-gradient(to left, #ACACAC, rgba(0,0,0,0)) 1 100% ;
     border-image-slice: 1 ;
     box-sizing: border-box ;
+    cursor: url(assets/row-select.svg), auto;
 }
 
 .jmv-column-cell {

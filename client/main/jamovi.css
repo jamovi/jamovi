@@ -218,4 +218,5 @@ body.windows.electron #header-buttons {
     right: 12px ;
     box-sizing: border-box;
     z-index: 110 ;
+    white-space: pre;
 }

@@ -1,4 +1,4 @@
-.jmv-ribbon-button .jmv-ribbon-button-icon {
+.jmv-ribbon-button:not(.jmv-context-menu-button) .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-other.svg');
 }
 

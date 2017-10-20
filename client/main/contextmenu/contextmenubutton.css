@@ -1,0 +1,26 @@
+
+
+.jmv-context-menu-arrow {
+    width: 5.5px;
+    height: 5.5px;
+    background-image: url('assets/context-menu-arrow.svg');
+    background-position: center;
+    background-repeat: no-repeat ;
+    background-size: contain;
+    margin: 0 2px 0 6px;
+}
+
+.jmv-ribbon-button-menu.context-menu {
+    margin-left: 0px;
+    margin-top: -1px;
+    left: 100% ;
+    top: 0;
+}
+
+.jmv-context-menu-button.active:not([disabled]) {
+    background-color: #cccccc ;
+}
+
+.jmv-context-menu-button:not([disabled]):active {
+    background-color: #cccccc ;
+}
