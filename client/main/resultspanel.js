@@ -25,7 +25,7 @@ const ResultsPanel = Backbone.View.extend({
         this._menuId = null;
         ContextMenu.$el.on('menuClicked', (event, button) => {
             if (this._menuId !== null)
-                this._menuEvent(button.eventData)
+                this._menuEvent(button.eventData);
         });
 
         ContextMenu.on('menu-closed', (event) => {

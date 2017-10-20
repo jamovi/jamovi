@@ -49,7 +49,7 @@ const ContextMenu = function() {
             if (openPath.length > 0 && button.openPath) {
                 openButton = button.openPath(openPath);
                 if (openButton !== null)
-                    openPath = []
+                    openPath = [];
             }
         }
 

@@ -86,7 +86,7 @@ const getResultsObjectMenuItems = function(entries, parent, levelId) {
                 type   : parent.type,
                 title  : parent.title,
             };
-            params.eventData = { type: 'selected', address: entryData.address, op: entryData.op, target: entryData }
+            params.eventData = { type: 'selected', address: entryData.address, op: entryData.op, target: entryData };
         }
 
         let button = new ContextMenuButton(params);
