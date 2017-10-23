@@ -7,7 +7,7 @@ const RibbonSeparator = require('../ribbon/ribbonseparator');
 const RibbonGroup = require('../ribbon/ribbongroup');
 const ContextMenuButton = require('./contextmenubutton');
 
-const getRowMenuItems = function() {
+const createRowMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Cut', name: 'cut', iconId: 'cut' }),
@@ -26,7 +26,7 @@ const getRowMenuItems = function() {
     ];
 };
 
-const getVariableMenuItems = function() {
+const createVariableMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Cut', name: 'cut' }),
@@ -53,7 +53,7 @@ const getVariableMenuItems = function() {
         ];
     };
 
-const getResultsObjectMenuItems = function(entries, parent, levelId) {
+const createResultsObjectMenuItems = function(entries, parent, levelId) {
     let items = [];
     for (let entry of entries) {
 
@@ -75,7 +75,7 @@ const getResultsObjectMenuItems = function(entries, parent, levelId) {
 
         let params = { title: title, iconId: iconId, name: entry.label + '_' + levelId + items.length, useActionHub: false };
         if (entry.options !== undefined && entry.options.length > 0) {
-            params.subItems = getResultsObjectMenuItems(entry.options, entry, items.length);
+            params.subItems = createResultsObjectMenuItems(entry.options, entry, items.length);
             params.eventData = { type: 'activated', address: entry.address };
         }
         else {
@@ -98,4 +98,4 @@ const getResultsObjectMenuItems = function(entries, parent, levelId) {
     return [new RibbonGroup({ orientation: 'vertical', items: items })];
 };
 
-module.exports = { getRowMenuItems, getVariableMenuItems, getResultsObjectMenuItems };
+module.exports = { createRowMenuItems, createVariableMenuItems, createResultsObjectMenuItems };

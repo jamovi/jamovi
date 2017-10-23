@@ -251,12 +251,7 @@ const ResultsPanel = Backbone.View.extend({
             entries.push(e);
         }
 
-        let menu = ContextMenus.getResultsObjectMenuItems(entries);
-        let openPath = [];
-        if (menu[0].items.length > 0)
-            openPath.push(menu[0].items[menu[0].items.length-1].name);
-
-        ContextMenu.show(menu, data.pos.left, data.pos.top, openPath);
+        ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     },
     _getElement(address, id) {
         if (id === undefined)

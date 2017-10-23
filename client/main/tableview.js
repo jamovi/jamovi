@@ -17,7 +17,6 @@ const Notify = require('./notification');
 const { csvifyCells, htmlifyCells } = require('./utils/formatio');
 const host = require('./host');
 const ActionHub = require('./actionhub');
-const ContextMenus = require('./contextmenu/contextmenus');
 const ContextMenu = require('./contextmenu');
 
 const TableView = SilkyView.extend({
@@ -420,7 +419,7 @@ const TableView = SilkyView.extend({
                 if (ContextMenu.isVisible)
                     this._mouseDown(event);
 
-                ContextMenu.show(ContextMenus.getVariableMenuItems(), event.clientX, event.clientY);
+                ContextMenu.showVariableMenu(event.clientX, event.clientY);
             }
             else {
                 let $table = $element.closest('.jmv-tableview');
@@ -430,11 +429,11 @@ const TableView = SilkyView.extend({
                             if (this._isClicking)
                                 this._mouseUp(event);
                             else
-                                ContextMenu.show(ContextMenus.getRowMenuItems(), event.clientX, event.clientY);
+                                ContextMenu.showDataRowMenu(event.clientX, event.clientY);
                         }, () => {});
                         return;
                     }
-                    ContextMenu.show(ContextMenus.getRowMenuItems(), event.clientX, event.clientY);
+                    ContextMenu.showDataRowMenu(event.clientX, event.clientY);
                 }
             }
         }
@@ -761,7 +760,7 @@ const TableView = SilkyView.extend({
             columnType = columnType[0].toUpperCase() + columnType.substring(1);
             let err = {
                 title: 'Column is not editable',
-                message: columnType + ' columns may not be edited.\nPress "F3" to modify column properties.',
+                message: columnType + ' columns may not be edited.',
                 type: 'error' };
             this._notifyEditProblem(err);
 

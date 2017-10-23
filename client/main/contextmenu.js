@@ -3,10 +3,10 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-
 const tarp = require('./utils/tarp');
+const ContextMenus = require('./contextmenu/contextmenus');
 
-const ContextMenu = function() {
+const ContextMenu = function() { // this is constructed at the bottom
 
     Object.assign(this, Backbone.Events);
 
@@ -21,11 +21,11 @@ const ContextMenu = function() {
         openPath = openPath === undefined ? [] : openPath;
         this.owner = owner;
         this.$el.show();
-        if ( ! this._tarpVisible) {
+        if ( ! this._visible) {
             tarp.show('click-menu', true, 0, 40)
                 .then(() => this._menuClosed(), (event) => this._menuClosed(event));
             this.$el.css('z-index', '50');
-            this._tarpVisible = true;
+            this._visible = true;
         }
 
         this.buttons = [ ];
@@ -62,8 +62,25 @@ const ContextMenu = function() {
 
     };
 
+    this.showDataRowMenu = function(x, y) {
+        this.show(ContextMenus.createRowMenuItems(), x, y);
+    };
+
+    this.showVariableMenu = function(x, y) {
+        this.show(ContextMenus.createVariableMenuItems(), x, y);
+    };
+
+    this.showResultsMenu = function(entries, x, y) {
+        let menu = ContextMenus.createResultsObjectMenuItems(entries);
+        let openPath = [];
+        if (menu[0].items.length > 0)
+            openPath.push(menu[0].items[menu[0].items.length-1].name);
+
+        this.show(menu, x, y, openPath);
+    };
+
     this.isVisible = function() {
-        return this._tarpVisible;
+        return this._visible;
     };
 
     this._menuShown = function(source) {
@@ -74,10 +91,10 @@ const ContextMenu = function() {
     };
 
     this._menuClosed = function(event) {
-        if (this._tarpVisible === false)
+        if (this._visible === false)
             return;
         this.$el.css('z-index', '');
-        this._tarpVisible = false;
+        this._visible = false;
         for (let button of this.buttons) {
             if (button.hideMenu)
                 button.hideMenu();

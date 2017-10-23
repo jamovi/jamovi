@@ -10,7 +10,7 @@ const ActionHub = require('../actionhub');
 const ContextMenuButton = Backbone.View.extend({
 
     /*
-    params
+    options
     {
         title:      //Title to be displayed
         name:       //Button Id used in action event  REQUIRED!
@@ -24,18 +24,18 @@ const ContextMenuButton = Backbone.View.extend({
     }
     */
 
-    initialize(params) {
+    initialize(options) {
 
-        let title = params.title === undefined ? null : params.title;
-        let name = params.name;
+        let title = options.title === undefined ? null : options.title;
+        let name = options.name;
         let size = 'medium';
-        let right = params.right === undefined ? false : params.right;
-        let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let right = options.right === undefined ? false : options.right;
+        let $el = options.$el === undefined ? $('<div></div>') : options.$el;
 
-        this.eventData = params.eventData  === undefined ? null : params.eventData;
-        this.useActionHub = params.useActionHub  === undefined ? true : params.useActionHub;
-        this._enabled = params.enabled === undefined ? true : params.enabled;
-        this._iconId = params.iconId === undefined ? null : params.iconId;
+        this.eventData = options.eventData  === undefined ? null : options.eventData;
+        this.useActionHub = options.useActionHub  === undefined ? true : options.useActionHub;
+        this._enabled = options.enabled === undefined ? true : options.enabled;
+        this._iconId = options.iconId === undefined ? null : options.iconId;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button jmv-context-menu-button');
@@ -43,8 +43,8 @@ const ContextMenuButton = Backbone.View.extend({
 
         this.tabName = null;
         this._definedTabName = false;
-        if (params.tabName !== undefined) {
-            this.tabName = params.tabName;
+        if (options.tabName !== undefined) {
+            this.tabName = options.tabName;
             this._definedTabName = true;
         }
 
@@ -66,9 +66,9 @@ const ContextMenuButton = Backbone.View.extend({
 
         this._refresh();
 
-        if (params.subItems !== undefined) {
-            for (let i = 0; i < params.subItems.length; i++)
-                this.addItem(params.subItems[i]);
+        if (options.subItems !== undefined) {
+            for (let i = 0; i < options.subItems.length; i++)
+                this.addItem(options.subItems[i]);
         }
 
         if (this.useActionHub) {
