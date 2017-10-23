@@ -23,6 +23,10 @@
     color: #555555 ;
 }
 
+.jmv-analyses-button > .jmv-ribbon-button-label {
+    font-size: 80% ;
+}
+
 .jmv-ribbon-button[disabled] {
     -webkit-filter: grayscale(100%) opacity(50%);
     filter: grayscale(100%) opacity(50%);
