@@ -111,7 +111,7 @@ def read(data, path):
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
                         column.append_level(meta_label[0], meta_label[1])
-        except:
+        except Exception:
             pass
 
         with TemporaryDirectory() as dir:

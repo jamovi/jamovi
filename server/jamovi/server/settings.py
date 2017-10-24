@@ -31,7 +31,7 @@ class Settings:
                     self._root = json.load(file)
                     if type(self._root) is not dict:
                         self._root = { }
-            except:
+            except Exception:
                 self._root = { }
 
         elif parent is not None and name is not None:

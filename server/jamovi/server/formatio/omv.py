@@ -149,7 +149,7 @@ def read(data, path, is_example=False):
                         if len(meta_label) > 2:
                             import_value = meta_label[2]
                         column.append_level(meta_label[0], meta_label[1],  import_value)
-        except:
+        except Exception:
             pass
 
         with TemporaryDirectory() as dir:

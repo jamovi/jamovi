@@ -39,7 +39,7 @@ def start():
 
     try:
         port = int(sys.argv[1])
-    except:
+    except Exception:
         port = 1337
 
     debug = '--debug' in sys.argv
@@ -64,7 +64,7 @@ def start():
             conn.request('GET', '/version')
             res = conn.getresponse()
             already_running = (res.status == 200)
-        except:
+        except Exception:
             already_running = False
 
     if not already_running:

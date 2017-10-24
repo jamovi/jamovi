@@ -44,10 +44,10 @@ class HTMLParser(Parser):
                     value = row[col_no]
                     try:
                         value = int(value)
-                    except:
+                    except Exception:
                         try:
                             value = float(value)
-                        except:
+                        except Exception:
                             pass
                     if isinstance(value, str):
                         value = value.strip()
@@ -105,7 +105,7 @@ class HTMLParser(Parser):
             if attr[0] == 'colspan':
                 try:
                     return int(attr[1])
-                except:
+                except Exception:
                     return 1
         return 1
 

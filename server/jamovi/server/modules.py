@@ -217,7 +217,7 @@ class Modules:
         for i in range(3):
             try:
                 version[i] = int(version[i])
-            except:
+            except Exception:
                 version[i] = 0
         module.version = version
 

@@ -45,10 +45,10 @@ class CSVParser:
                 value = row[col_no]
                 try:
                     value = int(value)
-                except:
+                except Exception:
                     try:
                         value = float(value)
-                    except:
+                    except Exception:
                         pass
                 if isinstance(value, str):
                     value = value.strip()

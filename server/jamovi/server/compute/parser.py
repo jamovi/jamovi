@@ -54,14 +54,14 @@ class Parser:
 
         s = 0
         e = 0
-        l = len(str)
+        n = len(str)
         q = ''
 
         chunks = list()
 
         while True:
 
-            while s < l:
+            while s < n:
                 sc = str[s]
                 if sc in '"\'`':
                     q = sc
@@ -74,7 +74,7 @@ class Parser:
 
             e = s + 1
 
-            while e < l:
+            while e < n:
                 ec = str[e]
                 if ec == q:
                     if q == '`':
@@ -95,7 +95,7 @@ class Parser:
                 term = ''.join(str[s:e])
                 chunks.append(term)
 
-            if e >= l:
+            if e >= n:
                 break
 
             s = e + 1
