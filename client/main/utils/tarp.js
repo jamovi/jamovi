@@ -23,6 +23,7 @@ const init = function(name) {
         "></div>`);
         $tarp.appendTo($('body'));
         $tarp.on('click', event => {
+            $tarp.trigger('tarp-clicked');
             event.preventDefault();
             event.stopPropagation();
         });
@@ -63,7 +64,7 @@ const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
             params.onMouseDown =  event => {
                 if (params.canCancel) {
                     setTimeout(() => $tarp.hide());
-                    params.rejectPromise();
+                    params.rejectPromise(event);
                     delete $tarps[params.name];
                     delete $params[params.name];
                     $tarp.remove();

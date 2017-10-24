@@ -96,8 +96,10 @@ const RibbonButton = Backbone.View.extend({
             ; // do nothing
         else if (this._menuGroup !== undefined)
             this._toggleMenu();
-        else
+        else {
             action.do();
+            this.$el.trigger('menuActioned');
+        }
 
         event.stopPropagation();
     },

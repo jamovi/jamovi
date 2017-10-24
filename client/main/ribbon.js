@@ -84,11 +84,13 @@ const RibbonView = Backbone.View.extend({
 
         this.$el.addClass('jmv-ribbon app-dragable');
 
+        this.$el.on('menuActioned', () => { this._closeMenus(); });
+
         let html = '';
         html += '<div class="jmv-ribbon-header">';
         html += '    <div class="jmv-ribbon-appmenu"></div>';
         html += '</div>';
-        html += '<div class="jmv-ribbon-body">';
+        html += '<div class="jmv-ribbon-body jmv-ribbon-group-body-horizontal">';
         html += '</div>';
         html += '<div class="jmv-store">';
         html += '</div>';
@@ -105,9 +107,9 @@ const RibbonView = Backbone.View.extend({
         for (let i = 0; i < tabs.length; i++) {
             let tab = tabs[i];
             let isSelected = tab.name === currentTabName;
-            let classes = "jmv-ribbon-tab";
+            let classes = 'jmv-ribbon-tab';
             if (isSelected) {
-                classes += " selected";
+                classes += ' selected';
                 this.selectedTab = tab;
             }
 

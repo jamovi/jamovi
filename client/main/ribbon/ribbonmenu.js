@@ -11,7 +11,7 @@ const RibbonMenu = Backbone.View.extend({
     initialize($el, title, name, items, right, containsNew) {
 
         this.$el = $el;
-        this.$el.addClass('jmv-ribbon-button');
+        this.$el.addClass('jmv-ribbon-button jmv-analyses-button');
 
         this.title = title;
         this.name = name;

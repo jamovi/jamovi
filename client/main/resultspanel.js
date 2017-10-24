@@ -8,6 +8,8 @@ const clipboard = require('clipboard-js');
 const formatIO = require('./utils/formatio');
 
 const Menu = require('./menu');
+const ContextMenus = require('./contextmenu/contextmenus');
+const ContextMenu = require('./contextmenu');
 const Notify = require('./notification');
 const host = require('./host');
 
@@ -20,11 +22,26 @@ const ResultsPanel = Backbone.View.extend({
         this.$el.empty();
         this.$el.addClass('silky-results-panel');
 
-        this.$menu = $('<div></div>');
-        this.menu = new Menu(this.$menu);
-        $('body').append(this.$menu);
+        this._menuId = null;
+        ContextMenu.$el.on('menuClicked', (event, button) => {
+            if (this._menuId !== null)
+                this._menuEvent(button.eventData);
+        });
 
-        this.menu.onMenuEvent(entry => this._menuEvent(entry));
+        ContextMenu.on('menu-closed', (event) => {
+            if (this._menuId !== null) {
+                this._menuEvent({ type: 'activated', address: null });
+                this._menuId = null;
+
+                if (event !== undefined) {
+                    if (event.button === 2) {
+                        let resource = this._tryGetResource(event.pageX, event.pageY);
+                        if (resource !== null)
+                            this._resultsRightClicked(event.offsetX - resource.$container.offset().left, event.offsetY - resource.$container.offset().top, resource.analysis);
+                    }
+                }
+            }
+        });
 
         this.resources = { };
 
@@ -89,7 +106,7 @@ const ResultsPanel = Backbone.View.extend({
             $cover.on('click', event => this._resultsClicked(event, analysis));
             $cover.on('mousedown', event => {
                 if (event.button === 2)
-                    this._resultsRightClicked(event, analysis);
+                    this._resultsRightClicked(event.offsetX, event.offsetY, analysis);
             });
         }
         else if (analysis.deleted) {
@@ -133,6 +150,16 @@ const ResultsPanel = Backbone.View.extend({
         }
 
     },
+
+    _tryGetResource(xpos, ypos) {
+        for (let id in this.resources) {
+            let $container = this.resources[id].$container;
+            let offset = $container.offset();
+            if (xpos >= offset.left && xpos <= offset.left + $container.width() && ypos >= offset.top && ypos <= offset.top + $container.height())
+                return this.resources[id];
+        }
+        return null;
+    },
     _resultsClicked(event, analysis) {
         event.stopPropagation();
         let current = this.model.get('selectedAnalysis');
@@ -141,12 +168,12 @@ const ResultsPanel = Backbone.View.extend({
         else
             this.model.set('selectedAnalysis', null);
     },
-    _resultsRightClicked(event, analysis) {
+    _resultsRightClicked(offsetX, offsetY, analysis) {
         let selected = this.model.attributes.selectedAnalysis;
-        if (selected === null || selected === analysis) {
+        if ((selected === null && analysis !== null) || selected === analysis) {
             let resources = this.resources[analysis.id];
             let iframe = resources.iframe;
-            let clickEvent = $.Event('click', { button: 2, pageX: event.offsetX, pageY: event.offsetY, bubbles: true });
+            let clickEvent = $.Event('click', { button: 2, pageX: offsetX, pageY: offsetY, bubbles: true });
             iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
         }
         else {
@@ -224,13 +251,7 @@ const ResultsPanel = Backbone.View.extend({
             entries.push(e);
         }
 
-        if (entries.length > 0) {
-            let lastEntry = entries[entries.length-1];
-            lastEntry.active = true;
-        }
-
-        this.menu.setup(entries);
-        this.menu.show({ clickPos : { top: data.pos.top, left: data.pos.left } });
+        ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     },
     _getElement(address, id) {
         if (id === undefined)

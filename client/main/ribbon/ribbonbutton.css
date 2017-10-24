@@ -2,21 +2,28 @@
 .jmv-ribbon-group-body .jmv-ribbon-button {
     display: flex;
     flex-wrap: nowrap;
-    padding: 3px;
     margin-bottom: 0;
     flex-direction: column;
 }
 
-.jmv-ribbon-group-body .jmv-ribbon-button .jmv-ribbon-button-menu {
+.jmv-ribbon-button-menu {
     top: 100%;
-    left: unset;
+    margin-left: -3px;
     margin-top: 0px;
     border-radius: 0px;
     background-color: white;
-}
 
-.jmv-ribbon-button .jmv-ribbon-button {
-    font-size: unset;
+    position: absolute;
+    white-space: nowrap;
+    text-align: left ;
+    z-index: 100;
+    color: #555555 ;
+    max-width: 300px ;
+    min-width: 100px;
+    padding: 1px ;
+
+    border: 1px solid #c1c1c1;
+    box-shadow: 0px 0px 5px #c1c1c1;
 }
 
 .jmv-ribbon-menu-arrow {
@@ -36,10 +43,8 @@
 
 .jmv-ribbon-group-body .jmv-ribbon-button-label {
     margin-top: 3px;
-}
-
-.jmv-ribbon-button[data-name="addrow"] .jmv-ribbon-group {
-    margin: 5px !important;
+    flex-grow: 1;
+    text-align: left;
 }
 
 /*huge button*/
@@ -54,6 +59,7 @@
 /*large button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-large {
     width: 40px;
+    padding: 5px 0px;
 }
 
 .jmv-ribbon-group-body .jmv-ribbon-button-size-large .jmv-ribbon-button-icon {
@@ -73,13 +79,14 @@
 }
 
 .jmv-ribbon-button-size-medium .jmv-ribbon-button-label {
-    margin-left: 3px;
+    margin-left: 4px;
     margin-top: 0px;
 }
 
 /*small button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-small {
     width: 18px ;
+    padding: 3px;
 }
 
 .jmv-ribbon-button-size-small .jmv-ribbon-button-icon {
