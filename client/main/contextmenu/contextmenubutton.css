@@ -15,6 +15,28 @@
     margin-top: -1px;
     left: 100% ;
     top: 0;
+    opacity: 1;
+    transition: .2s opacity;
+}
+
+.jmv-ribbon-button-menu.context-menu.left {
+    left: auto ;
+    right: 100%;
+}
+
+.jmv-ribbon-button-menu.context-menu.right {
+    left: 100%;
+    right: auto;
+}
+
+.jmv-ribbon-button-menu.context-menu.up {
+    top: auto ;
+    bottom: 0;
+}
+
+.jmv-ribbon-button-menu.context-menu.down {
+    top: 0;
+    bottom: auto;
 }
 
 .jmv-context-menu-button.active:not([disabled]) {

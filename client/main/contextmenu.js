@@ -10,8 +10,7 @@ const ContextMenu = function() { // this is constructed at the bottom
 
     Object.assign(this, Backbone.Events);
 
-    this.$el = $('<div class="jmv-context-menu jmv-ribbon-group-body-vertical"></div>');
-    this.$el.hide();
+    this.$el = $('<div class="jmv-context-menu jmv-ribbon-group-body-vertical jmv-context-menu-hidden"></div>');
 
     this.$el.on('menuActioned', () => { this._menuClosed(); });
 
@@ -20,7 +19,6 @@ const ContextMenu = function() { // this is constructed at the bottom
     this.show = function(menuItems, x, y, openPath, owner) {
         openPath = openPath === undefined ? [] : openPath;
         this.owner = owner;
-        this.$el.show();
         if ( ! this._visible) {
             tarp.show('click-menu', true, 0, 40)
                 .then(() => this._menuClosed(), (event) => this._menuClosed(event));
@@ -46,20 +44,28 @@ const ContextMenu = function() { // this is constructed at the bottom
             button.on('shown', menuShown);
             this.buttons.push(button);
 
-            if (openPath.length > 0 && button.openPath) {
-                openButton = button.openPath(openPath);
-                if (openButton !== null)
-                    openPath = [];
+            if (openButton === null && button.getEntryButton)
+                openButton = button.getEntryButton(openPath, false);
+        }
+
+        setTimeout(() => {
+            this.$el.removeClass('jmv-context-menu-hidden');
+            if (openButton !== null) {
+                x -= this.$el.outerWidth(true) - 10;
+                y -= openButton.$el.position().top + 10;
             }
-        }
 
-        if (openButton !== null) {
-            x -= this.$el.outerWidth(true) - 10;
-            y -= openButton.$el.position().top + 10;
-        }
+            if (y + this.$el.outerHeight(true) > window.innerHeight)
+                y = y - this.$el.outerHeight(true);
 
-        this.$el.css({ top: y, left: x });
+            if (x + this.$el.outerWidth(true) > window.innerWidth)
+                x = x - this.$el.innerWidth(true);
 
+            this.$el.css({ top: y, left: x });
+
+            if (openButton !== null)
+                openButton.getEntryButton(openPath, true);
+        }, 0);
     };
 
     this.showDataRowMenu = function(x, y) {
@@ -100,8 +106,7 @@ const ContextMenu = function() { // this is constructed at the bottom
                 button.hideMenu();
         }
         this.owner = null;
-        this.$el.hide();
-
+        this.$el.addClass('jmv-context-menu-hidden');
         this.trigger('menu-closed', event);
     };
 };

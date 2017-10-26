@@ -8,4 +8,11 @@
     border: 1px solid #c1c1c1;
     box-shadow: 0px 0px 5px #c1c1c1;
     box-sizing: border-box;
+    opacity: 1;
+    transition: .2s opacity;
+}
+
+.jmv-context-menu-hidden {
+    visibility: hidden;
+    opacity: 0;
 }
