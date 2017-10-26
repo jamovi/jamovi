@@ -20,7 +20,7 @@ const ContextMenu = function() { // this is constructed at the bottom
         openPath = openPath === undefined ? [] : openPath;
         this.owner = owner;
         if ( ! this._visible) {
-            tarp.show('click-menu', true, 0, 40)
+            tarp.show('context-menu', true, 0, 40)
                 .then(() => this._menuClosed(), (event) => this._menuClosed(event));
             this.$el.css('z-index', '50');
             this._visible = true;
@@ -105,6 +105,8 @@ const ContextMenu = function() { // this is constructed at the bottom
             if (button.hideMenu)
                 button.hideMenu();
         }
+
+        tarp.hide('context-menu');
         this.owner = null;
         this.$el.addClass('jmv-context-menu-hidden');
         this.trigger('menu-closed', event);
