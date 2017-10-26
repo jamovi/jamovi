@@ -140,7 +140,7 @@ const ContextMenuButton = Backbone.View.extend({
         let html = '';
         html += '   <div class="jmv-ribbon-button-icon"></div>';
         html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
-        html += '   <div class="jmv-ribbon-button-menu context-menu" style="display: none ;">';
+        html += '   <div class="jmv-ribbon-button-menu context-menu jmv-context-menu-hidden">';
         html += '   </div>';
 
         this.$el.html(html);
@@ -150,24 +150,42 @@ const ContextMenuButton = Backbone.View.extend({
 
 
     hideMenu() {
-        this.$menu.hide();
         this.menuVisible = false;
         this.$el.removeClass('active');
+        this.$menu.addClass('jmv-context-menu-hidden');
     },
     showMenu() {
         this.trigger('shown', this);
         this.$el.removeClass('contains-new');
         this.$el.addClass('active');
-        this.$menu.show();
         this.menuVisible = true;
+
+        this.$menu.removeClass('jmv-context-menu-hidden');
+        let x = this.$el.offset().left + this.$el.outerWidth(true);
+        let y = this.$el.offset().top;
+
+        this.$menu.removeClass('up');
+        this.$menu.removeClass('down');
+        if (y + this.$menu.outerHeight(true) > window.innerHeight)
+            this.$menu.addClass('up');
+        else
+            this.$menu.addClass('down');
+
+        this.$menu.removeClass('left');
+        this.$menu.removeClass('right');
+        if (x + this.$menu.outerWidth(true) > window.innerWidth)
+            this.$menu.addClass('left');
+        else
+            this.$menu.addClass('right');
     },
-    openPath(openPath) {
+    getEntryButton(openPath, open) {
         if (this.name === openPath[0]) {
-            this.showMenu();
+            if (open)
+                this.showMenu();
             openPath = openPath.slice(1);
             if (openPath.length > 0) {
                 for (let item of this._menuGroup.items) {
-                    if (item.openPath && item.openPath(openPath) !== null)
+                    if (item.getEntryButton && item.getEntryButton(openPath, open) !== null)
                         break;
                 }
             }

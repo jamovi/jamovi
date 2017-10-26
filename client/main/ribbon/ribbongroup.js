@@ -74,11 +74,11 @@ const RibbonGroup = Backbone.View.extend({
                 item.setTabName(name);
         }
     },
-    openPath(openPath) {
+    getEntryButton(openPath, open) {
         if (openPath.length > 0) {
             for (let item of this.items) {
-                if (item.openPath) {
-                    let openedItem = item.openPath(openPath);
+                if (item.getEntryButton) {
+                    let openedItem = item.getEntryButton(openPath, open);
                     if (openedItem !== null)
                         return openedItem;
                 }
