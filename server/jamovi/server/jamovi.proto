@@ -189,6 +189,13 @@ message ResultsImage {
 
 message ResultsArray {
     repeated ResultsElement elements = 1;
+
+    enum LayoutType {
+        FLAT = 0;
+        LIST_SELECT = 1;
+    }
+
+    LayoutType layout = 2;
 }
 
 message ResultsGroup {

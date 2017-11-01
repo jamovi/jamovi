@@ -13,7 +13,7 @@ const ElementView = Backbone.View.extend({
         this.parent = data.parent;
         this.level = ('level' in data) ? data.level : 0;
 
-        this.$el.addClass('silky-results-item');
+        this.$el.addClass('jmv-results-item');
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
         this.$el.on('contextmenu', event => {
@@ -27,12 +27,12 @@ const ElementView = Backbone.View.extend({
     render() {
         let error = this.model.get('error');
         if (error !== null) {
-            let $errorPlacement = $('<div class="silky-results-error-placement"></div>');
-            let $error = $('<div class="silky-results-error-message"></div>');
+            let $errorPlacement = $('<div class="jmv-results-error-placement"></div>');
+            let $error = $('<div class="jmv-results-error-message"></div>');
             $error.append(error.message);
             $errorPlacement.append($error);
             this.$el.append($errorPlacement);
-            this.$el.addClass('silky-results-error');
+            this.$el.addClass('jmv-results-error');
         }
     },
     _sendEvent(event) {

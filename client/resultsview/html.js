@@ -8,8 +8,8 @@ const Elem = require('./element');
 
 var HtmlModel = Backbone.Model.extend({
     defaults : {
-        name: "name",
-        title: "(no title)",
+        name: 'name',
+        title: '(no title)',
         element: '(no syntax)',
         error: null,
         status: 'complete',
@@ -22,7 +22,7 @@ var HtmlView = Elem.View.extend({
 
         Elem.View.prototype.initialize.call(this, data);
 
-        this.$el.addClass('silky-results-html');
+        this.$el.addClass('jmv-results-html');
 
         if (this.model === null)
             this.model = new HtmlModel();

@@ -36,7 +36,7 @@ const GroupView = Elem.View.extend({
         this.hoTag = '<h'  + (this.level+1) + '>';
         this.hcTag = '</h' + (this.level+1) + '>';
 
-        this.$el.addClass('silky-results-group');
+        this.$el.addClass('jmv-results-group');
 
         if (this.mode === 'text')
             this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);

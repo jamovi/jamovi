@@ -9,10 +9,10 @@ const ResultsElement = require('./element');
 
 const ImageModel = Backbone.Model.extend({
     defaults : {
-        name: "name",
-        title: "(no title)",
+        name: 'name',
+        title: '(no title)',
         element: {
-            path: "",
+            path: '',
             width: 400,
             height: 300
         },
@@ -28,11 +28,11 @@ const ImageView = ResultsElement.View.extend({
 
         ResultsElement.View.prototype.initialize.call(this, data);
 
-        this.$el.addClass('silky-results-image');
+        this.$el.addClass('jmv-results-image');
 
-        this.$title = $('<h' + (this.level+1) + ' class="silky-results-image-title"></h' + (this.level+1) + '>');
+        this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
         this.$title.appendTo(this.$el);
-        this.$status = $('<div class="silky-results-image-status-indicator"></div>');
+        this.$status = $('<div class="jmv-results-image-status-indicator"></div>');
         this.$status.appendTo(this.$el);
 
         if (this.model.attributes.status === 1)
@@ -48,7 +48,7 @@ const ImageView = ResultsElement.View.extend({
         this.render();
     },
     type: function() {
-        return "Image";
+        return 'Image';
     },
     render: function() {
 
