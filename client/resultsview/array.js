@@ -9,8 +9,8 @@ const b64 = require('../common/utils/b64');
 
 const ArrayModel = Backbone.Model.extend({
     defaults : {
-        name: "name",
-        title: "(no title)",
+        name:  'name',
+        title: '(no title)',
         element : {
             elements : [ ],
             layout : 0, // flat
@@ -50,11 +50,14 @@ const ArrayView = Elem.View.extend({
         if (this.mode !== 'text') {
             this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
             if (this.model.attributes.element.layout === 1) {
-                this.$select = $('<select></select>').appendTo(this.$el);
+                this.$select = $('<select></select>').appendTo(this.$title);
                 this.$select.on('change', (event) => {
                     this._selectEvent(event);
                 });
             }
+            if (this.model.attributes.element.hideHeadingOnlyChild &&
+                this.model.attributes.element.elements.length < 2)
+                    this.$title.hide();
         }
         else {
             this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
@@ -68,6 +71,8 @@ const ArrayView = Elem.View.extend({
         let select = this.$select[0];
         let item = select[select.selectedIndex];
         let name = atob(item.value);
+
+        window.setCustom(this.address(), { 'selected': name });
 
         for (let $child of this.$$children) {
             if ($child[0].dataset.name === item.value)
@@ -134,7 +139,15 @@ const ArrayView = Elem.View.extend({
         }
 
         this.ready = Promise.all(promises);
-    }
+    },
+    _sendEvent(event) {
+        if (this.parent !== null && event.type === 'menu' && event.data.entries.length > 0) {
+            if (event.data.entries[0].type === 'Group' && (this.children.length < 2 || this.model.attributes.element.layout !== 0))
+                event.data.entries.shift(); // discard
+        }
+
+        Elem.View.prototype._sendEvent.call(this, event);
+    },
 });
 
 module.exports = { Model: ArrayModel, View: ArrayView };

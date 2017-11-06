@@ -309,13 +309,31 @@ table.row-selectable tr.selected td {
     left: 0 ;
 }
 
+.jmv-results-array.jmv-results-array-listselect select {
+    margin-left: 8px ;
+}
+
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h1,
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h2,
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h3,
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h4,
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h5 {
+    display: none ;
+}
+
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-group {
+    margin-left: 0 ;
+}
+
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item {
     transition: opacity .2s ;
     opacity: 0 ;
+    pointer-events: none ;
 }
 
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item[data-active] {
     opacity: 1 ;
+    pointer-events: auto ;
 }
 
 .jmv-results-syntax,

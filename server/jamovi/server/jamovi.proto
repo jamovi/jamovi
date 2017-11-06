@@ -196,6 +196,7 @@ message ResultsArray {
     }
 
     LayoutType layout = 2;
+    bool hideHeadingOnlyChild = 4;
 }
 
 message ResultsGroup {
