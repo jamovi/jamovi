@@ -133,7 +133,7 @@
     color: #3E6DA9 ;
 }
 
-.jmv-column-header:hover,
+.jmv-column-header:not(.place-holder):hover,
 .jmv-row-header-cell:hover {
     background-color: #a6bede;
 }
