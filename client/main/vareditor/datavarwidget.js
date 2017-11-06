@@ -10,7 +10,7 @@ const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
     initialize(args) {
 
-        this.attached = true;
+        this.attached = false;
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor-datavarwidget');

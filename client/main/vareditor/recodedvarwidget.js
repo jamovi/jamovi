@@ -9,7 +9,7 @@ const RecodedVarWidget = Backbone.View.extend({
     className: 'RecodedVarWidget',
     initialize(args) {
 
-        this.attached = true;
+        this.attached = false;
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-recoded-widget');
