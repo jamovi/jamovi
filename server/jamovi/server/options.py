@@ -51,7 +51,7 @@ class Options:
             elif typ == 'List':
                 first_option = opt_defn['options'][0]
                 if isinstance(first_option, dict):
-                    default = first_option['value']
+                    default = first_option['name']
                 else:
                     default = first_option
             elif typ == 'NMXList':
