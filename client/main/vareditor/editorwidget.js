@@ -89,7 +89,6 @@ const EditorWidget = Backbone.View.extend({
         $widget.show();
     },
     detach() {
-        this.model.apply();
         this.attached = false;
 
         this.dataVarWidget.detach();

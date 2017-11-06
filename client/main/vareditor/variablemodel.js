@@ -110,25 +110,28 @@ const VariableModel = Backbone.Model.extend({
             formula: this.attributes.formula,
         };
 
+        let columnId = this.attributes.id;
         this.dataset.changeColumn(this.attributes.id, values)
             .then(() => {
-                let latestValues = {
-                    name: this.attributes.name,
-                    columnType: this.attributes.columnType,
-                    measureType: this.attributes.measureType,
-                    autoMeasure: this.attributes.autoMeasure,
-                    levels: this.attributes.levels,
-                    dps: this.attributes.dps,
-                    formula: this.attributes.formula,
-                };
+                if (columnId === this.attributes.id) {
+                    let latestValues = {
+                        name: this.attributes.name,
+                        columnType: this.attributes.columnType,
+                        measureType: this.attributes.measureType,
+                        autoMeasure: this.attributes.autoMeasure,
+                        levels: this.attributes.levels,
+                        dps: this.attributes.dps,
+                        formula: this.attributes.formula,
+                    };
 
-                this.original = latestValues;
-                this.set(this.original);
-                this.set('changes', false);
-                this.dataset.set('varEdited', false);
+                    this.original = latestValues;
+                    this.set(this.original);
+                    this.set('changes', false);
+                    this.dataset.set('varEdited', false);
 
-                let column = this.dataset.getColumnById(this.attributes.id);
-                this.set('formulaMessage', column.formulaMessage);
+                    let column = this.dataset.getColumnById(this.attributes.id);
+                    this.set('formulaMessage', column.formulaMessage);
+                }
             });
     },
     revert() {
