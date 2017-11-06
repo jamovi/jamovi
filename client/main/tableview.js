@@ -72,6 +72,7 @@ const TableView = SilkyView.extend({
         this.selection = null;
 
         this.$body.on('mousedown', event => this._mouseDown(event));
+        this.$header.on('mousedown', event => this._mouseDown(event));
         this.$el.on('mousemove', event => this._mouseMove(event));
         $(document).on('mouseup', event => this._mouseUp(event));
         this.$el.on('dblclick', event => this._dblClickHandler(event));
