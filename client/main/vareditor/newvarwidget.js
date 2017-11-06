@@ -10,7 +10,7 @@ const NewVarWidget = Backbone.View.extend({
     className: 'NewVarWidget',
     initialize(args) {
 
-        this.attached = true;
+        this.attached = false;
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-new-widget');

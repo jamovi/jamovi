@@ -50,7 +50,7 @@ const ComputedVarWidget = Backbone.View.extend({
     className: 'ComputedVarWidget',
     initialize(args) {
 
-        this.attached = true;
+        this.attached = false;
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-computed-widget');
