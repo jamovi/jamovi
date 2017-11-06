@@ -80,6 +80,8 @@ class Main {  // this is constructed at the bottom
                 eventData.devMode);
             this.$results.appendTo($body);
 
+            this.$selector = $('<div id="selector"></div>').appendTo($body);
+
             $(document).ready(() => {
                 let erd = ERDM({ strategy: "scroll" });
                 erd.listenTo(this.$results[0], (element) => {
@@ -104,7 +106,7 @@ class Main {  // this is constructed at the bottom
     _menuEvent(event) {
 
         if (this.active !== null) {
-            this.active.$el.removeClass('active');
+            this.$selector.css('opacity', '0');
             this.active = null;
         }
 
@@ -128,7 +130,21 @@ class Main {  // this is constructed at the bottom
                 }
                 break;
             case 'activated':
-                this.active.$el.addClass('active');
+                let pos = this.active.$el.offset();
+                let width = this.active.$el.outerWidth();
+                let height = this.active.$el.outerHeight();
+                let padTB = 0;
+                let padLR = 12;
+
+                if (this.active.$el.is(this.$results))
+                    padTB = padLR = 0;
+
+                this.$selector.css({
+                    left:   pos.left - padLR,
+                    top:    pos.top  - padTB,
+                    width:  width  + 2 * padLR,
+                    height: height + 2 * padTB,
+                    opacity: 1 });
                 break;
         }
     }
