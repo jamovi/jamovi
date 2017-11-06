@@ -42,7 +42,7 @@ const TableView = SilkyView.extend({
 
         let html = '';
         html += '<div class="jmv-table-header">';
-        html += '    <div class="jmv-column-header" style="width: 110%">&nbsp;</div>';
+        html += '    <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>';
         html += '</div>';
         html += '<div class="jmv-table-container">';
         html += '    <div class="jmv-table-body"></div>';
