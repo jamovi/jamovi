@@ -15,6 +15,8 @@
 
 #include <boost/bind.hpp>
 
+#include "host.h"
+
 #include "enginer.h"
 #include "analysis.h"
 
@@ -113,14 +115,8 @@ void Engine::start()
 void Engine::periodicChecks()
 {
     // suicide if parent is running
-#ifdef _WIN32
-    // TODO
-#else
-    // ppid changes when parent dies
-    static pid_t ppid = getppid();
-    if (ppid != getppid())
+    if (Host::isOrphan())
         terminate();
-#endif
 }
 
 void Engine::terminate()
