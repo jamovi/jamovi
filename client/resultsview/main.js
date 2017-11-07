@@ -28,6 +28,12 @@ class Main {  // this is constructed at the bottom
                 type : 'setOption',
                 data : { name, value }}, '*');
         };
+
+        window.setCustom = (address, options) => {
+            this.mainWindow.postMessage({
+                type : 'setCustom',
+                data : { address, options }}, '*');
+        };
     }
 
     _reallyNotifyResize() {
@@ -83,7 +89,7 @@ class Main {  // this is constructed at the bottom
             this.$selector = $('<div id="selector"></div>').appendTo($body);
 
             $(document).ready(() => {
-                let erd = ERDM({ strategy: "scroll" });
+                let erd = ERDM({ strategy: 'scroll' });
                 erd.listenTo(this.$results[0], (element) => {
                     this._notifyResize();
                 });
