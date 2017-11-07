@@ -26,6 +26,7 @@ class ModuleMeta:
         self.path = None
         self.is_sys = False
         self.new = False
+        self.min_app_version = 0
 
 
 class AnalysisMeta:
@@ -42,6 +43,8 @@ class AnalysisMeta:
 class Modules:
 
     _instance = None
+
+    LIBRARY_ROOT = 'https://library.jamovi.org/'
 
     @classmethod
     def instance(cls):
@@ -79,7 +82,7 @@ class Modules:
 
     def read_store(self, callback):
         Downloader.download(
-            'https://store.jamovi.org/modules.yaml',
+            Modules.LIBRARY_ROOT + 'modules.yaml',
             lambda t, res: self._read_store_callback(t, res, callback))
 
     def _read_store_callback(self, t, result, callback):
@@ -93,7 +96,8 @@ class Modules:
                 module_data = yaml.load(result)
                 if 'jds' not in module_data:
                     raise Exception('No jds')
-                if module_data['jds'] != '1.0' and module_data['jds'] != '1.1' and module_data['jds'] != '1.2' and module_data['jds'] != '1.3':
+                jds = float(module_data['jds'])
+                if jds > 1.4:
                     callback('error', 'The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
                     return
                 for defn in module_data['modules']:
@@ -150,7 +154,7 @@ class Modules:
         self._notify_listeners({ 'type': 'modulesChanged' })
 
     def install(self, path, callback):
-        if path.startswith('https://store.jamovi.org/'):
+        if path.startswith(Modules.LIBRARY_ROOT):
             Downloader.download(
                 path,
                 lambda t, result: self._on_install(t, result, callback))
@@ -164,12 +168,15 @@ class Modules:
             callback('progress', result)
         elif t == 'success':
             try:
-                module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
                 with ZipFile(result) as zip:
+
+                    module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
+                    module_name = zip.namelist()[0].split('/')[0]
+                    module_path = os.path.join(module_dir, module_name)
+
+                    shutil.rmtree(module_path, ignore_errors=True)
                     zip.extractall(module_dir)
 
-                module_name = zip.namelist()[0].split('/')[0]
-                module_path = os.path.join(module_dir, module_name)
                 meta = self._read_module(module_path)
 
                 self.reread()
@@ -205,21 +212,25 @@ class Modules:
         else:
             for arch in defn['architectures']:
                 if arch['name'] == '*' or arch['name'] == PlatformInfo.platform():
-                    module.path = 'https://store.jamovi.org/' + arch['path']
+                    module.path = Modules.LIBRARY_ROOT + arch['path']
                     break
             else:
                 module.path = ''
 
         version = defn['version'].split('.')
-        version = version[:3]
-        while len(version) < 3:
-            version.append(0)
-        for i in range(3):
-            try:
-                version[i] = int(version[i])
-            except Exception:
-                version[i] = 0
+        version = version[:4]
+        version = list(map(int, version))
         module.version = version
+
+        if 'requires' in defn and 'jamovi' in defn['requires']:
+            min_app_version = defn['requires']['jamovi']
+            min_app_version = min_app_version[2:]
+            min_app_version = min_app_version.split('.')
+            min_app_version = list(map(int, min_app_version))
+        else:
+            min_app_version = [ 0, 0, 0, 0 ]
+
+        module.min_app_version = min_app_version
 
         module.authors = [ ]
         module.authors.extend(defn['authors'])

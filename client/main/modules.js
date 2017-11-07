@@ -11,6 +11,9 @@ Backbone.$ = $;
 
 const yaml = require('js-yaml');
 
+const host = require('./host');
+const Version = require('./utils/version');
+
 const ModulesBase = Backbone.Model.extend({
     defaults : {
         modules : [ ],
@@ -69,13 +72,14 @@ const ModulesBase = Backbone.Model.extend({
             let module = {
                 name:  modulePB.name,
                 title: modulePB.title,
-                version: [ modulePB.version.major, modulePB.version.minor, modulePB.version.revision ],
+                version: modulePB.version,
                 authors: modulePB.authors,
                 description: modulePB.description,
                 analyses: modulePB.analyses,
                 path: modulePB.path,
                 isSystem: modulePB.isSystem,
                 new: modulePB.new,
+                minAppVersion: modulePB.minAppVersion,
             };
 
             module.ops = this._determineOps(module);
@@ -97,16 +101,20 @@ const Available = ModulesBase.extend({
     },
     retrieve() {
 
-        this._instance.retrieveAvailableModules()
-            .then(storeResponse => {
-                this._setup(storeResponse.modules);
-                this.set('status', 'done');
-            }, error => {
-                this.set('error', error);
-                this.set('status', 'error');
-                this._setup([ ]);
-            }).done();
         this.set('status', 'loading');
+
+        host.version.then((version) => {
+            this.version = Version.parse(version);
+        }).then(() => {
+            return this._instance.retrieveAvailableModules();
+        }).then(storeResponse => {
+            this._setup(storeResponse.modules);
+            this.set('status', 'done');
+        }, error => {
+            this.set('error', error);
+            this.set('status', 'error');
+            this._setup([ ]);
+        });
     },
     _updateOps() {
         let modules = this.attributes.modules;
@@ -118,9 +126,15 @@ const Available = ModulesBase.extend({
     _determineOps(module) {
         if (module.path === '')
             return [ 'unavailable' ];
+        if (module.minAppVersion > this.version)
+            return [ 'old' ];
         for (let installed of this._parent) {
-            if (module.name === installed.name)
-                return [ 'installed' ];
+            if (module.name === installed.name) {
+                if (module.version > installed.version)
+                    return [ 'update' ];
+                else
+                    return [ 'installed' ];
+            }
         }
         return [ 'install' ];
     }

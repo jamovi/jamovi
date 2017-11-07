@@ -71,12 +71,26 @@
     content: 'Unavailable' ;
 }
 
+.jmv-store-module-button[data-op='update']:before {
+    content: 'Update' ;
+}
+
+.jmv-store-module-button[data-op='old']:before {
+    content: 'Requires a newer version of jamovi' ;
+}
+
+.jmv-store-module-button[data-op='update'] {
+    border: 1.5px solid #E6AC40 ;
+    color: #E6AC40 ;
+}
+
 .jmv-store-module-button[data-op='installed'] {
     padding-left: 0 ;
     border: 1.5px solid transparent ;
 }
 
-.jmv-store-module-button[data-op='unavailable'] {
+.jmv-store-module-button[data-op='unavailable'],
+.jmv-store-module-button[data-op='old'] {
     padding-left: 0 ;
     border: 1.5px solid transparent ;
     color: #DD0000 ;
@@ -84,6 +98,11 @@
 
 .jmv-store-module-button:enabled:hover {
     background-color: #6B9DE8 ;
+    color: white ;
+}
+
+.jmv-store-module-button[data-op='update']:enabled:hover {
+    background-color: #E6AC40 ;
     color: white ;
 }
 

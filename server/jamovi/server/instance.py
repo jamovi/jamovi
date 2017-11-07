@@ -1262,16 +1262,26 @@ class Instance:
         self._coms.send(response, self._instance_id, request)
 
     def _module_to_pb(self, module, module_pb):
+
+        version = module.version
+        version = version[:4]
+        version.extend((4 - len(version)) * [0])
+        version = int.from_bytes(version, 'big')
+
+        min_version = module.min_app_version
+        min_version = min_version[:4]
+        min_version.extend((4 - len(min_version)) * [0])
+        min_version = int.from_bytes(min_version, 'big')
+
         module_pb.name = module.name
         module_pb.title = module.title
-        module_pb.version.major = module.version[0]
-        module_pb.version.minor = module.version[1]
-        module_pb.version.revision = module.version[2]
+        module_pb.version = version
         module_pb.description = module.description
         module_pb.authors.extend(module.authors)
         module_pb.path = module.path
         module_pb.isSystem = module.is_sys
         module_pb.new = module.new
+        module_pb.minAppVersion = min_version
 
         for analysis in module.analyses:
             analysis_pb = module_pb.analyses.add()

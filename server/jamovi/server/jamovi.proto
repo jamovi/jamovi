@@ -28,12 +28,6 @@ message ComsMessage {
     Error error = 6;
 }
 
-message Version {
-    int32 major = 1;
-    int32 minor = 2;
-    int32 revision = 3;
-}
-
 message AnalysisRequest {
     string datasetId = 1;
     int32 analysisId = 2;
@@ -76,7 +70,7 @@ message AnalysisResponse {
     int32 analysisId = 2;
     string name = 3;
     string ns = 4;
-    Version version = 5;
+    // Version version = 5;
     AnalysisOptions options = 6;
     ResultsElement results = 7;
     AnalysisStatus status = 8;
@@ -85,6 +79,7 @@ message AnalysisResponse {
     int32 revision = 11;
     bool restartEngines = 12;
     string stacktrace = 13;
+    uint32 version = 14;
 }
 
 message AnalysisOption {
@@ -311,13 +306,14 @@ message AnalysisMeta {
 message ModuleMeta {
     string name = 1;
     string title = 2;
-    Version version = 3;
+    uint32 version = 3;
     string description = 4;
     repeated string authors = 5;
     repeated AnalysisMeta analyses = 6;
     string path = 10;
     bool isSystem = 11;
     bool new = 12;
+    uint32 minAppVersion = 13;
 }
 
 enum ValueType {
