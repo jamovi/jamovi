@@ -88,7 +88,14 @@ void Engine::start()
         lock.lock(); // lock to access _waiting
 
         while (_waiting == NULL)
-            _condition.wait(lock); // wait for notification from message loop
+        {
+            // wait for notification from message loop
+            cv_status res;
+            res = _condition.wait_for(lock, chrono::milliseconds(250));
+            periodicChecks();
+            if (res == cv_status::timeout)
+                continue;
+        }
 
         _running = _waiting;
         _waiting = NULL;
@@ -101,6 +108,19 @@ void Engine::start()
     }
 
     t.join();
+}
+
+void Engine::periodicChecks()
+{
+    // suicide if parent is running
+#ifdef _WIN32
+    // TODO
+#else
+    // ppid changes when parent dies
+    static pid_t ppid = getppid();
+    if (ppid != getppid())
+        terminate();
+#endif
 }
 
 void Engine::terminate()
