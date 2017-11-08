@@ -15,7 +15,8 @@ const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", 
 const Format = {
     BEGIN_GROUP: 1,
     END_GROUP: 2,
-    NEGATIVE: 4
+    NEGATIVE: 4,
+    INDENTED: 8,
 };
 
 const extractCellValue = function(cellPB) {
@@ -276,6 +277,9 @@ const TableView = Elem.View.extend({
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
+
+                if (sourceCell.format & Format.INDENTED)
+                    cell.classes += ' jmv-results-table-cell-indented';
 
                 if ((sourceCell.format & Format.BEGIN_GROUP) === Format.BEGIN_GROUP)
                     cell.beginGroup = true;
