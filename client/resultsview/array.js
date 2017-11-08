@@ -33,7 +33,7 @@ const ArrayView = Elem.View.extend({
         this.$$children = [ ];
         this.mode = data.mode;
 
-        this.hoTag = '<h'  + (this.level+1) + '>';
+        this.hoTag = '<h'  + (this.level+1) + ' class="jmv-results-array-heading">';
         this.hcTag = '</h' + (this.level+1) + '>';
 
         this.$el.addClass('jmv-results-array');
@@ -44,23 +44,25 @@ const ArrayView = Elem.View.extend({
         if (this.mode !== 'text' && this.model.attributes.element.layout === 1) // list select
             this.$el.addClass('jmv-results-array-listselect');
 
+        if (this.mode !== 'text' &&
+            this.model.attributes.element.hideHeadingOnlyChild &&
+            this.model.attributes.element.elements.length < 2)
+                this.$el.addClass('jmv-results-array-hideheading');
+
         this.$select = $();
         this.selected = null;
 
         if (this.mode !== 'text') {
-            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
             if (this.model.attributes.element.layout === 1) {
                 this.$select = $('<select></select>').appendTo(this.$title);
                 this.$select.on('change', (event) => {
                     this._selectEvent(event);
                 });
             }
-            if (this.model.attributes.element.hideHeadingOnlyChild &&
-                this.model.attributes.element.elements.length < 2)
-                    this.$title.hide();
         }
         else {
-            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
         }
 
         this.$container = $('<div class="jmv-results-array-container"></div>').appendTo(this.$el);

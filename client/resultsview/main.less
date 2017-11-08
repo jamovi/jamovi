@@ -94,10 +94,18 @@ table {
 }
 
 .jmv-results-group .jmv-results-group {
-    margin-left: 24px ;
     padding-top: 0 ;
     padding-bottom: 0 ;
     margin-bottom: 0 ;
+}
+
+.jmv-results-group-container,
+.jmv-results-array-container {
+    margin-left: 24px ;
+}
+
+#results > .jmv-results-group-container {
+    margin-left: 0 ;
 }
 
 .jmv-results-table-status-indicator {
@@ -332,8 +340,13 @@ table.row-selectable tr.selected td {
     display: none ;
 }
 
-.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-group {
+.jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container,
+.jmv-results-array.jmv-results-array-hideheading > .jmv-results-array-container > .jmv-results-group > .jmv-results-group-container {
     margin-left: 0 ;
+}
+
+.jmv-results-array.jmv-results-array-hideheading > .jmv-results-array-heading {
+    display: none ;
 }
 
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item {

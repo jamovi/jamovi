@@ -30,10 +30,10 @@ const ImageView = ResultsElement.View.extend({
 
         this.$el.addClass('jmv-results-image');
 
-        this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
-        this.$title.appendTo(this.$el);
         this.$status = $('<div class="jmv-results-image-status-indicator"></div>');
-        this.$status.appendTo(this.$el);
+        this.$status.prependTo(this.$el);
+        this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
+        this.$title.prependTo(this.$el);
 
         if (this.model.attributes.status === 1)
             this.$el.attr('data-status', 'inited');

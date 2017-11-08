@@ -22,17 +22,18 @@ const ElementView = Backbone.View.extend({
             return false;
         });
 
+        this.$errorPlacement = $('<div class="jmv-results-error-placement"></div>');
+        this.$errorPlacement.appendTo(this.$el);
+
         this.ready = Promise.resolve();
     },
     render() {
         let error = this.model.get('error');
         if (error !== null) {
-            let $errorPlacement = $('<div class="jmv-results-error-placement"></div>');
+            this.$el.addClass('jmv-results-error');
             let $error = $('<div class="jmv-results-error-message"></div>');
             $error.append(error.message);
-            $errorPlacement.append($error);
-            this.$el.append($errorPlacement);
-            this.$el.addClass('jmv-results-error');
+            $error.appendTo(this.$errorPlacement);
         }
     },
     _sendEvent(event) {

@@ -39,9 +39,11 @@ const GroupView = Elem.View.extend({
         this.$el.addClass('jmv-results-group');
 
         if (this.mode === 'text')
-            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+            this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
         else
-            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).appendTo(this.$el);
+            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+
+        this.$container = $('<div class="jmv-results-group-container"></div>').appendTo(this.$el);
 
         this.render();
     },
@@ -87,8 +89,8 @@ const GroupView = Elem.View.extend({
             let child = this.create(element, $el, this.level+1, this, this.mode);
             if (child !== null) {
                 this.children.push(child);
-                $el.appendTo(this.$el);
-                $('<br>').appendTo(this.$el);
+                $el.appendTo(this.$container);
+                $('<br>').appendTo(this.$container);
                 promises.push(child);
             }
         }
