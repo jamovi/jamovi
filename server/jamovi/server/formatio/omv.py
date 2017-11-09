@@ -114,7 +114,17 @@ def read(data, path, is_example=False):
         data.path = path
 
     with ZipFile(path, 'r') as zip:
-        # manifest = zip.read('META-INF/MANIFEST.MF')
+        manifest = zip.read('META-INF/MANIFEST.MF').decode('utf-8')
+
+        regex = r'^jamovi-Archive-Version: ?([0-9]+)\.([0-9]+) ?$'
+        jav   = re.search(regex, manifest, re.MULTILINE)
+
+        if not jav:
+            raise Exception('File is corrupt (no JAV)')
+
+        jav = (int(jav.group(1)), int(jav.group(2)))
+        if jav[0] > 1:
+            raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
         metadata = json.loads(meta_content)
