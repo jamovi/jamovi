@@ -616,15 +616,17 @@ const TableView = Elem.View.extend({
             this.model.sort(columnName, 'desc');
         });
 
-        this._trs.on('click', event => {
-            let $row = $(event.target).closest(this._trs);
-            let rowNo = this._trs.index($row);
-            rowNo = this.model.attributes.sortTransform[rowNo];
-            if (rowNo === table.rowSelected)
-                window.setOption(table.rowSelect, -1);
-            else
-                window.setOption(table.rowSelect, rowNo);
-        });
+        if (table.rowSelect) {
+            this._trs.on('click', event => {
+                let $row = $(event.target).closest(this._trs);
+                let rowNo = this._trs.index($row);
+                rowNo = this.model.attributes.sortTransform[rowNo];
+                if (rowNo === table.rowSelected)
+                    window.setOption(table.rowSelect, -1);
+                else
+                    window.setOption(table.rowSelect, rowNo);
+            });
+        }
     },
     makeFormatClasses(column) {
 
