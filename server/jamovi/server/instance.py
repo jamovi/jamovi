@@ -1021,6 +1021,9 @@ class Instance:
         if n_rows_before != self._data.row_count:
             recalc = self._data  # if more rows recalc all
             cols_w_schema_change = self._data  # send *all* column schemas
+        else:
+            # sort ascending (the client doesn't like them out of order)
+            cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
 
         for column in recalc:
             column.needs_recalc = True
