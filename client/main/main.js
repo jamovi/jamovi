@@ -93,13 +93,16 @@ $(document).ready(() => {
     }
 
     document.oncontextmenu = function() { return false; };
+
+    // note: in linux, as of electron 1.7.9, the drop event is never fired,
+    // so we handle the navigate event in the electron app
     document.ondragover = (event) => {
         if (event.dataTransfer.files.length > 0) {
             event.dataTransfer.dropEffect = 'copy';
             event.preventDefault();
         }
     };
-    document.body.ondrop = (event) => {
+    document.ondrop = (event) => {
         for (let file of event.dataTransfer.files)
             instance.open(file.path);
         event.preventDefault();

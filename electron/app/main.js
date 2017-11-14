@@ -96,6 +96,7 @@ const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
 const dialog = electron.dialog;
 const child_process = require('child_process');
+const { URL } = require('url');
 
 const ini = require('./ini');
 const tmp = require('./tmp');
@@ -312,6 +313,9 @@ ipc.on('request', (event, arg) => {
             break;
     }
 
+    if (wind === null)
+        return;
+
     let eventType = arg.type;
     let eventData = arg.data;
 
@@ -355,6 +359,18 @@ const handleCommand = function(cmd) {
 const createWindow = function(open) {
 
     let wind = new BrowserWindow({ width: 1280, height: 800, frame: process.platform !== 'win32' });
+
+    // as of electron 1.7.9 on linux, drag and drop from the fs to electron
+    // doesn't seem to work, the drop event is never fired. so we handle the
+    // navigate event here to achieve the same thing
+    wind.webContents.on('will-navigate', (event, url) => {
+        if ( ! url.startsWith(rootUrl)) {
+            let path = new URL(url).pathname;
+            createWindow({ open: path });
+            event.preventDefault();
+        }
+    });
+
     windows.push(wind);
 
     let url = rootUrl + 'index.html';
