@@ -35,12 +35,13 @@ ifeq ($(os),OSX)
 
 else
 ifeq ($(os),Linux)
-	R_HOME = /usr/lib/R
-	INCLUDES += -I/usr/share/R/include
-	LIBS  = -L$(SRCDIR)/../../modules/base/R/RInside/lib \
+	R_HOME = $(SRCDIR)/../../../lib/R
+	LIBS  = -L$(R_HOME)/lib \
+			-L$(SRCDIR)/../../modules/base/R/RInside/lib \
 			-lboost_filesystem \
 			-lboost_system \
 			-lpthread \
+			-Wl,-rpath,'$$ORIGIN/../lib' \
 			-Wl,-rpath,'$$ORIGIN/../Resources/modules/base/R/RInside/lib'
 else
 	R_HOME = $(SRCDIR)/../../../Frameworks/R

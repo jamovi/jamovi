@@ -41,7 +41,7 @@ elif os.uname()[0] == "Linux":
     libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ ]
     extra_compile_args = [ ]
-    extra_link_args = [ ]
+    extra_link_args = [ "-Wl,-rpath,'$$ORIGIN/../lib'" ]
 
 elif os.uname()[0] == "Darwin":
     libraries = [ "boost_filesystem-mt", "boost_system-mt" ]
