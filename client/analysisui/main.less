@@ -137,24 +137,28 @@ h1 {
     padding-left: 5px;
     padding-top: 3px;
     padding-bottom: 3px;
-    vertical-align: middle ;
+    padding-right: 3px;
+    display: flex;
+    align-items: center;
 }
 
 .silky-list-item .silky-list-item-value {
-    vertical-align: middle ;
-    padding-left: 5px;
+    padding-left: 4px;
+    flex: 1 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: normal;
 }
 
 .silky-list-item .silky-variable-type-img {
-    width:18px; /*width of your image*/
-    height:18px; /*height of your image*/
+    height:18px;
     background-size: 100% 100%;
     background-repeat: no-repeat;
-    vertical-align: middle ;
+    flex: 0 0 18px;
 }
 
 .silky-variable-supplier .silky-list-item.silky-format-variable .silky-variable-type-img.silky-variable-type-none {
-    width:0px;
+    flex: 0 0 0;
 }
 
 .unavaliable_variable .silky-list-item-value {
