@@ -1,6 +1,8 @@
 
+import os
 import os.path
 import re
+from tempfile import NamedTemporaryFile as TempFile
 
 from . import csv
 from . import omv
@@ -33,12 +35,20 @@ def read(data, path, is_example=False):
 
 def write(data, path, content=None):
 
-    ext = os.path.splitext(path)[1].lower()
-
-    if ext == '.csv':
-        csv.write(data, path)
-    else:
-        omv.write(data, path, content)
+    try:
+        temp_file = TempFile(delete=False)
+        ext = os.path.splitext(path)[1].lower()
+        if ext == '.csv':
+            csv.write(data, temp_file.name)
+        else:
+            omv.write(data, temp_file.name, content)
+        os.replace(temp_file.name, path)
+    except Exception as e:
+        try:
+            os.remove(temp_file.name)
+        except Exception:
+            pass
+        raise e
 
 
 def is_supported(path):
