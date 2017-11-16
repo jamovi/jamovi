@@ -62,7 +62,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$theme.append($('<div>Plot theme</div>'));
-        this.$themeList = $('<select><option value="default">Default</option><option value="minimal">Minimal</option><option value="iheartspss">I ♥ SPSS</option><option value="liberace">Liberace</option><option value="hadley">Hadley</option></select>')
+        this.$themeList = $('<select><option value="default">Default</option><option value="minimal">Minimal</option><option value="iheartspss">I ♥ SPSS</option><option value="hadley">Hadley</option></select>')
             .appendTo(this.$theme)
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
