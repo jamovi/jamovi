@@ -108,6 +108,14 @@ const OptionListControl = function(params) {
         this._realColumnInfoList = [];
         let isTarget = this.getPropertyValue("isTarget");
         if (Array.isArray(columns)) {
+
+            let addButtonClick = () => {
+                this.setValue(this.createNewRow(), [this._localData.length]);
+                setTimeout( () => {
+                    this.setFocus(this._localData.length - 1);
+                }, 0);
+            };
+
             for (let i = 0; i < columns.length; i++) {
 
                 let columnInfo = { selectable: true, stretchFactor: 1, label: columns[i].name };
@@ -168,13 +176,7 @@ const OptionListControl = function(params) {
                     let addButton = this.getPropertyValue("addButton");
                     if (addButton !== null) {
                         this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
-                        this.$addButton.click(() => {
-                            this.setValue(this.createNewRow(), [this._localData.length]);
-                            setTimeout( () => {
-                                this.setFocus(this._localData.length - 1);
-                            }, 0);
-
-                        });
+                        this.$addButton.click(addButtonClick);
                         $filler.append(this.$addButton);
                     }
                 }
@@ -818,7 +820,7 @@ const OptionListControl = function(params) {
         }
 
         return this.hasFocus;
-    }
+    };
 
     this.setSelectedRowIndices = function(rowIndices) {
         let itemCount = this.contentRowCount();
@@ -834,7 +836,7 @@ const OptionListControl = function(params) {
                 }
             }
         }
-    }
+    };
 
     this.getSelectedRowIndices = function() {
         let indices = [];

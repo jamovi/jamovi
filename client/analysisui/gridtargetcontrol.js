@@ -391,7 +391,7 @@ const GridTargetContainer = function(params) {
                         }
                     }
                 }
-            })
+            });
         }
         else {
 
