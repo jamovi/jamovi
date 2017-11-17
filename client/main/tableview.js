@@ -844,59 +844,9 @@ const TableView = SilkyView.extend({
                                 }
                                 newLevels.push({ value: largestValue + 1, label: value, importValue: (largestValue + 1).toString() });
                                 this.currentColumn.levels = newLevels;
-                                return this.model.changeColumn(this.selection.colNo, this.currentColumn).then(n => {
+                                return this.model.changeColumn(this.currentColumn.id, this.currentColumn).then(n => {
                                     return this._applyEdit();
                                 });
-
-                                /*return new Promise((resolve, reject) => {
-                                    keyboardJS.pause();
-                                    this._editing = false;
-                                    setTimeout(() => {
-                                        dialogs.prompt('Enter an integer value for the label \'' + value + '\'', '', (result) => {
-                                            keyboardJS.resume();
-                                            if (result === undefined)
-                                                reject({ title: 'Value', message: 'Editing cancelled.'});
-                                            let n = parseInt(result);
-                                            if (isNaN(n))
-                                                reject({ title: 'Value', message: 'Nominal/Ordinal values must be a positive integer.'});
-                                            else
-                                                resolve(n);
-                                        });
-                                    }, 0);
-                                }).then(n => {
-
-                                    let newLevels = [];
-                                    let found = false;
-                                    for (let level of this.currentColumn.levels) {
-                                        if (n === level.value) {
-                                            found = level.label;
-                                            level = { value: n, label: value, importValue: level.importValue };
-                                        }
-                                        newLevels.push(level);
-                                    }
-                                    if ( ! found)
-                                        newLevels.push({ value: n, label: value, importValue: n.toString() });
-
-                                    return new Promise((resolve, reject) => {
-                                        if (found) {
-                                            keyboardJS.pause();
-                                            dialogs.confirm('The value ' + n + ' currently has the label \'' + found + '\'. Change?', (result) => {
-                                                keyboardJS.resume();
-                                                if (result)
-                                                    this.currentColumn.levels = newLevels;
-                                                resolve(n);
-                                            });
-                                        }
-                                        else {
-                                            this.currentColumn.levels = newLevels;
-                                            resolve(n);
-                                        }
-                                    });
-                                }).then(n => {
-                                    return this.model.changeColumn(this.selection.colNo, this.currentColumn);
-                                }).then(n => {
-                                    return this._applyEdit();
-                                });*/
                             }
                         }
                         else if ( ! Number.isNaN(number))
