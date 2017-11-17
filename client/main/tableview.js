@@ -1624,6 +1624,7 @@ const TableView = SilkyView.extend({
         let html = '';
 
         html += '<div data-id="' + column.id + '" data-index="' + column.index + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html +=     '<div class="jmv-column-header-icon"></div>';
         html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
         html +=     '<div class="jmv-column-header-resizer" data-index="' + column.index + '" draggable="true"></div>';
         html += '</div>';

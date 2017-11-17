@@ -115,7 +115,7 @@
     border-width: 0 1px 1px 0 ;
     border-style: solid ;
     border-image: linear-gradient(to top, #ACACAC, rgba(0,0,0,0));
-    padding: 3px 6px 3px 28px;
+    padding: 3px 6px 4px 6px;
     background-color: #E6E6E6 ;
     border-image-slice: 1 ;
     box-sizing: border-box ;
@@ -124,6 +124,8 @@
     background-size: auto 80% ;
     background-position: 6px 1px ;
     cursor: url(assets/column-select.svg), auto;
+    display: flex;
+    align-items: center;
 }
 
 
@@ -144,6 +146,15 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    padding-left: 4px;
+    line-height: normal;
+}
+
+.jmv-column-header-icon {
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    height: 16px;
+    flex: 0 0 16px;
 }
 
 .jmv-row-header-cell.virtual {
@@ -242,23 +253,23 @@ input.jmv-table-cell-selected.copying {
     pointer-events: none ;
 }
 
-.jmv-column-header[data-columntype="computed"] {
+.jmv-column-header[data-columntype="computed"] > .jmv-column-header-icon {
     background-image: url('assets/variable-computed.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="nominaltext"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="nominaltext"] > .jmv-column-header-icon {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="nominal"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="nominal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="ordinal"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="ordinal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] {
+.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon {
     background-image: url('assets/variable-continuous.svg');
 }
 
@@ -272,8 +283,9 @@ input.jmv-table-cell-selected.copying {
 .jmv-column-cell {
     position: absolute ;
     box-sizing: border-box ;
-    padding: 4px 6px 2px 6px ;
+    padding: 1px 6px 1px 6px ;
     width: 100% ;
+    line-height: normal;
 }
 
 .jmv-row-header-cell {
