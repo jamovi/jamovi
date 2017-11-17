@@ -66,7 +66,7 @@ var SelectableLayoutGrid = function() {
                 }
             }
         }
-        else if (selected === false || ctrlKey === false) {
+        else if (selected === false || (ctrlKey === false && this._selectedCells.length > 1)) {
             changed = true;
             cells = this.setCellSelection(true, cell, ctrlKey, shiftKey);
             if (ctrlKey) {

@@ -32,6 +32,7 @@
 .silky-option-text-input.frameless-textbox:focus {
   box-shadow: 0 0 5px rgba(181, 202, 239, 1);
   border: 1px solid rgba(181, 202, 239, 1);
+  background-color: white;
   z-index: 99;
 }
 

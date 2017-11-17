@@ -70,7 +70,7 @@ const LayoutCell = function(parent) {
         }
     };
 
-    this.setSelection = function(value, ctrlKey, shiftKey) {
+    this.setSelection = (value, ctrlKey, shiftKey) => {
         if (value && this.visible() === false)
             return;
 
@@ -80,7 +80,7 @@ const LayoutCell = function(parent) {
         }
     };
 
-    this.isSelected = function() {
+    this.isSelected = () => {
         return this._selected;
     };
 
@@ -195,7 +195,7 @@ const LayoutCell = function(parent) {
             let contentSpace = (this.dockContentWidth || (this.horizontalStretchFactor > 0)) ? 0 : this.contentWidth();
             this._preferredWidth =  contentSpace + this.cssProperties["padding-left"] + this.cssProperties["padding-right"] + this.cssProperties["border-left-width"] + this.cssProperties["border-right-width"];
         }
-        return this._preferredWidth;
+        return Math.round(this._preferredWidth);
     };
 
     this.preferredHeight = function() {
@@ -206,7 +206,7 @@ const LayoutCell = function(parent) {
             this._preferredHeight = this.contentHeight() + this.cssProperties["padding-top"] + this.cssProperties["padding-bottom"] + this.cssProperties["border-top-width"] + this.cssProperties["border-bottom-width"];
         }
 
-        return this._preferredHeight;
+        return Math.round(this._preferredHeight);
     };
 
     this.preferredSize = function() {
@@ -223,7 +223,7 @@ const LayoutCell = function(parent) {
                 if (this.ignoreContentMargin_right === false)
                     f += parseFloat(properties["margin-right"]);
             }
-            this._contentWidth = f;
+            this._contentWidth = Math.round(f);
         }
 
         return this._contentWidth;
@@ -239,7 +239,7 @@ const LayoutCell = function(parent) {
                 if (this.ignoreContentMargin_bottom === false)
                     f += parseFloat(properties["margin-bottom"]);
             }
-            this._contentHeight = f;
+            this._contentHeight = Math.round(f);
         }
 
         return this._contentHeight;
