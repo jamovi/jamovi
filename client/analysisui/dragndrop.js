@@ -129,7 +129,7 @@ const DragNDrop = function() {
     };
 
     this.dropIntoTarget = function(target, items, pageX, pageY) {
-        let itemsToDrop = target.filterItemsForDrop(items, this._dropId === target._dropId, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
+        let itemsToDrop = target.filterItemsForDrop(items, this, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
         if (itemsToDrop !== null && itemsToDrop.length !== 0) {
             if (target.onDragDropStart)
                 target.onDragDropStart();

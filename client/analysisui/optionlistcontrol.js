@@ -170,6 +170,10 @@ const OptionListControl = function(params) {
                         this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
                         this.$addButton.click(() => {
                             this.setValue(this.createNewRow(), [this._localData.length]);
+                            setTimeout( () => {
+                                this.setFocus(this._localData.length - 1);
+                            }, 0);
+
                         });
                         $filler.append(this.$addButton);
                     }
@@ -255,7 +259,13 @@ const OptionListControl = function(params) {
             if (hadAddButton) {
                 let $closeButton = $('<div class="list-item-delete-button"><span class="mif-cross"></span></div>');
                 $closeButton.click((event) => {
+                    let selectedIndices = this.getSelectedRowIndices();
                     this.getOption().removeAt(ctrl.getItemKey());
+                    this.setSelectedRowIndices(selectedIndices);
+                });
+                $closeButton.on("mousedown", null, this, (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
                 });
                 ctrl.$el.prepend($closeButton);
             }
@@ -792,6 +802,56 @@ const OptionListControl = function(params) {
 
     this.contentRowCount = function() {
         return  this._rowCount - (this.showHeaders ? 1 : 0) - 1;
+    };
+
+    this.setFocus = function(rowIndex) {
+        if (rowIndex === undefined && this.hasFocus)
+            return true;
+
+        if (this.contentRowCount() > 0) {
+            let cells = this.getRow(rowIndex === undefined ? this.rowIndexToDisplayIndex(0) : this.rowIndexToDisplayIndex(rowIndex));
+            if (cells) {
+                for (let i = 0; i < cells.length; i++) {
+                    this.selectCell(cells[i]);
+                }
+            }
+        }
+
+        return this.hasFocus;
+    }
+
+    this.setSelectedRowIndices = function(rowIndices) {
+        let itemCount = this.contentRowCount();
+        for (let r = 0; r < rowIndices.length; r++) {
+            let rowIndex = rowIndices[r];
+            if (rowIndex >= itemCount)
+                rowIndex = itemCount - 1;
+
+            let cells = this.getRow(this.rowIndexToDisplayIndex(rowIndex));
+            if (cells) {
+                for (let i = 0; i < cells.length; i++) {
+                    this.selectCell(cells[i]);
+                }
+            }
+        }
+    }
+
+    this.getSelectedRowIndices = function() {
+        let indices = [];
+        let _s = [];
+        let count = this.selectedCellCount();
+        for (let i = 0; i < count; i++) {
+            let cell = this.getSelectedCell(i);
+            let rowIndex = this.displayRowToRowIndex(cell.data.row);
+            if (_s[rowIndex] === undefined) {
+                _s[rowIndex] = 1;
+                indices.push(rowIndex);
+            }
+            else {
+                _s[rowIndex] += 1;
+            }
+        }
+        return indices;
     };
 
     this.applyToItems = function(rowIndex, count, callback) {

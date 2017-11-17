@@ -89,8 +89,8 @@ const TargetListSupport = function(supplier) {
                     let item = this._supplier.getItemFromValue(formattedValue);
                     if (item !== null) {
                         pickupItem.properties = item.properties;
-                        items.push(pickupItem);
                     }
+                    items.push(pickupItem);
                 }
             }
         }
@@ -160,8 +160,8 @@ const TargetListSupport = function(supplier) {
             this.trigger('dropoverflow', source, items.slice(overflowStartIndex));
     };
 
-    this.filterItemsForDrop = function(items, intoSelf, xpos, ypos) {
-        return this.preprocessItems(items, intoSelf);
+    this.filterItemsForDrop = function(items, from, xpos, ypos) {
+        return this.preprocessItems(items, from);
     };
 
     this._$hoverCell = null;
@@ -233,9 +233,10 @@ const TargetListSupport = function(supplier) {
         return $dropArea;
     };
 
-    this.preprocessItems = function(items, intoSelf, action) {
+    this.preprocessItems = function(items, from, action) {
 
-        if (intoSelf === false) {
+        let intoSelf = from === this;
+        if (from === this._supplier) {
             if (action === undefined)
                 action = this.getDefaultTransferAction();
 
@@ -333,6 +334,24 @@ const GridTargetContainer = function(params) {
         }
     };
 
+    this.findTargetListControl = function(container) {
+        if (container._isInheritedFrom(OptionListControl)) {
+            let isTarget = container.hasProperty('isTarget') && container.getPropertyValue('isTarget');
+            if (isTarget)
+                return container;
+        }
+
+        if (container.getControls) {
+            let ctrls = container.getControls();
+            for (let i = 0; i < ctrls.length; i++) {
+                let target = this.findTargetListControl(ctrls[i]);
+                if (target)
+                    return target;
+            }
+        }
+
+        return null;
+    };
 
     this.addListBox = function(listbox) {
         listbox.setCellBorders(listbox._columnInfo._list.length > 1 ? "columns" : null);
@@ -352,9 +371,32 @@ const GridTargetContainer = function(params) {
         });
 
         let isTarget = listbox.hasProperty('isTarget') && listbox.getPropertyValue('isTarget');
-        if (isTarget) {
+        if (isTarget === false) {
+            if (this.targetGrid === null) {
+                listbox.setFocus();
+            }
 
-            this.targetGrid = listbox; //new OptionListControl(params);
+            listbox.on('layoutgrid.selectionChanged', () => {
+                if (listbox.hasFocus) {
+                    let cell = listbox.getSelectedCell(0);
+                    if (cell && cell.item) {
+                        this.targetGrid = this.findTargetListControl(cell.item);
+                        if (this.gainOnClick === false) {
+                            if (this.targetGrid.setFocus() === false) {
+                                for (let a = 0; a < this.targetGrids.length; a++) {
+                                    let targetlist = this.targetGrids[a];
+                                    targetlist.clearSelection();
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        }
+        else {
+
+            if (this.targetGrid === null)
+                this.targetGrid = listbox;
             this.targetGrids.push(listbox);
 
             listbox.getSiblingCount = () => {
@@ -369,8 +411,8 @@ const GridTargetContainer = function(params) {
                 return this.applyTransferActionToItems(items, action);
             };
 
-            listbox.blockActionButtons = ($except, targetIsSelf) => {
-                this.blockActionButtons($except, targetIsSelf);
+            listbox.blockActionButtons = ($except, target) => {
+                this.blockActionButtons($except, target);
             };
 
             listbox.unblockActionButtons = () => {
@@ -467,8 +509,6 @@ const GridTargetContainer = function(params) {
         }
     };
 
-    //this.selectedGrid = null;
-
     this.setSupplier = function(supplier) {
         if (this._supplier !== null) {
             this._supplier.supplierGrid.off('layoutgrid.gotFocus', this._onGridGotFocus, this);
@@ -511,7 +551,7 @@ const GridTargetContainer = function(params) {
 
     this.onSelectionChanged = function(listbox) {
         if (this.$buttons && listbox === this.targetGrid) {
-            let gainOnClick = listbox.hasFocus === false;
+            let gainOnClick = this.targetGrid.hasFocus === false;
             this.gainOnClick = gainOnClick;
             this.$buttons.addClass(gainOnClick ? 'arrow-right' : 'arrow-left');
             this.$buttons.removeClass(gainOnClick ? 'arrow-left' : 'arrow-right');
@@ -520,6 +560,8 @@ const GridTargetContainer = function(params) {
 
     this._onGridGotFocus = function() {
         this.gainOnClick = true;
+        this.$buttons.addClass('arrow-right');
+        this.$buttons.removeClass('arrow-left');
         for (let a = 0; a < this.targetGrids.length; a++) {
             let targetlist = this.targetGrids[a];
             targetlist.clearSelection();
@@ -632,7 +674,7 @@ const GridTargetContainer = function(params) {
 
         if (items.length > 0 && this.targetGrid.isSingleItem && this.targetGrids.length === 1)
             items = [items[0]];
-        return this.targetGrid.preprocessItems(items, false, action);
+        return this.targetGrid.preprocessItems(items, this._supplier, action);
     };
 
     this.addRawToOption = function(item, key, insert) {
@@ -782,11 +824,20 @@ const GridTargetContainer = function(params) {
         return true;
     };
 
-    this.blockActionButtons = function($except, targetIsSelf) {
+    this.containsTarget = function(target) {
+        for (let i = 0; i < this.targetGrids.length; i++) {
+            if (this.targetGrids[i] === target)
+                return true;
+        }
+
+        return false;
+    };
+
+    this.blockActionButtons = function($except, target) {
 
         let fullBlock = $except !== this.$buttons;
 
-        this._enableButtons(this.toolbar, fullBlock === false, targetIsSelf);
+        this._enableButtons(this.toolbar, fullBlock === false, this.containsTarget(target) === false || target !== this._supplier);
         this._actionsBlocked = fullBlock;
 
         for (let a = 0; a < this.targetGrids.length; a++) {
@@ -943,7 +994,7 @@ const GridTargetContainer = function(params) {
             this.$buttons = this.toolbar.$el;//$('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
             this.$buttons.addClass('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
-                if (this.gainOnClick && this.targetGrids.length > 0)
+                if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)
                     this.targetGrid = this.targetGrids[0];
                 if (this._actionsBlocked === false) {
                     switch (item.name) {
