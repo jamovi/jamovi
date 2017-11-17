@@ -278,8 +278,7 @@ const LayoutSupplierView = function(params) {
             let $activeButton =  this._targets[id].unblockActionButtons();
             this.supplierGrid.clearSelection();
             for (let tid in this._targets) {
-                let targetIsSelf = tid === id;
-                this._targets[tid].blockActionButtons($activeButton, targetIsSelf);
+                this._targets[tid].blockActionButtons($activeButton, target);
             }
         };
 
