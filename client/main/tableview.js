@@ -1587,7 +1587,7 @@ const TableView = SilkyView.extend({
             ' class="jmv-column-cell"' +
             ' data-row="' + rowNo + '"' +
             ' data-col="' + colNo + '"' +
-            ' style="top : ' + top + 'px ; height : ' + height + 'px">' +
+            ' style="top : ' + top + 'px ; height : ' + height + 'px ; line-height:' + (height-3) + 'px;">' +
             '</div>');
 
         return $cell;
@@ -1602,7 +1602,7 @@ const TableView = SilkyView.extend({
         if (rowNo >= this.model.attributes.rowCount)
             virtual = ' virtual';
 
-        let $cell = $('<div class="jmv-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px">' + content + '</div>');
+        let $cell = $('<div class="jmv-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px; line-height:' + (height-3) + 'px;">' + content + '</div>');
 
         return $cell;
     },
