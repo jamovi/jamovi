@@ -235,7 +235,7 @@ const Instance = Backbone.Model.extend({
                     this.set('path', filePath);
                     this.set('title', path.basename(filePath, ext));
                     this._dataSetModel.set('edited', false);
-                    return { message: "File Saved", cause: "Your data and results have been saved to '" + path.basename(filePath) + "'" };
+                    return { message: "File Saved", cause: "Saved to '" + path.basename(filePath) + "'" };
                 }
             }
             else {
