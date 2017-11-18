@@ -42,6 +42,7 @@ def write(data, path, content=None):
             csv.write(data, temp_file.name)
         else:
             omv.write(data, temp_file.name, content)
+        temp_file.close()
         os.replace(temp_file.name, path)
     except Exception as e:
         try:
