@@ -15,6 +15,7 @@ class InstanceModel:
         self._analyses = Analyses()
         self._path = ''
         self._title = ''
+        self._import_path = ''
 
         self._columns = [ ]
         self._next_id = 0
@@ -152,6 +153,14 @@ class InstanceModel:
     @path.setter
     def path(self, path):
         self._path = path
+
+    @property
+    def import_path(self):
+        return self._import_path
+
+    @import_path.setter
+    def import_path(self, path):
+        self._import_path = path
 
     @property
     def virtual_row_count(self):

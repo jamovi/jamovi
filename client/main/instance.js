@@ -59,6 +59,7 @@ const Instance = Backbone.Model.extend({
         path : null,
         title : '',
         blank : false,
+        importPath : '',
         resultsSupplier: null,
     },
     instanceId() {
@@ -395,6 +396,7 @@ const Instance = Backbone.Model.extend({
                 this.set('title', info.title);
                 this.set('path',  info.path);
                 this.set('blank', info.blank);
+                this.set('importPath', info.importPath);
             }
 
             for (let analysis of info.analyses) {

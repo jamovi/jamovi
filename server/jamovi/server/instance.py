@@ -510,6 +510,7 @@ class Instance:
             response.path = self._data.path
             response.edited = self._data.is_edited
             response.blank = self._data.is_blank
+            response.importPath = self._data.import_path
 
             response.schema.rowCount = self._data.row_count
             response.schema.vRowCount = self._data.virtual_row_count

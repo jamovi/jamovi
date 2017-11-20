@@ -24,10 +24,15 @@ def read(data, path, is_example=False):
         blank.read(data)
     elif ext == '.csv' or ext == '.txt':
         csv.read(data, path)
+        if not is_example:
+            data.import_path = path
     elif ext == '.jasp':
         jasp.read(data, path)
+        data.import_path = path
     else:
-        omv.read(data, path, is_example)
+        omv.read(data, path)
+        if not is_example:
+            data.path = path
 
     fix_column_names(data)
 

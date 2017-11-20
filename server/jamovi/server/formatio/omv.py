@@ -107,11 +107,9 @@ def write(data, path, html=None):
             zip.write(abs_path, rel_path)
 
 
-def read(data, path, is_example=False):
+def read(data, path):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
-    if not is_example:
-        data.path = path
 
     with ZipFile(path, 'r') as zip:
         manifest = zip.read('META-INF/MANIFEST.MF').decode('utf-8')

@@ -417,6 +417,7 @@ message InfoResponse {
     bool edited = 4;
     bool blank = 5;
     DataSetSchema schema = 6;
+    string importPath = 7;
     repeated AnalysisResponse analyses = 9;
 }
 
