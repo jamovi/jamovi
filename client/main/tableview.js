@@ -86,6 +86,7 @@ const TableView = SilkyView.extend({
 
         this._edited = false;
         this._editing = false;
+        this._modifyingCellContents = false;
         this._editNote = new Notify({ duration: 3000 });
 
         ActionHub.get('cut').on('request', this._cutSelectionToClipboard, this);
@@ -135,15 +136,29 @@ const TableView = SilkyView.extend({
 
         this._enableDisableActions();
     },
+    selectAll() {
+        let range = {
+            rowNo: 0,
+            colNo: 0,
+            left: 0,
+            right: this.model.attributes.columnCount - 1,
+            top: 0,
+            bottom: this.model.attributes.rowCount - 1 };
+
+        this._setSelectedRange(range);
+    },
     _dataSetLoaded() {
 
         this.$header.empty();  // clear the temporary cell
 
-        // add the top-left corner cell
-        this.$header.append('<div class="jmv-column-header" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
-
         // add a background for its border line
         this.$header.append('<div class="jmv-table-header-background"></div>');
+
+        // add the top-left corner cell
+        let $topLeftCell = $('<div class="jmv-column-header select-all" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
+        $topLeftCell.on('click', event => this.selectAll());
+
+        this.$header.append($topLeftCell);
 
         let columns = this.model.get('columns');
         this._bodyWidth = this.rowHeaderWidth;
@@ -183,6 +198,10 @@ const TableView = SilkyView.extend({
         this.$selection.on('blur', event => {
             if (this._editing)
                 this._endEditing();
+        });
+        this.$selection.on('click', event => {
+            if (this._editing)
+                this._modifyingCellContents = true;
         });
 
         this.model.on('change:editingVar', event => {
@@ -782,6 +801,9 @@ const TableView = SilkyView.extend({
                     break;
                 }
             }
+            if (value)
+                this._modifyingCellContents = true;
+                
             this.$selection.val(value);
         }
 
@@ -881,6 +903,7 @@ const TableView = SilkyView.extend({
             return this._applyEdit();
         }).then(() => {
             this._editing = false;
+            this._modifyingCellContents = false;
             keyboardJS.setContext('spreadsheet');
             this.$selection.val('');
             this.$selection.blur();
@@ -911,6 +934,34 @@ const TableView = SilkyView.extend({
     _editingKeyPress(event) {
 
         switch(event.key) {
+            case 'ArrowLeft':
+                if (this._modifyingCellContents === false) {
+                    this._endEditing().then(() => {
+                        this._moveCursor('left');
+                    }, () => {});
+                }
+                break;
+            case 'ArrowRight':
+                if (this._modifyingCellContents === false) {
+                    this._endEditing().then(() => {
+                        this._moveCursor('right');
+                    }, () => {});
+                }
+                break;
+            case 'ArrowUp':
+                if (this._modifyingCellContents === false) {
+                    this._endEditing().then(() => {
+                        this._moveCursor('up');
+                    }, () => {});
+                }
+                break;
+            case 'ArrowDown':
+                if (this._modifyingCellContents === false) {
+                    this._endEditing().then(() => {
+                        this._moveCursor('down');
+                    }, () => {});
+                }
+                break;
             case 'Enter':
                 this._endEditing().then(() => {
                     this._moveCursor('down');
@@ -956,6 +1007,10 @@ const TableView = SilkyView.extend({
             else if (event.key.toLowerCase() === 'x') {
                 this._cutSelectionToClipboard()
                     .done();
+                event.preventDefault();
+            }
+            else if (event.key.toLowerCase() === 'a') {
+                this.selectAll();
                 event.preventDefault();
             }
         }
