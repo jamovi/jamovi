@@ -208,7 +208,7 @@ class Server:
     ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
     ETRON_NOTF_REGEX = re.compile('^notification: ([a-z-]+) ?(.*)\n?$')
 
-    def __init__(self, port, host='localhost', slave=False, stdin_slave=False, debug=False):
+    def __init__(self, port, host='127.0.0.1', slave=False, stdin_slave=False, debug=False):
 
         if port == 0:
             self._ports = [ 0, 0, 0 ]

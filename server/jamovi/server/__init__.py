@@ -50,7 +50,7 @@ def start():
     if '--if=*' in sys.argv:
         host = ''
     else:
-        host = 'localhost'
+        host = '127.0.0.1'
 
     sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0\n')
     sys.stdout.flush()
@@ -60,7 +60,7 @@ def start():
     if port != 0:
         # check to see if already running
         try:
-            conn = HTTPConnection('localhost', port, .2)
+            conn = HTTPConnection('127.0.0.1', port, .2)
             conn.request('GET', '/version')
             res = conn.getresponse()
             already_running = (res.status == 200)
