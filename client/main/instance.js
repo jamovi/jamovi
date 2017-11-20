@@ -232,6 +232,8 @@ const Instance = Backbone.Model.extend({
                     return { message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" };
                 }
                 else {
+                    if (info.path)
+                        filePath = info.path;
                     let ext = path.extname(filePath);
                     this.set('path', filePath);
                     this.set('title', path.basename(filePath, ext));

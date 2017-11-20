@@ -381,6 +381,7 @@ class Instance:
 
         response = jcoms.SaveProgress()
         response.success = True
+        response.path = Instance._virtualise_path(path)
         self._coms.send(response, self._instance_id, request)
 
         if not is_export:

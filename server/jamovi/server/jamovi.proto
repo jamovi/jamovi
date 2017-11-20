@@ -259,6 +259,7 @@ message SaveRequest {
 message SaveProgress {
     bool fileExists = 1;
     bool success = 2;
+    string path = 3;
 }
 
 message FSEntry {
