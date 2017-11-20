@@ -814,7 +814,10 @@ const OptionListControl = function(params) {
             let cells = this.getRow(rowIndex === undefined ? this.rowIndexToDisplayIndex(0) : this.rowIndexToDisplayIndex(rowIndex));
             if (cells) {
                 for (let i = 0; i < cells.length; i++) {
-                    this.selectCell(cells[i]);
+                    let cell = cells[i];
+                    let cIndex = cell.data.column;
+                    if (this._columnInfo._list[cIndex].selectable)
+                        this.selectCell(cells[i]);
                 }
             }
         }
