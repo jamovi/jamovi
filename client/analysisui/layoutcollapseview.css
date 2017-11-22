@@ -1,13 +1,11 @@
 
-/*.silky-options-collapse-group {
-    margin-right: 0px;
-    margin-bottom: 4px;
-    margin-top: 4px
-}*/
 
 .silky-options-collapse-button {
-    /*margin-bottom: 4px;*/
     white-space: nowrap;
+}
+
+.silky-options-collapse-button:hover {
+    background-color: #c9c9c9;
 }
 
 .silky-options-collapse-button.silky-control-margin-small {
@@ -62,4 +60,8 @@
 .silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle:before {
   -webkit-transform: rotate(-135deg);
           transform: rotate(-135deg);
+}
+
+.silky-options-collapse-button .silky-dropdown-toggle:before {
+    transition: transform 0.2s;
 }
