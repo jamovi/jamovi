@@ -247,7 +247,7 @@ var FSEntryBrowserView = SilkyView.extend({
             html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
             html += '       <div style="flex: 1 1 auto;">';
 
-            var path = this.model.currentActivePath;
+            var path = this.model.suggestedPath;
             var insert = "";
             if (path) {
                 extension = Path.extname(path);
@@ -597,7 +597,7 @@ var BackstageModel = Backbone.Model.extend({
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = "save";
-        this._pcSaveListModel.currentActivePath = null;
+        this._pcSaveListModel.suggestedPath = null;
         this._pcSaveListModel.fileExtensions = [ { extensions: ["omv"], description: "jamovi file (*.omv)" } ];
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
@@ -606,7 +606,7 @@ var BackstageModel = Backbone.Model.extend({
 
         this._pcExportListModel = new FSEntryListModel();
         this._pcExportListModel.clickProcess = "export";
-        this._pcExportListModel.currentActivePath = null;
+        this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [ { extensions: ["csv"], description: "CSV (Comma delimited) (*.csv)" } ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
@@ -623,6 +623,10 @@ var BackstageModel = Backbone.Model.extend({
             {
                 name: 'open',
                 title: 'Open',
+                action: () => {
+                    let path = this._determineSavePath();
+                    return this.setCurrentDirectory(Path.dirname(path));
+                },
                 places: [
                     //{ name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
@@ -635,15 +639,18 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    this._updateSavePath(this.instance.get('path'));
-                    this.requestSave(this._pcSaveListModel.currentActivePath, true);
+                    //this._updateSavePath(this.instance.get('path'));
+                    this.requestSave(this.instance.get('path'), true);
                 }
             },
             {
                 name: 'saveAs',
                 title: 'Save As',
                 action: () => {
-                    this._updateSavePath(this.instance.get('path'));
+                    let path = this._determineSavePath();
+                    return this.setCurrentDirectory(Path.dirname(path)).then(() => {
+                        this._pcSaveListModel.suggestedPath = path;
+                    });
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
@@ -654,9 +661,6 @@ var BackstageModel = Backbone.Model.extend({
             {
                 name: 'export',
                 title: 'Export',
-                action: () => {
-                    this._updateExportPath(this.instance.get('path'));
-                },
                 places: [
                     {
                         name: 'dataExport',
@@ -687,6 +691,7 @@ var BackstageModel = Backbone.Model.extend({
         if (host.isElectron) {
 
             var remote = window.require('electron').remote;
+            let browserWindow = remote.getCurrentWindow();
             var dialog = remote.dialog;
 
             let filters = [];
@@ -696,7 +701,7 @@ var BackstageModel = Backbone.Model.extend({
             console.log(directory);
             if (type === 'open') {
 
-                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]/*, defaultPath: directory + "/"*/ }, (fileNames) => {
+                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(this._osCurrentDirectory, '') }, (fileNames) => {
                     if (fileNames) {
                         var path = fileNames[0].replace(/\\/g, '/');
                         this.requestOpen(path);
@@ -705,66 +710,10 @@ var BackstageModel = Backbone.Model.extend({
             }
             else if (type === 'save') {
 
-                dialog.showSaveDialog({ filters : filters, defaultPath: /*directory +*/ "/" + filename }, (fileName) => {
+                dialog.showSaveDialog(browserWindow, { filters : filters, defaultPath: Path.join(this._osCurrentDirectory, filename) }, (fileName) => {
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
                         this.requestSave(fileName, true);
-                    }
-                });
-            }
-        }
-        else {
-            this.trigger("browse_invoker");
-        }
-    },
-    _browse : function(type) {
-
-        if (host.isElectron) {
-
-            var remote = window.require('electron').remote;
-            var dialog = remote.dialog;
-
-            if (type === 'open') {
-
-                let filters = [
-                    { name: 'Data files', extensions: ['omv', 'csv', 'txt', 'jasp']},
-                    { name: 'jamovi', extensions: ['omv'] },
-                    { name: 'CSV', extensions: ['csv', 'txt'] },
-                    { name: 'JASP', extensions: ['jasp'] },
-                ];
-
-                dialog.showOpenDialog({ filters: filters, properties: [ 'openFile' ]}, (fileNames) => {
-                    if (fileNames) {
-                        var path = fileNames[0].replace(/\\/g, '/');
-                        this.requestOpen(path);
-                    }
-                });
-            }
-            else if (type === 'saveAs') {
-
-                let filters = [
-                    { name: 'jamovi', extensions: ['omv'] },
-                ];
-
-                dialog.showSaveDialog({ filters : filters }, (fileName) => {
-                    if (fileName) {
-                        fileName = fileName.replace(/\\/g, '/');
-                        this.requestSave(fileName, true);
-                    }
-                });
-            }
-            else if (type === 'export') {
-
-                let filters = [
-                    { name: 'CSV (Comma delimited)', extensions: ['csv'] },
-                    { name: 'Portable Document Format (*.pdf)', extensions: ['pdf'] },
-                    { name: 'Web Page (*.html)', extensions: ['html', 'htm'] }
-                ];
-
-                dialog.showSaveDialog({ filters : filters }, (fileName) => {
-                    if (fileName) {
-                        fileName = fileName.replace(/\\/g, '/');
-                        this.requestExport(fileName, true);
                     }
                 });
             }
@@ -809,7 +758,7 @@ var BackstageModel = Backbone.Model.extend({
         this.requestExport(path);
     },
     setCurrentDirectory: function(path, type) {
-        this.instance.browse(path).then(response => {
+        return this.instance.browse(path).then(response => {
             let path = response.path;
 
             this._pcListModel.set('error', response.errorMessage);
@@ -825,6 +774,7 @@ var BackstageModel = Backbone.Model.extend({
             this._pcExportListModel.set('dirInfo', { path: path, type: type } );
 
             this._hasCurrentDirectory = true;
+            this._osCurrentDirectory = response.osPath;
         });
     },
     hasCurrentDirectory: function() {
@@ -836,29 +786,33 @@ var BackstageModel = Backbone.Model.extend({
         if (op === null)
             return;
 
+        let promise = null;
         if ('action' in op)
-            op.action();
+            promise = op.action();
 
-        if ('places' in op) {
-            var names = _.pluck(op.places, 'name');
-            var index = names.indexOf(this.attributes.lastSelectedPlace);
+        if ( ! promise)
+            promise = Promise.resolve();
 
-            if (index === -1)
-                index = names.indexOf(this.attributes.place);
+        promise.then(() => {
+            if ('places' in op) {
+                var names = _.pluck(op.places, 'name');
+                var index = names.indexOf(this.attributes.lastSelectedPlace);
 
-            if (index === -1)
-                index = 0;
+                if (index === -1)
+                    index = names.indexOf(this.attributes.place);
 
-            var place = op.places[index].name;
-            var old = this.attributes.place;
+                if (index === -1)
+                    index = 0;
 
-            //if (old !== place) {
+                var place = op.places[index].name;
+                var old = this.attributes.place;
+
                 this.attributes.place = place;
                 setTimeout(() => {
                     this.trigger('change:place');
                 }, 0);
-            //}
-        }
+            }
+        });
     },
     uploadFile: function(file) {
 
@@ -884,7 +838,7 @@ var BackstageModel = Backbone.Model.extend({
     requestOpen: function(path) {
         this.instance.open(path)
         .then(() => {
-            this._updateSavePath(path);
+            //this._updateSavePath(path);
             this.set('activated', false);
          });
     },
@@ -927,7 +881,6 @@ var BackstageModel = Backbone.Model.extend({
         this.instance.save(path, options, overwrite)
             .then(() => {
                 this.setSavingState(false);
-                this._updateExportPath(path);
                 this.setCurrentDirectory(Path.dirname(path));
                 this.set('activated', false);
             }).catch(() => {
@@ -968,23 +921,17 @@ var BackstageModel = Backbone.Model.extend({
         }
 
         return new Promise((resolve, reject) => {
-            if (path === undefined || path === null) {
-                if (this._pcSaveListModel.currentActivePath === null) {
-                    this.set('activated', true);
-                    this.set('operation', 'saveAs');
-                    reject();
-                    return;
-                }
-                else
-                    path = this._pcSaveListModel.currentActivePath;
+            if ( ! path) {
+                this.set('activated', true);
+                this.set('operation', 'saveAs');
+                reject();
+                return;
             }
 
             this.setSavingState(true);
             this.instance.save(path, undefined, overwrite)
                 .then(() => {
                     this.setSavingState(false);
-                    this._updateSavePath(path);
-                    this.setCurrentDirectory(Path.dirname(path));
                     if (this._savePromiseResolve !== null)
                         this._savePromiseResolve();
                     this.set('activated', false);
@@ -998,14 +945,20 @@ var BackstageModel = Backbone.Model.extend({
                 });
         });
     },
-    _updateSavePath: function(path) {
-        if (path.endsWith(".omv"))
-            this._pcSaveListModel.currentActivePath = path;
-        else
-            this._pcSaveListModel.currentActivePath = null;
-    },
-    _updateExportPath: function(path) {
-        this._pcExportListModel.currentActivePath = path;
+    _determineSavePath: function() {
+        let path = this.instance.get('path');
+        if (path)
+            return path;
+
+        path = this.instance.get('importPath');
+        if (path) {
+            if (path.endsWith(".omv"))
+                return path;
+            else
+                return Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) + '.omv');
+        }
+
+        return Path.join('{{Documents}}', this.instance.get('title') + '.omv');
     },
     _settingsChanged : function(event) {
         if ('recents' in event.changed)
@@ -1058,10 +1011,7 @@ var BackstageView = SilkyView.extend({
         let createCallback = (place, op) => {
             return (event) => {
                 this.model.set('op', op.name);
-                //this.model.set('place', place.name);
-                //this.model.set('lastSelectedPlace', place.name);
 
-                //var place = event.data;
                 if ('action' in place)
                     place.action();
 
@@ -1155,19 +1105,6 @@ var BackstageView = SilkyView.extend({
         this.model.set('place', '');
 
         $('body').find('.app-dragable').removeClass('ignore');
-
-        /*setTimeout(() => {
-            var ops = this.model.attributes.ops;
-            for (let i = 0; i < ops.length; i++) {
-                if ('places' in ops[i]) {
-                    this.model.set('operation', ops[i].name);
-                    this.model.set('place', ops[i].places[0].name);
-                    break;
-                }
-            }
-
-
-        }, 100);*/
     },
     _activationChanged : function() {
         if (this.model.get('activated'))
@@ -1225,102 +1162,6 @@ var BackstageView = SilkyView.extend({
             this.$el.removeClass('activated-sub');
     }
 });
-
-/*var BackstagePlaces = SilkyView.extend({
-    className: "silky-bs-places",
-    events: {
-        'change .silky-bs-browse-invoker' : '_fileUpload',
-    },
-    initialize: function() {
-        _.bindAll(this, '_opChanged');
-
-        this.model.on('change:operation', this._opChanged, this);
-        this.model.on('change:place',     this._placeChanged, this);
-        this.model.on('browse_invoker',  this._browseInvoker, this);
-
-        this.$el.addClass("silky-bs-mid");
-
-        var ops = this.model.attributes.ops;
-
-        for (let i = 0; i < ops.length; i++) {
-
-            let op = ops[i];
-            if (!('places' in op))
-                continue;
-
-            let html = '';
-
-            html += '<div class="silky-bs-places-panel" data-op="' + op.name + '">';
-            html += '    <h1 class="silky-bs-title">' + op.title + '</h1>';
-            html += '    <div class="silky-bs-places">';
-            html += '    </div>';
-            html += '</div>';
-
-            var $placesPanel = $(html);
-            this.$el.append($placesPanel);
-            var $places = $placesPanel.find('.silky-bs-places');
-
-            for (var j = 0; j < op.places.length; j++) {
-                let place = op.places[j];
-                var $place = $('<div class="silky-bs-place" data-place="' + place.name + '">' + place.title + '</div>');
-                $places.append($place);
-                if (place.separator)
-                    $places.append($('<div class="silky-bs-place-separator"></div>'));
-                $place.on('click', place, _.bind(this._placeClicked, this));
-            }
-        }
-
-        var $choices = $('<div class="silky-bs-choices"></div>');
-        this.$el.append($choices);
-
-        this.$title = this.$el.find('.silky-bs-title');
-        this.$ops = this.$el.find('.silky-bs-places-panel');
-        this.$places = this.$el.find('.silky-bs-place');
-
-        this._opChanged();
-        this._placeChanged();
-
-        this.$choices = this.$el.find('.silky-bs-choices');
-        this._choices = new BackstageChoices({ el: this.$choices, model : this.model });
-    },
-    _opChanged : function() {
-        var op = this.model.get('operation');
-        var $current = this.$ops.filter('[data-op="' + op + '"]');
-        var $off = this.$ops.filter(':not([data-op="' + op + '"])');
-
-        $off.fadeOut(200);
-        $off.removeAttr('data-selected');
-
-        $current.fadeIn(200);
-        $current.attr('data-selected', '');
-
-        this.$current = $current;
-    },
-    _placeChanged : function() {
-
-        this.$places.removeAttr('data-selected');
-        var place = this.model.get('place');
-        var $place = this.$current.find('[data-place="' + place + '"]');
-        $place.attr('data-selected', '');
-    },
-    _placeClicked: function(event) {
-        var place = event.data;
-        if ('action' in place)
-            place.action();
-
-        if ('view' in place) {
-            this.model.set('lastSelectedPlace', place.name);
-            this.model.set('place', place.name);
-        }
-    },
-    _browseInvoker : function() {
-        this.$browseInvoker.click();
-    },
-    _fileUpload : function(evt) {
-        var file = evt.target.files[0];
-        this.model.uploadFile(file);
-    }
-});*/
 
 var BackstageChoices = SilkyView.extend({
     className: "silky-bs-choices",
