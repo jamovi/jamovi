@@ -129,7 +129,11 @@ const Instance = Backbone.Model.extend({
             request.instanceId = this._instanceId;
 
             let onresolve = (response) => {
+
+                let info = coms.Messages.OpenProgress.decode(response.payload);
+                let filePath = info.path;
                 let ext = path.extname(filePath);
+                
                 this.set('path', filePath);
                 this.set('title', path.basename(filePath, ext));
                 this._retrieveInfo();

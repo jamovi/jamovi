@@ -244,6 +244,7 @@ message OpenRequest {
 }
 
 message OpenProgress {
+    string path = 3;
 }
 
 message SaveRequest {
@@ -282,8 +283,9 @@ message FSRequest {
 
 message FSResponse {
     string path = 1;
-    repeated FSEntry contents = 2;
-    string errorMessage = 3;
+    string osPath = 2;
+    repeated FSEntry contents = 3;
+    string errorMessage = 4;
 }
 
 message DataSetEntry {

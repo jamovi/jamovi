@@ -231,6 +231,7 @@ class Instance:
 
         response = jcoms.FSResponse()
         response.path = path
+        response.osPath = abs_path
 
         if path.startswith('{{Root}}'):
 
@@ -416,7 +417,8 @@ class Instance:
     def _on_open(self, request):
         path = request.filename
 
-        nor_path = Instance._normalise_path(path)
+        norm_path = Instance._normalise_path(path)
+        virt_path = Instance._virtualise_path(path)
 
         self._mm = MemoryMap.create(self._buffer_path, 65536)
         dataset = DataSet.create(self._mm)
@@ -425,8 +427,11 @@ class Instance:
             self._data.dataset = dataset
 
             is_example = path.startswith('{{Examples}}')
-            formatio.read(self._data, nor_path, is_example)
-            self._coms.send(None, self._instance_id, request)
+            formatio.read(self._data, norm_path, is_example)
+
+            response = jcoms.OpenProgress()
+            response.path = virt_path
+            self._coms.send(response, self._instance_id, request)
 
             if path != '' and not is_example:
                 self._add_to_recents(path)
