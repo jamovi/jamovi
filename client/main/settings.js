@@ -32,6 +32,7 @@ const Settings = Backbone.Model.extend({
         syntaxMode: false,
         zoom: 100,
         updateStatus: 'na',
+        format: '{"t":"sf","n":3,"p":3}',
     },
 
     retrieve(instanceId) {

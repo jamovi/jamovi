@@ -61,6 +61,7 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.set('selectedAnalysis', null);
         });
 
+        this.model.settings().on('change:format',  () => this._updateAll());
         this.model.settings().on('change:devMode', () => this._updateAll());
     },
     _resultsEvent(analysis) {
@@ -125,12 +126,22 @@ const ResultsPanel = Backbone.View.extend({
     _sendResults(resources) {
 
         if (this.mode === 'rich' || resources.incAsText) {
+
+            let format;
+            try {
+                format = JSON.parse(this.model.settings().get('format'));
+            }
+            catch (e) {
+                format = {t:'sf',n:3,p:3};
+            }
+
             let event = {
                 type: 'results',
                 data: {
                     results: resources.results,
                     mode: this.mode,
                     devMode: this.model.settings().get('devMode'),
+                    format: format,
                 }
             };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);

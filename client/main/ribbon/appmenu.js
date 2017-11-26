@@ -50,15 +50,22 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
-        this.$syntax.append($('<div>Syntax mode</div>'));
-        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
+        this.$results = $('<div class="jmv-results"></div>').appendTo(this.$content);
+        this.$resultsHeading = $('<div class="jmv-ribbon-appmenu-subheading">Results</div>').appendTo(this.$results);
 
-        this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox" for="devMode"></label>').appendTo(this.$content);
-        this.$dev.append($('<div>Developer mode</div>'));
-        this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
+        this.$nFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$nFormat.append($('<div>Number format</div>'));
+        this.$nFormatList = $('<select><optgroup label="significant figures"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="decimal places"><option value="dp:2">2 dp</option><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
+            .appendTo(this.$nFormat)
+            .click(event => event.stopPropagation())
+            .change(event => this._changeResultsFormat());
 
-        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$pFormat.append($('<div>p-value format</div>'));
+        this.$pFormatList = $('<select><optgroup label="decimal places"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
+            .appendTo(this.$pFormat)
+            .click(event => event.stopPropagation())
+            .change(event => this._changeResultsFormat());
 
         this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$theme.append($('<div>Plot theme</div>'));
@@ -66,6 +73,10 @@ const AppMenuButton = Backbone.View.extend({
             .appendTo(this.$theme)
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
+
+        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
+        this.$syntax.append($('<div>Syntax mode</div>'));
+        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
 
         this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
         this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
@@ -89,6 +100,12 @@ const AppMenuButton = Backbone.View.extend({
         this.$versionInfoUpdates = $('<label class="jmv-ribbon-appmenu-item checkbox" for="keep-uptodate"></label>').appendTo(this.$updateInfo);
         this.$versionInfoUpdates.append($('<div>Automatically install updates</div>'));
         this.$versionInfoUpdatesCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="keep-uptodate">').appendTo(this.$versionInfoUpdates);
+
+        this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
+        this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox" for="devMode"></label>').appendTo(this.$content);
+        this.$dev.append($('<div>Developer mode</div>'));
+        this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
 
         this.$zoomIn.on('click', event => { this.model.settings().zoomIn(); event.stopPropagation(); });
         this.$zoomOut.on('click', event => { this.model.settings().zoomOut(); event.stopPropagation(); });
@@ -114,11 +131,12 @@ const AppMenuButton = Backbone.View.extend({
             this.model.settings().setSetting('autoUpdate', this.$versionInfoUpdatesCheck.prop('checked'));
         });
 
-        this.model.settings().on('change:theme', () => this._updateUI());
-        this.model.settings().on('change:devMode', () => this._updateUI());
-        this.model.settings().on('change:zoom', () => this._updateUI());
+        this.model.settings().on('change:theme',        () => this._updateUI());
+        this.model.settings().on('change:devMode',      () => this._updateUI());
+        this.model.settings().on('change:zoom',         () => this._updateUI());
         this.model.settings().on('change:updateStatus', () => this._updateUI());
-        this.model.settings().on('change:autoUpdate', () => this._updateUI());
+        this.model.settings().on('change:autoUpdate',   () => this._updateUI());
+        this.model.settings().on('change:format',       () => this._updateUI());
 
         this._updateUI();
     },
@@ -134,8 +152,36 @@ const AppMenuButton = Backbone.View.extend({
     _changeTheme(name) {
         this.model.settings().setSetting('theme', name);
     },
+    _changeResultsFormat() {
+
+        let nfs = this.$nFormatList.val();
+        let pfs = this.$pFormatList.val();
+
+        let nfm = nfs.match(/(sf|dp):([0-9]+)/);
+        let pfm = pfs.match(/dp:([0-9]+)/);
+        let fmt = { t: nfm[1], n: nfm[2], p: pfm[1] };
+
+        let value = JSON.stringify(fmt);
+        this.model.settings().setSetting('format', value);
+    },
     _updateUI() {
         let settings = this.model.settings();
+
+        let fmt = settings.getSetting('format');
+        let nf, pf;
+        try {
+            fmt = JSON.parse(fmt);
+            nf = fmt.t + ':' + fmt.n;
+            pf = 'dp:' + fmt.p;
+        }
+        catch (e) {
+            nf = 'sf:3';
+            pf = 'dp:3';
+        }
+
+        this.$nFormatList.val(nf);
+        this.$pFormatList.val(pf);
+
         let theme = settings.getSetting('theme', 'default');
         this.$themeList.val(theme);
         let devMode = settings.getSetting('devMode', false);

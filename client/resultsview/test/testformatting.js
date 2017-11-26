@@ -5,7 +5,7 @@ var _ = require('underscore');
 var mocha = require('mocha');
 
 
-var determineFormatting = require('../formatting.js').determineFormatting;
+var determFormat = require('../formatting.js').determFormat;
 var format = require('../formatting.js').format;
 
 var tests = [
@@ -28,10 +28,10 @@ var tests = [
 
 tests.forEach(function(test) {
 
-    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
+    mocha.describe('determFormat(' + JSON.stringify(test.v) + ')', function() {
     
         mocha.it('should be ' + JSON.stringify(test.r), function() {
-            expect(determineFormatting(test.v, test.sf)).to.deep.equal(test.r);
+            expect(determFormat(test.v, test.sf)).to.deep.equal(test.r);
         });
     });
 });
@@ -50,7 +50,7 @@ tests = [
     
     tests.forEach(function(test) {
 
-    mocha.describe('determineFormatting(' + JSON.stringify(test.v) + ')', function() {
+    mocha.describe('determFormat(' + JSON.stringify(test.v) + ')', function() {
     
         mocha.it('should be ' + JSON.stringify(test.r), function() {
             expect(format(test.v, test.f)).to.eql(test.r);

@@ -32,6 +32,7 @@ const GroupView = Elem.View.extend({
         this.children = [ ];
         this.mode = data.mode;
         this.devMode = data.devMode;
+        this.fmt = data.fmt;
 
         this.hoTag = '<h'  + (this.level+1) + '>';
         this.hcTag = '</h' + (this.level+1) + '>';
@@ -86,7 +87,7 @@ const GroupView = Elem.View.extend({
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, $el, this.level+1, this, this.mode);
+            let child = this.create(element, $el, this.level+1, this, this.mode, undefined, this.fmt);
             if (child !== null) {
                 this.children.push(child);
                 $el.appendTo(this.$container);

@@ -3,7 +3,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const determineFormatting = require('../common/formatting').determineFormatting;
+const determFormat = require('../common/formatting').determFormat;
 const format = require('../common/formatting').format;
 
 const Elem = require('./element');
@@ -250,7 +250,7 @@ const TableView = Elem.View.extend({
                 cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
 
             let values = column.cells.map(v => v.d);
-            formattings[colNo] = determineFormatting(values, column.type, column.format);
+            formattings[colNo] = determFormat(values, column.type, column.format, this.fmt);
 
             colNo++;
         }

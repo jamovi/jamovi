@@ -32,6 +32,7 @@ const ArrayView = Elem.View.extend({
         this.children = [ ];
         this.$$children = [ ];
         this.mode = data.mode;
+        this.fmt = data.fmt;
 
         this.hoTag = '<h'  + (this.level+1) + ' class="jmv-results-array-heading">';
         this.hcTag = '</h' + (this.level+1) + '>';
@@ -115,7 +116,7 @@ const ArrayView = Elem.View.extend({
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, $el, this.level+1, this, this.mode);
+            let child = this.create(element, $el, this.level+1, this, this.mode, undefined, this.fmt);
             if (child === null)
                 continue;
 

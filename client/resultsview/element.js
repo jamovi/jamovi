@@ -12,6 +12,7 @@ const ElementView = Backbone.View.extend({
 
         this.parent = data.parent;
         this.level = ('level' in data) ? data.level : 0;
+        this.fmt = data.fmt;
 
         this.$el.addClass('jmv-results-item');
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));

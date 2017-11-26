@@ -1,77 +1,99 @@
+
 'use strict';
-var _ = require('underscore');
 
 // determine the number of decimal places that the column needs to be formatted to
 
-var determineFormatting = function(values, type, format, sf, maxNS, minNS) {
+const determFormat = function(values, type, format, settings, maxNS, minNS) {
 
-    if (_.isUndefined(format))
+    if (format === undefined)
         format = '';
-    if (_.isUndefined(sf))
-        sf = 3;
-    if (_.isUndefined(minNS))
+    if (settings === undefined)
+        settings = { 't': 'sf', 'n': 3, 'p': 3 };
+    if (minNS === undefined)
         minNS = 1e-3;
-    if (_.isUndefined(maxNS))
+    if (maxNS === undefined)
         maxNS = 1e6;
 
-    var formats = [ ];
+    let formats = [ ];
     if (format !== '')
         formats = format.split(',');
 
-    var minAbsNS = Infinity;
-    var maxAbsExpnt = -Infinity;
+    let minAbsNS = Infinity;
+    let maxAbsExpnt = -Infinity;
 
-    for (var i = 0; i < values.length; i++) {
+    for (let i = 0; i < values.length; i++) {
 
-        var value = values[i];
+        let value = values[i];
 
         if (isNaN(value))
             continue;
 
-        var absValue = Math.abs(value);
+        let absValue = Math.abs(value);
         if (absValue >= minNS && absValue <= maxNS) {
 
             if (absValue !== 0 && isFinite(absValue) && absValue < minAbsNS)
                 minAbsNS = absValue;
         }
         else {
-            var exponent = parseInt(Math.log10(absValue));
-            var absS = Math.abs(exponent);
+            let exponent = parseInt(Math.log10(absValue));
+            let absS = Math.abs(exponent);
             if (absS !== 0 && isFinite(absS) && absS > maxAbsExpnt)
                 maxAbsExpnt = absS;
         }
     }
 
-    var dp;
-    var expw;
+    let dp, sf;
 
-    if (type === 'integer') {
-        dp = 0;
-    }
-    else if (formats.includes('zto') || formats.includes('pc')) {
-        dp = sf;
+    if (formats.includes('pvalue')) {
+        dp = settings.p;
+        sf = settings.p;
         maxNS = Infinity;
         minNS = -Infinity;
     }
-    else if ( ! isFinite(minAbsNS)) {
-        dp = sf - 1;
+    else if (formats.includes('zto') || formats.includes('pc')) {
+        dp = settings.n;
+        sf = settings.n;
+        maxNS = Infinity;
+        minNS = -Infinity;
     }
-    else if (minAbsNS === 0) {
-        dp = sf - 1;
+    else if (settings.t === 'sf') {
+
+        if (type === 'integer') {
+            dp = 0;
+            sf = settings.n;
+        }
+        else if ( ! isFinite(minAbsNS)) {
+            dp = settings.n - 1;
+            sf = settings.n;
+        }
+        else if (minAbsNS === 0) {
+            dp = settings.n - 1;
+            sf = settings.n;
+        }
+        else {
+            sf = settings.n;
+            dp = settings.n - 1 - Math.floor(Math.log10(minAbsNS));
+            dp = Math.max(dp, 0);
+        }
     }
     else {
-        var logAbs = Math.log10(minAbsNS);
-        dp = sf - 1 - Math.floor(logAbs);
+
+        if (type === 'integer') {
+            dp = 0;
+            sf = settings.n + 1;
+        }
+        else {
+            dp = settings.n;
+            sf = settings.n + 1;
+        }
     }
 
-    dp = Math.max(dp, 0);
-
-    expw = parseInt(Math.log10(maxAbsExpnt)+1);
+    let expw = parseInt(Math.log10(maxAbsExpnt)+1);
 
     return { dp, expw, format, sf, maxNS, minNS };
 };
 
-var format = function(value, format) {
+let format = function(value, format) {
 
     if (isNaN(value)) {
         return 'NaN';
@@ -82,8 +104,8 @@ var format = function(value, format) {
         else
             return '-Inf';
     }
-    else if (format.format.includes('pvalue') && value < 0.001) {
-        return '<\u2009.001';
+    else if (format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
+        return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).substring(1);
     }
     else if (format.format.includes('pc')) {
         return '' + (100 * value).toFixed(format.dp - 2) + '\u2009%';
@@ -92,21 +114,21 @@ var format = function(value, format) {
         return value.toFixed(format.dp);
     }
     else {
-        var exponent = Math.floor(Math.log10(Math.abs(value)));
-        var mantissa = value/Math.pow(10, exponent);
+        let exponent = Math.floor(Math.log10(Math.abs(value)));
+        let mantissa = value/Math.pow(10, exponent);
         if (value === 0)
             return value.toFixed(format.dp);
-        var expntSpan = Math.log10(exponent);
-        var sign = '+';
+        let expntSpan = Math.log10(exponent);
+        let sign = '+';
         if (value < 1) {
             sign = '-';
         }
-        var spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
+        let spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
-        var gap = Array(spaces).join(" ");
+        let gap = Array(spaces).join(' ');
         return mantissa.toFixed(format.sf-1)+'e'+gap+sign+Math.abs(exponent);
     }
 
 };
 
-module.exports = { determineFormatting: determineFormatting, format: format };
+module.exports = { determFormat: determFormat, format: format };

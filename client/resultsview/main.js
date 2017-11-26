@@ -17,6 +17,7 @@ class Main {  // this is constructed at the bottom
         this.mainWindow = null;
         this.results = null;
         this.$results = null;
+        this.resultsDefn = null;
         this.active = null;
 
         window.addEventListener('message', event => this._messageEvent(event));
@@ -34,6 +35,10 @@ class Main {  // this is constructed at the bottom
                 type : 'setCustom',
                 data : { address, options }}, '*');
         };
+
+        $(document).ready(() => {
+            this.$body = $('body');
+        });
     }
 
     _reallyNotifyResize() {
@@ -71,29 +76,8 @@ class Main {  // this is constructed at the bottom
         let eventData = hostEvent.data;
 
         if (hostEvent.type === 'results') {
-            let content = '';
-            let $body = $('body');
-            $body.attr('data-mode', eventData.mode);
-            $body.empty();
-
-            this.$results = $('<div id="results"></div>');
-            this.results = createItem(
-                eventData.results,
-                this.$results,
-                0,
-                { _sendEvent: event => this._sendMenuRequest(event) },
-                eventData.mode,
-                eventData.devMode);
-            this.$results.appendTo($body);
-
-            this.$selector = $('<div id="selector"></div>').appendTo($body);
-
-            $(document).ready(() => {
-                let erd = ERDM({ strategy: 'scroll' });
-                erd.listenTo(this.$results[0], (element) => {
-                    this._notifyResize();
-                });
-            });
+            this.resultsDefn = eventData;
+            this._render();
         }
         else if (hostEvent.type === 'click') {
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
@@ -107,6 +91,31 @@ class Main {  // this is constructed at the bottom
         else if (hostEvent.type === 'menuEvent') {
             this._menuEvent(eventData);
         }
+    }
+
+    _render() {
+        this.$body.attr('data-mode', this.resultsDefn.mode);
+        this.$body.empty();
+
+        this.$results = $('<div id="results"></div>');
+        this.results = createItem(
+            this.resultsDefn.results,
+            this.$results,
+            0,
+            { _sendEvent: event => this._sendMenuRequest(event) },
+            this.resultsDefn.mode,
+            this.resultsDefn.devMode,
+            this.resultsDefn.format);
+        this.$results.appendTo(this.$body);
+
+        this.$selector = $('<div id="selector"></div>').appendTo(this.$body);
+
+        $(document).ready(() => {
+            let erd = ERDM({ strategy: 'scroll' });
+            erd.listenTo(this.$results[0], (element) => {
+                this._notifyResize();
+            });
+        });
     }
 
     _menuEvent(event) {

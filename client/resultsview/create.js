@@ -16,7 +16,7 @@ const SyntaxView  = require('./syntax').View;
 const HtmlModel = require('./html').Model;
 const HtmlView  = require('./html').View;
 
-const createItem = function(element, $el, level, parent, mode, devMode) {
+const createItem = function(element, $el, level, parent, mode, devMode, fmt) {
 
     if (level === undefined)
         level = 1;
@@ -38,7 +38,8 @@ const createItem = function(element, $el, level, parent, mode, devMode) {
             model: model,
             level: level,
             parent: parent,
-            mode: mode });
+            mode: mode,
+            fmt: fmt });
     }
     else if (element.type === 'group') {
 
@@ -63,7 +64,8 @@ const createItem = function(element, $el, level, parent, mode, devMode) {
                 level: level,
                 parent: parent,
                 mode: mode,
-                devMode: devMode });
+                devMode: devMode,
+                fmt: fmt });
         }
         else {
             view = null;
@@ -105,7 +107,8 @@ const createItem = function(element, $el, level, parent, mode, devMode) {
                 create: createItem,
                 level: level,
                 parent: parent,
-                mode: mode });
+                mode: mode,
+                fmt: fmt });
         }
         else {
             view = null;
