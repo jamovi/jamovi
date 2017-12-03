@@ -8,7 +8,7 @@
 .jmv-ribbon-appmenu-menu-panel {
     position: fixed ;
     display: flex;
-    right: 0px ;
+    right: -1px ;
     top: 0px ;
     width: 0px;
     bottom: 0px;
