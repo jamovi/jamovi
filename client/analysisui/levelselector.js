@@ -20,11 +20,11 @@ const LevelSelector = function(params) {
     this.levels = [];
     this.enabled = true;
 
-    this._override("onDataChanged", (baseFunction, data) => {
+    this._override('onDataChanged', (baseFunction, data) => {
         if (baseFunction !== null)
             baseFunction.call(this, data);
 
-        if (data.dataType !== "columns")
+        if (data.dataType !== 'columns')
             return;
 
         if (data.dataInfo.measureTypeChanged || data.dataInfo.levelsChanged || data.dataInfo.countChanged)
@@ -39,14 +39,14 @@ const LevelSelector = function(params) {
 
         let columnUsed = 0;
         let cell = null;
-        if (label !== "") {
-            this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+        if (label !== '') {
+            this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue('margin') + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
             cell = grid.addCell(column, row, true, this.$label);
-            cell.setAlignment("left", "center");
+            cell.setAlignment('left', 'center');
             columnUsed += 1;
         }
 
-        let t = '<select class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-' + this.getPropertyValue("margin") + '">';
+        let t = '<select class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-' + this.getPropertyValue('margin') + '">';
         t += '</select>';
 
         this.$input = $(t);
@@ -57,7 +57,7 @@ const LevelSelector = function(params) {
         });
 
         cell = grid.addCell(column + columnUsed, row, true, this.$input);
-        cell.setAlignment("left", "center");
+        cell.setAlignment('left', 'center');
 
         columnUsed += 1;
 
@@ -66,7 +66,7 @@ const LevelSelector = function(params) {
 
     this._updateList = function() {
         let variable = this.getPropertyValue('variable');
-        let promise = this.requestData("column", { columnName: variable, properties: [ "measureType", "levels" ] });
+        let promise = this.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
         promise.then(rData => {
 
             if (rData.columnFound === false)

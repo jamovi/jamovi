@@ -219,7 +219,7 @@ const Options = function(def) {
         eOpt.force = eventParams.force;
 
         if (option.setValue(value, keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, value, keys, "change");
+            this.onValueChanged(option, value, keys, 'change');
 
         return true;
     };
@@ -238,7 +238,7 @@ const Options = function(def) {
 
         key.push(propertyName);
 
-        this.onValueChanged(option, value, key, "property");
+        this.onValueChanged(option, value, key, 'property');
     };
 
     this.insertOptionValue = function(name, value, keys, eventParams) {
@@ -252,11 +252,11 @@ const Options = function(def) {
         else
             option = this.getOption(name);
 
-        let eOpt = Opt.getDefaultEventParams("inserted");
+        let eOpt = Opt.getDefaultEventParams('inserted');
         eOpt.force = eventParams.force;
 
         if (option.insertValueAt(value, keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, value, keys, "insert");
+            this.onValueChanged(option, value, keys, 'insert');
     };
 
     this.removeOptionValue = function(name, keys, eventParams) {
@@ -270,11 +270,11 @@ const Options = function(def) {
         else
             option = this.getOption(name);
 
-        let eOpt = Opt.getDefaultEventParams("removed");
+        let eOpt = Opt.getDefaultEventParams('removed');
         eOpt.force = eventParams.force;
 
         if (option.removeAt(keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, null, keys, "remove");
+            this.onValueChanged(option, null, keys, 'remove');
     };
 
     this.onValueChanged = function(option, value, keys, type) {
@@ -288,7 +288,7 @@ const Options = function(def) {
     this.fireQueuedEvents = function() {
 
         if (this._serverQueuedEvents.hasEvents()) {
-            this.trigger("options.valuesForServer", this._serverQueuedEvents);
+            this.trigger('options.valuesForServer', this._serverQueuedEvents);
             this._serverQueuedEvents = new keyedQueue(); //a new queue is made so that the old queue can be sent without being modified.
         }
     };

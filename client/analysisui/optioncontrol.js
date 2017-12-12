@@ -25,41 +25,39 @@ var OptionControl = function(params) {
         this._optProperties.push({ optPropertyName: optPropertyName, overrideName: overrideName, mode: mode });
     };
 
-    this.registerSimpleProperty("optionName", null);
-    this.registerSimpleProperty("enable", true);
-    this.registerOptionProperty("title", "label", 'localPush');
-    this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
+    this.registerSimpleProperty('optionName', null);
+    this.registerSimpleProperty('enable', true);
+    this.registerOptionProperty('title', 'label', 'localPush');
+    this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(['list', 'inline', 'list-inline', 'inline-list'], 'list'));
 
-    this.registerSimpleProperty("optionPart", null);
+    this.registerSimpleProperty('optionPart', null);
 
     this.setEnabled = function(value) {
-        this.setPropertyValue("enable", value);
+        this.setPropertyValue('enable', value);
     };
 
     this._override('onPropertyChanged', (baseFunction, propertyName) => {
         baseFunction.call(this, propertyName);
-        for (let i = 0; i < this._optProperties.length; i++) {
-            let overridePropertyInfo = this._optProperties[i];
+        for (let overridePropertyInfo of this._optProperties) {
             if (overridePropertyInfo.mode === 'localPush' && propertyName === overridePropertyInfo.overrideName) {
                 let option = this.getOption();
                 let properties = this.properties[overridePropertyInfo.overrideName];
-                option.setProperty(overridePropertyInfo.optPropertyName, properties.value, this.getFullKey(), this.getPropertyValue("optionPart"));
+                option.setProperty(overridePropertyInfo.optPropertyName, properties.value, this.getFullKey(), this.getPropertyValue('optionPart'));
             }
         }
     });
 
-    this._override("setOption", (baseFunction, option, valueKey) => {
+    this._override('setOption', (baseFunction, option, valueKey) => {
         baseFunction.call(this, option, valueKey);
         if (option === null)
             return;
 
-        for (let i = 0; i < this._optProperties.length; i++) {
-            let overridePropertyInfo = this._optProperties[i];
+        for (let overridePropertyInfo of this._optProperties) {
             let properties = this.properties[overridePropertyInfo.overrideName];
-            let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue("optionPart"));
+            let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue('optionPart'));
             let initialValue = optionProperties[overridePropertyInfo.optPropertyName];
             if (initialValue === undefined && overridePropertyInfo.mode === 'localPush')
-                option.setProperty(overridePropertyInfo.optPropertyName, properties.value, this.getFullKey(), this.getPropertyValue("optionPart"));
+                option.setProperty(overridePropertyInfo.optPropertyName, properties.value, this.getFullKey(), this.getPropertyValue('optionPart'));
             else {
                 //Updates any optionProperties that are data-bindings. This can only be determined when
                 //the option has been assigned (unlike simpleProperties)
@@ -74,14 +72,13 @@ var OptionControl = function(params) {
         }
     });
 
-    this._override("getPropertyValue", (baseFunction, property) => {
+    this._override('getPropertyValue', (baseFunction, property) => {
         let value = baseFunction.call(this, property);
-        for (let i = 0; i < this._optProperties.length; i++) {
-            let overridePropertyInfo = this._optProperties[i];
+        for (let overridePropertyInfo of this._optProperties) {
             if (property === overridePropertyInfo.overrideName) {
                 if (value === null) {
                     let option = this.getOption();
-                    let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue("optionPart"));
+                    let optionProperties = option.getProperties(this.getFullKey(), this.getPropertyValue('optionPart'));
                     if (optionProperties[overridePropertyInfo.optPropertyName] !== undefined)
                         value = optionProperties[overridePropertyInfo.optPropertyName];
                 }
