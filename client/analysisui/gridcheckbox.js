@@ -61,7 +61,9 @@ const GridCheckbox = function(params) {
             this.$input.prop('checked', this.getValue());
     };
 
-    this.onPropertyChanged = function(name) {
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        if (baseFunction !== null)
+            baseFunction.call(this, name);
         if (name === 'enable') {
             let enabled = this.getPropertyValue(name);
             this.$_subel.find('input').prop('disabled', enabled === false);
@@ -70,7 +72,7 @@ const GridCheckbox = function(params) {
             else
                 this.$_subel.addClass('disabled-text');
         }
-    };
+    });
 
     this._override('getValue', (baseFunction, keys) => {
         if (this.checkedValue === null)

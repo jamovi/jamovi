@@ -133,7 +133,7 @@ const Instance = Backbone.Model.extend({
                 let info = coms.Messages.OpenProgress.decode(response.payload);
                 let filePath = info.path;
                 let ext = path.extname(filePath);
-                
+
                 this.set('path', filePath);
                 this.set('title', path.basename(filePath, ext));
                 this._retrieveInfo();
@@ -503,7 +503,9 @@ const Instance = Backbone.Model.extend({
             let columnDataChanged = false;
             let columnDeleted = false;
             let columnRenamed = false;
+            let levelsRenamed = false;
             let columnRenames = [];
+            let levelRenames = [];
             let columnDeletes = [];
 
             for (let changes of event.changes) {
@@ -522,11 +524,19 @@ const Instance = Backbone.Model.extend({
                         columnRenamed = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
                     }
+                    if (changes.levelsChanged) {
+                        levelsRenamed = changes.levelNameChanges.length > 0;
+                        for (let i = 0; i < changes.levelNameChanges.length; i++)
+                            levelRenames.push({ variable: column.name, oldLabel: changes.levelNameChanges[i].oldLabel, newLabel: changes.levelNameChanges[i].newLabel });
+                    }
                 }
             }
 
             if (columnRenamed)
                 analysis.renameColumns(columnRenames);
+
+            if (levelsRenamed)
+                analysis.renameLevels(levelRenames);
 
 
             if (columnDataChanged || columnRenamed || columnDeleted) {

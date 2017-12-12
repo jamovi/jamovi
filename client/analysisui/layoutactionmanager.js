@@ -24,6 +24,16 @@ const LayoutActionManager = function(view) {
             return;
 
         this._initializingData -= 1;
+
+        //Refreshes the final values of the data bindings after the data has been updated (initialised).
+        //This is because action events are suspended during data initializati0n. They are suspended because
+        //action events are linked to *.event.js files where an 'update' event is provided after initialisation
+        //so that the ui can be updated with post initialising data. We don't want any 'onChange' events firing
+        //as data is being initialised. As a by-product, binding actions (which are yaml descriptions) don't have
+        // access to this 'update' event therefore can't refresh.
+        //Hence the executeBindingActions function is called when data initialising has ended to update their post initializing state.
+        if (this._initializingData === 0)
+            this.executeBindingActions();
     };
 
     this.initializingData = function() {
@@ -240,6 +250,7 @@ const LayoutActionManager = function(view) {
         return { startIndex: startIndex, endIndex: endIndex, bindFunction: logicFunction, sourceNames: sourceNames, inverted: inverted };
     };
 
+    this._bindingActions = {};
     this.bindingsToActions = function() {
         for (let name in this._resources) {
             let res = this._resources[name];
@@ -249,10 +260,20 @@ const LayoutActionManager = function(view) {
                     if (prop.binding !== undefined) {
                         let resolvedBindData = this._resolveBinding(prop.binding.trim(), 0);
                         let params = this.bindActionParams(res, property, resolvedBindData);
-                        this.addDirectAction(name, params);
+                        this.addDirectAction(name, params, true);
                         params.execute(this._resources);
                     }
                 }
+            }
+        }
+    };
+
+    this.executeBindingActions = function() {
+        for (let name in this._bindingActions) {
+            let list = this._bindingActions[name];
+            for (let i = 0; i < list.length; i++) {
+                let action = list[i];
+                action.execute(this._resources);
             }
         }
     };
@@ -264,12 +285,19 @@ const LayoutActionManager = function(view) {
             action.initialize();
     };
 
-    this.addDirectAction = function(name, params) {
+    this.addDirectAction = function(name, params, isBinding) {
         if (this._directActions[name] === undefined)
             this._directActions[name] = [];
 
         let action = new LayoutAction(this, params);
         this._directActions[name].push(action);
+
+        if (isBinding) {
+            if (this._bindingActions[name] === undefined)
+                this._bindingActions[name] = [];
+            this._bindingActions[name].push(action);
+        }
+
         if (this._initialised)
             action.initialize();
     };
@@ -285,6 +313,8 @@ const LayoutActionManager = function(view) {
         }
 
         delete this._directActions[name];
+        if (this._bindingActions[name] !== undefined)
+            delete this._bindingActions[name];
     };
 
     this.addResource = function(name, resource) {

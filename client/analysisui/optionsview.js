@@ -119,7 +119,7 @@ const OptionsView = function(uiModel) {
                             if (properties.elements !== undefined)
                                 list = properties.elements;
                             else
-                                throw "This option requires an 'elements' property to be considered an object.";
+                                return { }; //throw "This option requires an 'elements' property to be considered an object.";
 
                             let found = false;
                             for (let e = 0; e < list.length; e++) {
@@ -135,7 +135,7 @@ const OptionsView = function(uiModel) {
                         }
                         else if (typeof keyItem === 'number'){
                             if (properties.template === undefined)
-                                throw "This option requires a 'template' property to be considered an array.";
+                                return { }; //throw "This option requires a 'template' property to be considered an array.";
                             properties = properties.template;
                         }
                         else
@@ -163,6 +163,13 @@ const OptionsView = function(uiModel) {
                     }
 
                     return properties;
+                },
+
+                setProperty: function(propertyName, value, key, fragmentName) {
+                    if (key === undefined)
+                        key = [];
+
+                    options.setPropertyValue(this.getName(), propertyName, value, key, fragmentName);
                 },
 
                 isVirtual: isVirtual,

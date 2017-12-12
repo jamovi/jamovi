@@ -50,7 +50,14 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         },
 
         onOptionsChanged: data => {
-            this.analysis.setOptions(data);
+            this.analysis.setOptions(data.values);
+
+            for (let name in data.properties) {
+                let pData = data.properties[name];
+                for (let i = 0; i < pData.length; i++) {
+                    this.analysis.options.setProperty(name, pData[i].name, pData[i].key, pData[i].value);
+                }
+            }
         },
 
         hideOptions: data => {

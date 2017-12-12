@@ -29,6 +29,10 @@ OptionTypes.Option = function(template, value, isLeaf) {
     this._isLeaf = isLeaf;
     this._initialized = false;
 
+    this.setProperty = function(property, value) {
+        this._template[property] = value;
+    };
+
     this.getValue = function() {
         if (this._isLeaf)
             return this._value;
@@ -73,24 +77,36 @@ OptionTypes.Option = function(template, value, isLeaf) {
             for (let i = 0; i < this.children.length; i++)
                 this.children[i].renameColumn(oldName, newName);
         }
-     };
+    };
 
-     this.clearColumnUse = function(columnName) {
-         if (this._isLeaf)
-             this._onClearColumnUse(columnName);
-         else {
-             for (let i = 0; i < this.children.length; i++)
-                 this.children[i].clearColumnUse(columnName);
-         }
-     };
+    this.renameLevel = function(variable, oldLabel, newLabel, getOption) {
+        if (this._isLeaf)
+            this._onRenameLevel(variable, oldLabel, newLabel, getOption);
+        else {
+            for (let i = 0; i < this.children.length; i++)
+                this.children[i].renameLevel(variable, oldLabel, newLabel, getOption);
+        }
+    };
 
-     this._onGetUsedColumns = function() {
-         return [];
-     };
+    this.clearColumnUse = function(columnName) {
+        if (this._isLeaf)
+            this._onClearColumnUse(columnName);
+        else {
+            for (let i = 0; i < this.children.length; i++)
+                this.children[i].clearColumnUse(columnName);
+        }
+    };
 
-     this._onClearColumnUse = function(columnName) {  };
+    this._onGetUsedColumns = function() {
+        return [];
+    };
 
-     this._onRenameColumn = function(oldName, newName) {  };
+    this._onClearColumnUse = function(columnName) {  };
+
+    this._onRenameColumn = function(oldName, newName) {  };
+
+    this._onRenameLevel = function(variable, oldLevel, newLevel, getOption) {  };
+
 
     this.setValue(value);
 };
@@ -107,6 +123,22 @@ OptionTypes.number = function(template, value) {
 };
 OptionTypes.number.defaultValue = 0;
 SuperClass.create(OptionTypes.number);
+
+OptionTypes.Level = function(template, value) {
+    OptionTypes.Option.extendTo(this, template, value, true);
+
+    this._override('_onRenameLevel', (baseFunction, variable, oldLabel, newLabel, getOption) => {
+        let linkedVariable = this._template.variable;
+        if (linkedVariable.startsWith('(') && linkedVariable.endsWith(')')) {
+            let binding = linkedVariable.slice(1, -1);
+            linkedVariable = getOption(binding).getValue();
+        }
+        if (linkedVariable === variable && this._value === oldLabel)
+            this._value = newLabel;
+    });
+};
+SuperClass.create(OptionTypes.Level);
+
 
 OptionTypes.Variable = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
@@ -315,6 +347,10 @@ OptionTypes.Array = function(template, value) {
             this.children.push(OptionTypes.create(this._template.template, value[i]));
     });
 
+    this.getChild = function(index) {
+        return this.children[index];
+    };
+
     if (value !== null)
         this._createChildren(value);
 };
@@ -336,11 +372,18 @@ OptionTypes.Group = function(template, value) {
     });
 
     this._override('_createChildren', (baseFunction, value) => {
+        this._indexedChildren = { };
         for (let i = 0; i < this._template.elements.length; i++) {
             let element = this._template.elements[i];
-            this.children.push(OptionTypes.create(element, value[element.name]));
+            let child = OptionTypes.create(element, value[element.name]);
+            this.children.push(child);
+            this._indexedChildren[element.name] = child;
         }
     });
+
+    this.getChild = function(name) {
+        return this._indexedChildren[name];
+    };
 
     if (value !== null)
         this._createChildren(value);
@@ -383,8 +426,32 @@ const Options = function(def) {
         }
     };
 
-    this.getOption = function(name) {
+    this.renameLevel = function(variable, oldLabel, newLabel) {
+        for (let name in this._options) {
+            let option = this._options[name];
+            option.renameLevel(variable, oldLabel, newLabel, this.getOption);
+        }
+    };
+
+    this.getOption = (name) => {
         return this._options[name];
+    };
+
+    this.setProperty = function(name, property, key, value) {
+        let option = this._options[name];
+
+        for (let i = 0; i < key.length; i++) {
+            if ( ! option.getChild)
+                return false;
+
+            option = option.getChild(key[i]);
+            if ( ! option)
+                return false;
+        }
+
+        option.setProperty(property, value);
+
+        return true;
     };
 
     this.setValues = function(values, initializeOnly) {

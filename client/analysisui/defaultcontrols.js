@@ -15,6 +15,7 @@ const VariableLabel = require('./variablelabel');
 const TermLabel = require('./termlabel');
 const GridTargetContainer = require('./gridtargetcontrol');
 const VariablesListBox = require('./variableslistbox');
+const LevelSelector = require('./levelselector');
 
 const DefaultControls = {
 
@@ -35,6 +36,7 @@ const DefaultControls = {
     LayoutBox: ControlContainer,
     VariableLabel: VariableLabel,
     TermLabel: TermLabel,
+    LevelSelector: LevelSelector,
 
     ListItem: {//Not to be used, no longer supported
         TextBox: GridTextbox, //Not to be used, no longer supported

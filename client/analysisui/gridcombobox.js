@@ -91,7 +91,10 @@ const GridCombobox = function(params) {
             select.selectedIndex = index;
     };
 
-    this.onPropertyChanged = function(name) {
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        if (baseFunction !== null)
+            baseFunction.call(this, name);
+
         if (name === 'enable') {
             let enabled = this.getPropertyValue(name);
             this.$input.prop('disabled', enabled === false);
@@ -102,7 +105,7 @@ const GridCombobox = function(params) {
                     this.$label.addClass('disabled-text');
             }
         }
-    };
+    });
 };
 
 module.exports = GridCombobox;

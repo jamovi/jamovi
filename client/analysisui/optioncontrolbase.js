@@ -202,7 +202,7 @@ const OptionControlBase = function(params) {
     };
 
     this.getValueKey = function() {
-        let bKey =  this.getPropertyValue("valueKey");
+        let bKey =  this.getPropertyValue("valueKey").slice(0);
         let templateInfo = this.getTemplateInfo();
         if (templateInfo !== null) {
             let prevCtrl = this;

@@ -78,6 +78,14 @@ Analysis.prototype.renameColumns = function(columnRenames) {
         this._parent._notifyOptionsChanged(this);
 };
 
+Analysis.prototype.renameLevels = function(levelRenames) {
+    for (let i = 0; i < levelRenames.length; i++)
+        this.options.renameLevel(levelRenames[i].variable, levelRenames[i].oldLabel, levelRenames[i].newLabel);
+    this.revision++;
+    if (this.deleted === false && this._parent !== null)
+        this._parent._notifyOptionsChanged(this);
+};
+
 Analysis.prototype.clearColumnUse = function(columnNames) {
     for (let i = 0; i < columnNames.length; i++)
         this.options.clearColumnUse(columnNames[i]);
