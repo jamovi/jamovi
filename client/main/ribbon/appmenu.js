@@ -159,7 +159,10 @@ const AppMenuButton = Backbone.View.extend({
 
         let nfm = nfs.match(/(sf|dp):([0-9]+)/);
         let pfm = pfs.match(/dp:([0-9]+)/);
-        let fmt = { t: nfm[1], n: nfm[2], p: pfm[1] };
+        let fmt = {
+            t: nfm[1],
+            n: parseInt(nfm[2]),
+            p: parseInt(pfm[1]) };
 
         let value = JSON.stringify(fmt);
         this.model.settings().setSetting('format', value);
