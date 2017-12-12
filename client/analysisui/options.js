@@ -26,12 +26,22 @@ const keyedQueue = function() {
     this.push = function(key, obj) {
         this._hasEvents = true;
         let oldData = this.map[key];
-        if (_.isUndefined(oldData) || obj.type === 'change' && this.getKeyLevel(obj.keys) === 0) {
-            this.map[key] = { option: obj.option, events: [ obj ] };
+
+        if (oldData === undefined) {
+            oldData = { events: [ ], properties: [ ] };
+            this.map[key] = oldData;
+        }
+
+        oldData.option = obj.option;
+        if (obj.type === 'change' && this.getKeyLevel(obj.keys) === 0) {
+            oldData.events = [ obj ];
             return;
         }
 
-        this.processEvent(obj, oldData.events);
+        if (obj.type === 'property')
+            this.processProperty(obj, oldData.properties);
+        else
+            this.processEvent(obj, oldData.events);
     };
 
     this.compareKeys = function(newKey, k2) {
@@ -54,9 +64,32 @@ const keyedQueue = function() {
         }
     };
 
+    this.compareArrays = function(a1, a2) {
+        if (a1.length !== a2.length)
+            return false;
+
+        for (let i = 0; i < a1.length; i++) {
+            if (a1[i] !== a2[i])
+                return false;
+        }
+
+        return true;
+    };
+
+    this.processProperty = function(obj, oldData) {
+        for (let i = 0; i < oldData.length; i++) {
+            if (this.compareArrays(obj.keys, oldData[i].keys)) {
+                oldData[i] = obj;
+                return;
+            }
+        }
+
+        oldData.push(obj);
+    };
+
     this.processEvent = function(obj, oldData, startIndex) {
 
-        if (_.isUndefined(startIndex))
+        if (startIndex === undefined)
             startIndex = oldData.length - 1;
 
         if (startIndex === -1) {
@@ -186,9 +219,26 @@ const Options = function(def) {
         eOpt.force = eventParams.force;
 
         if (option.setValue(value, keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, value, keys, "change");
+            this.onValueChanged(option, value, keys, 'change');
 
         return true;
+    };
+
+    this.setPropertyValue = function(name, propertyName, value, key, fragmentName) {
+        if (propertyName === 'value' && ! fragmentName) {
+            this.setOptionValue(name, value, key);
+            return;
+        }
+
+        let option = null;
+        if (name._value !== undefined && name._initialized !== undefined)
+            option = name;
+        else
+            option = this.getOption(name);
+
+        key.push(propertyName);
+
+        this.onValueChanged(option, value, key, 'property');
     };
 
     this.insertOptionValue = function(name, value, keys, eventParams) {
@@ -202,11 +252,11 @@ const Options = function(def) {
         else
             option = this.getOption(name);
 
-        let eOpt = Opt.getDefaultEventParams("inserted");
+        let eOpt = Opt.getDefaultEventParams('inserted');
         eOpt.force = eventParams.force;
 
         if (option.insertValueAt(value, keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, value, keys, "insert");
+            this.onValueChanged(option, value, keys, 'insert');
     };
 
     this.removeOptionValue = function(name, keys, eventParams) {
@@ -220,11 +270,11 @@ const Options = function(def) {
         else
             option = this.getOption(name);
 
-        let eOpt = Opt.getDefaultEventParams("removed");
+        let eOpt = Opt.getDefaultEventParams('removed');
         eOpt.force = eventParams.force;
 
         if (option.removeAt(keys, eOpt) && eventParams.silent === false)
-            this.onValueChanged(option, null, keys, "remove");
+            this.onValueChanged(option, null, keys, 'remove');
     };
 
     this.onValueChanged = function(option, value, keys, type) {
@@ -238,8 +288,8 @@ const Options = function(def) {
     this.fireQueuedEvents = function() {
 
         if (this._serverQueuedEvents.hasEvents()) {
-            this.trigger("options.valuesForServer", this._serverQueuedEvents);
-            this._serverQueuedEvents = new keyedQueue();
+            this.trigger('options.valuesForServer', this._serverQueuedEvents);
+            this._serverQueuedEvents = new keyedQueue(); //a new queue is made so that the old queue can be sent without being modified.
         }
     };
 

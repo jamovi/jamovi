@@ -96,7 +96,7 @@
 }
 
 .silky-option-list.multi-item:not(.silky-target-list) > .silky-layout-cell:not(.silky-option-list-filler).selected {
-    background-color: rgba(181, 202, 239, 0.36);
+    background-color: transparent;
     border-left: 4px solid rgb(46,138,199);
 }
 

@@ -88,7 +88,8 @@ const OptionListControl = function(params) {
         return false;
     };
 
-    this.onPropertyChanged = function(name) {
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        baseFunction.call(this, name);
         if (name === "maxItemCount") {
             this.maxItemCount = this.getPropertyValue('maxItemCount');
             this.isSingleItem = this.maxItemCount === 1;
@@ -99,7 +100,7 @@ const OptionListControl = function(params) {
             else
                 this.$el.addClass('multi-item');
         }
-    };
+    });
 
     this.initialize = function() {
 
@@ -871,7 +872,7 @@ const OptionListControl = function(params) {
             for (let c = 0; c < rowCells.length; c++) {
                 let cell = rowCells[c];
                 if (cell.item)
-                    callback(cell.item, this.displayRowToRowIndex(r));
+                    callback(cell.item, this.displayRowToRowIndex(r), c);
             }
         }
     };

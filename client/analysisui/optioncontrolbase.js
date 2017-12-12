@@ -30,7 +30,7 @@ const OptionControlBase = function(params) {
 
         let event = { value: value, key: key, insert: insert, cancel: false };
 
-        this.trigger("changing", event);
+        this.trigger('changing', event);
 
         event.key = this.getFullKey(key);
 
@@ -51,9 +51,9 @@ const OptionControlBase = function(params) {
         this.setSourceValue(value, key, insert);
     };
 
-    this.registerComplexProperty("value", this.getValue, this.setValue, "value_changed");
-    this.registerSimpleProperty("name", null);
-    this.registerSimpleProperty("isVirtual", false);
+    this.registerComplexProperty('value', this.getValue, this.setValue, 'value_changed');
+    this.registerSimpleProperty('name', null);
+    this.registerSimpleProperty('isVirtual', false);
 
     this._override('onPropertyChanged', (baseFunction, property) => {
         if (this.isDisposed)
@@ -62,7 +62,7 @@ const OptionControlBase = function(params) {
         if (property === 'valueKey' || property === 'itemKey') {
             if (this.onOptionValueChanged)
                 this.onOptionValueChanged([], null);
-            this.firePropertyChangedEvent("value");
+            this.firePropertyChangedEvent('value');
         }
 
         if (baseFunction !== null)
@@ -73,7 +73,7 @@ const OptionControlBase = function(params) {
         if (this.isDisposed === false && this._isKeyAffecting(key)) {
             if (this.onOptionValueChanged)
                 this.onOptionValueChanged(this.getRelativeKey(key), data);
-            this.firePropertyChangedEvent("value");
+            this.firePropertyChangedEvent('value');
         }
     };
 
@@ -83,7 +83,7 @@ const OptionControlBase = function(params) {
             if (relKey.length > 0) {
                 if (this.onOptionValueInserted)
                     this.onOptionValueInserted(relKey, data);
-                this.firePropertyChangedEvent("value");
+                this.firePropertyChangedEvent('value');
             }
         }
     };
@@ -94,16 +94,16 @@ const OptionControlBase = function(params) {
             if (relKey.length > 0) {
                 if (this.onOptionValueRemoved)
                     this.onOptionValueRemoved(relKey, data);
-                this.firePropertyChangedEvent("value");
+                this.firePropertyChangedEvent('value');
             }
         }
     };
 
     this.setOption = function(option, valueKey) {
         if (this.option !== null) {
-            this.option.source.off("valuechanged", this._valueChanged, this);
-            this.option.source.off("valueinserted", this._valueInserted, this);
-            this.option.source.off("valueremoved", this._valueRemoved, this);
+            this.option.source.off('valuechanged', this._valueChanged, this);
+            this.option.source.off('valueinserted', this._valueInserted, this);
+            this.option.source.off('valueremoved', this._valueRemoved, this);
         }
 
         if (valueKey !== null && valueKey !== undefined)
@@ -112,9 +112,9 @@ const OptionControlBase = function(params) {
         this.option = option;
 
         if (this.option !== null) {
-            this.option.source.on("valuechanged", this._valueChanged, this);
-            this.option.source.on("valueinserted", this._valueInserted, this);
-            this.option.source.on("valueremoved", this._valueRemoved, this);
+            this.option.source.on('valuechanged', this._valueChanged, this);
+            this.option.source.on('valueinserted', this._valueInserted, this);
+            this.option.source.on('valueremoved', this._valueRemoved, this);
         }
 
         if (this.onOptionSet)
@@ -125,7 +125,7 @@ const OptionControlBase = function(params) {
     };
 
 
-    this._override("onDisposed", (baseFunction) => {
+    this._override('onDisposed', (baseFunction) => {
         if (baseFunction !== null)
             baseFunction.call(this);
         if (this.$el)
@@ -145,7 +145,7 @@ const OptionControlBase = function(params) {
         throw 'This control has no connection to an option';
     };
 
-    this.registerSimpleProperty("valueKey", []);
+    this.registerSimpleProperty('valueKey', []);
 
     this._isKeyAffecting = function(fullkey) {
         let needsUpdate = fullkey.length === 0;
@@ -202,18 +202,18 @@ const OptionControlBase = function(params) {
     };
 
     this.getValueKey = function() {
-        let bKey =  this.getPropertyValue("valueKey");
+        let bKey =  this.getPropertyValue('valueKey').slice(0);
         let templateInfo = this.getTemplateInfo();
         if (templateInfo !== null) {
             let prevCtrl = this;
-            let parentCtrl = this.getPropertyValue("_parentControl");
+            let parentCtrl = this.getPropertyValue('_parentControl');
             while (parentCtrl !== null) {
-                if (parentCtrl.getValueKey && prevCtrl.hasProperty("itemKey")) {
-                    bKey = parentCtrl.getValueKey().concat(prevCtrl.getPropertyValue("itemKey")).concat(bKey);
+                if (parentCtrl.getValueKey && prevCtrl.hasProperty('itemKey')) {
+                    bKey = parentCtrl.getValueKey().concat(prevCtrl.getPropertyValue('itemKey')).concat(bKey);
                     break;
                 }
                 prevCtrl = parentCtrl;
-                parentCtrl = parentCtrl.getPropertyValue("_parentControl");
+                parentCtrl = parentCtrl.getPropertyValue('_parentControl');
             }
         }
         return bKey;

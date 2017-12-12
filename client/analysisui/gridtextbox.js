@@ -156,7 +156,8 @@ const GridTextbox = function(params) {
             this.$input.val(this.getValueAsString());
     };
 
-    this.onPropertyChanged = function(name) {
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        baseFunction.call(this, name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
             this.$input.prop('disabled', disabled);
@@ -173,7 +174,7 @@ const GridTextbox = function(params) {
                     this.$suffix.removeClass('disabled-text');
             }
         }
-    };
+    });
 };
 
 module.exports = GridTextbox;

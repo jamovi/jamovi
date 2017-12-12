@@ -27,7 +27,7 @@ var PropertySupplier = function(properties) {
         if (_.isUndefined(this.properties[name]) === false && this.properties[name].isDefined)
             return;
 
-        let dataBound = this.isValueDataBound(initialValue);
+
 
         let properties = {
             trigger: name + "_changed",
@@ -44,6 +44,7 @@ var PropertySupplier = function(properties) {
             value: initialValue
         };
 
+        let dataBound = this.isValueDataBound(initialValue);
         if (dataBound) {
             properties.binding = initialValue;
             properties.value = null;

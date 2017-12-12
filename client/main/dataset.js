@@ -159,6 +159,7 @@ const DataSetModel = Backbone.Model.extend({
                         columnTypeChanged: false,
                         measureTypeChanged: true,
                         levelsChanged: true,
+                        levelNameChanges: [],
                         nameChanged: false,
                         dataChanged: true,
                         created: false,
@@ -429,6 +430,8 @@ const DataSetModel = Backbone.Model.extend({
 
                     let newName = columnPB.name;
 
+                    let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
+
                     let created;
                     let oldName;
                     let oldColumnType;
@@ -458,6 +461,7 @@ const DataSetModel = Backbone.Model.extend({
                         columnTypeChanged: column.columnType !== oldColumnType,
                         measureTypeChanged: true,
                         levelsChanged: true,
+                        levelNameChanges: levelNameChanges,
                         nameChanged: nameChanged,
                         dataChanged: true,
                         created: created,
@@ -480,6 +484,19 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
+    },
+    _determineLevelLabelChanges(column, columnPB) {
+        let levelNameChanges = [];
+        let levelLabels = {};
+        for (let li = 0; li < column.levels.length; li++)
+            levelLabels[column.levels[li].importValue] = column.levels[li].label;
+
+        for (let li = 0; li < columnPB.levels.length; li++) {
+            let oldLabel = levelLabels[columnPB.levels[li].importValue];
+            if (oldLabel !== undefined && oldLabel !== columnPB.levels[li].label)
+                levelNameChanges.push({oldLabel: oldLabel, newLabel: columnPB.levels[li].label});
+        }
+        return levelNameChanges;
     },
     _readColumnPB(column, columnPB) {
         column.id = columnPB.id;
@@ -884,6 +901,7 @@ const DataSetViewModel = DataSetModel.extend({
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
                     let newName = columnPB.name;
+                    let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
 
                     let created = false;
                     let oldName;
@@ -912,6 +930,7 @@ const DataSetViewModel = DataSetModel.extend({
                         columnTypeChanged: oldColumnType !== column.columnType,
                         measureTypeChanged: true,
                         levelsChanged: true,
+                        levelNameChanges: levelNameChanges,
                         nameChanged: oldName !== newName,
                         dataChanged: true,
                         created: created,

@@ -49,7 +49,10 @@ const LayoutGroupView = function(params) {
             this.$_subel.prepend(this.$icons);
     }
 
-    this.onPropertyChanged = function(name) {
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        if (baseFunction !== null)
+            baseFunction.call(this, name);
+            
         if (isOptionControl === false) {
             if (name === 'label')
                 this.setLabel(this.getPropertyValue(name));
@@ -63,7 +66,7 @@ const LayoutGroupView = function(params) {
                     this.$_subel.removeClass('disabled-text');
             }
         }
-    };
+    });
 
     if (isOptionControl === false) {
         this.setValue = function(value) {

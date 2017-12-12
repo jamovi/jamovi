@@ -210,10 +210,20 @@ function setOptionsValues(data) {
 
 function onValuesForServerChanges(e) {
 
-    var compiledList = {};
+    var compiledList = { values: { }, properties: { } };
 
     _.each(e.map, function(value, key, list) {
-        compiledList[key] = value.option.getValue();
+        if (value.events.length > 0)
+            compiledList.values[key] = value.option.getValue();
+
+        if (value.properties.length > 0) {
+            let properties = [ ];
+            for (let i = 0; i < value.properties.length; i++) {
+                let pData = value.properties[i];
+                properties.push( { name: pData.keys[pData.keys.length - 1], key: pData.keys.slice(0, pData.keys.length - 1), value: pData.value[0] } );
+            }
+            compiledList.properties[key] = properties;
+        }
     });
 
     parentFrame.send("onOptionsChanged", compiledList);
