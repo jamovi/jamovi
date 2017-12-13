@@ -8,6 +8,8 @@ const FormatDef = require('./formatdef');
 const Opt = function(initialValue, params) {
 
     this.params = params;
+    this._paramsOverride = { };
+    this._overrideCount = 0;
     this._value = initialValue;
     this._initialized = false;
 
@@ -43,18 +45,18 @@ const Opt = function(initialValue, params) {
         return value.length;
     };
 
-    this.getValue = function(keys) {
-        if (keys === undefined)
-            return this._value;
+    this._getObjectElement = function(obj, key) {
+        if (key === undefined)
+            return obj;
 
-        if (Array.isArray(keys)) {
-            if (keys.length === 0)
-                return this._value;
+        if (Array.isArray(key)) {
+            if (key.length === 0)
+                return obj;
             else {
                 let value = null;
-                let a = this._value;
-                for (let i = 0; i < keys.length; i++) {
-                    let index = keys[i];
+                let a = obj;
+                for (let i = 0; i < key.length; i++) {
+                    let index = key[i];
                     if (a === null)
                         return;
                     if (typeof a === 'object')
@@ -62,7 +64,7 @@ const Opt = function(initialValue, params) {
                     else if (index !== 0)
                         return;
 
-                    if (i === keys.length - 1 || a === undefined) {
+                    if (i === key.length - 1 || a === undefined) {
                         value = a;
                         break;
                     }
@@ -72,19 +74,24 @@ const Opt = function(initialValue, params) {
             }
         }
         else
-            return this._value[keys];
+            return obj[key];
     };
 
-    this.getFormattedValue = function(keys, format) {
-        let obj = this.getValue(keys);
+
+    this.getValue = function(key) {
+        return this._getObjectElement(this._value, key);
+    };
+
+    this.getFormattedValue = function(key, format) {
+        let obj = this.getValue(key);
         return FormatDef.constructor(obj, format);
     };
 
-    this.isValidKey = function(key) {
+    this._isValidKey = function(obj, key) {
         if (key.length === 0)
             return true;
 
-        let a = this._value;
+        let a = obj;
         if (a === null || a === undefined || typeof a !== "object")
             return false;
 
@@ -94,6 +101,30 @@ const Opt = function(initialValue, params) {
                 return false;
         }
         return true;
+    };
+
+    this.isValidKey = function(key) {
+        return this._isValidKey(this._value, key);
+    };
+
+    this.setProperty = function(value, key) {
+        let index = key.join('-');
+        if (this._getObjectElement(this.params, key) === value) {
+            delete this._paramsOverride[index];
+            this._overrideCount -= 1;
+        }
+        else {
+            if (this._paramsOverride[index] === undefined)
+                this._overrideCount += 1;
+            this._paramsOverride[index] = { key: key, value: value };
+        }
+    };
+
+    this.getOverriddenProperties = function() {
+        if (this._overrideCount === 0)
+            return null;
+
+        return this._paramsOverride;
     };
 
     this.setValue = function(value, keys, eventParams) {

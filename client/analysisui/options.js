@@ -238,6 +238,8 @@ const Options = function(def) {
 
         key.push(propertyName);
 
+        option.setProperty(value, key);
+
         this.onValueChanged(option, value, key, 'property');
     };
 
