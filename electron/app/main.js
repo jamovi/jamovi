@@ -205,7 +205,7 @@ let spawn = new Promise((resolve, reject) => {
             }
         }
 
-        let cmdRegex = /^request: ([a-z-]+) \(([0-9]+)\) ?(.*)\n?$/
+        let cmdRegex = /^request: ([a-z-]+) \(([0-9]+)\) ?(.*)\r?\n?$/
         let match = cmdRegex.exec(chunk)
         if (match !== null) {
             let id = match[2];
