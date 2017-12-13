@@ -408,7 +408,7 @@ void EngineR::initR()
     _rInside->parseEvalQNT("env <- knitr::knit_global();env$CairoPNG <- grDevices::png\n");
 
     // change the interaction component separator to an asterisk
-    _rInside->parseEvalQNT("sep <- ' \u273B '; base::Encoding(sep) <- 'UTF-8'; options(jmvTermSep=sep); rm(list='sep')\n");
+    _rInside->parseEvalQNT("sep <- rawToChar(as.raw(c(0x20, 0xE2, 0x9C, 0xBB, 0x20))); base::Encoding(sep) <- 'UTF-8'; options(jmvTermSep=sep); rm(list='sep')\n");
 
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
