@@ -26,11 +26,23 @@ const OptionTypes = {
 
 OptionTypes.Option = function(template, value, isLeaf) {
     this._template = template;
+    this._templateOverride = { };
     this._isLeaf = isLeaf;
     this._initialized = false;
 
     this.setProperty = function(property, value) {
-        this._template[property] = value;
+        if (value === this._template[property])
+            delete this._templateOverride[property];
+        else
+            this._templateOverride[property] = value;
+    };
+
+    this.getProperty = function(property) {
+        let value = this._templateOverride[property];
+        if (value === undefined)
+            value = this._template[property];
+
+        return value;
     };
 
     this.getValue = function() {
@@ -128,7 +140,7 @@ OptionTypes.Level = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
 
     this._override('_onRenameLevel', (baseFunction, variable, oldLabel, newLabel, getOption) => {
-        let linkedVariable = this._template.variable;
+        let linkedVariable = this.getProperty('variable');
         if (linkedVariable.startsWith('(') && linkedVariable.endsWith(')')) {
             let binding = linkedVariable.slice(1, -1);
             linkedVariable = getOption(binding).getValue();
