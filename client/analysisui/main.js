@@ -212,7 +212,8 @@ function onValuesForServerChanges(e) {
 
     var compiledList = { values: { }, properties: { } };
 
-    _.each(e.map, function(value, key, list) {
+    for (let key in e.map) {
+        let value = e.map[key];
         if (value.events.length > 0) {
             compiledList.values[key] = value.option.getValue();
             let props = value.option.getOverriddenProperties();
@@ -231,8 +232,8 @@ function onValuesForServerChanges(e) {
                 properties.push( { name: pData.keys[pData.keys.length - 1], key: pData.keys.slice(0, pData.keys.length - 1), value: pData.value[0] } );
             compiledList.properties[key] = properties;
         }
-    });
-    
+    }
+
     parentFrame.send("onOptionsChanged", compiledList);
 }
 
