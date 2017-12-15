@@ -66,6 +66,7 @@ const ControlContainer = function(params) {
         let currentStyle = this.getPropertyValue("style");
         let controls = this.getPropertyValue("controls");
         let _nextCell = { row: 0, column: 0 };
+        let _lastCell = null;
         if (this.gridEntryPosition)
             _nextCell = { row: this.gridEntryPosition.row, column: this.gridEntryPosition.column };
         else
@@ -76,6 +77,7 @@ const ControlContainer = function(params) {
 
             let cell = ctrlDef.cell;
             if (cell !== undefined) {
+                _lastCell = { row:_nextCell.row, column: _nextCell.column };
                 _nextCell.row = cell.row;
                 _nextCell.column = cell.column;
             }
@@ -88,6 +90,14 @@ const ControlContainer = function(params) {
 
             let cr2 = deepRenderToGrid(ctrl, context, this, _nextCell.row, _nextCell.column);
             this.controls.push(ctrl);
+
+            if (cell !== undefined) {
+                if (_lastCell.row < _nextCell.row + cr2.height)
+                    _lastCell.row = _nextCell.row;
+                if (_lastCell.column < _nextCell.column + cr2.width)
+                    _lastCell.column = _nextCell.column;
+                _nextCell = _lastCell;
+            }
 
             if (currentStyle.startsWith('inline')) {
                 _nextCell.row = this.gridEntryPosition.row;
