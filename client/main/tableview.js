@@ -499,7 +499,7 @@ const TableView = SilkyView.extend({
         let element = document.elementFromPoint(event.clientX, event.clientY);
         let $element = $(element);
 
-        let $header = $element.closest('.jmv-column-header');
+        let $header = $element.closest('.jmv-column-header:not(.select-all)');
         if ($header.length > 0) {
             let colNo = $header.data('index');
             this._endEditing().then(() => {
@@ -803,7 +803,7 @@ const TableView = SilkyView.extend({
             }
             if (value)
                 this._modifyingCellContents = true;
-                
+
             this.$selection.val(value);
         }
 
