@@ -487,14 +487,18 @@ const DataSetModel = Backbone.Model.extend({
     },
     _determineLevelLabelChanges(column, columnPB) {
         let levelNameChanges = [];
-        let levelLabels = {};
-        for (let li = 0; li < column.levels.length; li++)
-            levelLabels[column.levels[li].importValue] = column.levels[li].label;
+        if (column && column.levels && Array.isArray(column.levels)) {
+            let levelLabels = {};
+            for (let li = 0; li < column.levels.length; li++)
+                levelLabels[column.levels[li].importValue] = column.levels[li].label;
 
-        for (let li = 0; li < columnPB.levels.length; li++) {
-            let oldLabel = levelLabels[columnPB.levels[li].importValue];
-            if (oldLabel !== undefined && oldLabel !== columnPB.levels[li].label)
-                levelNameChanges.push({oldLabel: oldLabel, newLabel: columnPB.levels[li].label});
+            if (columnPB && columnPB.levels && Array.isArray(columnPB.levels)) {
+                for (let li = 0; li < columnPB.levels.length; li++) {
+                    let oldLabel = levelLabels[columnPB.levels[li].importValue];
+                    if (oldLabel !== undefined && oldLabel !== columnPB.levels[li].label)
+                        levelNameChanges.push({oldLabel: oldLabel, newLabel: columnPB.levels[li].label});
+                }
+            }
         }
         return levelNameChanges;
     },
