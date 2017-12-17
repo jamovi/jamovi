@@ -71,7 +71,7 @@ const LayoutGrid = function() {
             // remove divs
             outer.parentNode.removeChild(outer);
 
-            LayoutGrid.prototype._scrollbarWidth = widthNoScroll - widthWithScroll;
+            LayoutGrid.prototype._scrollbarWidth = Math.round(widthNoScroll - widthWithScroll);
         }
         return LayoutGrid.prototype._scrollbarWidth;
     };
@@ -758,13 +758,13 @@ const LayoutGrid = function() {
             let left = 0;
             let leftCell = null;
             let topCells = [];
-            if (_.isUndefined(this._gridRowData[r]))
+            if (this._gridRowData[r] === undefined)
                 this._gridRowData[r] = { top: top, height: 0 };
             let rowData = this._gridRowData[r];
             let firstCell = true;
             for (let c = 0; c < this._columnCount; c++) {
 
-                if (_.isUndefined(this._gridColumnData[c]))
+                if (this._gridColumnData[c] === undefined)
                     this._gridColumnData[c] = { left: 0, width: 0, tight: false };
 
                 let cell = this.getCell(c, r);

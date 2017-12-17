@@ -253,6 +253,7 @@ const LayoutCell = function(parent) {
     };
 
     this.adjustCellLeft = function(left) {
+        left = Math.round(left);
         if (this._left !== left) {
             this._left = left;
             this._leftAdjusted = true;
@@ -260,6 +261,7 @@ const LayoutCell = function(parent) {
     };
 
     this.adjustCellTop = function(top) {
+        top = Math.round(top);
         if (this._top !== top) {
             this._top = top;
             this._topAdjusted = true;
@@ -267,6 +269,7 @@ const LayoutCell = function(parent) {
     };
 
     this.adjustCellWidth = function(width) {
+        width = Math.round(width);
         if (this._width !== width) {
             this._width = width;
             if (this.maximumWidth > -1)
@@ -298,6 +301,7 @@ const LayoutCell = function(parent) {
     };
 
     this.adjustCellHeight = function(height) {
+        height = Math.round(height);
         if (this._height !== height) {
             this._height = height;
             this._heightAdjusted = true;
@@ -355,6 +359,11 @@ const LayoutCell = function(parent) {
                 width -=  parseFloat(margins["margin-right"]);
         }
 
+        if (left !== null)
+            left = Math.round(left);
+        if (width !== null)
+            width = Math.round(width);
+
         if (left !== null && width !== null)
             this.$content.css( { "left": left, "width": width });
         else if (left !== null)
@@ -403,6 +412,11 @@ const LayoutCell = function(parent) {
                 height -= parseFloat(margins["margin-bottom"]);
         }
 
+        if (top !== null)
+            top = Math.round(top);
+        if (height !== null)
+            height = Math.round(height);
+
         if (top !== null && height !== null)
             this.$content.css( { "top": top, "height": height });
         else if (top !== null)
@@ -413,14 +427,14 @@ const LayoutCell = function(parent) {
 
     this.actualWidth = function() {
         if (this._width === -1)
-            this._width = this.$el[0].getBoundingClientRect().width;
+            this._width = Math.round(this.$el[0].getBoundingClientRect().width);
 
         return this._width;
     };
 
     this.actualHeight = function() {
         if (this._height === -1)
-            this._height = this.$el[0].getBoundingClientRect().height;
+            this._height = Math.round(this.$el[0].getBoundingClientRect().height);
 
         return this._height;
     };
