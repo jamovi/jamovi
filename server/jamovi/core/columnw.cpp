@@ -172,6 +172,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     size_t allocated;
     char *chars = _mm->allocate<char>(length, &allocated);
     std::memcpy(chars, label, length);
+    chars = _mm->base(chars);
 
     if (importValue == NULL)
         importValue = label;
@@ -179,15 +180,16 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     size_t importAllocated;
     char *importChars = _mm->allocate<char>(length, &importAllocated);
     std::memcpy(importChars, importValue, length);
+    importChars = _mm->base(importChars);
 
     s = struc();
     Level &l = _mm->resolve(s->levels)[s->levelsUsed];
 
     l.value = value;
     l.capacity = allocated;
-    l.label = _mm->base(chars);
+    l.label = chars;
     l.importCapacity = importAllocated;
-    l.importValue = _mm->base(importChars);
+    l.importValue = importChars;
     l.count = 0;
 
     s->levelsUsed++;
