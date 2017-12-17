@@ -11,6 +11,7 @@ const LevelSelector = function(params) {
     RequestDataSupport.extendTo(this);
 
     this.registerSimpleProperty('format', FormatDef.string);
+    this.registerSimpleProperty('defaultLevelIndex', 0);
     this.registerOptionProperty('variable');
 
     this.$icon = null;
@@ -19,17 +20,6 @@ const LevelSelector = function(params) {
 
     this.levels = [];
     this.enabled = true;
-
-    this._override('onDataChanged', (baseFunction, data) => {
-        if (baseFunction !== null)
-            baseFunction.call(this, data);
-
-        if (data.dataType !== 'columns')
-            return;
-
-        if (data.dataInfo.measureTypeChanged || data.dataInfo.levelsChanged || data.dataInfo.countChanged)
-            this._updateList();
-    });
 
     this.onRenderToGrid = function(grid, row, column) {
 
@@ -50,7 +40,7 @@ const LevelSelector = function(params) {
         t += '</select>';
 
         this.$input = $(t);
-        this._updateList();
+        this.update();
         this.$input.change((event) => {
             let value = this.$input.val();
             this.setValue(value);
@@ -64,7 +54,7 @@ const LevelSelector = function(params) {
         return { height: 1, width: columnUsed };
     };
 
-    this._updateList = function() {
+    this.update = function() {
         let variable = this.getPropertyValue('variable');
         let promise = this.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
         promise.then(rData => {
@@ -106,6 +96,12 @@ const LevelSelector = function(params) {
             this.$input.empty();
             this.$input.html(html);
             this.$input[0].selectedIndex = selIndex;
+            if (selIndex === -1 && this.levels.length > 0) {
+                let defaultIndex = this.getPropertyValue('defaultLevelIndex');
+                if (defaultIndex >= this.levels.length)
+                    defaultIndex = this.levels.length - 1;
+                this.setValue(this.levels[defaultIndex].label);
+            }
         });
     };
 
@@ -113,7 +109,7 @@ const LevelSelector = function(params) {
         baseFunction.call(this, name);
 
         if (name === 'variable') {
-            this._updateList();
+            this.update();
         }
         else if (name === 'enable') {
             this.enabled = this.getPropertyValue(name);

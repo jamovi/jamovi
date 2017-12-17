@@ -356,6 +356,12 @@ const OptionsView = function(uiModel) {
 
         this._initializingData -= 1;
         this.model.actionManager.endInitializingData();
+
+        for (let ctrl of this._allCtrls) {
+            if (ctrl.update)
+                ctrl.update();
+        }
+
         this.trigger("ready");
 
         return true;
