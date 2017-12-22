@@ -12,6 +12,10 @@
     margin-left: 4px ;
 }
 
+.rma-delete-button:hover {
+    color: #c15050;
+}
+
 .silky-option-listitem, .rma-factor-label {
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
     font-size: inherit;

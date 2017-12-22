@@ -100,6 +100,13 @@ const LayoutGrid = function() {
     };
 
     this._setInvalidationFlag = function(deep) {
+
+        if (this._layoutValid) {
+            this._ready = new Promise((resolve, reject) => {
+                this._readyResolved = resolve;
+            });
+        }
+
         this._layoutValid = false;
         if (deep) {
             for (let j = 0; j < this._layouts.length; j++) {
@@ -229,6 +236,11 @@ const LayoutGrid = function() {
 
 
         this._layoutValid = true;
+
+        window.setTimeout(() => {
+            if (this._layoutValid)
+                this._readyResolved();
+        }, 0);
 
         this.trigger('layoutgrid.validated');
     };
@@ -822,18 +834,35 @@ const LayoutGrid = function() {
         }
     };
 
+    this._ready = new Promise((resolve, reject) => {
+        this._readyResolved = resolve;
+    });
+
+    this._readyResolved = null;
+    this.ready = function() {
+        return this._ready;
+    };
+
+    this._manipulating = 0;
     this.beginCellManipulation = function() {
 
-            for (let i = 0; i < this._cells.length; i++) {
-                let cell = this._cells[i];
-                if (cell.isVirtual)
-                    continue;
+        if (this._manipulating++ > 0)
+            return;
 
-                cell.beginManipulation();
-            }
+        for (let i = 0; i < this._cells.length; i++) {
+            let cell = this._cells[i];
+            if (cell.isVirtual)
+                continue;
+
+            cell.beginManipulation();
+        }
     };
 
     this.endCellManipulation = function(animate) {
+
+        this._manipulating -= 1;
+        if (this._manipulating > 0)
+            return;
 
         for (let i = 0; i < this._cells.length; i++) {
             let cell = this._cells[i];

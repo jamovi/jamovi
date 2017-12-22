@@ -492,7 +492,20 @@ const LayoutCell = function(parent) {
         if (this._manipulating++ > 0)
             return;
 
+        this._ready = new Promise((resolve, reject) => {
+            this._readyResolved = resolve;
+        });
+
         this.cssProperties = null;
+    };
+
+    this._ready = new Promise((resolve, reject) => {
+        this._readyResolved = resolve;
+    });
+
+    this._readyResolved = null;
+    this.ready = function() {
+        return this._ready;
     };
 
     this.checkForHeightDiscrepancy = function() {
@@ -552,6 +565,11 @@ const LayoutCell = function(parent) {
 
         if (this._heightAdjusted)
             this.updateContentVerticalAlignment(this._height);
+
+        window.setTimeout(() => {
+            if (this._manipulating === 0)
+                this._readyResolved();
+        }, 0);
 
         this._initialized = true;
 

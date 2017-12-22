@@ -32,10 +32,19 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         }
 
         this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" value="' + label + '">');
-        this.$label.focus(function() { $(this).select(); } );
+        let blurCall = event => {
+            if (event.target !== this.$label[0])
+                this.$label.blur();
+        };
+        this.$label.blur(() => { $(document).off('mousedown', blurCall); });
+        this.$label.focus(() => {
+            setTimeout(() => { $(document).on('mousedown', blurCall); }, 0);
+            this.$label.select();
+        });
         this.$label.keydown((event) => {
             let keypressed = event.keyCode || event.which;
             if (keypressed == 13) {
+                this.enterPressed = -1;
                 this.labelChange(this.$label);
                 this.$label.blur();
             }
@@ -51,6 +60,8 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         if (this.isFirst === false)
             cell.ignoreContentMargin_top = true;
         cell.ignoreContentMargin_bottom = true;
+
+        this.$label.data("index", index);
 
         if (this.isFirst || isEmpty)
             this.$closeButton.css("visibility", "hidden");
@@ -135,14 +146,16 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         }
         else {
             $t = $('<input class="silky-option-listitem" type="text" value="' + text + '">');
-            $t.focus(function() { $(this).select(); } );
-            $t.keydown((event) => {
-                let keypressed = event.keyCode || event.which;
-                if (keypressed == 13) {
-                    this.onChange($t);
+            let blurCall = event => {
+                if (event.target !== $t[0])
                     $t.blur();
-                }
+            };
+            $t.blur(() => { $(document).off('mousedown', blurCall); });
+            $t.focus(() => {
+                setTimeout(() => { $(document).on('mousedown', blurCall); }, 0);
+                $t.select();
             });
+
             this.listenForChange($t);
             this.$items[index] = $t;
 
@@ -158,6 +171,21 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
 
             cell = this.addCell(1, index + 1, false, $levelButton);
             cell.vAlign = "center";
+
+            $t.keydown((event) => {
+                let keypressed = event.keyCode || event.which;
+                if (keypressed == 13) {
+                    this.enterPressed = index;
+                    this.onChange($t);
+                    $t.blur();
+                    if (index + 1 < this.$items.length) {
+                        this.ready().then(() => {
+                            this.$items[index + 1].focus();
+                            this.enterPressed = -2;
+                        });
+                    }
+                }
+            });
         }
 
         $t.data("index", index);
@@ -172,6 +200,13 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             $levelButton.css("visibility", "hidden");
         else
             $levelButton.css("visibility", "visible");
+
+        if (this.enterPressed === index - 1) {
+            this.ready().then(() => {
+                $t.focus();
+            });
+            this.enterPressed = -2;
+        }
     };
 
     this.updateData = function(data, index) {
@@ -216,7 +251,6 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             }
 
         }
-        this.invalidateLayout('both', Math.random());
         this.resumeLayout();
 
     };
@@ -251,8 +285,17 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.onChange = function($item) {
-        let value = $item.val();
+        let value = $item.val().trim();
         let index = $item.data("index");
+        if (value === '')
+            value = 'Level ' + this.getSequenceChar(this._topIndex, index);
+
+        let checked = this.parent.checkLevelLabel(value, this._topIndex, index);
+        if (checked !== value) {
+            value = checked;
+            $item.val(value);
+        }
+
         this.data.levels[index] = value;
         this.parent.onItemChanged();
     };
@@ -264,7 +307,17 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
     };
 
     this.labelChange = function($item) {
-        let value = $item.val();
+        let value = $item.val().trim();
+        let index = $item.data("index");
+        if (value === '')
+            value = 'RM Factor ' + (index+1);
+
+        let checked = this.parent.checkItemLabel(value, index);
+        if (checked !== value) {
+            value = checked;
+            $item.val(value);
+        }
+
         if (this.data === undefined || this.data === null) {
             this.parent.onItemAdded({label: value, levels: ["Level " + this.getSequenceChar(this._topIndex , 0), "Level " + this.getSequenceChar(this._topIndex , 1)]});
         }
@@ -330,6 +383,49 @@ const RMAnovaFactorsControl = function(params) {
 
     this.onItemChanged = function(item) {
         this.setValue(this.data);
+    };
+
+    this.checkItemLabel = function(name, index) {
+        let count = 0;
+        let found = true;
+        while (found) {
+            found = false;
+            let label = count === 0 ? name : (name + '(' + count + ')');
+            for (let i = 0; i < this.data.length; i++) {
+                let cItem = this.data[i];
+                if (i !== index && label === cItem.label) {
+                    found = true;
+                    count += 1;
+                    break;
+                }
+            }
+            if (found === false)
+                return label;
+        }
+    };
+
+    this.checkLevelLabel = function(name, index, lIndex) {
+        let count = 0;
+        let found = true;
+        while (found) {
+            found = false;
+            let label = count === 0 ? name : (name + ' (' + count + ')');
+            for (let i = 0; i < this.data.length; i++) {
+                let cItem = this.data[i];
+                for (let j = 0; j < cItem.levels.length; j++)  {
+                    let level = cItem.levels[j];
+                    if ( ! (i === index && j === lIndex) && label === level) {
+                        found = true;
+                        count += 1;
+                        break;
+                    }
+                }
+                if (found)
+                    break;
+            }
+            if (found === false)
+                return label;
+        }
     };
 
     this.onItemAdded = function(data) {
