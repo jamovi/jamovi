@@ -18,6 +18,12 @@
 #include "dataset.h"
 #include "utils.h"
 
+#ifdef _WIN32
+    char PATH_DELIM[] = ";";
+#else
+    char PATH_DELIM[] = ";:";
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -175,17 +181,17 @@ void EngineR::setLibPaths(const std::string &moduleName)
     if (cPath != NULL)
         path = cPath;
 
-    algorithm::split(sysR, path, algorithm::is_any_of(";:"), token_compress_on);
+    algorithm::split(sysR, path, algorithm::is_any_of(PATH_DELIM), token_compress_on);
 
     cPath = nowide::getenv("JAMOVI_MODULES_PATH");
     if (cPath != NULL)
         path = cPath;
 
-    algorithm::split(moduleR, path, algorithm::is_any_of(";:"), token_compress_on);
+    algorithm::split(moduleR, path, algorithm::is_any_of(PATH_DELIM), token_compress_on);
 
     ss << "base::.libPaths(c(";
 
-    ss << "'" << Dirs::appDataDir() << "/modules/" << moduleName << "/R'";
+    ss << "'" << Dirs::appDataDir(true) << "/modules/" << moduleName << "/R'";
 
     for (auto path : moduleR)
     {
@@ -402,6 +408,21 @@ void EngineR::initR()
         _rInside->parseEvalQNT(ss.str());
     }
 
+    // override .libPaths(), the R version munges international characters
+    // and wrecks those short blah~1 type paths
+    _rInside->parseEvalQNT(""
+        "base <- base::.getNamespace('base')\n"
+        "base::unlockBinding('.libPaths', base)\n"
+        ".lib.loc <- base$.libPaths()\n"
+        "base$.libPaths <- function (new)\n"
+        "{\n"
+        "    if ( ! missing(new)) {\n"
+        "        paths <- c(new, .Library.site, .Library)\n"
+        "        paths <- paths[dir.exists(paths)]\n"
+        "        .lib.loc <<- unique(paths)\n"
+        "    } else .lib.loc\n"
+        "}\n");
+
     setLibPaths("jmv");
 
     // without this, on macOS, knitr tries to load X11
@@ -417,7 +438,7 @@ void EngineR::initR()
 string EngineR::makeAbsolute(const string &paths)
 {
     vector<string> out;
-    algorithm::split(out, paths, algorithm::is_any_of(";:"), token_compress_on);
+    algorithm::split(out, paths, algorithm::is_any_of(PATH_DELIM), token_compress_on);
 
     stringstream result;
     string sep = "";

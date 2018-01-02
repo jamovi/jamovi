@@ -11,7 +11,7 @@
 class Dirs {
 
 public:
-    static std::string appDataDir();
+    static std::string appDataDir(bool sh0rt=false);
     static std::string tempDir();
     static std::string exePath();
     static std::string exeDir();
