@@ -454,8 +454,7 @@ cdef class Column:
             for i in range(len(values)):
                 self[i] = values[i]
 
-            if self.auto_measure:
-                self.determine_dps()
+            self.determine_dps()
 
         elif new_type == MeasureType.NOMINAL or new_type == MeasureType.ORDINAL:
 
