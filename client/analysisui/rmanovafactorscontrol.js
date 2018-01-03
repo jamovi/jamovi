@@ -3,6 +3,7 @@
 const $ = require('jquery');
 const GridOptionControl = require('./gridoptioncontrol');
 const LayoutGrid = require('./layoutgrid').Grid;
+const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
 
 const rmafcItem = function(parent, data, isFirst, isLast) {
 
@@ -47,6 +48,12 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
                 this.enterPressed = -1;
                 this.labelChange(this.$label);
                 this.$label.blur();
+                if (this.$items.length > 0) {
+                    this.ready().then(() => {
+                        this.$items[0].focus();
+                        this.enterPressed = -2;
+                    });
+                }
             }
         });
         this.listenForLabelChange(this.$label);
@@ -334,6 +341,9 @@ const RMAnovaFactorsControl = function(params) {
 
     this.$el.addClass('rmanova-factors-control');
 
+    if (navigator.platform === 'MacIntel') 
+        HiddenScrollBarSupport.extendTo(this);
+
     this.setAutoSizeHeight(false);
     this._animateCells = true;
 
@@ -390,7 +400,7 @@ const RMAnovaFactorsControl = function(params) {
         let found = true;
         while (found) {
             found = false;
-            let label = count === 0 ? name : (name + '(' + count + ')');
+            let label = count === 0 ? name : (name + ' (' + (count + 1) + ')');
             for (let i = 0; i < this.data.length; i++) {
                 let cItem = this.data[i];
                 if (i !== index && label === cItem.label) {
@@ -409,7 +419,7 @@ const RMAnovaFactorsControl = function(params) {
         let found = true;
         while (found) {
             found = false;
-            let label = count === 0 ? name : (name + ' (' + count + ')');
+            let label = count === 0 ? name : (name + ' (' + (count + 1) + ')');
             for (let i = 0; i < this.data.length; i++) {
                 let cItem = this.data[i];
                 for (let j = 0; j < cItem.levels.length; j++)  {

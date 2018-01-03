@@ -13,6 +13,7 @@ const Backbone = require('backbone');
 const deepRenderToGrid = require('./controlcontainer').renderContainerItem;
 const TemplateItemControl = require('./templateitemcontrol');
 const TargetListValueFilter = require('./targetlistvaluefilter');
+const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
 
 const OptionListControl = function(params) {
     if (!DefaultControls)
@@ -104,6 +105,10 @@ const OptionListControl = function(params) {
 
     this.initialize = function() {
 
+        let addButton = this.getPropertyValue("addButton");
+        if (addButton !== null && navigator.platform === 'MacIntel')
+            HiddenScrollBarSupport.extendTo(this);
+
         let columns = this.getPropertyValue("columns");
         this._columnInfo = { _list:[] };
         this._realColumnInfoList = [];
@@ -174,7 +179,7 @@ const OptionListControl = function(params) {
                         $filler.append(this.$ghostTextLabel);
                     }
 
-                    let addButton = this.getPropertyValue("addButton");
+
                     if (addButton !== null) {
                         this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
                         this.$addButton.click(addButtonClick);
