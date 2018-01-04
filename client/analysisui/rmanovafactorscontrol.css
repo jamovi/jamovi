@@ -1,7 +1,7 @@
 
 .rma-delete-button {
     font-size: 11px ;
-    width: 15px ;
+    width: 19px ;
     height: 15px ;
     color: #555555 ;
     box-sizing: border-box ;
@@ -10,6 +10,11 @@
     cursor: default ;
     margin-right: 4px ;
     margin-left: 4px ;
+    padding-left: 4px;
+}
+
+.rma-delete-button:hover {
+    color: #c15050;
 }
 
 .rma-delete-button:hover {
@@ -22,6 +27,10 @@
     /*line-height: 1.1;*/
     font-weight: 400;
     font-style: normal;
+}
+
+.mac-scroll-fix {
+    overflow-y: hidden;
 }
 
 .rma-factor-label {
