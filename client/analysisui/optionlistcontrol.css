@@ -77,13 +77,13 @@
     box-sizing: border-box ;
     text-align: center ;
     cursor: default ;
-    padding: 2px 2px 1px 2px;
+    padding: 2px 2px 4px 2px;
     border: 1px solid transparent;
     z-index: 100;
 }
 
 .list-item-delete-button:hover {
-    border: 1px solid #555555;
+    color: #c15050;
 }
 
 .silky-option-list-header {
