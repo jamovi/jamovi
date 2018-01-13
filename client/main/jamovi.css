@@ -82,6 +82,7 @@ body.windows #header-text {
     top: 1px;
     right: 1px;
     display: none ;
+    height: 31px;
 }
 
 body.windows.electron #header-buttons {
