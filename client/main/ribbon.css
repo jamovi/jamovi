@@ -31,6 +31,11 @@
     -webkit-app-region: no-drag;
 }
 
+.jmv-ribbon-appmenu span {
+    line-height: 24px;
+    vertical-align: top;
+}
+
 body.windows .jmv-ribbon-appmenu {
     top: 36px ;
 }
