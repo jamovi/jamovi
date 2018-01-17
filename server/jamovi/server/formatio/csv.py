@@ -282,15 +282,14 @@ class ColumnWriter:
 
         elif self._measure_type == MeasureType.CONTINUOUS:
 
-            if self._only_euro_floats:
-                value = re.sub(
-                    ColumnWriter.euro_float_pattern,
-                    ColumnWriter.euro_float_repl,
-                    value)
-
             if value is None:
                 self._column[row_no] = float('nan')
             else:
+                if self._only_euro_floats:
+                    value = re.sub(
+                        ColumnWriter.euro_float_pattern,
+                        ColumnWriter.euro_float_repl,
+                        value)
                 self._column[row_no] = float(value)
 
         elif self._measure_type == MeasureType.NOMINAL_TEXT:
