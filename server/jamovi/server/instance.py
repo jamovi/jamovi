@@ -775,6 +775,9 @@ class Instance:
             column = self._data[i]
             cols_w_schema_change.add(column)
 
+        # sort ascending (the client doesn't like them out of order)
+        cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
+
         for column in cols_w_schema_change:
             response.incSchema = True
             columnPB = response.schema.columns.add()
