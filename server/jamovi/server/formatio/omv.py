@@ -10,8 +10,9 @@ import os
 import os.path
 import re
 
-from ...core import ColumnType
-from ...core import MeasureType
+from jamovi.core import ColumnType
+from jamovi.core import MeasureType
+from jamovi.server.appinfo import app_info
 
 
 def write(data, path, html=None):
@@ -23,9 +24,9 @@ def write(data, path, html=None):
 
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
-        content.write('Created-By: jamovi\n')
         content.write('Data-Archive-Version: 1.0.2\n')
         content.write('jamovi-Archive-Version: 1.0\n')
+        content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
         content = None
