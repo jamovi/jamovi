@@ -146,37 +146,70 @@ def read(data, path):
 
         data.dataset.set_row_count(row_count)
 
+        columns_w_bad_levels = [ ]  # do some repair work
+
         try:
             xdata_content = zip.read('xdata.json').decode('utf-8')
             xdata = json.loads(xdata_content)
 
             for column in data.dataset:
                 if column.name in xdata:
-                    meta_labels = xdata[column.name]['labels']
-                    for meta_label in meta_labels:
-                        import_value = meta_label[1]
-                        if len(meta_label) > 2:
-                            import_value = meta_label[2]
-                        column.append_level(meta_label[0], meta_label[1],  import_value)
+                    try:
+                        meta_labels = xdata[column.name]['labels']
+                        if meta_labels:
+                            for meta_label in meta_labels:
+                                import_value = meta_label[1]
+                                if len(meta_label) > 2:
+                                    import_value = meta_label[2]
+                                column.append_level(meta_label[0], meta_label[1],  import_value)
+                        else:
+                            columns_w_bad_levels.append(column.id)
+                    except Exception as e:
+                        columns_w_bad_levels.append(column.id)
         except Exception:
-            pass
+            columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
+            columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
             data_path = os.path.join(dir, 'data.bin')
             data_file = open(data_path, 'rb')
 
+            BUFF_SIZE = 65536
+            buff = memoryview(bytearray(BUFF_SIZE))
+
             for column in data.dataset:
+
                 if column.measure_type == MeasureType.CONTINUOUS:
-                    for i in range(row_count):
-                        byts = data_file.read(8)
-                        value = struct.unpack('<d', byts)
-                        column[i] = value[0]
+                    elem_fmt = '<d'
+                    elem_width = 8
+                    repair_levels = False
                 else:
-                    for i in range(row_count):
-                        byts = data_file.read(4)
-                        value = struct.unpack('<i', byts)
-                        column[i] = value[0]
+                    elem_fmt = '<i'
+                    elem_width = 4
+                    repair_levels = column.id in columns_w_bad_levels
+
+                for row_offset in range(0, row_count, int(BUFF_SIZE / elem_width)):
+                    n_bytes_to_read = min(elem_width * (row_count - row_offset), BUFF_SIZE)
+                    buff_view = buff[0:n_bytes_to_read]
+                    data_file.readinto(buff_view)
+
+                    # 'if' surrounding two loops, rather than an 'if' inside one loop
+                    # gives a performance improvement
+                    if repair_levels:
+                        i = 0
+                        for values in struct.iter_unpack(elem_fmt, buff_view):
+                            v = values[0]
+                            if v != -2147483648:  # missing value
+                                column.append_level(v, str(v))
+                            column[row_offset + i] = v
+                            i += 1
+                    else:
+                        i = 0
+                        for values in struct.iter_unpack(elem_fmt, buff_view):
+                            column[row_offset + i] = values[0]
+                            i += 1
+
             data_file.close()
 
         for column in data.dataset:
