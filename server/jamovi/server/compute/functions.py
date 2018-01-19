@@ -1,6 +1,9 @@
+
 import statistics as stats
 import random
 import math
+
+from scipy.stats import boxcox
 
 
 NaN = float('nan')
@@ -56,6 +59,14 @@ class RowFunctions:
     def GAMMA(index, alpha: float=1.0, beta: float=1.0):
         return random.gammavariate(alpha, beta)
 
+    @staticmethod
+    def ROW(index):
+        return index + 1
+
+    @staticmethod
+    def BOXCOX(index, x: float, lmbda: float):
+        return boxcox(x=x, lmbda=lmbda)
+
 
 class ColumnFunctions:
 
@@ -97,3 +108,9 @@ class ColumnFunctions:
     @staticmethod
     def VROWS(values):
         return sum(1 for _ in values)
+
+    @staticmethod
+    def VBOXCOXLAMBDA(values):
+        values = filter(lambda x: not math.isnan(x), values)
+        values = list(values)
+        return boxcox(values)[1]
