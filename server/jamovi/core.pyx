@@ -5,6 +5,7 @@
 from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp.list cimport list as cpplist
 from libcpp.pair cimport pair
 
 from cython.operator cimport dereference as deref, postincrement as inc
@@ -712,9 +713,13 @@ class ColumnType(Enum):
 cdef extern from "platforminfo.h":
     cdef cppclass CPlatformInfo "PlatformInfo":
         @staticmethod
-        string platform()
+        cpplist[string] platform()
 
 class PlatformInfo:
     @staticmethod
     def platform():
-        return decode(CPlatformInfo.platform())
+        platforms = CPlatformInfo.platform()
+        ps = [ ]
+        for plat in platforms:
+            ps.append(decode(plat))
+        return ps

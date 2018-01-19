@@ -211,7 +211,7 @@ class Modules:
             module.path = path
         else:
             for arch in defn['architectures']:
-                if arch['name'] == '*' or arch['name'] == PlatformInfo.platform():
+                if arch['name'] == '*' or arch['name'] in PlatformInfo.platform():
                     module.path = Modules.LIBRARY_ROOT + arch['path']
                     break
             else:
