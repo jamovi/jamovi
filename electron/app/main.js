@@ -48,6 +48,10 @@ const marshallArgs = function(args, wd, first) {
         // https://github.com/electron/electron/issues/3657
         cmd.open = '';
     }
+    else if (args[0] === '--debug') {
+        cmd.open = '';
+        cmd.debug = true;
+    }
     else {
         cmd.open = path.resolve(wd, args[0]);
     }
@@ -112,6 +116,8 @@ let args = serverCMD.slice(1);
 
 if (debug)
     args.unshift('-vvv');
+if (argvCmd.debug)
+    args.push('--debug');
 
 global.version = version();
 

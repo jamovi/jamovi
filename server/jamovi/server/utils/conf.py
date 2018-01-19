@@ -8,12 +8,24 @@ from configparser import ConfigParser
 config_values = None
 
 
+def set(key, value):
+    global config_values
+    _init()
+    config_values[key] = value
+
+
 def get(key, otherwise=None):
+    global config_values
+    _init()
+    return config_values.get(key, otherwise)
+
+
+def _init():
     global config_values
 
     if config_values is None:
 
-        config_values = { }
+        config_values = { 'debug': False }
 
         if 'JAMOVI_HOME' in environ:
             root = path.abspath(environ['JAMOVI_HOME'])
@@ -42,5 +54,3 @@ def get(key, otherwise=None):
                     parts = map(lambda x: path.normpath(path.join(root, 'bin', x)), parts)
                     value = path.pathsep.join(parts)
             config_values[k] = value
-
-    return config_values.get(key, otherwise)

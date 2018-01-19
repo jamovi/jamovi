@@ -223,6 +223,8 @@ class Server:
         self._debug = debug
         self._ports_opened_listeners = [ ]
 
+        conf.set('debug', debug)
+
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
             self._thread.start()

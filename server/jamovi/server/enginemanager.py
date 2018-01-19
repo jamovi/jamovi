@@ -64,11 +64,16 @@ class Engine:
         si = None
         stdout = sys.stdout
         stderr = sys.stderr
+
+        # Additional customizations for windows
         if platform.uname().system == 'Windows':
             si = subprocess.STARTUPINFO()
-            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             stdout = None
             stderr = None  # stdouts seem to break things on windows
+
+            # makes the engine windows visible in debug mode (on windows)
+            if not conf.get('debug', False):
+                si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         # be a bit wary to make changes to the Popen call
         # seemingly inconsequential changes can break things on windows
