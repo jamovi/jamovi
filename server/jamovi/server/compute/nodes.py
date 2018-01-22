@@ -1,10 +1,11 @@
 
 
 import ast
+from inspect import signature
+from types import FunctionType as function
 
-from .functions import ColumnFunctions
-from .functions import RowFunctions
 from ..utils import FValues
+from . import functions
 
 NaN = float('nan')
 
@@ -77,34 +78,58 @@ class Call(ast.Call):
 
     def __init__(self, func, args, keywords):
         self._cached_value = None
-        self._is_column_function = False
         self._node_parents = [ ]
 
         name = func.id
 
-        if hasattr(ColumnFunctions, name):
-            self._is_column_function = True
-            self._function = getattr(ColumnFunctions, name)
-        elif hasattr(RowFunctions, name):
-            self._is_column_function = False
-            self._function = getattr(RowFunctions, name)
-        else:
+        if not hasattr(functions, name):
             raise NameError('Function {}() does not exist'.format(name))
+
+        self._function = getattr(functions, name)
+        self._function.is_column_wise = self._function.is_column_wise
+
+        # the following checks and substitutes sub-functions
+        # see BOXCOX() or Z() for an example of a function
+        # with sub-functions
+
+        params = signature(self._function).parameters
+        param_names = list(params)
+        if self._function.is_row_wise:
+            param_names.pop(0)
+        sub_arg_len = len(param_names)
+        for param_name in reversed(param_names):
+            if isinstance(params[param_name].default, function):
+                sub_arg_len -= 1
+            else:
+                break
+        sub_func_args = args[0:sub_arg_len]  # arguments to the sub-functions
+
+        for i in range(sub_arg_len, len(param_names)):
+            # add the sub-functions as arguments if not specified by the user
+            if len(args) <= i:
+                sub_func = params[param_names[i]].default
+                sub_func_name = sub_func.__name__
+                args.append(Call(ast.Name(id=sub_func_name), sub_func_args, keywords))
+            else:
+                break
 
         ast.Call.__init__(self, func, args, keywords)
 
     def fvalue(self, index):
-        if self._is_column_function:
-            if self._cached_value is not None:
-                return self._cached_value
-            args = map(lambda arg: arg.fvalues(), self.args)
-            value = self._function(*args)
-            self._cached_value = value
-            return value
+        if self._function.__name__ == 'OFFSET':
+            offset = int(self.args[1].fvalue(index))
+            if index < offset:
+                return NaN
+            else:
+                return self.args[0].fvalue(index - offset)
+        elif self._function.is_column_wise:
+            if self._cached_value is None:
+                args = map(lambda arg: arg.fvalues(), self.args)
+                self._cached_value = self._function(*args)
+            return self._cached_value
         else:
-            args  = map(lambda arg: arg.fvalue(index), self.args)
-            value = self._function(index, *args)
-            return value
+            args = map(lambda arg: arg.fvalue(index), self.args)
+            return self._function(index, *args)
 
     def fvalues(self):
         return FValues(self)

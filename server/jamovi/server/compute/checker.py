@@ -5,8 +5,7 @@ from inspect import signature
 from inspect import Parameter
 from math import isnan
 
-from .functions import ColumnFunctions
-from .functions import RowFunctions
+from . import functions
 
 
 class Checker(NodeVisitor):
@@ -35,12 +34,9 @@ class Checker(NodeVisitor):
         min_args = 0
         max_args = 0
 
-        if hasattr(ColumnFunctions, name):
-            func = getattr(ColumnFunctions, name)
-            skip_first = False
-        elif hasattr(RowFunctions, name):
-            func = getattr(RowFunctions, name)
-            skip_first = True  # the first argument to a row function is index
+        if hasattr(functions, name):
+            func = getattr(functions, name)
+            skip_first = func.is_row_wise
         else:
             raise NameError('Function {}() does not exist'.format(name))
 

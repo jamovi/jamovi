@@ -110,7 +110,9 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$functionsContent.append($('<div class="item" data-name="SQRT">SQRT</div>'));
 
         this.$functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
         this.$functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
         this.$functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
@@ -120,6 +122,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$functionsContent.append($('<div class="item" data-name="VSTDEV">VSTDEV</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
 
         this.$functionsContent.append($('<div class="subtitle" data-name="">Simulation</div>'));
         this.$functionsContent.append($('<div class="item" data-name="BETA">BETA</div>'));
