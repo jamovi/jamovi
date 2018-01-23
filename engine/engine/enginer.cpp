@@ -399,6 +399,10 @@ void EngineR::initR()
 
     _rInside = new RInside();
 
+    // set english locale (the arrogance!)
+    // fixes some unicode handling issues
+    _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'en_US.UTF-8')\n");
+
     char *pandoc = nowide::getenv("PANDOCHOME");
 
     if (pandoc != NULL)
