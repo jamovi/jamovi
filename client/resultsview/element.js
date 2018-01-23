@@ -33,7 +33,7 @@ const ElementView = Backbone.View.extend({
         if (error !== null) {
             this.$el.addClass('jmv-results-error');
             let $error = $('<div class="jmv-results-error-message"></div>');
-            $error.append(error.message);
+            $error.text(error.message);
             $error.appendTo(this.$errorPlacement);
         }
     },
