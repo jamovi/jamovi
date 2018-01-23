@@ -40,6 +40,11 @@ class Settings:
         else:
             raise ValueError
 
+    def specify_default(self, name, value):
+        current_value = self.get(name, None)
+        if current_value is None:
+            self.set(name, value)
+
     def set(self, name, value):
         self._root[name] = value
         if self._parent is not None:

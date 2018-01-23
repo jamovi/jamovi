@@ -6,10 +6,14 @@ import csv
 import math
 import re
 from io import TextIOWrapper
-from ...core import MeasureType
 import chardet
-
 import logging
+
+from jamovi.core import MeasureType
+from jamovi.server.settings import Settings
+
+settings = Settings.retrieve('main')
+settings.specify_default('missings', 'NA')
 
 log = logging.getLogger('jamovi')
 
@@ -95,7 +99,7 @@ def read(data, path):
         column_writers = [ ]
 
         if len(column_names) == 0:
-            column_names = ['X']
+            column_names = ['A']
 
         for i in range(len(column_names)):
             column_name = column_names[i]
@@ -173,6 +177,7 @@ class ColumnWriter:
     def __init__(self, column, column_index):
         self._column = column
         self._column_index = column_index
+        self._missings = settings.get('missings')
 
         self._only_integers = True
         self._only_floats = True
@@ -181,7 +186,6 @@ class ColumnWriter:
         self._unique_values = set()
         self._measure_type = None
         self._ruminated = False
-        self._includes_na = False
         self._dps = 0
 
     def examine_row(self, row):
@@ -191,11 +195,7 @@ class ColumnWriter:
 
         value = row[self._column_index]
 
-        if value == 'NA':
-            self._includes_na = True
-            return
-
-        if value == '' or value == ' ':
+        if value == self._missings or value == '' or value == ' ':
             return
         else:
             self._is_empty = False
@@ -245,8 +245,6 @@ class ColumnWriter:
         else:
             self._measure_type = MeasureType.NOMINAL_TEXT
             self._unique_values = list(self._unique_values)
-            if self._includes_na:
-                self._unique_values.append('NA')
             self._unique_values.sort()
             for i in range(0, len(self._unique_values)):
                 label = self._unique_values[i]
@@ -266,12 +264,7 @@ class ColumnWriter:
         else:
             value = row[self._column_index]
 
-            # we treat NAs as missings, unless it's a text column
-            # NA could be an actual value so we play it safe
-
-            if value == 'NA' and self._measure_type != MeasureType.NOMINAL_TEXT:
-                value = None
-            elif value == '' or value == ' ':
+            if value == self._missings or value == '' or value == ' ':
                 value = None
 
         if self._measure_type == MeasureType.NOMINAL or self._measure_type == MeasureType.ORDINAL:

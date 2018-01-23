@@ -16,6 +16,8 @@ class InstanceModel:
         self._path = ''
         self._title = ''
         self._import_path = ''
+        self._embedded_path = ''
+        self._embedded_name = ''
 
         self._columns = [ ]
         self._next_id = 0
@@ -161,6 +163,22 @@ class InstanceModel:
     @import_path.setter
     def import_path(self, path):
         self._import_path = path
+
+    @property
+    def embedded_path(self):
+        return self._embedded_path
+
+    @embedded_path.setter
+    def embedded_path(self, path):
+        self._embedded_path = path
+
+    @property
+    def embedded_name(self):
+        return self._embedded_name
+
+    @embedded_name.setter
+    def embedded_name(self, name):
+        self._embedded_name = name
 
     @property
     def virtual_row_count(self):

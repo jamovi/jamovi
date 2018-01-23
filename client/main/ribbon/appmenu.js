@@ -4,6 +4,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const keyboardjs = require('keyboardjs');
 
 const host = require('../host');
 
@@ -78,8 +79,28 @@ const AppMenuButton = Backbone.View.extend({
         this.$syntax.append($('<div>Syntax mode</div>'));
         this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
 
+        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
+        this.$import = $('<div class="jmv-results"></div>').appendTo(this.$content);
+        this.$importHeading = $('<div class="jmv-ribbon-appmenu-subheading">Import</div>').appendTo(this.$import);
+
+        this.$missings = $('<label class="jmv-ribbon-appmenu-item"><div>Default missings</div></label>').appendTo(this.$import);
+        this.$missingsInput = $('<input type="text" size="10" class="jmv-import-missings" list="missings">').appendTo(this.$missings);
+        //this.$missingsItems = $('<datalist id="missings"><option value="NA"><option value="-999999"></datalist>').appendTo(this.$missings);
+        this.$missingsInput.on('keydown', (event) => {
+            if (event.keyCode === 13)
+                setTimeout(() => this.$missingsInput.blur());
+        });
+        this.$missingsInput.on('focus', () => keyboardjs.pause());
+        this.$missingsInput.on('blur', () => { keyboardjs.resume(); this._changeMissings(); });
+
+        this.$embed = $('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo(this.$import);
+        this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
+            .appendTo(this.$embed)
+            .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
+        this.$import.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
         this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
-        this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
         this.$versionInfo = $('<div class="jmv-ribbon-appmenu-subheading">Updates</div>').appendTo(this.$updateInfo);
 
         this.$versionInfoStatus = { };
@@ -137,6 +158,8 @@ const AppMenuButton = Backbone.View.extend({
         this.model.settings().on('change:updateStatus', () => this._updateUI());
         this.model.settings().on('change:autoUpdate',   () => this._updateUI());
         this.model.settings().on('change:format',       () => this._updateUI());
+        this.model.settings().on('change:missings',     () => this._updateUI());
+        this.model.settings().on('change:embedCond',    () => this._updateUI());
 
         this._updateUI();
     },
@@ -151,6 +174,10 @@ const AppMenuButton = Backbone.View.extend({
     },
     _changeTheme(name) {
         this.model.settings().setSetting('theme', name);
+    },
+    _changeMissings() {
+        let missings = this.$missingsInput.val().trim();
+        this.model.settings().setSetting('missings', missings);
     },
     _changeResultsFormat() {
 
@@ -191,6 +218,10 @@ const AppMenuButton = Backbone.View.extend({
         this.$devModeCheck.prop('checked', devMode);
         let zoom = '' + settings.getSetting('zoom', 100) + '%';
         this.$zoomLevel.text(zoom);
+        let missings = settings.getSetting('missings', 'NA');
+        this.$missingsInput.val(missings);
+        let embedCond = settings.getSetting('embedCond', '< 10 Mb');
+        this.$embedList.val(embedCond);
 
         let autoUpdate = settings.getSetting('autoUpdate', false);
         this.$versionInfoUpdatesCheck.prop('checked', autoUpdate);
