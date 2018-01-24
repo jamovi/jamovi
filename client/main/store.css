@@ -1,3 +1,15 @@
+.tippy-tooltip.jmv-library-theme {
+    background-color: transparent;
+    border: 2px solid white;
+}
+
+.tippy-tooltip.honeybee-theme .tippy-content {
+    color: white;
+}
+
+.tippy-tooltip.jmv-library-theme .tippy-backdrop {
+    background-color: transparent;
+}
 
 .jmv-store {
     position: absolute ;

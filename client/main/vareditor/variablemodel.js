@@ -101,7 +101,7 @@ const VariableModel = Backbone.Model.extend({
             return;
 
         let values = {
-            name: this.attributes.name,
+            name: this.attributes.name.trim(),
             columnType: this.attributes.columnType,
             measureType: this.attributes.measureType,
             autoMeasure: this.attributes.autoMeasure,
@@ -115,7 +115,7 @@ const VariableModel = Backbone.Model.extend({
             .then(() => {
                 if (columnId === this.attributes.id) {
                     let latestValues = {
-                        name: this.attributes.name,
+                        name: this.attributes.name.trim(),
                         columnType: this.attributes.columnType,
                         measureType: this.attributes.measureType,
                         autoMeasure: this.attributes.autoMeasure,

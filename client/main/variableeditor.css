@@ -2,6 +2,11 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
+
+ .tippy-tooltip.jmv-theme .tippy-backdrop {
+    background-color: #999999;
+}
+
 .jmv-variable-editor {
     background-color: #F8F8F8 ;
     width: 100% ;
@@ -46,19 +51,23 @@
     position: absolute ;
     right: 16px ;
     top: 58px ;
-    width: 24px ;
-    height: 24px ;
+    width: 26px ;
+    height: 26px ;
     color: #BBBBBB ;
     border: 3px solid #BBBBBB ;
-    border-radius: 12px ;
+    border-radius: 13px ;
     box-sizing: border-box;
-    font-size: 12px ;
+    font-size: 13px ;
     text-align: center;
     z-index: 1 ;
     font-weight: bold ;
-    padding-top: 1px ;
     transition: opacity .4s ;
     opacity: 0 ;
+}
+
+.jmv-variable-editor-revert span {
+    line-height: 20px;
+    vertical-align: top;
 }
 
 .jmv-variable-editor-revert.apply {
@@ -80,7 +89,9 @@
     position: absolute ;
     left: 0 ;
     width: 100% ;
-    margin-top: 4px ;
+    line-height: 32px;
+    vertical-align: top;
+    /*margin-top: 4px ;*/
     transition: opacity .4s ;
 }
 
@@ -102,6 +113,12 @@
     color: #BBBBBB ;
     transition: opacity .2s ;
     z-index: 1 ;
+}
+
+.jmv-variable-editor-button-left span,
+.jmv-variable-editor-button-right span {
+    line-height: 40px;
+    vertical-align: top;
 }
 
 .jmv-variable-editor-button-left.hidden,
