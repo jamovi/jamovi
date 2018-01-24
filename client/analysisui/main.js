@@ -159,12 +159,12 @@ $(document).ready(function() {
     $(window).resize( updateContainerHeight );
 
     tippy('.silky-sp-back-button', {
-      placement: 'left',
-      animation: 'perspective',
-      duration: 200,
-      delay: 700,
-      flip: true,
-      theme: 'jmv'
+        placement: 'left',
+        animation: 'perspective',
+        duration: 200,
+        delay: 700,
+        flip: true,
+        theme: 'jmv'
     });
 });
 

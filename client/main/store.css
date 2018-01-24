@@ -1,14 +1,14 @@
 .tippy-tooltip.jmv-library-theme {
-  background-color: transparent;
-  border: 2px solid white;
+    background-color: transparent;
+    border: 2px solid white;
 }
 
 .tippy-tooltip.honeybee-theme .tippy-content {
-  color: white;
+    color: white;
 }
 
 .tippy-tooltip.jmv-library-theme .tippy-backdrop {
- background-color: transparent;
+    background-color: transparent;
 }
 
 .jmv-store {
