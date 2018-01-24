@@ -34,6 +34,7 @@
     "preprocessify": "^1.0.1",
     "protobufjs": "5.0.1",
     "q": "^1.4.1",
+    "tippy.js": "^2.0.9",
     "uglifyify": "^3.0.4",
     "underscore": "^1.8.3"
   }

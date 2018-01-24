@@ -64,6 +64,9 @@ const RibbonButton = Backbone.View.extend({
         action.on('change:enabled', (event) => {
             this.setEnabled(event.changed.enabled);
         });
+
+        if (this.size === 'small' && this.title !== null)
+            this.$el.attr('title', this.title);
     },
     setParent(parent) {
         this.parent = parent;
