@@ -19,15 +19,15 @@ def write(data, path, html=None):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
 
-        if html is not None:
-            zip.writestr('index.html', html)
-
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
         content.write('jamovi-Archive-Version: 1.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
+
+        if html is not None:
+            zip.writestr('index.html', html)
 
         content = None
 

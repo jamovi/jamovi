@@ -110,7 +110,11 @@ class Analysis:
     @staticmethod
     def _get_resources(results_pb):
         if results_pb.HasField('image'):
-            return [ results_pb.image.path ]
+            path = results_pb.image.path
+            if path != '':
+                return [ path ]
+            else:
+                return [ ]
         elif results_pb.HasField('group'):
             resources = [ ]
             for element_pb in results_pb.group.elements:
