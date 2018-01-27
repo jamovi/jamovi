@@ -45,7 +45,9 @@ const TableView = SilkyView.extend({
         html += '    <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>';
         html += '</div>';
         html += '<div class="jmv-table-container">';
-        html += '    <div class="jmv-table-body"></div>';
+        html += '    <div class="jmv-table-body">';
+        html += '        <div class="jmv-column-row-header" style="left: 0 ;"></div>';
+        html += '    </div>';
         html += '</div>';
 
         this.$el.html(html);
@@ -53,21 +55,33 @@ const TableView = SilkyView.extend({
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
         this.$body      = this.$container.find('.jmv-table-body');
+        this.$rhColumn  = this.$body.find('.jmv-column-row-header');
         this.$columns   = [ ];
         this.$headers   = [ ];
 
         this._bodyWidth = 0;
 
-        this.rowHeaderWidth = 32;
-
         this.$container.on('scroll', event => this._scrollHandler(event));
 
-        setTimeout(() => {
-            this._rowHeight = this.$header.height();  // read and store the row height
-            this.$header.css('height', this._rowHeight);
-            this.$container.css('top', this._rowHeight);
-            this.$container.css('height', this.$el.height() - this._rowHeight);
-        }, 0);
+        let $measureOne = $(this._createRHCellHTML(0, 0, '', 0))
+            .css('width', 'auto')
+            .appendTo(this.$rhColumn);
+        let $measureTwo = $(this._createRHCellHTML(0, 0, '0', 1))
+            .css('width', 'auto')
+            .appendTo(this.$rhColumn);
+
+        this._rowHeaderDigits = 2;
+        this._rowHeaderWidthB = $measureOne[0].offsetWidth;
+        this._rowHeaderWidthM = $measureTwo[0].offsetWidth - this._rowHeaderWidthB;
+        this._rowHeaderWidth = this._rowHeaderDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
+
+        this._rowHeight = this.$header[0].offsetHeight;  // read and store the row height
+        this.$header.css('height', this._rowHeight);
+        this.$container.css('top', this._rowHeight);
+        this.$container.css('height', this.$el[0].offsetHeight - this._rowHeight);
+
+        this.$rhColumn.css('width', this._rowHeaderWidth);
+        this.$rhColumn.empty();
 
         this.selection = null;
 
@@ -155,13 +169,12 @@ const TableView = SilkyView.extend({
         this.$header.append('<div class="jmv-table-header-background"></div>');
 
         // add the top-left corner cell
-        let $topLeftCell = $('<div class="jmv-column-header select-all" style="width:' + this.rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>');
-        $topLeftCell.on('click', event => this.selectAll());
-
-        this.$header.append($topLeftCell);
+        this.$topLeftCell = $('<div class="jmv-column-header select-all" style="width:' + this._rowHeaderWidth + 'px ; height: ' + this._rowHeight + 'px">&nbsp;</div>')
+            .on('click', event => this.selectAll())
+            .appendTo(this.$header);
 
         let columns = this.model.get('columns');
-        this._bodyWidth = this.rowHeaderWidth;
+        this._bodyWidth = this._rowHeaderWidth;
 
         this._lefts = new Array(columns.length);  // store the left co-ordinate for each column
         this._widths = new Array(columns.length);
@@ -170,8 +183,6 @@ const TableView = SilkyView.extend({
             let column = columns[colNo];
             this._addColumnToView(column);
         }
-
-        this.$rhColumn = $('<div class="jmv-column-row-header" style="left: 0 ; width: ' + this.rowHeaderWidth + 'px ; background-color: pink ;"></div>').appendTo(this.$body);
 
         let vRowCount = this.model.get('vRowCount');
         let totalHeight = vRowCount * this._rowHeight;
@@ -327,7 +338,7 @@ const TableView = SilkyView.extend({
             rowNo = Math.floor(vy / this._rowHeight);
         }
 
-        if (vx < this.rowHeaderWidth) { // on row header
+        if (vx < this._rowHeaderWidth) { // on row header
             colNo = -1;
             vx = x - bodyBounds.left;
         }
@@ -657,8 +668,8 @@ const TableView = SilkyView.extend({
             let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
             if (scrollRight && selRight > containerRight)
                 this.$container.scrollLeft(scrollX + selRight - containerRight);
-            else if (scrollLeft && x - this.rowHeaderWidth < scrollX)
-                this.$container.scrollLeft(x - this.rowHeaderWidth);
+            else if (scrollLeft && x - this._rowHeaderWidth < scrollX)
+                this.$container.scrollLeft(x - this._rowHeaderWidth);
         }
 
         if (scrollUp || scrollDown) {
@@ -748,7 +759,7 @@ const TableView = SilkyView.extend({
         this.$selection.val('');
 
         // slide row/column highlight *lines* into position
-        this.$selectionRowHighlight.css({ top: y, width: this.rowHeaderWidth, height: height });
+        this.$selectionRowHighlight.css({ top: y, width: this._rowHeaderWidth, height: height });
         this.$selectionColumnHighlight.css({ left: x, width: width, height: this._rowHeight });
 
         if (oldSel.left === range.left &&
@@ -1650,7 +1661,7 @@ const TableView = SilkyView.extend({
     _createRHCellHTML(top, height, content, rowNo) {
 
         let highlighted = '';
-        if (this.selection !== null && this.selection.rowNo === rowNo)
+        if (this.selection && this.selection.rowNo === rowNo)
             highlighted = ' highlighted';
 
         let virtual = '';
@@ -1672,6 +1683,37 @@ const TableView = SilkyView.extend({
             let $cell = $(this._createRHCellHTML(top, this._rowHeight, content, rowNo));
             this.$rhColumn.append($cell);
         }
+
+        let nDigits = Math.floor(Math.log(v.bottom) / Math.log(10)) + 1;
+        if (this._rowHeaderDigits !== nDigits) {
+            let newWidth = nDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
+            let deltaWidth = newWidth - this._rowHeaderWidth;
+            this._rowHeaderWidth = newWidth;
+            this._rowHeaderDigits = nDigits;
+
+            // group all dom queries together before dom changes
+            // reduce reflow triggers
+            let leftCol = this.$selectionColumnHighlight.position().left;
+            let leftSel = this.$selection.position().left;
+
+            // now dom changes
+            this.$rhColumn.css('width', this._rowHeaderWidth);
+            this.$topLeftCell.css('width', this._rowHeaderWidth);
+
+            this.$selectionColumnHighlight.css('left', leftCol + deltaWidth);
+            this.$selectionRowHighlight.css('width', this._rowHeaderWidth);
+            this.$selection.css('left', leftSel + deltaWidth);
+
+            this._lefts = this._lefts.map(x => x += deltaWidth);
+            for (let i = 0; i < this._lefts.length; i++) {
+                let $column = this.$columns[i];
+                let $header = this.$headers[i];
+                let left = this._lefts[i];
+                $column.css('left', left);
+                $header.css('left', left);
+            }
+        }
+
     },
     refreshCells(oldViewport, newViewport) {
 
