@@ -36,7 +36,7 @@ const TableView = SilkyView.extend({
         this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
-        this.$el.addClass("jmv-tableview");
+        this.$el.addClass('jmv-tableview');
 
 
 
@@ -138,6 +138,8 @@ const TableView = SilkyView.extend({
         this.$header.append($header);
         this.$headers.push($header);
 
+        this._addResizeListeners($header);
+
         let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
         this.$columns.push($column);
@@ -190,10 +192,6 @@ const TableView = SilkyView.extend({
 
         this._updateViewRange();
 
-        let $resizers = this.$header.find('.jmv-column-header-resizer');
-        $resizers.on('drag', event => this._columnResizeHandler(event));
-        $resizers.on('mousedown', event => event.stopPropagation());
-
         this.$selection = $('<input class="jmv-table-cell-selected" contenteditable>');
         this.$selection.width(this._lefts[0]);
         this.$selection.height(this._rowHeight);
@@ -233,6 +231,11 @@ const TableView = SilkyView.extend({
         });
 
         this._setSelection(0, 0);
+    },
+    _addResizeListeners($element) {
+        let $resizers = $element.find('.jmv-column-header-resizer');
+        $resizers.on('drag', event => this._columnResizeHandler(event));
+        $resizers.on('mousedown', event => event.stopPropagation());
     },
     _updateHeight() {
         let vRowCount = this.model.get('vRowCount');
@@ -1206,6 +1209,8 @@ const TableView = SilkyView.extend({
         let $header = $(html);
         $header.insertBefore($after);
         this.$headers.splice(column.index, 0, $header);
+
+        this._addResizeListeners($header);
 
         $after = $(this.$columns[column.index]);
         let $column = $('<div data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
