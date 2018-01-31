@@ -1,6 +1,8 @@
 
-from ..core import ColumnType
-from ..core import MeasureType
+import ast
+
+from jamovi.core import ColumnType
+from jamovi.core import MeasureType
 
 from .compute import Parser
 from .compute import FormulaStatus
@@ -8,8 +10,8 @@ from .compute import Transmogrifier
 from .compute import Checker
 
 from .utils import FValues
-
-import ast
+from .utils import convert
+from .utils import is_missing
 
 
 NaN = float('nan')
@@ -49,18 +51,23 @@ class Column:
             return -2147483648
 
     def fvalue(self, index):
-        if self._child is None:
-            return NaN
-        v = self._child[index]
-        if self._child.measure_type is MeasureType.CONTINUOUS:
-            return v
-        elif isinstance(v, int):
-            if v == -2147483648:
-                return NaN
+        if self._child is not None:
+            v = self._child[index]
+            if (self._child.measure_type is MeasureType.NOMINAL or
+               self._child.measure_type is MeasureType.ORDINAL):
+                if is_missing(v):
+                    return (-2147483648, '')
+                else:
+                    return (v, self._child.get_label(v))
             else:
-                return float(v)
+                return v
         else:
-            return NaN
+            if self._child.measure_type is MeasureType.CONTINUOUS:
+                return NaN
+            elif self._child.measure_type is MeasureType.NOMINAL_TEXT:
+                return ''
+            else:
+                return (-2147483648, '')
 
     def fvalues(self):
         return FValues(self)
@@ -191,6 +198,11 @@ class Column:
             self._create_child()
         self._child.insert_level(raw, label, importValue)
 
+    def get_label(self, value):
+        if self._child is None:
+            raise RuntimeError('Virtual columns have no labels')
+        return self._child.get_label(value)
+
     def get_value_for_label(self, label):
         if self._child is not None:
             return self._child.get_value_for_label(label)
@@ -269,17 +281,18 @@ class Column:
             if formula != self._child.formula:
                 formula_change = True
 
-        self._child.change(
-            name=name,
-            column_type=column_type,
-            measure_type=measure_type,
-            levels=levels,
-            dps=dps,
-            auto_measure=auto_measure,
-            formula=formula)
-
         if formula_change:
+            self._child.change(formula=formula)
             self.parse_formula()
+        else:
+            self._child.change(
+                name=name,
+                column_type=column_type,
+                measure_type=measure_type,
+                levels=levels,
+                dps=dps,
+                auto_measure=auto_measure,
+                formula=formula)
 
     @property
     def has_deps(self):
@@ -326,26 +339,28 @@ class Column:
         elif end is None:
             end = start + 1
 
+        self._child.clear_levels()
+
+        if self.measure_type is MeasureType.CONTINUOUS:
+            ul_type = float
+        elif self.measure_type is MeasureType.NOMINAL_TEXT:
+            ul_type = str
+        else:
+            ul_type = int
+
         if self._node is None:
+            v = convert(NaN, ul_type)
             for row_no in range(start, end):
-                self._child[row_no] = float('nan')
+                self._child.set_value(row_no, v, True)
         else:
             for row_no in range(start, end):
                 try:
                     v = self._node.fvalue(row_no)
-                    if isinstance(v, float):
-                        pass
-                    elif isinstance(v, int):
-                        if v == -2147483648:
-                            v = float('nan')
-                        else:
-                            v = float(v)
-                    else:
-                        v = float('nan')
-                    self._child[row_no] = v
+                    v = convert(v, ul_type)
                 except Exception as e:
-                    self._child[row_no] = float('nan')
+                    v = convert(NaN, ul_type)
                     self._parent._log.exception(e)
+                self._child.set_value(row_no, v, True)
             self.determine_dps()
 
         self._needs_recalc = False
@@ -371,21 +386,22 @@ class Column:
                 self._node._add_node_parent(self)
                 self._formula_status = FormulaStatus.OK
 
-        except RecursionError as e:
+                self._child.set_measure_type(self._node.measure_type)
+
+        except RecursionError:
             self._formula_status = FormulaStatus.ERROR
             self._child.formula_message = 'Circular reference detected'
-        except SyntaxError as e:
+        except SyntaxError:
             self._formula_status = FormulaStatus.ERROR
             self._child.formula_message = 'The formula is mis-specified'
-        except NameError as e:
-            self._formula_status = FormulaStatus.ERROR
-            self._child.formula_message = str(e)
-        except TypeError as e:
+        except (NameError, TypeError, ValueError) as e:
             self._formula_status = FormulaStatus.ERROR
             self._child.formula_message = str(e)
         except BaseException as e:
             self._formula_status = FormulaStatus.ERROR
             self._child.formula_message = 'Unexpected error ({}, {})'.format(str(e), type(e).__name__)
+            # import traceback
+            # print(traceback.format_exc())
 
     def _add_node_parent(self, parent):
         self._node_parents.append(parent)

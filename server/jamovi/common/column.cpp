@@ -117,7 +117,7 @@ const char *Column::getLabel(int value) const
     }
 
     stringstream ss;
-    ss << "level " << value << " not found";
+    ss << "level " << value << " not found in " << this->name();
     throw runtime_error(ss.str());
 }
 

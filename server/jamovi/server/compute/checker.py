@@ -10,8 +10,11 @@ from . import functions
 
 class Checker(NodeVisitor):
 
-    LEGAL_NODES = [ 'Num', 'Str', 'Name', 'Load', 'UnaryOp', 'UAdd', 'USub',
-                    'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod', 'Pow', 'Call' ]
+    LEGAL_NODES = [ 'Name', 'Num', 'Str', 'Call', 'Load',
+                    'UnaryOp', 'UAdd', 'USub', 'Not', 'Invert',
+                    'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod', 'Pow',
+                    'Compare', 'Eq', 'NotEq', 'Gt', 'GtE', 'Lt', 'LtE',
+                    'BoolOp', 'And', 'Or' ]
 
     @staticmethod
     def check(column, node):
@@ -36,7 +39,7 @@ class Checker(NodeVisitor):
 
         if hasattr(functions, name):
             func = getattr(functions, name)
-            skip_first = func.is_row_wise
+            skip_first = func.meta.is_row_wise
         else:
             raise NameError('Function {}() does not exist'.format(name))
 
@@ -58,10 +61,11 @@ class Checker(NodeVisitor):
                 raise RuntimeError('Bad function definition')
 
         if len(node.args) > max_args or len(node.args) < min_args:
+            plural = 's' if min_args != 1 else ''
             if max_args == min_args:
-                raise TypeError('Function {}() takes {} argument(s)'.format(name, min_args))
+                raise TypeError('Function {}() takes {} argument{}'.format(name, min_args, plural))
             elif isnan(max_args):
-                raise TypeError('Function {}() requires atleast {} argument(s)'.format(name, min_args))
+                raise TypeError('Function {}() requires atleast {} argument{}'.format(name, min_args, plural))
             else:
                 raise TypeError('Function {}() requires between {} and {} arguments'.format(name, min_args, max_args))
 
@@ -72,6 +76,9 @@ class Checker(NodeVisitor):
 
     def visit_Name(self, node):
         depcy_name = node.id
+
+        if depcy_name == 'NA':
+            return
 
         if self._column.name == depcy_name:
             raise RecursionError()

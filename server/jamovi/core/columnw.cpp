@@ -261,6 +261,9 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
         {
             Level &level = levels[i];
             Level &nextLevel = levels[i+1];
+
+            assert(level.value != value);
+
             if (ascending && level.value > value)
             {
                 nextLevel = level;

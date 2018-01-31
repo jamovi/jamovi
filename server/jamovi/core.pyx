@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 Jonathon Love
+# Copyright (C) 2016-2018 Jonathon Love
 #
 
 from libcpp cimport bool
@@ -96,17 +96,13 @@ cdef class DataSet:
     def __iter__(self):
         return ColumnIterator(self)
 
-    def append_column(self, name, import_name=None):
+    def append_column(self, name, import_name=''):
         c = Column()
-        if import_name is None:
-            import_name = name
         c._this = self._this.appendColumn(name.encode('utf-8'), import_name.encode('utf-8'))
         return c
 
-    def insert_column(self, index, name, import_name=None):
+    def insert_column(self, index, name, import_name=''):
         c = Column()
-        if import_name is None:
-            import_name = name
         c._this = self._this.insertColumn(index, name.encode('utf-8'), import_name.encode('utf-8'))
         return c
 
@@ -158,7 +154,7 @@ cdef extern from "columnw.h":
         void setAutoMeasure(bool auto)
         bool autoMeasure() const
         void append[T](const T &value)
-        void setValue[T](int index, T value)
+        void setValue[T](int index, T value, bool init)
         T value[T](int index)
         const char *getLabel(int value) const
         const char *getImportValue(int value) const
@@ -238,9 +234,12 @@ cdef class Column:
             return MeasureType(self._this.measureType())
 
         def __set__(self, measure_type):
-            if type(measure_type) is MeasureType:
-                measure_type = measure_type.value
-            self._this.setMeasureType(measure_type)
+            self.set_measure_type(measure_type)
+
+    def set_measure_type(self, measure_type):
+        if type(measure_type) is MeasureType:
+            measure_type = measure_type.value
+        self._this.setMeasureType(measure_type)
 
     property auto_measure:
         def __get__(self):
@@ -320,6 +319,11 @@ cdef class Column:
             importValue = label
         self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
+    def get_label(self, value):
+        if value == -2147483648:
+            return ''
+        return self._this.getLabel(value).decode('utf-8');
+
     def get_value_for_label(self, label):
         return self._this.valueForLabel(label.encode('utf-8'))
 
@@ -380,6 +384,25 @@ cdef class Column:
             self._this.setValue[double](index, value)
         else:
             self._this.setValue[int](index, value)
+
+    def set_value(self, index, value, initing=False):
+        if index >= self.row_count:
+            raise IndexError()
+
+        if self.measure_type is MeasureType.CONTINUOUS:
+            self._this.setValue[double](index, value)
+        elif self.measure_type is MeasureType.NOMINAL_TEXT and isinstance(value, str):
+            if value == '':
+                level_i = -2147483648
+            elif self.has_level(value):
+                level_i = self.get_value_for_label(value)
+            else:
+                level_i = self.level_count
+                level_v = value.encode('utf-8')
+                self._this.appendLevel(level_i, level_v, ''.encode('utf-8'))
+            self._this.setValue[int](index, level_i, initing)
+        else:
+            self._this.setValue[int](index, value, initing)
 
     def __getitem__(self, index):
 
@@ -629,7 +652,7 @@ cdef class MemoryMap:
     cdef CMemoryMap *_this
 
     @staticmethod
-    def create(path, size=4194304):
+    def create(path, size=4*1024*1024):
         mm = MemoryMap()
         mm._this = CMemoryMap.create(path.encode('utf-8'), size=size)
         return mm

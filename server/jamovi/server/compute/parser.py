@@ -11,7 +11,7 @@ class Parser:
     @staticmethod
     def parse(str):
 
-        escaped = Parser.escape(str.strip())  # escape keywords
+        escaped = Parser.escape(str.strip())  # escape column names
         tree = ast.parse(escaped)
 
         if len(tree.body) == 0:
@@ -31,6 +31,12 @@ class Parser:
             return chunk
         elif chunk == '^':
             return '**'
+        elif chunk == 'and':
+            return 'and'
+        elif chunk == 'or':
+            return 'or'
+        elif chunk == 'not':
+            return 'not'
         elif len(chunk) == 1 and chunk in Parser._SPECIAL_CHARS:
             return chunk
         elif chunk.startswith('"') and chunk.endswith('"'):
@@ -50,7 +56,7 @@ class Parser:
     @staticmethod
     def escape(str):
 
-        # escapes keywords by replacing their first letter with an underscore
+        # encodes column names into base16
 
         s = 0
         e = 0

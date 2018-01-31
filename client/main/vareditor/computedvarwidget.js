@@ -117,12 +117,27 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VMODE">VMODE</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VN">VN</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VSE">VSE</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VSTDEV">VSTDEV</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
         this.$functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
         this.$functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
+
+        this.$functionsContent.append($('<div class="subtitle" data-name="">Logical</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="IF">IF</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="IFELSE">IFELSE</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="IFMISS">IFMISS</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
+
+        this.$functionsContent.append($('<div class="subtitle" data-name="">Misc</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="FILTER">FILTER</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="INT">INT</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="OFFSET">OFFSET</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
+        this.$functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
 
         this.$functionsContent.append($('<div class="subtitle" data-name="">Simulation</div>'));
         this.$functionsContent.append($('<div class="item" data-name="BETA">BETA</div>'));

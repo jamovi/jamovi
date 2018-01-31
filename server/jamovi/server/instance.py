@@ -735,6 +735,7 @@ class Instance:
         for column_schema in request.schema.columns:
             column = self._data.get_column_by_id(column_schema.id)
             old_name = column.name
+            old_type = column.measure_type
 
             levels = None
             if column_schema.hasLevels:
@@ -761,6 +762,8 @@ class Instance:
 
             if old_name != column.name:     # if a name has changed, then
                 reparse.update(dependents)  # dep columns need to be reparsed
+            elif old_type != column.measure_type:
+                reparse.update(dependents)
 
         for column in reparse:
             column.parse_formula()

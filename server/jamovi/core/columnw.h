@@ -66,6 +66,13 @@ public:
             if (newValue != INT_MIN)
             {
                 Level *level = rawLevel(newValue);
+                if (level == NULL)
+                {
+                    std::string str = std::to_string(newValue);
+                    const char *c_str = str.c_str();
+                    insertLevel(newValue, c_str, c_str);
+                    level = rawLevel(newValue);
+                }
                 assert(level != NULL);
                 level->count++;
             }
