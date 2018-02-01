@@ -262,7 +262,10 @@ class Call(ast.Call):
             if len(args) <= i:
                 sub_func = params[param_names[i]].default
                 sub_func_name = sub_func.__name__
-                args.append(Call(ast.Name(id=sub_func_name), sub_func_args, keywords))
+                new_func = Call(ast.Name(id=sub_func_name), sub_func_args, keywords)
+                for sf_arg in sub_func_args:
+                    sf_arg._add_node_parent(new_func)
+                args.append(new_func)
             else:
                 break
 

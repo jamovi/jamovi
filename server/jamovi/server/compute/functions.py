@@ -5,6 +5,7 @@ from numbers import Number as num
 import statistics as stats
 
 from scipy.stats import boxcox
+# numpy, scipy return numpy.float64's, so need to convert back to float
 
 from jamovi.core import MeasureType
 from jamovi.server.utils import is_missing
@@ -135,6 +136,7 @@ def VSUM(values: float):
 
 
 @column_wise
+@returns(MeasureType.ORDINAL)
 def VROWS(values):
     return sum(1 for _ in values)
 
@@ -143,12 +145,14 @@ def VROWS(values):
 def VBOXCOXLAMBDA(values: float):
     values = filter(lambda x: not math.isnan(x), values)
     values = list(values)
-    return boxcox(values)[1]
+    # numpy returns numpy.float64, so need to convert back to float
+    return float(boxcox(values)[1])
 
 
 @row_wise
 def BOXCOX(index, x: float, lmbda: float=VBOXCOXLAMBDA):
-    return boxcox(x=x, lmbda=lmbda)
+    # numpy returns numpy.float64, so need to convert back to float
+    return float(boxcox(x=x, lmbda=lmbda))
 
 
 @row_wise
@@ -191,6 +195,7 @@ def IFMISS(index, cond, x=1, y=-2147483648):
 
 
 @row_wise
+@returns(MeasureType.NOMINAL, 0)
 def NOT(index, x):
     if is_missing(x):
         return x
@@ -198,10 +203,14 @@ def NOT(index, x):
 
 
 @row_wise
-def FILTER(index, x, cond: int):
-    if is_missing(cond, True):
-        return -2147483648
-    return x if cond else -2147483648
+@returns(MeasureType.NOMINAL, 0)
+def FILTER(index, x, *conds: int):
+    for cond in conds:
+        if is_missing(cond, True):
+            return -2147483648
+        if not cond:
+            return -2147483648
+    return x
 
 
 @row_wise
