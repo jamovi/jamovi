@@ -437,10 +437,13 @@ const TableView = Elem.View.extend({
                     if (cell === undefined)
                         continue;
                     let nowValue = cell.value;
-                    if (cell.value === lastValue)
+                    if (cell.value === lastValue) {
                         cell.value = '';
-                    else
+                        cell.sups = '';
+                    }
+                    else {
                         lastValue = nowValue;
+                    }
                 }
             }
         }
