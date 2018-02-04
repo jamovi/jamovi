@@ -10,7 +10,6 @@ const ERDM = require("element-resize-detector");
 const createItem = require('./create').createItem;
 
 
-
 class Main {  // this is constructed at the bottom
 
     constructor() {
@@ -36,13 +35,13 @@ class Main {  // this is constructed at the bottom
                 data : { address, options }}, '*');
         };
 
-        $(document).ready(() => {
-            this.$body = $('body');
-        });
+        // the location of the script should be inside the body
+        // so we don't need document.ready()
+        this.$body = $('body');
     }
 
     _reallyNotifyResize() {
-        let width  = this.$results.width()  + 20;
+        let width  = this.$results.width()  + 40;
         let height = this.$results.height() + 25;
 
         this.mainWindow.postMessage({
