@@ -141,12 +141,14 @@ OptionTypes.Level = function(template, value) {
 
     this._override('_onRenameLevel', (baseFunction, variable, oldLabel, newLabel, getOption) => {
         let linkedVariable = this.getProperty('variable');
-        if (linkedVariable.startsWith('(') && linkedVariable.endsWith(')')) {
-            let binding = linkedVariable.slice(1, -1);
-            linkedVariable = getOption(binding).getValue();
+        if (linkedVariable) {
+            if (linkedVariable.startsWith('(') && linkedVariable.endsWith(')')) {
+                let binding = linkedVariable.slice(1, -1);
+                linkedVariable = getOption(binding).getValue();
+            }
+            if (linkedVariable === variable && this._value === oldLabel)
+                this._value = newLabel;
         }
-        if (linkedVariable === variable && this._value === oldLabel)
-            this._value = newLabel;
     });
 };
 SuperClass.create(OptionTypes.Level);
