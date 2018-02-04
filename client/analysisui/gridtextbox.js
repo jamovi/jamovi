@@ -64,7 +64,7 @@ const GridTextbox = function(params) {
                 }
                 dd = dd + '<div class="jmv-option-text-input-suggested-option" data-value="' + value + '">';
                 dd = dd + '    <div class="jmv-option-text-input-suggested-option-value">' + value + '</div>';
-                if (isObject)
+                if (isObject && suggestedValues[i].label)
                     dd = dd + '    <div class="jmv-option-text-input-suggested-option-label">' + suggestedValues[i].label + '</div>';
                 dd = dd + '</div>';
             }
