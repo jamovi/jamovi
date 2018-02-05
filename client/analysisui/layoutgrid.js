@@ -238,7 +238,7 @@ const LayoutGrid = function() {
         this._layoutValid = true;
 
         window.setTimeout(() => {
-            if (this._layoutValid)
+            if (this._layoutValid && this._readyResolved !== null)
                 this._readyResolved();
         }, 0);
 

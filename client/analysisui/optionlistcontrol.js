@@ -209,6 +209,27 @@ const OptionListControl = function(params) {
         this._context = context;
     };
 
+    this.cloneObject = function(template) {
+        let newTemplate = template;
+        if (typeof template === 'object' && template !== null) {
+            if (Array.isArray(template)) {
+                newTemplate = [];
+                for (let i = 0; i < template.length; i++)
+                    newTemplate.push(this.cloneObject(template[i]));
+            }
+            else {
+                newTemplate = { };
+                for (let prop in template) {
+                    if (prop === '_parentControl')
+                        newTemplate[prop] = template[prop];
+                    else
+                        newTemplate[prop] = this.cloneObject(template[prop]);
+                }
+            }
+        }
+        return newTemplate;
+    };
+
     this.updateValueCell = function(columnInfo, dispRow, value) {
         let dispColumn = columnInfo.index;
         if (dispRow === this._rowCount - 1)
@@ -237,7 +258,7 @@ const OptionListControl = function(params) {
                 params._templateInfo.templateName = columnInfo.templateName;
 
             if (columnInfo.template !== undefined)
-                _.extend(params, columnInfo.template);
+                _.extend(params, this.cloneObject(columnInfo.template));
 
             let offsetKey = [this.displayRowToRowIndex(dispRow)];
             if (this.maxItemCount === 1)

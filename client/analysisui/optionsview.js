@@ -65,7 +65,7 @@ const OptionsView = function(uiModel) {
 
     this.dataChanged = function(data) {
         for (let i = 0; i < this._allCtrls.length; i++) {
-            let ctrl = this._allCtrls[i];
+            let ctrl = this._allCtrls[i].ctrl;
             if (ctrl.isDisposed)
                 continue;
 
@@ -83,13 +83,8 @@ const OptionsView = function(uiModel) {
         return this._wrapOption(option, false);
     };
 
-    this._getVirtualOption = function(params) {
-
-        let ctrlOption = this._ctrlOptions[params.name];
-        if (ctrlOption === undefined)
-            return this._wrapOption(new Opt(null, params), true);
-
-        return ctrlOption;
+    this._getVirtualOption = function() {
+        return this._wrapOption(new Opt(null, { }), true);
     };
 
     this._wrapOption = function(option, isVirtual) {
@@ -101,8 +96,11 @@ const OptionsView = function(uiModel) {
 
         let options = this.model.options;
 
-        let ctrlOption = this._ctrlOptions[option.name];
-        if (ctrlOption === undefined) {
+        let ctrlOption = null;
+        if (option.name)
+            ctrlOption =this._ctrlOptions[option.name];
+
+        if ( ! ctrlOption) {
             ctrlOption = {
 
                 source: option,
@@ -237,7 +235,9 @@ const OptionsView = function(uiModel) {
                     return option.isValidKey(key);
                 }
             };
-            this._ctrlOptions[option.name] = ctrlOption;
+
+            if (option.name)
+                this._ctrlOptions[option.name] = ctrlOption;
         }
 
         return ctrlOption;
@@ -253,18 +253,21 @@ const OptionsView = function(uiModel) {
         this._ctrlListValid = true;
         let i = 0;
         while (i < this._allCtrls.length) {
-            let ctrl = this._allCtrls[i];
+            let ctrlInfo = this._allCtrls[i];
+            let ctrl = ctrlInfo.ctrl;
 
             if (ctrl.isDisposed) {
                 this._allCtrls.splice(i, 1);
-                if (ctrl.hasProperty('name'))
-                    this.model.actionManager.removeResource(ctrl.getPropertyValue('name'));
+                if (ctrlInfo.resourceId !== null)
+                    this.model.actionManager.removeResource(ctrlInfo.resourceId);
             }
             else
                 i += 1;
         }
     };
 
+    this._nextControlID = 0;
+    this._templateCtrlNameCount = { };
     this.createControl = function(uiDef, parent) {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
@@ -273,6 +276,8 @@ const OptionsView = function(uiModel) {
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }
 
+        let name = uiDef.name === undefined ? null :  uiDef.name;
+
         uiDef._parentControl = parent;
 
         let templateInfo = uiDef._templateInfo;
@@ -280,17 +285,49 @@ const OptionsView = function(uiModel) {
             templateInfo = parent.getTemplateInfo();
 
         if (templateInfo !== null) {
-            if (uiDef.name !== undefined)
-                uiDef.name = uiDef.name + "_" + templateInfo.name + "_" + templateInfo.instanceId;
-            else
-                uiDef.name = "_" + templateInfo.name + "_" + templateInfo.instanceId;
+            name = null;
             uiDef._templateInfo = templateInfo;
         }
 
+        if (uiDef.controlID !== undefined)
+            throw 'This control definition has already been assigned a control id. It has already been used by a control';
+
+        uiDef.controlID = this._nextControlID++;
         let ctrl = new uiDef.type(uiDef);
 
         if (ctrl.getPropertyValue("stage") > this.model.currentStage)
             return null;
+
+        if (ctrl.setRequestedDataSource)
+            ctrl.setRequestedDataSource(this._requestedDataSource);
+
+        if (ctrl.setControlManager)
+            ctrl.setControlManager(this);
+
+        if (uiDef.name !== undefined || ctrl.hasProperty("optionName")) {
+            if (ctrl.setOption) {
+                let id = ctrl.getPropertyValue("optionName");
+                let isVirtual = false;
+                if (id === null) {
+                    id = name;
+                    isVirtual = ctrl.getPropertyValue("isVirtual");
+                }
+                let option = null;
+                if (isVirtual)
+                    option = this._getVirtualOption();
+                else if (templateInfo !== null)
+                    option = templateInfo.parent.option;
+                else
+                    option = this._getOption(id);
+
+                if (option !== null)
+                    ctrl.setOption(option);
+            }
+        }
+
+        let resourceId = null;
+        if (ctrl !== null)
+            resourceId = this.model.actionManager.addResource(name, ctrl);
 
         ctrl._override("onDisposed", (baseFunction) => {
             if (baseFunction !== null)
@@ -302,39 +339,7 @@ const OptionsView = function(uiModel) {
             }
         });
 
-        if (ctrl.setRequestedDataSource)
-            ctrl.setRequestedDataSource(this._requestedDataSource);
-
-        if (ctrl.setControlManager)
-            ctrl.setControlManager(this);
-
-        this._allCtrls.push(ctrl);
-
-        if (uiDef.name === undefined && ctrl.hasProperty("optionName") === false)
-            return ctrl;
-
-        let name = uiDef.name;
-        if (ctrl.setOption) {
-            let id = ctrl.getPropertyValue("optionName");
-            let isVirtual = false;
-            if (id === null) {
-                id = name;
-                isVirtual = ctrl.getPropertyValue("isVirtual");
-            }
-            let option = null;
-            if (isVirtual)
-                option = this._getVirtualOption({ name:id });
-            else if (templateInfo !== null)
-                option = templateInfo.parent.option;
-            else
-                option = this._getOption(id);
-
-            if (option !== null)
-                ctrl.setOption(option);
-        }
-
-        if (ctrl !== null && name !== null)
-            this.model.actionManager.addResource(uiDef.name, ctrl);
+        this._allCtrls.push( { ctrl: ctrl, resourceId: resourceId } );
 
         return ctrl;
     };
@@ -357,7 +362,8 @@ const OptionsView = function(uiModel) {
         this._initializingData -= 1;
         this.model.actionManager.endInitializingData();
 
-        for (let ctrl of this._allCtrls) {
+        for (let ctrlInfo of this._allCtrls) {
+            let ctrl = ctrlInfo.ctrl;
             if (ctrl.update)
                 ctrl.update();
         }
