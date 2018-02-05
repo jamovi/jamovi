@@ -73,8 +73,7 @@ const LayoutAction = function(manager, params) {
     };
 
     this.initialize = function() {
-        for (let i = 0; i < this._listeners.length; i++) {
-            let eventObj = this._listeners[i];
+        for (let eventObj of this._listeners) {
             if (eventObj.connected === false) {
                 let supplier = this._manager.getObject(eventObj.name);
                 if (eventObj.eventName === null)
@@ -88,8 +87,7 @@ const LayoutAction = function(manager, params) {
 
     this.tryConnectTo = function(name, supplier) {
         let found = false;
-        for (let i = 0; i < this._listeners.length; i++) {
-            let eventObj = this._listeners[i];
+        for (let eventObj of this._listeners) {
             if (eventObj.name === name && eventObj.connected === false) {
                 if (eventObj.eventName === null)
                     eventObj.eventName = supplier.getTrigger(eventObj.property);
@@ -103,8 +101,7 @@ const LayoutAction = function(manager, params) {
     };
 
     this.disconnectFrom = function(supplier) {
-        for (let i = 0; i < this._listeners.length; i++) {
-            let eventObj = this._listeners[i];
+        for (let eventObj of this._listeners) {
             if (eventObj.supplier === supplier) {
                 if (eventObj.connected) {
                     eventObj.supplier.off(eventObj.eventName, this.execute);
@@ -118,8 +115,7 @@ const LayoutAction = function(manager, params) {
     };
 
     this.close = function() {
-        for (let i = 0; i < this._listeners.length; i++) {
-            let eventObj = this._listeners[i];
+        for (let eventObj of this._listeners) {
             if (eventObj.connected) {
                 eventObj.supplier.off(eventObj.eventName, this.execute);
                 eventObj.supplier = null;

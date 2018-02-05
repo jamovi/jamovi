@@ -252,15 +252,15 @@ const LayoutActionManager = function(view) {
 
     this._bindingActions = {};
     this.bindingsToActions = function() {
-        for (let name in this._resources) {
-            let res = this._resources[name];
+        for (let resourceId in this._resources) {
+            let res = this._resources[resourceId];
             if (res.properties !== undefined) {
                 for (let property in res.properties) {
                     let prop = res.properties[property];
                     if (prop.binding !== undefined) {
                         let resolvedBindData = this._resolveBinding(prop.binding.trim(), 0);
                         let params = this.bindActionParams(res, property, resolvedBindData);
-                        this.addDirectAction(name, params, true);
+                        this.addDirectAction(resourceId, params, true);
                         params.execute(this._resources);
                     }
                 }
@@ -269,8 +269,8 @@ const LayoutActionManager = function(view) {
     };
 
     this.executeBindingActions = function() {
-        for (let name in this._bindingActions) {
-            let list = this._bindingActions[name];
+        for (let resourceId in this._bindingActions) {
+            let list = this._bindingActions[resourceId];
             for (let i = 0; i < list.length; i++) {
                 let action = list[i];
                 action.execute(this._resources);
@@ -285,25 +285,25 @@ const LayoutActionManager = function(view) {
             action.initialize();
     };
 
-    this.addDirectAction = function(name, params, isBinding) {
-        if (this._directActions[name] === undefined)
-            this._directActions[name] = [];
+    this.addDirectAction = function(resourceId, params, isBinding) {
+        if (this._directActions[resourceId] === undefined)
+            this._directActions[resourceId] = [];
 
         let action = new LayoutAction(this, params);
-        this._directActions[name].push(action);
+        this._directActions[resourceId].push(action);
 
         if (isBinding) {
-            if (this._bindingActions[name] === undefined)
-                this._bindingActions[name] = [];
-            this._bindingActions[name].push(action);
+            if (this._bindingActions[resourceId] === undefined)
+                this._bindingActions[resourceId] = [];
+            this._bindingActions[resourceId].push(action);
         }
 
         if (this._initialised)
             action.initialize();
     };
 
-    this.removeDirectActions = function(name) {
-        let actions = this._directActions[name];
+    this.removeDirectActions = function(resourceId) {
+        let actions = this._directActions[resourceId];
         if (actions === undefined)
             return;
 
@@ -312,13 +312,23 @@ const LayoutActionManager = function(view) {
             action.close();
         }
 
-        delete this._directActions[name];
-        if (this._bindingActions[name] !== undefined)
-            delete this._bindingActions[name];
+        delete this._directActions[resourceId];
+        if (this._bindingActions[resourceId] !== undefined)
+            delete this._bindingActions[resourceId];
     };
 
     this.addResource = function(name, resource) {
-        this._resources[name] = resource;
+        let resId = null;
+        if (name === null && resource.hasProperty && resource.hasProperty('controlID'))
+            resId = resource.getPropertyValue('controlID');
+
+        if (name === null && resId === null)
+            throw 'If a resource does not have an id, it then requires a name.';
+
+        let useId = name === null ? '{' + resId + '}' : name;
+
+        if (this._resources[useId] !== undefined)
+            throw "The following resource id is already in use: " + useId;
 
         let events = null;
         if (resource.hasProperty && resource.hasProperty('events'))
@@ -326,83 +336,83 @@ const LayoutActionManager = function(view) {
         else if (resource.events !== undefined)
             events = resource.events;
 
-        if (events !== null) {
-            if (Array.isArray(events)) {
-                for (let i = 0; i < events.length; i++) {
-                    let execute = events[i].execute;
-                    let params = JSON.parse(JSON.stringify(events[i]));
-                    params.execute = execute;
+        if (events !== null || name !== null)
+            this._resources[useId] = resource;
+        else
+            useId = null;
 
-                    if (_.isFunction(params.execute) === false)
-                        throw "An action must contain an execute function.";
+        if (events !== null && Array.isArray(events)) {
+            for (let i = 0; i < events.length; i++) {
+                let execute = events[i].execute;
+                let params = JSON.parse(JSON.stringify(events[i]));
+                params.execute = execute;
 
-                    if (params.onChange === undefined && params.onEvent === undefined)
-                        params.onChange = name;
+                if (_.isFunction(params.execute) === false)
+                    throw "An action must contain an execute function.";
 
-                    if (params.onEvent !== undefined) {
-                        if (typeof params.onEvent === 'string') {
-                            if (params.onEvent.includes('.') === false)
-                                params.onEvent = name + '.' + params.onEvent;
-                        }
-                        else {
-                            for (let j = 0; j < params.onEvent.length; j++) {
-                                if (params.onEvent[j].includes('.') === false)
-                                    params.onEvent = name + '.' + params.onEvent;
-                            }
+                if (params.onChange === undefined && params.onEvent === undefined)
+                        params.onChange = useId;
+
+                if (params.onEvent !== undefined) {
+                    if (typeof params.onEvent === 'string') {
+                        if (params.onEvent.includes('.') === false)
+                            params.onEvent = useId + '.' + params.onEvent;
+                    }
+                    else {
+                        for (let j = 0; j < params.onEvent.length; j++) {
+                            if (params.onEvent[j].includes('.') === false)
+                                params.onEvent = useId + '.' + params.onEvent;
                         }
                     }
+                }
 
-                    this.addDirectAction(name, params);
+                this.addDirectAction(useId, params);
+            }
+
+            if (this._initialised) {
+                for (let action of this._actions)
+                    action.tryConnectTo(useId, resource);
+
+                for (let id in this._directActions) {
+                    let list = this._directActions[id];
+                    for (let i = 0; i < list.length; i++) {
+                        let action = list[i];
+                        action.tryConnectTo(useId, resource);
+                    }
                 }
             }
         }
+
+        return useId;
+    };
+
+    this.removeResource = function(resourceId) {
+        this.removeDirectActions(resourceId);
+        delete this._resources[resourceId];
 
         if (this._initialised) {
-            for (let i = 0; i < this._actions.length; i++) {
-                let action = this._actions[i];
-                action.tryConnectTo(name, resource);
-            }
+            for (let action of this._actions)
+                action.disconnectFrom(resourceId);
 
-            for (let name in this._directActions) {
-                let list = this._directActions[name];
+            for (let id in this._directActions) {
+                let list = this._directActions[id];
                 for (let i = 0; i < list.length; i++) {
                     let action = list[i];
-                    action.tryConnectTo(name, resource);
-                }
-            }
-        }
-    };
-
-    this.removeResource = function(name) {
-        let resource = this._resources[name];
-        this.removeDirectActions(name);
-        delete this._resources[name];
-
-        if (this._initialised) {
-            for (let i = 0; i < this._actions.length; i++) {
-                let action = this._actions[i];
-                action.disconnectFrom(name);
-            }
-
-            for (let name in this._directActions) {
-                let list = this._directActions[name];
-                for (let i = 0; i < list.length; i++) {
-                    let action = list[i];
-                    action.disconnectFrom(name);
+                    action.disconnectFrom(resourceId);
                 }
             }
         }
     };
 
 
-    this.exists = function(name) {
-        return this._resources[name] !== undefined;
+    this.exists = function(resourceId) {
+        return this._resources[resourceId] !== undefined;
     };
 
-    this.getObject = function(name) {
-        let obj = this._resources[name];
+    this.getObject = function(resourceId) {
+        let obj = this._resources[resourceId];
         if (obj === undefined)
-            throw "UI Object '" + name + "' does not exist and cannot be accessed.";
+            throw "UI Object '" + resourceId + "' does not exist and cannot be accessed.";
 
         return obj;
     };
@@ -410,13 +420,11 @@ const LayoutActionManager = function(view) {
     this.initializeAll = function() {
         this.bindingsToActions();
 
-        for (let i = 0; i < this._actions.length; i++) {
-            let action = this._actions[i];
+        for (let action of this._actions)
             action.initialize();
-        }
 
-        for (let name in this._directActions) {
-            let list = this._directActions[name];
+        for (let resourceId in this._directActions) {
+            let list = this._directActions[resourceId];
             for (let i = 0; i < list.length; i++) {
                 let action = list[i];
                 action.initialize();
@@ -427,13 +435,11 @@ const LayoutActionManager = function(view) {
     };
 
     this.close = function() {
-        for (let i = 0; i < this._actions.length; i++) {
-            let action = this._actions[i];
+        for (let action of this._actions)
             action.close();
-        }
 
-        for (let name in this._directActions) {
-            let list = this._directActions[name];
+        for (let resourceId in this._directActions) {
+            let list = this._directActions[resourceId];
             for (let i = 0; i < list.length; i++) {
                 let action = list[i];
                 action.close();
