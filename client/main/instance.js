@@ -470,12 +470,13 @@ const Instance = Backbone.Model.extend({
 
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
+            let options = OptionsPB.fromPB(response.options, coms.Messages);
 
-            if (analysis.isReady === false && response.options)
-                analysis.setup(OptionsPB.fromPB(response.options, coms.Messages));
+            if (analysis.isReady === false)
+                analysis.setup(options);
 
             if (response.results)
-                analysis.setResults(response.results, response.incAsText, response.syntax);
+                analysis.setResults(response.results, options, response.incAsText, response.syntax);
         }
         else if (message.payloadType === 'ModuleRR') {
             let response = coms.Messages.ModuleRR.decode(message.payload);

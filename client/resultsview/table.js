@@ -61,6 +61,7 @@ const TableModel = Backbone.Model.extend({
         asText: null,
         sortedCells : [ ],
         sortTransform: [ ],
+        options: { },
     },
     initialize() {
 

@@ -338,7 +338,7 @@ OptionTypes.Pairs = function(template, value) {
 SuperClass.create(OptionTypes.Pairs);
 
 OptionTypes.Pair = function(template, value) {
-    OptionTypes.Group.extendTo(this, { type: "Group", elements: [{ type: "Variable", name: "i1" }, { type: "Variable", name: "i2" }] }, value);
+    OptionTypes.Group.extendTo(this, { type: 'Group', elements: [{ type: 'Variable', name: 'i1' }, { type: 'Variable', name: 'i2' }] }, value);
 };
 SuperClass.create(OptionTypes.Pair);
 
@@ -469,10 +469,29 @@ const Options = function(def) {
     };
 
     this.setValues = function(values, initializeOnly) {
+
         for (let name in values) {
-            if (name in this._options) {
-                if (values[name] !== undefined)
-                    this._options[name].setValue(values[name], initializeOnly);
+            let value = values[name];
+            if (value === undefined) {
+                console.log("option '" + name + "' not set!");
+                continue;
+            }
+            else if (name.startsWith('results/')) {  // results options
+                if (name in this._options) {
+                    // results options / params are notified as cleared by
+                    // having values of null
+                    if (value === null)
+                         delete this._options[name];
+                    else
+                        this._options[name].setValue(value, initializeOnly);
+                }
+                else {
+                    if (value !== null)
+                        this._options[name] = new OptionTypes.Option({}, value, true);
+                }
+            }
+            else if (name in this._options) {
+                this._options[name].setValue(value, initializeOnly);
             }
         }
     };

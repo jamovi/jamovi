@@ -93,8 +93,6 @@ const ResultsPanel = Backbone.View.extend({
                 iframe : iframe,
                 $iframe : $iframe,
                 $container : $container,
-                results : analysis.results,
-                incAsText : analysis.incAsText,
                 loaded : false };
 
             this.resources[analysis.id] = resources;
@@ -117,15 +115,14 @@ const ResultsPanel = Backbone.View.extend({
         }
         else {
 
-            resources.results = analysis.results;
-            resources.incAsText = analysis.incAsText;
+            resources.analysis = analysis;
             if (resources.loaded)
                 this._sendResults(resources);
         }
     },
     _sendResults(resources) {
 
-        if (this.mode === 'rich' || resources.incAsText) {
+        if (this.mode === 'rich' || resources.analysis.incAsText) {
 
             let format;
             try {
@@ -138,7 +135,8 @@ const ResultsPanel = Backbone.View.extend({
             let event = {
                 type: 'results',
                 data: {
-                    results: resources.results,
+                    results: resources.analysis.results,
+                    options: resources.analysis.options.getValues(),
                     mode: this.mode,
                     devMode: this.model.settings().get('devMode'),
                     format: format,
@@ -209,6 +207,8 @@ const ResultsPanel = Backbone.View.extend({
             let $container = resources.$container;
             let analysis = resources.analysis;
 
+            let options = { };
+
             switch (eventType) {
                 case 'sizeChanged':
                     let height = eventData.height;
@@ -235,12 +235,17 @@ const ResultsPanel = Backbone.View.extend({
                     eventData.pos.top  += offset.top;
                     this._showMenu(id, eventData);
                     break;
-                case 'clipboardCopy':
-                    this._copyToClipboard(eventData);
-                    break;
                 case 'setOption':
-                    let options = { };
                     options[eventData.name] = eventData.value;
+                    analysis.setOptions(options);
+                    break;
+                case 'setParam':
+                    let root = 'results/' + eventData.address.join('/');
+                    for (let optionName in eventData.options) {
+                        let value = eventData.options[optionName];
+                        let path = root + '/' + optionName;
+                        options[path] = value;
+                    }
                     analysis.setOptions(options);
                     break;
             }

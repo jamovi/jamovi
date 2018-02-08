@@ -13,12 +13,13 @@ class Option:
 class Options:
 
     @staticmethod
-    def create(defn):
+    def create(options_defn, results_defn):
 
         options = Options()
         options._pb.hasNames = True
+        options._results = Results(options, results_defn)
 
-        for opt_defn in defn:
+        for opt_defn in options_defn:
 
             if 'name' not in opt_defn or 'type' not in opt_defn:
                 continue
@@ -91,6 +92,7 @@ class Options:
 
     def __init__(self):
         self._options = { }
+        self._results = None
         self._pb = AnalysisOptions()
 
     def set(self, pb):
@@ -101,18 +103,26 @@ class Options:
         for i in range(len(new_names)):
             name = new_names[i]
             new_pb = pb.options[i]
+
+            changed = False
+
             if name in old_names:
                 old_index = old_names.index(name)
                 old_pb = self._pb.options[old_index]
                 if old_pb != new_pb:
                     old_pb.CopyFrom(new_pb)
-                    if name not in self._options or not self._options[name].passive:
-                        changes = True
+                    changed = True
             else:
                 self._pb.names.append(name)
                 option_pb = self._pb.options.add()
                 option_pb.CopyFrom(new_pb)
-                if name not in self._options or not self._options[name].passive:
+                changed = True
+
+            if changed:
+                if name.startswith('results/'):
+                    if not self._results.is_passive(name):
+                        changes = True
+                elif name not in self._options or not self._options[name].passive:
                     changes = True
 
         return changes
@@ -126,9 +136,32 @@ class Options:
     def as_bytes(self):
         return self._pb.SerializeToString()
 
+    def compress(self):
+        # remove deleted results options (set to null)
+        # used before saving
+        i = 0
+        while i < len(self._pb.names):
+            name = self._pb.names[i]
+            pb = self._pb.options[i]
+            if name.startswith('results/') and pb.o is AnalysisOption.Other.Value('NULL'):
+                del self._pb.names[i]
+                del self._pb.options[i]
+            else:
+                i += 1
+
     @staticmethod
     def _get_option_pb(pb, name):
         for i in range(len(pb.names)):
             if pb.names[i] == name:
                 return pb.options[i]
         return None
+
+
+class Results:
+
+    def __init__(self, options, defn):
+        self._options = options
+        self._defn = defn
+
+    def is_passive(self, option_name):
+        return True

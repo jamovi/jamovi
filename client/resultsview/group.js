@@ -14,7 +14,8 @@ const GroupModel = Backbone.Model.extend({
             elements : [ ]
         },
         error: null,
-        status: 'complete'
+        status: 'complete',
+        options: { },
     },
     initialize: function() {
     }
@@ -77,6 +78,7 @@ const GroupView = Elem.View.extend({
 
         let promises = [ ];
         let elements = this.model.attributes.element.elements;
+        let options = this.model.attributes.options;
 
         for (let element of elements) {
             if (this.mode === 'rich' && element.name === 'syntax' && element.type === 'preformatted')
@@ -87,7 +89,7 @@ const GroupView = Elem.View.extend({
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, $el, this.level+1, this, this.mode, undefined, this.fmt);
+            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt);
             if (child !== null) {
                 this.children.push(child);
                 $el.appendTo(this.$container);

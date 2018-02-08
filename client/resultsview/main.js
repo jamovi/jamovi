@@ -29,9 +29,9 @@ class Main {  // this is constructed at the bottom
                 data : { name, value }}, '*');
         };
 
-        window.setCustom = (address, options) => {
+        window.setParam = (address, options) => {
             this.mainWindow.postMessage({
-                type : 'setCustom',
+                type : 'setParam',
                 data : { address, options }}, '*');
         };
 
@@ -57,12 +57,6 @@ class Main {  // this is constructed at the bottom
 
         let lastEntry = entries[entries.length-1];
         this._menuEvent({ type: 'activated', address: lastEntry.address });
-    }
-
-    _sendClipboardContent(data) {
-        this.mainWindow.postMessage({
-            type : 'clipboardCopy',
-            data : data }, '*');
     }
 
     _messageEvent(event) {
@@ -99,6 +93,7 @@ class Main {  // this is constructed at the bottom
         this.$results = $('<div id="results"></div>');
         this.results = createItem(
             this.resultsDefn.results,
+            this.resultsDefn.options,
             this.$results,
             0,
             { _sendEvent: event => this._sendMenuRequest(event) },
@@ -137,12 +132,6 @@ class Main {  // this is constructed at the bottom
         }
 
         switch (event.type) {
-            case 'selected':
-                if (event.op === 'copy') {
-                    let clipboard = this.active.asClipboard();
-                    this._sendClipboardContent(clipboard);
-                }
-                break;
             case 'activated':
                 let pos = this.active.$el.offset();
                 let width = this.active.$el.outerWidth();

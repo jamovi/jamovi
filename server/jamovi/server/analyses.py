@@ -69,6 +69,7 @@ class Analysis:
 
     def set_results(self, results):
         self.results = results
+        self.options.set(results.options)
         self.changes.clear()
         self.status = Analysis.Status(results.status)
         self.clear_state = False
@@ -81,6 +82,8 @@ class Analysis:
         self.parent._notify_options_changed(self)
 
     def serialize(self):
+        self.options.compress()
+        self.results.options.CopyFrom(self.options.as_pb())
         return self.results.SerializeToString()
 
     def save(self, path, part):
@@ -172,14 +175,39 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
+    def _construct(self, id, name, ns, options_pb):
+        module = Modules.instance().get(ns)
+        analysis_root = os.path.join(module.path, 'analyses', name.lower())
+
+        a_defn = None
+        r_defn = None
+
+        with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
+            a_defn = yaml.load(stream)
+
+        with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
+            r_defn = yaml.load(stream)
+
+        analysis_name = a_defn['name']
+        option_defs = a_defn['options']
+        results_defs = r_defn['items']
+
+        options = Options.create(option_defs, results_defs)
+        options.set(options_pb)
+
+        return Analysis(id, analysis_name, ns, options, self)
+
     def create_from_serial(self, serial):
+
         analysis_pb = jcoms.AnalysisResponse()
         analysis_pb.ParseFromString(serial)
 
-        options = Options()
-        options.read(analysis_pb.options.SerializeToString())
+        analysis = self._construct(
+            analysis_pb.analysisId,
+            analysis_pb.name,
+            analysis_pb.ns,
+            analysis_pb.options)
 
-        analysis = Analysis(analysis_pb.analysisId, analysis_pb.name, analysis_pb.ns, options, self)
         analysis.results = analysis_pb
         analysis.status = Analysis.Status.COMPLETE
         self._analyses.append(analysis)
@@ -188,22 +216,11 @@ class Analyses:
 
     def create(self, id, name, ns, options_pb):
 
-        module = Modules.instance().get(ns)
-        analysis_root = os.path.join(module.path, 'analyses', name.lower())
+        analysis = self._construct(id, name, ns, options_pb)
+        self._analyses.append(analysis)
+        self._notify_options_changed(analysis)
 
-        with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
-            defn = yaml.load(stream)
-            analysis_name = defn['name']
-            option_defs = defn['options']
-
-            options = Options.create(option_defs)
-            options.set(options_pb)
-
-            analysis = Analysis(id, analysis_name, ns, options, self)
-            self._analyses.append(analysis)
-            self._notify_options_changed(analysis)
-
-            return analysis
+        return analysis
 
     def recreate(self, id):
         o = self[id]

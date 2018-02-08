@@ -14,6 +14,7 @@ var SyntaxModel = Backbone.Model.extend({
         error: null,
         status: 'complete',
         stale: false,
+        options: { },
     }
 });
 

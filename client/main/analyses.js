@@ -55,10 +55,12 @@ Analysis.prototype.setup = function(values) {
     this._notifySetup(this);
 };
 
-Analysis.prototype.setResults = function(results, incAsText, syntax) {
+Analysis.prototype.setResults = function(results, options, incAsText, syntax) {
     this.results = results;
     this.incAsText = incAsText;
     this.syntax = syntax;
+    if (this.options)
+        this.options.setValues(options);
     if (this.deleted === false && this._parent !== null)
         this._parent._notifyResultsChanged(this);
 };
@@ -143,7 +145,7 @@ const Analyses = Backbone.Model.extend({
         analysis._parent = this;
         this._analyses.push(analysis);
         analysis.setup(values);
-        analysis.setResults(results, incAsText, syntax);
+        analysis.setResults(results, values, incAsText, syntax);
 
         if (this._nextId <= id)
             this._nextId = id + 1;

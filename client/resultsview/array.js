@@ -16,7 +16,8 @@ const ArrayModel = Backbone.Model.extend({
             layout : 0, // flat
         },
         error: null,
-        status: 'complete'
+        status: 'complete',
+        options: { },
     },
     initialize: function() {
     }
@@ -51,7 +52,6 @@ const ArrayView = Elem.View.extend({
                 this.$el.addClass('jmv-results-array-hideheading');
 
         this.$select = $();
-        this.selected = null;
 
         if (this.mode !== 'text') {
             this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
@@ -75,7 +75,7 @@ const ArrayView = Elem.View.extend({
         let item = select[select.selectedIndex];
         let name = atob(item.value);
 
-        window.setCustom(this.address(), { 'selected': name });
+        window.setParam(this.address(), { 'selected': name });
 
         for (let $child of this.$$children) {
             if ($child[0].dataset.name === item.value)
@@ -110,29 +110,45 @@ const ArrayView = Elem.View.extend({
 
         let promises = [ ];
         let elements = this.model.attributes.element.elements;
+        let options = this.model.attributes.options;
+
+        let selected;
+        let valid = false;
+        let selectedOptionName = 'results/' + this.address().join('/') + '/selected';
+        if (selectedOptionName in this.model.attributes.options) {
+            selected = this.model.attributes.options[selectedOptionName];
+            for (let element of elements) {
+                if (element.visible === 1 || element.visible === 3)
+                    continue;
+                if (element.name === selected) {
+                    valid = true;
+                    break;
+                }
+            }
+        }
+
+        if ( ! valid && elements.length > 0)
+            selected = elements[elements.length - 1].name;
 
         for (let element of elements) {
             if (element.visible === 1 || element.visible === 3)
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, $el, this.level+1, this, this.mode, undefined, this.fmt);
+            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt);
             if (child === null)
                 continue;
 
             let name = element.name;
             let title = element.title;
-            let selected = '';
 
-            if ( ! this.selected)
-                this.selected = name;
-
-            if (this.selected === name) {
-                selected = 'selected';
+            let selectedAttr = '';
+            if (selected === name) {
+                selectedAttr = 'selected';
                 $el[0].dataset.active = true;
             }
 
-            let selectItem = $('<option value="' + b64.enc(name) + '" ' + selected + '>' + title + '</option>').appendTo(this.$select);
+            let selectItem = $('<option value="' + b64.enc(name) + '" ' + selectedAttr + '>' + title + '</option>').appendTo(this.$select);
 
             this.children.push(child);
             this.$$children.push($el);

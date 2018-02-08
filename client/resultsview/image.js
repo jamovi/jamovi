@@ -17,7 +17,8 @@ const ImageModel = Backbone.Model.extend({
             height: 300
         },
         error: null,
-        status: 'complete'
+        status: 'complete',
+        options: { },
     },
     initialize: function() {
     }

@@ -68,7 +68,7 @@ void EngineR::run(Analysis *analysis)
     rInside.parseEvalQNT(ss.str());
 
     if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(true, true);
+        sendResults(true);
         return;
     }
 
@@ -100,7 +100,7 @@ void EngineR::run(Analysis *analysis)
     rInside.parseEvalQNT("analysis$init(noThrow=TRUE)");
 
     if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(true, true);
+        sendResults(true);
         return;
     }
 
@@ -133,7 +133,7 @@ void EngineR::run(Analysis *analysis)
     }
     else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
-        sendResults(true, true);
+        sendResults(true);
         rInside.parseEvalQ("try(analysis$.save())");
     }
     else if (analysis->perform == 0)   // INIT
@@ -152,16 +152,15 @@ void EngineR::run(Analysis *analysis)
         sendResults();
         rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
         sendResults();
-        sendResults(true, true);
+        sendResults(true);
         rInside.parseEvalQ("try(analysis$.save())");
     }
 }
 
-void EngineR::sendResults(bool incOptions, bool incAsText)
+void EngineR::sendResults(bool incAsText)
 {
     stringstream ss;
     ss << "analysis$serialize(";
-    ss << "incOptions=" << (incOptions ? "TRUE" : "FALSE") << ", ";
     ss << "incAsText=" << (incAsText ? "TRUE" : "FALSE") << ")\n";
     Rcpp::RawVector rawVec = _rInside->parseEval(ss.str());
     string raw(rawVec.begin(), rawVec.end());
