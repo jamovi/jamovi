@@ -139,8 +139,6 @@ class UnaryOp(ast.UnaryOp):
                 return self.operand.measure_type
         elif isinstance(self.op, ast.Not):
             return MeasureType.NOMINAL
-        elif isinstance(self.op, ast.Invert):
-            return MeasureType.NOMINAL_TEXT
         else:
             return self.operand.measure_type
 
@@ -359,7 +357,9 @@ class BinOp(ast.BinOp):
 
         rv = convert(rv, ul_type)
 
-        if ul_type is not str and not isinstance(op, ast.Add):
+        if ul_type is str and isinstance(op, ast.Add):
+            pass
+        else:
             if is_missing(lv) or is_missing(rv):
                 return get_missing(int)
 
