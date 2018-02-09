@@ -383,7 +383,7 @@ const createWindow = function(open) {
     if (open.id)
         url += '?id=' + open.id;
     else if (open.open)
-        url += '?open=' + path.resolve(open.open);
+        url += '?open=' + encodeURI(path.resolve(open.open));
 
     wind.loadURL(url);
 
