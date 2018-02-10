@@ -400,7 +400,11 @@ void EngineR::initR()
 
     // set english locale (the arrogance!)
     // fixes some unicode handling issues
+#ifdef _WIN32
+    _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'English_United States.1252')\n");
+#else
     _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'en_US.UTF-8')\n");
+#endif
 
     char *pandoc = nowide::getenv("PANDOCHOME");
 
