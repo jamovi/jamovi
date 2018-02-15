@@ -185,8 +185,11 @@ class Analyses:
         with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
             a_defn = yaml.load(stream)
 
-        with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
-            r_defn = yaml.load(stream)
+        if os.path.isfile(analysis_root + '.r.yaml'):
+            with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
+                r_defn = yaml.load(stream)
+        else:
+            r_defn = { 'items': { } }
 
         analysis_name = a_defn['name']
         option_defs = a_defn['options']
