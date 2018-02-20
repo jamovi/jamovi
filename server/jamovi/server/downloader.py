@@ -1,8 +1,11 @@
 
 import re
+import os.path as path
 from tempfile import TemporaryFile
 
 from tornado.httpclient import AsyncHTTPClient
+
+from .utils import conf
 
 
 class Download:
@@ -15,12 +18,21 @@ class Download:
         self._complete = False
         self._content = None
 
+        server_path = conf.get('server_path')
+        if server_path is not None:
+            chain_path = path.join(server_path, 'resources', 'chain.pem')
+            if not path.isfile(chain_path):
+                chain_path = None
+        else:
+            chain_path = None
+
         client = AsyncHTTPClient()
         response = client.fetch(
             url,
             header_callback=self._header_callback,
             streaming_callback=self._streaming_callback,
-            request_timeout=24 * 60 * 60)
+            request_timeout=24 * 60 * 60,
+            ca_certs=chain_path)
         response.add_done_callback(self._done_callback)
         self._callback('progress', (0, 1))
 
