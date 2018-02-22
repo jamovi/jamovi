@@ -42,6 +42,16 @@ let emitter = new events.EventEmitter();
 let on = (name, args) => emitter.on(name, args);
 let _notify = (name, args) => emitter.emit(name, args);
 
+let os;
+if (navigator.platform === 'Win32')
+    os = 'win64';
+else if (navigator.platform === 'MacIntel')
+    os = 'macos';
+else if (navigator.platform.startsWith('Linux'))
+    os = 'linux';
+else
+    os = 'other';
+
 if (window.require) {
 
     isElectron = true;
@@ -169,7 +179,7 @@ if (window.require) {
     };
 
     window.onkeydown = function(event) {
-        if (navigator.platform === 'MacIntel') {
+        if (os === 'macos') {
             if (event.key === '_' && event.metaKey && event.shiftKey) {
                 zoomOut();
                 event.preventDefault();
@@ -278,4 +288,5 @@ module.exports = {
     copyToClipboard,
     pasteFromClipboard,
     showSaveDialog,
+    os,
 };
