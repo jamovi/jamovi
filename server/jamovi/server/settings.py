@@ -18,12 +18,17 @@ class Settings:
         if group_name is None:
             return Settings.settings
         else:
-            return Settings(parent=Settings.settings, name=group_name)
+            if group_name not in Settings.settings._children:
+                Settings.settings._children[group_name] = Settings(parent=Settings.settings, name=group_name)
+            return Settings.settings._children[group_name]
 
     def __init__(self, path=None, parent=None, name=None):
         self._path = path
         self._parent = parent
         self._name = name
+
+        self._children = { }
+        self._defaults = { }
 
         if path is not None:
             try:
@@ -41,9 +46,7 @@ class Settings:
             raise ValueError
 
     def specify_default(self, name, value):
-        current_value = self.get(name, None)
-        if current_value is None:
-            self.set(name, value)
+        self._defaults[name] = value
 
     def set(self, name, value):
         self._root[name] = value
@@ -51,10 +54,12 @@ class Settings:
             self._parent.set(self._name, self._root)
 
     def get(self, name, default=None):
-        return self._root.get(name, default)
+        return self._root.get(name, self._defaults.get(name, default))
 
     def __iter__(self):
-        return self._root.__iter__()
+        keys = set(self._root)
+        keys.update(self._defaults)
+        return keys.__iter__()
 
     def sync(self):
         if self._parent is not None:

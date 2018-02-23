@@ -40,6 +40,13 @@ from .utils import fs
 log = logging.getLogger('jamovi')
 
 
+# until we deploy the windows updater and are happy with it,
+# we'll default autoUpdate to off -- macOS works well though.
+is_windows = platform.uname().system == 'Windows'
+def4ult = False if is_windows else True
+Settings.retrieve('main').specify_default('autoUpdate', def4ult)
+
+
 class Instance:
 
     instances = { }
