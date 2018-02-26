@@ -95,13 +95,18 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
 
     keywords='statistics analysis spreadsheet',
 
-    packages=['jamovi.server', 'jamovi.core', 'jamovi.server.formatio', 'jamovi.server.utils'],
+    packages=[
+        'jamovi.core',
+        'jamovi.server',
+        'jamovi.server.formatio',
+        'jamovi.server.utils',
+        'jamovi.server.compute',
+    ],
 
     ext_modules=cythonize(
         extensions,
@@ -122,10 +127,10 @@ setup(
         'jamovi.server': [ 'jamovi.proto' ]
     },
 
-    data_files=[
-        ('jamovi/server/resources/client', glob.glob('jamovi/server/resources/client/*.*')),
-        ('jamovi/server/resources/client/assets', glob.glob('jamovi/server/resources/client/assets/*.*'))
-    ],
+    # data_files=[
+    #     ('jamovi/server/resources/client', glob.glob('jamovi/server/resources/client/*.*')),
+    #     ('jamovi/server/resources/client/assets', glob.glob('jamovi/server/resources/client/assets/*.*'))
+    # ],
 
     # entry_points={
     #     'console_scripts': [
