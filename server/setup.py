@@ -40,7 +40,7 @@ if os.name == 'nt':  # windows
 elif os.uname()[0] == "Linux":
     libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ ]
-    extra_compile_args = [ "-std=c++11" ]
+    extra_compile_args = [ ]
     extra_link_args = [ "-Wl,-rpath,'$$ORIGIN/../lib'" ]
 
 elif os.uname()[0] == "Darwin":

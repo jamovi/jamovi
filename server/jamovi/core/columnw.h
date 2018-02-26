@@ -9,6 +9,7 @@
 #include "memorymapw.h"
 
 #include <string>
+#include <sstream>
 #include <cmath>
 #include <climits>
 
@@ -68,7 +69,9 @@ public:
                 Level *level = rawLevel(newValue);
                 if (level == NULL)
                 {
-                    std::string str = std::to_string(newValue);
+                    std::ostringstream ss;
+                    ss << newValue;
+                    std::string str = ss.str();
                     const char *c_str = str.c_str();
                     insertLevel(newValue, c_str, c_str);
                     level = rawLevel(newValue);
