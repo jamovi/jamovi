@@ -308,7 +308,9 @@ class Server:
     def start(self):
 
         client_path = conf.get('client_path')
-        version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
+        version_path = conf.get('version_path', False)
+        if not version_path:
+            version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
         session_dir = tempfile.TemporaryDirectory()

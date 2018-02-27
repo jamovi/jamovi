@@ -7,18 +7,62 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+const ini = require('./ini');
+const tmp = require('./tmp');
+
 process.on('uncaughtException', (e) => {
     console.log(e);
 });
 
-const version = function() {
-    let versionPath = path.join(path.dirname(process.execPath), '..', 'Resources', 'jamovi', 'version');
+let _config;
+
+function readConfig() {
+
+    if (_config)
+        return _config;
+
+    let execDir = path.dirname(process.execPath);
+    let confPath = path.join(execDir, 'env.conf');
+    let content = fs.readFileSync(confPath, 'utf8');
+    let conf = ini.parse(content);
+    let env = conf.ENV;
+
+    let clientPath;
+    clientPath = env.JAMOVI_CLIENT_PATH;
+    clientPath = path.resolve(execDir, clientPath) + '/';
+    // windows path adjustments
+    if ( ! clientPath.startsWith('/'))
+        clientPath = '/' + clientPath;
+    clientPath = clientPath.replace(/\\/g, '/');
+
+    let versionPath;
+    versionPath = env.JAMOVI_VERSION_PATH;
+    if (versionPath)
+        versionPath = path.resolve(execDir, versionPath);
+    else
+        versionPath = path.join(execDir, '..', 'Resources', 'jamovi', 'version');
+
+    let version;
     try {
-        return fs.readFileSync(versionPath, { encoding: 'utf-8' }).trim();
+        version = fs.readFileSync(versionPath, { encoding: 'utf-8' }).trim();
     }
     catch(e) {
-        return '0.0.0.0';
+        version = '0.0.0.0';
     }
+
+    let serverCmd = env.JAMOVI_SERVER_CMD.split(' ');
+    let serverExe = path.resolve(execDir, serverCmd[0]);
+    let serverArgs = serverCmd.slice(1);
+
+    _config = {
+        clientPath,
+        serverExe,
+        serverArgs,
+        version,
+        env,
+    };
+
+    return _config;
 }
 
 const marshallArgs = function(args, wd, first) {
@@ -29,7 +73,7 @@ const marshallArgs = function(args, wd, first) {
         cmd.open = '';
     }
     else if (args[0] === '--version') {
-        console.log(version());
+        console.log(readConfig().version);
         cmd.exit = true;
     }
     else if (args[0] === '--install') {
@@ -102,24 +146,14 @@ const dialog = electron.dialog;
 const child_process = require('child_process');
 const { URL } = require('url');
 
-const ini = require('./ini');
-const tmp = require('./tmp');
-
-let confPath = path.join(path.dirname(process.execPath), 'env.conf');
-let content = fs.readFileSync(confPath, 'utf8');
-let conf = ini.parse(content);
-let rootPath = path.resolve(path.dirname(process.execPath), conf.ENV.JAMOVI_CLIENT_PATH) + '/';
-
-let serverCMD = conf.ENV.JAMOVI_SERVER_CMD.split(' ')
-let cmd = path.resolve(path.dirname(process.execPath), serverCMD[0]);
-let args = serverCMD.slice(1);
+const config = readConfig();
 
 if (debug)
-    args.unshift('-vvv');
+    config.serverArgs.unshift('-vvv');
 if (argvCmd.debug)
-    args.push('--debug');
+    config.serverArgs.push('--debug');
 
-global.version = version();
+global.version = config.version;
 
 let env = { };
 if (process.platform === 'linux') {
@@ -131,7 +165,7 @@ else if (process.platform === 'darwin') {
     if (process.env.HOME)
         env.HOME = process.env.HOME;
 }
-Object.assign(env, conf.ENV);
+Object.assign(env, config.env);
 
 let bin = path.dirname(process.execPath);
 
@@ -191,7 +225,10 @@ let updateUrl;
 
 let spawn = new Promise((resolve, reject) => {
 
-    server = child_process.spawn(cmd, args, { env: env, detached: true });
+    server = child_process.spawn(
+        config.serverExe,
+        config.serverArgs,
+        { env: env, detached: true });
     // detached, because weird stuff happens on windows if not detached
 
     let dataListener = (chunk) => {
@@ -265,7 +302,7 @@ let spawn = new Promise((resolve, reject) => {
     else
         platform = 'linux';
 
-    updateUrl = 'https://www.jamovi.org/downloads/update?p=' + platform + '&v=' + global.version + '&f=zip';
+    updateUrl = 'https://www.jamovi.org/downloads/update?p=' + platform + '&v=' + config.version + '&f=zip';
 
     setTimeout(() => checkForUpdate(updateUrl), 500);
     setInterval(() => checkForUpdate(updateUrl, 'checking', false), 60 * 1000);
@@ -277,13 +314,7 @@ let spawn = new Promise((resolve, reject) => {
 });
 
 let windows = [ ];
-
-// windows path adjustments
-if (rootPath.startsWith('/') === false)
-    rootPath = '/' + rootPath;
-rootPath = rootPath.replace(/\\/g, '/');
-
-let rootUrl = encodeURI('file://' + rootPath);
+let rootUrl = encodeURI('file://' + config.clientPath);
 let serverUrl = rootUrl + 'analyses/';
 
 app.on('window-all-closed', () => app.quit());
