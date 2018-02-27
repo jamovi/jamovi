@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "scripts": {
     "prepublish": "asar pack app default_app.asar",
-    "deploy":  "asar pack app ../../../bin/resources/default_app.asar"
+    "deploy": "asar pack app ../../../bin/resources/default_app.asar"
   },
   "devDependencies": {
-    "asar": "^0.12.3"
+    "asar": "^0.14.2"
   }
 }
