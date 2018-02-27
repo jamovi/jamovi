@@ -35,7 +35,7 @@ ifeq ($(os),OSX)
 
 else
 ifeq ($(os),Linux)
-	R_HOME = $(SRCDIR)/../../../lib/R
+	R_HOME ?= $(SRCDIR)/../../../lib/R
 	LIBS  = -L$(R_HOME)/lib \
 			-L$(SRCDIR)/../../modules/base/R/RInside/lib \
 			-lboost_filesystem \
