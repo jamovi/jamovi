@@ -97,10 +97,13 @@ void EngineR::run(Analysis *analysis)
 
     rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
+    rInside.parseEvalQNT(".options <- options()"); // save options
+
     rInside.parseEvalQNT("analysis$init(noThrow=TRUE)");
 
     if (rInside.parseEvalNT("analysis$errored\n")) {
         sendResults(true);
+        rInside.parseEvalQNT("options(.options)"); // restore options
         return;
     }
 
@@ -147,7 +150,10 @@ void EngineR::run(Analysis *analysis)
 
         bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
         if ( ! shouldSend)
+        {
+            rInside.parseEvalQNT("options(.options)"); // restore options
             return;
+        }
 
         sendResults();
         rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
@@ -155,6 +161,8 @@ void EngineR::run(Analysis *analysis)
         sendResults(true);
         rInside.parseEvalQ("try(analysis$.save())");
     }
+
+    rInside.parseEvalQNT("options(.options)"); // restore options
 }
 
 void EngineR::sendResults(bool incAsText)
