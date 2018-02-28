@@ -624,7 +624,17 @@ cdef extern from "dirs.h":
 cdef class Dirs:
     @staticmethod
     def app_data_dir():
-        return decode(CDirs.appDataDir())
+        # return decode(CDirs.appDataDir())
+        # CDirs.appDataDir() seems to have stopped working under macOS
+        # hence, us handling it here.
+
+        if platform.uname().system == 'Darwin':
+            path = os.path.expanduser('~/Library/Application Support/jamovi')
+            os.makedirs(path, exist_ok=True)
+            return path
+        else:
+            return decode(CDirs.appDataDir())
+
     @staticmethod
     def temp_dir():
         return decode(CDirs.tempDir())
