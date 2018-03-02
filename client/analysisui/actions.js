@@ -190,19 +190,73 @@ function View() {
         }
     };
 
-    this.checkValue = function(ctrl, valueIsList, validValues, format) {
+    this.checkValue = function(ctrl, valuesAtlevel, validValues, format) {
+        if (valuesAtlevel === true)
+            valuesAtlevel = 1;
+        else if (valuesAtlevel === false)
+            valuesAtlevel = 0;
+
         let value = this.clone(ctrl.value());
-        if (valueIsList && value === null)
+        if (valuesAtlevel > 0 && value === null)
             value = [];
 
         let changed = false;
+        if (valuesAtlevel > 0) {
+            let removeFromList = (list) => {
+                if ( ! list)
+                    return false;
 
-        if (valueIsList) {
-            for (let i = 0; i < value.length; i++) {
-                if (this.listContains(validValues, value[i], format) === false) {
-                    value.splice(i, 1);
-                    i -= 1;
+                let removed = false;
+                for (let i = 0; i < list.length; i++) {
+                    if (this.listContains(validValues, list[i], format) === false) {
+                        list.splice(i, 1);
+                        i -= 1;
+                        removed = true;
+                    }
+                }
+                return removed;
+            };
+
+            let getValue = (data, indices) => {
+                let value = data;
+                for (let x = 0; x < indices.length; x++) {
+                    if (indices[x] >= value.length) {
+                        indices[x] = 0;
+                        if (x > 0)
+                            indices[x-1] += 1;
+                        else
+                            return;
+
+                        return getValue(data, indices);
+                    }
+                    value = value[indices[x]];
+                    if (x < indices.length - 1 && Array.isArray(value) === false) {
+                        if (value === null || value === undefined) {
+                            value[indices[x]] = [];
+                            value = value[indices[x]];
+                        }
+                        else
+                            break;
+                    }
+                }
+
+                return value;
+            };
+
+            let indices = [];
+            for (let x = 0; x < valuesAtlevel - 1; x++)
+                indices[x] = 0;
+
+            let list = getValue(value, indices);
+            while (list !== undefined) {
+                if (removeFromList(list))
                     changed = true;
+
+                if (indices.length === 0)
+                    break;
+                else if (indices.length > 0) {
+                    indices[indices.length - 1] += 1;
+                    list = getValue(value, indices);
                 }
             }
         }
