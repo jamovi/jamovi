@@ -1,0 +1,5 @@
+#!/bin/bash
+
+printf "all:\n\tmake -C engine all\n\ninstall:\n\tmake -C engine install DESTDIR=\$(DESTDIR)\n\n" > Makefile
+
+cd engine && ./configure $*

@@ -1,6 +1,20 @@
 
 # This Makefile would like Make 2.8 or above
 
+PREFIX=%PREFIX%
+LIBDIR=%LIBDIR%
+CFLAGS=%CFLAGS%
+CXXFLAGS=%CXXFLAGS%
+R_PATH=%R_PATH%
+
+ifneq (%BASE_MODULE_PATH%,)
+BASE_MODULE_PATH=%BASE_MODULE_PATH%
+endif
+
+ifneq (%R_HOME%,)
+R_HOME=%R_HOME%
+endif
+
 ifeq ($(OS),Windows_NT)
 	os = Windows
 else
@@ -19,42 +33,43 @@ endif
 
 SRCDIR ?= $(dir $(firstword $(MAKEFILE_LIST)))
 TARGET = jamovi-engine
-CFLAGS = -std=c++11
+CXXFLAGS += -std=c++11
 INCLUDES += -I.
 
 ifeq ($(os),OSX)
-
-	R_HOME = $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.3/Resources
-	LIBS =	-L$(SRCDIR)/../../../Frameworks \
-			-L$(SRCDIR)/../../lib \
-			-L$(R_HOME)/lib \
-			-L$(R_HOME)/library/RInside/lib \
-			-lboost_filesystem-mt \
-			-lboost_system-mt \
-			-framework Foundation
-
+	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.3/Resources
+	BASE_MODULE_PATH ?= $(R_HOME)/library
+	LDFLAGS +=	-L$(SRCDIR)/../../../Frameworks \
+				-L$(SRCDIR)/../../lib \
+				-L$(R_HOME)/lib \
+				-L$(BASE_MODULE_PATH)/RInside/lib \
+				-lboost_filesystem-mt \
+				-lboost_system-mt \
+				-framework Foundation
 else
 ifeq ($(os),Linux)
 	R_HOME ?= $(SRCDIR)/../../../lib/R
-	LIBS  = -L$(R_HOME)/lib \
-			-L$(SRCDIR)/../../modules/base/R/RInside/lib \
-			-lboost_filesystem \
-			-lboost_system \
-			-lpthread \
-			-Wl,-rpath,'$$ORIGIN/../lib' \
-			-Wl,-rpath,'$$ORIGIN/../Resources/modules/base/R/RInside/lib'
+	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
+	R_PATH ?= $$ORIGIN/../lib  $$ORIGIN/../Resources/modules/base/R/RInside/lib
+	LDFLAGS +=	-L$(R_HOME)/lib \
+				-L$(BASE_MODULE_PATH)/RInside/lib \
+				-lboost_filesystem \
+				-lboost_system \
+				-lpthread \
+				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)')
 else
-	R_HOME = $(SRCDIR)/../../../Frameworks/R
-	LIBS =	-L$(SRCDIR)/../../lib \
-			-L$(SRCDIR)/../../lib/libgcc \
-			-L$(R_HOME)/bin/x64 \
-			-L$(R_HOME)/library/RInside/lib/x64 \
-			-lboost_filesystem-mgw49-mt-1_60 \
-			-lboost_system-mgw49-mt-1_60
+	R_HOME ?= $(SRCDIR)/../../../Frameworks/R
+	BASE_MODULE_PATH ?= $(R_HOME)/library
+	LDFLAGS +=	-L$(SRCDIR)/../../lib \
+				-L$(SRCDIR)/../../lib/libgcc \
+				-L$(R_HOME)/bin/x64 \
+				-L$(BASE_MODULE_PATH)/RInside/lib/x64 \
+				-lboost_filesystem-mgw49-mt-1_60 \
+				-lboost_system-mgw49-mt-1_60
 
 	# _WIN32_WINNT is for SHGetKnownFolderPath
 
-	CFLAGS +=	-DUNICODE \
+	CXXFLAGS +=	-DUNICODE \
 				"-D_WIN32_WINNT=_WIN32_WINNT_VISTA" \
 				"-DWIN32_LEAN_AND_MEAN"
 endif
@@ -65,12 +80,10 @@ INCLUDES += \
 	-I$(SRCDIR)/../../../include \
 	-I$(SRCDIR)/../server/jamovi/common \
 	-I$(R_HOME)/include \
-	-I$(SRCDIR)/../../modules/base/R/RInside/include \
-	-I$(SRCDIR)/../../modules/base/R/Rcpp/include \
-	-I$(R_HOME)/library/RInside/include \
-	-I$(R_HOME)/library/Rcpp/include
+	-I$(BASE_MODULE_PATH)/RInside/include \
+	-I$(BASE_MODULE_PATH)/Rcpp/include
 
-LIBS += -lR -lnanomsg -lprotobuf -lRInside
+LDFLAGS += -lR -lnanomsg -lprotobuf -lRInside
 
 ABS_SRCS  = $(wildcard $(SRCDIR)/engine/*.cpp)
 ABS_SRCS += $(wildcard $(SRCDIR)/engine/**/*.cpp)
@@ -90,18 +103,18 @@ endif
 
 $(TARGET): $(OBJS)
 	mkdir -p $(@D)
-	$(CXX) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
 
 jamovi.pb.cc: $(SRCDIR)/../server/jamovi/server/jamovi.proto
 	protoc --cpp_out=. --proto_path=$(SRCDIR)/../server/jamovi/server $(SRCDIR)/../server/jamovi/server/jamovi.proto
 
 jamovi.pb.cc.o: jamovi.pb.cc
 	mkdir -p $(@D)
-	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
+	$(CXX) -c -o $@ $^ $(CXXFLAGS) $(INCLUDES)
 
 ../server/jamovi/common/%.cpp.o: $(SRCDIR)/../server/jamovi/common/%.cpp
 	mkdir -p $(@D)
-	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
+	$(CXX) -c -o $@ $^ $(CXXFLAGS) $(INCLUDES)
 
 ../server/jamovi/common/%.m.o: $(SRCDIR)/../server/jamovi/common/%.m
 	mkdir -p $(@D)
@@ -109,7 +122,7 @@ jamovi.pb.cc.o: jamovi.pb.cc
 
 engine/%.cpp.o: $(SRCDIR)/engine/%.cpp
 	mkdir -p $(@D)
-	$(CXX) -c -o $@ $^ $(CFLAGS) $(INCLUDES)
+	$(CXX) -c -o $@ $^ $(CXXFLAGS) $(INCLUDES)
 
 all: $(TARGET)
 
@@ -117,7 +130,7 @@ clean:
 	rm -f $(TARGET) $(OBJS) jamovi.pb.cc jamovi.pc.h
 
 install:
-	mkdir -p $(DESTDIR)/bin
-	cp $(TARGET) $(DESTDIR)/bin
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp $(TARGET) $(DESTDIR)$(PREFIX)/bin
 
 .PHONY:	clean all install

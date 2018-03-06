@@ -1,0 +1,56 @@
+#!/bin/bash
+
+for i in "$@"
+do
+case $i in
+    --prefix=*)
+    PREFIX="${i#*=}"
+    shift # past argument=value
+    ;;
+    --libdir=*)
+    LIBDIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    CFLAGS=*)
+    CFLAGS="${i#*=}"
+    shift # past argument=value
+    ;;
+    CXXFLAGS=*)
+    CXXFLAGS="${i#*=}"
+    shift # past argument=value
+    ;;
+    --rhome=*)
+    R_HOME="${i#*=}"
+    shift # past argument=value
+    ;;
+    --rpath=*)
+    R_PATH="${R_PATH} ${i#*=}"
+    shift # past argument=value
+    ;;
+    --base-module-path=*)
+    BASE_MODULE_PATH="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+          # unknown option
+    ;;
+esac
+done
+echo "PREFIX=${PREFIX}"
+echo "LIBDIR=${LIBDIR}"
+echo "CFLAGS= ${CFLAGS}"
+echo "CXXFLAGS=${CXXFLAGS}"
+echo "R_HOME=${R_HOME}"
+echo "BASE_MODULE_PATH=${BASE_MODULE_PATH}"
+echo "R_PATH=${R_PATH}"
+
+sed -e "s|%PREFIX%|$PREFIX|g"   \
+    -e "s|%LIBDIR%|${LIBDIR}|g" \
+    -e "s|%CFLAGS%|${CFLAGS}|g" \
+    -e "s|%CXXFLAGS%|${CXXFLAGS}|g" \
+    -e "s|%R_HOME%|${R_HOME}|g" \
+    -e "s|%R_PATH%|${R_PATH}|g" \
+    -e "s|%BASE_MODULE_PATH%|${BASE_MODULE_PATH}|g" \
+        Makefile.in > Makefile
+
+echo "Makefile written"

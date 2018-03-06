@@ -11,6 +11,9 @@ server/build/
 server/jamovi/core.cpp
 electron/default_app.asar
 
+Makefile
+engine/Makefile
+
 **/__pycache__/
 
 client/*.js
