@@ -2,7 +2,7 @@
 Name=jamovi
 Comment=Statistical spreadsheet
 Keywords=statistics;data;spreadsheet;analysis
-Exec=/usr/bin/jamovi %f
+Exec=jamovi %f
 Terminal=false
 Type=Application
 StartupNotify=true
