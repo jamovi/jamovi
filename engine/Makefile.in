@@ -38,7 +38,7 @@ INCLUDES += -I.
 
 ifeq ($(os),OSX)
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.3/Resources
-	BASE_MODULE_PATH ?= $(R_HOME)/library
+	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../../Frameworks \
 				-L$(SRCDIR)/../../lib \
 				-L$(R_HOME)/lib \
