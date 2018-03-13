@@ -484,7 +484,7 @@ class Instance:
 
         if analysis is not None:  # analysis already exists
             self._data.is_edited = True
-            if request.perform is jcoms.AnalysisRequest.Perform.Value('DELETE'):
+            if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
                 del self._data.analyses[request.analysisId]
             else:
                 analysis.set_options(request.options, request.changed)
@@ -1212,13 +1212,13 @@ class Instance:
 
             for setting_pb in settings_pb:
                 name = setting_pb.name
-                if setting_pb.valueType is jcoms.ValueType.Value('STRING'):
+                if setting_pb.valueType == jcoms.ValueType.Value('STRING'):
                     value = setting_pb.s
-                elif setting_pb.valueType is jcoms.ValueType.Value('INT'):
+                elif setting_pb.valueType == jcoms.ValueType.Value('INT'):
                     value = setting_pb.i
-                elif setting_pb.valueType is jcoms.ValueType.Value('DOUBLE'):
+                elif setting_pb.valueType == jcoms.ValueType.Value('DOUBLE'):
                     value = setting_pb.d
-                elif setting_pb.valueType is jcoms.ValueType.Value('BOOL'):
+                elif setting_pb.valueType == jcoms.ValueType.Value('BOOL'):
                     value = setting_pb.b
                 else:
                     continue

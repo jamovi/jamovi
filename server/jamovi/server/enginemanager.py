@@ -203,7 +203,7 @@ class Engine:
             log.info('id : {}, response received when not running'.format(message.id))
         elif self.status is Engine.Status.OPPING:
             self.status = Engine.Status.WAITING
-            if message.status is jcoms.Status.Value('ERROR'):
+            if message.status == jcoms.Status.Value('ERROR'):
                 self.analysis.op.set_exception(RuntimeError(message.error.cause))
             else:
                 self.analysis.op.set_result(message)
