@@ -19,6 +19,7 @@ const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
+const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
 const Modules = require('./modules');
@@ -49,11 +50,11 @@ if (window.navigator.platform === 'MacIntel') {
             ]
         },
         {
-            label: "Edit",
+            label: 'Edit',
             submenu: [
-                { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-                { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-                { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+                { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+                { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+                { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
             ]
         },
     ]);
@@ -68,24 +69,30 @@ window.addEventListener('popstate', function () {
 
 $(document).ready(() => {
 
-    if (navigator.platform === "Win32")
-        $('body').addClass("windows");
-    else if (navigator.platform == "MacIntel")
-        $('body').addClass("mac");
+    if (navigator.platform === 'Win32')
+        $('body').addClass('windows');
+    else if (navigator.platform == 'MacIntel')
+        $('body').addClass('mac');
     else
-        $('body').addClass("other");
+        $('body').addClass('other');
 
     if (host.isElectron)
         $('body').addClass('electron');
 
     $(window).on('keydown', function(event) {
-        if (event.key === 'F10' || event.keyCode === 121)
+        if (event.key === 'F10' || event.keyCode === 121) {
             host.toggleDevTools();
-        else if (event.key === 'F9' || event.keyCode === 120)
+        }
+        else if (event.key === 'F9' || event.keyCode === 120) {
             instance.restartEngines();
+        }
+        else if (event.ctrlKey || event.metaKey) {
+            if (event.key === 's')
+                ActionHub.get('save').do();
+        }
     });
 
-    if (host.isElectron && navigator.platform === "Win32") {
+    if (host.isElectron && navigator.platform === 'Win32') {
 
         $('#close-button').on('click', event => host.closeWindow());
         $('#min-button').on('click', event => host.minimizeWindow());
@@ -109,7 +116,7 @@ $(document).ready(() => {
     };
 
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
-    let backstage = new Backstage({ el : "#backstage", model : backstageModel });
+    let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
     ribbon.on('analysisSelected', function(analysis) {
         analyses.createAnalysis(analysis.name, analysis.ns);
@@ -122,18 +129,18 @@ $(document).ready(() => {
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
     let optionsFixedWidth = 585;
-    let splitPanel  = new SplitPanel({el : "#main-view"});
+    let splitPanel  = new SplitPanel({el : '#main-view'});
 
-    splitPanel.addPanel("main-table", { minWidth: 90, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
-    splitPanel.addPanel("main-options", { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferredWidth: optionsFixedWidth, visible: false, strongEdge: "right", stretchyEdge: "left", level: 1 });
-    splitPanel.addPanel("results", { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
-    splitPanel.addPanel("help", { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: "right", level: 1 });
+    splitPanel.addPanel('main-table', { minWidth: 90, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
+    splitPanel.addPanel('main-options', { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferredWidth: optionsFixedWidth, visible: false, strongEdge: 'right', stretchyEdge: 'left', level: 1 });
+    splitPanel.addPanel('results', { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
+    splitPanel.addPanel('help', { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: 'right', level: 1 });
 
-    instance.on("change:selectedAnalysis", function(event) {
+    instance.on('change:selectedAnalysis', function(event) {
         let analysis = event.changed.selectedAnalysis;
         if (analysis !== null) {
             analysis.ready.then(function() {
-                splitPanel.setVisibility("main-options", true);
+                splitPanel.setVisibility('main-options', true);
                 optionspanel.setAnalysis(analysis);
             });
         }
@@ -142,7 +149,7 @@ $(document).ready(() => {
         }
     });
 
-    instance.on("moduleInstalled", (event) => {
+    instance.on('moduleInstalled', (event) => {
         optionspanel.reloadAnalyses(event.name);
     });
 
@@ -153,26 +160,26 @@ $(document).ready(() => {
         document.title = title;
     });
 
-    let section = splitPanel.getSection("main-options");
-    splitPanel.getSection("results").$panel.find(".hideOptions").click(function() {
-        splitPanel.setVisibility("main-options", false);
+    let section = splitPanel.getSection('main-options');
+    splitPanel.getSection('results').$panel.find('.hideOptions').click(function() {
+        splitPanel.setVisibility('main-options', false);
     });
 
-    let helpSection = splitPanel.getSection("help");
-    splitPanel.getSection("results").$panel.find(".hideHelp").click(function() {
-        splitPanel.setVisibility("help", helpSection.getVisibility() === false);
+    let helpSection = splitPanel.getSection('help');
+    splitPanel.getSection('results').$panel.find('.hideHelp').click(function() {
+        splitPanel.setVisibility('help', helpSection.getVisibility() === false);
     });
 
     splitPanel.render();
 
-    let mainTable   = new TableView({el : "#main-table", model : dataSetModel });
+    let mainTable   = new TableView({el : '#main-table', model : dataSetModel });
 
     backstageModel.on('change:activated', function(event) {
         mainTable.setActive( ! event.changed.activated);
     });
 
-    let resultsView = new ResultsView({ el : "#results", iframeUrl : host.resultsViewUrl, model : instance });
-    let optionspanel = new OptionsPanel({ el : "#main-options", iframeUrl : host.analysisUIUrl, model : instance });
+    let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
+    let optionspanel = new OptionsPanel({ el : '#main-options', iframeUrl : host.analysisUIUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
     optionspanel.$el.on('splitpanel-hide', () =>  window.focus() );
 
@@ -200,7 +207,7 @@ $(document).ready(() => {
                 type: 'question',
                 buttons: [ 'Save', 'Cancel', "Don't Save" ],
                 defaultId: 1,
-                message: 'Do you want to save the changes made to "' + instance.attributes.title + '"?',
+                message: "Do you want to save the changes made to '" + instance.attributes.title + "'?",
             });
             if (response === 1) {  // Cancel
                 event.preventDefault();

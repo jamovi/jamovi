@@ -16,6 +16,7 @@ const tarp = require('./utils/tarp');
 const pathtools = require('./utils/pathtools');
 
 const host = require('./host');
+const ActionHub = require('./actionhub');
 
 const FSEntryListModel = Backbone.Model.extend({
     defaults: {
@@ -614,6 +615,8 @@ var BackstageModel = Backbone.Model.extend({
 
         this._savePromiseResolve = null;
 
+        ActionHub.get('save').on('request', () => this.requestSave(this.instance.get('path'), true));
+
         this.attributes.ops = [
             {
                 name: 'new',
@@ -698,7 +701,6 @@ var BackstageModel = Backbone.Model.extend({
             for (let i = 0; i < list.length; i++)
                 filters.push({ name: list[i].description, extensions: list[i].extensions });
 
-            console.log(directory);
             if (type === 'open') {
 
                 dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(this._osCurrentDirectory, '') }, (fileNames) => {
