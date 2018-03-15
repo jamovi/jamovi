@@ -24,6 +24,7 @@ import tempfile
 import logging
 import pkg_resources
 import threading
+import asyncio
 
 log = logging.getLogger('jamovi')
 
@@ -215,7 +216,7 @@ class Server:
         else:
             self._ports = [int(port), int(port) + 1, int(port) + 2]
 
-        self._ioloop = tornado.ioloop.IOLoop.instance()
+        self._ioloop = asyncio.get_event_loop()
 
         self._host = host
         self._slave = slave and not stdin_slave
@@ -254,14 +255,13 @@ class Server:
         self._ports_opened_listeners.append(listener)
 
     def _read_stdin(self):
-        ioloop = tornado.ioloop.IOLoop.instance()
         try:
             for line in sys.stdin:
                 line = line.strip()
-                ioloop.add_callback(self._stdin, line)
+                self._ioloop.call_soon_threadsafe(self._stdin, line)
         except OSError:
             pass
-        ioloop.add_callback(self.stop)
+        self._ioloop.call_soon_threadsafe(self.stop)
 
     def _stdin(self, line):
 
@@ -303,7 +303,7 @@ class Server:
             self.stop()
 
     def stop(self):
-        tornado.ioloop.IOLoop.instance().stop()
+        self._ioloop.stop()
 
     def start(self):
 
@@ -395,6 +395,6 @@ class Server:
             self._ioloop.call_later(3, check.start)
 
         try:
-            self._ioloop.start()
+            self._ioloop.run_forever()
         except KeyboardInterrupt:
             pass

@@ -16,6 +16,7 @@ from . import jamovi_pb2 as jcoms
 from .analyses import Analysis
 
 import logging
+import asyncio
 
 log = logging.getLogger('jamovi')
 
@@ -45,6 +46,8 @@ class Engine:
         self._restarting = False
         self._stopping = False
         self._stopped = False
+
+        self._ioloop = asyncio.get_event_loop()
 
     @property
     def is_waiting(self):
@@ -128,7 +131,7 @@ class Engine:
                 bytes = self._socket.recv()
                 message = jcoms.ComsMessage()
                 message.ParseFromString(bytes)
-                self._receive(message)
+                self._ioloop.call_soon_threadsafe(self._receive, message)
 
             except nanomsg.NanoMsgAPIError as e:
                 if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
@@ -140,6 +143,9 @@ class Engine:
                     log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
                 break
 
+        self._ioloop.call_soon_threadsafe(self._on_closing)
+
+    def _on_closing(self):
         self._socket.close()
         if self._restarting:
             log.info('Restarting engine')

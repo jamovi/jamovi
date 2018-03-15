@@ -31,9 +31,7 @@ import math
 import yaml
 import logging
 import time
-
-import threading
-from threading import Thread
+import asyncio
 
 from .utils import fs
 
@@ -79,9 +77,10 @@ class Instance:
         return Instance.instances.get(instance_id)
 
     def __init__(self, session_path, instance_id=None):
-
         if Instance._garbage_collector is None:
-            Instance._garbage_collector = Instance.GarbageCollector()
+            ioloop = asyncio.get_event_loop()
+            gc = GarbageCollection()
+            Instance._garbage_collector = ioloop.create_task(gc)
 
         self._session_path = session_path
         if instance_id is None:
@@ -1336,28 +1335,14 @@ class Instance:
                 content=message)
             self._instance._coms.send(broadcast, self._instance._instance_id)
 
-    class GarbageCollector:
 
-        def __init__(self):
-            self._stopped = False
-            self._thread = Thread(target=self.run)
-            self._thread.start()
+async def GarbageCollection():
 
-        def run(self):
-            parent = threading.main_thread()
-
-            while True:
-                time.sleep(.3)
-                if self._stopped is True:
-                    break
-                if parent.is_alive() is False:
-                    break
-                for id, instance in Instance.instances.items():
-                    if instance.inactive_for > 2:
-                        log.info('cleaning up: ' + str(id))
-                        instance.close()
-                        del Instance.instances[id]
-                        break
-
-        def stop(self):
-            self._stopped = True
+    while True:
+        await asyncio.sleep(.3)
+        for id, instance in Instance.instances.items():
+            if instance.inactive_for > 2:
+                log.info('cleaning up: ' + str(id))
+                instance.close()
+                del Instance.instances[id]
+                break
