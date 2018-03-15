@@ -112,18 +112,9 @@ var FSEntryBrowserView = SilkyView.extend({
         this.model.on('change:dirInfo', this._render, this);
 
         this.$el.addClass('silky-bs-fslist');
+        this.$el.attr('tabindex', 0);
         this._createHeader();
         this._render();
-    },
-    onClose: function() {
-        let context = keyboardJS.getContext();
-        keyboardJS.setContext('save_name_textbox');
-        keyboardJS.reset();
-        if (this._keyboardSetup) {
-            keyboardJS.setContext('save_file_browser');
-            keyboardJS.reset();
-        }
-        keyboardJS.setContext(context);
     },
     events : {
         'click .silky-bs-fslist-item' : '_itemClicked',
@@ -136,7 +127,9 @@ var FSEntryBrowserView = SilkyView.extend({
         'paste .silky-bs-fslist-browser-save-name' : '_nameChanged',
         'focus .silky-bs-fslist-browser-save-name' : '_nameGotFocus',
         'focus .silky-bs-fslist-browser-save-filetype' : '_focusChanged',
-        'click .silky-bs-fslist-browse-button' : '_manualBrowse'
+        'click .silky-bs-fslist-browse-button' : '_manualBrowse',
+        'keydown' : '_keyPressHandle',
+        'keydown .silky-bs-fslist-browser-save-name' : '_nameKeypressHandle'
     },
     _saveTypeChanged : function() {
         var selected = this.$el.find('option:selected');
@@ -155,7 +148,6 @@ var FSEntryBrowserView = SilkyView.extend({
         return -1;
     },
     _nameGotFocus: function(event) {
-        keyboardJS.setContext('save_name_textbox');
         this._selected = false;
         if (this._selectedIndex !== -1) {
             this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
@@ -163,7 +155,6 @@ var FSEntryBrowserView = SilkyView.extend({
         }
     },
     _focusChanged: function(event) {
-        keyboardJS.setContext('');
         this._selected = false;
         if (this._selectedIndex !== -1) {
             this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
@@ -296,8 +287,6 @@ var FSEntryBrowserView = SilkyView.extend({
         if (this.model.clickProcess === "save" || this.model.clickProcess === "export") {
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
-                keyboardJS.setContext('save_name_textbox');
-                keyboardJS.bind('', event => this._nameBoxFocused(event));
             }, 50);
         }
 
@@ -307,7 +296,7 @@ var FSEntryBrowserView = SilkyView.extend({
         if (extValue != -1)
             this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
     },
-    _nameBoxFocused: function(event) {
+    _nameKeypressHandle: function(event) {
 
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
@@ -387,13 +376,6 @@ var FSEntryBrowserView = SilkyView.extend({
         if (itemType !== FSItemType.File || this.model.clickProcess === "open")
             this.model.requestOpen(itemPath, itemType);
         else {
-            if (!this._selected) {
-                keyboardJS.setContext('save_file_browser');
-                if (!this._keyboardSetup) {
-                    keyboardJS.bind('', event => this._focusKeyPress(event));
-                    this._keyboardSetup = true;
-                }
-            }
 
             if (this._selectedIndex !== -1)
                 this.$items[this._selectedIndex].removeClass("silky-bs-fslist-selected-item");
@@ -407,8 +389,7 @@ var FSEntryBrowserView = SilkyView.extend({
             this._selected = true;
         }
     },
-    _focusKeyPress: function(event) {
-
+    _keyPressHandle : function(event) {
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
@@ -426,7 +407,9 @@ var FSEntryBrowserView = SilkyView.extend({
                     var $target = this.$items[this._selectedIndex];
                     var itemType = $target.data('type');
                     var itemPath = $target.data('path');
-                    if (itemType === FSItemType.File && this.model.clickProcess === "save")
+                    if (itemType !== FSItemType.File || this.model.clickProcess === "open")
+                        this.model.requestOpen(itemPath, itemType);
+                    else if (itemType === FSItemType.File && this.model.clickProcess === "save")
                         this.model.requestSave(itemPath, itemType);
                     else if (itemType === FSItemType.File && this.model.clickProcess === "export")
                         this.model.requestExport(itemPath, itemType);
@@ -464,7 +447,9 @@ var FSEntryBrowserView = SilkyView.extend({
         var $target = $(event.currentTarget);
         var itemType = $target.data('type');
         var itemPath = $target.data('path');
-        if (itemType === FSItemType.File && this.model.clickProcess === "save")
+        if (itemType !== FSItemType.File || this.model.clickProcess === "open")
+            this.model.requestOpen(itemPath, itemType);
+        else if (itemType === FSItemType.File && this.model.clickProcess === "save")
             this.model.requestSave(itemPath, itemType);
         else if (itemType === FSItemType.File && this.model.clickProcess === "export")
             this.model.requestExport(itemPath, itemType);
@@ -980,13 +965,25 @@ var BackstageModel = Backbone.Model.extend({
 var BackstageView = SilkyView.extend({
     className: "backstage",
     initialize: function() {
+        this.$el.attr('tabindex', 0);
         this.render();
         this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
     },
     events: {
-        'click .silky-bs-back-button div' : 'deactivate'
+        'click .silky-bs-back-button div' : 'deactivate',
+        'keydown' : '_keypressHandle'
+    },
+    _keypressHandle: function(event) {
+        if (event.metaKey || event.ctrlKey || event.altKey)
+            return;
+
+        switch(event.key) {
+            case 'Escape':
+                this.deactivate();
+                break;
+        }
     },
     render: function() {
 
@@ -1081,6 +1078,7 @@ var BackstageView = SilkyView.extend({
     },
     activate : function() {
 
+        keyboardJS.pause();
         this.$el.addClass('activated');
 
         tarp.show('backstage', true, 0.3).then(
@@ -1090,9 +1088,14 @@ var BackstageView = SilkyView.extend({
         this.model.set('activated', true);
 
         $('body').find('.app-dragable').addClass('ignore');
+
+        setTimeout(() => {
+            this.$el.focus();
+        }, 0);
     },
     deactivate : function() {
 
+        keyboardJS.resume();
         tarp.hide('backstage');
         this.$el.removeClass('activated');
         this.$el.removeClass('activated-sub');
