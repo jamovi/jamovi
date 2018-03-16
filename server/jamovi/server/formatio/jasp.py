@@ -3,12 +3,17 @@ import zipfile
 from zipfile import ZipFile
 import io
 import json
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile
 import struct
 import os
 import os.path
 
-from ...core import MeasureType
+from jamovi.core import MeasureType
+
+
+def get_readers():
+    return [ ( 'jasp', read ) ]
 
 
 def write(data, path):

@@ -3,16 +3,66 @@ import os
 import os.path
 import re
 import shutil
+import importlib
+
+from collections import OrderedDict
 
 from jamovi.server.settings import Settings
 
-from . import csv
 from . import omv
 from . import blank
-from . import jasp
+
+_readers = None
+_writers = None
 
 settings = Settings.retrieve('main')
 settings.specify_default('embedCond', '< 10 Mb')
+
+
+def _init():
+    global _readers
+    global _writers
+
+    _readers = OrderedDict()
+    _writers = OrderedDict()
+
+    plugins = os.listdir(os.path.dirname(__file__))
+    plugins_py = list(filter(lambda x: x.endswith('.py'), plugins))
+    if len(plugins_py) > 0:
+        plugins = plugins_py
+        plugins = filter(lambda x: x != '__init__.py', plugins)
+        plugins = map(lambda x: '.' + x[:-3], plugins)
+    else:
+        plugins = filter(lambda x: x.endswith('.pyc'), plugins)
+        plugins = filter(lambda x: x != '__init__.pyc', plugins)
+        plugins = map(lambda x: '.' + x[:-4], plugins)
+
+    plugins = list(sorted(plugins))
+
+    for plugin in plugins:
+        module = importlib.import_module(plugin, 'jamovi.server.formatio')
+        if hasattr(module, 'get_readers'):
+            module_readers = module.get_readers()
+            module_readers = map(lambda x: (x[0], x), module_readers)
+            _readers.update(module_readers)
+        if hasattr(module, 'get_writers'):
+            module_writers = module.get_writers()
+            module_writers = map(lambda x: (x[0], x), module_writers)
+            _writers.update(module_writers)
+
+
+def get_readers():
+    global _readers
+    if _readers is None:
+        _init()
+    return _readers
+
+
+def get_writers():
+    global _writers
+    if _writers is None:
+        _init()
+    return _writers
 
 
 def read(data, path, is_example=False):
@@ -35,12 +85,11 @@ def read(data, path, is_example=False):
 
 
 def _import(data, path, is_example=False):
+    readers = get_readers()
 
-    ext = os.path.splitext(path)[1].lower()
-    if ext == '.csv' or ext == '.txt':
-        csv.read(data, path)
-    elif ext == '.jasp':
-        jasp.read(data, path)
+    ext = os.path.splitext(path)[1].lower()[1:]
+    if ext in readers:
+        readers[ext][1](data, path)
     else:
         raise RuntimeError('Unrecognised file format')
 
@@ -61,14 +110,17 @@ def _import(data, path, is_example=False):
 
 
 def write(data, path, content=None):
+    writers = get_writers()
 
     try:
         temp_path = path + '.tmp'
-        ext = os.path.splitext(path)[1].lower()
-        if ext == '.csv':
-            csv.write(data, temp_path)
-        else:
+        ext = os.path.splitext(path)[1].lower()[1:]
+        if ext == 'omv':
             omv.write(data, temp_path, content)
+        elif ext in writers:
+            writers[ext][1](data, temp_path)
+        else:
+            raise RuntimeError('Unrecognised file format')
         os.replace(temp_path, path)
     except Exception as e:
         try:
@@ -79,16 +131,9 @@ def write(data, path, content=None):
 
 
 def is_supported(path):
-
-    ext = os.path.splitext(path)[1].lower()
-
-    return (ext == '.csv' or
-            ext == '.txt' or
-            ext == '.omv' or
-            ext == '.jasp' or
-            ext == '.pdf' or
-            ext == '.html' or
-            ext == '.htm')
+    readers = get_readers()
+    ext = os.path.splitext(path)[1].lower()[1:]
+    return ext == 'omv' or ext in readers or ext in ('pdf', 'html', 'htm')
 
 
 def fix_column_names(dataset):

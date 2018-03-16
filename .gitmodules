@@ -7,6 +7,6 @@
 [submodule "jamovi-compiler"]
 	path = jamovi-compiler
 	url = https://github.com/jamovi/jamovi-compiler.git
-[submodule "server/jamovi-readstat"]
-	path = server/jamovi-readstat
+[submodule "jamovi-readstat"]
+	path = readstat
 	url = https://github.com/jamovi/jamovi-readstat.git

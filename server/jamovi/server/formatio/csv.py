@@ -18,6 +18,14 @@ settings.specify_default('missings', 'NA')
 log = logging.getLogger('jamovi')
 
 
+def get_readers():
+    return [ ( 'csv', read ), ( 'txt', read ) ]
+
+
+def get_writers():
+    return [ ( 'csv', write ), ( 'txt', write ) ]
+
+
 def write(data, path):
 
     with open(path, 'w', encoding='utf-8') as file:
