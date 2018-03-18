@@ -36,6 +36,7 @@ string Dirs::_downloadsDir = "";
 string Dirs::_homeDir = "";
 string Dirs::_desktopDir = "";
 
+
 string Dirs::appDataDir(bool sh0rt)
 {
     if (Dirs::_appDataDir == "")
@@ -45,7 +46,7 @@ string Dirs::appDataDir(bool sh0rt)
 
 #ifdef _WIN32
         TCHAR buffer[MAX_PATH];
-        HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, buffer);
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve app data directory";
         dir = nowide::narrow(buffer);
@@ -72,7 +73,11 @@ string Dirs::appDataDir(bool sh0rt)
                 throw "could not create app data dir";
         }
 
-        Dirs::_appDataDir = filesystem::path(dir).generic_string();
+#ifdef _WIN32
+        std::replace( dir.begin(), dir.end(), '\\', '/');
+#endif
+
+        Dirs::_appDataDir = dir;
     }
 
 #ifdef _WIN32
@@ -105,7 +110,7 @@ string Dirs::tempDir()
 
         TCHAR buffer[MAX_PATH];
 
-        HRESULT ret = SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, buffer);
 
         if ( ! SUCCEEDED(ret))
             "Could not retrieve app data directory";
@@ -135,7 +140,11 @@ string Dirs::tempDir()
                 throw "could not create temp dir";
         }
 
-        Dirs::_tempDir = filesystem::path(dir).generic_string();
+        #ifdef _WIN32
+                std::replace( dir.begin(), dir.end(), '\\', '/');
+        #endif
+
+        Dirs::_tempDir = dir;
     }
 
     return Dirs::_tempDir;
@@ -277,7 +286,7 @@ string Dirs::documentsDir()
 
 #ifdef _WIN32
         TCHAR buffer[MAX_PATH];
-        HRESULT ret = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, buffer);
+        HRESULT ret = SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, buffer);
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve documents directory";
         dir = nowide::narrow(buffer);
@@ -290,7 +299,11 @@ string Dirs::documentsDir()
         dir = homeDir() + "/Documents";
 #endif
 
-        Dirs::_documentsDir = filesystem::path(dir).generic_string();
+#ifdef _WIN32
+        std::replace( dir.begin(), dir.end(), '\\', '/');
+#endif
+
+        Dirs::_documentsDir = dir;
     }
 
     return Dirs::_documentsDir;
@@ -323,7 +336,11 @@ string Dirs::downloadsDir()
         dir = homeDir() + "/Downloads";
 #endif
 
-        Dirs::_downloadsDir = filesystem::path(dir).generic_string();
+#ifdef _WIN32
+        std::replace( dir.begin(), dir.end(), '\\', '/');
+#endif
+
+        Dirs::_downloadsDir = dir;
     }
 
     return Dirs::_downloadsDir;
@@ -337,7 +354,7 @@ string Dirs::homeDir()
 
 #ifdef _WIN32
         TCHAR buffer[MAX_PATH];
-        HRESULT ret = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, 0, buffer);
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve home directory";
         dir = nowide::narrow(buffer);
@@ -350,7 +367,10 @@ string Dirs::homeDir()
         dir = string(getpwuid(getuid())->pw_dir);
 #endif
 
-        Dirs::_homeDir = filesystem::path(dir).generic_string();
+#ifdef _WIN32
+        std::replace( dir.begin(), dir.end(), '\\', '/');
+#endif
+        Dirs::_homeDir = dir;
     }
 
     return Dirs::_homeDir;
@@ -365,7 +385,7 @@ string Dirs::desktopDir()
 
 #ifdef _WIN32
         TCHAR buffer[MAX_PATH];
-        HRESULT ret = SHGetFolderPath(NULL, CSIDL_DESKTOP, NULL, 0, buffer);
+        HRESULT ret = SHGetFolderPathW(NULL, CSIDL_DESKTOP, NULL, 0, buffer);
         if ( ! SUCCEEDED(ret))
             throw "Could not retrieve desktop";
         dir = nowide::narrow(buffer);
@@ -378,7 +398,10 @@ string Dirs::desktopDir()
         dir = homeDir() + "/Desktop";
 #endif
 
-        Dirs::_desktopDir = filesystem::path(dir).generic_string();
+#ifdef _WIN32
+        std::replace( dir.begin(), dir.end(), '\\', '/');
+#endif
+        Dirs::_desktopDir = dir;
     }
 
     return Dirs::_desktopDir;
