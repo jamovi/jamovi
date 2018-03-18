@@ -424,13 +424,13 @@ class Instance:
     def _on_open(self, request):
         path = request.filename
 
-        norm_path = Instance._normalise_path(path)
-        virt_path = Instance._virtualise_path(path)
-
-        self._mm = MemoryMap.create(self._buffer_path, 65536)
-        dataset = DataSet.create(self._mm)
-
         try:
+            norm_path = Instance._normalise_path(path)
+            virt_path = Instance._virtualise_path(path)
+
+            self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
+            dataset = DataSet.create(self._mm)
+
             self._data.dataset = dataset
 
             is_example = path.startswith('{{Examples}}')
