@@ -159,6 +159,10 @@
     overflow: hidden;
 }
 
+.silky-bs-fslist:focus, #backstage:focus {
+    outline: none;
+}
+
 .silky-bs-op-recents.silky-bs-fslist {
     padding-left: 0px;
 }
