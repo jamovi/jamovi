@@ -38,6 +38,7 @@
     line-height: 50px;
     text-align: center;
     height: 85px ;
+    min-width: 85px;
 }
 
 [data-type='info'] .silky-notification-icon {
@@ -77,6 +78,7 @@
     display: flex ;
     justify-content: space-between ;
     margin-bottom: 12px ;
+    white-space: pre-wrap;
 }
 
 .silky-notification-content > * {
