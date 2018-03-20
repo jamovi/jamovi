@@ -281,7 +281,9 @@ const Instance = Backbone.Model.extend({
         message.instanceId = this.instanceId();
 
         return coms.send(message)
-            .then(response => coms.Messages.FSResponse.decode(response.payload));
+            .then(response => {
+                return coms.Messages.FSResponse.decode(response.payload);
+            });
     },
     restartEngines() {
 
