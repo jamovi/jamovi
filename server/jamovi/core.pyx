@@ -13,7 +13,6 @@ from cython.operator cimport dereference as deref, postincrement as inc
 import math
 import os
 import os.path
-from platform import uname
 
 from enum import Enum
 
@@ -628,11 +627,11 @@ cdef class Dirs:
         # CDirs.appDataDir() seems to have stopped working under macOS
         # hence, us handling it here.
 
-        if uname().system == 'Darwin':
+        IF UNAME_SYSNAME == 'Darwin':
             path = os.path.expanduser('~/Library/Application Support/jamovi')
             os.makedirs(path, exist_ok=True)
             return path
-        else:
+        ELSE:
             return decode(CDirs.appDataDir())
 
     @staticmethod
