@@ -1,6 +1,7 @@
 
 from collections import OrderedDict
 from numbers import Number
+from datetime import date
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
@@ -23,6 +24,9 @@ def read(data, path, format):
     parser.parse(path, format)
     for column in data.dataset:
         column.determine_dps()
+
+
+TIME_START = date(1970, 1, 1)
 
 
 class Parser(ReadStatParser):
@@ -50,6 +54,7 @@ class Parser(ReadStatParser):
     def handle_variable(self, index, variable, labels_key):
         name = variable.name
         label = variable.label
+
         if label is None:
             label = name
         column = self._data.dataset.append_column(label, name)
@@ -59,6 +64,7 @@ class Parser(ReadStatParser):
 
         var_meas = variable.measure
         var_type = variable.type
+
         if var_type is str:
             column.set_measure_type(MeasureType.NOMINAL_TEXT)
             if level_labels is not None:
@@ -67,6 +73,8 @@ class Parser(ReadStatParser):
                     label = level_labels[value]
                     column.append_level(level_i, label, value)
                     level_i += 1
+        elif var_type is date:
+            column.set_measure_type(MeasureType.ORDINAL)
         elif var_type is int or var_type is float:
             if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL:
                 mt = MeasureType.NOMINAL if var_meas is Measure.NOMINAL else MeasureType.ORDINAL
@@ -105,6 +113,18 @@ class Parser(ReadStatParser):
         elif (column.measure_type is MeasureType.NOMINAL or
                 column.measure_type is MeasureType.ORDINAL):
             if isinstance(value, Number):
-                column.set_value(row_index, int(value))
+                try:
+                    value = int(value)
+                    if value.bit_length() > 32:
+                        column.set_measure_type(MeasureType.CONTINUOUS)
+                except Exception:
+                    column.set_measure_type(MeasureType.CONTINUOUS)
+                column.set_value(row_index, value)
+            elif vt is date:
+                delta = value - TIME_START
+                ul_value = delta.days
+                if not column.has_level(ul_value):
+                    column.insert_level(ul_value, value.isoformat(), str(ul_value))
+                column.set_value(row_index, ul_value)
             elif value is None:
                 column.set_value(row_index, -2147483648)
