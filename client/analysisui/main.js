@@ -192,7 +192,9 @@ function loadAnalysis(def) {
 
         analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
 
-        updateContainerHeight();
+        setTimeout(function () {
+          updateContainerHeight();
+        }, 0);
     });
 }
 
@@ -290,6 +292,9 @@ function updateContainerHeight() {
 
     if (analysis === null)
         return;
+
+    let element = document.documentElement;
+    void( element.offsetHeight );
 
     var $content = $('.silky-options-content');
 

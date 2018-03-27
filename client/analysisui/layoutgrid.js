@@ -132,6 +132,8 @@ const LayoutGrid = function() {
             if (this.waitingForValidation())
                 return;
 
+            this.reflow();
+
             if (newContent) {
                 this._waitingForValidation = true;
                 window.setTimeout(() => {
@@ -145,6 +147,10 @@ const LayoutGrid = function() {
                     this._postProcessCells();
             }
         }
+    };
+
+    this.reflow = function() {
+        void( this.$el[0].offsetHeight );
     };
 
     this.hasVScrollbar = function() {
