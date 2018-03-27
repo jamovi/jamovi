@@ -12,6 +12,8 @@
 
 #include <boost/nowide/cstdlib.hpp>
 #include <boost/nowide/fstream.hpp>
+#include <boost/nowide/convert.hpp>
+#include <exception>
 
 #include "dirs.h"
 #include "memorymap.h"
@@ -19,9 +21,11 @@
 #include "utils.h"
 
 #ifdef _WIN32
-    char PATH_DELIM[] = ";";
+    const char *PATH_SEP = "\\";
+    const char PATH_DELIM[] = ";";
 #else
-    char PATH_DELIM[] = ";:";
+    const char *PATH_SEP = "/";
+    const char PATH_DELIM[] = ";:";
 #endif
 
 using namespace std;
@@ -235,12 +239,21 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     if (_rInside == NULL)
         initR();
 
-    filesystem::path p = _path;
-    p /= datasetId;
-    p /= "buffer";
-    string path = p.generic_string();
+    string path = _path + PATH_SEP + datasetId + PATH_SEP + "buffer";
 
-    MemoryMap *mm = MemoryMap::attach(path);
+    MemoryMap *mm;
+
+    try
+    {
+        mm = MemoryMap::attach(path);
+    }
+    catch (std::exception e)
+    {
+        std::cout << e.what() << "\n";
+        std::cout.flush();
+        throw e;
+    }
+
     DataSet &dataset = *DataSet::retrieve(mm);
 
     int columnCount = dataset.columnCount();
@@ -376,12 +389,11 @@ Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &an
 
     EngineR::createDirectories(fullPath);
 
-    fullPath += "/%%%%%%%%%%%%%%%%";
+    fullPath += filesystem::unique_path("/%%%%%%%%%%%%%%%%").generic_string();
 
     if (suffix != "")
         fullPath += "." + suffix;
 
-    fullPath = filesystem::unique_path(fullPath).generic_string();
     relPath = Utils::makeRelative(rootPath, fullPath);
 
     return Rcpp::List::create(
@@ -391,7 +403,13 @@ Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &an
 
 void EngineR::createDirectories(const string &path)
 {
+#ifdef _WIN32
+    wstring wpath = nowide::widen(path);
+    filesystem::path fpath = filesystem::path(wpath);
+#else
     filesystem::path fpath = filesystem::path(path);
+#endif
+
     filesystem::create_directories(fpath);
 }
 
