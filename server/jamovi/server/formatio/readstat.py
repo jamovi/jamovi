@@ -13,6 +13,7 @@ from jamovi.readstat import Measure
 def get_readers():
     return [
         ( 'sav', lambda data, path: read(data, path, 'sav') ),
+        ( 'zsav', lambda data, path: read(data, path, 'sav') ),
         ( 'dta', lambda data, path: read(data, path, 'dta') ),
         ( 'por', lambda data, path: read(data, path, 'por') ),
         ( 'xpt', lambda data, path: read(data, path, 'xpt') ),

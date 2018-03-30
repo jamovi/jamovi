@@ -574,12 +574,12 @@ var BackstageModel = Backbone.Model.extend({
         this._pcListModel.clickProcess = 'open';
         this._pcListModel.fileExtensions = [
             { description: 'Data files', extensions: [
-                'omv', 'csv', 'txt', 'sav', 'por', 'dta',
-                'sas7bdat', 'xpt', 'jasp',
+                'omv', 'csv', 'txt', 'sav', 'zsav', 'por',
+                'dta', 'sas7bdat', 'xpt', 'jasp',
             ]},
             { description: 'jamovi files (.omv)', extensions: ['omv'] },
             { description: 'CSV (Comma delimited) (.csv, .txt)', extensions: ['csv', 'txt'] },
-            { description: 'SPSS files (.sav, .por)', extensions: ['sav', 'por'] },
+            { description: 'SPSS files (.sav, .zsav, .por)', extensions: ['sav', 'zsav', 'por'] },
             { description: 'Stata files (.dta, .sas7bdat)', extensions: ['dta', 'sas7bdat'] },
             { description: 'SAS files (.xpt)', extensions: ['xpt'] },
             { description: 'JASP files (.jasp)', extensions: ['jasp'] },
