@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/jamovi-dataset">
+        <comment>jamovi dataset</comment>
+        <glob pattern="*.omv"/>
+        <sub-class-of type="application/zip"/>
+    </mime-type>
+</mime-info>
+
