@@ -678,12 +678,8 @@ class Instance:
             column.column_type = column_pb.columnType
             column.auto_measure = column_pb.autoMeasure
 
-        response.schema.rowCount = self._data.row_count
-        response.schema.vRowCount = self._data.virtual_row_count
-        response.schema.columnCount = self._data.column_count
-        response.schema.vColumnCount = self._data.virtual_column_count
+        self._populate_schema_info(request, response)
 
-        response.incSchema = True
         column_pb = response.schema.columns.add()
         self._populate_column_schema(column, column_pb)
 
@@ -714,7 +710,14 @@ class Instance:
         for column in reparse:
             column.recalc()
 
-        self._populate_schema(request, response)
+        self._populate_schema_info(request, response)
+
+        reparse = filter(lambda x: x not in columns, reparse)
+        reparse = sorted(reparse, key=lambda x: x.index)
+
+        for column in reparse:
+            column_schema = response.schema.columns.add()
+            self._populate_column_schema(column, column_schema)
 
     def _apply_schema(self, request, response):
 
@@ -1138,10 +1141,13 @@ class Instance:
                             cell.i = value
 
     def _populate_schema(self, request, response):
-        response.incSchema = True
+        self._populate_schema_info(request, response)
         for column in self._data:
             column_schema = response.schema.columns.add()
             self._populate_column_schema(column, column_schema)
+
+    def _populate_schema_info(self, request, response):
+        response.incSchema = True
         response.schema.rowCount = self._data.row_count
         response.schema.vRowCount = self._data.virtual_row_count
         response.schema.columnCount = self._data.column_count
