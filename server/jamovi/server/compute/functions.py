@@ -13,6 +13,7 @@ from jamovi.server.utils import is_missing
 from .funcmeta import row_wise
 from .funcmeta import column_wise
 from .funcmeta import returns
+from .funcmeta import levels
 
 
 NaN = float('nan')
@@ -173,23 +174,16 @@ def OFFSET(index, x, offset: int):
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, 1)
-def IF(index, cond: int, x=1):
-    if is_missing(cond, True):
-        return -2147483648
-    return x if cond else -2147483648
-
-
-@row_wise
-@returns(MeasureType.NOMINAL, 1, 2)
-def IFELSE(index, cond: int, x=1, y=0):
+@returns(MeasureType.NOMINAL, [1, 2])
+@levels([1, 2])
+def IF(index, cond: int, x=1, y=-2147483648):
     if is_missing(cond, True):
         return -2147483648
     return x if cond else y
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, 1, 2)
+@returns(MeasureType.NOMINAL, [1, 2])
 def IFMISS(index, cond, x=1, y=-2147483648):
     return x if is_missing(cond, empty_str_is_missing=True) else y
 
@@ -229,3 +223,17 @@ def VALUE(index, x: str):
 @returns(MeasureType.ORDINAL)
 def INT(index, x: str):
     return int(float(x))
+
+
+@row_wise
+@returns(MeasureType.NOMINAL, range(0, 10000, 2))
+@levels(range(0, 10000, 2))
+def RECODE(index, x, *args):
+    for i in range(0, len(args) - 1, 2):
+        cond = args[i]
+        if cond:
+            return args[i + 1]
+    if len(args) % 2 == 1:
+        return args[-1]
+    else:
+        return x

@@ -1,5 +1,4 @@
 
-
 from jamovi.core import MeasureType
 
 
@@ -9,6 +8,7 @@ class FuncMeta:
         self.is_column_wise = False
         self._measure_type = MeasureType.CONTINUOUS
         self._returns = [ ]
+        self._arg_level_indices = [ ]
 
     def __str__(self):
         return str({
@@ -18,36 +18,20 @@ class FuncMeta:
             'returns': self._returns,
         })
 
+    @property
+    def m_type(self):
+        return self._measure_type
+
     def set_m_type(self, m_type):
         self._measure_type = m_type
 
-    def determine_m_type(self, args):
-        if len(self._returns) == 0:
-            return self._measure_type
-        if len(args) == 0:
-            return self._measure_type
+    @property
+    def returns(self):
+        return self._returns
 
-        # not sure why this doesn't work:
-        # types = map(lambda i: args[i].measure_type, self._returns)
-        #
-        # had to do this instead:
-        types = [None] * len(self._returns)
-        for i in range(len(self._returns)):
-            arg_i = self._returns[i]
-            if arg_i < len(args):
-                types[i] = args[arg_i].measure_type
-
-        mt = MeasureType.NOMINAL
-        for t in list(types):
-            if t is MeasureType.ORDINAL and mt is MeasureType.NOMINAL:
-                mt = MeasureType.ORDINAL
-            elif t is MeasureType.CONTINUOUS:
-                mt = MeasureType.CONTINUOUS
-            elif t is MeasureType.NOMINAL_TEXT:
-                mt = MeasureType.NOMINAL_TEXT
-                break
-
-        return mt
+    @property
+    def arg_level_indices(self):
+        return self._arg_level_indices
 
 
 def _meta(func):
@@ -56,11 +40,25 @@ def _meta(func):
     return func.meta
 
 
-def returns(mt, *args):
+def returns(mt, args_to_determine_from=[]):
+    if isinstance(args_to_determine_from, int):
+        args_to_determine_from = [ args_to_determine_from ]
+
     def inner(func):
         meta = _meta(func)
         meta._measure_type = mt
-        meta._returns = args
+        meta._returns = args_to_determine_from
+        return func
+    return inner
+
+
+def levels(args_to_determine_from):
+    if isinstance(args_to_determine_from, int):
+        args_to_determine_from = [ args_to_determine_from ]
+
+    def inner(func):
+        meta = _meta(func)
+        meta._arg_level_indices = args_to_determine_from
         return func
     return inner
 

@@ -126,7 +126,6 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.$functionsContent.append($('<div class="subtitle" data-name="">Logical</div>'));
         this.$functionsContent.append($('<div class="item" data-name="IF">IF</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="IFELSE">IFELSE</div>'));
         this.$functionsContent.append($('<div class="item" data-name="IFMISS">IFMISS</div>'));
         this.$functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
 

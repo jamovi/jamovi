@@ -5,6 +5,7 @@ from inspect import signature
 from inspect import Parameter
 from types import FunctionType as function
 import math
+from collections import OrderedDict
 
 from jamovi.core import MeasureType
 from ..utils import FValues
@@ -52,6 +53,10 @@ class Num(ast.Num):
     def needs_recalc(self, needs_recalc: bool):
         pass
 
+    @property
+    def has_levels(self):
+        return False
+
 
 class Str(ast.Str):
 
@@ -85,6 +90,14 @@ class Str(ast.Str):
     @needs_recalc.setter
     def needs_recalc(self, needs_recalc: bool):
         pass
+
+    @property
+    def has_levels(self):
+        return True
+
+    @property
+    def levels(self):
+        return [ self.s ]
 
 
 class UnaryOp(ast.UnaryOp):
@@ -157,6 +170,10 @@ class UnaryOp(ast.UnaryOp):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
 
+    @property
+    def has_levels(self):
+        return False
+
 
 class BoolOp(ast.BoolOp):
 
@@ -166,25 +183,29 @@ class BoolOp(ast.BoolOp):
 
     def fvalue(self, index):
         if isinstance(self.op, ast.And):
+            to_return = 1
             for v in self.values:
                 value = v.fvalue(index)
                 if is_missing(value):
-                    return 0
+                    to_return = value
+                    continue
                 if isinstance(value, tuple):
                     value = value[0]
                 if not value:
                     return 0
-            return 1
+            return to_return
         elif isinstance(self.op, ast.Or):
+            to_return = 0
             for v in self.values:
                 value = v.fvalue(index)
                 if is_missing(value):
+                    to_return = value
                     continue
                 if isinstance(value, tuple):
                     value = value[0]
                 if value:
                     return 1
-            return 0
+            return to_return
         else:
             raise RuntimeError("Shouldn't get here")
 
@@ -216,6 +237,10 @@ class BoolOp(ast.BoolOp):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
 
+    @property
+    def has_levels(self):
+        return False
+
 
 class Call(ast.Call):
 
@@ -223,6 +248,7 @@ class Call(ast.Call):
         self._cached_value = None
         self._node_parents = [ ]
         self._arg_types = [ ]
+        self._m_type = None
 
         name = func.id
 
@@ -320,7 +346,84 @@ class Call(ast.Call):
 
     @property
     def measure_type(self):
-        return self._function.meta.determine_m_type(self.args)
+        # determine the measure type from the function meta
+        # and the function arguments
+
+        if self._m_type is not None:  # value cached
+            return self._m_type
+
+        func_meta = self._function.meta
+
+        if len(self.args) == 0:
+            return func_meta.m_type
+
+        if len(func_meta.returns) == 0:
+            return func_meta.m_type
+
+        # not sure why this doesn't work:
+        # types = map(lambda i: args[i].measure_type, self._returns)
+        #
+        # had to do this instead:
+        types = [None] * len(func_meta.returns)
+        for i in range(len(func_meta.returns)):
+            arg_i = func_meta.returns[i]
+            if arg_i < len(self.args):
+                types[i] = self.args[arg_i].measure_type
+
+        mt = MeasureType.NOMINAL
+        for t in list(types):
+            if t is MeasureType.ORDINAL and mt is MeasureType.NOMINAL:
+                mt = MeasureType.ORDINAL
+            elif t is MeasureType.CONTINUOUS:
+                mt = MeasureType.CONTINUOUS
+            elif t is MeasureType.NOMINAL_TEXT:
+                mt = MeasureType.NOMINAL_TEXT
+                break
+
+        self._m_type = mt  # cache value
+        return mt
+
+    @property
+    def has_levels(self):
+        return True
+
+    @property
+    def levels(self):
+
+        m_type = self.measure_type
+        func_meta = self._function.meta
+        arg_level_indices = func_meta.arg_level_indices
+
+        if len(arg_level_indices) == 0:
+            return [ ]
+        if len(self.args) == 0:
+            return [ ]
+        if m_type is not MeasureType.NOMINAL_TEXT:
+            return [ ]
+
+        level_use = OrderedDict()
+
+        for i in range(len(arg_level_indices)):
+            arg_i = arg_level_indices[i]
+            if arg_i < len(self.args):
+                arg = self.args[arg_i]
+                if not arg.has_levels:
+                    continue
+                for level in arg.levels:
+                    level_use[level[1]] = 0
+
+        for value in self.fvalues():
+            if is_missing(value):
+                continue
+            value = convert(value, str)
+            if value in level_use:
+                level_use[value] += 1
+
+        levels = list(filter(lambda k: level_use[k] > 0, level_use))
+        for i in range(len(levels)):
+            levels[i] = (i, levels[i])
+
+        return levels
 
 
 class BinOp(ast.BinOp):
@@ -422,6 +525,10 @@ class BinOp(ast.BinOp):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
 
+    @property
+    def has_levels(self):
+        return False
+
 
 class Compare(ast.Compare):
 
@@ -479,7 +586,7 @@ class Compare(ast.Compare):
         return FValues(self)
 
     def is_atomic_node(self):
-        if self.left.ris_atomic_node() is False:
+        if self.left.is_atomic_node() is False:
             return False
         for node in self.comparators:
             if node.is_atomic_node() is False:
@@ -504,3 +611,11 @@ class Compare(ast.Compare):
     def needs_recalc(self, needs_recalc: bool):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
+
+    @property
+    def has_levels(self):
+        return True
+
+    @property
+    def levels(self):
+        return ((1, 'true'), (0, 'false'))
