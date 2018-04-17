@@ -12,6 +12,7 @@ const NewVarWidget = require('./newvarwidget');
 const DataVarWidget = require('./datavarwidget');
 const ComputedVarWidget = require('./computedvarwidget');
 const RecodedVarWidget = require('./recodedvarwidget');
+const FilterWidget = require('./filterwidget');
 
 const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
@@ -70,6 +71,9 @@ const EditorWidget = Backbone.View.extend({
         this.$recodedVarWidget = $('<div></div>').appendTo(this.$body);
         this.recodedVarWidget = new RecodedVarWidget({ el: this.$recodedVarWidget, model: this.model });
 
+        this.$filterWidget = $('<div></div>').appendTo(this.$body);
+        this.filterWidget = new FilterWidget({ el: this.$filterWidget, model: this.model });
+
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);
         this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
 
@@ -77,6 +81,7 @@ const EditorWidget = Backbone.View.extend({
             this.$dataVarWidget,
             this.$computedVarWidget,
             this.$recodedVarWidget,
+            this.$filterWidget,
             this.$newVarWidget,
         ];
     },
@@ -95,6 +100,7 @@ const EditorWidget = Backbone.View.extend({
         this.computedVarWidget.detach();
         this.newVarWidget.detach();
         this.recodedVarWidget.detach();
+        this.filterWidget.detach();
     },
     attach() {
         this.attached = true;
@@ -118,11 +124,21 @@ const EditorWidget = Backbone.View.extend({
             this._show(this.$recodedVarWidget);
             this.recodedVarWidget.attach();
         }
+        else if (type === 'filter') {
+            this.$title.hide();
+            this._show(this.$filterWidget);
+            this.filterWidget.attach();
+        }
         else {
             this.$title.hide();
             this._show(this.$newVarWidget);
             this.newVarWidget.attach();
         }
+    },
+    update() {
+        let type = this.model.get('columnType');
+        if (type === 'filter')
+            this.filterWidget.update();
     }
 });
 

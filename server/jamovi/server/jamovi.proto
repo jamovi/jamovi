@@ -366,6 +366,7 @@ enum ColumnType {
     DATA = 1;
     COMPUTED = 2;
     RECODED = 3;
+    FILTER = 4;
 }
 
 message DataSetSchema {
@@ -393,12 +394,17 @@ message DataSetSchema {
         ColumnType columnType = 11;
         string formula = 12;
         string formulaMessage = 13;
+        string description = 14;
+        bool hidden = 15;
+        bool active = 16;
+        int32 childOf = 17;
     }
     repeated ColumnSchema columns = 1;
     uint32 rowCount = 5;
     uint32 columnCount = 6;
     uint32 vRowCount = 7;
     uint32 vColumnCount = 8;
+    uint32 tColumnCount = 9;
 }
 
 enum GetSet {
@@ -441,6 +447,7 @@ message DataSetRR {
     uint32 rowEnd = 6;
     uint32 columnEnd = 7;
 
+
     message ColumnData {
 
         message CellValue {
@@ -461,6 +468,7 @@ message DataSetRR {
     bool incCBData = 10;
     string cbText = 11;
     string cbHtml = 12;
+    bool excHiddenCols = 13;
 }
 
 message ModuleRR {

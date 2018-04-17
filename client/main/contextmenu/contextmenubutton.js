@@ -75,7 +75,8 @@ const ContextMenuButton = Backbone.View.extend({
             let action = ActionHub.get(name);
             this.setEnabled(action.get('enabled'));
             action.on('change:enabled', (event) => {
-                this.setEnabled(event.changed.enabled);
+                if ('enabled' in event.changed)
+                    this.setEnabled(event.changed.enabled);
             });
         }
     },

@@ -32,12 +32,12 @@
 .dialog-widget .ok, .dialog-widget .cancel {
     border-radius: 2px;
     color: inherit;
-    background-color: #a9c6f2;
+    background-color: #A9C6F2;
     width: calc(50% - 5px);
 }
 
 .dialog-widget .ok:hover, .dialog-widget .cancel:hover {
-    background-color: #7faaec;
+    background-color: #7fAAEC;
 }
 
 .dialog-widget .ok:focus, .dialog-widget .cancel:focus {
@@ -73,11 +73,45 @@
 .jmv-column {
     position: absolute ;
     background-color: white ;
+    height: 100%;
+}
+
+.jmv-column[data-formula-check=false] {
+    background-color: #D5AEAB ;
+}
+
+.jmv-column-header[data-formula-check=false] {
+    color: #B5B6B6;
+}
+
+.jmv-column-header[data-formula-check=false].highlighted {
+    color: #979797;
+}
+
+.jmv-column-header[data-formula-check=false]:hover {
+    color: #E5E5E5;
+}
+
+
+.jmv-column[data-active=false] {
+    background-color: #EEEEEE ;
+}
+
+.jmv-column-header[data-active=false] {
+    color: #B5B6B6;
+}
+
+.jmv-column-header[data-active=false].highlighted {
+    color: #979797;
+}
+
+.jmv-column-header[data-active=false]:hover {
+    color: #E5E5E5;
 }
 
 .jmv-column,
 .jmv-column-header {
-    transition: .2s left ;
+    transition: .2s left, .2s background-color ease-out;
 }
 
 .jmv-column-row-header {
@@ -141,7 +175,7 @@
 
 .jmv-column-header:not(.place-holder):hover,
 .jmv-row-header-cell:hover {
-    background-color: #a6bede;
+    background-color: #A6BEDE;
 }
 
 
@@ -157,6 +191,7 @@
 .jmv-column-header-icon {
     background-size: 100% 100%;
     background-repeat: no-repeat;
+    background-position: center;
     height: 16px;
     flex: 0 0 16px;
 }
@@ -205,11 +240,16 @@
     box-shadow: 0 0 0 2px #5E8BC4 ;
     padding: 2px 4px ;
     white-space: no-wrap;
-    background-color: rgba(94, 139, 196, .1);;
+    background-color: rgba(94, 139, 196, .1);
     font-size: 12.8px ;
 
     left: -100px ; /* overridden by code */
     top: -100px ;
+}
+
+.jmv-table-cell-selected.not-editable {
+    box-shadow: 0 0 0 2px #9f9f9f ;
+    background-color: rgba(110, 110, 110, 0.1);
 }
 
 input.jmv-table-cell-selected.copying {
@@ -276,6 +316,17 @@ input.jmv-table-cell-selected.copying {
 .jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon {
     background-image: url('assets/variable-continuous.svg');
 }
+
+.jmv-column-header[data-columntype='filter'] .jmv-column-header-icon {
+    display: none;
+}
+
+.jmv-column-header[data-formula-check=false][data-active=true] > .jmv-column-header-icon {
+    display: block;
+    cursor: default;
+    background-image: url('assets/column-error.svg');
+}
+
 
 .jmv-table-body {
     position: absolute ;

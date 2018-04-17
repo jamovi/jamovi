@@ -49,11 +49,23 @@ class InstanceModel:
         else:
             raise KeyError('No such column: ' + str(id))
 
-    def append_column(self, name, import_name=None):
+    def append_column(self, name, import_name=None, id=-1):
+
+        if id != -1:
+            if id < self._next_id:
+                for existing_column in self:
+                    if existing_column.id == id:
+                        raise KeyError('Column id already exists: ' + str(id))
+            self._next_id = id
+
         column = self._dataset.append_column(name, import_name)
         column.column_type = ColumnType.NONE
         column.id = self._next_id
         self._next_id += 1
+
+        new_column = Column(self, column)
+        new_column.index = self.total_column_count
+        self._columns.append(new_column)
         return column
 
     def set_row_count(self, count):
@@ -67,8 +79,21 @@ class InstanceModel:
         self._dataset.insert_rows(start, end)
         self._recalc_all()
 
-    def insert_column(self, index):
-        name = self._gen_column_name(index)
+    def insert_column(self, index, id=-1):
+        if id != -1:
+            if id < self._next_id:
+                for existing_column in self:
+                    if existing_column.id == id:
+                        raise KeyError('Column id already exists: ' + str(id))
+            self._next_id = id
+
+        filter_count = self.filter_column_count
+
+        nIndex = index
+        if index >= filter_count:
+            nIndex = index - filter_count
+        name = self._gen_column_name(nIndex)
+
         ins = self._dataset.insert_column(index, name)
         ins.auto_measure = True
         ins.id = self._next_id
@@ -84,13 +109,38 @@ class InstanceModel:
             column.index = index
             index += 1
 
+    def update_filter_names(self):
+        filter_index = 0
+        subfilter_index = 1
+        for column in self._columns:
+            if column.column_type == ColumnType.FILTER:
+                if column.child_of == -1:
+                    column.name = 'Filter ' + str(filter_index + 1)
+                    filter_index += 1
+                    subfilter_index = 1
+                else:
+                    column.name = 'F' + str(filter_index) + ' (' + str(subfilter_index + 1) + ')'
+                    subfilter_index += 1
+            else:
+                break
+
     def delete_columns(self, start, end):
+        for i in range(start, end + 1):
+            parent_column = self._columns[i]
+            for c in range(0, len(self._columns)):
+                if c >= start and c <= end:
+                    continue
+                column = self._columns[c]
+                if column.child_of == parent_column.id:
+                    column.child_of = parent_column.child_of
 
         self._dataset.delete_columns(start, end)
         del self._columns[start:end + 1]
 
         for i in range(start, len(self._columns)):
             self._columns[i].index = i
+
+        self.update_filter_names()
 
     @property
     def title(self):
@@ -118,34 +168,36 @@ class InstanceModel:
 
     def setup(self):
 
-        self._columns = [ ]
         self._next_id = 0
 
         index = 0
         for child in self._dataset:
-            column = Column(self, child)
+            if index < len(self._columns):
+                column = self._columns[index]
+            else:
+                column = Column(self, child)
+                self._columns.append(column)
             column.index = index
-            self._columns.append(column)
+
             index += 1
 
             if column.id >= self._next_id:
                 self._next_id = column.id + 1
 
         for column in self:
-            if column.column_type is ColumnType.COMPUTED:
+            if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.FILTER:
                 column.parse_formula()
 
         self._add_virtual_columns()
 
     def _add_virtual_columns(self):
-        n_virtual = self.virtual_column_count - self.column_count
+        n_virtual = self.total_column_count - self.column_count
         for i in range(n_virtual, InstanceModel.N_VIRTUAL_COLS):
-            index = self.virtual_column_count
+            index = self.total_column_count
             column = Column(self)
             column.id = self._next_id
             column.index = index
             self._columns.append(column)
-            index += 1
             self._next_id += 1
 
     @property
@@ -186,6 +238,28 @@ class InstanceModel:
 
     @property
     def virtual_column_count(self):
+        return self.total_column_count - self.column_count
+
+    @property
+    def visible_column_count(self):
+        count = 0
+        for column in self._columns:
+            if column.hidden is False:
+                count += 1
+        return count
+
+    @property
+    def filter_column_count(self):
+        count = 0
+        for column in self._columns:
+            if column.column_type == ColumnType.FILTER:
+                count += 1
+            else:
+                break
+        return count
+
+    @property
+    def total_column_count(self):
         return len(self._columns)
 
     @property
@@ -238,8 +312,9 @@ class InstanceModel:
 
     def _realise_column(self, column):
         index = column.index
+        filter_count = self.filter_column_count
         for i in range(self.column_count, index + 1):
-            name = self._gen_column_name(i)
+            name = self._gen_column_name(i - filter_count)
             child = self._dataset.append_column(name)
             wrapper = self[i]
             child.id = wrapper.id

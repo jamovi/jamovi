@@ -24,6 +24,10 @@ class Column:
         self._child = child
         self._id = -1
         self._index = -1
+        self._description = ''
+        self._hidden = False
+        self._active = True
+        self._child_of = -1
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -76,6 +80,10 @@ class Column:
         return False
 
     @property
+    def is_filter(self):
+        return self.column_type is ColumnType.FILTER
+
+    @property
     def is_virtual(self):
         return self._child is None
 
@@ -93,6 +101,38 @@ class Column:
         self._id = id
         if self._child is not None:
             self._child.id = id
+
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    def description(self, description):
+        self._description = description
+
+    @property
+    def hidden(self):
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, hidden):
+        self._hidden = hidden
+
+    @property
+    def active(self):
+        return self._active
+
+    @active.setter
+    def active(self, active):
+        self._active = active
+
+    @property
+    def child_of(self):
+        return self._child_of
+
+    @child_of.setter
+    def child_of(self, child_of):
+        self._child_of = child_of
 
     @property
     def index(self):
@@ -174,11 +214,23 @@ class Column:
             return self._child.formula
         return ''
 
+    @formula.setter
+    def formula(self, formula):
+        if self._child is None:
+            self._create_child()
+        self._child.formula = formula
+
     @property
     def formula_message(self):
         if self._child is not None:
             return self._child.formula_message
         return ''
+
+    @formula_message.setter
+    def formula_message(self, formula_message):
+        if self._child is None:
+            self._create_child()
+        self._child.formula_message = formula_message
 
     @property
     def has_formula(self):
@@ -237,6 +289,11 @@ class Column:
             return self._child.levels
         return []
 
+    def append_level(self, raw, label, import_value=None):
+        if self._child is not None:
+            return self._child.append_level(raw, label, import_value)
+        return False
+
     @property
     def row_count(self):
         if self._child is not None:
@@ -271,7 +328,11 @@ class Column:
                levels=None,
                dps=None,
                auto_measure=None,
-               formula=None):
+               formula=None,
+               description=None,
+               hidden=None,
+               active=None,
+               child_of=None):
 
         if self._child is None:
             self._create_child()
@@ -294,6 +355,18 @@ class Column:
                 auto_measure=auto_measure,
                 formula=formula)
 
+        if description is not None:
+            self._description = description
+
+        if hidden is not None:
+            self._hidden = hidden
+
+        if active is not None:
+            self._active = active
+
+        if child_of is not None:
+            self._child_of = child_of
+
     @property
     def has_deps(self):
         return len(self.dependencies) != 0 or len(self.dependents) != 0
@@ -312,7 +385,7 @@ class Column:
 
     @property
     def needs_recalc(self):
-        if self.column_type is not ColumnType.COMPUTED:
+        if self.column_type is not ColumnType.COMPUTED and self.column_type is not ColumnType.FILTER:
             return False
         else:
             return self._needs_recalc
@@ -321,7 +394,7 @@ class Column:
     def needs_recalc(self, needs_recalc: bool):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
-        if self.column_type is ColumnType.COMPUTED:
+        if self.column_type is ColumnType.COMPUTED or self.column_type is ColumnType.FILTER:
             self._needs_recalc = needs_recalc
 
     def recalc(self, start=None, end=None):

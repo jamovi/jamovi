@@ -28,6 +28,10 @@
     background-image: url('assets/menu-data-cut.svg');
 }
 
+.jmv-ribbon-button[data-name=editfilters] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-data-filter.svg');
+}
+
 .jmv-ribbon-button[data-name=editvar] > .jmv-ribbon-button-icon {
     background-image: url('assets/menu-variable-edit.svg');
 }

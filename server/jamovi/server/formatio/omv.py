@@ -22,7 +22,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 2.0\n')
+        content.write('jamovi-Archive-Version: 3.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -32,25 +32,33 @@ def write(data, path, html=None):
         content = None
 
         fields = [ ]
-        for column in data.dataset:
+        for column in data:
+            if column.is_virtual is True:
+                continue
+
             field = { }
             field['name'] = column.name
             field['columnType'] = ColumnType.stringify(column.column_type)
             field['measureType'] = MeasureType.stringify(column.measure_type)
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
+            field['id'] = column.id
             if column.measure_type == MeasureType.CONTINUOUS:
                 field['type'] = 'number'
             else:
                 field['type'] = 'integer'
             field['importName'] = column.import_name
+            field['description'] = column.description
+            field['hidden'] = column.hidden
+            field['active'] = column.active
+            field['childOf'] = column.child_of
             fields.append(field)
 
         metadata = { }
 
         metadataset = { }
-        metadataset['rowCount'] = data.dataset.row_count
-        metadataset['columnCount'] = data.dataset.column_count
+        metadataset['rowCount'] = data.row_count
+        metadataset['columnCount'] = data.column_count
         metadataset['fields'] = fields
 
         if data.import_path is not '':
@@ -67,15 +75,19 @@ def write(data, path, html=None):
         metadata = None
 
         xdata = { }
-        for column in data.dataset:
+        for column in data:
+            if column.is_virtual is True:
+                continue
             if column.has_levels:
                 xdata[column.name] = { 'labels': column.levels }
         zip.writestr('xdata.json', json.dumps(xdata), zipfile.ZIP_DEFLATED)
         xdata = None
 
-        row_count = data.dataset.row_count
+        row_count = data.row_count
         required_bytes = 0
-        for column in data.dataset:
+        for column in data:
+            if column.is_virtual is True:
+                continue
             if column.measure_type == MeasureType.CONTINUOUS:
                 required_bytes += (8 * row_count)
             else:
@@ -84,7 +96,9 @@ def write(data, path, html=None):
         temp_file = NamedTemporaryFile(delete=False)
         temp_file.truncate(required_bytes)
 
-        for column in data.dataset:
+        for column in data:
+            if column.is_virtual is True:
+                continue
             if column.measure_type == MeasureType.CONTINUOUS:
                 for i in range(0, row_count):
                     value = column.raw(i)
@@ -136,7 +150,7 @@ def read(data, path):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 2:
+        if jav[0] > 3:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -164,8 +178,9 @@ def read(data, path):
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']
             import_name = meta_column.get('importName', name)
-            data.dataset.append_column(name, import_name)
-            column = data.dataset[data.dataset.column_count - 1]
+
+            data.append_column(name, import_name, meta_column.get('id', -1))
+            column = data[data.column_count - 1]
 
             column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
             column.column_type = column_type
@@ -173,10 +188,14 @@ def read(data, path):
             column.measure_type = measure_type
             column.formula = meta_column.get('formula', '')
             column.formula_message = meta_column.get('formulaMessage', '')
+            column.description = meta_column.get('description', '')
+            column.hidden = meta_column.get('hidden', False)
+            column.active = meta_column.get('active', True)
+            column.child_of = meta_column.get('childOf', -1)
 
         row_count = meta_dataset['rowCount']
 
-        data.dataset.set_row_count(row_count)
+        data.set_row_count(row_count)
 
         columns_w_bad_levels = [ ]  # do some repair work
 
@@ -184,7 +203,7 @@ def read(data, path):
             xdata_content = zip.read('xdata.json').decode('utf-8')
             xdata = json.loads(xdata_content)
 
-            for column in data.dataset:
+            for column in data:
                 if column.name in xdata:
                     try:
                         meta_labels = xdata[column.name]['labels']
@@ -201,7 +220,6 @@ def read(data, path):
         except Exception:
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
             columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
-
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
             data_path = os.path.join(dir, 'data.bin')
@@ -244,7 +262,7 @@ def read(data, path):
 
             data_file.close()
 
-        for column in data.dataset:
+        for column in data:
             column.determine_dps()
 
         is_analysis = re.compile('^[0-9][0-9]+ .+/analysis$')

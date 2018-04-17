@@ -10,10 +10,10 @@ const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
 const Backbone = require('backbone');
 const ControlContainer = require('./controlcontainer').container;
-const Toolbar = require('./toolbar/toolbar');
-const ToolbarButton = require('./toolbar/toolbarbutton');
-const ToolbarGroup = require('./toolbar/toolbargroup');
-const ToolbarSeparator = require('./toolbar/toolbarseparator');
+const Toolbar = require('../common/toolbar/toolbar');
+const ToolbarButton = require('../common/toolbar/toolbarbutton');
+const ToolbarGroup = require('../common/toolbar/toolbargroup');
+const ToolbarSeparator = require('../common/toolbar/toolbarseparator');
 
 const TargetListSupport = function(supplier) {
     DragNDrop.extendTo(this);

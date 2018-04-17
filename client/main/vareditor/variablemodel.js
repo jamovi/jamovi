@@ -37,6 +37,10 @@ const VariableModel = Backbone.Model.extend({
         changes : false,
         formula : '',
         formulaMessage : '',
+        description: '',
+        hidden: false,
+        active: true,
+        childOf: -1
     },
     editLevelLabel(index, label) {
 
@@ -89,8 +93,12 @@ const VariableModel = Backbone.Model.extend({
             columnType: column.columnType,
             measureType : column.measureType,
             autoMeasure : column.autoMeasure,
+            description: column.description,
             levels : column.levels,
             formula : column.formula,
+            hidden : column.hidden,
+            active : column.active,
+            childOf : column.childOf
         };
         this.set(this.original);
         this.set('formulaMessage', column.formulaMessage);
@@ -98,7 +106,7 @@ const VariableModel = Backbone.Model.extend({
     apply() {
 
         if (this.attributes.changes === false)
-            return;
+            return Promise.resolve();
 
         let values = {
             name: this.attributes.name.trim(),
@@ -108,10 +116,14 @@ const VariableModel = Backbone.Model.extend({
             levels: this.attributes.levels,
             dps: this.attributes.dps,
             formula: this.attributes.formula,
+            description: this.attributes.description,
+            hidden: this.attributes.hidden,
+            active: this.attributes.active,
+            childOf: this.attributes.childOf
         };
 
         let columnId = this.attributes.id;
-        this.dataset.changeColumn(this.attributes.id, values)
+        return this.dataset.changeColumn(this.attributes.id, values)
             .then(() => {
                 if (columnId === this.attributes.id) {
                     let latestValues = {
@@ -122,6 +134,10 @@ const VariableModel = Backbone.Model.extend({
                         levels: this.attributes.levels,
                         dps: this.attributes.dps,
                         formula: this.attributes.formula,
+                        description: this.attributes.description,
+                        hidden: this.attributes.hidden,
+                        active: this.attributes.active,
+                        childOf: this.attributes.childOf
                     };
 
                     this.original = latestValues;
@@ -136,6 +152,15 @@ const VariableModel = Backbone.Model.extend({
     },
     revert() {
         this.set(this.original);
+    },
+    setColumnForEdit(id) {
+        let columns = this.dataset.get('columns');
+        for (let i = 0; i < columns.length; i++) {
+            if (columns[i].id === id) {
+                this.dataset.set('editingVar', i);
+                break;
+            }
+        }
     }
 });
 

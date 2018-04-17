@@ -48,13 +48,15 @@ const LayoutVariablesView = function(params) {
     });
 
     this.requestMeasureType = function(columnId, item) {
-        let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id" ] });
+        let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id", "hidden", "columnType" ] });
         promise.then(rData => {
             if (rData.measureType === undefined)
                 rData.measureType = "none";
 
             item.properties.type = rData.measureType;
             item.properties.columnId = rData.id;
+            item.properties.hidden = rData.hidden;
+            item.properties.columnType = rData.columnType;
           });
         return promise;
     };
@@ -76,26 +78,34 @@ const LayoutVariablesView = function(params) {
         let items = [];
         let columns = this.resources.columns;
         let promises = [];
+
+        let process = (column, item) => {
+            return this.requestMeasureType(column.id, item).then(() => {
+                if (item.properties.hidden || item.properties.columnType === 'filter')
+                    return;
+
+                if (suggested && this._contains(column.measureType, suggested)) {
+                    items.splice(suggestedCount, 0, item);
+                    suggestedCount += 1;
+                }
+                else if (permitted && this._contains(column.measureType, permitted)) {
+                    items.splice(suggestedCount + permittedCount, 0, item);
+                    permittedCount += 1;
+                }
+                else {
+                    items.push(item);
+                    item.properties.permitted = permitted.length === 0;
+                }
+            });
+        };
+
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
             if (column.measureType === 'none')
                 continue;
             let item = { value: new FormatDef.constructor(column.name, FormatDef.variable), properties: {  id: column.id, permitted: true } };
 
-            promises.push(this.requestMeasureType(column.id, item));
-
-            if (suggested && this._contains(column.measureType, suggested)) {
-                items.splice(suggestedCount, 0, item);
-                suggestedCount += 1;
-            }
-            else if (permitted && this._contains(column.measureType, permitted)) {
-                items.splice(suggestedCount + permittedCount, 0, item);
-                permittedCount += 1;
-            }
-            else {
-                items.push(item);
-                item.properties.permitted = permitted.length === 0;
-            }
+            promises.push(process(column, item));
         }
 
         Promise.all(promises).then(() => {
