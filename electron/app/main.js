@@ -395,7 +395,14 @@ const handleCommand = function(cmd) {
 
 const createWindow = function(open) {
 
-    let wind = new BrowserWindow({ width: 1280, height: 800, frame: process.platform !== 'win32' });
+    let wind = new BrowserWindow({
+        width: 1280,
+        height: 800,
+        minWidth: 800,
+        minHeight: 600,
+        vibrancy: 'titlebar',
+        defaultEncoding: 'UTF-8',
+        frame: process.platform !== 'win32' });
 
     // as of electron 1.7.9 on linux, drag and drop from the fs to electron
     // doesn't seem to work, the drop event is never fired. so we handle the
