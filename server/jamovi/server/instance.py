@@ -739,12 +739,13 @@ class Instance:
             column_schema = response.schema.columns.add()
             self._populate_column_schema(column, column_schema)
 
-        for i in range(request.columnStart, self._data.column_count):
-            column = self._data[i]
-            if column.column_type is not ColumnType.FILTER:
-                break
-            column_schema = response.schema.columns.add()
-            self._populate_column_schema(column, column_schema)
+        if contains_filter is True:
+            for i in range(request.columnStart, self._data.column_count):
+                column = self._data[i]
+                if column.column_type is not ColumnType.FILTER:
+                    break
+                column_schema = response.schema.columns.add()
+                self._populate_column_schema(column, column_schema)
 
     def _apply_schema(self, request, response):
 
