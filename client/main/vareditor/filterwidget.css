@@ -232,6 +232,7 @@
     background-size: 70%;
     cursor: default;
     flex: none;
+    margin-right: 3px;
 }
 
 .jmv-filter-options > .formula-list > .formula-box .show-editor:hover {
