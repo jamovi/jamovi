@@ -385,19 +385,28 @@ const FilterWidget = Backbone.View.extend({
             this.addNestedEvents($addNested, rootColumn.id, $formulaBox);
         }
 
-        let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        let $formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaBox);
+        let $showEditor = $('<div class="show-editor" title="Show formula editor"></div>').appendTo($formulaBox);
 
-        $formula.on('focus mousedown', (event) => {
+        $showEditor.on('click', (event) => {
+            $formula.focus();
             if (formulaToolbar.focusedOn() !== $formula)
                 formulaToolbar.show($formula, null, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
         });
+
+        $showEditor.on('mousedown', (event) => {
+            this._editorClicked = true;
+        });
+
+        let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
+
+        let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
+        let $formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
 
         $formula.on('input', (event) => {
             formulaToolbar.updatePosition();
         });
 
-        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaBox);
+        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);
         let $formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
 
         $formula[0].textContent = relatedColumn.formula;
@@ -422,6 +431,9 @@ const FilterWidget = Backbone.View.extend({
             }
         }, 10);
 
+    },
+    _isRealBlur() {
+        return formulaToolbar.clicked() || this._editorClicked;
     },
 
     _createFilter(column, index) {
@@ -639,6 +651,11 @@ const FilterWidget = Backbone.View.extend({
             $element.select();
         });
         $element.on('blur', (event) => {
+            if (this._isRealBlur()) {
+                this._editorClicked = false;
+                return;
+            }
+
             keyboardJS.resume();
             let data = { };
             data[name] = $element[0].textContent;

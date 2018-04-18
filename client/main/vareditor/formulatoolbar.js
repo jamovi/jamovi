@@ -279,7 +279,11 @@ const updatePosition = function() {
 };
 
 const focusedOn = function() {
-    return this.$formula;
+    return _toolbar.$formula;
 };
 
-module.exports = { init, show, hide, updatePosition, focusedOn };
+const clicked = function() {
+    return _toolbar._inTools;
+};
+
+module.exports = { init, show, hide, updatePosition, focusedOn, clicked };

@@ -127,7 +127,6 @@
 
     color: #658ec2;
     margin: 2px 0px 2px 3px;
-    /*border-right: 2px solid #658ec2;*/
     padding-right: 3px;
     height: 18px;
     line-height: 18px;
@@ -138,9 +137,7 @@
 .jmv-filter-options > .title-box .active {
     width: 25px;
     height: 14px;
-    /* border: 1px solid #74b574; */
     background-color: #8cc18c;
-    /* box-shadow: 0px 0px 5px #63d263; */
     border-radius: 9px;
     margin: 0px 5px 0px 2px;
 }
@@ -150,10 +147,7 @@
     width: 12px;
     height: 10px;
     left: 9px;
-    /* border: 1px solid #74b574; */
     background-color: #ffffff;
-    /* float: left; */
-    /* box-shadow: 0px 0px 5px #63d263; */
     border-radius: inherit;
     margin: 2px 2px 2px 2px;
     transition: .1s left ease-out;
@@ -204,7 +198,7 @@
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .equal {
-    padding: 5px 5px 0px 5px;
+    padding: 5px 5px 0px 28px;
     position: absolute;
     top: 0;
     left: 0;
@@ -220,6 +214,29 @@
     color: #658ec2;
     cursor: default;
     line-height: 20px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formula-pair {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor {
+    filter: grayscale(100%);
+    width: 20px;
+    border: 1px solid #dadada;
+    background-image: url(assets/variable-computed.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 70%;
+    cursor: default;
+    flex: none;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor:hover {
+    filter: none;
+    background-color: #ffffff;
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .add-nested:hover {
@@ -239,25 +256,21 @@
     color: #c15050;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .formulaMessageBox {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox {
     background-color: pink;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .formulaMessageBox > .formulaMessage {
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox > .formulaMessage {
     flex: 1;
     flex-grow: 1;
     margin: 5px;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .formulaMessageBox > .formulaMessage:empty {
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox > .formulaMessage:empty {
     display: none;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .formula {
+.jmv-filter-options > .formula-list > .formula-box .formula {
     flex: 1;
     resize: none;
     text-indent: 1em;
@@ -272,17 +285,13 @@
     min-height: 1em;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .in-errror {
-    height: 3em;
-}
-
 [contenteditable=true]:empty:before {
     content: attr(placeholder);
     display: block; /* For Firefox */
     color: #CCCCCC;
 }
 
-.jmv-filter-options > .formula-list > .formula-box > .caret {
+.jmv-filter-options > .formula-list > .formula-box .caret {
     border-left: 1px solid #888888;
     top: 2px;
     left: 15px;
@@ -318,7 +327,6 @@
 }
 
 .jmv-filter-options.remove {
-    /*height: 0px;*/
     opacity: 0;
     margin: 0px 5px 0px 5px;
     padding: 0px;
@@ -327,7 +335,6 @@
 }
 
 .jmv-filter-splitter.remove, .jmv-filter-options > .formula-list > .formula-box.remove {
-    /*height: 0px;*/
     opacity: 0;
     margin: 0px;
     padding: 0px;
