@@ -233,85 +233,43 @@ const DataSetModel = Backbone.Model.extend({
         }
         throw 'Column display index out of range.';
     },
-    insertColumn(start, end, properties, isDisplayIndex) {
+    insertColumn(index, properties, isDisplayIndex) {
 
-        let dStart = start;
-        let dEnd = end;
-        if (isDisplayIndex) {
-            start = this.indexFromDisplayIndex(start);
-            end = this.indexFromDisplayIndex(end);
-        }
-        else {
-            dStart = -1;
-            dEnd = -1;
-            for (let i = start; i <= end; i++) {
-                let column = this.getColumn(i);
-                if (column.hidden === false) {
-                    let dIndex = this.indexToDisplayIndex(i);
-                    if (dStart === -1)
-                        dStart = dIndex;
-                    dEnd = dIndex;
-                }
-            }
-        }
+        if (isDisplayIndex)
+            index = this.indexFromDisplayIndex(index);
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
         datasetPB.op = coms.Messages.GetSet.INS_COLS;
-        datasetPB.columnStart = start;
-        datasetPB.columnEnd = end;
+        datasetPB.columnStart = index;
+        datasetPB.columnEnd = index;
         datasetPB.schema = new coms.Messages.DataSetSchema();
         datasetPB.incSchema = true;
 
-        for (let i = 0; i < end - start + 1; i++) {
+        let params = Object.assign({}, properties);
 
-            let params = null;
+        if (params === null)
+            params = { };
 
-            if (Array.isArray(properties)) {
-                if (i < properties.length)
-                    params = properties[i];
-                else
-                    params = Object.assign({}, properties[properties.length - 1]);
-            }
-            else if (properties !== undefined)
-                params = Object.assign({}, properties);
+        if (params.childOf === undefined)
+            params.childOf = -1;
 
-            if (params === null)
-                params = { };
+        if (params.active === undefined)
+            params.active = true;
 
-            if (params.childOf === undefined)
-                params.childOf = -1;
+        let columnType = params.columnType;
+        if (columnType === undefined)
+            throw 'Column type not specified';
+        params.columnType = DataSetModel.parseColumnType(columnType || 'none');
 
-            if (params.active === undefined)
-                params.active = true;
+        if (params.measureType === undefined)
+            params.measureType = columnType === 'computed' ? 'continuous' : 'nominal';
+        params.measureType = DataSetModel.parseMeasureType(params.measureType);
 
-            let columnType = params.columnType;
-            if (columnType === undefined)
-                throw 'Column type not specified';
-
-            columnType = columnType || 'none';
-            delete params.columnType;
-
-            let measureType = params.measureType;
-            if (params.measureType === undefined) {
-                measureType = (columnType === 'computed' ? 'continuous' : 'nominal');
-                delete params.measureType;
-            }
-
-            let autoMeasure = params.autoMeasure;
-            if (params.autoMeasure === undefined) {
-                autoMeasure = (columnType !== 'computed');
-                delete params.measureType;
-            }
-
-            let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
-            columnPB.columnType  = DataSetModel.parseColumnType(columnType);
-            columnPB.measureType = DataSetModel.parseMeasureType(measureType);
-            columnPB.autoMeasure = autoMeasure;
-            for (let prop in params)
-                columnPB[prop] = params[prop];
-            datasetPB.schema.columns.push(columnPB);
-        }
+        let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
+        for (let prop in params)
+            columnPB[prop] = params[prop];
+        datasetPB.schema.columns.push(columnPB);
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -319,6 +277,9 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
+
+            if (this.attributes.editingVar !== null && index <= this.attributes.editingVar)
+                this.attributes.editingVar += 1;
 
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             if (datasetPB.incSchema) {
@@ -337,10 +298,9 @@ const DataSetModel = Backbone.Model.extend({
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
                     let column = this.getColumnById(id);
-                    let created = false;
+                    let created = column === undefined;
 
-                    if (column === undefined) {
-                        created = true;
+                    if (created) {
                         column = { };
                         this._readColumnPB(column, columnPB);
                         columns.splice(column.index, 0, column);
@@ -380,7 +340,7 @@ const DataSetModel = Backbone.Model.extend({
                         dataChanged: created };
                 }
 
-                this.trigger('columnsInserted', { start: start, end: end });
+                this.trigger('columnsInserted', { start: index, end: index });
 
                 this.trigger('columnsChanged', { changed, changes });
             }

@@ -248,11 +248,14 @@ const TableView = SilkyView.extend({
 
         let editingVar = this.model.get('editingVar');
         if (editingVar !== null) {
-            let y = this.model.indexToDisplayIndex(editingVar);
-            if (y !== -1) {
-                sel.colNo = y;
-                sel.left = y;
-                sel.right = y;
+            let column = this.model.getColumn(editingVar);
+            if (column && column.hidden === false) {
+                let y = this.model.indexToDisplayIndex(editingVar);
+                if (y !== -1) {
+                    sel.colNo = y;
+                    sel.left = y;
+                    sel.right = y;
+                }
             }
         }
 
@@ -1317,7 +1320,7 @@ const TableView = SilkyView.extend({
         });
     },
     _insertColumn(columnType) {
-        return this.model.insertColumn(this.selection.colNo, this.selection.colNo, { columnType: columnType }, true);
+        return this.model.insertColumn(this.selection.colNo, { columnType: columnType }, true);
     },
     _columnsInserted(event, ignoreSelection) {
 
@@ -1576,7 +1579,7 @@ const TableView = SilkyView.extend({
             if (isFilter)
                 this.model.set('editingVar', column.index);
             else
-                this.model.insertColumn(0, 0, { columnType: 'filter', hidden: this.model.get('filtersVisible') === false }).then(() => this.model.set('editingVar', 0));
+                this.model.insertColumn(0, { columnType: 'filter', hidden: this.model.get('filtersVisible') === false }).then(() => this.model.set('editingVar', 0));
         }
         else
             this.model.set('editingVar', null);

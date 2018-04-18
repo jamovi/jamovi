@@ -108,7 +108,7 @@ const FilterWidget = Backbone.View.extend({
             i += 1;
             column = dataset.getColumn(i);
         } while(column.columnType === 'filter');
-        dataset.insertColumn(i, i, { columnType: 'filter', hidden: dataset.get('filtersVisible') === false }).then(() => {
+        dataset.insertColumn(i, { columnType: 'filter', hidden: dataset.get('filtersVisible') === false }).then(() => {
             column = dataset.getColumn(i);
             this.model.setColumnForEdit(column.id);
         });
@@ -393,6 +393,10 @@ const FilterWidget = Backbone.View.extend({
                 formulaToolbar.show($formula, null, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
         });
 
+        $formula.on('input', (event) => {
+            formulaToolbar.updatePosition();
+        });
+
         let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaBox);
         let $formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
 
@@ -588,7 +592,7 @@ const FilterWidget = Backbone.View.extend({
             let index = parentInfo.index + 1;
             let childOf = parentInfo.column.id;
             this._internalCreate = true;
-            dataset.insertColumn(index, index, { columnType: 'filter', childOf: childOf, hidden: dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
+            dataset.insertColumn(index, { columnType: 'filter', childOf: childOf, hidden: dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
                 let column = dataset.getColumn(index);
                 this.model.setColumnForEdit(column.id);
             });
