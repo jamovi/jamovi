@@ -170,6 +170,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     column->levelsCapacity = 0;
 
     column->dps = 0;
+    column->active = true;
     column->changes = 0;
 
     column->formula = NULL;

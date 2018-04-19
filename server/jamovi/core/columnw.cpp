@@ -66,6 +66,13 @@ void ColumnW::setDPs(int dps)
     s->changes++;
 }
 
+void ColumnW::setActive(bool active)
+{
+    ColumnStruct *s = struc();
+    s->active = active;
+    s->changes++;
+}
+
 void ColumnW::setFormula(const char *value)
 {
     ColumnStruct *s = struc();

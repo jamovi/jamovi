@@ -671,27 +671,46 @@ class Instance:
 
     def _on_dataset_ins_cols(self, request, response):
 
-        contains_filter = False
+        filter_inserted = False
         for i in range(request.columnStart, request.columnEnd + 1):
             self._data.insert_column(i)
             column = self._data[i]
 
             if request.incSchema:
                 column_pb = request.schema.columns[i - request.columnStart]
-                column.change(measure_type=column_pb.measureType)
-                column.column_type = column_pb.columnType
-                column.auto_measure = column_pb.autoMeasure
-                column.child_of = column_pb.childOf
-                column.hidden = column_pb.hidden
-                column.active = column_pb.active
+
+                name = None
+                if column_pb.name is not None:
+                    name = column_pb.name
+                    orig_name = name
+                    used_names = list(map(lambda x: x.name, self._data))
+                    i = 2
+                    while name in used_names:
+                        name = '{} ({})'.format(orig_name, i)
+                        i += 1
+
+                column.change(
+                    name=name,
+                    column_type=column_pb.columnType,
+                    measure_type=column_pb.measureType,
+                    formula=column_pb.formula,
+                    auto_measure=column_pb.autoMeasure,
+                    hidden=column_pb.hidden,
+                    active=column_pb.active,
+                    child_of=column_pb.childOf)
 
                 if column.column_type is ColumnType.FILTER:
-                    contains_filter = True
+                    filter_inserted = True
+
+                if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.FILTER:
+                    column.parse_formula()
+                    column.needs_recalc = True
+                    column.recalc()
+
+        if filter_inserted:
+            self._data.update_filter_names()
 
         self._populate_schema_info(request, response)
-
-        if contains_filter is True:
-            self._data.update_filter_names()
 
         # has to be after the filter names are renamed
         for i in range(request.columnStart, request.columnEnd + 1):
@@ -705,45 +724,45 @@ class Instance:
 
     def _on_dataset_del_cols(self, request, response):
 
-        columns = [None] * (request.columnEnd - request.columnStart + 1)
+        to_delete = [None] * (request.columnEnd - request.columnStart + 1)
+        filter_deleted = False
 
-        contains_filter = False
-
-        for i in range(len(columns)):
+        for i in range(len(to_delete)):
             column = self._data[i + request.columnStart]
-            column.change(formula='')  # clear formula to clean up dependents
-            columns[i] = column
+            column.prep_for_deletion()
+            to_delete[i] = column
             if column.column_type is ColumnType.FILTER:
-                contains_filter = True
+                filter_deleted = True
 
-        reparse = set(columns)
-        for column in columns:
+        to_reparse = set()
+        for column in to_delete:
             dependents = column.dependents
-            reparse.update(dependents)
+            to_reparse.update(dependents)
+        to_reparse -= set(to_delete)
 
         self._data.delete_columns(request.columnStart, request.columnEnd)
 
-        for column in reparse:
+        for column in to_reparse:
             column.parse_formula()
+
+        if filter_deleted:
+            to_recalc = self._data  # all
+        else:
+            to_recalc = to_reparse
+
+        for column in to_recalc:
             column.needs_recalc = True
 
-        for column in reparse:
+        for column in to_recalc:
             column.recalc()
 
-        self._populate_schema_info(request, response)
+        to_reparse = sorted(to_reparse, key=lambda x: x.index)
 
-        reparse = filter(lambda x: x not in columns, reparse)
-        reparse = sorted(reparse, key=lambda x: x.index)
-
-        for column in reparse:
-            column_schema = response.schema.columns.add()
-            self._populate_column_schema(column, column_schema)
-
-        if contains_filter is True:
-            for i in range(request.columnStart, self._data.column_count):
-                column = self._data[i]
-                if column.column_type is not ColumnType.FILTER:
-                    break
+        if filter_deleted:
+            self._populate_schema(request, response)
+        else:
+            self._populate_schema_info(request, response)
+            for column in to_reparse:
                 column_schema = response.schema.columns.add()
                 self._populate_column_schema(column, column_schema)
 
@@ -758,21 +777,26 @@ class Instance:
             if column.index < min_index:
                 min_index = column.index
 
-        for i in range(self._data.column_count, min_index):
-            column = self._data[i]
-            column.realise()
-            response.incSchema = True
-            schema = response.schema.columns.add()
-            self._populate_column_schema(column, schema)
-
         cols_w_schema_change = set()
         recalc = set()
         reparse = set()
+        filter_changed = False
+
+        # 'realise' any virtual columns to the left of the edit
+        for i in range(self._data.column_count, min_index):
+            column = self._data[i]
+            column.realise()
+            cols_w_schema_change.add(column)
+            # response.incSchema = True
+            # schema = response.schema.columns.add()
+            # self._populate_column_schema(column, schema)
 
         for column_schema in request.schema.columns:
             column = self._data.get_column_by_id(column_schema.id)
             old_name = column.name
             old_type = column.measure_type
+            old_formula = column.formula
+            old_active = column.active
 
             levels = None
             if column_schema.hasLevels:
@@ -791,6 +815,12 @@ class Instance:
                 hidden=column_schema.hidden,
                 active=column_schema.active,
                 child_of=column_schema.childOf)
+
+            if column.column_type is ColumnType.FILTER:
+                if column.formula != old_formula:
+                    filter_changed = True
+                elif column.active != old_active:
+                    filter_changed = True
 
             column.needs_recalc = True
             column.recalc()
@@ -815,21 +845,24 @@ class Instance:
 
         self._data.is_edited = True
 
-        for i in range(n_cols_before, self._data.total_column_count):  # cols added
-            column = self._data[i]
-            cols_w_schema_change.add(column)
+        if filter_changed:
+            self._populate_schema(request, response)
+        else:
+            for i in range(n_cols_before, self._data.total_column_count):  # cols added
+                column = self._data[i]
+                cols_w_schema_change.add(column)
 
-        # sort ascending (the client doesn't like them out of order)
-        cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
+            # sort ascending (the client doesn't like them out of order)
+            cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
 
-        for column in cols_w_schema_change:
-            response.incSchema = True
-            columnPB = response.schema.columns.add()
-            self._populate_column_schema(column, columnPB)
+            for column in cols_w_schema_change:
+                response.incSchema = True
+                column_pb = response.schema.columns.add()
+                self._populate_column_schema(column, column_pb)
 
-        response.schema.columnCount = self._data.column_count
-        response.schema.vColumnCount = self._data.visible_column_count
-        response.schema.tColumnCount = self._data.total_column_count
+            response.schema.columnCount = self._data.column_count
+            response.schema.vColumnCount = self._data.visible_column_count
+            response.schema.tColumnCount = self._data.total_column_count
 
     def _parse_cells(self, request):
 
@@ -923,7 +956,7 @@ class Instance:
 
         cells, selection = self._parse_cells(request)
 
-        exclude_hidden_Cols = request.excHiddenCols
+        exclude_hidden_cols = request.excHiddenCols
 
         row_start = selection['row_start']
         col_start = selection['col_start']
@@ -945,7 +978,7 @@ class Instance:
         search_index = col_start
         for i in range(col_count):
 
-            column = self._get_column(search_index, base_index, exclude_hidden_Cols)
+            column = self._get_column(search_index, base_index, exclude_hidden_cols)
 
             if column is None:
                 break
@@ -994,7 +1027,7 @@ class Instance:
         base_index = 0
         search_index = col_start
         for i in range(col_count):
-            column = self._get_column(search_index, base_index, exclude_hidden_Cols)
+            column = self._get_column(search_index, base_index, exclude_hidden_cols)
             if column is None:
                 break
             base_index = column.index + 1
@@ -1131,8 +1164,8 @@ class Instance:
 
         for column in cols_w_schema_change:
             response.incSchema = True
-            columnPB = response.schema.columns.add()
-            self._populate_column_schema(column, columnPB)
+            column_pb = response.schema.columns.add()
+            self._populate_column_schema(column, column_pb)
 
         self._populate_cells(request, response)
 
@@ -1177,12 +1210,16 @@ class Instance:
         row_count = row_end - row_start + 1
         col_count = col_end - col_start + 1
 
-        exclude_hidden_Cols = request.excHiddenCols
+        filtered = map(lambda row_no: self._data.is_row_filtered(row_no), range(row_start, row_end + 1))
+        filtered = map(lambda filtered: 1 if filtered else 0, filtered)
+        response.filtered = bytes(filtered)
+
+        exclude_hidden_cols = request.excHiddenCols
         base_index = 0
         search_index = col_start
         for cc in range(col_count):
 
-            column = self._get_column(search_index, base_index, exclude_hidden_Cols)
+            column = self._get_column(search_index, base_index, exclude_hidden_cols)
 
             if column is None:
                 break

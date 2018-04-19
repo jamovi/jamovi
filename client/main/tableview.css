@@ -76,36 +76,36 @@
     height: 100%;
 }
 
-.jmv-column[data-formula-check=false] {
+.jmv-column[data-fmlaok="0"] {
     background-color: #D5AEAB ;
 }
 
-.jmv-column-header[data-formula-check=false] {
+.jmv-column-header[data-fmlaok="0"] {
     color: #B5B6B6;
 }
 
-.jmv-column-header[data-formula-check=false].highlighted {
+.jmv-column-header[data-fmlaok="0"].highlighted {
     color: #979797;
 }
 
-.jmv-column-header[data-formula-check=false]:hover {
+.jmv-column-header[data-fmlaok="0"]:hover {
     color: #E5E5E5;
 }
 
 
-.jmv-column[data-active=false] {
-    background-color: #EEEEEE ;
+.jmv-column[data-active="0"] {
+    background-color: #eeeeee ;
 }
 
-.jmv-column-header[data-active=false] {
+.jmv-column-header[data-active="0"] {
     color: #B5B6B6;
 }
 
-.jmv-column-header[data-active=false].highlighted {
+.jmv-column-header[data-active="0"].highlighted {
     color: #979797;
 }
 
-.jmv-column-header[data-active=false]:hover {
+.jmv-column-header[data-active="0"]:hover {
     color: #E5E5E5;
 }
 
@@ -224,6 +224,48 @@
     text-align: right ;
 }
 
+.jmv-column-cell[data-type="bool"] {
+    text-align: center ;
+}
+
+.jmv-column-cell[data-type="bool"] .true,
+.jmv-column-cell[data-type="bool"] .false {
+    mask-size: auto 55% ;
+    mask-repeat: no-repeat;
+    mask-position: center ;
+    -webkit-mask-image: url('assets/correct.svg') ;
+    -webkit-mask-size: auto 55% ;
+    -webkit-mask-repeat: no-repeat ;
+    -webkit-mask-position: center ;
+    width: 100% ;
+    height: 100% ;
+}
+
+.jmv-column-cell[data-type="bool"] .true {
+    mask-image: url('assets/correct.svg') ;
+    -webkit-mask-image: url('assets/correct.svg') ;
+    background-color: #399B3F ;
+}
+
+.jmv-column-cell[data-type="bool"] .false {
+    mask-image: url('assets/incorrect.svg') ;
+    -webkit-mask-image: url('assets/incorrect.svg') ;
+    background-color: #BE564D ;
+}
+
+[data-active="0"] > .jmv-column-cell[data-type="bool"] * {
+    background-color: #C2C2C2 ;
+}
+
+[data-fmlaok="0"] > .jmv-column-cell[data-type="bool"] * {
+    background-color: transparent ;
+}
+
+.jmv-column[data-fmlaok="1"] > .jmv-column-cell[data-filtered="1"] {
+    color: #C2C2C2 ;
+    background-color: #EEEEEE ;
+}
+
 .jmv-column-cell {
     padding-left: 10px ;
     padding-right: 10px ;
@@ -321,7 +363,7 @@ input.jmv-table-cell-selected.copying {
     display: none;
 }
 
-.jmv-column-header[data-formula-check=false][data-active=true] > .jmv-column-header-icon {
+.jmv-column-header[data-fmlaok="0"][data-active="1"] > .jmv-column-header-icon {
     display: block;
     cursor: default;
     background-image: url('assets/column-error.svg');

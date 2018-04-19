@@ -52,6 +52,7 @@ typedef struct
     char columnType;
     char measureType;
     char autoMeasure;
+    bool active;
     int rowCount;
     int capacity;
 
@@ -117,6 +118,7 @@ public:
     const char *importName() const;
     int rowCount() const;
     int dps() const;
+    bool active() const;
 
     ColumnType::Type columnType() const;
     MeasureType::Type measureType() const;

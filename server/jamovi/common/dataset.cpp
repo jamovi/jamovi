@@ -84,3 +84,42 @@ int DataSet::columnCount() const
 {
     return _mm->resolve(_rel)->columnCount;
 }
+
+bool DataSet::isRowFiltered(int index) const
+{
+    DataSet ds = *this;
+
+    for (int colNo = 0; colNo < columnCount(); colNo++)
+    {
+        Column column = ds[colNo];
+
+        if (column.columnType() == ColumnType::FILTER)
+        {
+            if ( ! column.active())
+                continue;
+
+            int value = column.value<int>(index);
+            if (value != 1)
+                return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+int DataSet::rowCountExFiltered() const
+{
+    int nRows = 0;
+
+    for (int rowNo = 0; rowNo < rowCount(); rowNo++)
+    {
+        if ( ! isRowFiltered(rowNo))
+            nRows++;
+    }
+
+    return nRows;
+}

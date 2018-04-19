@@ -87,6 +87,16 @@ def ROW(index):
     return index + 1
 
 
+@row_wise
+@returns(MeasureType.NOMINAL)
+def NOTROW(index, arg0, *args):
+    if (index + 1) == arg0:
+        return 0
+    elif (index + 1) in args:
+        return 0
+    return 1
+
+
 @column_wise
 def VMEAN(values: float):
     values = filter(lambda x: not math.isnan(x), values)

@@ -26,7 +26,6 @@ class Column:
         self._index = -1
         self._description = ''
         self._hidden = False
-        self._active = True
         self._child_of = -1
 
         self._node = None
@@ -79,6 +78,12 @@ class Column:
     def is_atomic_node(self):
         return False
 
+    def prep_for_deletion(self):
+        # removes itself as a dependent
+        if self._node is not None:
+            self._node._remove_node_parent(self)
+            self._node = None
+
     @property
     def is_filter(self):
         return self.column_type is ColumnType.FILTER
@@ -120,11 +125,19 @@ class Column:
 
     @property
     def active(self):
-        return self._active
+        if self._child is not None:
+            return self._child.active
+        return True
 
     @active.setter
     def active(self, active):
-        self._active = active
+        if self._child is None:
+            self._create_child()
+        self._child.active = active
+
+    @property
+    def is_child(self):
+        return self._child_of != -1
 
     @property
     def child_of(self):
@@ -342,18 +355,18 @@ class Column:
             if formula != self._child.formula:
                 formula_change = True
 
+        self._child.change(
+            name=name,
+            column_type=column_type,
+            measure_type=measure_type,
+            levels=levels,
+            dps=dps,
+            auto_measure=auto_measure,
+            formula=formula,
+            active=active)
+
         if formula_change:
-            self._child.change(formula=formula)
             self.parse_formula()
-        else:
-            self._child.change(
-                name=name,
-                column_type=column_type,
-                measure_type=measure_type,
-                levels=levels,
-                dps=dps,
-                auto_measure=auto_measure,
-                formula=formula)
 
         if description is not None:
             self._description = description
@@ -426,7 +439,10 @@ class Column:
             ul_type = int
 
         if self._node is None:
-            v = convert(NaN, ul_type)
+            if not self.is_filter:
+                v = convert(NaN, ul_type)
+            else:
+                v = 1
             for row_no in range(start, end):
                 self._child.set_value(row_no, v, True)
         else:
@@ -435,7 +451,10 @@ class Column:
                     v = self._node.fvalue(row_no)
                     v = convert(v, ul_type)
                 except Exception as e:
-                    v = convert(NaN, ul_type)
+                    if not self.is_filter:
+                        v = convert(NaN, ul_type)
+                    else:
+                        v = 1
                     self._parent._log.exception(e)
                 self._child.set_value(row_no, v, True)
             self.determine_dps()
@@ -454,11 +473,38 @@ class Column:
             node = Parser.parse(self.formula)
             self._child.formula_message = ''
 
+            if self.column_type is ColumnType.FILTER:
+                if node is None:
+                    node = ast.Num(1)
+
+                if not self.is_child:
+                    node = ast.Call(
+                        func=ast.Name(id='IFMISS', ctx=ast.Load()),
+                        args=[
+                            node,
+                            ast.Num(0),
+                            node ],
+                        keywords=[ ] )
+                else:
+                    parent = dataset.get_column_by_id(self.child_of)
+                    parent_node = ast.Name(id=parent.name, ctx=ast.Load())
+                    node = ast.Call(
+                        func=ast.Name(id='IF', ctx=ast.Load()),
+                        args=[
+                            ast.Compare(
+                                left=parent_node,
+                                ops=[ ast.NotEq() ],
+                                comparators=[ ast.Num(1) ]),
+                            ast.Num(-2147483648),
+                            node ],
+                        keywords=[ ] )
+
             if node is None:
                 self._formula_status = FormulaStatus.EMPTY
             else:
                 Checker.check(self, node)
                 node = Transmogrifier(dataset).visit(node)
+
                 self._node = node
                 self._node._add_node_parent(self)
                 self._formula_status = FormulaStatus.OK

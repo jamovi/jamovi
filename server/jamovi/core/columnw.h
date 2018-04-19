@@ -37,6 +37,7 @@ public:
     void setDPs(int dps);
     void setFormula(const char *value);
     void setFormulaMessage(const char *value);
+    void setActive(bool active);
 
     int changes() const;
 

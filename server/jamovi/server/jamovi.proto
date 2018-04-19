@@ -400,6 +400,7 @@ message DataSetSchema {
         int32 childOf = 17;
     }
     repeated ColumnSchema columns = 1;
+
     uint32 rowCount = 5;
     uint32 columnCount = 6;
     uint32 vRowCount = 7;
@@ -463,6 +464,7 @@ message DataSetRR {
     }
 
     repeated ColumnData data = 8;
+    bytes filtered = 14;
     DataSetSchema schema = 9;
 
     bool incCBData = 10;

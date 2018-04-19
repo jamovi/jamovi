@@ -57,6 +57,11 @@ int Column::dps() const
     return struc()->dps;
 }
 
+bool Column::active() const
+{
+    return struc()->active;
+}
+
 const char *Column::formula() const
 {
     if (struc()->formula == NULL)

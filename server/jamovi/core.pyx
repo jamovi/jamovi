@@ -35,7 +35,9 @@ cdef extern from "datasetw.h":
         @staticmethod
         CDataSet *retrieve(CMemoryMap *mm) except +
         int rowCount() const
+        int rowCountExFiltered() const
         int columnCount() const
+        bool isRowFiltered(int index) const
         CColumn appendColumn(const char *name, const char *importName) except +
         CColumn insertColumn(int index, const char *name, const char *importName) except +
         void setRowCount(size_t count) except +
@@ -117,6 +119,9 @@ cdef class DataSet:
     def delete_columns(self, col_start, col_end):
         self._this.deleteColumns(col_start, col_end)
 
+    def is_row_filtered(self, index):
+        return self._this.isRowFiltered(index)
+
     @property
     def row_count(self):
         return self._this.rowCount()
@@ -176,8 +181,8 @@ cdef extern from "columnw.h":
         void setFormula(const char *value);
         const char *formulaMessage() const;
         void setFormulaMessage(const char *value);
-
-
+        void setActive(bool active);
+        bool active() const;
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
@@ -284,6 +289,13 @@ cdef class Column:
                 if max_dps == ceiling_dps:
                     break
             self.dps = max_dps
+
+    property active:
+        def __get__(self):
+            return self._this.active()
+
+        def __set__(self, active):
+            self._this.setActive(active)
 
     @staticmethod
     def how_many_dps(value, max_dp=3):
@@ -435,7 +447,8 @@ cdef class Column:
         levels=None,
         dps=None,
         auto_measure=None,
-        formula=None):
+        formula=None,
+        active=None):
 
         if name is not None:
             self.name = name
@@ -447,6 +460,9 @@ cdef class Column:
 
         if dps is not None:
             self.dps = dps
+
+        if active is not None:
+            self.active = active
 
         if auto_measure is not None:
             self.auto_measure = auto_measure

@@ -257,21 +257,27 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
     DataSet &dataset = *DataSet::retrieve(mm);
 
     int columnCount = dataset.columnCount();
-    int rowCount;
+    int rowCount = 0;
+    int rowCountExFiltered = 0;
 
-    if (headerOnly)
-        rowCount = 0;
-    else
+    if ( ! headerOnly)
+    {
         rowCount = dataset.rowCount();
+        rowCountExFiltered = dataset.rowCountExFiltered();
+    }
 
     Rcpp::List columns(columnsRequired.size());
     Rcpp::CharacterVector columnNames(columnsRequired.size());
-    Rcpp::CharacterVector rowNames(rowCount);
+    Rcpp::CharacterVector rowNames(rowCountExFiltered);
+
+    int rowNo = 0;
+    int colNo = 0;
 
     for (int i = 0; i < rowCount; i++)
-        rowNames[i] = Rcpp::String(std::to_string(i));
-
-    int index = 0;
+    {
+        if ( ! dataset.isRowFiltered(i))
+            rowNames[rowNo++] = Rcpp::String(std::to_string(i));
+    }
 
     for (int i = 0; i < columnCount; i++)
     {
@@ -289,16 +295,20 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
         if ( ! required)
             continue;
 
-        columnNames[index] = Rcpp::String(columnName);
+        columnNames[colNo] = Rcpp::String(columnName);
 
         if (column.measureType() == MeasureType::CONTINUOUS)
         {
-            Rcpp::NumericVector v(rowCount, Rcpp::NumericVector::get_na());
+            Rcpp::NumericVector v(rowCountExFiltered, Rcpp::NumericVector::get_na());
+            rowNo = 0;
 
             for (int j = 0; j < rowCount; j++)
-                v[j] = column.value<double>(j);
+            {
+                if ( ! dataset.isRowFiltered(j))
+                    v[rowNo++] = column.value<double>(j);
+            }
 
-            columns[index] = v;
+            columns[colNo] = v;
         }
         else
         {
@@ -324,13 +334,18 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             // populate cells
 
-            Rcpp::IntegerVector v(rowCount, MISSING);
+            Rcpp::IntegerVector v(rowCountExFiltered, MISSING);
+            rowNo = 0;
 
             for (j = 0; j < rowCount; j++)
             {
-                int value = column.value<int>(j);
-                if (value != MISSING)
-                    v[j] = indexes[value];
+                if ( ! dataset.isRowFiltered(j))
+                {
+                    int value = column.value<int>(j);
+                    if (value != MISSING)
+                        v[rowNo] = indexes[value];
+                    rowNo++;
+                }
             }
 
             // assign levels
@@ -347,10 +362,10 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
                 v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
             }
 
-            columns[index] = v;
+            columns[colNo] = v;
         }
 
-        index++;
+        colNo++;
     }
 
     columns.attr("names") = columnNames;

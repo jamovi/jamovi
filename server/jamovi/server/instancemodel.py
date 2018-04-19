@@ -113,16 +113,15 @@ class InstanceModel:
         filter_index = 0
         subfilter_index = 1
         for column in self._columns:
-            if column.column_type == ColumnType.FILTER:
-                if column.child_of == -1:
-                    column.name = 'Filter ' + str(filter_index + 1)
-                    filter_index += 1
-                    subfilter_index = 1
-                else:
-                    column.name = 'F' + str(filter_index) + ' (' + str(subfilter_index + 1) + ')'
-                    subfilter_index += 1
-            else:
+            if column.column_type is not ColumnType.FILTER:
                 break
+            if not column.is_child:
+                column.name = 'Filter {}'.format(filter_index + 1)
+                filter_index += 1
+                subfilter_index = 1
+            else:
+                column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
+                subfilter_index += 1
 
     def delete_columns(self, start, end):
         for i in range(start, end + 1):
@@ -141,6 +140,12 @@ class InstanceModel:
             self._columns[i].index = i
 
         self.update_filter_names()
+
+    def is_row_filtered(self, index):
+        if index < self._dataset.row_count:
+            return self._dataset.is_row_filtered(index)
+        else:
+            return False
 
     @property
     def title(self):

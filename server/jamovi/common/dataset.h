@@ -29,6 +29,9 @@ public:
     int rowCount() const;
     int columnCount() const;
 
+    bool isRowFiltered(int index) const;
+    int rowCountExFiltered() const;
+
     Column operator[](int index);
     Column operator[](const char *name);
     Column getColumnById(int id);
