@@ -842,6 +842,7 @@ const DataSetModel = Backbone.Model.extend({
         column.hidden = columnPB.hidden;
         column.active = columnPB.active;
         column.childOf = columnPB.childOf;
+        column.importName = columnPB.importName;
 
         let levels = null;
         if (columnPB.hasLevels) {

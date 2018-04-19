@@ -53,6 +53,18 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.attached = false;
 
+        this._exampleFormulas = [
+            "gender == 'female'",
+            "score == 10",
+            "consent == 'yes'",
+            "Q1 != 'don\'t know'",
+            "ROW() <= 100",
+            "ROW() % 2",
+            "-1.5 < Z(score) < 1.5",
+            "ROW() != 33 and ROW() != 37",
+            "score > 0.5"
+        ];
+
         formulaToolbar.init(this.model.dataset);
 
         this.$el.empty();
@@ -68,18 +80,11 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$bottom = $('<div class="bottom"></div>').appendTo(this.$methods);
 
         this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
-        this.$formulaBox = $('<div class="formula-box"></div>').appendTo(this.$options);
-        this.$equal = $('<div class="equal">=</div>').appendTo(this.$formulaBox);
-        this.$formula = $('<div class="formula" type="text" placeholder="Type formula here\u2026"></div>').appendTo(this.$formulaBox);
-        this.$formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo(this.$formulaBox);
-        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo(this.$formulaMessageBox);
-
+        this._createFormulaBox(this.$options);
 
         this.$formula.focus(() => {
             keyboardJS.pause();
-            formulaToolbar.show(this.$formula, this.model.get('name'));
         });
-
         this.$formula.blur((event) => {
             keyboardJS.resume();
         });
@@ -100,6 +105,37 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
         this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
+    },
+    _createFormulaBox($parent, data) {
+        let $formulaBox = $('<div class="formula-box"></div>').appendTo($parent);
+
+        $('<div class="equal">=</div>').appendTo($formulaBox);
+
+        let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
+
+        $showEditor.on('click', (event) => {
+            if (this._$wasEditingFormula !== this.$formula) {
+                formulaToolbar.show(this.$formula);
+                this.$formula.focus();
+            }
+        });
+
+        $showEditor.on('mousedown', (event) => {
+            this._$wasEditingFormula = formulaToolbar.focusedOn();
+            this._editorClicked = true;
+        });
+
+        let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
+
+        let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
+        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
+
+        this.$formula.on('input', (event) => {
+            formulaToolbar.updatePosition();
+        });
+
+        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);
+        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
     },
     _setFormula(formula) {
         if ( ! this.attached)

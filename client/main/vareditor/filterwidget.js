@@ -385,15 +385,17 @@ const FilterWidget = Backbone.View.extend({
             this.addNestedEvents($addNested, rootColumn.id, $formulaBox);
         }
 
-        let $showEditor = $('<div class="show-editor" title="Show formula editor"></div>').appendTo($formulaBox);
+        let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
 
         $showEditor.on('click', (event) => {
-            $formula.focus();
-            if (formulaToolbar.focusedOn() !== $formula)
+            if (this._$wasEditingFormula !== $formula) {
                 formulaToolbar.show($formula, null, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
+                $formula.focus();
+            }
         });
 
         $showEditor.on('mousedown', (event) => {
+            this._$wasEditingFormula = formulaToolbar.focusedOn();
             this._editorClicked = true;
         });
 

@@ -161,7 +161,7 @@ const TableView = SilkyView.extend({
             rowNo: 0,
             colNo: 0,
             left: 0,
-            right: this.model.attributes.columnCount - 1,
+            right: this.model.visibleRealColumnCount() - 1,
             top: 0,
             bottom: this.model.attributes.rowCount - 1 };
 
@@ -226,8 +226,12 @@ const TableView = SilkyView.extend({
                 if (this.selection !== null) {
                     this._endEditing().then(() => {
                         if (column.hidden === false) {
-                            let rowNo = this.selection === null ? 0 : this.selection.rowNo;
-                            this._setSelection(rowNo, now);
+                            if (now === this.selection.colNo)
+                                this._refreshColumnSelection();
+                            else {
+                                let rowNo = this.selection === null ? 0 : this.selection.rowNo;
+                                this._setSelection(rowNo, now);
+                            }
                         }
                     }, () => {});
                 }
@@ -240,7 +244,7 @@ const TableView = SilkyView.extend({
 
         this._setSelection(0, 0);
     },
-    _refreshColumnSelection() {
+    _refreshColumnSelection(focusSelection) {
         let visibleColumns = this.model.get('vColumnCount');
         let sel = Object.assign({}, this.selection);
 
@@ -252,9 +256,10 @@ const TableView = SilkyView.extend({
             if (column && column.hidden === false) {
                 let y = this.model.indexToDisplayIndex(editingVar);
                 if (y !== -1) {
+                    let diff = sel.colNo - y;
                     sel.colNo = y;
                     sel.left = y;
-                    sel.right = y;
+                    sel.right = focusSelection ? y : sel.right - diff;
                 }
             }
         }
@@ -348,8 +353,12 @@ const TableView = SilkyView.extend({
 
         let editingVar = this.model.get('editingVar');
         let editingVarCleared = false;
+        let focusSelection = false;
 
         for (let changes of event.changes) {
+
+            if (changes.deleted || changes.created || changes.hiddenChanged)
+                focusSelection = true;
 
             if (changes.deleted) {
                 if (editingVarCleared === false && editingVar !== null) {
@@ -403,7 +412,7 @@ const TableView = SilkyView.extend({
             }
         }
 
-        this._refreshColumnSelection();
+        this._refreshColumnSelection(focusSelection);
 
         this._enableDisableActions();
         this._updateViewRange();

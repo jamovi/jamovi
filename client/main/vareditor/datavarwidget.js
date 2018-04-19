@@ -66,6 +66,7 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:measureType', event => this._setOptions(event.changed.measureType, this.model.get('levels')));
         this.model.on('change:levels',      event => this._setOptions(this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
+        this.model.on('change:description', event => this._updateHighlightPosition());
     },
     _moveUp() {
         if (this.attached === false)
@@ -107,6 +108,15 @@ const DataVarWidget = Backbone.View.extend({
         else {
             this.$moveUp.addClass('disabled');
             this.$moveDown.addClass('disabled');
+        }
+    },
+    _updateHighlightPosition() {
+        let $option = this.resources[this.model.get('measureType')].$option;
+        if ($option) {
+            let css = $option.position();
+            css.width = $option.width();
+            css.height = $option.height();
+            this.$typesHighlight.css(css);
         }
     },
     _setOptions(measureType, levels) {

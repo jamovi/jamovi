@@ -198,7 +198,7 @@
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .equal {
-    padding: 5px 5px 0px 31px;
+    padding: 5px 5px 0px 34px;
     position: absolute;
     top: 0;
     left: 0;
@@ -223,21 +223,36 @@
 }
 
 .jmv-filter-options > .formula-list > .formula-box .show-editor {
-    filter: grayscale(100%);
-    width: 20px;
+    filter: hue-rotate(40deg) saturate(5) grayscale(100%);
+    width: 23px;
     border: 1px solid #dadada;
-    background-image: url(assets/variable-computed.svg);
-    background-position: center;
+    background-image: url(assets/filters-formula.svg);
+    background-position: center left 1px;
     background-repeat: no-repeat;
-    background-size: 70%;
+    background-size: 65%;
     cursor: default;
     flex: none;
     margin-right: 3px;
+    background-color: white;
 }
 
 .jmv-filter-options > .formula-list > .formula-box .show-editor:hover {
     filter: none;
     background-color: #ffffff;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor > .down-arrow {
+    filter: inherit;
+    position: absolute;
+    background-image: url(assets/filters-down-arrow.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    top: 50%;
+    margin-top: -3px;
+    width: 5px;
+    left: 16px;
+    height: 5px;
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .add-nested:hover {

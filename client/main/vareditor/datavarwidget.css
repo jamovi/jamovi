@@ -1,8 +1,4 @@
 
-.jmv-variable-editor-widget-body {
-    flex-grow: 1 ;
-    display: flex ;
-}
 
 .jmv-variable-editor-datavarwidget {
     flex: 1;
@@ -89,6 +85,7 @@
     display: flex ;
     flex-direction: column;
     margin-left: 30px ;
+    margin-bottom: 5px;
 }
 
 .jmv-variable-editor-levels-title {

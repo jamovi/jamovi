@@ -40,7 +40,8 @@ const VariableModel = Backbone.Model.extend({
         description: '',
         hidden: false,
         active: true,
-        childOf: -1
+        childOf: -1,
+        importName: ''
     },
     editLevelLabel(index, label) {
 
@@ -98,7 +99,8 @@ const VariableModel = Backbone.Model.extend({
             formula : column.formula,
             hidden : column.hidden,
             active : column.active,
-            childOf : column.childOf
+            childOf : column.childOf,
+            importName : column.importName
         };
         this.set(this.original);
         this.set('formulaMessage', column.formulaMessage);
@@ -119,7 +121,8 @@ const VariableModel = Backbone.Model.extend({
             description: this.attributes.description,
             hidden: this.attributes.hidden,
             active: this.attributes.active,
-            childOf: this.attributes.childOf
+            childOf: this.attributes.childOf,
+            importName: this.attributes.importName
         };
 
         let columnId = this.attributes.id;
@@ -137,7 +140,8 @@ const VariableModel = Backbone.Model.extend({
                         description: this.attributes.description,
                         hidden: this.attributes.hidden,
                         active: this.attributes.active,
-                        childOf: this.attributes.childOf
+                        childOf: this.attributes.childOf,
+                        importName: this.attributes.importName
                     };
 
                     this.original = latestValues;
