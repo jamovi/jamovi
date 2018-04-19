@@ -22,6 +22,7 @@ public:
     static std::string desktopDir();
 
 private:
+    static void throwError(const std::string &message, int code);
     static std::string _appDataDir;
     static std::string _tempDir;
     static std::string _exePath;
