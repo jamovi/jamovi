@@ -119,7 +119,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
-                formulaToolbar.show(this.$formula);
+                formulaToolbar.show(this.$formula, this.model.get('name'));
                 this.$formula.focus();
                 this.$showEditor.addClass('is-active');
             }
