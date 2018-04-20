@@ -39,6 +39,9 @@ const EditorWidget = Backbone.View.extend({
         this.$title = $('<input class="jmv-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$el);
         this._addTextEvents(this.$title, 'name');
         this.model.on('change:name', event => {
+            if ( ! this.attached)
+                return;
+                
             let name = this.model.get('name');
             if (name !== this.$title.val())
                 this.$title.val(name);
@@ -50,6 +53,9 @@ const EditorWidget = Backbone.View.extend({
         this.$description = $('<div class="jmv-variable-editor-widget-description" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$el);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
+            if ( ! this.attached)
+                return;
+
             let desc = this.model.get('description');
             if (desc !== this.$description[0].textContent)
                 this.$description[0].textContent = desc;

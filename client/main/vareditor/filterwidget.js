@@ -180,28 +180,39 @@ const FilterWidget = Backbone.View.extend({
         let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
         let removeBase = (details) => {
-            details.$filter.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend",
-            (event) => {
+            if (this.attached) {
+                details.$filter.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend",
+                (event) => {
+                    details.$filter.remove();
+                    details.$splitter.remove();
+                });
+
+                details.$filter.addClass('remove');
+                details.$splitter.addClass('remove');
+
+                this._collapseSection(details.$filter[0]);
+                if (details.$splitter.length > 0)
+                    this._collapseSection(details.$splitter[0]);
+            }
+            else {
                 details.$filter.remove();
                 details.$splitter.remove();
-            });
-
-            details.$filter.addClass('remove');
-            details.$splitter.addClass('remove');
-
-            this._collapseSection(details.$filter[0]);
-            if (details.$splitter.length > 0)
-                this._collapseSection(details.$splitter[0]);
+            }
         };
 
         let removeSub = (details) => {
-            details.$formulaBox.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend",
-            (event) => {
-                details.$formulaBox.remove();
-            });
-            details.$formulaBox.addClass('remove');
+            if (this.attached) {
+                details.$formulaBox.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend",
+                (event) => {
+                    details.$formulaBox.remove();
+                });
+                details.$formulaBox.addClass('remove');
 
-            this._collapseSection(details.$formulaBox[0]);
+                this._collapseSection(details.$formulaBox[0]);
+            }
+            else {
+                details.$formulaBox.remove();
+            }
         };
 
         for (let c = event.start; c <= event.end; c++) {
@@ -428,7 +439,8 @@ const FilterWidget = Backbone.View.extend({
         this.addEvents($filter, $formula, 'formula', relatedColumn.id);
 
         setTimeout(() => {
-            this._expandSection($formulaBox[0]);
+            if (this.attached)
+                this._expandSection($formulaBox[0]);
             $formulaBox.removeClass('filter-hidden');
 
             if (this._internalCreate) {
@@ -529,7 +541,8 @@ const FilterWidget = Backbone.View.extend({
         $description.attr('contenteditable', 'true');
 
         setTimeout(() => {
-            this._expandSection($filter[0], '100px');
+            if (this.attached)
+                this._expandSection($filter[0], '100px');
             this._stickyBottom(this.$filterList);
             $filter.removeClass('filter-hidden');
         }, 10);
@@ -758,7 +771,20 @@ const FilterWidget = Backbone.View.extend({
             }
         }
     },
+    _cleanUp() {
+        let $toRemove = this.$filterList.find('.remove');
+        if ($toRemove.length > 0) {
+            $toRemove.remove();
+        }
+        let $test = this.$filterList.find('[data-expanding=true]');
+        if ($test.length > 0) {
+            $test.css('height', '');
+            $test.attr('data-expanding', false);
+        }
+    },
     attach() {
+
+        this._cleanUp();
 
         this.attached = true;
 
