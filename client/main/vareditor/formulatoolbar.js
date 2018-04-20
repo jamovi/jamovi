@@ -188,6 +188,7 @@ const toolbar = function(dataset) {
         if (self._inTools === false) {
             self.$el.addClass('formula-toolbar-hidden formula-toolbar-remove');
             self.$formula.off('blur.formula-toolbar', null, this.hide);
+            self.$formula.trigger('editor:closing');
             self.$formula = null;
             self._shown = false;
             self._waiting = false;

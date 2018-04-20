@@ -391,6 +391,7 @@ const FilterWidget = Backbone.View.extend({
             if (this._$wasEditingFormula !== $formula) {
                 formulaToolbar.show($formula, null, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
                 $formula.focus();
+                $showEditor.addClass('is-active');
             }
         });
 
@@ -406,6 +407,10 @@ const FilterWidget = Backbone.View.extend({
 
         $formula.on('input', (event) => {
             formulaToolbar.updatePosition();
+        });
+
+        $formula.on('editor:closing', () => {
+            $showEditor.removeClass('is-active');
         });
 
         let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);

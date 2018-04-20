@@ -236,7 +236,7 @@
     background-color: white;
 }
 
-.jmv-filter-options > .formula-list > .formula-box .show-editor:hover {
+.jmv-filter-options > .formula-list > .formula-box .show-editor:hover, .jmv-filter-options > .formula-list > .formula-box .show-editor.is-active {
     filter: none;
     background-color: #ffffff;
 }

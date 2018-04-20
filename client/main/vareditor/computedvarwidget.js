@@ -103,6 +103,10 @@ const ComputedVarWidget = Backbone.View.extend({
             this.model.set('formula', this.$formula[0].textContent);
         });
 
+        this.$formula.on('editor:closing', () => {
+            this.$showEditor.removeClass('is-active');
+        });
+
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
         this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
     },
@@ -111,16 +115,17 @@ const ComputedVarWidget = Backbone.View.extend({
 
         $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
+        this.$showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
 
-        $showEditor.on('click', (event) => {
+        this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
                 formulaToolbar.show(this.$formula);
                 this.$formula.focus();
+                this.$showEditor.addClass('is-active');
             }
         });
 
-        $showEditor.on('mousedown', (event) => {
+        this.$showEditor.on('mousedown', (event) => {
             this._$wasEditingFormula = formulaToolbar.focusedOn();
             this._editorClicked = true;
         });

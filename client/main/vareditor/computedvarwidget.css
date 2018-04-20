@@ -62,7 +62,7 @@
     background-color: white;
 }
 
-.jmv-variable-computed-options > .formula-box .show-editor:hover {
+.jmv-variable-computed-options > .formula-box .show-editor:hover, .jmv-variable-computed-options > .formula-box .show-editor.is-active {
     filter: none;
     background-color: #ffffff;
 }
