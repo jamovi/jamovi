@@ -111,12 +111,15 @@ const DataVarWidget = Backbone.View.extend({
         }
     },
     _updateHighlightPosition() {
-        let $option = this.resources[this.model.get('measureType')].$option;
-        if ($option) {
-            let css = $option.position();
-            css.width = $option.width();
-            css.height = $option.height();
-            this.$typesHighlight.css(css);
+        let resource = this.resources[this.model.get('measureType')];
+        if (resource) {
+            let $option = resource.$option;
+            if ($option) {
+                let css = $option.position();
+                css.width = $option.width();
+                css.height = $option.height();
+                this.$typesHighlight.css(css);
+            }
         }
     },
     _setOptions(measureType, levels) {
