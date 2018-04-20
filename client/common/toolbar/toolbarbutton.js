@@ -30,6 +30,7 @@ const ToolbarButton = function(params) {
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
         let classes = params.classes === undefined ? '' : params.classes;
         let hasIcon = params.hasIcon === undefined ? true : params.hasIcon;
+        let hasMenuArrow = params.hasMenuArrow === undefined ? true : params.hasMenuArrow;
 
         this.$el = $el;
         this.$el.addClass('jmv-toolbar-button');
@@ -41,6 +42,7 @@ const ToolbarButton = function(params) {
         this.name = name;
         this.dock = right ? 'right' : 'left';
         this.hasIcon = hasIcon || size === 'small';
+        this.hasMenuArrow = hasMenuArrow;
         this._enabled = true;
         this.menuVisible = false;
 
@@ -99,7 +101,8 @@ const ToolbarButton = function(params) {
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
             this.$menu.append(this._menuGroup.$el);
-            $('<div class="jmv-toolbar-menu-arrow"></div>').insertBefore(this.$menu);
+            if (this.hasMenuArrow)
+                $('<div class="jmv-toolbar-menu-arrow"></div>').insertBefore(this.$menu);
             this.$el.addClass("jmv-toolbar-dropdown");
         }
 

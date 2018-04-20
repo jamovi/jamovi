@@ -1,0 +1,371 @@
+
+.jmv-filter-widget {
+    width: 100% ;
+    display: flex;
+    flex-direction:  row;
+    align-items: stretch;
+}
+
+.tippy-tooltip.jmv-filter-theme .tippy-backdrop {
+   background-color: #c0d0e4;
+}
+
+.tippy-tooltip.jmv-filter-theme .tippy-content {
+    color: #658ec2;
+}
+
+.jmv-filter-list-box {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #CCCCCC;
+}
+
+.jmv-filter-list-buttons {
+    flex-basis: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.jmv-filter-options > .title-box.think {
+    background-image: url('assets/indicator-running.svg');
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+}
+
+.filter-hidden {
+    opacity: 0;
+    height: 0px;
+}
+
+.filter-button {
+    width: 25px;
+    height: 25px;
+    margin: 2px 5px 2px 5px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.filter-button:hover {
+    background-color: rgba(101, 142, 194, 0.38);
+}
+
+.jmv-filter-list-button {
+    width: 20px;
+    height: 20px;
+}
+
+.jmv-filter-options {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    /*min-height: 100px;*/
+    flex: 2;
+    border: 2px solid #e7e7e7;
+    border-left: 4px solid #c1c1c1;
+    padding: 0 5px 5px 5px;
+    margin: 4px 4px 4px 4px;
+    background: #f8f8f8;
+    opacity: 1;
+    transition: 0.2s opacity, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
+}
+
+.jmv-filter-splitter {
+    height: 2px;
+    margin: 3px;
+    border-bottom: 1px solid #e9e9e9;;
+}
+
+.jmv-filter-list-box > .jmv-filter-options:not(.remove) ~ .jmv-filter-options:not(.remove) {
+    margin-top: 7px;
+}
+
+
+.jmv-filter-options.selected {
+    border: 2px solid #658ec2;
+    border-left: 4px solid #658ec2;
+}
+
+.jmv-filter-options > .title-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 3px 0px 5px 0px;
+}
+
+
+.jmv-filter-options > .title-box > .title
+{
+    flex-grow: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    line-height: 25px;
+    padding-left: 10px;
+}
+
+.jmv-filter-options > .title-box > .header-splitter {
+    height: 18px;
+    width: 5px;
+    border-right: 2px solid #658ec2;
+}
+
+.jmv-filter-options > .title-box > .middle-box {
+    flex-grow: 1;
+}
+
+.jmv-filter-options > .title-box > .middle-box > .status-box {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    float: right;
+}
+
+.jmv-filter-options > .title-box > .middle-box > .status-box > .status {
+
+    color: #658ec2;
+    margin: 2px 0px 2px 3px;
+    padding-right: 3px;
+    height: 18px;
+    line-height: 18px;
+    text-align: right;
+
+}
+
+.jmv-filter-options > .title-box .active {
+    width: 25px;
+    height: 14px;
+    background-color: #8cc18c;
+    border-radius: 9px;
+    margin: 0px 5px 0px 2px;
+}
+
+.jmv-filter-options > .title-box .active .switch {
+    position: relative;
+    width: 12px;
+    height: 10px;
+    left: 9px;
+    background-color: #ffffff;
+    border-radius: inherit;
+    margin: 2px 2px 2px 2px;
+    transition: .1s left ease-out;
+}
+
+.remove-filter-btn {
+    width: 19px;
+    height: 19px;
+    font-size: 13px;
+    font-weight: normal;
+    color: #658ec2;
+    text-align: center;
+    /* line-height: 19px; */
+    margin: 0px 0px 0px 5px;
+}
+
+.remove-filter-btn:hover {
+    background-color: rgba(101, 142, 194, 0.38);
+}
+
+.jmv-filter-options > .title-box .active.filter-disabled .switch {
+    left: 0px;
+}
+
+.jmv-filter-options > .title-box .active.filter-disabled {
+    background-color: #c18c8c;
+}
+
+.jmv-filter-options > .title-box > .label-parent > .label {
+    font-size: 120%;
+    color: #626262;
+    margin: 2px 4px 2px 3px;
+    padding-left: 4px;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.jmv-filter-options > .title-box > .label-parent {
+    display: table;
+}
+
+.jmv-filter-options > .formula-list > .formula-box {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    margin-bottom: 5px;
+    transition: 0.4s opacity, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
+}
+
+.jmv-filter-options > .formula-list > .formula-box > .equal {
+    padding: 5px 5px 0px 34px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 12px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box > .add-nested {
+    position: absolute;
+    right: 6px;
+    font-size: 11px;
+    color: #658ec2;
+    cursor: default;
+    line-height: 20px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formula-pair {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor {
+    filter: hue-rotate(40deg) saturate(5) grayscale(100%);
+    width: 23px;
+    border: 1px solid #dadada;
+    background-image: url(assets/filters-formula.svg);
+    background-position: center left 1px;
+    background-repeat: no-repeat;
+    background-size: 65%;
+    cursor: default;
+    flex: none;
+    margin-right: 3px;
+    background-color: white;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor:hover, .jmv-filter-options > .formula-list > .formula-box .show-editor.is-active {
+    filter: none;
+    background-color: #ffffff;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .show-editor > .down-arrow {
+    filter: inherit;
+    position: absolute;
+    background-image: url(assets/filters-down-arrow.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    top: 50%;
+    margin-top: -3px;
+    width: 5px;
+    left: 16px;
+    height: 5px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box > .add-nested:hover {
+    color: #3c5472;
+}
+
+.jmv-filter-options > .formula-list > .formula-box > .remove-nested {
+    position: absolute;
+    right: 6px;
+    font-size: 10px;
+    color: #bbbbbb;
+    cursor: default;
+    line-height: 21px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box > .remove-nested:hover {
+    color: #c15050;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox {
+    background-color: pink;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox > .formulaMessage {
+    flex: 1;
+    flex-grow: 1;
+    margin: 5px;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formulaMessageBox > .formulaMessage:empty {
+    display: none;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .formula {
+    flex: 1;
+    resize: none;
+    text-indent: 1em;
+    font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-size: 12px;
+    padding: 5px 20px 5px 5px;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    cursor: text;
+    overflow-y: auto;
+    line-height: 1em;
+    min-height: 1em;
+}
+
+[contenteditable=true]:empty:before {
+    content: attr(placeholder);
+    display: block; /* For Firefox */
+    color: #CCCCCC;
+}
+
+.jmv-filter-options > .formula-list > .formula-box .caret {
+    border-left: 1px solid #888888;
+    top: 2px;
+    left: 15px;
+    height: calc(1em + 2px);
+    position: absolute;
+    transition: .05s left ease-out, .05s top ease-out;
+    pointer-events: none;
+}
+
+.jmv-filter-options > .description{
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    line-height: 1.5em;
+    padding-left: 10px;
+    height: 3em;
+    overflow-y: auto;
+    cursor: text;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.filter-button.add-filter {
+    background-size: 80%;
+    background-image: url('assets/filters-add.svg');
+}
+
+.show-filter-columns {
+    background-image: url('assets/filters-hidden.svg');
+}
+
+.hide-filter-columns {
+    background-image: url('assets/filters-visible.svg');
+}
+
+.jmv-filter-options.remove {
+    opacity: 0;
+    margin: 0px 5px 0px 5px;
+    padding: 0px;
+    border-width: 0px;
+    min-height: unset;
+}
+
+.jmv-filter-splitter.remove, .jmv-filter-options > .formula-list > .formula-box.remove {
+    opacity: 0;
+    margin: 0px;
+    padding: 0px;
+    border-width: 0px;
+    min-height: unset;
+}
+
+.jmv-filter-options > .title-box .status-box:hover .active {
+    background-color: #659c65;
+}
+
+.jmv-filter-options > .title-box .status-box:hover .active.filter-disabled {
+    background-color: #a16666;
+}
+
+.jmv-filter-options > .title-box .status-box:hover .status {
+    color: #2e5383;
+}

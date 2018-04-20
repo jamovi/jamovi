@@ -26,6 +26,23 @@ const createRowMenuItems = function() {
     ];
 };
 
+const createFilterRowMenuItems = function() {
+    return [
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Copy', name: 'copy', iconId: 'copy' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ /*title: "Awesome", titlePosition: "top",*/ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Insert Row...', name: 'insertRow', iconId: 'insertrow' }),
+            new ContextMenuButton({ title: 'Append Row...', name: 'appendRow', iconId: 'appendrow' }),
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Delete Row', name: 'delRow', iconId: 'delrow' })
+        ]}),
+    ];
+};
+
 const createVariableMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
@@ -35,23 +52,43 @@ const createVariableMenuItems = function() {
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Add Variable', name: 'addVar', subItems: [
-                    new RibbonGroup({ title: 'Data Variable', orientation: 'vertical', titlePosition: 'top', items: [
-                        new ContextMenuButton({ title: 'Insert', name: 'insertVar' }),
-                        new ContextMenuButton({ title: 'Append', name: 'appendVar' })
-                    ]}),
-                    new RibbonGroup({ title: 'Computed Variable', orientation: 'vertical', titlePosition: 'top', items: [
-                        new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
-                        new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
-                    ]})
+            new ContextMenuButton({ title: 'Add Variable', name: 'addVar', subItems: [
+                new RibbonGroup({ title: 'Data Variable', orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: 'Insert', name: 'insertVar' }),
+                    new ContextMenuButton({ title: 'Append', name: 'appendVar' })
                 ]}),
+                new RibbonGroup({ title: 'Computed Variable', orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
+                    new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
+                ]})
             ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Delete Variable', name: 'delVar' })
-            ]})
-        ];
-    };
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Delete Variable', name: 'delVar' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Setup...', name: 'editVar' })
+        ]}),
+    ];
+};
+
+const createFilterMenuItems = function() {
+    return [
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Copy', name: 'copy' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Delete Filter', name: 'delVar' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Edit...', name: 'editFilters' })
+        ]}),
+    ];
+};
 
 const createResultsObjectMenuItems = function(entries, parent, levelId) {
     let items = [];
@@ -98,4 +135,4 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
     return [new RibbonGroup({ orientation: 'vertical', items: items })];
 };
 
-module.exports = { createRowMenuItems, createVariableMenuItems, createResultsObjectMenuItems };
+module.exports = { createRowMenuItems, createVariableMenuItems, createResultsObjectMenuItems, createFilterMenuItems, createFilterRowMenuItems };

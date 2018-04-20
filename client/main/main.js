@@ -137,15 +137,17 @@ $(document).ready(() => {
     splitPanel.addPanel('help', { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: 'right', level: 1 });
 
     instance.on('change:selectedAnalysis', function(event) {
-        let analysis = event.changed.selectedAnalysis;
-        if (analysis !== null) {
-            analysis.ready.then(function() {
-                splitPanel.setVisibility('main-options', true);
-                optionspanel.setAnalysis(analysis);
-            });
-        }
-        else {
-            optionspanel.hideOptions();
+        if ('selectedAnalysis' in event.changed) {
+            let analysis = event.changed.selectedAnalysis;
+            if (analysis !== null) {
+                analysis.ready.then(function() {
+                    splitPanel.setVisibility('main-options', true);
+                    optionspanel.setAnalysis(analysis);
+                });
+            }
+            else {
+                optionspanel.hideOptions();
+            }
         }
     });
 
@@ -155,9 +157,11 @@ $(document).ready(() => {
 
     let $fileName = $('.header-file-name');
     instance.on('change:title', function(event) {
-        let title = event.changed.title;
-        $fileName.text(title);
-        document.title = title;
+        if ('selectedAnalysis' in event.changed) {
+            let title = event.changed.title;
+            $fileName.text(title);
+            document.title = title;
+        }
     });
 
     let section = splitPanel.getSection('main-options');
@@ -175,7 +179,8 @@ $(document).ready(() => {
     let mainTable   = new TableView({el : '#main-table', model : dataSetModel });
 
     backstageModel.on('change:activated', function(event) {
-        mainTable.setActive( ! event.changed.activated);
+        if ('activated' in event.changed)
+            mainTable.setActive( ! event.changed.activated);
     });
 
     let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });

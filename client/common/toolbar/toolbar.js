@@ -2,8 +2,8 @@
 'use strict';
 
 const $ = require('jquery');
-const tarp = require('../../common/utils/tarp');
-const SuperClass = require('../../common/superclass');
+const tarp = require('../utils/tarp');
+const SuperClass = require('../superclass');
 const Backbone = require('backbone');
 
 const Toolbar = function(items) {

@@ -184,6 +184,7 @@ cdef extern from "columnw.h":
         CColumnTypeData       "ColumnType::DATA"
         CColumnTypeComputed   "ColumnType::COMPUTED"
         CColumnTypeRecoded    "ColumnType::RECODED"
+        CColumnTypeFilter     "ColumnType::FILTER"
 
 class CellIterator:
     def __init__(self, column):
@@ -717,6 +718,7 @@ class ColumnType(Enum):
     DATA     = CColumnTypeData
     COMPUTED = CColumnTypeComputed
     RECODED  = CColumnTypeRecoded
+    FILTER  = CColumnTypeFilter
 
     @staticmethod
     def stringify(value):
@@ -726,6 +728,8 @@ class ColumnType(Enum):
             return 'Computed'
         elif value == ColumnType.RECODED:
             return 'Recoded'
+        elif value == ColumnType.FILTER:
+            return 'Filter'
         elif value == ColumnType.NONE:
             return 'None'
         else:
@@ -739,6 +743,8 @@ class ColumnType(Enum):
             return ColumnType.COMPUTED
         elif value == 'Recoded':
             return ColumnType.RECODED
+        elif value == 'Filter':
+            return ColumnType.FILTER
         elif value == 'None':
             return ColumnType.NONE
         else:

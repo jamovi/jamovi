@@ -5,6 +5,7 @@ const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const formulaToolbar = require('./formulatoolbar');
 
 const keyboardJS = require('keyboardjs');
 
@@ -52,6 +53,20 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.attached = false;
 
+        this._exampleFormulas = [
+            "gender == 'female'",
+            "score == 10",
+            "consent == 'yes'",
+            "Q1 != 'don\'t know'",
+            "ROW() <= 100",
+            "ROW() % 2",
+            "-1.5 < Z(score) < 1.5",
+            "ROW() != 33 and ROW() != 37",
+            "score > 0.5"
+        ];
+
+        formulaToolbar.init(this.model.dataset);
+
         this.$el.empty();
         this.$el.addClass('jmv-variable-computed-widget');
 
@@ -65,12 +80,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$bottom = $('<div class="bottom"></div>').appendTo(this.$methods);
 
         this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
-        this.$formulaBox = $('<div class="formula-box"></div>').appendTo(this.$options);
-        this.$equal = $('<div class="equal">=</div>').appendTo(this.$formulaBox);
-        this.$formula = $('<div class="formula" type="text" placeholder="Type formula here\u2026"></div>').appendTo(this.$formulaBox);
-        this.$formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo(this.$formulaBox);
-        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo(this.$formulaMessageBox);
-
+        this._createFormulaBox(this.$options);
 
         this.$formula.focus(() => {
             keyboardJS.pause();
@@ -81,6 +91,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 this.model.apply();
+                this.$formula.blur();
                 event.preventDefault();
             }
 
@@ -92,111 +103,44 @@ const ComputedVarWidget = Backbone.View.extend({
             this.model.set('formula', this.$formula[0].textContent);
         });
 
+        this.$formula.on('editor:closing', () => {
+            this.$showEditor.removeClass('is-active');
+        });
+
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
         this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
+    },
+    _createFormulaBox($parent, data) {
+        let $formulaBox = $('<div class="formula-box"></div>').appendTo($parent);
 
+        $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        this.$ops = $('<div class="ops-box"></div>').appendTo(this.$options);
+        this.$showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
 
-        this.$functions = $('<div class="op"></div>').appendTo(this.$ops);
-        this.$functionsTitle = $('<div class="title">Functions</div>').appendTo(this.$functions);
-        this.$functionsContent = $('<div class="content"></div>').appendTo(this.$functions);
-
-        this.$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="ABS">ABS</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="EXP">EXP</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="LN">LN</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="LOG10">LOG10</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SQRT">SQRT</div>'));
-
-        this.$functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VMODE">VMODE</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VN">VN</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VSE">VSE</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VSTDEV">VSTDEV</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
-
-        this.$functionsContent.append($('<div class="subtitle" data-name="">Logical</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="IF">IF</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="IFMISS">IFMISS</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
-
-        this.$functionsContent.append($('<div class="subtitle" data-name="">Misc</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="FILTER">FILTER</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="INT">INT</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="OFFSET">OFFSET</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
-
-        this.$functionsContent.append($('<div class="subtitle" data-name="">Simulation</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="BETA">BETA</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="GAMMA">GAMMA</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="NORM">NORM</div>'));
-        this.$functionsContent.append($('<div class="item" data-name="UNIF">UNIF</div>'));
-
-        this.$functionsContent.on("dblclick", (event) => {
-            if ($(event.target).hasClass('item')) {
-                insertText(this.$formula[0], event.target.dataset.name + "()", -1);
-                this.model.set('formula', this.$formula[0].textContent);
+        this.$showEditor.on('click', (event) => {
+            if (this._$wasEditingFormula !== this.$formula) {
+                formulaToolbar.show(this.$formula, this.model.get('name'));
+                this.$formula.focus();
+                this.$showEditor.addClass('is-active');
             }
         });
 
-        this.$functionsContent.on("click", (event) => {
-            this.$formula.focus();
-            $(".content .item").removeClass("item-activated");
-            if ($(event.target).hasClass("item"))
-                $(event.target).addClass("item-activated");
+        this.$showEditor.on('mousedown', (event) => {
+            this._$wasEditingFormula = formulaToolbar.focusedOn();
+            this._editorClicked = true;
         });
 
-        this.$vars = $('<div class="op"></div>').appendTo(this.$ops);
-        this.$varsTitle = $('<div class="title">Variables</div>').appendTo(this.$vars);
-        this.$varsContent = $('<div class="content"></div>').appendTo(this.$vars);
+        let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
-        this.$varsContent.on("dblclick", (event) => {
-            if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
-                insertText(this.$formula[0], event.target.dataset.name);
-                this.model.set('formula', this.$formula[0].textContent);
-            }
+        let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
+        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
+
+        this.$formula.on('input', (event) => {
+            formulaToolbar.updatePosition();
         });
 
-        this.$varsContent.on("click", (event) => {
-            this.$formula.focus();
-            $(".content .item").removeClass("item-activated");
-            $(event.target).addClass("item-activated");
-        });
-
-        // this.$math = $('<div class="op"></div>').appendTo(this.$ops);
-        // this.$mathTitle = $('<div class="title">Operators</div>').appendTo(this.$math);
-        // this.$mathContent = $('<div class="content"></div>').appendTo(this.$math);
-        // this.$mathContent.append($('<div class="item" data-name="+">+</div>'));
-        // this.$mathContent.append($('<div class="item" data-name="-">-</div>'));
-        // this.$mathContent.append($('<div class="item" data-name="*">*</div>'));
-        // this.$mathContent.append($('<div class="item" data-name="/">/</div>'));
-        // this.$mathContent.append($('<div class="item" data-name="^">^</div>'));
-        // this.$mathContent.append($('<div class="item" data-name="%">%</div>'));
-        //
-        // this.$mathContent.on("dblclick", (event) => {
-        //     if ($(event.target).hasClass('item')) {
-        //         insertText(this.$formula[0], " " + event.target.dataset.name + " ");
-        //         this.model.set('formula', this.$formula[0].textContent);
-        //     }
-        // });
-        // this.$mathContent.on("click", (event) => {
-        //     this.$formula.focus();
-        //     $(".content .item").removeClass("item-activated");
-        //     $(event.target).addClass("item-activated");
-        // });
-
+        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);
+        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
     },
     _setFormula(formula) {
         if ( ! this.attached)
@@ -221,18 +165,6 @@ const ComputedVarWidget = Backbone.View.extend({
         this._setFormula(this.model.attributes.formula);
         this._setFormulaMessage(this.model.attributes.formulaMessage);
         this.$formula.attr('contenteditable', 'true');
-
-        this.$varsContent.empty();
-        let dataset = this.model.dataset;
-        let name = this.model.get("name");
-        for (let col of dataset.get("columns")) {
-            if (col.name !== '') {
-                if (col.name === name)
-                    this.$varsContent.append($('<div class="item item-grayed-out" data-name="current">' + col.name + " (current)" + '</div>'));
-                else
-                    this.$varsContent.append($('<div class="item" data-name="' + col.name + '">' + col.name + '</div>'));
-            }
-        }
     }
 });
 

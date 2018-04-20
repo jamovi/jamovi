@@ -44,6 +44,7 @@ const DataTab = function() {
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Rows', items : [
+                new RibbonButton({ title: 'Filters', name: 'editFilters', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', items: [
                     new RibbonButton({ title: 'Add', name: 'addRow', subItems: [
                         new RibbonButton({ title: 'Insert', name: 'insertRow' }),

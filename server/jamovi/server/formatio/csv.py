@@ -10,6 +10,7 @@ import chardet
 import logging
 
 from jamovi.core import MeasureType
+from jamovi.core import ColumnType
 from jamovi.server.settings import Settings
 
 settings = Settings.retrieve('main')
@@ -30,15 +31,20 @@ def write(data, path):
 
     with open(path, 'w', encoding='utf-8') as file:
         sep = ''
-        for column in data.dataset:
+        for column in data:
+            if column.is_virtual is True or column.is_filter is True:
+                continue
             file.write(sep + '"' + column.name + '"')
             sep = ','
         file.write('\n')
 
-        for row_no in range(data.dataset.row_count):
+        for row_no in range(data.row_count):
             sep = ''
-            for col_no in range(data.dataset.column_count):
-                cell = data.dataset[col_no][row_no]
+            for column in data:
+                if column.is_virtual is True or column.is_filter is True:
+                    continue
+                col_no = column.index
+                cell = data[col_no][row_no]
                 if isinstance(cell, int) and cell == -2147483648:
                     file.write(sep + '')
                 elif isinstance(cell, float) and math.isnan(cell):
@@ -111,8 +117,9 @@ def read(data, path):
 
         for i in range(len(column_names)):
             column_name = column_names[i]
-            data.dataset.append_column(column_name)
-            column = data.dataset[i]
+            data.append_column(column_name, column_name)
+            column = data[i]
+            column.column_type = ColumnType.DATA
             column_writers.append(ColumnWriter(column, i))
             column_count += 1
 
@@ -134,7 +141,7 @@ def read(data, path):
         for column_writer in column_writers:
             column_writer.ruminate()
 
-        data.dataset.set_row_count(row_count)
+        data.set_row_count(row_count)
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)

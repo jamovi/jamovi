@@ -1079,11 +1079,6 @@ var BackstageView = SilkyView.extend({
         //    this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
         this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
     },
-    changePlace : function(place) {
-
-        this.model.set('place', place);
-
-    },
     activate : function() {
 
         keyboardJS.pause();

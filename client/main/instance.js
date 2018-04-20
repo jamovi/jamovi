@@ -501,6 +501,9 @@ const Instance = Backbone.Model.extend({
         this._dataSetModel.set('edited', true);
 
         for (let analysis of this._analyses) {
+            if (analysis.isReady === false)
+                continue;
+                
             let using = analysis.getUsing();
 
             let columnDataChanged = false;
