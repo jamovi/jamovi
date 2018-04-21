@@ -777,7 +777,7 @@ class Instance:
             if column.index < min_index:
                 min_index = column.index
 
-        cols_w_schema_change = set()
+        cols_changed = set()
         recalc = set()
         reparse = set()
         filter_changed = False
@@ -786,17 +786,17 @@ class Instance:
         for i in range(self._data.column_count, min_index):
             column = self._data[i]
             column.realise()
-            cols_w_schema_change.add(column)
-            # response.incSchema = True
-            # schema = response.schema.columns.add()
-            # self._populate_column_schema(column, schema)
+            cols_changed.add(column)
 
         for column_schema in request.schema.columns:
             column = self._data.get_column_by_id(column_schema.id)
             old_name = column.name
-            old_type = column.measure_type
+            old_type = column.column_type
+            old_m_type = column.measure_type
             old_formula = column.formula
             old_active = column.active
+            old_child_of = column.child_of
+            old_levels = column.levels
 
             levels = None
             if column_schema.hasLevels:
@@ -816,6 +816,19 @@ class Instance:
                 active=column_schema.active,
                 child_of=column_schema.childOf)
 
+            cols_changed.add(column)
+
+            if (column.name == old_name and
+                    column.column_type == old_type and
+                    column.measure_type == old_m_type and
+                    column.formula == old_formula and
+                    column.child_of == old_child_of and
+                    column.levels == old_levels and
+                    column.active == old_active):
+                # if these things haven't changed, no need
+                # to trigger recalcs
+                continue
+
             if column.column_type is ColumnType.FILTER:
                 if column.formula != old_formula:
                     filter_changed = True
@@ -827,13 +840,18 @@ class Instance:
 
             dependents = column.dependents
 
-            cols_w_schema_change.add(column)
-            cols_w_schema_change.update(dependents)
+            for dep in dependents:
+                # we have to reparse dependent filters in case the formula
+                # has changed to include a 'V' or column function
+                if dep.is_filter:
+                    reparse.add(dep)
+
+            cols_changed.update(dependents)
             recalc.update(dependents)
 
             if old_name != column.name:     # if a name has changed, then
                 reparse.update(dependents)  # dep columns need to be reparsed
-            elif old_type != column.measure_type:
+            elif old_m_type != column.measure_type:
                 reparse.update(dependents)
 
         for column in reparse:
@@ -846,23 +864,22 @@ class Instance:
         self._data.is_edited = True
 
         if filter_changed:
+            # easiest way to refresh the whole viewport is just to send back
+            # the whole data set schema (i.e. all the columns)
             self._populate_schema(request, response)
         else:
+            self._populate_schema_info(request, response)
+
             for i in range(n_cols_before, self._data.total_column_count):  # cols added
                 column = self._data[i]
-                cols_w_schema_change.add(column)
+                cols_changed.add(column)
 
             # sort ascending (the client doesn't like them out of order)
-            cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
+            cols_changed = sorted(cols_changed, key=lambda x: x.index)
 
-            for column in cols_w_schema_change:
-                response.incSchema = True
+            for column in cols_changed:
                 column_pb = response.schema.columns.add()
                 self._populate_column_schema(column, column_pb)
-
-            response.schema.columnCount = self._data.column_count
-            response.schema.vColumnCount = self._data.visible_column_count
-            response.schema.tColumnCount = self._data.total_column_count
 
     def _parse_cells(self, request):
 

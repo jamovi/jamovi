@@ -57,6 +57,10 @@ class Num(ast.Num):
     def has_levels(self):
         return False
 
+    @property
+    def uses_column_formula(self):
+        return False
+
 
 class Str(ast.Str):
 
@@ -98,6 +102,10 @@ class Str(ast.Str):
     @property
     def levels(self):
         return [ self.s ]
+
+    @property
+    def uses_column_formula(self):
+        return False
 
 
 class UnaryOp(ast.UnaryOp):
@@ -174,6 +182,10 @@ class UnaryOp(ast.UnaryOp):
     def has_levels(self):
         return False
 
+    @property
+    def uses_column_formula(self):
+        return self.operand.uses_column_formula
+
 
 class BoolOp(ast.BoolOp):
 
@@ -239,6 +251,13 @@ class BoolOp(ast.BoolOp):
 
     @property
     def has_levels(self):
+        return False
+
+    @property
+    def uses_column_formula(self):
+        for v in self.values:
+            if v.uses_column_formula:
+                return True
         return False
 
 
@@ -425,6 +444,17 @@ class Call(ast.Call):
 
         return levels
 
+    @property
+    def uses_column_formula(self):
+        if self._function.meta.is_column_wise:
+            return True
+
+        for arg in self.args:
+            if arg.uses_column_formula:
+                return True
+
+        return False
+
 
 class BinOp(ast.BinOp):
 
@@ -529,6 +559,10 @@ class BinOp(ast.BinOp):
     def has_levels(self):
         return False
 
+    @property
+    def uses_column_formula(self):
+        return self.left.uses_column_formula or self.right.uses_column_formula
+
 
 class Compare(ast.Compare):
 
@@ -619,3 +653,14 @@ class Compare(ast.Compare):
     @property
     def levels(self):
         return ((1, 'true'), (0, 'false'))
+
+    @property
+    def uses_column_formula(self):
+        if self.left.uses_column_formula:
+            return True
+
+        for comp in self.comparators:
+            if comp.uses_column_formula:
+                return True
+
+        return False

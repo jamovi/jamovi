@@ -1,5 +1,6 @@
 
 import ast
+import re
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
@@ -352,6 +353,9 @@ class Column:
 
         formula_change = False
         if formula is not None:
+            regex = re.compile(r'\s+')  # the r is supposed to be there if you were wondering
+            formula = formula.strip()
+            formula = regex.sub(' ', formula)
             if formula != self._child.formula:
                 formula_change = True
 
@@ -531,6 +535,13 @@ class Column:
 
     def _remove_node_parent(self, parent):
         self._node_parents.remove(parent)
+
+    @property
+    def uses_column_formula(self):
+        if self._node is not None:
+            return self._node.uses_column_formula
+        else:
+            return False
 
     class DependentResolver:
 
