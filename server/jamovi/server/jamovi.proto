@@ -398,6 +398,7 @@ message DataSetSchema {
         bool hidden = 15;
         bool active = 16;
         int32 childOf = 17;
+        bool trimLevels = 18;
     }
     repeated ColumnSchema columns = 1;
 

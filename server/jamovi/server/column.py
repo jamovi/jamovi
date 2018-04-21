@@ -28,6 +28,7 @@ class Column:
         self._description = ''
         self._hidden = False
         self._child_of = -1
+        self._trim_levels = True
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -147,6 +148,14 @@ class Column:
     @child_of.setter
     def child_of(self, child_of):
         self._child_of = child_of
+
+    @property
+    def trim_levels(self):
+        return self._trim_levels
+
+    @trim_levels.setter
+    def trim_levels(self, trim_levels):
+        self._trim_levels = trim_levels
 
     @property
     def index(self):
@@ -346,7 +355,8 @@ class Column:
                description=None,
                hidden=None,
                active=None,
-               child_of=None):
+               child_of=None,
+               trim_levels=None):
 
         if self._child is None:
             self._create_child()
@@ -383,6 +393,9 @@ class Column:
 
         if child_of is not None:
             self._child_of = child_of
+
+        if trim_levels is not None:
+            self._trim_levels = trim_levels
 
     @property
     def has_deps(self):

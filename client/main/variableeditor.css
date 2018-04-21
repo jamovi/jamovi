@@ -227,8 +227,11 @@
 .jmv-variable-editor-widget-body {
     flex-grow: 1;
     display: flex;
-    margin-left: 2px;
     margin-top: 1px;
+}
+
+.jmv-variable-editor-widget-footer {
+    margin-left: 2px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-title {
