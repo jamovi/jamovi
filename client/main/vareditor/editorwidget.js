@@ -41,7 +41,7 @@ const EditorWidget = Backbone.View.extend({
         this.model.on('change:name', event => {
             if ( ! this.attached)
                 return;
-                
+
             let name = this.model.get('name');
             if (name !== this.$title.val())
                 this.$title.val(name);
@@ -65,6 +65,16 @@ const EditorWidget = Backbone.View.extend({
         } );
 
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
+
+        this.$footer = $('<div class="jmv-variable-editor-widget-footer"></div>').appendTo(this.$el);
+        let $checkbox = $('<label style="white-space: nowrap;"></label>').appendTo(this.$footer);
+        this.$input = $('<input class="check-box" type="checkbox" value="value" checked >').appendTo($checkbox);
+        $('<span>Retain unused levels</span>').appendTo($checkbox);
+        this.$input.change((event) => {
+            let value = this.$input[0].checked;
+            this.model.set('trimLevels', ! value);
+        });
+
 
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
         this.dataVarWidget = new DataVarWidget({ el: this.$dataVarWidget, model: this.model });
@@ -156,12 +166,17 @@ const EditorWidget = Backbone.View.extend({
         if (description !== this.$description[0].textContent)
             this.$description[0].textContent = description;
 
+        let trimLevels = this.model.get('trimLevels');
+        if (trimLevels === this.$input[0].checked)
+            this.$input.prop('checked', ! trimLevels);
+
         let type = this.model.get('columnType');
 
         this._updateImportAsLabel(type, name);
 
         if (type === 'data') {
             this.$label[0].textContent = 'DATA VARIABLE';
+            this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
             this.$title.show();
@@ -171,6 +186,7 @@ const EditorWidget = Backbone.View.extend({
         }
         else if (type === 'computed') {
             this.$label[0].textContent = 'COMPUTED VARIABLE';
+            this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
             this.$title.show();
@@ -180,6 +196,7 @@ const EditorWidget = Backbone.View.extend({
         }
         else if (type === 'recoded') {
             this.$label[0].textContent = 'RECODED VARIABLE';
+            this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
             this.$title.show();
@@ -189,6 +206,7 @@ const EditorWidget = Backbone.View.extend({
         }
         else if (type === 'filter') {
             this.$label[0].textContent = 'ROW FILTERS';
+            this.$footer.hide();
             this.$labelBox.show();
             this.$importedAs.hide();
             this.$label.show();
@@ -198,6 +216,7 @@ const EditorWidget = Backbone.View.extend({
             this.filterWidget.attach();
         }
         else {
+            this.$footer.hide();
             this.$labelBox.hide();
             this.$title.hide();
             this.$description.hide();

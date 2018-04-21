@@ -570,6 +570,11 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columnPB.childOf = column.childOf;
 
+            if ('trimLevels' in values)
+                columnPB.trimLevels = values.trimLevels;
+            else
+                columnPB.trimLevels = column.trimLevels;
+
             if ('columnType' in values)
                 columnPB.columnType = DataSetModel.parseColumnType(values.columnType);
             else
@@ -850,6 +855,7 @@ const DataSetModel = Backbone.Model.extend({
         column.active = columnPB.active;
         column.childOf = columnPB.childOf;
         column.importName = columnPB.importName;
+        column.trimLevels = columnPB.trimLevels;
 
         let levels = null;
         if (columnPB.hasLevels) {
