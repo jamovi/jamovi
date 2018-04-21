@@ -14,7 +14,7 @@ const DataTab = function() {
 
     this.getRibbonItems = function(ribbon) {
         return [
-            new RibbonGroup({ title: 'Clipboard', items: [
+            new RibbonGroup({ title: 'Clipboard', margin: 'large', items: [
                 new RibbonButton({ title: 'Paste', name: 'paste', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', items: [
                     new RibbonButton({ title: 'Cut', name: 'cut', size: 'small' }),
@@ -23,8 +23,9 @@ const DataTab = function() {
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Variables', items: [
-                new RibbonButton({ title: 'Setup', name: 'editVar', size: 'large' }),
-                new RibbonGroup({ orientation: 'vertical', items: [
+                new RibbonButton({ title: 'Setup', name: 'editVar', margin: 'large', size: 'large' }),
+                new RibbonButton({ title: 'Compute', name: 'compute', margin: 'large', size: 'large' }),
+                new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [
                             new RibbonButton({ title: 'Insert', name: 'insertVar' }),
@@ -44,8 +45,8 @@ const DataTab = function() {
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Rows', items : [
-                new RibbonButton({ title: 'Filters', name: 'editFilters', size: 'large' }),
-                new RibbonGroup({ orientation: 'vertical', items: [
+                new RibbonButton({ title: 'Filters', name: 'editFilters', margin: 'large', size: 'large' }),
+                new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: 'Add', name: 'addRow', subItems: [
                         new RibbonButton({ title: 'Insert', name: 'insertRow' }),
                         new RibbonButton({ title: 'Append', name: 'appendRow' }),

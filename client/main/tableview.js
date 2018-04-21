@@ -113,13 +113,28 @@ const TableView = SilkyView.extend({
         ActionHub.get('editVar').on('request', this._toggleVariableEditor, this);
         ActionHub.get('editFilters').on('request', this._toggleFilterEditor, this);
 
-        ActionHub.get('insertVar').on('request', () => this._insertColumn('data'));
+        ActionHub.get('insertVar').on('request', () => this._insertColumn({ columnType: 'data' }));
         ActionHub.get('appendVar').on('request', () => this._appendColumn('data'));
-        ActionHub.get('insertComputed').on('request', () => this._insertColumn('computed'));
+        ActionHub.get('insertComputed').on('request', () => this._insertColumn({ columnType: 'computed' }));
         ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
-        ActionHub.get('insertRecoded').on('request', () => this._insertColumn('recoded'));
+        ActionHub.get('insertRecoded').on('request', () => this._insertColumn({ columnType: 'recoded' }));
         ActionHub.get('appendRecoded').on('request', () => this._appendColumn('recoded'));
         ActionHub.get('delVar').on('request', () => this._deleteColumns());
+        ActionHub.get('compute').on('request', () => {
+            let column = this.model.getColumn(this.selection.colNo, true);
+            if (column) {
+                if (this.selection.colNo < this.model.visibleRealColumnCount()) {
+                    this._insertColumn({ columnType: 'computed', name: column.name }, true).then(() => {
+                        this.model.set('editingVar', this.selection.colNo + 1);
+                    });
+                }
+                else {
+                    this.model.changeColumn(column.id, { columnType: 'computed' }).then(() => {
+                        this.model.set('editingVar', this.selection.colNo);
+                    });
+                }
+            }
+        });
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);
@@ -1339,8 +1354,11 @@ const TableView = SilkyView.extend({
             return this._setSelectedRange(oldSelection);
         });
     },
-    _insertColumn(columnType) {
-        return this.model.insertColumn(this.selection.colNo, { columnType: columnType }, true);
+    _insertColumn(properties, right) {
+        let index = this.selection.colNo;
+        if (right)
+            index += 1;
+        return this.model.insertColumn(index, properties, true);
     },
     _columnsInserted(event, ignoreSelection) {
 
@@ -1592,6 +1610,7 @@ const TableView = SilkyView.extend({
         ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
         ActionHub.get('cut').set('enabled', column.columnType !== 'filter');
         ActionHub.get('paste').set('enabled', column.columnType !== 'filter');
+        ActionHub.get('compute').set('enabled', column.columnType !== 'filter');
     },
     _toggleFilterEditor() {
         let editingIndex = this.model.get('editingVar');

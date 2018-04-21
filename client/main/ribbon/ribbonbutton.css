@@ -6,6 +6,10 @@
     flex-direction: column;
 }
 
+.jmv-ribbon-button-margin-large {
+    margin: 0px 7px;
+}
+
 .jmv-ribbon-button-menu {
     top: 100%;
     margin-left: -3px;
@@ -45,11 +49,14 @@
     margin-top: 3px;
     flex-grow: 1;
     text-align: left;
+    margin-left: 3px;
+    margin-right: 3px;
 }
 
 /*huge button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-huge {
-    width: 45px;
+    min-width: 45px;
+    width: auto;
 }
 
 .jmv-ribbon-group-body .jmv-ribbon-button-size-huge .jmv-ribbon-button-icon {
@@ -58,8 +65,9 @@
 
 /*large button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-large {
-    width: 40px;
+    min-width: 40px;
     padding: 5px 0px;
+    width: auto;
 }
 
 .jmv-ribbon-group-body .jmv-ribbon-button-size-large .jmv-ribbon-button-icon {
@@ -81,6 +89,7 @@
 .jmv-ribbon-button-size-medium .jmv-ribbon-button-label {
     margin-left: 4px;
     margin-top: 0px;
+    margin-right: 0px;
 }
 
 /*small button*/

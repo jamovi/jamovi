@@ -13,6 +13,7 @@ const RibbonGroup = Backbone.View.extend({
         orientation:    //How are the contents displayed 'vertical' or 'horizontal' (default)
         titlePosition:  //Title at the 'top' or 'bottom' (default)
         right:          //Is the button docked to the right? [default: false]
+        margin:         //defines the size of the left right magins [default: normal]
         $el:            //jquery element. Will create if missing.
         items:          //Array of menu items. Not needed, can use 'addItem'.
     }
@@ -25,9 +26,11 @@ const RibbonGroup = Backbone.View.extend({
         let right = params.right === undefined ? false : params.right;
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
+        let margin =  params.margin === undefined ? 'normal' : params.margin;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
+        this.$el.addClass('jmv-ribbon-group-margin-' + margin);
         if (title !== null)
             this.$el.attr('data-position', titlePosition);
 
@@ -39,8 +42,6 @@ const RibbonGroup = Backbone.View.extend({
             this.$el.addClass('right');
 
         this.items = [];
-
-        this.$el.addClass('jmv-ribbon-group');
 
         let html = '';
         html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '">';

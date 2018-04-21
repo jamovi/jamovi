@@ -27,11 +27,13 @@ const RibbonButton = Backbone.View.extend({
         let name = params.name;
         let size = params.size === undefined ? 'medium' : params.size;
         let right = params.right === undefined ? false : params.right;
+        let margin =  params.margin === undefined ? 'normal' : params.margin;
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button');
         this.$el.addClass('jmv-ribbon-button-size-' + size);
+        this.$el.addClass('jmv-ribbon-button-margin-' + margin);
 
         this.tabName = null;
         this._definedTabName = false;

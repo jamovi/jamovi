@@ -15,6 +15,10 @@
     justify-content: space-between;
 }
 
+.jmv-ribbon-group-margin-large {
+    margin: 0px 7px;
+}
+
 .jmv-ribbon-group-body-vertical > .jmv-ribbon-group[data-position="top"] {
     margin: 5px;
 }
