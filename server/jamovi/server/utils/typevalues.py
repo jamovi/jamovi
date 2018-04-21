@@ -4,17 +4,18 @@ from numbers import Number as num
 
 
 class FValues:
-    def __init__(self, parent):
+    def __init__(self, parent, filt):
         self._parent = parent
+        self._filt = filt
 
     def __iter__(self):
         if self._parent.is_atomic_node():
-            return [ self._parent.fvalue(0) ].__iter__()
+            return [ self._parent.fvalue(0, False) ].__iter__()
         else:
             return FValues.FIter(self)
 
     def __getitem__(self, index):
-        return self._parent.fvalue(index)
+        return self._parent.fvalue(index, self._filt)
 
     class FIter:
         def __init__(self, parent):
@@ -23,7 +24,7 @@ class FValues:
 
         def __next__(self):
             try:
-                v = self._parent._parent.fvalue(self._index)
+                v = self._parent._parent.fvalue(self._index, self._parent._filt)
                 self._index += 1
                 return v
             except IndexError:

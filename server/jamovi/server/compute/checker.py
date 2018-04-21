@@ -84,6 +84,11 @@ class Checker(NodeVisitor):
             raise RecursionError()
         try:
             depcy = self._dataset[depcy_name]
+
+            if self._column.is_filter:
+                if not depcy.is_filter and depcy.uses_column_formula:
+                    raise ValueError("Filters may not reference columns using 'V' or column functions")
+
             depcies = depcy.dependencies
 
             depcies_names = map(lambda x: x.name, depcies)

@@ -1,5 +1,6 @@
 
 import ast
+import re
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
@@ -47,15 +48,13 @@ class Column:
     def __getitem__(self, index):
         if self._child is not None:
             return self._child[index]
-        elif self._child.measure_type is MeasureType.NOMINAL_TEXT:
-            return ''
-        elif self._child.measure_type is MeasureType.CONTINUOUS:
-            return NaN
         else:
-            return -2147483648
+            return (-2147483648, '')
 
-    def fvalue(self, index):
+    def fvalue(self, index, filt):
         if self._child is not None:
+            if filt and self._parent.is_row_filtered(index):
+                return (-2147483648, '')
             v = self._child[index]
             if (self._child.measure_type is MeasureType.NOMINAL or
                self._child.measure_type is MeasureType.ORDINAL):
@@ -66,15 +65,10 @@ class Column:
             else:
                 return v
         else:
-            if self._child.measure_type is MeasureType.CONTINUOUS:
-                return NaN
-            elif self._child.measure_type is MeasureType.NOMINAL_TEXT:
-                return ''
-            else:
-                return (-2147483648, '')
+            return (-2147483648, '')
 
-    def fvalues(self):
-        return FValues(self)
+    def fvalues(self, filt):
+        return FValues(self, filt)
 
     def is_atomic_node(self):
         return False
@@ -362,6 +356,9 @@ class Column:
 
         formula_change = False
         if formula is not None:
+            regex = re.compile(r'\s+')
+            formula = formula.strip()
+            formula = regex.sub(' ', formula)
             if formula != self._child.formula:
                 formula_change = True
 
@@ -461,7 +458,12 @@ class Column:
         else:
             for row_no in range(start, end):
                 try:
-                    v = self._node.fvalue(row_no)
+                    if self.is_filter:
+                        v = self._node.fvalue(row_no, False)
+                    elif self.uses_column_formula and self._parent.is_row_filtered(row_no):
+                        v = NaN
+                    else:
+                        v = self._node.fvalue(row_no, self.uses_column_formula)
                     v = convert(v, ul_type)
                 except Exception as e:
                     if not self.is_filter:
@@ -544,6 +546,13 @@ class Column:
 
     def _remove_node_parent(self, parent):
         self._node_parents.remove(parent)
+
+    @property
+    def uses_column_formula(self):
+        if self._node is not None:
+            return self._node.uses_column_formula
+        else:
+            return False
 
     class DependentResolver:
 
