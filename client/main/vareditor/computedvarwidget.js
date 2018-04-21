@@ -90,7 +90,6 @@ const ComputedVarWidget = Backbone.View.extend({
         });
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
-                this.model.apply();
                 this.$formula.blur();
                 event.preventDefault();
             }
