@@ -697,7 +697,8 @@ class Instance:
                     auto_measure=column_pb.autoMeasure,
                     hidden=column_pb.hidden,
                     active=column_pb.active,
-                    child_of=column_pb.childOf)
+                    child_of=column_pb.childOf,
+                    trim_levels=column_pb.trimLevels)
 
                 if column.column_type is ColumnType.FILTER:
                     filter_inserted = True
@@ -814,7 +815,8 @@ class Instance:
                 description=column_schema.description,
                 hidden=column_schema.hidden,
                 active=column_schema.active,
-                child_of=column_schema.childOf)
+                child_of=column_schema.childOf,
+                trim_levels=column_schema.trimLevels)
 
             if column.column_type is ColumnType.FILTER:
                 if column.formula != old_formula:
@@ -1301,6 +1303,7 @@ class Instance:
         column_schema.hidden = column.hidden
         column_schema.active = column.active
         column_schema.childOf = column.child_of
+        column_schema.trimLevels = column.trim_levels
 
         if column.measure_type is MeasureType.NOMINAL_TEXT:
             for level in column.levels:
