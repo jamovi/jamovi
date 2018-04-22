@@ -45,6 +45,10 @@
     background-image: url('assets/analysis-jmvarcade.svg');
 }
 
+.jmv-ribbon-button[data-name=jpower] .jmv-ribbon-button-icon {
+    background-image: url('assets/analysis-power.svg');
+}
+
 .jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-more.svg');
 }
