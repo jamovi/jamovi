@@ -301,6 +301,10 @@
     min-height: 1em;
 }
 
+.jmv-filter-options > .formula-list > .formula-box .formula.and-formula {
+    text-indent: 2em;
+}
+
 [contenteditable=true]:empty:before {
     content: attr(placeholder);
     display: block; /* For Firefox */
