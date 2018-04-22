@@ -28,7 +28,6 @@ class Column:
         self._index = -1
         self._description = ''
         self._hidden = False
-        self._child_of = -1
         self._filter_no = -1
         self._trim_levels = True
 
@@ -131,18 +130,6 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.active = active
-
-    @property
-    def is_child(self):
-        return self._child_of != -1
-
-    @property
-    def child_of(self):
-        return self._child_of
-
-    @child_of.setter
-    def child_of(self, child_of):
-        self._child_of = child_of
 
     @property
     def filter_no(self):
@@ -358,7 +345,7 @@ class Column:
                description=None,
                hidden=None,
                active=None,
-               child_of=None,
+               filter_no=None,
                trim_levels=None):
 
         if self._child is None:
@@ -394,8 +381,8 @@ class Column:
         if active is not None:
             self._active = active
 
-        if child_of is not None:
-            self._child_of = child_of
+        if filter_no is not None:
+            self._filter_no = filter_no
 
         if trim_levels is not None:
             self._trim_levels = trim_levels

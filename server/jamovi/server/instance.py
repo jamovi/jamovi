@@ -699,7 +699,7 @@ class Instance:
                     auto_measure=column_pb.autoMeasure,
                     hidden=column_pb.hidden,
                     active=column_pb.active,
-                    child_of=column_pb.childOf,
+                    filter_no=column_pb.filterNo,
                     trim_levels=column_pb.trimLevels)
 
                 if column.column_type is ColumnType.FILTER:
@@ -807,7 +807,7 @@ class Instance:
             old_type = column.column_type
             old_formula = column.formula
             old_active = column.active
-            old_child_of = column.child_of
+            old_filter_no = column.filter_no
             old_levels = column.levels
 
             levels = None
@@ -837,7 +837,7 @@ class Instance:
                 description=column_schema.description,
                 hidden=column_schema.hidden,
                 active=column_schema.active,
-                child_of=column_schema.childOf,
+                filter_no=column_schema.filterNo,
                 trim_levels=column_schema.trimLevels)
 
             cols_changed.add(column)
@@ -846,7 +846,7 @@ class Instance:
                     column.column_type == old_type and
                     column.measure_type == old_m_type and
                     column.formula == old_formula and
-                    column.child_of == old_child_of and
+                    column.filter_no == old_filter_no and
                     column.levels == old_levels and
                     column.active == old_active):
                 # if these things haven't changed, no need
@@ -1351,7 +1351,7 @@ class Instance:
         column_schema.description = column.description
         column_schema.hidden = column.hidden
         column_schema.active = column.active
-        column_schema.childOf = column.child_of
+        column_schema.filterNo = column.filter_no
         column_schema.trimLevels = column.trim_levels
 
         if column.measure_type is MeasureType.NOMINAL_TEXT:

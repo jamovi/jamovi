@@ -40,7 +40,7 @@ const VariableModel = Backbone.Model.extend({
         description: '',
         hidden: false,
         active: true,
-        childOf: -1,
+        filterNo: -1,
         importName: '',
         trimLevels: true
     },
@@ -100,7 +100,7 @@ const VariableModel = Backbone.Model.extend({
             formula : column.formula,
             hidden : column.hidden,
             active : column.active,
-            childOf : column.childOf,
+            filterNo : column.filterNo,
             importName : column.importName,
             trimLevels : column.trimLevels
         };
@@ -123,7 +123,7 @@ const VariableModel = Backbone.Model.extend({
             description: this.attributes.description,
             hidden: this.attributes.hidden,
             active: this.attributes.active,
-            childOf: this.attributes.childOf,
+            filterNo: this.attributes.filterNo,
             importName: this.attributes.importName,
             trimLevels: this.attributes.trimLevels
         };
@@ -143,7 +143,7 @@ const VariableModel = Backbone.Model.extend({
                         description: this.attributes.description,
                         hidden: this.attributes.hidden,
                         active: this.attributes.active,
-                        childOf: this.attributes.childOf,
+                        filterNo: this.attributes.filterNo,
                         importName: this.attributes.importName,
                         trimLevels: this.attributes.trimLevels
                     };
