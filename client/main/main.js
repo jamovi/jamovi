@@ -90,6 +90,9 @@ $(document).ready(() => {
             if (event.key === 's')
                 ActionHub.get('save').do();
         }
+        else if (event.key === 'Escape') {
+            optionspanel.hideOptions();
+        }
     });
 
     if (host.isElectron && navigator.platform === 'Win32') {
@@ -125,6 +128,8 @@ $(document).ready(() => {
     ribbon.on('tabSelected', function(tabName) {
         if (tabName === 'file')
             backstage.activate();
+        else if (tabName === 'data')
+            optionspanel.hideOptions();
     });
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
@@ -143,6 +148,8 @@ $(document).ready(() => {
                 analysis.ready.then(function() {
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
+                    if (ribbonModel.get('selectedTab') === 'data')
+                        ribbonModel.set('selectedTab', 'analyses');
                 });
             }
             else {
