@@ -112,6 +112,7 @@ class InstanceModel:
     def update_filter_names(self):
         filter_index = 0
         subfilter_index = 1
+        filter_no = -1
         for column in self._columns:
             if column.column_type is not ColumnType.FILTER:
                 break
@@ -119,9 +120,11 @@ class InstanceModel:
                 column.name = 'Filter {}'.format(filter_index + 1)
                 filter_index += 1
                 subfilter_index = 1
+                filter_no += 1
             else:
                 column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
                 subfilter_index += 1
+            column.filter_no = filter_no
 
     def delete_columns(self, start, end):
         for i in range(start, end + 1):

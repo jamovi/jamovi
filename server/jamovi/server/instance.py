@@ -672,6 +672,8 @@ class Instance:
     def _on_dataset_ins_cols(self, request, response):
 
         filter_inserted = False
+        to_calc = set()
+
         for i in range(request.columnStart, request.columnEnd + 1):
             self._data.insert_column(i)
             column = self._data[i]
@@ -702,14 +704,20 @@ class Instance:
 
                 if column.column_type is ColumnType.FILTER:
                     filter_inserted = True
+                    to_calc.add(column)
 
-                if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.FILTER:
-                    column.parse_formula()
-                    column.needs_recalc = True
-                    column.recalc()
+                if column.column_type is ColumnType.COMPUTED:
+                    to_calc.add(column)
 
         if filter_inserted:
             self._data.update_filter_names()
+
+        for column in to_calc:
+            column.parse_formula()
+            column.needs_recalc = True
+
+        for column in to_calc:
+            column.recalc()
 
         self._populate_schema_info(request, response)
 
@@ -853,27 +861,6 @@ class Instance:
                 elif column.active != old_active:
                     filter_changed = True
 
-            cols_changed.add(column)
-
-            if (column.name == old_name and
-                    column.column_type == old_type and
-                    column.measure_type == old_m_type and
-                    column.formula == old_formula and
-                    column.child_of == old_child_of and
-                    column.levels == old_levels and
-                    column.active == old_active):
-                # if these things haven't changed, no need
-                # to trigger recalcs
-                continue
-
-            recalc.add(column)
-
-            if column.column_type is ColumnType.FILTER:
-                if column.formula != old_formula:
-                    filter_changed = True
-                elif column.active != old_active:
-                    filter_changed = True
-
             dependents = column.dependents
 
             for dep in dependents:
@@ -890,12 +877,18 @@ class Instance:
             elif old_m_type != column.measure_type:
                 reparse.update(dependents)
 
+        if filter_changed:
+            # reparse filters, recalc all
+            for column in self._data:
+                if column.is_filter:
+                    reparse.add(column)
+                else:
+                    break
+            recalc = self._data
+
+        reparse = sorted(reparse, key=lambda x: x.index)
         for column in reparse:
             column.parse_formula()
-
-        if filter_changed:
-            # recalc all
-            recalc = self._data
 
         for column in recalc:
             column.needs_recalc = True
