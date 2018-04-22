@@ -398,13 +398,14 @@ const FilterWidget = Backbone.View.extend({
         else
             $formulaBox.insertBefore($($list[rIndex]));
 
-        $('<div class="equal">=</div>').appendTo($formulaBox);
 
         if (rIndex > 0) {
+            $('<div class="equal">and</div>').appendTo($formulaBox);
             let $removeNested = $('<div class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></div>').appendTo($formulaBox);
             this.removeNestedEvents($removeNested, relatedColumn.id);
         }
         else {
+            $('<div class="equal">=</div>').appendTo($formulaBox);
             let $addNested = $('<div class="add-nested" title="Add another nested filter"><span class="mif-plus"></span></div>').appendTo($formulaBox);
             this.addNestedEvents($addNested, rootColumn.id, $formulaBox);
         }
@@ -427,7 +428,7 @@ const FilterWidget = Backbone.View.extend({
         let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        let $formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
+        let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" placeholder="e.g. ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
 
         $formula.on('input', (event) => {
             formulaToolbar.updatePosition();
