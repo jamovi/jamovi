@@ -47,27 +47,42 @@ function allFunctions($functionsContent) {
 
     $functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
     $functionsContent.append($('<div class="item item-activated" data-name="ABS">ABS</div>'));
-    descriptions.ABS = { label: 'ABS( <i>column_name</i> )', content: 'Returns the absolute value for each cell of the specified column.' };
+    descriptions.ABS = { label: 'ABS( <i>number</i> )', content: 'Returns the absolute value of a number.' };
     $functionsContent.append($('<div class="item" data-name="EXP">EXP</div>'));
+    descriptions.EXP = { label: 'EXP( <i>number</i> )', content: 'Returns the exponent for basis \u212F of a number.' };
     $functionsContent.append($('<div class="item" data-name="LN">LN</div>'));
+    descriptions.LN = { label: 'LN( <i>number</i> )', content: 'Returns the natural logarithm of a number.' };
     $functionsContent.append($('<div class="item" data-name="LOG10">LOG10</div>'));
+    descriptions.LOG10 = { label: 'LOG10( <i>number</i> )', content: 'Returns the base-10 logarithm of a number.' };
     $functionsContent.append($('<div class="item" data-name="SQRT">SQRT</div>'));
-    descriptions.SQRT = { label: 'SQRT( <i>column_name</i> )', content: 'Returns the square root for each cell of the specified column.' };
+    descriptions.SQRT = { label: 'SQRT( <i>number</i> )', content: 'Returns the square root of a number.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
     $functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
     $functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
+    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i> )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
+    descriptions.SCALE = { label: 'SCALE( <i>variable</i> )', content: 'Returns the normalized values of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
+    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i> )', content: 'Returns the sum of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
+    descriptions.VMEAN = { label: 'VMEAN( <i>variable</i> )', content: 'Returns the overall mean of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
+    descriptions.VMED = { label: 'VMED( <i>variable</i> )', content: 'Returns the median of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VMODE">VMODE</div>'));
+    descriptions.VMODE = { label: 'VMODE( <i>variable</i> )', content: 'Returns the most common value in a variable.' };
     $functionsContent.append($('<div class="item" data-name="VN">VN</div>'));
+    descriptions.VN = { label: 'VN( <i>variable</i> )', content: 'Returns the number of cases in a variable.' };
     $functionsContent.append($('<div class="item" data-name="VSE">VSE</div>'));
+    descriptions.VSE = { label: 'VSE( <i>variable</i> )', content: 'Returns the standard error of the mean of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VSTDEV">VSTDEV</div>'));
+    descriptions.VSTDEV = { label: 'VSTDEV( <i>variable</i> )', content: 'Returns the standard deviation of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
+    descriptions.VSUM = { label: 'VSUM( <i>variable</i> )', content: 'Returns the overall sum of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
+    descriptions.VVAR = { label: 'VVAR( <i>variable</i> )', content: 'Returns the variance of a variable.' };
     $functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
+    descriptions.Z = { label: 'Z( <i>variable</i> )', content: 'Returns the normalized values of a set of numbers.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Logical</div>'));
     $functionsContent.append($('<div class="item" data-name="IF">IF</div>'));
@@ -80,15 +95,21 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="INT">INT</div>'));
     $functionsContent.append($('<div class="item" data-name="OFFSET">OFFSET</div>'));
     $functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
+    descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: 'Returns the row numbers.' };
     $functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
     $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
     $functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
+    descriptions.VROWS = { label: 'VROWS( <i>variable</i> )', content: 'Returns the nummber of rows of a variable.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Simulation</div>'));
     $functionsContent.append($('<div class="item" data-name="BETA">BETA</div>'));
+    descriptions.BETA = { label: 'BETA( <i>alpha, beta</i> )', content: 'Draws samples from a Beta distribution.' };
     $functionsContent.append($('<div class="item" data-name="GAMMA">GAMMA</div>'));
+    descriptions.GAMMA = { label: 'GAMMA( <i>shape, scale</i> )', content: 'Draws samples from a Gamma distribution.' };
     $functionsContent.append($('<div class="item" data-name="NORM">NORM</div>'));
+    descriptions.NORM = { label: 'NORM( <i>mean, sd</i> )', content: 'Draws samples from a normal (Gaussian) distribution.' };
     $functionsContent.append($('<div class="item" data-name="UNIF">UNIF</div>'));
+    descriptions.UNIF = { label: 'UNIF( <i>low, high</i> )', content: 'Draws samples from a uniform distribution.' };
 
     return descriptions;
 }
