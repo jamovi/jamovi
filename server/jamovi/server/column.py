@@ -28,6 +28,7 @@ class Column:
         self._description = ''
         self._hidden = False
         self._child_of = -1
+        self._filter_no = -1
         self._trim_levels = True
 
         self._node = None
@@ -141,6 +142,14 @@ class Column:
     @child_of.setter
     def child_of(self, child_of):
         self._child_of = child_of
+
+    @property
+    def filter_no(self):
+        return self._filter_no
+
+    @filter_no.setter
+    def filter_no(self, filter_no):
+        self._filter_no = filter_no
 
     @property
     def trim_levels(self):
@@ -478,7 +487,6 @@ class Column:
 
     def parse_formula(self):
         try:
-
             dataset = self._parent
 
             if self._formula_status is FormulaStatus.OK:
@@ -491,8 +499,7 @@ class Column:
             if self.column_type is ColumnType.FILTER:
                 if node is None:
                     node = ast.Num(1)
-
-                if not self.is_child:
+                else:
                     node = ast.Call(
                         func=ast.Name(id='IFMISS', ctx=ast.Load()),
                         args=[
@@ -500,18 +507,33 @@ class Column:
                             ast.Num(0),
                             node ],
                         keywords=[ ] )
-                else:
-                    parent = dataset.get_column_by_id(self.child_of)
-                    parent_node = ast.Name(id=parent.name, ctx=ast.Load())
+
+                if self.filter_no > 0:
+                    parent_filter_no = self.filter_no - 1
+                    parent_filter_start = None
+                    parent_filter_end = self.index
+                    for i in range(0, self.index):
+                        filter_no = self._parent[i].filter_no
+                        if filter_no < parent_filter_no:
+                            pass
+                        elif filter_no == parent_filter_no:
+                            if parent_filter_start is None:
+                                parent_filter_start = i
+                            parent_filter_end = i + 1
+                        else:
+                            break
+
+                    parents = list(map(lambda i: self._parent[i], range(parent_filter_start, parent_filter_end)))
+                    ops     = list(map(lambda i: ast.Eq(),        range(parent_filter_start, parent_filter_end)))
                     node = ast.Call(
                         func=ast.Name(id='IF', ctx=ast.Load()),
                         args=[
                             ast.Compare(
-                                left=parent_node,
-                                ops=[ ast.NotEq() ],
-                                comparators=[ ast.Num(1) ]),
-                            ast.Num(-2147483648),
-                            node ],
+                                left=ast.Num(1),
+                                ops=ops,
+                                comparators=parents),
+                            node,
+                            ast.Num(-2147483648) ],
                         keywords=[ ] )
 
             if node is None:

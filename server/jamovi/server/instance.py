@@ -672,6 +672,8 @@ class Instance:
     def _on_dataset_ins_cols(self, request, response):
 
         filter_inserted = False
+        to_calc = set()
+
         for i in range(request.columnStart, request.columnEnd + 1):
             self._data.insert_column(i)
             column = self._data[i]
@@ -702,14 +704,20 @@ class Instance:
 
                 if column.column_type is ColumnType.FILTER:
                     filter_inserted = True
+                    to_calc.add(column)
 
-                if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.FILTER:
-                    column.parse_formula()
-                    column.needs_recalc = True
-                    column.recalc()
+                if column.column_type is ColumnType.COMPUTED:
+                    to_calc.add(column)
 
         if filter_inserted:
             self._data.update_filter_names()
+
+        for column in to_calc:
+            column.parse_formula()
+            column.needs_recalc = True
+
+        for column in to_calc:
+            column.recalc()
 
         self._populate_schema_info(request, response)
 

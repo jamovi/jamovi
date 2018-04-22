@@ -1841,7 +1841,7 @@ const TableView = SilkyView.extend({
             type = '';
         }
         else if (isFC) {
-            if (content === '1')
+            if (content === 1 || content === '1' || content === 'true')
                 content = '<div class="true"></div>';
             else
                 content = '<div class="false"></div>';
