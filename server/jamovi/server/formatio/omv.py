@@ -52,6 +52,12 @@ def write(data, path, html=None):
             field['hidden'] = column.hidden
             field['active'] = column.active
             field['childOf'] = column.child_of
+
+            if column.is_filter:
+                field['filterNo'] = column.filter_no
+            else:
+                field['trimLevels'] = column.trim_levels
+
             fields.append(field)
 
         metadata = { }
@@ -192,6 +198,11 @@ def read(data, path):
             column.hidden = meta_column.get('hidden', False)
             column.active = meta_column.get('active', True)
             column.child_of = meta_column.get('childOf', -1)
+
+            if column.is_filter:
+                column.filter_no = meta_column.get('filterNo', 0)
+            else:
+                column.trim_levels = meta_column.get('trimLevels', True)
 
         row_count = meta_dataset['rowCount']
 
