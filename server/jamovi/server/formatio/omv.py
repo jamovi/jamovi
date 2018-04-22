@@ -42,7 +42,6 @@ def write(data, path, html=None):
             field['measureType'] = MeasureType.stringify(column.measure_type)
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
-            field['id'] = column.id
             if column.measure_type == MeasureType.CONTINUOUS:
                 field['type'] = 'number'
             else:
@@ -51,7 +50,6 @@ def write(data, path, html=None):
             field['description'] = column.description
             field['hidden'] = column.hidden
             field['active'] = column.active
-            field['childOf'] = column.child_of
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
@@ -185,7 +183,7 @@ def read(data, path):
             name = meta_column['name']
             import_name = meta_column.get('importName', name)
 
-            data.append_column(name, import_name, meta_column.get('id', -1))
+            data.append_column(name, import_name)
             column = data[data.column_count - 1]
 
             column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
@@ -197,7 +195,6 @@ def read(data, path):
             column.description = meta_column.get('description', '')
             column.hidden = meta_column.get('hidden', False)
             column.active = meta_column.get('active', True)
-            column.child_of = meta_column.get('childOf', -1)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)

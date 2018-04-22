@@ -112,30 +112,24 @@ class InstanceModel:
     def update_filter_names(self):
         filter_index = 0
         subfilter_index = 1
-        filter_no = -1
+        filters = []
+
         for column in self._columns:
             if column.column_type is not ColumnType.FILTER:
                 break
-            if not column.is_child:
+            if column.filter_no in filters:
+                column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
+                column.filter_no = filter_index - 1
+                subfilter_index += 1
+            else:
                 column.name = 'Filter {}'.format(filter_index + 1)
+                if column.filter_no > -1:
+                    filters.append(column.filter_no)
+                column.filter_no = filter_index
                 filter_index += 1
                 subfilter_index = 1
-                filter_no += 1
-            else:
-                column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
-                subfilter_index += 1
-            column.filter_no = filter_no
 
     def delete_columns(self, start, end):
-        for i in range(start, end + 1):
-            parent_column = self._columns[i]
-            for c in range(0, len(self._columns)):
-                if c >= start and c <= end:
-                    continue
-                column = self._columns[c]
-                if column.child_of == parent_column.id:
-                    column.child_of = parent_column.child_of
-
         self._dataset.delete_columns(start, end)
         del self._columns[start:end + 1]
 

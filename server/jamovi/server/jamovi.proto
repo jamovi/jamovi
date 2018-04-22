@@ -397,7 +397,7 @@ message DataSetSchema {
         string description = 14;
         bool hidden = 15;
         bool active = 16;
-        int32 childOf = 17;
+        int32 filterNo = 17;
         bool trimLevels = 18;
     }
     repeated ColumnSchema columns = 1;

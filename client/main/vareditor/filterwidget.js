@@ -113,10 +113,24 @@ const FilterWidget = Backbone.View.extend({
             this.model.setColumnForEdit(column.id);
         });
     },
+    _isColumnRoot(column) {
+        let columns = this.model.dataset.attributes.columns;
+        for (let i = 0; i < columns.length; i++) {
+            if (column.columnType !== 'filter')
+                break;
+
+            if (columns[i].id === column.id)
+                return true;
+            else if (columns[i].filterNo === column.filterNo)
+                break;
+        }
+
+        return false;
+    },
     _columnsActiveChanged(event) {
         for (let c = event.start; c <= event.end; c++) {
             let column = this.model.dataset.getColumn(c);
-            if (column.columnType === 'filter' && column.childOf === -1) {
+            if (column.columnType === 'filter' && this._isColumnRoot(column)) {
                 let $filter = this.$filterList.find('.jmv-filter-options[data-columnid=' + column.id + ']:not(.remove)');
 
                 this._setActive($filter, event.value);
@@ -170,7 +184,7 @@ const FilterWidget = Backbone.View.extend({
             if (column.columnType !== 'filter')
                 break;
 
-            if (column.childOf === -1)
+            if (this._isColumnRoot(column))
                 this._createFilter(column, index++);
         }
     },
@@ -237,14 +251,14 @@ const FilterWidget = Backbone.View.extend({
             let column = this.model.dataset.getColumn(c);
             if (column.columnType === 'filter') {
                 let columns = this.model.dataset.attributes.columns;
-                if (column.childOf === -1) {
+                if (this._isColumnRoot(column)) {
                     let index = 0;
                     for (let i = 0; i < columns.length; i++) {
                         let existingColumn = columns[i];
                         if (i >= c)
                             break;
                         if (existingColumn.columnType === 'filter') {
-                            if (existingColumn.childOf === -1)
+                            if (this._isColumnRoot(existingColumn))
                                 index += 1;
                         }
                         else
@@ -255,7 +269,6 @@ const FilterWidget = Backbone.View.extend({
                 else {
                     let rootInfo = this.rootOf(column.id);
                     let rColumn = rootInfo.column;
-                    let pColumn = this.model.dataset.getColumnById(column.childOf);
                     let $filter = this.$filterList.find('.jmv-filter-options[data-columnid=' + rColumn.id + ']:not(.remove)');
                     let $formulaList = $filter.find('.formula-list');
                     this._createFormulaBox(rColumn, column, column.index - rColumn.index, $filter, $formulaList);
@@ -280,7 +293,7 @@ const FilterWidget = Backbone.View.extend({
             let $formulaBox = this.$filterList.find('.formula-box[data-columnid=' + column.id + ']:not(.remove)');
             this._setFormula($formulaBox, column.formula, column.formulaMessage);
 
-            if (column.childOf === -1) {
+            if (this._isColumnRoot(column)) {
                 let $filter = this.$filterList.find('.jmv-filter-options[data-columnid=' + column.id + ']:not(.remove)');
 
                 let $label = $filter.find('.label');
@@ -622,9 +635,9 @@ const FilterWidget = Backbone.View.extend({
             let relatedColumns = this.columnsOf(id);
             let parentInfo = relatedColumns[relatedColumns.length - 1];
             let index = parentInfo.index + 1;
-            let childOf = parentInfo.column.id;
+            let filterNo = parentInfo.column.filterNo;
             this._internalCreate = true;
-            dataset.insertColumn(index, { columnType: 'filter', childOf: childOf, hidden: dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
+            dataset.insertColumn(index, { columnType: 'filter', filterNo: filterNo, hidden: dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
                 let column = dataset.getColumn(index);
                 this.model.setColumnForEdit(column.id);
             });
@@ -730,27 +743,18 @@ const FilterWidget = Backbone.View.extend({
     columnsOf(id) {
         let dataset = this.model.dataset;
         let children = [];
+        let column = dataset.getColumnById(id);
         let columns = dataset.get("columns");
         for (let i = 0; i < columns.length; i++) {
             let col = columns[i];
-            if (col.columnType === 'filter') {
-                let parent = col.id === id || col.childOf === id;
-                if (parent) {
-                    if (col.id === id)
-                        children.unshift({ column: col, index: i });
-                    else
-                        children.push({ column: col, index: i });
-                }
-            }
+            if (col.columnType !== 'filter')
+                break;
+
+            if (column.filterNo === col.filterNo)
+                children.push({ column: col, index: i });
         }
 
-        if (children.length <= 1)
-            return children;
-
-        let cc = [ children[0] ];
-        for (let i = 1; i < children.length; i++)
-            cc = cc.concat(this.columnsOf(children[i].column.id));
-        return cc;
+        return children;
     },
     rootOf(id) {
         let dataset = this.model.dataset;
@@ -759,16 +763,11 @@ const FilterWidget = Backbone.View.extend({
         let columns = dataset.get("columns");
         for (let i = 0; i < columns.length; i++) {
             let col = columns[i];
-            if (col.columnType === 'filter') {
-                if (col.id === column.childOf) {
-                    if (col.childOf === -1)
-                        return { column: col, index: i };
-                    else {
-                        column = col;
-                        i = -1;
-                    }
-                }
-            }
+            if (col.columnType !== 'filter')
+                break;
+
+            if (col.filterNo === column.filterNo)
+                return { column: col, index: i };
         }
     },
     _cleanUp() {

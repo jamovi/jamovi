@@ -251,8 +251,8 @@ const DataSetModel = Backbone.Model.extend({
         if (params === null)
             params = { };
 
-        if (params.childOf === undefined)
-            params.childOf = -1;
+        if (params.filterNo === undefined)
+            params.filterNo = -1;
 
         if (params.active === undefined)
             params.active = true;
@@ -565,10 +565,10 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columnPB.active = column.active;
 
-            if ('childOf' in values)
-                columnPB.childOf = values.childOf;
+            if ('filterNo' in values)
+                columnPB.filterNo = values.filterNo;
             else
-                columnPB.childOf = column.childOf;
+                columnPB.filterNo = column.filterNo;
 
             if ('trimLevels' in values)
                 columnPB.trimLevels = values.trimLevels;
@@ -853,7 +853,7 @@ const DataSetModel = Backbone.Model.extend({
         column.description = columnPB.description;
         column.hidden = columnPB.hidden;
         column.active = columnPB.active;
-        column.childOf = columnPB.childOf;
+        column.filterNo = columnPB.filterNo;
         column.importName = columnPB.importName;
         column.trimLevels = columnPB.trimLevels;
 
