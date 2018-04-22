@@ -229,21 +229,42 @@ const FilterWidget = Backbone.View.extend({
             }
         };
 
+        let removedCount = 0;
         for (let c = event.start; c <= event.end; c++) {
 
-            let details = this._getFilterDetails($filters, c);
+            let details = this._getFilterDetails($filters, c - removedCount);
             if (details === null)
                 break;
 
             removed = true;
 
             if (details.isBase) {
-                removeBase(details);
-                c += details.fcount - 1;
+                removeSub(details);
+                let $formulaBoxes = details.$filter.find('.formula-box:not(.remove)');
+                if ($formulaBoxes.length === 0)
+                    removeBase(details);
+                else {
+                    details.$filter.attr('data-columnid', $($formulaBoxes[0]).attr('data-columnid'));
+                    this._convertRemoveBoxToAddBox($($formulaBoxes[0]));
+                }
             }
             else
                 removeSub(details);
+
+            removedCount += 1;
         }
+    },
+    _convertRemoveBoxToAddBox($element) {
+        let columnId =  parseInt($element.attr('data-columnid'));
+        $element.find('.equal').text('=');
+        $element.find('.formula').removeClass('and-formula');
+        let $removeButton = $element.find('.remove-nested');
+        $removeButton.off('click.removenested');
+        this.addNestedEvents($removeButton, columnId);
+        $removeButton.removeClass('remove-nested');
+        $removeButton.addClass('add-nested');
+        $removeButton.attr('title', 'Add another nested filter');
+        $removeButton.find('span').removeClass('mif-cross').addClass('mif-plus');
     },
     _columnsInserted(event) {
 
@@ -398,7 +419,6 @@ const FilterWidget = Backbone.View.extend({
         else
             $formulaBox.insertBefore($($list[rIndex]));
 
-
         if (rIndex > 0) {
             $('<div class="equal">and</div>').appendTo($formulaBox);
             let $removeNested = $('<div class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></div>').appendTo($formulaBox);
@@ -407,7 +427,7 @@ const FilterWidget = Backbone.View.extend({
         else {
             $('<div class="equal">=</div>').appendTo($formulaBox);
             let $addNested = $('<div class="add-nested" title="Add another nested filter"><span class="mif-plus"></span></div>').appendTo($formulaBox);
-            this.addNestedEvents($addNested, rootColumn.id, $formulaBox);
+            this.addNestedEvents($addNested, rootColumn.id);
         }
 
         let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
@@ -509,8 +529,9 @@ const FilterWidget = Backbone.View.extend({
             if (this._removingFilter)
                 return;
 
+            let columnId = parseInt($filter.attr('data-columnid'));
             this._removingFilter = true;
-            this._removeFilter(column.id).then(() => {
+            this._removeFilter(columnId).then(() => {
                 this._removingFilter = false;
             });
         });
@@ -519,7 +540,9 @@ const FilterWidget = Backbone.View.extend({
             if ($filter.hasClass('remove'))
                 return;
 
-            this.model.dataset.set('editingVar', column.index);
+            let columnId = parseInt($filter.attr('data-columnid'));
+            let fColumn = this.model.dataset.getColumnById(columnId);
+            this.model.dataset.set('editingVar', fColumn.index);
         });
 
         let relatedColumns = this.columnsOf(column.id);
@@ -533,8 +556,10 @@ const FilterWidget = Backbone.View.extend({
 
         let activeChanged = (event) => {
 
-            let active = column.active;
-            let related = this.columnsOf(column.id);
+            let columnId = parseInt($filter.attr('data-columnid'));
+            let fColumn = this.model.dataset.getColumnById(columnId);
+            let active = fColumn.active;
+            let related = this.columnsOf(fColumn.id);
             let pairs = [];
             for (let colInfo of related)
                 pairs.push({id: colInfo.column.id, values: { active: !active } });
@@ -631,7 +656,7 @@ const FilterWidget = Backbone.View.extend({
         });
     },
     addNestedEvents($element, id) {
-        $element.on('click', (event) => {
+        $element.on('click.addnested', (event) => {
             let dataset = this.model.dataset;
             let relatedColumns = this.columnsOf(id);
             let parentInfo = relatedColumns[relatedColumns.length - 1];
@@ -647,7 +672,7 @@ const FilterWidget = Backbone.View.extend({
         });
     },
     removeNestedEvents($element, id) {
-        $element.on('click', (event) => {
+        $element.on('click.removenested', (event) => {
 
             if (this._removingFilter)
                 return;
@@ -804,7 +829,7 @@ const FilterWidget = Backbone.View.extend({
         for (let i = 0; i < $filters.length; i++) {
             let $filter = $($filters[i]);
 
-            let columnId = parseInt($filter.data('columnid'));
+            let columnId = parseInt($filter.attr('data-columnid'));
             $filter.removeClass('selected');
 
             let relatedColumns = this.columnsOf(columnId);
