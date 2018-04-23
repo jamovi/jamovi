@@ -6,6 +6,7 @@ from enum import Enum
 from .parser import Parser
 from .transmogrifier import Transmogrifier
 from .transfilterifier import Transfilterifier
+from .transfudgifier import Transfudgifier
 from .checker import Checker
 
 
