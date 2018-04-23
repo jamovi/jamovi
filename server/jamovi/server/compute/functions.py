@@ -167,13 +167,15 @@ def BOXCOX(index, x: float, lmbda: float=VBOXCOXLAMBDA):
 
 
 @row_wise
-def Z(index, x: float, mean: float=VMEAN, sd: float=VSTDEV):
-    return (x - mean) / sd
+def Z(index, x: float):
+    # see the transfudgifier
+    return x
 
 
 @row_wise
-def SCALE(index, x: float, mean: float=VMEAN, sd: float=VSTDEV):
-    return (x - mean) / sd
+def SCALE(index, x: float):
+    # see the transfudgifier
+    return x
 
 
 @row_wise

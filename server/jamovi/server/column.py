@@ -9,6 +9,7 @@ from .compute import Parser
 from .compute import FormulaStatus
 from .compute import Transmogrifier
 from .compute import Transfilterifier
+from .compute import Transfudgifier
 from .compute import Checker
 
 from .utils import FValues
@@ -485,6 +486,9 @@ class Column:
 
             node = Parser.parse(self.formula)
             self._child.formula_message = ''
+
+            if node is not None:
+                node = Transfudgifier().visit(node)
 
             if self.column_type is ColumnType.FILTER:
                 if node is None:
