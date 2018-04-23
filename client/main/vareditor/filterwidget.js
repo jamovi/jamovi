@@ -192,7 +192,6 @@ const FilterWidget = Backbone.View.extend({
     _columnsDeleted(event) {
         let dataset = this.model.dataset;
         let removed = false;
-        let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
         let removeBase = (details) => {
             if (this.attached) {
@@ -232,7 +231,7 @@ const FilterWidget = Backbone.View.extend({
 
         let removedCount = 0;
         for (let c = event.start; c <= event.end; c++) {
-
+            let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
             let details = this._getFilterDetails($filters, c - removedCount);
             if (details === null)
                 break;
