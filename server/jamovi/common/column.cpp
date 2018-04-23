@@ -62,6 +62,11 @@ bool Column::active() const
     return struc()->active;
 }
 
+bool Column::trimLevels() const
+{
+    return struc()->trimLevels;
+}
+
 const char *Column::formula() const
 {
     if (struc()->formula == NULL)
@@ -96,6 +101,28 @@ const vector<LevelData> Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
+        LevelData v;
+        v.value = l.value;
+        v.label = _mm->resolve(l.label);
+        v.importValue = _mm->resolve(l.importValue);
+        m.push_back(v);
+    }
+
+    return m;
+}
+
+const vector<LevelData> Column::levelsExFiltered() const
+{
+    vector<LevelData> m;
+
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &l = levels[i];
+        if (l.countExFiltered == 0)
+            continue;
         LevelData v;
         v.value = l.value;
         v.label = _mm->resolve(l.label);

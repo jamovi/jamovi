@@ -73,6 +73,30 @@ void ColumnW::setActive(bool active)
     s->changes++;
 }
 
+ void ColumnW::setTrimLevels(bool trim)
+ {
+     ColumnStruct *s = struc();
+     if (s->trimLevels == trim)
+        return;
+
+     if (trim)
+     {
+         Level *levels = _mm->resolve(s->levels);
+         for (int i = 0; i < s->levelsUsed; i++)
+         {
+             Level &level = levels[i];
+             if (level.count == 0)
+             {
+                 removeLevel(level.value);
+                 i--;
+             }
+         }
+     }
+
+     s->trimLevels = trim;
+     s->changes++;
+ }
+
 void ColumnW::setFormula(const char *value)
 {
     ColumnStruct *s = struc();
@@ -198,29 +222,37 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     l.importCapacity = importAllocated;
     l.importValue = importChars;
     l.count = 0;
+    l.countExFiltered = 0;
 
     s->levelsUsed++;
     s->changes++;
 }
 
 void ColumnW::updateLevelCounts() {
+
     if (measureType() != MeasureType::CONTINUOUS)
     {
         ColumnStruct *s = struc();
         Level *levels = _mm->resolve(s->levels);
         int levelCount = s->levelsUsed;
 
-        for (int i = 0; i < levelCount; i++) {
+        for (int i = 0; i < levelCount; i++)
+        {
             Level &level = levels[i];
             level.count = 0;
+            level.countExFiltered = 0;
         }
 
-        for (int i = 0; i < rowCount(); i++) {
+        for (int i = 0; i < rowCount(); i++)
+        {
             int &v = this->cellAt<int>(i);
+            if (v == INT_MIN)
+                continue;
             Level *level = rawLevel(v);
-            if (level != NULL) {
-                level->count++;
-            }
+            assert(level != NULL);
+            level->count++;
+            if ( ! this->_parent->isRowFiltered(i))
+                level->countExFiltered++;
         }
     }
 }
@@ -259,6 +291,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
         level.label = baseLabel;
         level.importValue = baseImportValue;
         level.count = 0;
+        level.countExFiltered = 0;
     }
     else
     {
@@ -285,6 +318,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
                 nextLevel.label = baseLabel;
                 nextLevel.importValue = baseImportValue;
                 nextLevel.count = 0;
+                nextLevel.countExFiltered = 0;
                 inserted = true;
                 break;
             }
@@ -297,6 +331,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
             level.label = baseLabel;
             level.importValue = baseImportValue;
             level.count = 0;
+            level.countExFiltered = 0;
         }
     }
 

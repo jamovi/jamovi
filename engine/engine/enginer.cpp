@@ -5,15 +5,16 @@
 #include "enginer.h"
 
 #include <sstream>
+#include <algorithm>
+#include <exception>
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <algorithm>
 
 #include <boost/nowide/cstdlib.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/convert.hpp>
-#include <exception>
 
 #include "dirs.h"
 #include "memorymap.h"
@@ -316,10 +317,14 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             // populate levels
 
-            vector<LevelData > m = column.levels();
+            vector<LevelData> m;
+            if (column.trimLevels())
+                m = column.levelsExFiltered();
+            else
+                m = column.levels();
 
-            Rcpp::CharacterVector levels(m.size());
-            Rcpp::IntegerVector values(m.size());
+            Rcpp::CharacterVector levels = Rcpp::CharacterVector(m.size());
+            Rcpp::IntegerVector values = Rcpp::IntegerVector(m.size());
 
             map<int, int> indexes;
             int j = 0;

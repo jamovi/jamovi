@@ -39,6 +39,7 @@ typedef struct
     int capacity;
     int importCapacity;
     int count;
+    int countExFiltered;
     char *label;
     char *importValue;
 
@@ -70,6 +71,7 @@ typedef struct
     int formulaMessageCapacity;
 
     char dps;
+    int trimLevels;
 
     char changes;
 
@@ -125,6 +127,7 @@ public:
     bool autoMeasure() const;
     int levelCount() const;
     const std::vector<LevelData> levels() const;
+    const std::vector<LevelData> levelsExFiltered() const;
     const char *getLabel(int value) const;
     const char *getImportValue(int value) const;
     int valueForLabel(const char *label) const;
@@ -132,6 +135,7 @@ public:
     bool hasLevel(int value) const;
     const char *formula() const;
     const char *formulaMessage() const;
+    bool trimLevels() const;
 
     template<typename T> T value(int rowIndex)
     {

@@ -38,6 +38,7 @@ public:
     void setFormula(const char *value);
     void setFormulaMessage(const char *value);
     void setActive(bool active);
+    void setTrimLevels(bool trim);
 
     int changes() const;
 
@@ -60,8 +61,11 @@ public:
                     Level *level = rawLevel(oldValue);
                     assert(level != NULL);
                     level->count--;
-                    if (level->count == 0)
+
+                    if (level->count == 0 && trimLevels())
                         removeLevel(oldValue);
+                    if ( ! this->_parent->isRowFiltered(rowIndex))
+                        level->countExFiltered--;
                 }
             }
 
@@ -79,6 +83,8 @@ public:
                 }
                 assert(level != NULL);
                 level->count++;
+                if ( ! this->_parent->isRowFiltered(rowIndex))
+                    level->countExFiltered++;
             }
         }
 

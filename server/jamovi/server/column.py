@@ -141,11 +141,15 @@ class Column:
 
     @property
     def trim_levels(self):
-        return self._trim_levels
+        if self._child is not None:
+            return self._child.trim_levels
+        return True
 
     @trim_levels.setter
     def trim_levels(self, trim_levels):
-        self._trim_levels = trim_levels
+        if self._child is None:
+            self._create_child()
+        self._child.trim_levels = trim_levels
 
     @property
     def index(self):
@@ -367,7 +371,8 @@ class Column:
             dps=dps,
             auto_measure=auto_measure,
             formula=formula,
-            active=active)
+            active=active,
+            trim_levels=trim_levels)
 
         if formula_change:
             self.parse_formula()
@@ -383,9 +388,6 @@ class Column:
 
         if filter_no is not None:
             self._filter_no = filter_no
-
-        if trim_levels is not None:
-            self._trim_levels = trim_levels
 
     @property
     def has_deps(self):

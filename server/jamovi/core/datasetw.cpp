@@ -171,6 +171,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 
     column->dps = 0;
     column->active = true;
+    column->trimLevels = true;
     column->changes = 0;
 
     column->formula = NULL;
@@ -271,11 +272,6 @@ void DataSetW::deleteRows(int delStart, int delEnd)
                 column.setValue<double>(to, value);
             }
 
-            for (int j = finalCount; j < startCount; j++)
-            {
-                column.setValue<double>(j, NAN);
-            }
-
             column.setRowCount<double>(finalCount);
         }
         else
@@ -289,12 +285,8 @@ void DataSetW::deleteRows(int delStart, int delEnd)
                 column.setValue<int>(to, value);
             }
 
-            for (int j = finalCount; j < startCount; j++)
-            {
-                column.setValue<int>(j, INT_MIN);
-            }
-
             column.setRowCount<int>(finalCount);
+            column.updateLevelCounts();
         }
     }
 
