@@ -87,19 +87,25 @@ function allFunctions($functionsContent) {
 
     $functionsContent.append($('<div class="subtitle" data-name="">Logical</div>'));
     $functionsContent.append($('<div class="item" data-name="IF">IF</div>'));
-    $functionsContent.append($('<div class="item" data-name="IFELSE">IFELSE</div>'));
+    descriptions.IF = { label: 'IF( <i>expression, value, else</i> )', content: 'If the expression resolves true, use the value, otherwise the else.' };
     $functionsContent.append($('<div class="item" data-name="IFMISS">IFMISS</div>'));
+    descriptions.IFMISS = { label: 'IFMISS( <i>variable, value, else</i> )', content: 'When the variable contains a missing value, use the value, otherwise the else.' };
     $functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
+    descriptions.NOT = { label: 'NOT( <i>value</i> )', content: 'Inverts the value.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Misc</div>'));
     $functionsContent.append($('<div class="item" data-name="FILTER">FILTER</div>'));
     descriptions.FILTER = { label: 'FILTER( <i>variable, filter expression</i> )', content: 'Filters a variable using the filter expression.' };
     $functionsContent.append($('<div class="item" data-name="INT">INT</div>'));
+    descriptions.INT = { label: 'INT( <i>number</i> )', content: 'Converts a number to an integer.' };
     $functionsContent.append($('<div class="item" data-name="OFFSET">OFFSET</div>'));
+    descriptions.OFFSET = { label: 'OFFSET( <i>variable, integer</i> )', content: 'Offsets the values up or down.' };
     $functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
     descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: 'Returns the row numbers.' };
     $functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
+    descriptions.TEXT = { label: 'TEXT( <i>number</i> )', content: 'Converts the value to text.' };
     $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
+    descriptions.VALUE = { label: 'VALUE( <i>text</i> )', content: 'Converts text to a number (if possible).' };
     $functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
     descriptions.VROWS = { label: 'VROWS( <i>variable</i> )', content: 'Returns the number of rows of a variable.' };
 
