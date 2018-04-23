@@ -52,7 +52,7 @@ const DataSetModel = Backbone.Model.extend({
         instanceId : null,
         editingVar : null,
         varEdited : false,
-        filtersVisible: false,
+        filtersVisible: true,
         edited : false,
         formula : '',
         formulaMessage : '',
@@ -90,7 +90,8 @@ const DataSetModel = Backbone.Model.extend({
 
             if (columns.length > 0) {
                 let firstColumn = columns[0];
-                this.attributes.filtersVisible = firstColumn.columnType === 'filter' && firstColumn.hidden === false;
+                if (firstColumn.columnType === 'filter')
+                    this.attributes.filtersVisible = firstColumn.hidden === false;
             }
 
 

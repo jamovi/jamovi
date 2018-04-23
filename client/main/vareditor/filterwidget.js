@@ -62,7 +62,9 @@ const FilterWidget = Backbone.View.extend({
         this.model.dataset.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
         this.model.dataset.on('columnsChanged', event => this._columnsChanged(event));
 
-        this.$showFilter = $('<div class="filter-button filter-button-tooltip show-filter-columns" title="Show filter columns" data-tippy-placement="left" data-tippy-dynamictitle="true"></div>').appendTo(this.$filterListButtons);
+        let filtersVisible = this.model.dataset.get('filtersVisible');
+
+        this.$showFilter = $('<div class="filter-button filter-button-tooltip ' + (filtersVisible ? 'show-filter-columns' : 'hide-filter-columns') + '" title="Show filter columns" data-tippy-placement="left" data-tippy-dynamictitle="true"></div>').appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
             this.$showFilter[0]._tippy.hide();
             this.$showFilter[0]._tippy.disable();
@@ -71,7 +73,6 @@ const FilterWidget = Backbone.View.extend({
             dataset.toggleFilterVisibility().then(() => {
                 this._updateEyeButton();
             });
-
         });
         this.$showFilter.on('mouseout', event => {
             this.$showFilter[0]._tippy.enable();
@@ -438,6 +439,8 @@ const FilterWidget = Backbone.View.extend({
                 $formula.focus();
                 $showEditor.addClass('is-active');
             }
+            event.stopPropagation();
+            event.preventDefault();
         });
 
         $showEditor.on('mousedown', (event) => {
