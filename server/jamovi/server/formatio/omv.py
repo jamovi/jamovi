@@ -48,11 +48,11 @@ def write(data, path, html=None):
                 field['type'] = 'integer'
             field['importName'] = column.import_name
             field['description'] = column.description
-            field['hidden'] = column.hidden
-            field['active'] = column.active
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
+                field['hidden'] = column.hidden
+                field['active'] = column.active
             else:
                 field['trimLevels'] = column.trim_levels
 
@@ -193,11 +193,11 @@ def read(data, path):
             column.formula = meta_column.get('formula', '')
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
-            column.hidden = meta_column.get('hidden', False)
-            column.active = meta_column.get('active', True)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)
+                column.active = meta_column.get('active', True)
+                column.hidden = meta_column.get('hidden', False)
             else:
                 column.trim_levels = meta_column.get('trimLevels', True)
 

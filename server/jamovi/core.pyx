@@ -144,6 +144,12 @@ cdef class DataSet:
         def __set__(self, blank):
             self._this.setBlank(blank)
 
+    def update_filter_status(self):
+        for column in self:
+            if column.column_type is not ColumnType.FILTER:
+                if column.measure_type is not MeasureType.CONTINUOUS:
+                    column._update_level_counts()
+
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
         const char *name() const
@@ -183,6 +189,8 @@ cdef extern from "columnw.h":
         void setFormulaMessage(const char *value);
         void setActive(bool active);
         bool active() const;
+        void setTrimLevels(bool trim);
+        bool trimLevels() const;
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
@@ -279,6 +287,13 @@ cdef class Column:
 
         def __set__(self, dps):
             self._this.setDPs(dps)
+
+    property trim_levels:
+        def __get__(self):
+            return self._this.trimLevels()
+
+        def __set__(self, trim):
+            self._this.setTrimLevels(trim)
 
     def determine_dps(self):
         if self.measure_type == MeasureType.CONTINUOUS:
@@ -448,7 +463,8 @@ cdef class Column:
         dps=None,
         auto_measure=None,
         formula=None,
-        active=None):
+        active=None,
+        trim_levels=None):
 
         if name is not None:
             self.name = name
@@ -463,6 +479,9 @@ cdef class Column:
 
         if active is not None:
             self.active = active
+
+        if trim_levels is not None:
+            self.trim_levels = trim_levels
 
         if auto_measure is not None:
             self.auto_measure = auto_measure

@@ -719,6 +719,12 @@ class Instance:
         for column in to_calc:
             column.recalc()
 
+        if filter_inserted:
+            # we could do this, but a newly inserted filter is all 'true'
+            # self._data.update_filter_status()
+            # so i don't think we need to
+            pass
+
         self._populate_schema_info(request, response)
 
         # has to be after the filter names are renamed
@@ -768,6 +774,7 @@ class Instance:
         to_reparse = sorted(to_reparse, key=lambda x: x.index)
 
         if filter_deleted:
+            self._data.update_filter_status()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)
@@ -809,6 +816,7 @@ class Instance:
             old_active = column.active
             old_filter_no = column.filter_no
             old_levels = column.levels
+            old_trim = column.trim_levels
 
             levels = None
             if column_schema.hasLevels:
@@ -848,7 +856,8 @@ class Instance:
                     column.formula == old_formula and
                     column.filter_no == old_filter_no and
                     column.levels == old_levels and
-                    column.active == old_active):
+                    column.active == old_active and
+                    column.trim_levels == old_trim):
                 # if these things haven't changed, no need
                 # to trigger recalcs
                 continue
@@ -863,10 +872,14 @@ class Instance:
 
             dependents = column.dependents
 
+            print('dependents of', column.name)
+            print(list(map(lambda x: x.name, dependents)))
+
             for dep in dependents:
                 # we have to reparse dependent filters in case the formula
                 # has changed to include a 'V' or column function
                 if dep.is_filter:
+                    filter_changed = True
                     reparse.add(dep)
 
             cols_changed.update(dependents)
@@ -900,6 +913,7 @@ class Instance:
         if filter_changed:
             # easiest way to refresh the whole viewport is just to send back
             # the whole data set schema (i.e. all the columns)
+            self._data.update_filter_status()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)
@@ -1067,16 +1081,18 @@ class Instance:
         if row_end >= self._data.row_count:
             self._data.set_row_count(row_end + 1)
 
-        cols_w_schema_change = set()  # schema changes to send
+        cols_changed = set()  # schema changes to send
         recalc = set()  # computed columns that need to update from these changes
 
         for i in range(self._data.column_count, col_start):
             column = self._data[i]
             column.realise()
-            cols_w_schema_change.add(column)
+            cols_changed.add(column)
 
         base_index = 0
         search_index = col_start
+        filter_changed = False
+
         for i in range(col_count):
             column = self._get_column(search_index, base_index, exclude_hidden_cols)
             if column is None:
@@ -1183,40 +1199,43 @@ class Instance:
                 column.determine_dps()
 
             if changes != column.changes or was_virtual:
-                cols_w_schema_change.add(column)
+                cols_changed.add(column)
 
             dependents = column.dependents
             recalc.update(dependents)
-            cols_w_schema_change.update(dependents)
+            cols_changed.update(dependents)
+
+            for dep in dependents:
+                if dep.is_filter:
+                    filter_changed = True
 
         self._data.is_edited = True
 
         for i in range(n_cols_before, self._data.total_column_count):  # cols added
             column = self._data[i]
-            cols_w_schema_change.add(column)
-
-        response.schema.rowCount = self._data.row_count
-        response.schema.vRowCount = self._data.virtual_row_count
-        response.schema.columnCount = self._data.column_count
-        response.schema.vColumnCount = self._data.visible_column_count
-        response.schema.tColumnCount = self._data.total_column_count
+            cols_changed.add(column)
 
         if n_rows_before != self._data.row_count:
             recalc = self._data  # if more rows recalc all
-            cols_w_schema_change = self._data  # send *all* column schemas
+            cols_changed = self._data  # send *all* column schemas
         else:
             # sort ascending (the client doesn't like them out of order)
-            cols_w_schema_change = sorted(cols_w_schema_change, key=lambda x: x.index)
+            cols_changed = sorted(cols_changed, key=lambda x: x.index)
 
         for column in recalc:
             column.needs_recalc = True
         for column in recalc:
             column.recalc()
 
-        for column in cols_w_schema_change:
-            response.incSchema = True
-            column_pb = response.schema.columns.add()
-            self._populate_column_schema(column, column_pb)
+        if filter_changed:
+            self._data.update_filter_status()
+            self._populate_schema(request, response)
+        else:
+            self._populate_schema_info(request, response)
+
+            for column in cols_changed:
+                column_pb = response.schema.columns.add()
+                self._populate_column_schema(column, column_pb)
 
         self._populate_cells(request, response)
 

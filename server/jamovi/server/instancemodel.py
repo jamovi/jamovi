@@ -129,6 +129,9 @@ class InstanceModel:
                 filter_index += 1
                 subfilter_index = 1
 
+    def update_filter_status(self):
+        self._dataset.update_filter_status()
+
     def delete_columns(self, start, end):
         self._dataset.delete_columns(start, end)
         del self._columns[start:end + 1]
