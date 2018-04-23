@@ -27,6 +27,7 @@ class Parser:
 
     @staticmethod
     def escape_chunk(chunk):
+
         if len(chunk) == 0:
             return chunk
         elif chunk == '^':
@@ -37,6 +38,8 @@ class Parser:
             return 'or'
         elif chunk == 'not':
             return 'not'
+        elif chunk == '==':
+            return '=='
         elif len(chunk) == 1 and chunk in Parser._SPECIAL_CHARS:
             return chunk
         elif chunk.startswith('"') and chunk.endswith('"'):
@@ -75,6 +78,10 @@ class Parser:
                 if sc not in Parser._SPECIAL_CHARS:
                     break
                 else:
+                    if sc == '=':
+                        sc = '=='
+                        if s + 1 < n and (str[s + 1] == '='):
+                            s += 1
                     chunks.append(sc)
                     s += 1
 
@@ -93,6 +100,10 @@ class Parser:
                 elif q is '' and ec in Parser._SPECIAL_CHARS:
                     term = ''.join(str[s:e])
                     chunks.append(term)
+                    if ec == '=':
+                        ec = '=='
+                        if e + 1 < n and (str[e + 1] == '='):
+                            e += 1
                     chunks.append(ec)
                     break
                 else:
