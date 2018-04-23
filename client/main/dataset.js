@@ -258,6 +258,9 @@ const DataSetModel = Backbone.Model.extend({
         if (params.active === undefined)
             params.active = true;
 
+        if (params.trimLevels === undefined)
+            params.trimLevels = true;
+
         let columnType = params.columnType;
         if (columnType === undefined)
             throw 'Column type not specified';
