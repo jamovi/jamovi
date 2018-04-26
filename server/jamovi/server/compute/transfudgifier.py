@@ -21,5 +21,5 @@ class Transfudgifier(ast.NodeTransformer):
                     func=ast.Name(id='VSTDEV', ctx=ast.Load()),
                     args=[ copy.deepcopy(node.args[0]) ],
                     keywords=[ ]))
-
-        return node
+        else:
+            return self.generic_visit(node)
