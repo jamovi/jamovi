@@ -1065,11 +1065,6 @@ class Instance:
                     if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
                         raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
 
-            elif column.measure_type == MeasureType.NOMINAL or column.measure_type == MeasureType.ORDINAL:
-                for value in values:
-                    if value is not None and value != '' and not isinstance(value, int):
-                        raise TypeError("Cannot assign non-interger value to column '{}'".format(column.name))
-
         # assign
 
         n_cols_before = self._data.total_column_count
@@ -1180,15 +1175,19 @@ class Instance:
                         if not column.has_level(value) and value != -2147483648:
                             column.insert_level(value, str(value))
                         column[row_start + j] = value
-                    elif isinstance(value, float) and column.auto_measure:
-                        column.change(measure_type=MeasureType.CONTINUOUS)
-                        column[row_start + j] = value
-                    elif isinstance(value, str) and column.auto_measure:
-                        column.change(measure_type=MeasureType.NOMINAL_TEXT)
-                        column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
-                        index = column.level_count
-                        column.insert_level(index, value)
+                    elif isinstance(value, str):
+                        if column.has_level(value):
+                            index = column.get_value_for_label(value)
+                        else:
+                            column.clear_at(row_start + j)
+                            index = 0
+                            for level in column.levels:
+                                index = max(index, level[0])
+                            index += 1
+                            column.insert_level(index, value)
                         column[row_start + j] = index
+                    else:
+                        raise RuntimeError('Should not get here')
 
             if column.auto_measure:
                 self._auto_adjust(column)

@@ -1009,34 +1009,6 @@ const TableView = SilkyView.extend({
                     case 'ordinal':
                         if (Number.isInteger(number))
                             value = number;
-                        else if ( ! this.currentColumn.autoMeasure) {
-                            let found = false;
-
-                            if (typeof value === 'string') {
-                                for (let levelInfo of this.currentColumn.levels) {
-                                    if (value === levelInfo.label) {
-                                        value = levelInfo.value;
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if ( ! found) {
-                                let newLevels = [];
-                                let largestValue = null;
-                                for (let level of this.currentColumn.levels) {
-                                    if (largestValue === null || largestValue < level.value)
-                                        largestValue = level.value;
-                                    newLevels.push(level);
-                                }
-                                newLevels.push({ value: largestValue + 1, label: value, importValue: (largestValue + 1).toString() });
-                                this.currentColumn.levels = newLevels;
-                                return this.model.changeColumn(this.currentColumn.id, this.currentColumn).then(n => {
-                                    return this._applyEdit();
-                                });
-                            }
-                        }
                         else if ( ! Number.isNaN(number))
                             value = number;
                         break;
@@ -1076,7 +1048,11 @@ const TableView = SilkyView.extend({
             this.$selection.blur();
             this.$selection.removeClass('editing');
         }).catch(err => {
-            this._notifyEditProblem(err);
+            this._notifyEditProblem({
+                title: err.message,
+                message: err.cause,
+                type: 'error',
+            });
             this.$selection.select();
             console.log(err);
             throw 'cancelled';

@@ -252,6 +252,9 @@ const DataSetModel = Backbone.Model.extend({
         if (params === null)
             params = { };
 
+        if (params.autoMeasure === undefined)
+            params.autoMeasure = true;
+
         if (params.filterNo === undefined)
             params.filterNo = -1;
 
