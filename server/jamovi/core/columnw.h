@@ -64,7 +64,7 @@ public:
 
                     if (level->count == 0 && trimLevels())
                         removeLevel(oldValue);
-                    if ( ! this->_parent->isRowFiltered(rowIndex))
+                    else if ( ! this->_parent->isRowFiltered(rowIndex))
                         level->countExFiltered--;
                 }
             }
