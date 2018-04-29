@@ -223,7 +223,7 @@ let server;
 let ports = null;
 let updateUrl;
 
-let spawn = new Promise((resolve, reject) => {
+const spawn = new Promise((resolve, reject) => {
 
     server = child_process.spawn(
         config.serverExe,
@@ -286,6 +286,7 @@ let spawn = new Promise((resolve, reject) => {
     server.stderr.setEncoding('utf8');
     server.stdout.on('data', dataListener);
     server.stderr.on('data', dataListener);
+    server.on('close', (code) => reject(`Failed to start (${code})`));
 
 }).then(ports => {
 
