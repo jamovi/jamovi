@@ -67,14 +67,35 @@ const EditorWidget = Backbone.View.extend({
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
 
         this.$footer = $('<div class="jmv-variable-editor-widget-footer"></div>').appendTo(this.$el);
-        let $checkbox = $('<label style="white-space: nowrap;"></label>').appendTo(this.$footer);
-        this.$input = $('<input class="check-box" type="checkbox" value="value" checked >').appendTo($checkbox);
-        $('<span>Retain unused levels</span>').appendTo($checkbox);
-        this.$input.change((event) => {
-            let value = this.$input[0].checked;
-            this.model.set('trimLevels', ! value);
-        });
 
+
+        let $statusBox = $('<div class="status-box"></div>').appendTo(this.$footer);
+        this.$active = $('<div class="active"><div class="switch"></div></div>').appendTo($statusBox);
+        let $status = $('<div class="status">Retain unused levels</div>').appendTo($statusBox);
+
+        if (this.model.get('trimLevels') === false)
+            this.$active.addClass('retain-levels');
+        else
+            this.$active.removeClass('retain-levels');
+
+        let activeChanged = (event) => {
+
+            let value = this.$active.hasClass('retain-levels');
+
+            this.model.set('trimLevels', value);
+            event.stopPropagation();
+            event.preventDefault();
+        };
+
+        this.$active.on('click', activeChanged);
+        $status.on('click', activeChanged);
+
+        this.model.on('change:trimLevels', event => {
+            if (this.model.get('trimLevels') === false)
+                this.$active.addClass('retain-levels');
+            else
+                this.$active.removeClass('retain-levels');
+        });
 
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
         this.dataVarWidget = new DataVarWidget({ el: this.$dataVarWidget, model: this.model });
@@ -166,9 +187,10 @@ const EditorWidget = Backbone.View.extend({
         if (description !== this.$description[0].textContent)
             this.$description[0].textContent = description;
 
-        let trimLevels = this.model.get('trimLevels');
-        if (trimLevels === this.$input[0].checked)
-            this.$input.prop('checked', ! trimLevels);
+        if (this.model.get('trimLevels') === false)
+            this.$active.addClass('retain-levels');
+        else
+            this.$active.removeClass('retain-levels');
 
         let type = this.model.get('columnType');
 
