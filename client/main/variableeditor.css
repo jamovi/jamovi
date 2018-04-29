@@ -232,6 +232,11 @@
 
 .jmv-variable-editor-widget-footer {
     margin-left: 2px;
+    margin-right: 27px;
+}
+
+.jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-footer {
+    margin-right: 0;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-title {
@@ -248,4 +253,58 @@
 
 .jmv-variable-editor-main[data-type='filter'] .label-box .jmv-variable-editor-widget-label {
     margin-left: 3px;
+}
+
+
+
+.jmv-variable-editor-widget-footer > .status-box {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    float: right;
+}
+
+.jmv-variable-editor-widget-footer > .status-box > .status {
+    color: #757575;
+    margin: 2px 0px 2px 3px;
+    padding-right: 3px;
+    height: 18px;
+    line-height: 18px;
+    text-align: right;
+
+}
+
+.jmv-variable-editor-widget-footer .status-box:hover .active {
+    background-color: #bcbcbc;
+}
+
+.jmv-variable-editor-widget-footer .active.retain-levels {
+    background-color: #8cc18c;
+}
+
+.jmv-variable-editor-widget-footer .status-box:hover .active.retain-levels {
+    background-color: #659c65;
+}
+
+.jmv-variable-editor-widget-footer .active.retain-levels .switch {
+    left: 9px;
+}
+
+.jmv-variable-editor-widget-footer .active {
+    width: 25px;
+    height: 14px;
+    background-color: #cccccc;
+    border-radius: 9px;
+    margin: 0px 0px 0px 2px;
+}
+
+.jmv-variable-editor-widget-footer .active .switch {
+    position: relative;
+    width: 12px;
+    height: 10px;
+    left: 0px;
+    background-color: #ffffff;
+    border-radius: inherit;
+    margin: 2px 2px 2px 2px;
+    transition: .1s left ease-out;
 }
