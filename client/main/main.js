@@ -219,7 +219,7 @@ $(document).ready(() => {
                 type: 'question',
                 buttons: [ 'Save', 'Cancel', "Don't Save" ],
                 defaultId: 1,
-                message: "Do you want to save the changes made to '" + instance.attributes.title + "'?",
+                message: "Save changes to '" + instance.attributes.title + "'?",
             });
             if (response === 1) {  // Cancel
                 event.preventDefault();

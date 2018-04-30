@@ -26,6 +26,7 @@ message ComsMessage {
     string payloadType = 4;
     Status status = 5;
     Error error = 6;
+    int32 progress = 7;
 }
 
 message AnalysisRequest {
@@ -227,11 +228,6 @@ message ResultsElement {
 
 
 // CLIENT
-
-message Progress {
-    uint32 progress = 1;
-    uint32 total = 2;
-}
 
 message InstanceRequest {
 }

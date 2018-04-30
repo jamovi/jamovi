@@ -28,9 +28,9 @@ Coms.prototype.connect = function(sessionId) {
 
     if ( ! this.connected) {
 
-        this.connected = Promise.all([
+        this.connected = Q.all([
 
-            new Promise((resolve, reject) => {
+            new Q.promise((resolve, reject) => {
 
                 var protoUrl = this._baseUrl + 'proto/coms.proto';
 
@@ -44,7 +44,7 @@ Coms.prototype.connect = function(sessionId) {
                     }
                 });
             }),
-            new Promise((resolve, reject) => {
+            new Q.promise((resolve, reject) => {
 
                 let url = this._baseUrl + 'coms';
                 url = url.replace('http', 'ws'); // http -> ws, https -> wss
@@ -122,8 +122,10 @@ Coms.prototype.receive = function(event) {
                 trans.resolve(response);
             else if (response.status === this.Messages.Status.ERROR)
                 trans.reject(response.error);
+            else if (response.status === this.Messages.Status.IN_PROGRESS)
+                trans.onprogress(response.progress);
             else
-                trans.onprogress(response);
+                console.log("Shouldn't get here!");
             break;
         }
     }

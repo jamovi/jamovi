@@ -2,6 +2,7 @@
 # Copyright (C) 2016 Jonathon Love
 #
 
+import os
 import csv
 import math
 import re
@@ -80,7 +81,9 @@ def calc_dps(value, max_dp=3):
     return max_dp_required
 
 
-def read(data, path):
+def read(data, path, prog_cb):
+
+    file_size = os.stat(path).st_size
 
     with open(path, mode='rb') as file:
 
@@ -138,6 +141,9 @@ def read(data, path):
 
                 row_count += 1
 
+            if row_count % 1000 == 0:
+                prog_cb(int(33333 * file.tell() / file_size))
+
         for column_writer in column_writers:
             column_writer.ruminate()
 
@@ -156,6 +162,9 @@ def read(data, path):
                 for i in range(column_count):
                     column_writers[i].parse_row(row, row_no)
                 row_no += 1
+
+            if row_no % 1000 == 0:
+                prog_cb(int(33333 + 66666 * file.tell() / file_size))
 
 
 def trim_after_last_newline(text):

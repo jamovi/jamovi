@@ -13,7 +13,12 @@ const Notify = Backbone.Model.extend({
         message : null,
         visible : true,
         type: 'info',
-    }
+        progress: -1,
+        dismissed: false,
+    },
+    dismiss() {
+        this.set('dismissed', true);
+    },
 });
 
 module.exports = Notify;

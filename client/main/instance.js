@@ -105,9 +105,15 @@ const Instance = Backbone.Model.extend({
         if (this.attributes.hasDataSet) {
 
             let instance = new Instance({ coms : coms });
+            let progress = new Notify({
+                title: 'Opening',
+                duration: 0
+            });
+
             promise = instance.connect().then(() => {
                 return instance.open(filePath);
             }).then(() => {
+                progress.dismiss();
                 if (this.attributes.blank && this._dataSetModel.attributes.edited === false) {
                     host.navigate(instance.instanceId());
                 }
@@ -115,9 +121,13 @@ const Instance = Backbone.Model.extend({
                     host.openWindow(instance.instanceId());
                     instance.destroy();
                 }
-            }).catch(error => {
+            }, (error) => {
+                progress.dismiss();
                 this._notify(error);
                 instance.destroy();
+            }, (prog) => {
+                progress.set('progress', prog);
+                this.trigger('notification', progress);
             });
         }
         else {
@@ -140,7 +150,6 @@ const Instance = Backbone.Model.extend({
             };
 
             let onprogress = (progress) => {
-                console.log(progress);
             };
 
             let onreject = (error) => {
@@ -503,7 +512,7 @@ const Instance = Backbone.Model.extend({
         for (let analysis of this._analyses) {
             if (analysis.isReady === false)
                 continue;
-                
+
             let using = analysis.getUsing();
 
             let columnDataChanged = false;

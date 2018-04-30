@@ -65,31 +65,33 @@ def get_writers():
     return _writers
 
 
-def read(data, path, is_example=False):
+def read(data, path, prog_cb, is_example=False):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
     ext = os.path.splitext(path)[1].lower()
 
+    prog_cb(0)
+
     if path == '':
         blank.read(data)
     elif ext == '.omv':
-        omv.read(data, path)
+        omv.read(data, path, prog_cb)
         if not is_example:
             data.path = path
     else:
-        _import(data, path, is_example)
+        _import(data, path, prog_cb, is_example)
 
     fix_column_names(data)
 
     data.setup()
 
 
-def _import(data, path, is_example=False):
+def _import(data, path, prog_cb, is_example=False):
     readers = get_readers()
 
     ext = os.path.splitext(path)[1].lower()[1:]
     if ext in readers:
-        readers[ext][1](data, path)
+        readers[ext][1](data, path, prog_cb)
     else:
         raise RuntimeError('Unrecognised file format')
 

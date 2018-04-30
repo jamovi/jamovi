@@ -829,11 +829,15 @@ var BackstageModel = Backbone.Model.extend({
         });
     },
     requestOpen: function(path) {
+        let deactivated = false;
+        let deactivate = () => {
+            if ( ! deactivated) {
+                this.set('activated', false);
+                deactivated = true;
+            }
+        };
         this.instance.open(path)
-        .then(() => {
-            //this._updateSavePath(path);
-            this.set('activated', false);
-         });
+            .then(deactivate, undefined, deactivate);
     },
     externalRequestSave: function(path, overwrite) {
 

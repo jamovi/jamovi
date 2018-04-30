@@ -5,34 +5,37 @@ const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const SilkyView = require('./view');
 
-const NotificationView = SilkyView.extend({
+const NotificationView = Backbone.View.extend({
     className: "notification",
     events : {
-        'click .silky-notification-button-ok': 'dismiss'
+        'click .jmv-notification-button-ok': 'dismiss'
     },
     initialize: function() {
 
-        this.$el.addClass("silky-notification hidden");
-        this.$el.attr("data-type", this.model.get('type'));
+        this.$el.addClass('jmv-notification hidden');
+        this.$el.attr('data-type', this.model.get('type'));
 
-        this.model.on("change", () => this._update());
+        this.model.on('change', () => this._update());
+        this.model.on('change:dismissed', () => this.dismiss());
         this.handlers = [];
 
-        this.$icon  = $('<div class="silky-notification-icon"></div>').appendTo(this.$el);
-        this.$info = $('<div class="silky-notification-info"></div>').appendTo(this.$el);
+        this.$icon  = $('<div class="jmv-notification-icon"></div>').appendTo(this.$el);
+        this.$info = $('<div class="jmv-notification-info"></div>').appendTo(this.$el);
 
-        this.$title = $('<div class="silky-notification-title"></div>').appendTo(this.$info);
-        this.$body  = $('<div class="silky-notification-body"></div>').appendTo(this.$info);
+        this.$title = $('<div class="jmv-notification-title"></div>').appendTo(this.$info);
+        this.$body  = $('<div class="jmv-notification-body"></div>').appendTo(this.$info);
 
-        this.$content = $('<div class="silky-notification-content"></div>').appendTo(this.$body);
+        this.$content = $('<div class="jmv-notification-content"></div>').appendTo(this.$body);
 
-        this.$message = $('<div class="silky-notification-message"></div>').appendTo(this.$content);
+        this.$progressBar = $('<div class="jmv-notification-progressbar"></div>').appendTo(this.$content);
+        this.$progressBarBar = $('<div class="jmv-notification-progressbarbar"></div>').appendTo(this.$progressBar);
 
-        // this.$buttons = $('<div class="silky-notification-buttons"></div>').appendTo(this.$body);
+        this.$message = $('<div class="jmv-notification-message"></div>').appendTo(this.$content);
+
+        // this.$buttons = $('<div class="jmv-notification-buttons"></div>').appendTo(this.$body);
         //
-        // this.$ok = $('<div class="silky-notification-button-ok">OK</div>').appendTo(this.$buttons);
+        // this.$ok = $('<div class="jmv-notification-button-ok">OK</div>').appendTo(this.$buttons);
 
         this._finished = () => {
             this.trigger('finished');
@@ -53,16 +56,23 @@ const NotificationView = SilkyView.extend({
         this.reshow();
     },
     _update: function() {
-
         this.$el.toggleClass('hidden', this.model.attributes.visible === false);
         this.$message.text(this.model.attributes.message);
         this.$title.text(this.model.attributes.title);
+
+        if (this.model.attributes.progress >= 0) {
+            this.$progressBarBar.css('width', '' + (this.model.attributes.progress / 1000) + '%');
+            this.$progressBar.show();
+        }
+        else {
+            this.$progressBar.hide();
+        }
     }
 });
 
 const Notifications = function($el) {
     this.$el = $el;
-    this.$el.addClass('silky-notifications');
+    this.$el.addClass('jmv-notifications');
     this.list = [ ];
 };
 

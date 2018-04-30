@@ -140,7 +140,7 @@ def write(data, path, html=None):
                 pass
 
 
-def read(data, path):
+def read(data, path, prog_cb):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
 
@@ -176,6 +176,8 @@ def read(data, path):
                 zip.extract(embedded_path, data.instance_path)
                 data.embedded_path = embedded_path
                 data.embedded_name = embedded_name
+
+                prog_cb(10000)
             except Exception as e:
                 pass
 
@@ -228,6 +230,9 @@ def read(data, path):
         except Exception:
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
             columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
+
+        prog_cb(30000)
+
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
             data_path = os.path.join(dir, 'data.bin')
@@ -235,6 +240,9 @@ def read(data, path):
 
             BUFF_SIZE = 65536
             buff = memoryview(bytearray(BUFF_SIZE))
+
+            ncols = data.dataset.column_count
+            col_no = 0
 
             for column in data.dataset:
 
@@ -267,6 +275,9 @@ def read(data, path):
                         for values in struct.iter_unpack(elem_fmt, buff_view):
                             column[row_offset + i] = values[0]
                             i += 1
+
+                prog_cb(30000 + 65000 * (col_no + 1) / ncols)
+                col_no += 1
 
             data_file.close()
 

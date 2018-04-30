@@ -434,10 +434,19 @@ class Instance:
             self._data.dataset = dataset
 
             is_example = path.startswith('{{Examples}}')
-            formatio.read(self._data, norm_path, is_example)
+
+            def prog_cb(p):
+                self._coms.send(None,
+                                self._instance_id,
+                                request,
+                                complete=False,
+                                progress=int(p))
+
+            formatio.read(self._data, norm_path, prog_cb, is_example)
 
             response = jcoms.OpenProgress()
             response.path = virt_path
+
             self._coms.send(response, self._instance_id, request)
 
             if path != '' and not is_example:
