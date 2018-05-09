@@ -558,8 +558,6 @@ const Instance = Backbone.Model.extend({
     },
     _stringifyMeasureType(measureType) {
         switch (measureType) {
-            case 1:
-                return 'nominaltext';
             case 2:
                 return 'nominal';
             case 3:

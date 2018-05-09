@@ -28,7 +28,7 @@
 
 .jmv-variable-editor-autotype {
     display: inline-block ;
-    margin: 4px 0 0 24px ;
+    margin: 6px 0 12px 12px ;
 }
 
 .jmv-variable-editor-widget-option {
@@ -54,6 +54,13 @@
     vertical-align: middle ;
 }
 
+.jmv-vareditor-datatype {
+    display: flex ;
+    justify-content: space-between ;
+    align-items: baseline;
+    padding-top: 24px ;
+}
+
 .jmv-variable-editor-variable-type {
     display: inline-block ;
     width: 20px ;
@@ -62,10 +69,6 @@
     vertical-align: top ;
     margin-right: 6px ;
     vertical-align: top ;
-}
-
-.jmv-variable-editor-variable-type[data-type="nominaltext"] {
-    background-image: url('assets/variable-nominal-text.svg');
 }
 
 .jmv-variable-editor-variable-type[data-type="nominal"] {
@@ -78,6 +81,10 @@
 
 .jmv-variable-editor-variable-type[data-type="continuous"] {
     background-image: url('assets/variable-continuous.svg');
+}
+
+.jmv-variable-editor-variable-type[data-type="id"] {
+    background-image: url('assets/variable-id.svg');
 }
 
 .jmv-variable-editor-levels-container {

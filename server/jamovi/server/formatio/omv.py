@@ -11,6 +11,7 @@ import os.path
 import re
 
 from jamovi.core import ColumnType
+from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
 
@@ -22,7 +23,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 3.0\n')
+        content.write('jamovi-Archive-Version: 4.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -39,6 +40,7 @@ def write(data, path, html=None):
             field = { }
             field['name'] = column.name
             field['columnType'] = ColumnType.stringify(column.column_type)
+            field['dataType'] = DataType.stringify(column.data_type)
             field['measureType'] = MeasureType.stringify(column.measure_type)
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
@@ -92,7 +94,7 @@ def write(data, path, html=None):
         for column in data:
             if column.is_virtual is True:
                 continue
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 required_bytes += (8 * row_count)
             else:
                 required_bytes += (4 * row_count)
@@ -103,7 +105,7 @@ def write(data, path, html=None):
         for column in data:
             if column.is_virtual is True:
                 continue
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 for i in range(0, row_count):
                     value = column.raw(i)
                     byts = struct.pack('<d', value)
@@ -136,7 +138,7 @@ def write(data, path, html=None):
             try:
                 path = os.path.join(data.instance_path, data.embedded_path)
                 zip.write(path, data.embedded_path)
-            except Exception as e:
+            except Exception:
                 pass
 
 
@@ -154,7 +156,7 @@ def read(data, path, prog_cb):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 3:
+        if jav[0] > 4:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -166,7 +168,7 @@ def read(data, path, prog_cb):
                 import_path = meta_dataset.get('importPath')
                 if os.path.isfile(import_path):
                     data.import_path = import_path
-            except Exception as e:
+            except Exception:
                 pass
 
         if 'embeddedPath' in meta_dataset:
@@ -190,8 +192,27 @@ def read(data, path, prog_cb):
 
             column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
             column.column_type = column_type
-            measure_type = MeasureType.parse(meta_column.get('measureType', 'Nominal'))
-            column.measure_type = measure_type
+
+            measure_type_str = meta_column.get('measureType', 'Nominal')
+            data_type_str = meta_column.get('dataType', None)
+
+            if data_type_str is None:
+                # NominalText is an old way we used to do things
+                if measure_type_str == 'NominalText':
+                    data_type = DataType.TEXT
+                    measure_type = MeasureType.NOMINAL
+                elif measure_type_str == 'Continuous':
+                    data_type = DataType.DECIMAL
+                    measure_type = MeasureType.CONTINUOUS
+                else:
+                    data_type = DataType.INTEGER
+                    measure_type = MeasureType.parse(measure_type_str)
+            else:
+                data_type = DataType.parse(data_type_str)
+                measure_type = MeasureType.parse(measure_type_str)
+
+            column.change(data_type=data_type, measure_type=measure_type)
+
             column.formula = meta_column.get('formula', '')
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
@@ -225,7 +246,7 @@ def read(data, path, prog_cb):
                                 column.append_level(meta_label[0], meta_label[1],  import_value)
                         else:
                             columns_w_bad_levels.append(column.id)
-                    except Exception as e:
+                    except Exception:
                         columns_w_bad_levels.append(column.id)
         except Exception:
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)

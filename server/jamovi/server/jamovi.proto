@@ -372,30 +372,36 @@ message DataSetSchema {
         string name = 2;
         int32 index = 3;
 
+        enum DataType {
+            NO_DATA_TYPE = 0;
+            INTEGER = 1;
+            DECIMAL = 2;
+            TEXT = 3;
+        }
+
         enum MeasureType {
             NONE = 0;
-            NOMINAL_TEXT = 1;
             NOMINAL = 2;
             ORDINAL = 3;
             CONTINUOUS = 4;
         }
 
-        MeasureType measureType = 4;
-        bool autoMeasure = 5;
-        int32 width = 6;
-        bool hasLevels = 7;
-        repeated VariableLevel levels = 8;
-        int32 dps = 9;
-        string importName = 10;
-
-        ColumnType columnType = 11;
-        string formula = 12;
-        string formulaMessage = 13;
-        string description = 14;
-        bool hidden = 15;
-        bool active = 16;
-        int32 filterNo = 17;
-        bool trimLevels = 18;
+        ColumnType columnType = 4;
+        DataType dataType = 5;
+        MeasureType measureType = 6;
+        bool autoMeasure = 7;
+        int32 width = 8;
+        bool hasLevels = 9;
+        repeated VariableLevel levels = 10;
+        int32 dps = 11;
+        string importName = 12;
+        string formula = 13;
+        string formulaMessage = 14;
+        string description = 15;
+        bool hidden = 16;
+        bool active = 17;
+        int32 filterNo = 18;
+        bool trimLevels = 19;
     }
     repeated ColumnSchema columns = 1;
 

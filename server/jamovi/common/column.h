@@ -51,6 +51,7 @@ typedef struct
     char *name;
     char *importName;
     char columnType;
+    char dataType;
     char measureType;
     char autoMeasure;
     bool active;
@@ -85,15 +86,26 @@ typedef struct LevelData
 
 } LevelData;
 
+namespace DataType
+{
+    enum Type
+    {
+        NONE = 0,
+        INTEGER = 1,
+        DECIMAL = 2,
+        TEXT = 3
+    };
+}
+
 namespace MeasureType
 {
     enum Type
     {
         NONE = 0,
-        NOMINAL_TEXT = 1,
         NOMINAL = 2,
         ORDINAL = 3,
-        CONTINUOUS = 4
+        CONTINUOUS = 4,
+        ID = 5
     };
 }
 
@@ -124,6 +136,7 @@ public:
 
     ColumnType::Type columnType() const;
     MeasureType::Type measureType() const;
+    DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
     const std::vector<LevelData> levels() const;

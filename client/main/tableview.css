@@ -343,20 +343,28 @@ input.jmv-table-cell-selected.copying {
     background-image: url('assets/variable-computed.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="nominaltext"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-nominal-text.svg');
-}
-
-.jmv-column-header[data-columntype="data"][data-measuretype="nominal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon {
+    background-image: url('assets/variable-nominal-text.svg');
+}
+
+.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-ordinal.svg');
+}
+
+.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+    background-image: url('assets/variable-ordinal-text.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon {
     background-image: url('assets/variable-continuous.svg');
+}
+
+.jmv-column-header[data-columntype="data"][data-measuretype="id"] > .jmv-column-header-icon {
+    background-image: url('assets/variable-id.svg');
 }
 
 .jmv-column-header[data-columntype='filter'] .jmv-column-header-icon {

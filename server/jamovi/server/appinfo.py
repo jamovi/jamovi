@@ -24,7 +24,7 @@ class AppInfo:
                 version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
                 with open(version_path, 'r', encoding='utf-8') as version_file:
                     self._version = version_file.readline().strip()
-            except Exception as e:
+            except Exception:
                 self._version = '0.0.0.0'
         return self._version
 

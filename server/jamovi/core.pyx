@@ -23,10 +23,14 @@ cdef extern from "column.h":
         string importValue;
     ctypedef enum CMeasureType  "MeasureType::Type":
         CMeasureTypeNone        "MeasureType::NONE"
-        CMeasureTypeNominalText "MeasureType::NOMINAL_TEXT"
         CMeasureTypeNominal     "MeasureType::NOMINAL"
         CMeasureTypeOrdinal     "MeasureType::ORDINAL"
         CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
+        CMeasureTypeID          "MeasureType::ID"
+    ctypedef enum CDataType  "DataType::Type":
+        CDataTypeInteger  "DataType::INTEGER"
+        CDataTypeDecimal  "DataType::DECIMAL"
+        CDataTypeText     "DataType::TEXT"
 
 cdef extern from "datasetw.h":
     cdef cppclass CDataSet "DataSetW":
@@ -159,6 +163,8 @@ cdef extern from "columnw.h":
         void setId(int id)
         void setColumnType(CColumnType columnType)
         CColumnType columnType() const
+        void setDataType(CDataType dataType)
+        CDataType dataType() const
         void setMeasureType(CMeasureType measureType)
         CMeasureType measureType() const
         void setAutoMeasure(bool auto)
@@ -242,17 +248,16 @@ cdef class Column:
                 column_type = column_type.value
             self._this.setColumnType(column_type)
 
+    property data_type:
+        def __get__(self):
+            return DataType(self._this.dataType())
+
     property measure_type:
         def __get__(self):
             return MeasureType(self._this.measureType())
 
         def __set__(self, measure_type):
-            self.set_measure_type(measure_type)
-
-    def set_measure_type(self, measure_type):
-        if type(measure_type) is MeasureType:
-            measure_type = measure_type.value
-        self._this.setMeasureType(measure_type)
+            self._this.setMeasureType(measure_type.value)
 
     property auto_measure:
         def __get__(self):
@@ -283,6 +288,8 @@ cdef class Column:
 
     property dps:
         def __get__(self):
+            if self.data_type is not DataType.DECIMAL:
+                return 0
             return self._this.dps()
 
         def __set__(self, dps):
@@ -296,7 +303,7 @@ cdef class Column:
             self._this.setTrimLevels(trim)
 
     def determine_dps(self):
-        if self.measure_type == MeasureType.CONTINUOUS:
+        if self.data_type == DataType.DECIMAL:
             ceiling_dps = 3
             max_dps = 0
             for value in self:
@@ -333,7 +340,7 @@ cdef class Column:
         return max_dp_required
 
     def append(self, value):
-        if self.measure_type is MeasureType.CONTINUOUS:
+        if self.data_type is DataType.DECIMAL:
             self._this.append[double](value)
         else:
             self._this.append[int](value)
@@ -382,12 +389,14 @@ cdef class Column:
 
     @property
     def levels(self):
-        if self.has_levels is False:
-            return None
         arr = [ ]
-        levels = self._this.levels()
-        for level in levels:
-            arr.append((level.value, level.label.decode('utf-8'), level.importValue.decode('utf-8')))
+        if self.has_levels:
+            levels = self._this.levels()
+            for level in levels:
+                arr.append((
+                    level.value,
+                    level.label.decode('utf-8'),
+                    level.importValue.decode('utf-8')))
         return arr
 
     @property
@@ -399,7 +408,7 @@ cdef class Column:
         return self._this.changes();
 
     def clear_at(self, index):
-        if self.measure_type is MeasureType.CONTINUOUS:
+        if self.data_type is DataType.DECIMAL:
             self._this.setValue[double](index, float('nan'))
         else:
             self._this.setValue[int](index, -2147483648)
@@ -409,7 +418,7 @@ cdef class Column:
         if index >= self.row_count:
             raise IndexError()
 
-        if self.measure_type is MeasureType.CONTINUOUS:
+        if self.data_type is DataType.DECIMAL:
             self._this.setValue[double](index, value)
         else:
             self._this.setValue[int](index, value)
@@ -418,9 +427,9 @@ cdef class Column:
         if index >= self.row_count:
             raise IndexError()
 
-        if self.measure_type is MeasureType.CONTINUOUS:
+        if self.data_type is DataType.DECIMAL:
             self._this.setValue[double](index, value)
-        elif self.measure_type is MeasureType.NOMINAL_TEXT and isinstance(value, str):
+        elif self.data_type is DataType.TEXT and isinstance(value, str):
             if value == '':
                 level_i = -2147483648
             elif self.has_level(value):
@@ -438,9 +447,9 @@ cdef class Column:
         if index >= self.row_count:
             raise IndexError()
 
-        if self.measure_type == MeasureType.CONTINUOUS:
+        if self.data_type == DataType.DECIMAL:
             return self._this.value[double](index)
-        elif self.measure_type == MeasureType.NOMINAL_TEXT:
+        elif self.data_type == DataType.TEXT:
             raw = self._this.value[int](index)
             return self._this.getLabel(raw).decode()
         else:
@@ -450,7 +459,7 @@ cdef class Column:
         return CellIterator(self)
 
     def raw(self, index):
-        if self.measure_type == MeasureType.CONTINUOUS:
+        if self.data_type == DataType.DECIMAL:
             return self._this.value[double](index)
         else:
             return self._this.value[int](index)
@@ -458,6 +467,7 @@ cdef class Column:
     def change(self,
         name=None,
         column_type=None,
+        data_type=None,
         measure_type=None,
         levels=None,
         dps=None,
@@ -466,13 +476,62 @@ cdef class Column:
         active=None,
         trim_levels=None):
 
+        if column_type is None:
+            column_type = self.column_type
+        elif isinstance(column_type, int):
+            column_type = ColumnType(column_type)
+
+        if column_type is ColumnType.NONE:
+            column_type = ColumnType.DATA
+
+        self.column_type = column_type
+
+        if data_type is None:
+            data_type = self.data_type
+        elif isinstance(data_type, int):
+            data_type = DataType(data_type)
+
+        if measure_type is None:
+            measure_type = self.measure_type
+        elif isinstance(measure_type, int):
+            measure_type = MeasureType(measure_type)
+
+        if measure_type is MeasureType.NONE:
+            measure_type = MeasureType.NOMINAL
+
+        dt_changing = (data_type != self.data_type)
+        mt_changing = (measure_type != self.measure_type)
+
+        if mt_changing:
+            if measure_type is MeasureType.CONTINUOUS:
+                if data_type is DataType.TEXT:
+                    if self.data_type is DataType.INTEGER:
+                        data_type = DataType.INTEGER
+                    else:
+                        data_type = DataType.DECIMAL
+            else:
+                if data_type is DataType.DECIMAL:
+                    if self.data_type is DataType.INTEGER:
+                        data_type = DataType.INTEGER
+                    else:
+                        data_type = DataType.TEXT
+
+        elif dt_changing:
+            if data_type is DataType.DECIMAL:
+                measure_type = MeasureType.CONTINUOUS
+            elif data_type is DataType.TEXT:
+                if measure_type is MeasureType.CONTINUOUS:
+                    measure_type = MeasureType.NOMINAL
+
+        if self.column_type is ColumnType.NONE:
+            if auto_measure is None:
+                auto_measure = True
+
+        old_m_type = self.measure_type
+        new_m_type = measure_type
+
         if name is not None:
             self.name = name
-
-        if column_type is not None:
-            if column_type is not ColumnType:
-                column_type = ColumnType(column_type)
-            self.column_type = column_type
 
         if dps is not None:
             self.dps = dps
@@ -489,16 +548,14 @@ cdef class Column:
         if formula is not None:
             self.formula = formula
 
-        if measure_type is None:
-            return
+        if type(data_type) is not DataType:
+            data_type = DataType(data_type)
 
-        if type(measure_type) is not MeasureType:
-            measure_type = MeasureType(measure_type)
+        new_type = data_type
+        old_type = self.data_type
 
-        new_type = measure_type
-        old_type = self.measure_type
+        if new_type == DataType.DECIMAL:
 
-        if new_type == MeasureType.CONTINUOUS:
             values = list(self)
             nan = float('nan')
             for i in range(len(values)):
@@ -511,36 +568,41 @@ cdef class Column:
                     values[i] = nan
 
             self.clear_levels()
+            self._this.setDataType(DataType.DECIMAL.value)
             self.measure_type = MeasureType.CONTINUOUS
+
             for i in range(len(values)):
                 self[i] = values[i]
 
             self.determine_dps()
 
-        elif new_type == MeasureType.NOMINAL or new_type == MeasureType.ORDINAL:
+        elif new_type == DataType.INTEGER:
 
-            if old_type == MeasureType.NOMINAL or old_type == MeasureType.ORDINAL:
-                self.measure_type = new_type
+            if old_type == DataType.INTEGER:
 
-                if levels is not None:
+                self.measure_type = measure_type
 
+                if new_m_type == MeasureType.CONTINUOUS:
                     self.clear_levels()
-                    for level in levels:
-                        self.append_level(level[0], level[1], str(level[0]))
-
-                    self._update_level_counts()
-
-            elif old_type == MeasureType.NOMINAL_TEXT or old_type == MeasureType.CONTINUOUS:
-
-                if old_type == MeasureType.NOMINAL_TEXT:
-                    nan = ''
+                elif old_m_type == MeasureType.CONTINUOUS:
+                    for value in self:
+                        if value == -2147483648:
+                            pass
+                        elif not self.has_level(value):
+                            self.append_level(value, str(value), str(value))
                 else:
-                    nan = float('nan')
+                    if levels is not None:
+                        self.clear_levels()
+                        for level in levels:
+                            self.append_level(level[0], level[1], str(level[0]))
+                        self._update_level_counts()
 
+            elif old_type == DataType.DECIMAL:
+                nan = float('nan')
                 values = list(self)
-                self.clear_levels()
 
-                self.measure_type = new_type
+                self._this.setDataType(DataType.INTEGER.value)
+                self.measure_type = measure_type
 
                 for i in range(len(values)):
                     try:
@@ -555,12 +617,43 @@ cdef class Column:
                     except ValueError:
                         self._this.setValue[int](i, -2147483648, True)
 
+            elif old_type == DataType.TEXT:
+                nan = ''
+
+                level_ivs = { }
+                for level in self.levels:
+                    level_ivs[level[1]] = level[2]
+
+                values = list(self)
+                self.clear_levels()
+
+                self._this.setDataType(DataType.INTEGER.value)
+                self.measure_type = measure_type
+
+                for i in range(len(values)):
+                    try:
+                        value = values[i]
+                        if value != nan:
+                            label = value
+                            value = int(float(level_ivs[value]))
+                            if not self.has_level(value):
+                                self.insert_level(value, label, str(value))
+                        else:
+                            value = -2147483648
+                        self._this.setValue[int](i, value, True)
+                    except ValueError:
+                        self._this.setValue[int](i, -2147483648, True)
+
                 self.dps = 0
 
-        elif new_type == MeasureType.NOMINAL_TEXT:
-            if old_type == MeasureType.NOMINAL_TEXT:
+        elif new_type == DataType.TEXT:
+            if old_type == DataType.TEXT:
+
+                self.measure_type = measure_type
+
                 if levels is not None:
                     old_levels = self.levels
+
                     recode = { }
                     for old_level in old_levels:
                         for new_level in levels:
@@ -577,12 +670,11 @@ cdef class Column:
                         value = recode.get(value, -2147483648)
                         self._this.setValue[int](row_no, value, True)
 
-                self.measure_type = MeasureType.NOMINAL_TEXT
-
-            elif old_type == MeasureType.CONTINUOUS:
+            elif old_type == DataType.DECIMAL:
                 nan = float('nan')
 
-                multip = math.pow(10, self.dps)
+                dps = self.dps
+                multip = math.pow(10, dps)
 
                 uniques = set()
                 for value in self:
@@ -591,13 +683,13 @@ cdef class Column:
                 uniques = list(uniques)
                 uniques.sort()
 
-                self.measure_type = MeasureType.NOMINAL_TEXT
+                self._this.setDataType(DataType.TEXT.value)
+                self.measure_type = measure_type
 
-                self.clear_levels()
                 for i in range(len(uniques)):
                     v = float(uniques[i]) / multip
-                    label = '{:.{}f}'.format(v, self.dps)
-                    self.append_level(i, label)
+                    label = '{:.{}f}'.format(v, dps)
+                    self.append_level(i, label, label)
 
                 v2i = { }
                 for i in range(len(uniques)):
@@ -609,10 +701,10 @@ cdef class Column:
                     else:
                         self._this.setValue[int](i, v2i[int(value * multip)], True)
 
-                self.determine_dps()
-
-            else: # ordinal or nominal
+            elif old_type == DataType.INTEGER:
                 nan = -2147483648
+
+                level_labels = { }
 
                 uniques = set()
                 for value in self:
@@ -621,11 +713,24 @@ cdef class Column:
                 uniques = list(uniques)
                 uniques.sort()
 
-                self.measure_type = MeasureType.NOMINAL_TEXT
+                if self.has_levels:
+                    for level in self.levels:
+                        value = level[0]
+                        label = level[1]
+                        level_labels[value] = label
+                else:
+                    for value in uniques:
+                        label = str(value)
+                        level_labels[value] = label
 
                 self.clear_levels()
+                self._this.setDataType(DataType.TEXT.value)
+                self.measure_type = measure_type
+
                 for i in range(len(uniques)):
-                    self.append_level(i, str(uniques[i]))
+                    value = uniques[i]
+                    label = level_labels[value]
+                    self.append_level(i, label, str(value))
 
                 v2i = { }
                 for i in range(len(uniques)):
@@ -715,36 +820,64 @@ def decode(string str):
     return str.c_str().decode('utf-8')
 
 
+class DataType(Enum):
+    INTEGER = CDataTypeInteger
+    DECIMAL = CDataTypeDecimal
+    TEXT    = CDataTypeText
+
+    @staticmethod
+    def stringify(data_type):
+        if data_type == DataType.INTEGER:
+            return 'Integer'
+        elif data_type == DataType.DECIMAL:
+            return 'Decimal'
+        elif data_type == DataType.TEXT:
+            return 'Text'
+        else:
+            return 'Integer'
+
+    @staticmethod
+    def parse(data_type):
+        if data_type == 'Integer':
+            return DataType.INTEGER
+        elif data_type == 'Decimal':
+            return DataType.DECIMAL
+        elif data_type == 'Text':
+            return DataType.TEXT
+        else:
+            return DataType.INTEGER
+
+
 class MeasureType(Enum):
     NONE         = CMeasureTypeNone
-    NOMINAL_TEXT = CMeasureTypeNominalText
     NOMINAL      = CMeasureTypeNominal
     ORDINAL      = CMeasureTypeOrdinal
     CONTINUOUS   = CMeasureTypeContinuous
+    ID           = CMeasureTypeID
 
     @staticmethod
     def stringify(measure_type):
         if measure_type == MeasureType.CONTINUOUS:
-            return "Continuous"
+            return 'Continuous'
         elif measure_type == MeasureType.ORDINAL:
-            return "Ordinal"
+            return 'Ordinal'
         elif measure_type == MeasureType.NOMINAL:
-            return "Nominal"
-        elif measure_type == MeasureType.NOMINAL_TEXT:
-            return "NominalText"
+            return 'Nominal'
+        elif measure_type == MeasureType.ID:
+            return 'ID'
         else:
-            return "None"
+            return 'None'
 
     @staticmethod
     def parse(measure_type):
-        if measure_type == "Continuous":
+        if measure_type == 'Continuous':
             return MeasureType.CONTINUOUS
-        elif measure_type == "Ordinal":
+        elif measure_type == 'Ordinal':
             return MeasureType.ORDINAL
-        elif measure_type == "Nominal":
+        elif measure_type == 'Nominal':
             return MeasureType.NOMINAL
-        elif measure_type == "NominalText":
-            return MeasureType.NOMINAL_TEXT
+        elif measure_type == 'ID':
+            return MeasureType.ID
         else:
             return MeasureType.NONE
 

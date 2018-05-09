@@ -7,6 +7,7 @@ import statistics as stats
 from scipy.stats import boxcox
 # numpy, scipy return numpy.float64's, so need to convert back to float
 
+from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.utils import is_missing
 
@@ -34,7 +35,7 @@ def SUM(index, arg0: float, *args: float):
 
 
 @row_wise
-@returns(MeasureType.CONTINUOUS, 0)
+@returns(DataType.DECIMAL, MeasureType.CONTINUOUS, 0)
 def ABS(index, value: num):
     if is_missing(value):
         return value
@@ -82,13 +83,13 @@ def GAMMA(index, alpha: float=1.0, beta: float=1.0):
 
 
 @row_wise
-@returns(MeasureType.ORDINAL)
+@returns(DataType.INTEGER, MeasureType.ORDINAL)
 def ROW(index):
     return index + 1
 
 
 @row_wise
-@returns(MeasureType.NOMINAL)
+@returns(DataType.INTEGER, MeasureType.NOMINAL)
 def NOTROW(index, arg0, *args):
     if (index + 1) == arg0:
         return 0
@@ -134,7 +135,7 @@ def VMODE(values: float):
 
 
 @column_wise
-@returns(MeasureType.ORDINAL)
+@returns(DataType.INTEGER, MeasureType.ORDINAL)
 def VN(values):
     values = filter(lambda v: not is_missing(v), values)
     return sum(1 for _ in values)
@@ -147,7 +148,7 @@ def VSUM(values: float):
 
 
 @column_wise
-@returns(MeasureType.ORDINAL)
+@returns(DataType.INTEGER, MeasureType.ORDINAL)
 def VROWS(values):
     return sum(1 for _ in values)
 
@@ -179,14 +180,14 @@ def SCALE(index, x: float):
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, 0)
+@returns(DataType.INTEGER, MeasureType.NOMINAL, 0)
 def OFFSET(index, x, offset: int):
     # this is handled specially elsewhere
     return x
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, [1, 2])
+@returns(DataType.INTEGER, MeasureType.NOMINAL, [1, 2])
 @levels([1, 2])
 def IF(index, cond: int, x=1, y=-2147483648):
     if is_missing(cond, True):
@@ -195,13 +196,13 @@ def IF(index, cond: int, x=1, y=-2147483648):
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, [1, 2])
+@returns(DataType.INTEGER, MeasureType.NOMINAL, [1, 2])
 def IFMISS(index, cond, x=1, y=-2147483648):
     return x if is_missing(cond, empty_str_is_missing=True) else y
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, 0)
+@returns(DataType.INTEGER, MeasureType.NOMINAL, 0)
 def NOT(index, x):
     if is_missing(x):
         return x
@@ -209,7 +210,7 @@ def NOT(index, x):
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, 0)
+@returns(DataType.INTEGER, MeasureType.NOMINAL, 0)
 def FILTER(index, x, *conds: int):
     for cond in conds:
         if is_missing(cond, True):
@@ -220,25 +221,24 @@ def FILTER(index, x, *conds: int):
 
 
 @row_wise
-@returns(MeasureType.NOMINAL_TEXT)
+@returns(DataType.TEXT, MeasureType.NOMINAL)
 def TEXT(index, x: str):
     return x
 
 
 @row_wise
-@returns(MeasureType.CONTINUOUS)
 def VALUE(index, x: str):
     return float(x)
 
 
 @row_wise
-@returns(MeasureType.ORDINAL)
+@returns(DataType.INTEGER, MeasureType.ORDINAL)
 def INT(index, x: str):
     return int(float(x))
 
 
 @row_wise
-@returns(MeasureType.NOMINAL, range(0, 10000, 2))
+@returns(DataType.INTEGER, MeasureType.NOMINAL, range(0, 10000, 2))
 @levels(range(0, 10000, 2))
 def RECODE(index, x, *args):
     for i in range(0, len(args) - 1, 2):

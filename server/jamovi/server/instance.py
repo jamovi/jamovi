@@ -6,11 +6,12 @@ import os
 import os.path
 import platform
 
-from ..core import ColumnType
-from ..core import MeasureType
-from ..core import Dirs
-from ..core import MemoryMap
-from ..core import DataSet
+from jamovi.core import ColumnType
+from jamovi.core import DataType
+from jamovi.core import MeasureType
+from jamovi.core import Dirs
+from jamovi.core import MemoryMap
+from jamovi.core import DataSet
 
 from .settings import Settings
 
@@ -726,6 +727,7 @@ class Instance:
                 column.change(
                     name=name,
                     column_type=column_pb.columnType,
+                    data_type=column_pb.dataType,
                     measure_type=column_pb.measureType,
                     formula=column_pb.formula,
                     auto_measure=column_pb.autoMeasure,
@@ -840,6 +842,7 @@ class Instance:
             column = self._data.get_column_by_id(column_schema.id)
             old_name = column.name
             old_type = column.column_type
+            old_d_type = column.data_type
             old_m_type = column.measure_type
             old_formula = column.formula
             old_active = column.active
@@ -854,7 +857,10 @@ class Instance:
             if column_schema.hasLevels:
                 levels = [ ]
                 for level in column_schema.levels:
-                    levels.append((level.value, level.label, level.importValue))
+                    levels.append((
+                        level.value,
+                        level.label,
+                        level.importValue))
 
             if column.column_type is ColumnType.NONE:
                 column_type = column_schema.columnType
@@ -863,13 +869,16 @@ class Instance:
 
             if column_type is ColumnType.COMPUTED or column_type is ColumnType.FILTER:
                 # measure_type determined by formula
+                data_type = None
                 measure_type = None
             else:
+                data_type = column_schema.dataType
                 measure_type = column_schema.measureType
 
             column.change(
                 name=column_schema.name,
                 column_type=column_type,
+                data_type=data_type,
                 measure_type=measure_type,
                 levels=levels,
                 auto_measure=column_schema.autoMeasure,
@@ -884,6 +893,7 @@ class Instance:
 
             if (column.name == old_name and
                     column.column_type == old_type and
+                    column.data_type == old_d_type and
                     column.measure_type == old_m_type and
                     column.formula == old_formula and
                     column.filter_no == old_filter_no and
@@ -916,7 +926,7 @@ class Instance:
 
             if old_name != column.name:     # if a name has changed, then
                 reparse.update(dependents)  # dep columns need to be reparsed
-            elif old_m_type != column.measure_type:
+            elif old_d_type != column.data_type:
                 reparse.update(dependents)
 
         if filter_changed:
@@ -1092,10 +1102,15 @@ class Instance:
 
             values = cells[i]
 
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 for value in values:
                     if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
                         raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
+
+            if column.data_type == DataType.INTEGER and column.measure_type == MeasureType.CONTINUOUS:
+                for value in values:
+                    if value is not None and value != '' and not isinstance(value, int):
+                        raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
 
         # assign
 
@@ -1132,8 +1147,9 @@ class Instance:
             was_virtual = column.is_virtual
             changes = column.changes
 
-            if column.auto_measure:  # change column type if necessary
+            if column.auto_measure:  # change data type if necessary
 
+                dt = column.data_type
                 mt = column.measure_type
 
                 for j in range(row_count):
@@ -1141,18 +1157,18 @@ class Instance:
                     if value is None or value == '':
                         pass
                     elif isinstance(value, float):
-                        if mt is not MeasureType.NOMINAL_TEXT:
+                        if dt is not DataType.TEXT:
+                            dt = DataType.DECIMAL
                             mt = MeasureType.CONTINUOUS
-                    elif isinstance(value, int):
-                        if mt is not MeasureType.NOMINAL_TEXT and mt is not MeasureType.CONTINUOUS:
-                            mt = MeasureType.NOMINAL
                     elif isinstance(value, str):
-                        mt = MeasureType.NOMINAL_TEXT
+                        dt = DataType.TEXT
+                        if mt is MeasureType.CONTINUOUS:
+                            mt = MeasureType.NOMINAL
 
-                if mt != column.measure_type:
-                    column.change(measure_type=mt)
+                if dt != column.data_type:
+                    column.change(data_type=dt, measure_type=mt)
 
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 nan = float('nan')
                 for j in range(row_count):
                     value = values[j]
@@ -1162,15 +1178,10 @@ class Instance:
                         column[row_start + j] = value
                     elif isinstance(value, int):
                         column[row_start + j] = value
-                    elif isinstance(value, str) and column.auto_measure:
-                        column.change(measure_type=MeasureType.NOMINAL_TEXT)
-                        index = column.level_count
-                        column.insert_level(index, value)
-                        column[row_start + j] = index
                     else:
                         raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
 
-            elif column.measure_type == MeasureType.NOMINAL_TEXT:
+            elif column.data_type == DataType.TEXT:
                 for j in range(row_count):
                     value = values[j]
 
@@ -1188,7 +1199,7 @@ class Instance:
                         else:
                             value = str(value)
 
-                        column.clear_at(row_start + j)  # necessary to clear first with NOMINAL_TEXT
+                        column.clear_at(row_start + j)  # necessary to clear first with TEXT
 
                         if value == -2147483648:
                             index = -2147483648
@@ -1216,14 +1227,14 @@ class Instance:
                             for level in column.levels:
                                 index = max(index, level[0])
                             index += 1
-                            column.insert_level(index, value)
+                            column.insert_level(index, value, str(index))
                         column[row_start + j] = index
                     else:
                         raise RuntimeError('Should not get here')
 
             if column.auto_measure:
                 self._auto_adjust(column)
-            elif column.measure_type == MeasureType.CONTINUOUS:
+            elif column.data_type == DataType.DECIMAL:
                 column.determine_dps()
 
             if changes != column.changes or was_virtual:
@@ -1268,33 +1279,36 @@ class Instance:
         self._populate_cells(request, response)
 
     def _auto_adjust(self, column):
-        if column.measure_type == MeasureType.NOMINAL_TEXT:
-            for level in column.levels:
-                try:
-                    int(level[1])
-                except ValueError:
-                    break
-            else:
-                column.change(measure_type=MeasureType.NOMINAL)
-                return
+        if column.data_type == DataType.TEXT:
 
-            for level in column.levels:
-                try:
-                    float(level[1])
-                except ValueError:
-                    break
-            else:
-                column.change(measure_type=MeasureType.CONTINUOUS)
-                return
+            d_type = DataType.INTEGER
+            m_type = MeasureType.NOMINAL
 
-        elif column.measure_type == MeasureType.CONTINUOUS:
+            try:
+                for level in column.levels:
+                    value = float(level[1])
+                    if d_type is DataType.INTEGER:
+                        if not math.isclose(value % 1, 0.0):
+                            d_type = DataType.DECIMAL
+                            m_type = MeasureType.CONTINUOUS
+
+                column.change(data_type=d_type, measure_type=m_type)
+
+            except ValueError:
+                # don't change
+                pass
+
+        elif column.data_type == DataType.DECIMAL:
             for value in column:
                 if math.isnan(value):
                     continue
-                if round(value) != round(value, 6):
+                if not math.isclose(value % 1, 0.0):
+                    # don't change
                     break
             else:
-                column.change(measure_type=MeasureType.NOMINAL)
+                column.change(
+                    data_type=DataType.INTEGER,
+                    measure_type=MeasureType.NOMINAL)
                 return
 
             column.determine_dps()
@@ -1327,7 +1341,7 @@ class Instance:
 
             col_res = response.data.add()
 
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 for r in range(row_start, row_start + row_count):
                     cell = col_res.values.add()
                     if r >= column.row_count:
@@ -1338,7 +1352,7 @@ class Instance:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
                             cell.d = value
-            elif column.measure_type == MeasureType.NOMINAL_TEXT:
+            elif column.data_type == DataType.TEXT:
                 for r in range(row_start, row_start + row_count):
                     cell = col_res.values.add()
                     if r >= column.row_count:
@@ -1381,32 +1395,28 @@ class Instance:
         column_schema.id = column.id
         column_schema.index = column.index
 
+        column_schema.columnType = column.column_type.value
+        column_schema.dataType = column.data_type.value
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
+
         if column.column_type is ColumnType.FILTER:
             column_schema.width = 78
         else:
             column_schema.width = 100
+
         column_schema.dps = column.dps
-
-        column_schema.hasLevels = True
-
-        column_schema.columnType = column.column_type.value
         column_schema.formula = column.formula
         column_schema.formulaMessage = column.formula_message
-
         column_schema.description = column.description
         column_schema.hidden = column.hidden
         column_schema.active = column.active
         column_schema.filterNo = column.filter_no
         column_schema.trimLevels = column.trim_levels
 
-        if column.measure_type is MeasureType.NOMINAL_TEXT:
-            for level in column.levels:
-                level_pb = column_schema.levels.add()
-                level_pb.label = level[1]
-                level_pb.importValue = level[2]
-        elif column.measure_type is MeasureType.NOMINAL or column.measure_type is MeasureType.ORDINAL:
+        column_schema.hasLevels = True
+
+        if column.has_levels:
             for level in column.levels:
                 level_pb = column_schema.levels.add()
                 level_pb.value = level[0]

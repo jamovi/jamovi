@@ -4,6 +4,7 @@ import re
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
+from jamovi.core import DataType
 
 from .compute import Parser
 from .compute import FormulaStatus
@@ -58,8 +59,7 @@ class Column:
             if filt and self._parent.is_row_filtered(index):
                 return (-2147483648, '')
             v = self._child[index]
-            if (self._child.measure_type is MeasureType.NOMINAL or
-               self._child.measure_type is MeasureType.ORDINAL):
+            if self._child.data_type is DataType.INTEGER:
                 if is_missing(v):
                     return (-2147483648, '')
                 else:
@@ -189,6 +189,12 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.column_type = column_type
+
+    @property
+    def data_type(self):
+        if self._child is not None:
+            return self._child.data_type
+        return DataType.INTEGER
 
     @property
     def measure_type(self):
@@ -342,6 +348,7 @@ class Column:
     def change(self,
                name=None,
                column_type=None,
+               data_type=None,
                measure_type=None,
                levels=None,
                dps=None,
@@ -367,6 +374,7 @@ class Column:
         self._child.change(
             name=name,
             column_type=column_type,
+            data_type=data_type,
             measure_type=measure_type,
             levels=levels,
             dps=dps,
@@ -441,9 +449,9 @@ class Column:
             for level in self._node.levels:
                 self._child.append_level(level[0], level[1])
 
-        if self.measure_type is MeasureType.CONTINUOUS:
+        if self.data_type is DataType.DECIMAL:
             ul_type = float
-        elif self.measure_type is MeasureType.NOMINAL_TEXT:
+        elif self.data_type is DataType.TEXT:
             ul_type = str
         else:
             ul_type = int
@@ -561,7 +569,9 @@ class Column:
                 self._node._add_node_parent(self)
                 self._formula_status = FormulaStatus.OK
 
-                self._child.set_measure_type(self._node.measure_type)
+                self.change(
+                    data_type=self._node.data_type,
+                    measure_type=self._node.measure_type)
 
         except RecursionError:
             self._formula_status = FormulaStatus.ERROR

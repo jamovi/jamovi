@@ -9,6 +9,7 @@ import struct
 import os
 import os.path
 
+from jamovi.core import DataType
 from jamovi.core import MeasureType
 
 
@@ -100,8 +101,20 @@ def read(data, path, prog_cb):
         for meta_column in meta_dataset['fields']:
             data.dataset.append_column(meta_column['name'])
             column = data.dataset[data.dataset.column_count - 1]
-            measure_type = MeasureType.parse(meta_column['measureType'])
-            column.measure_type = measure_type
+
+            measure_type_str = meta_column['measureType']
+
+            if measure_type_str == 'NominalText':
+                data_type = DataType.TEXT
+                measure_type = MeasureType.NOMINAL
+            elif measure_type_str == 'Continuous':
+                data_type = DataType.DECIMAL
+                measure_type = MeasureType.CONTINUOUS
+            else:
+                data_type = DataType.INTEGER
+                measure_type = MeasureType.parse(measure_type_str)
+
+            column.change(data_type=data_type, measure_type=measure_type)
 
         row_count = meta_dataset['rowCount']
 
@@ -115,7 +128,7 @@ def read(data, path, prog_cb):
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
-                        column.append_level(meta_label[0], meta_label[1])
+                        column.append_level(meta_label[0], meta_label[1], str(meta_label[0]))
         except Exception:
             pass
 

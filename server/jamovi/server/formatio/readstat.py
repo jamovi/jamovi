@@ -4,6 +4,7 @@ from numbers import Number
 from datetime import date
 
 from jamovi.core import ColumnType
+from jamovi.core import DataType
 from jamovi.core import MeasureType
 
 from jamovi.readstat import Parser as ReadStatParser
@@ -63,20 +64,46 @@ class Parser(ReadStatParser):
         var_meas = variable.measure
         var_type = variable.type
 
+        if var_meas == Measure.SCALE:
+            measure_type = MeasureType.CONTINUOUS
+        elif var_meas == Measure.ORDINAL:
+            measure_type = MeasureType.ORDINAL
+        else:
+            measure_type = MeasureType.NOMINAL
+
         if var_type is str:
-            column.set_measure_type(MeasureType.NOMINAL_TEXT)
+            if measure_type == MeasureType.CONTINUOUS:
+                measure_type = MeasureType.NOMINAL
+
+            column.change(
+                data_type=DataType.TEXT,
+                measure_type=measure_type)
+
             if level_labels is not None:
                 level_i = 0
                 for value in level_labels:
                     label = level_labels[value]
                     column.append_level(level_i, label, value)
                     level_i += 1
+
         elif var_type is date:
-            column.set_measure_type(MeasureType.ORDINAL)
+
+            column.change(
+                data_type=DataType.INTEGER,
+                measure_type=MeasureType.ORDINAL)
+
         elif var_type is int or var_type is float:
             if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL:
-                mt = MeasureType.NOMINAL if var_meas is Measure.NOMINAL else MeasureType.ORDINAL
-                column.set_measure_type(mt)
+
+                if var_meas == Measure.NOMINAL:
+                    measure_type = MeasureType.NOMINAL
+                else:
+                    measure_type = MeasureType.ORDINAL
+
+                column.change(
+                    data_type=DataType.INTEGER,
+                    measure_type=measure_type)
+
                 if level_labels is not None:
                     new_labels = OrderedDict()
                     if var_type is float:
@@ -88,7 +115,14 @@ class Parser(ReadStatParser):
                         label = level_labels[value]
                         column.append_level(value, label, str(value))
             else:
-                column.set_measure_type(MeasureType.CONTINUOUS)
+                if var_type is float:
+                    data_type = DataType.DECIMAL
+                else:
+                    data_type = DataType.INTEGER
+
+                column.change(
+                    data_type=data_type,
+                    measure_type=MeasureType.CONTINUOUS)
 
     def handle_value(self, var_index, row_index, value):
 
@@ -96,27 +130,27 @@ class Parser(ReadStatParser):
 
         column = self._data.dataset[var_index]
 
-        if column.measure_type is MeasureType.NOMINAL_TEXT:
+        if column.data_type is DataType.TEXT:
             if vt is str:
                 if not column.has_level(value):
-                    column.append_level(column.level_count, value, value)
+                    column.append_level(
+                        column.level_count,
+                        value,
+                        value)
                 column.set_value(row_index, value)
-            elif value is None:
-                column.set_value(row_index, value)
-        elif column.measure_type is MeasureType.CONTINUOUS:
-            if isinstance(value, Number):
-                column.set_value(row_index, float(value))
-            elif value is None:
-                column.set_value(row_index, float('nan'))
+            else:
+                column.set_value(row_index, '')
         elif (column.measure_type is MeasureType.NOMINAL or
                 column.measure_type is MeasureType.ORDINAL):
             if isinstance(value, Number):
                 try:
                     value = int(value)
                     if value.bit_length() > 32:
-                        column.set_measure_type(MeasureType.CONTINUOUS)
+                        raise Exception()
                 except Exception:
-                    column.set_measure_type(MeasureType.CONTINUOUS)
+                    column.change(
+                        data_type=DataType.DECIMAL,
+                        measure_type=MeasureType.CONTINUOUS)
                 column.set_value(row_index, value)
             elif vt is date:
                 delta = value - TIME_START
@@ -124,5 +158,15 @@ class Parser(ReadStatParser):
                 if not column.has_level(ul_value):
                     column.insert_level(ul_value, value.isoformat(), str(ul_value))
                 column.set_value(row_index, ul_value)
-            elif value is None:
+            else:
+                column.set_value(row_index, -2147483648)
+        elif column.data_type is DataType.DECIMAL:
+            if isinstance(value, Number):
+                column.set_value(row_index, float(value))
+            else:
+                column.set_value(row_index, float('nan'))
+        elif column.data_type is DataType.INTEGER:
+            if isinstance(value, Number):
+                column.set_value(row_index, int(value))
+            else:
                 column.set_value(row_index, -2147483648)

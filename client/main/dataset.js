@@ -269,6 +269,11 @@ const DataSetModel = Backbone.Model.extend({
             throw 'Column type not specified';
         params.columnType = DataSetModel.parseColumnType(columnType || 'none');
 
+        let dataType = params.dataType;
+        if (dataType === undefined)
+            dataType = 'integer';
+        params.dataType = DataSetModel.parseDataType(dataType);
+
         if (params.measureType === undefined)
             params.measureType = columnType === 'computed' ? 'continuous' : 'nominal';
         params.measureType = DataSetModel.parseMeasureType(params.measureType);
@@ -529,6 +534,7 @@ const DataSetModel = Backbone.Model.extend({
 
             let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
             columnPB.id = id;
+            columnPB.dataType = DataSetModel.parseDataType(values.dataType);
             columnPB.measureType = DataSetModel.parseMeasureType(values.measureType);
 
             if ( ! ('name' in values))
@@ -607,18 +613,10 @@ const DataSetModel = Backbone.Model.extend({
                 for (let i = 0; i < values.levels.length; i++) {
                     let level = values.levels[i];
                     let levelPB = new coms.Messages.VariableLevel();
-                    if (values.measureType === 'nominal' || values.measureType === 'ordinal') {
-                        levelPB.value = level.value;
-                        levelPB.label = level.label;
-                        levelPB.importValue = '';
-                        columnPB.levels.push(levelPB);
-                    }
-                    else {
-                        levelPB.value = i;
-                        levelPB.label = level.label;
-                        levelPB.importValue = level.importValue;
-                        columnPB.levels.push(levelPB);
-                    }
+                    levelPB.value = level.value;
+                    levelPB.label = level.label;
+                    levelPB.importValue = level.importValue;
+                    columnPB.levels.push(levelPB);
                 }
             }
 
@@ -851,6 +849,7 @@ const DataSetModel = Backbone.Model.extend({
         column.name = columnPB.name;
         column.index = columnPB.index;
         column.columnType = DataSetModel.stringifyColumnType(columnPB.columnType);
+        column.dataType = DataSetModel.stringifyDataType(columnPB.dataType);
         column.measureType = DataSetModel.stringifyMeasureType(columnPB.measureType);
         column.autoMeasure = columnPB.autoMeasure;
         column.dps = columnPB.dps;
@@ -869,20 +868,11 @@ const DataSetModel = Backbone.Model.extend({
             levels = new Array(columnPB.levels.length);
             for (let i = 0; i < levels.length; i++) {
                 let levelPB = columnPB.levels[i];
-                if (column.measureType === 'nominaltext') {
-                    levels[i] = {
-                        label: levelPB.label,
-                        value: i,
-                        importValue: levelPB.importValue
-                    };
-                }
-                else {
-                    levels[i] = {
-                        label: levelPB.label,
-                        value: levelPB.value,
-                        importValue: levelPB.value.toString()
-                    };
-                }
+                levels[i] = {
+                    label: levelPB.label,
+                    value: levelPB.value,
+                    importValue: levelPB.importValue,
+                };
             }
         }
         column.levels = levels;
@@ -891,14 +881,14 @@ const DataSetModel = Backbone.Model.extend({
 
 DataSetModel.stringifyMeasureType = function(type) {
     switch (type) {
-        case 1:
-            return 'nominaltext';
         case 2:
             return 'nominal';
         case 3:
             return 'ordinal';
         case 4:
             return 'continuous';
+        case 5:
+            return 'id';
         default:
             return 'none';
     }
@@ -906,14 +896,14 @@ DataSetModel.stringifyMeasureType = function(type) {
 
 DataSetModel.parseMeasureType = function(str) {
     switch (str) {
-        case 'nominaltext':
-            return 1;
         case 'nominal':
             return 2;
         case 'ordinal':
             return 3;
         case 'continuous':
             return 4;
+        case 'id':
+            return 5;
         default:
             return 0;
     }
@@ -949,6 +939,32 @@ DataSetModel.parseColumnType = function(str) {
             return 4;
         case 'none':
             return 0;
+        default:
+            return 1;
+    }
+};
+
+DataSetModel.stringifyDataType = function(type) {
+    switch (type) {
+        case 1:
+            return 'integer';
+        case 2:
+            return 'decimal';
+        case 3:
+            return 'text';
+        default:
+            return 'integer';
+    }
+};
+
+DataSetModel.parseDataType = function(str) {
+    switch (str) {
+        case 'integer':
+            return 1;
+        case 'decimal':
+            return 2;
+        case 'text':
+            return 3;
         default:
             return 1;
     }

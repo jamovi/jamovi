@@ -298,7 +298,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
         columnNames[colNo] = Rcpp::String(columnName);
 
-        if (column.measureType() == MeasureType::CONTINUOUS)
+        if (column.dataType() == DataType::DECIMAL)
         {
             Rcpp::NumericVector v(rowCountExFiltered, Rcpp::NumericVector::get_na());
             rowNo = 0;
@@ -307,6 +307,19 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
             {
                 if ( ! dataset.isRowFiltered(j))
                     v[rowNo++] = column.value<double>(j);
+            }
+
+            columns[colNo] = v;
+        }
+        else if (column.measureType() == MeasureType::CONTINUOUS)
+        {
+            Rcpp::IntegerVector v(rowCountExFiltered, Rcpp::IntegerVector::get_na());
+            rowNo = 0;
+
+            for (int j = 0; j < rowCount; j++)
+            {
+                if ( ! dataset.isRowFiltered(j))
+                    v[rowNo++] = column.value<int>(j);
             }
 
             columns[colNo] = v;
@@ -357,7 +370,7 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             v.attr("levels") = levels;
 
-            if (column.measureType() == MeasureType::NOMINAL_TEXT)
+            if (column.dataType() == DataType::TEXT)
             {
                 v.attr("class") = "factor";
             }

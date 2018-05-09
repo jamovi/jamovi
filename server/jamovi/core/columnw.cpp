@@ -42,14 +42,21 @@ void ColumnW::setColumnType(ColumnType::Type columnType)
     s->changes++;
 }
 
+void ColumnW::setDataType(DataType::Type dataType)
+{
+    ColumnStruct *s = struc();
+    s->dataType = (char)dataType;
+    s->changes++;
+
+    if (dataType == DataType::DECIMAL)
+        setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
+}
+
 void ColumnW::setMeasureType(MeasureType::Type measureType)
 {
     ColumnStruct *s = struc();
     s->measureType = (char)measureType;
     s->changes++;
-
-    if (measureType == MeasureType::CONTINUOUS)
-        setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
 }
 
 void ColumnW::setAutoMeasure(bool yes)
@@ -149,7 +156,7 @@ void ColumnW::insertRows(int insStart, int insEnd)
     int startCount = rowCount();
     int finalCount = startCount + insCount;
 
-    if (measureType() == MeasureType::CONTINUOUS)
+    if (dataType() == DataType::DECIMAL)
     {
         setRowCount<double>(finalCount);
 
@@ -360,7 +367,7 @@ void ColumnW::removeLevel(int value)
 
     s->levelsUsed--;
 
-    if (measureType() == MeasureType::NOMINAL_TEXT)
+    if (dataType() == DataType::TEXT)
     {
         // consolidate levels
 

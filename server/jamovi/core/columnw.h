@@ -26,6 +26,7 @@ public:
     void setId(int id);
     void setName(const char *name);
     void setColumnType(ColumnType::Type columnType);
+    void setDataType(DataType::Type dataType);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
     void appendLevel(int value, const char *label, const char *importValue = 0);
@@ -44,10 +45,13 @@ public:
 
     template<typename T> void setValue(int rowIndex, T value, bool initing = false)
     {
-        if (measureType() != MeasureType::CONTINUOUS)
-        {
+        if (dataType() == DataType::DECIMAL)
+            assert(sizeof(T) == 8);
+        else
             assert(sizeof(T) == 4);
 
+        if (measureType() != MeasureType::CONTINUOUS)
+        {
             int newValue = (int)value;
 
             if (initing == false)

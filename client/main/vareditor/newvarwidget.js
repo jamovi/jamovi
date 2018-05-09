@@ -39,7 +39,6 @@ const NewVarWidget = Backbone.View.extend({
 
         this.$computed.on('click', (event) => {
             this.model.set('columnType', 'computed');
-            this.model.set('measureType', 'continuous');
             this.model.apply();
         });
 

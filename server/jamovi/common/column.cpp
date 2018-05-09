@@ -39,6 +39,11 @@ ColumnType::Type Column::columnType() const
     return (ColumnType::Type) struc()->columnType;
 }
 
+DataType::Type Column::dataType() const
+{
+    return (DataType::Type) struc()->dataType;
+}
+
 MeasureType::Type Column::measureType() const
 {
     return (MeasureType::Type) struc()->measureType;
@@ -221,8 +226,11 @@ bool Column::hasLevel(const char *label) const
         Level &level = levels[i];
         const char *l = _mm->resolve(level.label);
         if (strcmp(l, label) == 0)
+        {
             return true;
-        else {
+        }
+        else
+        {
             const char *iv = _mm->resolve(level.importValue);
             if (strcmp(iv, label) == 0)
                 return true;

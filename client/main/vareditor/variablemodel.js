@@ -30,6 +30,7 @@ const VariableModel = Backbone.Model.extend({
         name : null,
         id: null,
         columnType: null,
+        dataType: null,
         measureType : null,
         autoMeasure : false,
         levels : null,
@@ -93,6 +94,7 @@ const VariableModel = Backbone.Model.extend({
             name : column.name,
             id : column.id,
             columnType: column.columnType,
+            dataType: column.dataType,
             measureType : column.measureType,
             autoMeasure : column.autoMeasure,
             description: column.description,
@@ -115,6 +117,7 @@ const VariableModel = Backbone.Model.extend({
         let values = {
             name: this.attributes.name.trim(),
             columnType: this.attributes.columnType,
+            dataType: this.attributes.dataType,
             measureType: this.attributes.measureType,
             autoMeasure: this.attributes.autoMeasure,
             levels: this.attributes.levels,
@@ -135,6 +138,7 @@ const VariableModel = Backbone.Model.extend({
                     let latestValues = {
                         name: this.attributes.name.trim(),
                         columnType: this.attributes.columnType,
+                        dataType: this.attributes.dataType,
                         measureType: this.attributes.measureType,
                         autoMeasure: this.attributes.autoMeasure,
                         levels: this.attributes.levels,

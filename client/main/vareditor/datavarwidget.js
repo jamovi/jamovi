@@ -17,7 +17,10 @@ const DataVarWidget = Backbone.View.extend({
 
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
         this.$left = $('<div class="jmv-variable-editor-widget-left"></div>').appendTo(this.$body);
+
         this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
+        this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
+        this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
 
         this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$body);
@@ -34,11 +37,15 @@ const DataVarWidget = Backbone.View.extend({
         this.$moveDown.on('click', event => this._moveDown());
         this.selectedLevelIndex = -1;
 
+        this.$dataTypeList.on('change', (event) => {
+            let dt = this.$dataTypeList.val();
+            this.model.set({ dataType: dt, autoMeasure: false });
+        });
+
         let options = [
             { label: 'Continuous',   measureType: 'continuous' },
             { label: 'Ordinal',      measureType: 'ordinal' },
             { label: 'Nominal',      measureType: 'nominal' },
-            { label: 'Nominal Text', measureType: 'nominaltext' },
         ];
 
         this.resources = { };
@@ -63,8 +70,9 @@ const DataVarWidget = Backbone.View.extend({
 
         this.$typesHighlight = $('<div class="jmv-variable-editor-widget-types-highlight"></div>').appendTo(this.$types);
 
-        this.model.on('change:measureType', event => this._setOptions(event.changed.measureType, this.model.get('levels')));
-        this.model.on('change:levels',      event => this._setOptions(this.model.get('measureType'), event.changed.levels));
+        this.model.on('change:dataType',    event => this._setOptions(event.changed.dataType, this.model.get('measureType'), this.model.get('levels')));
+        this.model.on('change:measureType', event => this._setOptions(this.model.get('dataType'), event.changed.measureType, this.model.get('levels')));
+        this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
         this.model.on('change:description', event => this._updateHighlightPosition());
     },
@@ -122,9 +130,11 @@ const DataVarWidget = Backbone.View.extend({
             }
         }
     },
-    _setOptions(measureType, levels) {
+    _setOptions(dataType, measureType, levels) {
         if ( ! this.attached)
             return;
+
+        this.$dataTypeList.val(dataType);
 
         for (let t in this.resources) {
             let $option = this.resources[t].$option;
@@ -214,7 +224,10 @@ const DataVarWidget = Backbone.View.extend({
         this.attached = true;
         this.selectedLevelIndex = -1;
         this._setAutoMeasure(this.model.get('autoMeasure'));
-        this._setOptions(this.model.get('measureType'), this.model.get('levels'));
+        this._setOptions(
+            this.model.get('dataType'),
+            this.model.get('measureType'),
+            this.model.get('levels'));
     }
 });
 

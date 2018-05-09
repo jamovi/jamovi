@@ -7,6 +7,7 @@ from types import FunctionType as function
 import math
 from collections import OrderedDict
 
+from jamovi.core import DataType
 from jamovi.core import MeasureType
 from ..utils import FValues
 from ..utils import convert
@@ -37,6 +38,13 @@ class Num(ast.Num):
 
     def is_atomic_node(self):
         return True
+
+    @property
+    def data_type(self):
+        if isinstance(self.n, int):
+            return DataType.INTEGER
+        else:
+            return DataType.DECIMAL
 
     @property
     def measure_type(self):
@@ -84,8 +92,12 @@ class Str(ast.Str):
         return True
 
     @property
+    def data_type(self):
+        return DataType.TEXT
+
+    @property
     def measure_type(self):
-        return MeasureType.NOMINAL_TEXT
+        return MeasureType.NOMINAL
 
     @property
     def needs_recalc(self):
@@ -152,9 +164,21 @@ class UnaryOp(ast.UnaryOp):
         return self.operand.is_atomic_node()
 
     @property
+    def data_type(self):
+        if isinstance(self.op, ast.UAdd):
+            if self.operand.data_type is DataType.TEXT:
+                return DataType.DECIMAL
+            else:
+                return self.operand.data_type
+        elif isinstance(self.op, ast.Not):
+            return DataType.INTEGER
+        else:
+            return self.operand.data_type
+
+    @property
     def measure_type(self):
         if isinstance(self.op, ast.UAdd):
-            if self.operand.measure_type is MeasureType.NOMINAL_TEXT:
+            if self.operand.data_type is DataType.TEXT:
                 return MeasureType.CONTINUOUS
             else:
                 return self.operand.measure_type
@@ -231,6 +255,10 @@ class BoolOp(ast.BoolOp):
         return True
 
     @property
+    def data_type(self):
+        return DataType.INTEGER
+
+    @property
     def measure_type(self):
         return MeasureType.NOMINAL
 
@@ -267,6 +295,7 @@ class Call(ast.Call):
         self._cached_value = None
         self._node_parents = [ ]
         self._arg_types = [ ]
+        self._d_type = None
         self._m_type = None
 
         name = func.id
@@ -363,44 +392,63 @@ class Call(ast.Call):
         for parent in self._node_parents:
             parent.needs_recalc = needs_recalc
 
-    @property
-    def measure_type(self):
-        # determine the measure type from the function meta
+    def _determine_d_m_types(self):
+        # determine the data and measure type from the function meta
         # and the function arguments
-
-        if self._m_type is not None:  # value cached
-            return self._m_type
 
         func_meta = self._function.meta
 
         if len(self.args) == 0:
-            return func_meta.m_type
+            self._d_type = func_meta.d_type
+            self._m_type = func_meta.m_type
+            return
 
         if len(func_meta.returns) == 0:
-            return func_meta.m_type
+            self._d_type = func_meta.d_type
+            self._m_type = func_meta.m_type
+            return
 
         # not sure why this doesn't work:
         # types = map(lambda i: args[i].measure_type, self._returns)
         #
         # had to do this instead:
-        types = [None] * len(func_meta.returns)
+        d_types = [None] * len(func_meta.returns)
+        m_types = [None] * len(func_meta.returns)
         for i in range(len(func_meta.returns)):
             arg_i = func_meta.returns[i]
             if arg_i < len(self.args):
-                types[i] = self.args[arg_i].measure_type
+                d_types[i] = self.args[arg_i].data_type
+                m_types[i] = self.args[arg_i].measure_type
 
-        mt = MeasureType.NOMINAL
-        for t in list(types):
-            if t is MeasureType.ORDINAL and mt is MeasureType.NOMINAL:
-                mt = MeasureType.ORDINAL
-            elif t is MeasureType.CONTINUOUS:
-                mt = MeasureType.CONTINUOUS
-            elif t is MeasureType.NOMINAL_TEXT:
-                mt = MeasureType.NOMINAL_TEXT
+        dt = DataType.INTEGER
+        for t in list(d_types):
+            if t is DataType.DECIMAL:
+                dt = DataType.DECIMAL
+            elif t is DataType.TEXT:
+                dt = DataType.TEXT
                 break
 
-        self._m_type = mt  # cache value
-        return mt
+        if dt is DataType.DECIMAL:
+            mt = MeasureType.CONTINUOUS
+        else:
+            mt = MeasureType.NOMINAL
+            if MeasureType.ORDINAL in m_types:
+                mt = MeasureType.ORDINAL
+
+        self._d_type = dt
+        self._m_type = mt
+
+    @property
+    def data_type(self):
+        if self._d_type is None:
+            self._determine_d_m_types()
+        return self._d_type
+
+    @property
+    def measure_type(self):
+        if self._m_type is None:
+            self._determine_d_m_types()
+        return self._m_type
 
     @property
     def has_levels(self):
@@ -409,7 +457,6 @@ class Call(ast.Call):
     @property
     def levels(self):
 
-        m_type = self.measure_type
         func_meta = self._function.meta
         arg_level_indices = func_meta.arg_level_indices
 
@@ -417,7 +464,7 @@ class Call(ast.Call):
             return [ ]
         if len(self.args) == 0:
             return [ ]
-        if m_type is not MeasureType.NOMINAL_TEXT:
+        if self.data_type is not DataType.TEXT:
             return [ ]
 
         level_use = OrderedDict()
@@ -468,10 +515,10 @@ class BinOp(ast.BinOp):
         rv = self.right
         op = self.op
 
-        mt = self.measure_type
-        if mt is MeasureType.CONTINUOUS:
+        dt = self.data_type
+        if dt is DataType.DECIMAL:
             ul_type = float
-        elif mt is MeasureType.NOMINAL_TEXT:
+        elif dt is DataType.TEXT:
             ul_type = str
         else:
             ul_type = int
@@ -523,6 +570,22 @@ class BinOp(ast.BinOp):
         return self.left.is_atomic_node() and self.right.is_atomic_node()
 
     @property
+    def data_type(self):
+
+        if isinstance(self.op, ast.Pow):
+            return DataType.DECIMAL
+
+        ldt = self.left.data_type
+        rdt = self.right.data_type
+
+        if ldt is DataType.TEXT or rdt is DataType.TEXT:
+            return DataType.TEXT
+        elif ldt is DataType.DECIMAL or rdt is DataType.DECIMAL:
+            return DataType.DECIMAL
+        else:
+            return DataType.INTEGER
+
+    @property
     def measure_type(self):
 
         if isinstance(self.op, ast.Pow):
@@ -531,11 +594,11 @@ class BinOp(ast.BinOp):
         lmt = self.left.measure_type
         rmt = self.right.measure_type
 
-        if lmt is MeasureType.NOMINAL_TEXT or rmt is MeasureType.NOMINAL_TEXT:
-            return MeasureType.NOMINAL_TEXT
-        elif lmt is MeasureType.CONTINUOUS or rmt is MeasureType.CONTINUOUS:
-            return MeasureType.CONTINUOUS
-        elif lmt is MeasureType.NOMINAL or rmt is MeasureType.NOMINAL:
+        if lmt is MeasureType.CONTINUOUS or rmt is MeasureType.CONTINUOUS:
+            if self.data_type is not DataType.TEXT:
+                return MeasureType.CONTINUOUS
+
+        if lmt is MeasureType.NOMINAL or rmt is MeasureType.NOMINAL:
             return MeasureType.NOMINAL
         else:
             return MeasureType.ORDINAL
@@ -626,6 +689,10 @@ class Compare(ast.Compare):
             if node.is_atomic_node() is False:
                 return False
         return True
+
+    @property
+    def data_type(self):
+        return DataType.INTEGER
 
     @property
     def measure_type(self):

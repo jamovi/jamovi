@@ -159,7 +159,7 @@ const TableView = SilkyView.extend({
 
         this._addResizeListeners($header);
 
-        let $column = $('<div data-fmlaok="' + (column.formulaMessage === '' ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-fmlaok="' + (column.formulaMessage === '' ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
         this.$columns.push($column);
 
@@ -414,8 +414,8 @@ const TableView = SilkyView.extend({
             if (changes.levelsChanged || changes.measureTypeChanged || changes.columnTypeChanged) {
                 $header.attr('data-measuretype', column.measureType);
                 $header.attr('data-columntype', column.columnType);
+                $header.attr('data-datatype', column.dataType);
                 $column.attr('data-measuretype', column.measureType);
-                $column.attr('data-columntype', column.columnType);
             }
 
             if (changes.formulaMessageChanged) {
@@ -1000,8 +1000,8 @@ const TableView = SilkyView.extend({
                             value = number;
                         else if ( ! this.currentColumn.autoMeasure)
                             throw {
-                                title: 'Numeric value required',
-                                message: 'Variables of type Continuous only accept numeric values',
+                                message: 'Could not assign data',
+                                cause: 'Cannot assign non-numeric value to column \'' + this.currentColumn.name + '\'',
                                 type: 'error',
                             };
                         break;
@@ -1011,14 +1011,6 @@ const TableView = SilkyView.extend({
                             value = number;
                         else if ( ! Number.isNaN(number))
                             value = number;
-                        break;
-                    case 'nominaltext':
-                        for (let levelInfo of this.currentColumn.levels) {
-                            if (value === levelInfo.importValue) {
-                                value = levelInfo.label;
-                                break;
-                            }
-                        }
                         break;
                 }
             }
@@ -1378,7 +1370,7 @@ const TableView = SilkyView.extend({
                 this._addResizeListeners($header);
 
                 $after = $(this.$columns[column.dIndex]);
-                let $column = $('<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+                let $column = $('<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
                 $column.insertBefore($after);
                 this.$columns.splice(column.dIndex, 0, $column);
 
@@ -1932,7 +1924,7 @@ const TableView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-id="' + column.id + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html += '<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-id="' + column.id + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
         html +=     '<div class="jmv-column-header-icon"></div>';
         html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
         html +=     '<div class="jmv-column-header-resizer" data-index="' + column.dIndex + '" draggable="true"></div>';

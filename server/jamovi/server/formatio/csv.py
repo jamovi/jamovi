@@ -10,8 +10,9 @@ from io import TextIOWrapper
 import chardet
 import logging
 
-from jamovi.core import MeasureType
 from jamovi.core import ColumnType
+from jamovi.core import DataType
+from jamovi.core import MeasureType
 from jamovi.server.settings import Settings
 
 settings = Settings.retrieve('main')
@@ -209,6 +210,7 @@ class ColumnWriter:
         self._is_empty = True
         self._unique_values = set()
         self._measure_type = None
+        self._data_type = None
         self._ruminated = False
         self._dps = 0
 
@@ -256,27 +258,44 @@ class ColumnWriter:
             many_uniques = True
 
         if self._only_integers and many_uniques is False:
+            self._data_type = DataType.INTEGER
             self._measure_type = MeasureType.NOMINAL
+            self._column.change(
+                data_type=DataType.INTEGER,
+                measure_type=MeasureType.NOMINAL)
+
             self._unique_values = list(self._unique_values)
             self._unique_values = list(map(lambda x: int(x), self._unique_values))
             self._unique_values.sort()
             for level in self._unique_values:
                 self._column.append_level(level, str(level))
+            self._column.dps = self._dps
+
         elif self._only_floats or self._only_euro_floats:
+            self._data_type = DataType.DECIMAL
+            self._measure_type = MeasureType.CONTINUOUS
+            self._column.change(
+                data_type=DataType.DECIMAL,
+                measure_type=MeasureType.CONTINUOUS)
+
             if self._only_floats and self._only_euro_floats:
                 self._only_euro_floats = False
-            self._measure_type = MeasureType.CONTINUOUS
+
         else:
-            self._measure_type = MeasureType.NOMINAL_TEXT
+            self._data_type = DataType.TEXT
+            self._measure_type = MeasureType.NOMINAL
+            self._column.change(
+                data_type=DataType.TEXT,
+                measure_type=MeasureType.NOMINAL)
+
             self._unique_values = list(self._unique_values)
             self._unique_values.sort()
             for i in range(0, len(self._unique_values)):
                 label = self._unique_values[i]
                 self._column.append_level(i, label)
 
-        self._ruminated = True
-        self._column.measure_type = self._measure_type
         self._column.dps = self._dps
+        self._ruminated = True
 
     def parse_row(self, row, row_no):
 
@@ -291,13 +310,13 @@ class ColumnWriter:
             if value == self._missings or value == '' or value == ' ':
                 value = None
 
-        if self._measure_type == MeasureType.NOMINAL or self._measure_type == MeasureType.ORDINAL:
+        if self._data_type == DataType.INTEGER:
             if value is None:
                 self._column[row_no] = -2147483648
             else:
                 self._column[row_no] = int(value)
 
-        elif self._measure_type == MeasureType.CONTINUOUS:
+        elif self._data_type == DataType.DECIMAL:
 
             if value is None:
                 self._column[row_no] = float('nan')
@@ -309,7 +328,7 @@ class ColumnWriter:
                         value)
                 self._column[row_no] = float(value)
 
-        elif self._measure_type == MeasureType.NOMINAL_TEXT:
+        elif self._data_type == DataType.TEXT:
 
             if value is None:
                 self._column[row_no] = -2147483648
