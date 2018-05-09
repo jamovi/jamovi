@@ -133,22 +133,36 @@ class Instance:
         return nor_path
 
     def _virtualise_path(path):
-        documents_dir = Dirs.documents_dir()
-        home_dir = Dirs.home_dir()
-        desktop_dir = Dirs.desktop_dir()
-        downloads_dir = Dirs.downloads_dir()
 
-        vir_path = path
-        if path.startswith(documents_dir):
-            vir_path = path.replace(documents_dir, '{{Documents}}')
-        elif path.startswith(downloads_dir):
-            vir_path = path.replace(downloads_dir, '{{Downloads}}')
-        elif path.startswith(desktop_dir):
-            vir_path = path.replace(desktop_dir, '{{Desktop}}')
-        elif path.startswith(home_dir):
-            vir_path = path.replace(home_dir, '{{Home}}')
+        try:
+            documents_dir = Dirs.documents_dir()
+            if path.startswith(documents_dir):
+                return path.replace(documents_dir, '{{Documents}}')
+        except Exception:
+            pass
 
-        return vir_path
+        try:
+            downloads_dir = Dirs.downloads_dir()
+            if path.startswith(downloads_dir):
+                return path.replace(downloads_dir, '{{Downloads}}')
+        except Exception:
+            pass
+
+        try:
+            desktop_dir = Dirs.desktop_dir()
+            if path.startswith(desktop_dir):
+                return path.replace(desktop_dir, '{{Desktop}}')
+        except Exception:
+            pass
+
+        try:
+            home_dir = Dirs.home_dir()
+            if path.startswith(home_dir):
+                return path.replace(home_dir, '{{Home}}')
+        except Exception:
+            pass
+
+        return path
 
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
@@ -229,11 +243,14 @@ class Instance:
             abs_path = Instance._normalise_path(path)
             path = Instance._virtualise_path(path)
         else:
-            path = '{{Documents}}'
-            abs_path = Dirs.documents_dir()
-            if os.path.exists(abs_path):
+            try:
                 path = '{{Documents}}'
-            else:
+                abs_path = Dirs.documents_dir()
+                if os.path.exists(abs_path):
+                    path = '{{Documents}}'
+                else:
+                    path = '{{Root}}'
+            except Exception:
                 path = '{{Root}}'
 
         response = jcoms.FSResponse()
@@ -242,29 +259,41 @@ class Instance:
 
         if path.startswith('{{Root}}'):
 
-            if os.path.exists(Dirs.documents_dir()):
-                entry = response.contents.add()
-                entry.name = 'Documents'
-                entry.path = '{{Documents}}'
-                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            try:
+                if os.path.exists(Dirs.documents_dir()):
+                    entry = response.contents.add()
+                    entry.name = 'Documents'
+                    entry.path = '{{Documents}}'
+                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            except Exception:
+                pass
 
-            if os.path.exists(Dirs.downloads_dir()):
-                entry = response.contents.add()
-                entry.name = 'Downloads'
-                entry.path = '{{Downloads}}'
-                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            try:
+                if os.path.exists(Dirs.downloads_dir()):
+                    entry = response.contents.add()
+                    entry.name = 'Downloads'
+                    entry.path = '{{Downloads}}'
+                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            except Exception:
+                pass
 
-            if os.path.exists(Dirs.desktop_dir()):
-                entry = response.contents.add()
-                entry.name = 'Desktop'
-                entry.path = '{{Desktop}}'
-                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            try:
+                if os.path.exists(Dirs.desktop_dir()):
+                    entry = response.contents.add()
+                    entry.name = 'Desktop'
+                    entry.path = '{{Desktop}}'
+                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            except Exception:
+                pass
 
-            if os.path.exists(Dirs.home_dir()):
-                entry = response.contents.add()
-                entry.name = 'Home'
-                entry.path = '{{Home}}'
-                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            try:
+                if os.path.exists(Dirs.home_dir()):
+                    entry = response.contents.add()
+                    entry.name = 'Home'
+                    entry.path = '{{Home}}'
+                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+            except Exception:
+                pass
 
             if platform.uname().system == 'Windows':
                 for drive_letter in range(ord('A'), ord('Z') + 1):
