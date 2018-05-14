@@ -27,6 +27,7 @@ message ComsMessage {
     Status status = 5;
     Error error = 6;
     int32 progress = 7;
+    int32 progressTotal = 8;
 }
 
 message AnalysisRequest {

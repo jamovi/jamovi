@@ -469,7 +469,7 @@ class Instance:
                                 self._instance_id,
                                 request,
                                 complete=False,
-                                progress=int(p))
+                                progress=(1000 * p, 1000))
 
             formatio.read(self._data, norm_path, prog_cb, is_example)
 
@@ -637,10 +637,7 @@ class Instance:
 
     def _on_module_callback(self, t, result, request):
         if t == 'progress':
-            progress = jcoms.Progress()
-            progress.progress = result[0]
-            progress.total = result[1]
-            self._coms.send(progress, self._instance_id, request, complete=False)
+            self._coms.send(None, self._instance_id, request, complete=False, progress=result)
         elif t == 'error':
             self._coms.send_error('Unable to install module', str(result), self._instance_id, request)
         elif t == 'success':
@@ -662,10 +659,7 @@ class Instance:
 
     def _on_store_callback(self, request, t, result):
         if t == 'progress':
-            progress = jcoms.Progress()
-            progress.progress = result[0]
-            progress.total = result[1]
-            self._coms.send(progress, self._instance_id, request, complete=False)
+            self._coms.send(None, self._instance_id, request, complete=False, progress=result)
         elif t == 'error':
             self._coms.send_error('Unable to access library', str(result), self._instance_id, request)
         elif t == 'success':

@@ -60,8 +60,8 @@ const NotificationView = Backbone.View.extend({
         this.$message.text(this.model.attributes.message);
         this.$title.text(this.model.attributes.title);
 
-        if (this.model.attributes.progress >= 0) {
-            this.$progressBarBar.css('width', '' + (this.model.attributes.progress / 1000) + '%');
+        if (this.model.attributes.progress[1] > 0) {
+            this.$progressBarBar.css('width', '' + (100 * this.model.attributes.progress[0] / this.model.attributes.progress[1]) + '%');
             this.$progressBar.show();
         }
         else {

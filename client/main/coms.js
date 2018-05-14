@@ -123,7 +123,7 @@ Coms.prototype.receive = function(event) {
             else if (response.status === this.Messages.Status.ERROR)
                 trans.reject(response.error);
             else if (response.status === this.Messages.Status.IN_PROGRESS)
-                trans.onprogress(response.progress);
+                trans.onprogress([ response.progress, response.progressTotal ]);
             else
                 console.log("Shouldn't get here!");
             break;

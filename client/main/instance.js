@@ -324,8 +324,6 @@ const Instance = Backbone.Model.extend({
                 return coms.Messages.StoreResponse.decode(response.payload);
             }, error => {
                 throw error;
-            }, progress => {
-                return coms.Messages.Progress.decode(progress.payload);
             });
     },
     installModule(filePath) {
@@ -341,11 +339,7 @@ const Instance = Backbone.Model.extend({
         request.payloadType = 'ModuleRR';
         request.instanceId = this._instanceId;
 
-        return coms.send(request)
-            .then(undefined, undefined, progress => {
-                let pg = coms.Messages.Progress.decode(progress.payload);
-                return [ pg.progress, pg.total ];
-            });
+        return coms.send(request);
     },
     uninstallModule(name) {
 

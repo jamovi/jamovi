@@ -177,8 +177,8 @@ def read(data, path, prog_cb):
                 data.embedded_path = embedded_path
                 data.embedded_name = embedded_name
 
-                prog_cb(10000)
-            except Exception as e:
+                prog_cb(0.1)
+            except Exception:
                 pass
 
         for meta_column in meta_dataset['fields']:
@@ -231,7 +231,7 @@ def read(data, path, prog_cb):
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
             columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
 
-        prog_cb(30000)
+        prog_cb(0.3)
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
@@ -276,7 +276,7 @@ def read(data, path, prog_cb):
                             column[row_offset + i] = values[0]
                             i += 1
 
-                prog_cb(30000 + 65000 * (col_no + 1) / ncols)
+                prog_cb(0.3 + 0.65 * (col_no + 1) / ncols)
                 col_no += 1
 
             data_file.close()

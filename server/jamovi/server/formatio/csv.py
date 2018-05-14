@@ -142,7 +142,7 @@ def read(data, path, prog_cb):
                 row_count += 1
 
             if row_count % 1000 == 0:
-                prog_cb(int(33333 * file.tell() / file_size))
+                prog_cb(0.33333 * file.tell() / file_size)
 
         for column_writer in column_writers:
             column_writer.ruminate()
@@ -164,7 +164,7 @@ def read(data, path, prog_cb):
                 row_no += 1
 
             if row_no % 1000 == 0:
-                prog_cb(int(33333 + 66666 * file.tell() / file_size))
+                prog_cb(.33333 + .66666 * file.tell() / file_size)
 
 
 def trim_after_last_newline(text):

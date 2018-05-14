@@ -58,7 +58,7 @@ class ClientConnection(WebSocketHandler):
             # would be nice to send_error()
             log.exception(e)
 
-    def send(self, message=None, instance_id=None, response_to=None, complete=True, progress=0):
+    def send(self, message=None, instance_id=None, response_to=None, complete=True, progress=(0, 0)):
 
         if message is None and response_to is None:
             return
@@ -87,7 +87,8 @@ class ClientConnection(WebSocketHandler):
         else:
             m.status = jcoms.Status.Value('IN_PROGRESS')
 
-        m.progress = progress
+        m.progress = int(progress[0])
+        m.progressTotal = int(progress[1])
 
         self.write_message(m.SerializeToString(), binary=True)
 
