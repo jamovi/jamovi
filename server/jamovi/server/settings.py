@@ -65,5 +65,10 @@ class Settings:
         if self._parent is not None:
             self._parent.sync()
         else:
-            with open(self._path, 'w', encoding='utf-8') as file:
-                json.dump(self._root, file)
+            try:
+                temp_path = self._path + '.tmp'
+                with open(temp_path, 'w', encoding='utf-8') as file:
+                    json.dump(self._root, file)
+                os.replace(temp_path, self._path)
+            except Exception as e:
+                print(e)
