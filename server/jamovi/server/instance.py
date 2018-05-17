@@ -1523,15 +1523,22 @@ class Instance:
 
     def _module_to_pb(self, module, module_pb):
 
-        version = module.version
-        version = version[:4]
-        version.extend((4 - len(version)) * [0])
-        version = int.from_bytes(version, 'big')
+        try:
+            version = module.version
+            version = version[:4]
+            version.extend((4 - len(version)) * [0])
+            version = int.from_bytes(version, byteorder='big')
+        except Exception:
+            version = 0
 
-        min_version = module.min_app_version
-        min_version = min_version[:4]
-        min_version.extend((4 - len(min_version)) * [0])
-        min_version = int.from_bytes(min_version, 'big')
+        try:
+            min_version = module.min_app_version
+            min_version = min_version[:4]
+            min_version.extend((4 - len(min_version)) * [0])
+            min_version = int.from_bytes(min_version, byteorder='big')
+        except Exception:
+            # makes it uninstallable
+            min_version = int.from_bytes([255, 255, 255, 255], byteorder='big')
 
         module_pb.name = module.name
         module_pb.title = module.title
