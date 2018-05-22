@@ -367,6 +367,11 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
                 v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
             }
 
+            if ( ! column.trimLevels() && column.hasUnusedLevels())
+            {
+                v.attr("jmv-unused-levels") = true;
+            }
+
             columns[colNo] = v;
         }
 

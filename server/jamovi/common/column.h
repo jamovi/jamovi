@@ -136,6 +136,7 @@ public:
     const char *formula() const;
     const char *formulaMessage() const;
     bool trimLevels() const;
+    bool hasUnusedLevels() const;
 
     template<typename T> T value(int rowIndex)
     {

@@ -133,6 +133,21 @@ const vector<LevelData> Column::levelsExFiltered() const
     return m;
 }
 
+bool Column::hasUnusedLevels() const
+{
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &l = levels[i];
+        if (l.countExFiltered == 0)
+            return true;
+    }
+
+    return false;
+}
+
 const char *Column::getLabel(int value) const
 {
     if (value == INT_MIN)
