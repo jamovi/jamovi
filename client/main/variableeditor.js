@@ -79,7 +79,7 @@ const VariableEditor = Backbone.View.extend({
                         this.model.set('editingVar', index);
                         this._update();
                     }
-                    else if (changes.measureTypeChanged || changes.levelsChanged || changes.nameChanged) {
+                    else if (changes.measureTypeChanged || changes.dataTypeChanged || changes.levelsChanged || changes.nameChanged) {
                         this._update();
                     }
                     break;

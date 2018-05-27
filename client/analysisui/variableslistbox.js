@@ -110,7 +110,7 @@ const VariablesListBox = function(params) {
 
         var itemValue = item.value;
         if (itemValue.format.name === 'variable' && item.properties !== undefined)
-            allowItem = this._checkIfVariableTypeAllowed(item.properties.type);
+            allowItem = this._checkIfVariableTypeAllowed(item.properties);
 
         if (!allowItem)
             this._flashIcons();
@@ -118,17 +118,35 @@ const VariablesListBox = function(params) {
         return allowItem;
     });
 
-    this._checkIfVariableTypeAllowed = function(type) {
-        let allowItem = true;
-        if (this._permittedVariableTypes.length > 0) {
-            allowItem = false;
-            for (let i = 0; i < this._permittedVariableTypes.length; i++) {
-                if (type === this._permittedVariableTypes[i]) {
-                    allowItem = true;
+    this._checkPermitted = function(column, permitted) {
+
+        let measureType = column.measureType;
+        if (column.dataType === 'text')
+            measureType = column.measureType + 'text';
+        if (permitted.includes(measureType))
+            return true;
+
+        for (let p = 0; p < permitted.length; p++) {
+            let permit = permitted[p];
+            switch (permit) {
+                case 'numeric':
+                    if (column.measureType !== 'id' && (column.dataType === 'integer' || column.dataType === 'decimal'))
+                        return true;
                     break;
-                }
+                case 'factor':
+                    if (column.measureType === 'nominal' || column.measureType === 'ordinal')
+                        return true;
+                    break;
             }
         }
+
+        return false;
+    };
+
+    this._checkIfVariableTypeAllowed = function(data) {
+        let allowItem = true;
+        if (this._permittedVariableTypes.length > 0)
+            allowItem = this._checkPermitted(data, this._permittedVariableTypes);
         return allowItem;
     };
 

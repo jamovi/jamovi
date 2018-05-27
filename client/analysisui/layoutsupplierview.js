@@ -351,10 +351,14 @@ const LayoutSupplierView = function(params) {
             $item.addClass("silky-grayed-out");
 
         let variableType = 'none';
-        if (_.isUndefined(item.properties.type) === false)
-            variableType = item.properties.type;
+        if (item.properties.measureType !== undefined)
+            variableType = item.properties.measureType;
 
-        $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + '"></div>');
+        let dataType = 'none';
+        if (item.properties.dataType !== undefined)
+            dataType = item.properties.dataType;
+
+        $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + ' jmv-data-type-' + dataType + '"></div>');
         $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
 
         let c1 = this.supplierGrid.getCell(0, row);

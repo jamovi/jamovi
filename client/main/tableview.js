@@ -411,7 +411,7 @@ const TableView = SilkyView.extend({
             let $header = $(this.$headers[column.dIndex]);
             let $column = $(this.$columns[column.dIndex]);
 
-            if (changes.levelsChanged || changes.measureTypeChanged || changes.columnTypeChanged) {
+            if (changes.levelsChanged || changes.measureTypeChanged || changes.dataTypeChanged || changes.columnTypeChanged) {
                 $header.attr('data-measuretype', column.measureType);
                 $header.attr('data-columntype', column.columnType);
                 $header.attr('data-datatype', column.dataType);

@@ -14,8 +14,8 @@ const LayoutVariablesView = function(params) {
 
     this.$el.addClass("silky-options-variable-supplier-group");
 
-    this.registerSimpleProperty("suggested", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
-    this.registerSimpleProperty("permitted", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext"]));
+    this.registerSimpleProperty("suggested", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext", "id"]));
+    this.registerSimpleProperty("permitted", [], new EnumArrayPropertyFilter(["continuous", "ordinal", "nominal", "nominaltext", "id", "numeric", "factor"]));
     this.registerSimpleProperty("populate", "auto", new EnumPropertyFilter(["auto", "manual"], "auto"));
     this.registerSimpleProperty("format", FormatDef.variable);
 
@@ -38,7 +38,7 @@ const LayoutVariablesView = function(params) {
         if (data.dataType !== "columns")
             return;
 
-        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.countChanged) {
+        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.dataTypeChanged || data.dataInfo.countChanged) {
             let promise = this.requestData("columns", null);
             promise.then(columnInfo => {
                 this.resources = columnInfo;
@@ -48,12 +48,13 @@ const LayoutVariablesView = function(params) {
     });
 
     this.requestMeasureType = function(columnId, item) {
-        let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id", "hidden", "columnType" ] });
+        let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id", "hidden", "columnType", "dataType" ] });
         promise.then(rData => {
             if (rData.measureType === undefined)
                 rData.measureType = "none";
 
-            item.properties.type = rData.measureType;
+            item.properties.measureType = rData.measureType;
+            item.properties.dataType = rData.dataType;
             item.properties.columnId = rData.id;
             item.properties.hidden = rData.hidden;
             item.properties.columnType = rData.columnType;
@@ -62,6 +63,31 @@ const LayoutVariablesView = function(params) {
     };
 
     this._waitingFor = 0;
+
+    this._checkPermitted = function(column, permitted) {
+        let measureType = column.measureType;
+        if (column.dataType === 'text')
+            measureType = column.measureType + 'text';
+
+        if (this._contains(measureType, permitted))
+            return true;
+
+        for (let p = 0; p < permitted.length; p++) {
+            let permit = permitted[p];
+            switch (permit) {
+                case 'numeric':
+                    if (column.measureType !== 'id' && (column.dataType === 'integer' || column.dataType === 'decimal'))
+                        return true;
+                    break;
+                case 'factor':
+                    if (column.measureType === 'nominal' || column.measureType === 'ordinal')
+                        return true;
+                    break;
+            }
+        }
+
+        return false;
+    };
 
     this.populateItemList = function() {
 
@@ -88,7 +114,7 @@ const LayoutVariablesView = function(params) {
                     items.splice(suggestedCount, 0, item);
                     suggestedCount += 1;
                 }
-                else if (permitted && this._contains(column.measureType, permitted)) {
+                else if (permitted && this._checkPermitted(column, permitted)) {
                     items.splice(suggestedCount + permittedCount, 0, item);
                     permittedCount += 1;
                 }

@@ -42,16 +42,20 @@
     background-image: url('assets/variable-continuous.svg');
 }
 
-.silky-variable-type-img.silky-variable-type-nominaltext {
-    background-image: url('assets/variable-nominal-text.svg');
-}
-
 .silky-variable-type-img.silky-variable-type-nominal {
     background-image: url('assets/variable-nominal.svg');
 }
 
+.silky-variable-type-img.silky-variable-type-nominal.jmv-data-type-text {
+    background-image: url('assets/variable-nominal-text.svg');
+}
+
 .silky-variable-type-img.silky-variable-type-ordinal {
     background-image: url('assets/variable-ordinal.svg');
+}
+
+.silky-variable-type-img.silky-variable-type-ordinal.jmv-data-type-text {
+    background-image: url('assets/variable-ordinal-text.svg');
 }
 
 .silky-options-supplier-group-header {
