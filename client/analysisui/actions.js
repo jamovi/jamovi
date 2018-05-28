@@ -21,13 +21,13 @@ function View() {
 
     this.setCustomVariables = function(variables) {
         this.customVariables = variables;
-        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
         this.emit('customVariablesChanged', event);
         //this._fireEvent("customVariablesChanged", event);
     };
 
-    this.setCustomVariable = function(name, measureType, levels) {
-        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: false } };
+    this.setCustomVariable = function(name, measureType, dataType, levels) {
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: false } };
 
         let found = false;
         let changed = false;
@@ -40,6 +40,11 @@ function View() {
                     this.customVariables[i].measureType = measureType;
                 }
 
+                if (dataType !== this.customVariables[i].dataType) {
+                    changed = true;
+                    event.dataInfo.dataTypeChanged = true;
+                    this.customVariables[i].dataType = dataType;
+                }
 
                 if (levels !== this.customVariables[i].levels) {
                     if (levels === undefined || this.customVariables[i].levels === undefined || levels.length !== this.customVariables[i].levels.length) {
@@ -66,7 +71,7 @@ function View() {
         if (found === false) {
             changed = true;
             event.dataInfo.countChanged = true;
-            this.customVariables.push( { name: name, measureType: measureType, levels: levels });
+            this.customVariables.push( { name: name, measureType: measureType, dataType: dataType, levels: levels });
         }
 
         if (changed)
@@ -84,14 +89,14 @@ function View() {
         }
 
         if (found) {
-            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
             this.emit('customVariablesChanged', event);
         }
     };
 
     this.clearCustomVariables = function(name, measureType, levels) {
         if (this.customVariables.length > 0) {
-            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
             this.customVariables = [];
             this.emit('customVariablesChanged', event);
         }

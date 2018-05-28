@@ -70,7 +70,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 let columns = this.dataSetModel.get('columns');
                 let columnData = [];
                 for (let i = 0; i < columns.length; i++)
-                    columnData[i] = { name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType };
+                    columnData[i] = { name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType };
                 data.columns = columnData;
             }
             else if (data.requestType === "column") {
@@ -232,10 +232,12 @@ let OptionsPanel = SilkyView.extend({
 
         this.dataSetModel.on('columnsChanged', event => {
 
-            let data = { measureTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true };
+            let data = { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true };
             for (let changes of event.changes) {
                 if (changes.measureTypeChanged)
                     data.measureTypeChanged = true;
+                if (changes.dataTypeChanged)
+                    data.dataTypeChanged = true;
                 if (changes.nameChanged)
                     data.nameChanged = true;
                 if (changes.levelsChanged)
@@ -244,7 +246,7 @@ let OptionsPanel = SilkyView.extend({
                     data.countChanged = true;
             }
 
-                if (data.measureTypeChanged || data.nameChanged || data.levelsChanged || data.countChanged) {
+                if (data.measureTypeChanged || data.dataTypeChanged || data.nameChanged || data.levelsChanged || data.countChanged) {
                     for (let analysesKey in this._analysesResources)
                         this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', data);
                 }

@@ -23,7 +23,7 @@ const VariableLabel = function(params) {
         if (data.dataType !== "columns")
             return;
 
-        if (data.dataInfo.measureTypeChanged || data.dataInfo.countChanged)
+        if (data.dataInfo.measureTypeChanged || data.dataInfo.dataTypeChanged || data.dataInfo.countChanged)
             this.updateView();
     });
 
@@ -48,7 +48,7 @@ const VariableLabel = function(params) {
     };
 
     this._updateIcon = function(columnName) {
-        let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType" ] });
+        let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType", "dataType" ] });
         promise.then(rData => {
             this.$icon.removeClass();
 
@@ -60,11 +60,19 @@ const VariableLabel = function(params) {
             let measureType = rData.measureType;
             if (measureType === undefined)
                 measureType = "none";
+            let dataType = rData.dataType;
+            if (dataType === undefined)
+                dataType = "none";
             var imageClasses = 'silky-variable-type-img';
             if (measureType !== null && measureType !== undefined)
                 imageClasses = imageClasses + ' silky-variable-type-' + measureType;
             else
                 imageClasses = imageClasses + ' silky-variable-type-none';
+
+            if (dataType !== null && dataType !== undefined)
+                imageClasses = imageClasses + ' jmv-data-type-' + dataType;
+            else
+                imageClasses = imageClasses + ' jmv-data-type-none';
 
             this.$icon.addClass(imageClasses);
 
