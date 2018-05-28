@@ -68,22 +68,15 @@ const LayoutVariablesView = function(params) {
         let measureType = column.measureType;
         if ((column.measureType === 'nominal' || column.measureType === 'ordinal') && column.dataType === 'text')
             measureType = column.measureType + 'text';
-
-        if (this._contains(measureType, permitted))
+        if (permitted.includes(measureType))
             return true;
 
-        for (let permit of permitted) {
-            switch (permit) {
-                case 'numeric':
-                    if (column.measureType !== 'id' && (column.dataType === 'integer' || column.dataType === 'decimal'))
-                        return true;
-                    break;
-                case 'factor':
-                    if (column.measureType === 'nominal' || column.measureType === 'ordinal')
-                        return true;
-                    break;
-            }
-        }
+        if (column.measureType === 'id')
+            return false;
+        else if (column.dataType === 'text' && permitted.includes('factor'))
+            return true;
+        else if ((column.dataType === 'integer' || column.dataType === 'decimal') && permitted.includes('numeric'))
+            return true;
 
         return false;
     };
