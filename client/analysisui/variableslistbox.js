@@ -121,13 +121,13 @@ const VariablesListBox = function(params) {
     this._checkPermitted = function(column, permitted) {
 
         let measureType = column.measureType;
-        if (column.dataType === 'text')
+        if ((column.measureType === 'nominal' || column.measureType === 'ordinal') && column.dataType === 'text')
             measureType = column.measureType + 'text';
+
         if (permitted.includes(measureType))
             return true;
 
-        for (let p = 0; p < permitted.length; p++) {
-            let permit = permitted[p];
+        for (let permit of permitted.length) {
             switch (permit) {
                 case 'numeric':
                     if (column.measureType !== 'id' && (column.dataType === 'integer' || column.dataType === 'decimal'))
