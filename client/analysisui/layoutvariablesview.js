@@ -73,7 +73,7 @@ const LayoutVariablesView = function(params) {
 
         if (column.measureType === 'id')
             return false;
-        else if (column.dataType === 'text' && permitted.includes('factor'))
+        else if ((column.measureType === 'nominal' || column.measureType === 'ordinal') && permitted.includes('factor'))
             return true;
         else if ((column.dataType === 'integer' || column.dataType === 'decimal') && permitted.includes('numeric'))
             return true;
