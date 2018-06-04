@@ -36,6 +36,7 @@ let constructMenu = doNothing;
 let copyToClipboard = doNothing;
 let pasteFromClipboard = doNothing;
 let showSaveDialog = doNothing;
+let openUrl = doNothing;
 
 let emitter = new events.EventEmitter();
 
@@ -64,6 +65,7 @@ if (window.require) {
     const dialog = remote.dialog;
     const Menu = remote.Menu;
     const clipboard = electron.clipboard;
+    const shell = electron.shell;
 
     version = Promise.resolve(remote.getGlobal('version'));
     nameAndVersion = Promise.resolve(APP_NAME + ' ' + remote.getGlobal('version'));
@@ -137,6 +139,10 @@ if (window.require) {
 
     toggleDevTools = function() {
         ipc.send('request', { type: 'openDevTools' });
+    };
+
+    openUrl = function(url) {
+        shell.openExternal(url);
     };
 
     const zoomLevels = [ 30, 50, 67, 80, 90, 100, 110, 120, 133, 150, 170, 200, 240, 300 ];
@@ -289,4 +295,5 @@ module.exports = {
     pasteFromClipboard,
     showSaveDialog,
     os,
+    openUrl,
 };

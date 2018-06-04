@@ -248,6 +248,9 @@ const ResultsPanel = Backbone.View.extend({
                     }
                     analysis.setOptions(options);
                     break;
+                case 'openUrl':
+                    host.openUrl(eventData.url);
+                    break;
             }
         }
     },

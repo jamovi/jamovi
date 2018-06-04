@@ -52,7 +52,12 @@ var HtmlView = Elem.View.extend({
 
         this.ready = Promise.all(promises).then(() => {
             this.$el.html(doc.content);
+            this.$el.find('a[href]').on('click', (event) => this._handleLinkClick(event));
         });
+    },
+    _handleLinkClick(event) {
+        let href = $(event.target).attr('href');
+        window.openUrl(href);
     },
     _insertSS(url) {
         return new Promise((resolve) => {

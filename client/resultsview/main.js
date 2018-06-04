@@ -35,6 +35,12 @@ class Main {  // this is constructed at the bottom
                 data : { address, options }}, '*');
         };
 
+        window.openUrl = (url) => {
+            this.mainWindow.postMessage({
+                type : 'openUrl',
+                data : { url: url }}, '*');
+        };
+
         // the location of the script should be inside the body
         // so we don't need document.ready()
         this.$body = $('body');
