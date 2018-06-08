@@ -372,12 +372,19 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             if (column.dataType() == DataType::TEXT)
             {
-                v.attr("class") = "factor";
+                if (column.measureType() == MeasureType::ORDINAL)
+                    v.attr("class") = Rcpp::CharacterVector::create("ordered", "factor");
+                else
+                    v.attr("class") = "factor";
             }
             else
             {
                 v.attr("values") = values;
-                v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
+
+                if (column.measureType() == MeasureType::ORDINAL)
+                    v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "ordered", "factor");
+                else
+                    v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
             }
 
             if ( ! column.trimLevels() && column.hasUnusedLevels())
