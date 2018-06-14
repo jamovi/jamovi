@@ -614,9 +614,16 @@ const DataSetModel = Backbone.Model.extend({
                 for (let i = 0; i < values.levels.length; i++) {
                     let level = values.levels[i];
                     let levelPB = new coms.Messages.VariableLevel();
-                    levelPB.value = level.value;
-                    levelPB.label = level.label;
-                    levelPB.importValue = level.importValue;
+                    if (values.dataType === 'text') {
+                        levelPB.value = i;
+                        levelPB.label = level.label;
+                        levelPB.importValue = level.importValue;
+                    }
+                    else {
+                        levelPB.value = level.value;
+                        levelPB.label = level.label;
+                        levelPB.importValue = level.importValue;
+                    }
                     columnPB.levels.push(levelPB);
                 }
             }
@@ -870,11 +877,20 @@ const DataSetModel = Backbone.Model.extend({
             levels = new Array(columnPB.levels.length);
             for (let i = 0; i < levels.length; i++) {
                 let levelPB = columnPB.levels[i];
-                levels[i] = {
-                    label: levelPB.label,
-                    value: levelPB.value,
-                    importValue: levelPB.importValue,
-                };
+                if (column.dataType === 'text') {
+                    levels[i] = {
+                        label: levelPB.label,
+                        value: i,
+                        importValue: levelPB.importValue,
+                    };
+                }
+                else {
+                    levels[i] = {
+                        label: levelPB.label,
+                        value: levelPB.value,
+                        importValue: levelPB.value.toString(),
+                    };
+                }
             }
         }
         column.levels = levels;
