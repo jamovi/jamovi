@@ -198,7 +198,7 @@ void DataSetW::setRowCount(size_t count)
         ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
-        if (column.measureType() == MeasureType::CONTINUOUS)
+        if (column.dataType() == DataType::DECIMAL)
             column.setRowCount<double>(count);
         else
             column.setRowCount<int>(count);
@@ -220,7 +220,7 @@ void DataSetW::appendRows(int n)
         ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
-        if (column.measureType() == MeasureType::CONTINUOUS)
+        if (column.dataType() == DataType::DECIMAL)
         {
             for (int j = 0; j < n; j++)
                 column.append<double>(NAN);
@@ -263,7 +263,7 @@ void DataSetW::deleteRows(int delStart, int delEnd)
         ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
 
-        if (column.measureType() == MeasureType::CONTINUOUS)
+        if (column.dataType() == DataType::DECIMAL)
         {
             for (int j = delStart; j < finalCount; j++)
             {
