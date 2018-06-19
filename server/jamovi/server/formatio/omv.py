@@ -44,7 +44,7 @@ def write(data, path, html=None):
             field['measureType'] = MeasureType.stringify(column.measure_type)
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
-            if column.measure_type == MeasureType.CONTINUOUS:
+            if column.data_type == DataType.DECIMAL:
                 field['type'] = 'number'
             else:
                 field['type'] = 'integer'
@@ -267,7 +267,7 @@ def read(data, path, prog_cb):
 
             for column in data.dataset:
 
-                if column.measure_type == MeasureType.CONTINUOUS:
+                if column.data_type == DataType.DECIMAL:
                     elem_fmt = '<d'
                     elem_width = 8
                     repair_levels = False
