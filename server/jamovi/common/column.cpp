@@ -106,11 +106,19 @@ const vector<LevelData> Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        LevelData v;
-        v.value = l.value;
-        v.label = _mm->resolve(l.label);
-        v.importValue = _mm->resolve(l.importValue);
-        m.push_back(v);
+
+        if (dataType() == DataType::TEXT)
+        {
+            char *value = _mm->resolve(l.importValue);
+            char *label = _mm->resolve(l.label);
+            m.push_back(LevelData(value, label));
+        }
+        else
+        {
+            int value   = l.value;
+            char *label = _mm->resolve(l.label);
+            m.push_back(LevelData(value, label));
+        }
     }
 
     return m;
@@ -128,11 +136,19 @@ const vector<LevelData> Column::levelsExFiltered() const
         Level &l = levels[i];
         if (l.countExFiltered == 0)
             continue;
-        LevelData v;
-        v.value = l.value;
-        v.label = _mm->resolve(l.label);
-        v.importValue = _mm->resolve(l.importValue);
-        m.push_back(v);
+
+        if (dataType() == DataType::TEXT)
+        {
+            char *value = _mm->resolve(l.importValue);
+            char *label = _mm->resolve(l.label);
+            m.push_back(LevelData(value, label));
+        }
+        else
+        {
+            int value   = l.value;
+            char *label = _mm->resolve(l.label);
+            m.push_back(LevelData(value, label));
+        }
     }
 
     return m;
@@ -203,8 +219,11 @@ int Column::valueForLabel(const char *label) const
         Level &level = levels[i];
         const char *l = _mm->resolve(level.label);
         if (strcmp(l, label) == 0)
+        {
             return level.value;
-        else {
+        }
+        else
+        {
             const char *iv = _mm->resolve(level.importValue);
             if (strcmp(iv, label) == 0)
                 return level.value;
@@ -214,6 +233,11 @@ int Column::valueForLabel(const char *label) const
     stringstream ss;
     ss << "level '" << label << "' not found";
     throw runtime_error(ss.str());
+}
+
+bool Column::hasLevels() const
+{
+    return measureType() != MeasureType::CONTINUOUS;
 }
 
 bool Column::hasLevel(const char *label) const

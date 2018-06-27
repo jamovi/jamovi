@@ -17,6 +17,7 @@ typedef struct
     ColumnStruct **columns;
     int capacity;  // size of columns array
     int nextColumnId;
+    ColumnStruct *scratch;
 
 } DataSetStruct;
 

@@ -19,6 +19,7 @@ class DataSetW;
 
 class ColumnW : public Column
 {
+    friend class DataSetW;
 public:
 
     ColumnW(DataSetW *parent = 0, MemoryMapW *mm = 0, ColumnStruct *rel = 0);
@@ -29,8 +30,8 @@ public:
     void setDataType(DataType::Type dataType);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
-    void appendLevel(int value, const char *label, const char *importValue = 0);
-    void insertLevel(int value, const char *label, const char *importValue = 0);
+    void appendLevel(int value, const char *label = 0, const char *importValue = 0);
+    void insertLevel(int value, const char *label = 0, const char *importValue = 0);
     void removeLevel(int value);
     void clearLevels();
     void updateLevelCounts();
@@ -41,6 +42,9 @@ public:
     void setActive(bool active);
     void setTrimLevels(bool trim);
 
+    void changeDMType(DataType::Type dataType, MeasureType::Type measureType);
+    void setLevels(const std::vector<LevelData> &levels);
+
     int changes() const;
 
     template<typename T> void setValue(int rowIndex, T value, bool initing = false)
@@ -50,6 +54,9 @@ public:
         else
             assert(sizeof(T) == 4);
 
+        if ( ! initing)
+            _discardScratchColumn();
+
         if (measureType() != MeasureType::CONTINUOUS)
         {
             int newValue = (int)value;
@@ -57,6 +64,7 @@ public:
             if (initing == false)
             {
                 int oldValue = this->value<int>(rowIndex);
+
                 if (oldValue == newValue)
                     return;
 
@@ -97,6 +105,39 @@ public:
 
     template<typename T> void setRowCount(size_t count)
     {
+        _discardScratchColumn();
+        _setRowCount<T>(count);
+    }
+
+    template<typename T> void append(const T &value)
+    {
+        ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
+
+        setRowCount<T>(cs->rowCount + 1);
+
+        cs = _mm->resolve<ColumnStruct>(_rel);
+        int blockIndex = cs->rowCount * sizeof(T) / VALUES_SPACE;
+        Block **blocks = _mm->resolve<Block*>(cs->blocks);
+        Block *currentBlock = _mm->resolve<Block>(blocks[blockIndex]);
+
+        int index = cs->rowCount % (VALUES_SPACE / sizeof(T));
+
+        T* p = (T*) &currentBlock->values[index * sizeof(T)];
+        *p = value;
+    }
+
+private:
+
+    int ivalue(int index);
+    const char *svalue(int index);
+    double dvalue(int index);
+
+    MemoryMapW *_mm;
+    static void _transferLevels(ColumnW &dest, ColumnW &src);
+    void _discardScratchColumn();
+
+    template<typename T> void _setRowCount(size_t count)
+    {
         ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
         int blocksRequired = count * sizeof(T) / VALUES_SPACE + 1;
 
@@ -119,26 +160,6 @@ public:
                 cellAt<int>(i) = INT_MIN;
         }
     }
-
-    template<typename T> void append(const T &value)
-    {
-        ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
-
-        setRowCount<T>(cs->rowCount + 1);
-
-        cs = _mm->resolve<ColumnStruct>(_rel);
-        int blockIndex = cs->rowCount * sizeof(T) / VALUES_SPACE;
-        Block **blocks = _mm->resolve<Block*>(cs->blocks);
-        Block *currentBlock = _mm->resolve<Block>(blocks[blockIndex]);
-
-        int index = cs->rowCount % (VALUES_SPACE / sizeof(T));
-
-        T* p = (T*) &currentBlock->values[index * sizeof(T)];
-        *p = value;
-    }
-
-private:
-    MemoryMapW *_mm;
 
 };
 

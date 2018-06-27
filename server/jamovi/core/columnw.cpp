@@ -6,6 +6,9 @@
 
 #include <stdexcept>
 #include <climits>
+#include <map>
+#include <set>
+#include <iomanip>
 
 #include "dataset.h"
 
@@ -49,7 +52,7 @@ void ColumnW::setDataType(DataType::Type dataType)
     s->changes++;
 
     if (dataType == DataType::DECIMAL)
-        setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
+        _setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
 }
 
 void ColumnW::setMeasureType(MeasureType::Type measureType)
@@ -181,6 +184,18 @@ void ColumnW::insertRows(int insStart, int insEnd)
 void ColumnW::appendLevel(int value, const char *label, const char *importValue)
 {
     ColumnStruct *s = struc();
+
+    string tmp;
+    if (label == NULL)
+    {
+        stringstream ss;
+        ss << value;
+        tmp = ss.str();
+        label = tmp.c_str();
+    }
+
+    if (importValue == NULL)
+        importValue = label;
 
     if (s->levelsUsed + 1 >= s->levelsCapacity)
     {
@@ -394,4 +409,417 @@ void ColumnW::clearLevels()
 int ColumnW::changes() const
 {
     return struc()->changes;
+}
+
+void ColumnW::setLevels(const std::vector<LevelData> &newLevels)
+{
+    if ( ! hasLevels())
+        return;
+
+    if (dataType() == DataType::INTEGER)
+    {
+        clearLevels();
+
+        for (int i = 0; i < newLevels.size(); i++)
+        {
+            const LevelData &newLevel = newLevels[i];
+            appendLevel(newLevel.ivalue(), newLevel.label(), newLevel.svalue());
+        }
+
+        for (int i = 0; i < rowCount(); i++)
+        {
+            int value = cellAt<int>(i);
+            if (value != INT_MIN)
+                setValue(i, value, true);
+        }
+    }
+    else if (dataType() == DataType::TEXT)
+    {
+        map<int, int> recode;
+        const vector<LevelData> oldLevels = levels();
+
+        for (int i = 0; i < newLevels.size(); i++)
+        {
+            const LevelData &newLevel = newLevels[i];
+            for (int j = 0; j < oldLevels.size(); j++)
+            {
+                const LevelData &oldLevel = oldLevels[j];
+                if (strcmp(oldLevel.svalue(), newLevel.svalue()) == 0)
+                {
+                    recode[j] = i;
+                    break;
+                }
+            }
+        }
+
+        clearLevels();
+
+        for (int i = 0; i < newLevels.size(); i++)
+        {
+            const LevelData &newLevel = newLevels[i];
+            appendLevel(i, newLevel.label(), newLevel.svalue());
+        }
+
+        for (int i = 0; i < rowCount(); i++)
+        {
+            int value = cellAt<int>(i);
+            if (value != INT_MIN)
+                setValue(i, recode[value], true);
+        }
+    }
+    else
+    {
+        // shouldn't get here
+    }
+}
+
+void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureType)
+{
+    if (measureType == MeasureType::NONE && dataType == DataType::NONE)
+        return;
+
+    /*
+     * when changing the data/measure type, the innards of the column are
+     * exchanged with a 'scratch' column. the old values are then copied to the
+     * new innards, and the old column's innards become the scratch column
+     * if the innards are swapped a *second* time, the column can return to how
+     * it was; this allows for a person to make a mistake, and then return to
+     * how things were.
+     */
+
+    DataSetW *ds = (DataSetW*)_parent;
+    ColumnW old = ds->swapWithScratchColumn(*this);
+
+    if (measureType != MeasureType::NONE)
+    {
+        if (measureType == MeasureType::CONTINUOUS)
+        {
+            if (dataType == DataType::TEXT || dataType == DataType::NONE)
+            {
+                if (old.dataType() == DataType::INTEGER)
+                    dataType = DataType::INTEGER;
+                else
+                    dataType = DataType::DECIMAL;
+            }
+        }
+        else
+        {
+            if (dataType == DataType::DECIMAL || dataType == DataType::NONE)
+            {
+                if (old.dataType() == DataType::INTEGER)
+                    dataType = DataType::INTEGER;
+                else
+                    dataType = DataType::TEXT;
+            }
+        }
+    }
+    else // if (dataType != DataType::NONE)
+    {
+        if (dataType == DataType::DECIMAL)
+            measureType = MeasureType::CONTINUOUS;
+        else if (dataType == DataType::TEXT && measureType == MeasureType::CONTINUOUS)
+            measureType = MeasureType::NOMINAL;
+        else if (dataType == DataType::TEXT && old.measureType() == MeasureType::CONTINUOUS)
+            measureType = MeasureType::NOMINAL;
+        else
+            measureType = old.measureType();
+    }
+
+    if (dataType == DataType::NONE)
+        dataType = old.dataType();
+
+    if (id() == old.id() && dataType == this->dataType() && measureType == this->measureType())
+        return;
+
+    if (id() == old.id() && this->dataType() == DataType::TEXT)
+    {
+        // if the new column is of type TEXT, we're better off copying *from*
+        // this older column (TEXT is lossless); so we swap back again.
+
+        old = ds->swapWithScratchColumn(*this);
+    }
+    else if (id() == old.id() && this->dataType() == DataType::DECIMAL)
+    {
+        // if the new column is DECIMAL, and the old column is INTEGER,
+        // we're better off copying *from* the DECIMAL column, so we swap
+        // back again.
+
+        if (old.dataType() == DataType::INTEGER)
+            old = ds->swapWithScratchColumn(*this);
+    }
+
+
+    setId(old.id());
+    setDataType(dataType);
+    setMeasureType(measureType);
+
+    if (dataType == DataType::DECIMAL)
+        _setRowCount<double>(_parent->rowCount());
+    else
+        _setRowCount<int>(_parent->rowCount());
+
+    ColumnW::_transferLevels(*this, old);
+
+    if (dataType == DataType::INTEGER)
+    {
+        for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
+        {
+            int value = old.ivalue(rowNo);
+            setValue(rowNo, value, true);
+        }
+    }
+    else if (dataType == DataType::TEXT)
+    {
+        for (int rowNo = 0; rowNo < rowCount(); rowNo++)
+        {
+            const char *value = old.svalue(rowNo);
+
+            if (value[0] != '\0')
+            {
+                int levelIndex = valueForLabel(value);
+                setValue(rowNo, levelIndex, true);
+            }
+            else
+            {
+                setValue(rowNo, INT_MIN, true);
+            }
+        }
+    }
+    else if (dataType == DataType::DECIMAL)
+    {
+        for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
+            setValue(rowNo, old.dvalue(rowNo), true);
+    }
+}
+
+int ColumnW::ivalue(int index)
+{
+    if (dataType() == DataType::INTEGER)
+    {
+        return cellAt<int>(index);
+    }
+    else if (dataType() == DataType::DECIMAL)
+    {
+        double value = cellAt<double>(index);
+        if (isnan(value) || value < INT_MIN || value > INT_MAX)
+            return INT_MIN;
+        else
+            return (int)value;
+    }
+    else // if (dataType() == DataType::TEXT)
+    {
+        int value = cellAt<int>(index);
+        if (value != INT_MIN)
+        {
+            const char *v = getImportValue(value);
+            char junk;
+            double d;
+            if (sscanf(v, "%i%1c", &value, &junk) == 1)
+                return value;
+            else if (sscanf(v, "%lf%1c", &d, &junk) == 1)
+                return (int) d;
+            else
+                return INT_MIN;
+        }
+        else
+        {
+            return INT_MIN;
+        }
+    }
+}
+
+const char *ColumnW::svalue(int index)
+{
+    static string tmp;
+
+    if (dataType() == DataType::INTEGER)
+    {
+        int value = cellAt<int>(index);
+        if (value == INT_MIN)
+        {
+            return "";
+        }
+        else
+        {
+            stringstream ss;
+            ss << value;
+            tmp = ss.str();
+            return tmp.c_str();
+        }
+    }
+    else if (dataType() == DataType::DECIMAL)
+    {
+        double value = cellAt<double>(index);
+        if (isnan(value) || value < INT_MIN || value > INT_MAX)
+        {
+            return "";
+        }
+        else
+        {
+            stringstream ss;
+            ss.setf(ios::fixed);
+            ss << setprecision(dps()) << value;
+            tmp = ss.str();
+            return tmp.c_str();
+        }
+    }
+    else // if (dataType() == DataType::TEXT)
+    {
+        int value = cellAt<int>(index);
+        if (value == INT_MIN)
+        {
+            return "";
+        }
+        else
+        {
+            return getImportValue(value);
+        }
+    }
+}
+
+double ColumnW::dvalue(int index)
+{
+    if (dataType() == DataType::INTEGER)
+    {
+        int value = cellAt<int>(index);
+        if (value == INT_MIN)
+            return NAN;
+        else
+            return (double)value;
+    }
+    else if (dataType() == DataType::DECIMAL)
+    {
+        return cellAt<double>(index);
+    }
+    else // if (dataType() == DataType::TEXT)
+    {
+        const char *value = svalue(index);
+
+        if (value[0] == '\0')
+        {
+            return NAN;
+        }
+        else
+        {
+            double d;
+            char junk;
+            if (sscanf(value, "%lf%1c", &d, &junk) == 1)
+                return d;
+            else
+                return NAN;
+        }
+    }
+}
+
+void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
+{
+    dest.clearLevels();
+    if ( ! dest.hasLevels())
+        return;
+
+    int count = 0;
+
+    if (src.hasLevels())
+    {
+        std::vector<LevelData> levels = src.levels();
+        std::vector<LevelData>::iterator itr;
+
+        for (itr = levels.begin(); itr != levels.end(); itr++)
+        {
+            LevelData &level = *itr;
+
+            if (dest.dataType() == DataType::TEXT)
+            {
+                const char *value = level.svalue();
+                if (value[0] != '\0')
+                    dest.appendLevel(count++, level.label(), level.svalue());
+            }
+            else
+            {
+                int value = level.ivalue();
+                if (value != INT_MIN && ! dest.hasLevel(value))
+                {
+                    if (level.hasLabelChanged())
+                        dest.insertLevel(value, level.label(), level.svalue());
+                    else
+                        dest.insertLevel(value);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (dest.dataType() == DataType::TEXT)
+        {
+            if (src.dataType() == DataType::DECIMAL)
+            {
+                set<int> values;
+
+                for (int i = 0; i < src.rowCount(); i++)
+                {
+                    double value = src.dvalue(i);
+                    if ( ! isnan(value))
+                        values.insert((int)(value * 1000));
+                }
+
+                int count = 0;
+                set<int>::iterator itr;
+                for (itr = values.begin(); itr != values.end(); itr++)
+                {
+                    int value = *itr;
+                    stringstream ss;
+                    ss.setf(ios::fixed);
+                    ss << setprecision(src.dps());
+                    ss << ((double)value) / 1000;
+                    string v = ss.str();
+                    dest.insertLevel(count++, v.c_str(), v.c_str());
+                }
+            }
+            else if (src.dataType() == DataType::INTEGER)
+            {
+                int value;
+                for (int i = 0; i < src.rowCount(); i++)
+                {
+                    value = src.ivalue(i);
+                    if (value != INT_MIN && ! dest.hasLevel(value))
+                        dest.insertLevel(value, src.svalue(i));
+                }
+
+                ColumnStruct *s = dest.struc();
+                Level *levels = dest._mm->resolve(s->levels);
+                for (int i = 0; i < s->levelsUsed; i++)
+                    levels[i].value = i;
+            }
+            else
+            {
+                int count = 0;
+                for (int i = 0; i < src.rowCount(); i++)
+                {
+                    const char *value = src.svalue(i);
+                    if (value[0] != '\0' && ! dest.hasLevel(value))
+                        dest.appendLevel(count++, value);
+                }
+            }
+        }
+        else if (dest.dataType() == DataType::INTEGER)
+        {
+            for (int i = 0; i < src.rowCount(); i++)
+            {
+                int value = src.ivalue(i);
+                if (value != INT_MIN && ! dest.hasLevel(value))
+                {
+                    if (src.dataType() == DataType::DECIMAL)
+                        dest.insertLevel(value); // src.svalue() would return a decimal string
+                    else
+                        dest.insertLevel(value, src.svalue(i));
+                }
+            }
+        }
+    }
+}
+
+void ColumnW::_discardScratchColumn()
+{
+    DataSetW *ds = (DataSetW*)_parent;
+    ds->discardScratchColumn(id());
 }

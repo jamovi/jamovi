@@ -17,10 +17,13 @@ import os.path
 from enum import Enum
 
 cdef extern from "column.h":
-    cdef struct CLevelData "LevelData":
-        int value;
-        string label;
-        string importValue;
+    cdef cppclass CLevelData "LevelData":
+        CLevelData()
+        CLevelData(int value, const char *label);
+        CLevelData(const char *value, const char *label);
+        int ivalue() const;
+        const char *svalue() const;
+        const char *label() const;
     ctypedef enum CMeasureType  "MeasureType::Type":
         CMeasureTypeNone        "MeasureType::NONE"
         CMeasureTypeNominal     "MeasureType::NOMINAL"
@@ -28,6 +31,7 @@ cdef extern from "column.h":
         CMeasureTypeContinuous  "MeasureType::CONTINUOUS"
         CMeasureTypeID          "MeasureType::ID"
     ctypedef enum CDataType  "DataType::Type":
+        CDataTypeNone     "DataType::NONE"
         CDataTypeInteger  "DataType::INTEGER"
         CDataTypeDecimal  "DataType::DECIMAL"
         CDataTypeText     "DataType::TEXT"
@@ -185,6 +189,7 @@ cdef extern from "columnw.h":
         void clearLevels()
         void updateLevelCounts()
         const vector[CLevelData] levels()
+        void setLevels(vector[CLevelData] levels)
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
@@ -197,6 +202,7 @@ cdef extern from "columnw.h":
         bool active() const;
         void setTrimLevels(bool trim);
         bool trimLevels() const;
+        void changeDMType(CDataType dataType, CMeasureType measureType);
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
@@ -232,6 +238,8 @@ cdef class Column:
             return self._this.name().decode('utf-8')
 
         def __set__(self, name):
+            if not isinstance(name, str):
+                raise TypeError('name must be instance of str')
             name = name[:63]
             self._this.setName(name.encode('utf-8'))
 
@@ -244,9 +252,11 @@ cdef class Column:
             return ColumnType(self._this.columnType())
 
         def __set__(self, column_type):
-            if type(column_type) is ColumnType:
-                column_type = column_type.value
-            self._this.setColumnType(column_type)
+            if not isinstance(column_type, ColumnType):
+                raise TypeError('column_type must be an instance of ColumnType')
+            if column_type is not self.column_type:
+                self._this.setColumnType(column_type.value)
+
 
     property data_type:
         def __get__(self):
@@ -392,11 +402,20 @@ cdef class Column:
         arr = [ ]
         if self.has_levels:
             levels = self._this.levels()
-            for level in levels:
-                arr.append((
-                    level.value,
-                    level.label.decode('utf-8'),
-                    level.importValue.decode('utf-8')))
+            if self.data_type is DataType.TEXT:
+                count = 0
+                for level in levels:
+                    arr.append((
+                        count,
+                        level.label().decode('utf-8'),
+                        level.svalue().decode('utf-8')))
+                    count += 1
+            else:
+                for level in levels:
+                    arr.append((
+                        level.ivalue(),
+                        level.label().decode('utf-8'),
+                        level.svalue().decode('utf-8')))
         return arr
 
     @property
@@ -464,281 +483,63 @@ cdef class Column:
         else:
             return self._this.value[int](index)
 
+    def set_data_type(self, data_type):
+        self._this.setDataType(data_type.value)
+
+    def set_measure_type(self, measure_type):
+        self._this.setMeasureType(measure_type.value)
+
+    def set_levels(self, levels):
+        cdef vector[CLevelData] new_levels
+        cdef const char* label
+        cdef const char* svalue
+        cdef int ivalue
+        cdef CLevelData new_level
+
+        if self.data_type == DataType.TEXT:
+            for level in levels:
+                utf8_bytes = level[2].encode('utf-8')
+                svalue = utf8_bytes
+                utf8_bytes = level[1].encode('utf-8')
+                label = utf8_bytes
+                new_levels.push_back(CLevelData(svalue, label))
+        else:
+            for level in levels:
+                ivalue = level[0]
+                utf8_bytes = level[1].encode('utf-8')
+                label = utf8_bytes
+                new_levels.push_back(CLevelData(ivalue, label))
+
+        self._this.setLevels(new_levels)
+
     def change(self,
-        name=None,
-        column_type=None,
         data_type=None,
         measure_type=None,
-        levels=None,
-        dps=None,
-        auto_measure=None,
-        formula=None,
-        active=None,
-        trim_levels=None):
-
-        if column_type is None:
-            column_type = self.column_type
-        elif isinstance(column_type, int):
-            column_type = ColumnType(column_type)
-
-        if column_type is ColumnType.NONE:
-            column_type = ColumnType.DATA
-
-        self.column_type = column_type
+        levels=None):
 
         if data_type is None:
-            data_type = self.data_type
-        elif isinstance(data_type, int):
-            data_type = DataType(data_type)
+            data_type = DataType.NONE
+        elif not isinstance(data_type, DataType):
+            raise TypeError('data_type must be an instance of DataType')
 
         if measure_type is None:
-            measure_type = self.measure_type
-        elif isinstance(measure_type, int):
-            measure_type = MeasureType(measure_type)
+            measure_type = MeasureType.NONE
+        elif not isinstance(measure_type, MeasureType):
+            raise TypeError('measure_type must be an instance of MeasureType')
 
-        if measure_type is MeasureType.NONE:
-            measure_type = MeasureType.NOMINAL
+        if data_type == self.data_type:  # unchanged
+            data_type = DataType.NONE
 
-        dt_changing = (data_type != self.data_type)
-        mt_changing = (measure_type != self.measure_type)
+        if measure_type == self.measure_type:  # unchanged
+            measure_type = MeasureType.NONE
 
-        if mt_changing:
-            if measure_type is MeasureType.CONTINUOUS:
-                if data_type is DataType.TEXT:
-                    if self.data_type is DataType.INTEGER:
-                        data_type = DataType.INTEGER
-                    else:
-                        data_type = DataType.DECIMAL
-            else:
-                if data_type is DataType.DECIMAL:
-                    if self.data_type is DataType.INTEGER:
-                        data_type = DataType.INTEGER
-                    else:
-                        data_type = DataType.TEXT
-
-        elif dt_changing:
-            if data_type is DataType.DECIMAL:
-                measure_type = MeasureType.CONTINUOUS
-            elif data_type is DataType.TEXT:
-                if measure_type is MeasureType.CONTINUOUS:
-                    measure_type = MeasureType.NOMINAL
-
-        if self.column_type is ColumnType.NONE:
-            if auto_measure is None:
-                auto_measure = True
-
-        old_m_type = self.measure_type
-        new_m_type = measure_type
-
-        if name is not None:
-            self.name = name
-
-        if dps is not None:
-            self.dps = dps
-
-        if active is not None:
-            self.active = active
-
-        if trim_levels is not None:
-            self.trim_levels = trim_levels
-
-        if auto_measure is not None:
-            self.auto_measure = auto_measure
-
-        if formula is not None:
-            self.formula = formula
-
-        if type(data_type) is not DataType:
-            data_type = DataType(data_type)
-
-        new_type = data_type
-        old_type = self.data_type
-
-        if new_type == DataType.DECIMAL:
-
-            values = list(self)
-            nan = float('nan')
-            for i in range(len(values)):
-                try:
-                    if values[i] != -2147483648:
-                        values[i] = float(values[i])
-                    else:
-                        values[i] = nan
-                except:
-                    values[i] = nan
-
-            self.clear_levels()
-            self._this.setDataType(DataType.DECIMAL.value)
-            self.measure_type = MeasureType.CONTINUOUS
-
-            for i in range(len(values)):
-                self[i] = values[i]
-
+        if ((data_type != self.data_type and data_type != DataType.NONE) or
+            (measure_type != self.measure_type and measure_type != MeasureType.NONE)):
+            self._this.changeDMType(data_type.value, measure_type.value)
             self.determine_dps()
+        elif levels is not None:
+            self.set_levels(levels)
 
-        elif new_type == DataType.INTEGER:
-
-            if old_type == DataType.INTEGER:
-
-                self.measure_type = measure_type
-
-                if new_m_type == MeasureType.CONTINUOUS:
-                    self.clear_levels()
-                elif old_m_type == MeasureType.CONTINUOUS:
-                    for value in self:
-                        if value == -2147483648:
-                            pass
-                        elif not self.has_level(value):
-                            self.append_level(value, str(value), str(value))
-                else:
-                    if levels is not None:
-                        self.clear_levels()
-                        for level in levels:
-                            self.append_level(level[0], level[1], str(level[0]))
-                        self._update_level_counts()
-
-            elif old_type == DataType.DECIMAL:
-                nan = float('nan')
-                values = list(self)
-
-                self._this.setDataType(DataType.INTEGER.value)
-                self.measure_type = measure_type
-
-                for i in range(len(values)):
-                    try:
-                        value = values[i]
-                        if value != nan:
-                            value = round(float(value))
-                            if not self.has_level(value):
-                                self.insert_level(value, str(value))
-                        else:
-                            value = -2147483648
-                        self._this.setValue[int](i, value, True)
-                    except ValueError:
-                        self._this.setValue[int](i, -2147483648, True)
-
-            elif old_type == DataType.TEXT:
-                nan = ''
-
-                level_ivs = { }
-                for level in self.levels:
-                    level_ivs[level[1]] = level[2]
-
-                values = list(self)
-                self.clear_levels()
-
-                self._this.setDataType(DataType.INTEGER.value)
-                self.measure_type = measure_type
-
-                for i in range(len(values)):
-                    try:
-                        value = values[i]
-                        if value != nan:
-                            label = value
-                            value = int(float(level_ivs[value]))
-                            if not self.has_level(value):
-                                self.insert_level(value, label, str(value))
-                        else:
-                            value = -2147483648
-                        self._this.setValue[int](i, value, True)
-                    except ValueError:
-                        self._this.setValue[int](i, -2147483648, True)
-
-                self.dps = 0
-
-        elif new_type == DataType.TEXT:
-            if old_type == DataType.TEXT:
-
-                self.measure_type = measure_type
-
-                if levels is not None:
-                    old_levels = self.levels
-
-                    recode = { }
-                    for old_level in old_levels:
-                        for new_level in levels:
-                            if old_level[2] == new_level[2]:
-                                recode[old_level[0]] = new_level[0]
-                                break
-
-                    self.clear_levels()
-                    for level in levels:
-                        self.append_level(level[0], level[1], level[2])
-
-                    for row_no in range(self.row_count):
-                        value = self._this.value[int](row_no)
-                        value = recode.get(value, -2147483648)
-                        self._this.setValue[int](row_no, value, True)
-
-            elif old_type == DataType.DECIMAL:
-                nan = float('nan')
-
-                dps = self.dps
-                multip = math.pow(10, dps)
-
-                uniques = set()
-                for value in self:
-                    if math.isnan(value) == False:
-                        uniques.add(int(value * multip))
-                uniques = list(uniques)
-                uniques.sort()
-
-                self._this.setDataType(DataType.TEXT.value)
-                self.measure_type = measure_type
-
-                for i in range(len(uniques)):
-                    v = float(uniques[i]) / multip
-                    label = '{:.{}f}'.format(v, dps)
-                    self.append_level(i, label, label)
-
-                v2i = { }
-                for i in range(len(uniques)):
-                    v2i[uniques[i]] = i
-                for i in range(self.row_count):
-                    value = self._this.value[double](i)
-                    if math.isnan(value):
-                        self._this.setValue[int](i, -2147483648, True)
-                    else:
-                        self._this.setValue[int](i, v2i[int(value * multip)], True)
-
-            elif old_type == DataType.INTEGER:
-                nan = -2147483648
-
-                level_labels = { }
-
-                uniques = set()
-                for value in self:
-                    if value != -2147483648:
-                        uniques.add(value)
-                uniques = list(uniques)
-                uniques.sort()
-
-                if self.has_levels:
-                    for level in self.levels:
-                        value = level[0]
-                        label = level[1]
-                        level_labels[value] = label
-                else:
-                    for value in uniques:
-                        label = str(value)
-                        level_labels[value] = label
-
-                self.clear_levels()
-                self._this.setDataType(DataType.TEXT.value)
-                self.measure_type = measure_type
-
-                for i in range(len(uniques)):
-                    value = uniques[i]
-                    label = level_labels[value]
-                    self.append_level(i, label, str(value))
-
-                v2i = { }
-                for i in range(len(uniques)):
-                    v2i[uniques[i]] = i
-                for i in range(self.row_count):
-                    value = self._this.value[int](i)
-                    if value != nan:
-                        self._this.setValue[int](i, v2i[value], True)
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":
@@ -824,6 +625,7 @@ class DataType(Enum):
     INTEGER = CDataTypeInteger
     DECIMAL = CDataTypeDecimal
     TEXT    = CDataTypeText
+    NONE    = CDataTypeNone
 
     @staticmethod
     def stringify(data_type):

@@ -344,10 +344,16 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
             for (auto p : m)
             {
-                values[j] = p.value;
-                levels[j] = Rcpp::String(p.label);
+                int value;
+                if (column.dataType() == DataType::TEXT)
+                    value = j;
+                else
+                    value = p.ivalue();
+
+                values[j] = value;
+                levels[j] = Rcpp::String(p.label());
                 j++;
-                indexes[p.value] = j;
+                indexes[value] = j;
             }
 
             // populate cells

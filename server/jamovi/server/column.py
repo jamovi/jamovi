@@ -242,7 +242,12 @@ class Column:
     def formula(self, formula):
         if self._child is None:
             self._create_child()
-        self._child.formula = formula
+        regex = re.compile(r'\s+')
+        formula = formula.strip()
+        formula = regex.sub(' ', formula)
+        if formula != self._child.formula:
+            self._child.formula = formula
+            self.parse_formula()
 
     @property
     def formula_message(self):
@@ -345,58 +350,28 @@ class Column:
             return self._child.raw(index)
         return -2147483648
 
+    def set_data_type(self, data_type):
+        if self._child is None:
+            self._create_child()
+        self._child.set_data_type(data_type)
+
+    def set_measure_type(self, measure_type):
+        if self._child is None:
+            self._create_child()
+        self._child.set_measure_type(measure_type)
+
     def change(self,
-               name=None,
-               column_type=None,
-               data_type=None,
-               measure_type=None,
-               levels=None,
-               dps=None,
-               auto_measure=None,
-               formula=None,
-               description=None,
-               hidden=None,
-               active=None,
-               filter_no=None,
-               trim_levels=None):
+               data_type=DataType.NONE,
+               measure_type=MeasureType.NONE,
+               levels=None):
 
         if self._child is None:
             self._create_child()
 
-        formula_change = False
-        if formula is not None:
-            regex = re.compile(r'\s+')
-            formula = formula.strip()
-            formula = regex.sub(' ', formula)
-            if formula != self._child.formula:
-                formula_change = True
-
         self._child.change(
-            name=name,
-            column_type=column_type,
             data_type=data_type,
             measure_type=measure_type,
-            levels=levels,
-            dps=dps,
-            auto_measure=auto_measure,
-            formula=formula,
-            active=active,
-            trim_levels=trim_levels)
-
-        if formula_change:
-            self.parse_formula()
-
-        if description is not None:
-            self._description = description
-
-        if hidden is not None:
-            self._hidden = hidden
-
-        if active is not None:
-            self._active = active
-
-        if filter_no is not None:
-            self._filter_no = filter_no
+            levels=levels)
 
     @property
     def has_deps(self):
