@@ -260,9 +260,8 @@ class ColumnWriter:
         if self._only_integers and many_uniques is False:
             self._data_type = DataType.INTEGER
             self._measure_type = MeasureType.NOMINAL
-            self._column.change(
-                data_type=DataType.INTEGER,
-                measure_type=MeasureType.NOMINAL)
+            self._column.set_data_type(DataType.INTEGER)
+            self._column.set_measure_type(MeasureType.NOMINAL)
 
             self._unique_values = list(self._unique_values)
             self._unique_values = list(map(lambda x: int(x), self._unique_values))
@@ -274,9 +273,8 @@ class ColumnWriter:
         elif self._only_floats or self._only_euro_floats:
             self._data_type = DataType.DECIMAL
             self._measure_type = MeasureType.CONTINUOUS
-            self._column.change(
-                data_type=DataType.DECIMAL,
-                measure_type=MeasureType.CONTINUOUS)
+            self._column.set_data_type(DataType.DECIMAL)
+            self._column.set_measure_type(MeasureType.CONTINUOUS)
 
             if self._only_floats and self._only_euro_floats:
                 self._only_euro_floats = False
@@ -284,9 +282,8 @@ class ColumnWriter:
         else:
             self._data_type = DataType.TEXT
             self._measure_type = MeasureType.NOMINAL
-            self._column.change(
-                data_type=DataType.TEXT,
-                measure_type=MeasureType.NOMINAL)
+            self._column.set_data_type(DataType.TEXT)
+            self._column.set_measure_type(MeasureType.NOMINAL)
 
             self._unique_values = list(self._unique_values)
             self._unique_values.sort()

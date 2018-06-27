@@ -724,17 +724,20 @@ class Instance:
                         name = '{} ({})'.format(orig_name, i)
                         i += 1
 
+                    column.name = name
+
+                column.column_type = ColumnType(column_pb.columnType)
+
                 column.change(
-                    name=name,
-                    column_type=column_pb.columnType,
-                    data_type=column_pb.dataType,
-                    measure_type=column_pb.measureType,
-                    formula=column_pb.formula,
-                    auto_measure=column_pb.autoMeasure,
-                    hidden=column_pb.hidden,
-                    active=column_pb.active,
-                    filter_no=column_pb.filterNo,
-                    trim_levels=column_pb.trimLevels)
+                    data_type=DataType(column_pb.dataType),
+                    measure_type=MeasureType(column_pb.measureType))
+
+                column.formula = column_pb.formula
+                column.auto_measure = column_pb.autoMeasure
+                column.hidden = column_pb.hidden
+                column.active = column_pb.active
+                column.filter_no = column_pb.filterNo
+                column.trim_levels = column_pb.trimLevels
 
                 if column.column_type is ColumnType.FILTER:
                     filter_inserted = True
@@ -838,8 +841,8 @@ class Instance:
             column.realise()
             cols_changed.add(column)
 
-        for column_schema in request.schema.columns:
-            column = self._data.get_column_by_id(column_schema.id)
+        for column_pb in request.schema.columns:
+            column = self._data.get_column_by_id(column_pb.id)
             old_name = column.name
             old_type = column.column_type
             old_d_type = column.data_type
@@ -854,40 +857,35 @@ class Instance:
             old_trim = column.trim_levels
 
             levels = None
-            if column_schema.hasLevels:
+            if column_pb.hasLevels:
                 levels = [ ]
-                for level in column_schema.levels:
+                for level in column_pb.levels:
                     levels.append((
                         level.value,
                         level.label,
                         level.importValue))
 
             if column.column_type is ColumnType.NONE:
-                column_type = column_schema.columnType
-            else:
-                column_type = column.column_type
+                column.column_type = ColumnType(column_pb.columnType)
 
-            if column_type is ColumnType.COMPUTED or column_type is ColumnType.FILTER:
-                # measure_type determined by formula
-                data_type = None
-                measure_type = None
-            else:
-                data_type = column_schema.dataType
-                measure_type = column_schema.measureType
+            if column.column_type is ColumnType.DATA:
+                column.change(
+                    data_type=DataType(column_pb.dataType),
+                    measure_type=MeasureType(column_pb.measureType),
+                    levels=levels)
 
-            column.change(
-                name=column_schema.name,
-                column_type=column_type,
-                data_type=data_type,
-                measure_type=measure_type,
-                levels=levels,
-                auto_measure=column_schema.autoMeasure,
-                formula=column_schema.formula,
-                description=column_schema.description,
-                hidden=column_schema.hidden,
-                active=column_schema.active,
-                filter_no=column_schema.filterNo,
-                trim_levels=column_schema.trimLevels)
+            if column_pb.name != '':
+                column.name = column_pb.name
+
+            column.column_type = ColumnType(column_pb.columnType)
+
+            column.formula = column_pb.formula
+            column.auto_measure = column_pb.autoMeasure
+            column.hidden = column_pb.hidden
+            column.active = column_pb.active
+            column.filter_no = column_pb.filterNo
+            column.trim_levels = column_pb.trimLevels
+            column.description = column_pb.description
 
             cols_changed.add(column)
 
@@ -1208,6 +1206,7 @@ class Instance:
                             column.insert_level(index, value)
                         else:
                             index = column.get_value_for_label(value)
+
                         column[row_start + j] = index
             else:
                 for j in range(row_count):
@@ -1279,6 +1278,7 @@ class Instance:
         self._populate_cells(request, response)
 
     def _auto_adjust(self, column):
+
         if column.data_type == DataType.TEXT:
 
             d_type = DataType.INTEGER

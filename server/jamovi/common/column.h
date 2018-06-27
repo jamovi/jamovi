@@ -6,6 +6,8 @@
 #define COLUMN_H
 
 #include "memorymap.h"
+#include "vartypes.h"
+#include "level.h"
 
 #include <string>
 #include <vector>
@@ -78,37 +80,6 @@ typedef struct
 
 } ColumnStruct;
 
-typedef struct LevelData
-{
-    int value;
-    std::string label;
-    std::string importValue;
-
-} LevelData;
-
-namespace DataType
-{
-    enum Type
-    {
-        NONE = 0,
-        INTEGER = 1,
-        DECIMAL = 2,
-        TEXT = 3
-    };
-}
-
-namespace MeasureType
-{
-    enum Type
-    {
-        NONE = 0,
-        NOMINAL = 2,
-        ORDINAL = 3,
-        CONTINUOUS = 4,
-        ID = 5
-    };
-}
-
 namespace ColumnType
 {
     enum Type
@@ -144,6 +115,7 @@ public:
     const char *getLabel(int value) const;
     const char *getImportValue(int value) const;
     int valueForLabel(const char *label) const;
+    bool hasLevels() const;
     bool hasLevel(const char *label) const;
     bool hasLevel(int value) const;
     const char *formula() const;

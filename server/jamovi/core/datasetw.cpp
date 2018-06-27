@@ -24,6 +24,7 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->capacity = 65536;  // "ought to be enough for anybody"
     dss->columnCount = 0;
     dss->nextColumnId = 0;
+    dss->scratch = NULL;
 
     return ds;
 }
@@ -150,26 +151,32 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 
     column = strucC(columnCount);
 
+    initColumn(&column);
+
     column->name = _mm->base<char>(chars);
     column->importName = _mm->base<char>(chars2);
     column->id = columnId;
+
+    struc()->columnCount++;
+
+    ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
+    wrapper.setRowCount<int>(rowCount());
+
+    return wrapper;
+}
+
+void DataSetW::initColumn(ColumnStruct **columnp)
+{
+    ColumnStruct *column = *columnp;
+
+    column->name = NULL;
+    column->importName = NULL;
+    column->id = -1;
 
     column->columnType = ColumnType::DATA;
     column->dataType = DataType::INTEGER;
     column->measureType = MeasureType::NOMINAL;
     column->autoMeasure = false;
-    column->rowCount = 0;
-
-    column->blocksUsed = 0;
-    column->blockCapacity = 1024;
-
-    Block** blocks = _mm->allocateBase<Block*>(column->blockCapacity);
-    column = strucC(columnCount);
-    column->blocks = blocks;
-
-    column->levelsUsed = 0;
-    column->levelsCapacity = 0;
-
     column->dps = 0;
     column->active = true;
     column->trimLevels = true;
@@ -180,12 +187,19 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     column->formulaMessage = NULL;
     column->formulaMessageCapacity = 0;
 
-    struc()->columnCount++;
+    column->rowCount = 0;
+    column->blocksUsed = 0;
+    column->blockCapacity = 1024;
+    column->levelsUsed = 0;
+    column->levelsCapacity = 0;
 
-    ColumnW wrapper = ColumnW(this, _mm, _mm->base<ColumnStruct>(column));
-    wrapper.setRowCount<int>(rowCount());
+    ColumnStruct *rel = _mm->base(column);
+    Block** blocks = _mm->allocateBase<Block*>(column->blockCapacity);
 
-    return wrapper;
+    column = _mm->resolve(rel);
+    column->blocks = blocks;
+
+    columnp = &column;
 }
 
 void DataSetW::setRowCount(size_t count)
@@ -310,4 +324,81 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     memmove(&columns[delStart], &columns[delEnd+1], nToMove * sizeof(ColumnStruct*));
 
     dss->columnCount -= delCount;
+}
+
+ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)
+{
+    ColumnStruct *scratch = struc()->scratch;
+
+    if (scratch == NULL)
+    {
+        scratch = _mm->allocate<ColumnStruct>();
+        initColumn(&scratch);
+        scratch = _mm->base(scratch);
+    }
+
+    ColumnStruct *old = _mm->resolve(column._rel);
+
+    scratch = _mm->resolve(scratch);
+
+    /*int rowCount = scratch->rowCount;
+    int capacity = scratch->capacity;
+    Block **blocks = scratch->blocks;
+    int blocksUsed = scratch->blocksUsed;
+    int blockCapacity = scratch->blockCapacity;
+    Level *levels = scratch->levels;
+    int levelsUsed = scratch->levelsUsed;
+    int levelsCapacity = scratch->levelsCapacity;
+
+    *scratch = *old;
+    scratch->rowCount = rowCount;
+    scratch->capacity = capacity;
+    scratch->blocks = blocks;
+    scratch->blocksUsed = blocksUsed;
+    scratch->blockCapacity = blockCapacity;
+    scratch->levels = levels;
+    scratch->levelsUsed = levelsUsed;
+    scratch->levelsCapacity = levelsCapacity;*/
+
+    scratch->name = old->name;
+    scratch->importName = old->importName;
+    scratch->columnType = old->columnType;
+    scratch->autoMeasure = old->autoMeasure;
+    scratch->active = old->active;
+    scratch->trimLevels = old->trimLevels;
+    scratch->changes = old->changes;
+
+    scratch->formula = old->formula;
+    scratch->formulaCapacity = old->formulaCapacity;
+    scratch->formulaMessage = old->formulaMessage;
+    scratch->formulaMessageCapacity = old->formulaMessageCapacity;
+
+    scratch = _mm->base(scratch);
+
+    ColumnStruct *tmp = column._rel;
+    column._rel = scratch;
+    struc()->scratch = tmp;
+
+    ColumnStruct **columns = _mm->resolve(struc()->columns);
+    for (int i = 0; i < columnCount(); i++)
+    {
+        if (columns[i] == tmp)
+        {
+            columns[i] = column._rel;
+            break;
+        }
+    }
+
+    return ColumnW(this, _mm, tmp);
+}
+
+void DataSetW::discardScratchColumn(int id)
+{
+    ColumnStruct *scratch = struc()->scratch;
+    if (scratch == NULL)
+        return;
+
+    scratch = _mm->resolve(scratch);
+    if (scratch->id == id)
+        scratch->id = -1;
 }
