@@ -52,7 +52,7 @@ void ColumnW::setDataType(DataType::Type dataType)
     s->changes++;
 
     if (dataType == DataType::DECIMAL)
-        setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
+        _setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
 }
 
 void ColumnW::setMeasureType(MeasureType::Type measureType)
