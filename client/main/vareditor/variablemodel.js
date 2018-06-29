@@ -24,7 +24,18 @@ const VariableModel = Backbone.Model.extend({
             if (changes) {
                 this.dataset.set('varEdited', changes);
             }
+
+            if (this.get('autoApply') && !this._applying && this.get('changes')) {
+                this._applying = true;
+                setTimeout(() => {
+                    this.apply();
+                    this._applying = false;
+                }, 0);
+            }
         });
+    },
+    suspendAutoApply() {
+        this.set('autoApply', false);
     },
     defaults : {
         name : null,
@@ -43,7 +54,8 @@ const VariableModel = Backbone.Model.extend({
         active: true,
         filterNo: -1,
         importName: '',
-        trimLevels: true
+        trimLevels: true,
+        autoApply: true
     },
     editLevelLabel(index, label) {
 
@@ -110,6 +122,8 @@ const VariableModel = Backbone.Model.extend({
         this.set('formulaMessage', column.formulaMessage);
     },
     apply() {
+
+        this.set('autoApply', true);
 
         if (this.attributes.changes === false)
             return Promise.resolve();

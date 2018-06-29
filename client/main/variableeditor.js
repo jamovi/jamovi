@@ -143,9 +143,6 @@ const VariableEditor = Backbone.View.extend({
         });
 
         this.editorModel.on('change:changes', event => {
-            this.$ok.toggleClass('apply', event.changed.changed);
-            this.$revert.toggleClass('apply', event.changed.changed);
-
             if (this.$ok.hasClass('apply'))
                 this.$ok.attr('title', 'Apply changes');
             else

@@ -70,7 +70,7 @@ const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
                     $tarp.remove();
                 }
             };
-            $tarp.one('mousedown', params.onMouseDown);
+            $tarp.one('mouseup', params.onMouseDown);
 
             $tarp.show();
         });
@@ -86,7 +86,7 @@ const hide = function(name) {
 
         let params = $params[name];
 
-        $tarp.off('mousedown');
+        $tarp.off('mouseup');
         $tarp.hide();
 
         params.resolvePromise();

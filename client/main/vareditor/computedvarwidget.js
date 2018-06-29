@@ -87,6 +87,7 @@ const ComputedVarWidget = Backbone.View.extend({
         });
         this.$formula.blur((event) => {
             keyboardJS.resume();
+            this.model.set('formula', this.$formula[0].textContent);
         });
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
@@ -97,9 +98,6 @@ const ComputedVarWidget = Backbone.View.extend({
             if (event.keyCode === 9) {    //tab
                 event.preventDefault();
             }
-        });
-        this.$formula.on('input', (event) => {
-            this.model.set('formula', this.$formula[0].textContent);
         });
 
         this.$formula.on('editor:closing', () => {
