@@ -46,7 +46,7 @@ const EditorWidget = Backbone.View.extend({
             if (name !== this.$title.val())
                 this.$title.val(name);
         });
-        this.$title.on('change keyup paste', () => {
+        this.$title.on('blur', () => {
             this.model.set('name', this.$title.val());
         } );
 
@@ -60,7 +60,7 @@ const EditorWidget = Backbone.View.extend({
             if (desc !== this.$description[0].textContent)
                 this.$description[0].textContent = desc;
         });
-        this.$description.on('input', () => {
+        this.$description.on('blur', () => {
             this.model.set('description', this.$description[0].textContent);
         } );
 

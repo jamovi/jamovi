@@ -5,6 +5,7 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const DataVarLevelWidget = require('./datavarlevelwidget');
+const tarp = require('../utils/tarp');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -23,15 +24,22 @@ const DataVarWidget = Backbone.View.extend({
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
 
-        this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$body);
+        this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
+        this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$levelsCrtl);
         this.$levelsTitle = $('<div class="jmv-variable-editor-levels-title">Levels</div>').appendTo(this.$levelsContainer);
         this.$levels = $('<div class="jmv-variable-editor-levels"></div>').appendTo(this.$levelsContainer);
         this.$levelItems = $();
         this.levelCtrls = [];
 
-        this.$move = $('<div class="jmv-variable-editor-widget-move"></div>').appendTo(this.$body);
+        this.$move = $('<div class="jmv-variable-editor-widget-move"></div>').appendTo(this.$levelsCrtl);
         this.$moveUp = $('<div class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></div>').appendTo(this.$move);
         this.$moveDown = $('<div class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></div>').appendTo(this.$move);
+
+        $(window).on('keydown', event => {
+            if (event.key === 'Escape' || event.key === 'Enter') {
+                tarp.hide('levels');
+            }
+        });
 
         this.$moveUp.on('click', event => this._moveUp());
         this.$moveDown.on('click', event => this._moveDown());
@@ -75,6 +83,11 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
         this.model.on('change:description', event => this._updateHighlightPosition());
+
+        this.model.on('change:autoApply', event => {
+            if (this.model.get('autoApply'))
+                tarp.hide('levels');
+        });
     },
     _moveUp() {
         if (this.attached === false)
@@ -84,6 +97,9 @@ const DataVarWidget = Backbone.View.extend({
         let index = this.selectedLevelIndex;
         if (index < 1)
             return;
+
+        this._focusLevelControls();
+
         let levels = this.model.get('levels');
         let clone  = levels.slice(0);
         let item   = clone.splice(index, 1)[0];
@@ -100,6 +116,9 @@ const DataVarWidget = Backbone.View.extend({
         let levels = this.model.get('levels');
         if (index === -1 || index >= levels.length - 1)
             return;
+
+        this._focusLevelControls();
+
         let clone  = levels.slice(0);
         let item   = clone.splice(index, 1)[0];
         clone.splice(index + 1, 0, item);
@@ -129,6 +148,17 @@ const DataVarWidget = Backbone.View.extend({
                 this.$typesHighlight.css(css);
             }
         }
+    },
+    _focusLevelControls() {
+        this.model.suspendAutoApply();
+        this.$levelsCrtl.addClass('super-focus');
+        tarp.show('levels', true, 0.1, 299).then(() => {
+            this.$levelsCrtl.removeClass('super-focus');
+            this.model.apply();
+        }, () => {
+            this.$levelsCrtl.removeClass('super-focus');
+            this.model.apply();
+        });
     },
     _setOptions(dataType, measureType, levels) {
         if ( ! this.attached)
@@ -171,6 +201,7 @@ const DataVarWidget = Backbone.View.extend({
         if (levels) {
 
             let _clickCallback = event => {
+                this._focusLevelControls();
                 this.$levelItems.removeClass('selected');
                 let $level = $(event.delegateTarget);
                 $level.addClass('selected');
