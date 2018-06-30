@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from numbers import Number
 from datetime import date
+import math
 
 from jamovi.core import ColumnType
 from jamovi.core import DataType
@@ -64,6 +65,11 @@ class Parser(ReadStatParser):
         var_meas = variable.measure
         var_type = variable.type
 
+        if level_labels and var_meas == Measure.SCALE:
+            # if scale w/ levels, treat it as ordinal
+            # https://github.com/jamovi/jamovi/issues/487
+            var_meas = Measure.ORDINAL
+
         if var_meas == Measure.SCALE:
             measure_type = MeasureType.CONTINUOUS
         elif var_meas == Measure.ORDINAL:
@@ -75,9 +81,8 @@ class Parser(ReadStatParser):
             if measure_type == MeasureType.CONTINUOUS:
                 measure_type = MeasureType.NOMINAL
 
-            column.change(
-                data_type=DataType.TEXT,
-                measure_type=measure_type)
+            column.set_data_type(DataType.TEXT)
+            column.set_measure_type(measure_type)
 
             if level_labels is not None:
                 level_i = 0
@@ -88,9 +93,8 @@ class Parser(ReadStatParser):
 
         elif var_type is date:
 
-            column.change(
-                data_type=DataType.INTEGER,
-                measure_type=MeasureType.ORDINAL)
+            column.set_data_type(DataType.INTEGER)
+            column.set_measure_type(MeasureType.ORDINAL)
 
         elif var_type is int or var_type is float:
             if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL:
@@ -100,9 +104,8 @@ class Parser(ReadStatParser):
                 else:
                     measure_type = MeasureType.ORDINAL
 
-                column.change(
-                    data_type=DataType.INTEGER,
-                    measure_type=measure_type)
+                column.set_data_type(DataType.INTEGER)
+                column.set_measure_type(measure_type)
 
                 if level_labels is not None:
                     new_labels = OrderedDict()
@@ -120,9 +123,8 @@ class Parser(ReadStatParser):
                 else:
                     data_type = DataType.INTEGER
 
-                column.change(
-                    data_type=data_type,
-                    measure_type=MeasureType.CONTINUOUS)
+                column.set_data_type(data_type)
+                column.set_measure_type(MeasureType.CONTINUOUS)
 
     def handle_value(self, var_index, row_index, value):
 
@@ -143,6 +145,11 @@ class Parser(ReadStatParser):
         elif (column.measure_type is MeasureType.NOMINAL or
                 column.measure_type is MeasureType.ORDINAL):
             if isinstance(value, Number):
+                if not math.isclose(float(value) % 1.0, 0.0):
+                    column.change(data_type=DataType.DECIMAL)
+                    self.handle_value(var_index, row_index, value)
+                    return
+
                 try:
                     value = int(value)
                     if value.bit_length() > 32:
