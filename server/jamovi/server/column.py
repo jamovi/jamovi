@@ -544,9 +544,8 @@ class Column:
                 self._node._add_node_parent(self)
                 self._formula_status = FormulaStatus.OK
 
-                self.change(
-                    data_type=self._node.data_type,
-                    measure_type=self._node.measure_type)
+                self.set_data_type(self._node.data_type)
+                self.set_measure_type(self._node.measure_type)
 
         except RecursionError:
             self._formula_status = FormulaStatus.ERROR
