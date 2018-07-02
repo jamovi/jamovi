@@ -1119,6 +1119,7 @@ class Instance:
             self._data.set_row_count(row_end + 1)
 
         cols_changed = set()  # schema changes to send
+        reparse = set()
         recalc = set()  # computed columns that need to update from these changes
 
         for i in range(self._data.column_count, col_start):
@@ -1237,7 +1238,10 @@ class Instance:
                 column.determine_dps()
 
             if changes != column.changes or was_virtual:
+                # if a schema change
                 cols_changed.add(column)
+                # reparse dependents, as it may impact their data/measure type
+                reparse.update(column.dependents)
 
             dependents = column.dependents
             recalc.update(dependents)
@@ -1260,6 +1264,8 @@ class Instance:
             # sort ascending (the client doesn't like them out of order)
             cols_changed = sorted(cols_changed, key=lambda x: x.index)
 
+        for column in reparse:
+            column.parse_formula()
         for column in recalc:
             column.needs_recalc = True
         for column in recalc:
