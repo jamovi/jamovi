@@ -164,7 +164,7 @@ $(document).ready(() => {
 
     let $fileName = $('.header-file-name');
     instance.on('change:title', function(event) {
-        if ('selectedAnalysis' in event.changed) {
+        if ('title' in event.changed) {
             let title = event.changed.title;
             $fileName.text(title);
             document.title = title;
