@@ -113,6 +113,8 @@ function View() {
         {
             onEvent: "view.loaded", execute: function(ui) {
                 this._loaded = true;
+                if (this.loaded)
+                    this.loaded(ui);
             }
         },
         {

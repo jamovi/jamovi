@@ -69,8 +69,11 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             if (data.requestType === "columns") {
                 let columns = this.dataSetModel.get('columns');
                 let columnData = [];
-                for (let i = 0; i < columns.length; i++)
-                    columnData[i] = { name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType };
+                for (let i = 0; i < columns.length; i++) {
+                    if (columns[i].columnType === 'none')
+                        continue;
+                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType });
+                }
                 data.columns = columnData;
             }
             else if (data.requestType === "column") {
