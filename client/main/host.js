@@ -37,6 +37,7 @@ let copyToClipboard = doNothing;
 let pasteFromClipboard = doNothing;
 let showSaveDialog = doNothing;
 let openUrl = doNothing;
+let openRecorder = doNothing;
 
 let emitter = new events.EventEmitter();
 
@@ -139,6 +140,10 @@ if (window.require) {
 
     toggleDevTools = function() {
         ipc.send('request', { type: 'openDevTools' });
+    };
+
+    openRecorder = function() {
+        ipc.send('request', { type: 'openRecorder' });
     };
 
     openUrl = function(url) {
@@ -296,4 +301,5 @@ module.exports = {
     showSaveDialog,
     os,
     openUrl,
+    openRecorder,
 };

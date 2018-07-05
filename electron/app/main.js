@@ -376,6 +376,9 @@ ipc.on('request', (event, arg) => {
             else
                 wind.maximize();
             break;
+        case 'openRecorder':
+            openRecorder();
+            break;
     }
 });
 
@@ -505,4 +508,35 @@ const notifyUpdateStatus = function(status) {
         let response = 'notification: update ' + status + '\n';
         server.stdin.write(response);
     });
+}
+
+let recorderWindow = null;
+
+const openRecorder = function() {
+    if (recorderWindow !== null) {
+        recorderWindow.focus();
+        recorderWindow.flashFrame();
+    }
+    else {
+        // window size isn't here, because it's set in recorder/main.js
+        recorderWindow = new BrowserWindow({
+            show: false,
+            resizable: true,
+            minimizable: false,
+            maximizable: false,
+            alwaysOnTop: true,
+            fullscreenable: false,
+            skipTaskbar: true,
+            vibrancy: 'titlebar',
+            acceptFirstMouse: true,
+            defaultEncoding: 'UTF-8' });
+
+        recorderWindow.loadURL(rootUrl + 'recorder.html');
+        recorderWindow.once('ready-to-show', () => {
+            recorderWindow.show();
+        });
+        recorderWindow.once('closed', () => {
+            recorderWindow = null;
+        });
+    }
 }
