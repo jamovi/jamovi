@@ -16,9 +16,8 @@
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/convert.hpp>
 
+#include "readdf.h"
 #include "dirs.h"
-#include "memorymap.h"
-#include "dataset.h"
 #include "utils.h"
 
 #ifdef _WIN32
@@ -242,173 +241,12 @@ Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columns
 
     string path = _path + PATH_SEP + datasetId + PATH_SEP + "buffer";
 
-    MemoryMap *mm;
+    Rcpp::StringVector req(columnsRequired.size());
+    int count = 0;
+    for (SEXP sexp : columnsRequired)
+        req[count++] = Rcpp::as<Rcpp::String>(sexp);
 
-    try
-    {
-        mm = MemoryMap::attach(path);
-    }
-    catch (std::exception e)
-    {
-        std::cout << e.what() << "\n";
-        std::cout.flush();
-        throw e;
-    }
-
-    DataSet &dataset = *DataSet::retrieve(mm);
-
-    int columnCount = dataset.columnCount();
-    int rowCount = 0;
-    int rowCountExFiltered = 0;
-
-    if ( ! headerOnly)
-    {
-        rowCount = dataset.rowCount();
-        rowCountExFiltered = dataset.rowCountExFiltered();
-    }
-
-    Rcpp::List columns(columnsRequired.size());
-    Rcpp::CharacterVector columnNames(columnsRequired.size());
-    Rcpp::CharacterVector rowNames(rowCountExFiltered);
-
-    int rowNo = 0;
-    int colNo = 0;
-
-    for (int i = 0; i < rowCount; i++)
-    {
-        if ( ! dataset.isRowFiltered(i))
-            rowNames[rowNo++] = Rcpp::String(std::to_string(i));
-    }
-
-    for (int i = 0; i < columnCount; i++)
-    {
-        Column column = dataset[i];
-        string columnName = column.name();
-
-        bool required = false;
-
-        for (string hay : columnsRequired)
-        {
-            if (hay == columnName)
-                required = true;
-        }
-
-        if ( ! required)
-            continue;
-
-        columnNames[colNo] = Rcpp::String(columnName);
-
-        if (column.dataType() == DataType::DECIMAL)
-        {
-            Rcpp::NumericVector v(rowCountExFiltered, Rcpp::NumericVector::get_na());
-            rowNo = 0;
-
-            for (int j = 0; j < rowCount; j++)
-            {
-                if ( ! dataset.isRowFiltered(j))
-                    v[rowNo++] = column.value<double>(j);
-            }
-
-            columns[colNo] = v;
-        }
-        else if (column.measureType() == MeasureType::CONTINUOUS)
-        {
-            Rcpp::IntegerVector v(rowCountExFiltered, Rcpp::IntegerVector::get_na());
-            rowNo = 0;
-
-            for (int j = 0; j < rowCount; j++)
-            {
-                if ( ! dataset.isRowFiltered(j))
-                    v[rowNo++] = column.value<int>(j);
-            }
-
-            columns[colNo] = v;
-        }
-        else
-        {
-            int MISSING = Rcpp::IntegerVector::get_na();
-
-            // populate levels
-
-            vector<LevelData> m;
-            if (column.trimLevels())
-                m = column.levelsExFiltered();
-            else
-                m = column.levels();
-
-            Rcpp::CharacterVector levels = Rcpp::CharacterVector(m.size());
-            Rcpp::IntegerVector values = Rcpp::IntegerVector(m.size());
-
-            map<int, int> indexes;
-            int j = 0;
-
-            for (auto p : m)
-            {
-                int value;
-                if (column.dataType() == DataType::TEXT)
-                    value = j;
-                else
-                    value = p.ivalue();
-
-                values[j] = value;
-                levels[j] = Rcpp::String(p.label());
-                j++;
-                indexes[value] = j;
-            }
-
-            // populate cells
-
-            Rcpp::IntegerVector v(rowCountExFiltered, MISSING);
-            rowNo = 0;
-
-            for (j = 0; j < rowCount; j++)
-            {
-                if ( ! dataset.isRowFiltered(j))
-                {
-                    int value = column.value<int>(j);
-                    if (value != MISSING)
-                        v[rowNo] = indexes[value];
-                    rowNo++;
-                }
-            }
-
-            // assign levels
-
-            v.attr("levels") = levels;
-
-            if (column.dataType() == DataType::TEXT)
-            {
-                if (column.measureType() == MeasureType::ORDINAL)
-                    v.attr("class") = Rcpp::CharacterVector::create("ordered", "factor");
-                else
-                    v.attr("class") = "factor";
-            }
-            else
-            {
-                v.attr("values") = values;
-
-                if (column.measureType() == MeasureType::ORDINAL)
-                    v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "ordered", "factor");
-                else
-                    v.attr("class") = Rcpp::CharacterVector::create("SilkyFactor", "factor");
-            }
-
-            if ( ! column.trimLevels() && column.hasUnusedLevels())
-            {
-                v.attr("jmv-unused-levels") = true;
-            }
-
-            columns[colNo] = v;
-        }
-
-        colNo++;
-    }
-
-    columns.attr("names") = columnNames;
-    columns.attr("row.names") = rowNames;
-    columns.attr("class") = "data.frame";
-
-    return columns;
+    return readDF(path, req, headerOnly);
 }
 
 void EngineR::setCheckForNewCB(std::function<Analysis*()> check)

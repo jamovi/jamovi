@@ -14,7 +14,7 @@ DataSet *DataSet::retrieve(MemoryMap *mm)
 {
     DataSet *ds = new DataSet(mm);
 
-    ds->_rel = mm->base(mm->root<DataSetStruct>());
+    ds->_rel = mm->root<DataSetStruct>();
 
     return ds;
 }

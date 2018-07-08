@@ -33,7 +33,7 @@ DataSetW *DataSetW::retrieve(MemoryMapW *mm)
 {
     DataSetW *ds = new DataSetW(mm);
 
-    ds->_rel = mm->base(mm->root<DataSetStruct>());
+    ds->_rel = mm->root<DataSetStruct>();
 
     return ds;
 }
