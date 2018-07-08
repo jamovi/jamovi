@@ -22,6 +22,10 @@ const DataTab = function() {
                 ]})
             ]}),
             new RibbonSeparator(),
+            new RibbonGroup({ title: 'Data', margin: 'large', items: [
+                new RibbonButton({ title: 'Import Settings', name: 'editImport', margin: 'large', size: 'large' })
+            ]}),
+            new RibbonSeparator(),
             new RibbonGroup({ title: 'Variables', items: [
                 new RibbonButton({ title: 'Setup', name: 'editVar', margin: 'large', size: 'large' }),
                 new RibbonButton({ title: 'Compute', name: 'compute', margin: 'large', size: 'large' }),

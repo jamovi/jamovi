@@ -19,6 +19,7 @@ const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
+const ImportEditor = require('./importeditor');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
@@ -203,6 +204,26 @@ $(document).ready(() => {
             splitPanel.resized({ height: height + 200 });
         }
     });
+
+    let importeditor = new ImportEditor({ el : '#import-editor', model : dataSetModel });
+    importeditor.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
+    importeditor.on('visibility-changing', value => {
+        if (value === false) {
+            let height = parseFloat(splitPanel.$el.css('height'));
+            splitPanel.resized({ height: height + 200 });
+        }
+    });
+
+    ActionHub.get('editImport').on('request', () => {
+        dataSetModel.set('editingVar', null);
+        importeditor.toggleVisibility();
+    });
+
+    dataSetModel.on('change:editingVar', event => {
+        if (dataSetModel.get('editingVar') !== null)
+            importeditor.visible(false);
+    });
+
 
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));

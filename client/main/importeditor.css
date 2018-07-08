@@ -1,0 +1,71 @@
+
+.jmv-import-editor {
+    background-color: #F8F8F8 ;
+    width: 100% ;
+    height: 300px ;
+    transition: height .2s, border-top .2s ;
+    box-sizing: border-box;
+    border-top: 1px solid #CCCCCC ;
+}
+
+.jmv-import-editor.hidden {
+    height: 0 ;
+    transition-timing-function: ease, step-end ;
+    border-top: 1px solid #F0F0F0 ;
+}
+
+.jmv-import-editor-main {
+    position: relative ;
+    margin: 0 auto ;
+    width: 700px ;
+    height: 100% ;
+    box-sizing: border-box;
+    overflow: hidden ;
+}
+
+.jmv-import-editor-ok {
+    position: absolute ;
+    right: 12px ;
+    top: 12px ;
+    width: 40px ;
+    height: 40px ;
+    color: #BBBBBB ;
+    border: 4px solid #BBBBBB ;
+    border-radius: 20px ;
+    box-sizing: border-box;
+    font-size: 24px ;
+    text-align: center;
+    z-index: 1 ;
+    transition: color .2s, border-color .2s ;
+}
+
+.jmv-import-editor-ok span.mif-checkmark {
+    color: #AAAAAA ;
+    border-color: #AAAAAA;
+}
+
+.jmv-import-editor-ok.apply {
+    border-color: #AAAAAA;
+}
+
+.jmv-import-editor-ok span {
+    position: absolute ;
+    left: 0 ;
+    width: 100% ;
+    line-height: 32px;
+    vertical-align: top;
+    transition: opacity .4s ;
+}
+
+.jmv-import-editor-ok:not(.apply) span.mif-checkmark {
+    opacity: 0 ;
+}
+
+.jmv-import-editor-ok.apply span.mif-arrow-up {
+    opacity: 0 ;
+}
+
+.jmv-variable-editor-ok:hover {
+    color: #999999 ;
+    border-color: #999999 ;
+}
