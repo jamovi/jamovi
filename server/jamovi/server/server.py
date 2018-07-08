@@ -13,12 +13,14 @@ from .clientconnection import ClientConnection
 from .instance import Instance
 from .modules import Modules
 from .utils import conf
+from jamovi.core import Dirs
 
 import sys
 import os.path
 import uuid
 import mimetypes
 import re
+import json
 
 import tempfile
 import logging
@@ -204,6 +206,23 @@ class PDFConverter(RequestHandler):
         return self._future
 
 
+class DatasetsList(RequestHandler):
+
+    def get(self):
+        instances = [ ]
+        for id in Instance.instances:
+            instance = Instance.get(id)
+            instances.append({
+                'id': id,
+                'title': instance._data.title,
+                'buffer': instance._buffer_path,
+                'rowCount': instance._data.row_count,
+                'columnCount': instance._data.column_count,
+            })
+        self.set_header('Content-Type', 'application/json')
+        self.write(json.dumps(instances))
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -329,6 +348,7 @@ class Server:
             (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
             (r'/analyses/(.*)/(.*)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
+            (r'/api/datasets', DatasetsList),
             (r'/(.*)', SFHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',
@@ -394,7 +414,23 @@ class Server:
             check = tornado.ioloop.PeriodicCallback(self._lonely_suicide, 1000)
             self._ioloop.call_later(3, check.start)
 
+        # write the port no. to a file, so external software can
+        # find out what port jamovi is running on
+        app_data = Dirs.app_data_dir()
+        port_name = str(self._ports[0]) + '.port'
+        port_file = os.path.join(app_data, port_name)
+        with open(port_file, 'w'):
+            pass
+
+        for entry in os.scandir(app_data):
+            if entry.name == port_name:
+                continue
+            if entry.name.endswith('.port') and entry.is_file():
+                os.remove(entry.path)
+
         try:
             self._ioloop.run_forever()
         except KeyboardInterrupt:
             pass
+
+        os.remove(port_file)
