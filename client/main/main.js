@@ -19,7 +19,8 @@ const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
-const ImportEditor = require('./importeditor');
+const EditorPanel = require('./editorpanel');
+const ImportSettings = require('./editors/importsettings');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
@@ -205,23 +206,27 @@ $(document).ready(() => {
         }
     });
 
-    let importeditor = new ImportEditor({ el : '#import-editor', model : dataSetModel });
-    importeditor.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
-    importeditor.on('visibility-changing', value => {
+    let editorPanel = new EditorPanel({ el : '#import-editor', model : dataSetModel });
+    editorPanel.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
+    editorPanel.on('visibility-changing', value => {
         if (value === false) {
             let height = parseFloat(splitPanel.$el.css('height'));
             splitPanel.resized({ height: height + 200 });
         }
     });
 
+    let importSettings = new ImportSettings();
     ActionHub.get('editImport').on('request', () => {
         dataSetModel.set('editingVar', null);
-        importeditor.toggleVisibility();
+        if (editorPanel.item === importSettings)
+            editorPanel.attach(null);
+        else
+            editorPanel.attach(importSettings);
     });
 
     dataSetModel.on('change:editingVar', event => {
         if (dataSetModel.get('editingVar') !== null)
-            importeditor.visible(false);
+            editorPanel.attach(null);
     });
 
 
