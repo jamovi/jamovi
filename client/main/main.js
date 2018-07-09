@@ -19,6 +19,8 @@ const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
+const EditorPanel = require('./editorpanel');
+const ImportSettings = require('./editors/importsettings');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
@@ -203,6 +205,30 @@ $(document).ready(() => {
             splitPanel.resized({ height: height + 200 });
         }
     });
+
+    let editorPanel = new EditorPanel({ el : '#import-editor', model : dataSetModel });
+    editorPanel.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
+    editorPanel.on('visibility-changing', value => {
+        if (value === false) {
+            let height = parseFloat(splitPanel.$el.css('height'));
+            splitPanel.resized({ height: height + 200 });
+        }
+    });
+
+    let importSettings = new ImportSettings();
+    ActionHub.get('editImport').on('request', () => {
+        dataSetModel.set('editingVar', null);
+        if (editorPanel.item === importSettings)
+            editorPanel.attach(null);
+        else
+            editorPanel.attach(importSettings);
+    });
+
+    dataSetModel.on('change:editingVar', event => {
+        if (dataSetModel.get('editingVar') !== null)
+            editorPanel.attach(null);
+    });
+
 
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
