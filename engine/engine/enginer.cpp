@@ -99,6 +99,13 @@ void EngineR::run(Analysis *analysis)
     rInside["checkpoint"] = Rcpp::InternalFunction(checkpoint);
     rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
 
+    if (analysis->ns == "Rj")
+    {
+        // Rj needs special access to this
+        string datasetPath = _path + PATH_SEP + analysis->datasetId + PATH_SEP + "buffer";
+        rInside[".datasetPath"] = datasetPath;
+    }
+
     rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
 
     rInside.parseEvalQNT(".options <- options()"); // save options
@@ -208,6 +215,9 @@ void EngineR::setLibPaths(const std::string &moduleName)
     {
         ss << ",'" << makeAbsolute(path) << "/" << moduleName << "/R'";
         ss << ",'" << makeAbsolute(path) << "/base/R'";
+
+        if (moduleName == "Rj")
+            ss << ", '" << makeAbsolute(path) << "/jmv/R'";
     }
 
     for (auto path : sysR)
