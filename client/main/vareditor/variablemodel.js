@@ -25,11 +25,10 @@ const VariableModel = Backbone.Model.extend({
                 this.dataset.set('varEdited', changes);
             }
 
-            if (this.get('autoApply') && !this._applying && this.get('changes')) {
-                this._applying = true;
-                setTimeout(() => {
+            if (this.get('autoApply') && !this._applyId && this.get('changes')) {
+                this._applyId = setTimeout(() => {
                     this.apply();
-                    this._applying = false;
+                    this._applyId = null;
                 }, 0);
             }
         });
@@ -101,6 +100,14 @@ const VariableModel = Backbone.Model.extend({
         this.set(dict);
     },
     setColumn(id) {
+        this.trigger('columnChanging');
+        
+        if (this._applyId) {
+            clearTimeout(this._applyId);
+            this._applyId = null;
+            this.apply();
+        }
+
         let column = this.dataset.getColumnById(id);
         this.original = {
             name : column.name,
