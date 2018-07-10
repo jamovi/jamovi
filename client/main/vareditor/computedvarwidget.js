@@ -82,6 +82,11 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
         this._createFormulaBox(this.$options);
 
+        this.model.on('columnChanging', () => {
+            if (this.$formula.is(":focus"))
+                this.$formula.blur();
+        });
+
         this.$formula.focus(() => {
             keyboardJS.pause();
         });

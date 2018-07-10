@@ -64,6 +64,13 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('description', this.$description[0].textContent);
         } );
 
+        this.model.on('columnChanging', () => {
+            if (this.$description.is(":focus"))
+                this.$description.blur();
+            if (this.$title.is(":focus"))
+                this.$title.blur();
+        });
+
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
 
         this.$footer = $('<div class="jmv-variable-editor-widget-footer"></div>').appendTo(this.$el);
