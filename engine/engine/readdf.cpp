@@ -50,7 +50,7 @@ DataFrame readDF(
     for (int i = 0; i < rowCount; i++)
     {
         if ( ! dataset.isRowFiltered(i))
-            rowNames[rowNo++] = String(std::to_string(i));
+            rowNames[rowNo++] = String(std::to_string(i+1));
     }
 
     bool readAllColumns;
@@ -124,30 +124,40 @@ DataFrame readDF(
 
             // populate levels
 
-            vector<LevelData> m;
-            if (column.trimLevels())
-                m = column.levelsExFiltered();
-            else
-                m = column.levels();
+            vector<LevelData> m = column.levels();
 
-            CharacterVector levels = CharacterVector(m.size());
-            IntegerVector values = IntegerVector(m.size());
+            int nLevels = column.levelCountExFiltered();
+            CharacterVector levels = CharacterVector(nLevels);
+            IntegerVector values = IntegerVector(nLevels);
 
             map<int, int> indexes;
-            int j = 0;
+            int jli = 0;
+            int rli = 0;
 
-            for (auto p : m)
+            vector<LevelData>::iterator itr = m.begin();
+            for (; itr != m.end(); itr++)
             {
-                int value;
-                if (column.dataType() == DataType::TEXT)
-                    value = j;
-                else
-                    value = p.ivalue();
+                LevelData &p = *itr;
+                if ( ! p.filtered())
+                {
+                    int value;
+                    if (column.dataType() == DataType::TEXT)
+                        value = jli;
+                    else
+                        value = p.ivalue();
 
-                values[j] = value;
-                levels[j] = String(p.label());
-                j++;
-                indexes[value] = j;
+                    indexes[value] = rli + 1;
+                    values[rli] = value;
+                    levels[rli] = String(p.label());
+
+                    jli++;
+                    rli++;
+                }
+                else
+                {
+                    jli++;
+                }
+
             }
 
             // populate cells
@@ -155,7 +165,7 @@ DataFrame readDF(
             IntegerVector v(rowCountExFiltered, MISSING);
             rowNo = 0;
 
-            for (j = 0; j < rowCount; j++)
+            for (int j = 0; j < rowCount; j++)
             {
                 if ( ! dataset.isRowFiltered(j))
                 {

@@ -110,8 +110,8 @@ public:
     DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
+    int levelCountExFiltered() const;
     const std::vector<LevelData> levels() const;
-    const std::vector<LevelData> levelsExFiltered() const;
     const char *getLabel(int value) const;
     const char *getImportValue(int value) const;
     int valueForLabel(const char *label) const;

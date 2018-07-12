@@ -4,8 +4,6 @@
 
 #include "memorymap.h"
 
-#include <boost/nowide/fstream.hpp>
-
 using namespace std;
 using namespace boost;
 

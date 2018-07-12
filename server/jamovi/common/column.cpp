@@ -96,6 +96,16 @@ int Column::levelCount() const
     return struc()->levelsUsed;
 }
 
+int Column::levelCountExFiltered() const
+{
+    int count = 0;
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+    for (int i = 0; i < s->levelsUsed; i++)
+        count += (levels[i].countExFiltered > 0) ? 1 : 0;
+    return count;
+}
+
 const vector<LevelData> Column::levels() const
 {
     vector<LevelData> m;
@@ -106,48 +116,19 @@ const vector<LevelData> Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
+        bool filtered = l.countExFiltered == 0;
 
         if (dataType() == DataType::TEXT)
         {
             char *value = _mm->resolve(l.importValue);
             char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label));
+            m.push_back(LevelData(value, label, filtered));
         }
         else
         {
             int value   = l.value;
             char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label));
-        }
-    }
-
-    return m;
-}
-
-const vector<LevelData> Column::levelsExFiltered() const
-{
-    vector<LevelData> m;
-
-    ColumnStruct *s = struc();
-    Level *levels = _mm->resolve(s->levels);
-
-    for (int i = 0; i < s->levelsUsed; i++)
-    {
-        Level &l = levels[i];
-        if (l.countExFiltered == 0)
-            continue;
-
-        if (dataType() == DataType::TEXT)
-        {
-            char *value = _mm->resolve(l.importValue);
-            char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label));
-        }
-        else
-        {
-            int value   = l.value;
-            char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label));
+            m.push_back(LevelData(value, label, filtered));
         }
     }
 
