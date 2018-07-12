@@ -222,6 +222,7 @@ const convertToPDF = function(path) {
 let server;
 let ports = null;
 let updateUrl;
+let recorderWindow = null;
 
 const spawn = new Promise((resolve, reject) => {
 
@@ -377,7 +378,7 @@ ipc.on('request', (event, arg) => {
                 wind.maximize();
             break;
         case 'openRecorder':
-            openRecorder();
+            openRecorder(eventData);
             break;
     }
 });
@@ -419,6 +420,18 @@ const createWindow = function(open) {
         }
     });
 
+    if (recorderWindow !== null) {
+        let script = `window.notifyCurrentWindowChanged(${wind.id})`;
+        recorderWindow.webContents.executeJavaScript(script);
+    }
+
+    wind.on('focus', (event) => {
+        if (recorderWindow !== null) {
+            let script = `window.notifyCurrentWindowChanged(${event.sender.id})`;
+            recorderWindow.webContents.executeJavaScript(script);
+        }
+    });
+
     windows.push(wind);
 
     let url = rootUrl + 'index.html';
@@ -449,8 +462,14 @@ const createWindow = function(open) {
         }
     });
 
-    wind.on('closed', function() {
+    wind.on('closed', (event) => {
         windows = windows.filter(w => w != wind);
+        if (windows.length === 0 && recorderWindow !== null) {
+            let recorder = recorderWindow;
+            // set it to null to really close
+            recorderWindow = null;
+            recorder.close();
+        }
     });
 };
 
@@ -510,22 +529,18 @@ const notifyUpdateStatus = function(status) {
     });
 }
 
-let recorderWindow = null;
-
-const openRecorder = function() {
-    if (recorderWindow !== null) {
-        recorderWindow.focus();
-        recorderWindow.flashFrame();
-    }
-    else {
-        // window size isn't here, because it's set in recorder/main.js
+const openRecorder = function(id) {
+    if (recorderWindow === null) {
         recorderWindow = new BrowserWindow({
             show: false,
-            resizable: true,
+            width: 340,
+            height: 240,
+            resizable: false,
             minimizable: false,
             maximizable: false,
             alwaysOnTop: true,
             fullscreenable: false,
+            focusable: process.platform !== 'darwin',
             skipTaskbar: true,
             vibrancy: 'titlebar',
             acceptFirstMouse: true,
@@ -533,10 +548,26 @@ const openRecorder = function() {
 
         recorderWindow.loadURL(rootUrl + 'recorder.html');
         recorderWindow.once('ready-to-show', () => {
+            let script = `window.notifyCurrentWindowChanged(${id})`;
+            recorderWindow.webContents.executeJavaScript(script);
             recorderWindow.show();
         });
-        recorderWindow.once('closed', () => {
+        recorderWindow.on('close', (event) => {
+            // set recorderWindow to null to close properly
+            if (recorderWindow !== null) {
+                recorderWindow.hide();
+                event.preventDefault();
+            }
+        })
+        recorderWindow.once('closed', (event) => {
             recorderWindow = null;
         });
+    }
+    else if (recorderWindow.isVisible()) {
+        recorderWindow.focus();
+        recorderWindow.flashFrame();
+    }
+    else {
+        recorderWindow.show();
     }
 }

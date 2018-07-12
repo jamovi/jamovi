@@ -143,7 +143,8 @@ if (window.require) {
     };
 
     openRecorder = function() {
-        ipc.send('request', { type: 'openRecorder' });
+        // we send the parent so it can be the first window for recording
+        ipc.send('request', { type: 'openRecorder', data: browserWindow.id });
     };
 
     openUrl = function(url) {
@@ -233,7 +234,10 @@ if (window.require) {
         return { text: text, html: html };
     };
 
-    showSaveDialog = dialog.showSaveDialog;
+    showSaveDialog = (options, callback) => {
+        return dialog.showSaveDialog(browserWindow, options, callback);
+    };
+
 
 }
 else {
