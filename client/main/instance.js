@@ -197,7 +197,7 @@ const Instance = Backbone.Model.extend({
             else if (filePath.endsWith('.omv')) {
                 return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
             }
-            else if (filePath.endsWith('.html')) {
+            else if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
                 return this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
             }
             else if (filePath.endsWith('.pdf')) {
