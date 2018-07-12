@@ -44,7 +44,8 @@ class Parser(ReadStatParser):
         self._labels = [ ]
 
     def handle_metadata(self, metadata):
-        self._data.set_row_count(metadata.row_count)
+        if metadata.row_count >= 0:  # negative values are possible here!
+            self._data.set_row_count(metadata.row_count)
 
     def handle_value_label(self, labels_key, value, label):
         if labels_key not in self._tmp_value_labels:
@@ -97,7 +98,7 @@ class Parser(ReadStatParser):
             column.set_measure_type(MeasureType.ORDINAL)
 
         elif var_type is int or var_type is float:
-            if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL:
+            if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL or level_labels:
 
                 if var_meas == Measure.NOMINAL:
                     measure_type = MeasureType.NOMINAL
@@ -127,6 +128,9 @@ class Parser(ReadStatParser):
                 column.set_measure_type(MeasureType.CONTINUOUS)
 
     def handle_value(self, var_index, row_index, value):
+
+        if row_index >= self._data.row_count:
+            self._data.set_row_count(row_index + 1)
 
         vt = type(value)
 
