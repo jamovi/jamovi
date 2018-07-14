@@ -75,9 +75,18 @@ $(document).ready(() => {
         saving = true;
 
         let screenshot;
-        let saveToPath;
+        let saveFilePath;
 
         capture.takeScreenshot(currentWindow).then((ss) => {
+
+            // the capture process requires determining the window
+            // to capture from the title. so we change the title,
+            // grab the window by this title, then change it back.
+            // this seems to bring that window to the front on
+            // linux, so here we bring the capture window back to
+            // the front: *shrugs*.
+            if (navigator.platform.startsWith('Linux'))
+                thisWindow.focus();
 
             screenshot = ss;
 
@@ -94,7 +103,7 @@ $(document).ready(() => {
                     };
                     dialog.showSaveDialog(thisWindow, options, (filePath) => {
                         if (filePath) {
-                            saveToPath = filePath;
+                            saveFilePath = filePath;
                             resolve();
                         }
                         else {
@@ -109,13 +118,13 @@ $(document).ready(() => {
                 name = name.replace('T', ' ');
                 name = name.replace(/\:/g, '.');
                 name = name + '.png';
-                saveToPath = path.join(savePath, name);
+                saveFilePath = path.join(savePath, name);
             }
 
         }).then(() => {
 
             return new Promise((resolve, reject) => {
-                fs.writeFile(saveToPath, screenshot, (error) => {
+                fs.writeFile(saveFilePath, screenshot, (error) => {
                     if (error)
                         reject(error);
                     resolve();

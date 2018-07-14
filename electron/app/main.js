@@ -531,6 +531,15 @@ const notifyUpdateStatus = function(status) {
 
 const openRecorder = function(id) {
     if (recorderWindow === null) {
+
+        // setting focusable to false seems only useful on macOS
+        // it's bad on windows, and completely useless on linux
+        let focusable = process.platform !== 'darwin';
+
+        // on linux, alwaysOnTop doesn't work, so it's better
+        // to leave it in the taskbar
+        let skipTaskbar = process.platform !== 'linux';
+
         recorderWindow = new BrowserWindow({
             show: false,
             width: 340,
@@ -540,8 +549,8 @@ const openRecorder = function(id) {
             maximizable: false,
             alwaysOnTop: true,
             fullscreenable: false,
-            focusable: process.platform !== 'darwin',
-            skipTaskbar: true,
+            focusable: focusable,
+            skipTaskbar: skipTaskbar,
             vibrancy: 'titlebar',
             acceptFirstMouse: true,
             defaultEncoding: 'UTF-8' });
