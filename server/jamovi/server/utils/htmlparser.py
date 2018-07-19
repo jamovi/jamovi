@@ -18,6 +18,7 @@ class HTMLParser(Parser):
         self._rows = [ ]
         self._type = HTMLParser.HTMLType.UNKNOWN
         self._span = 1
+        self._just_data = ''
 
     def result(self):
         return self._result
@@ -42,29 +43,38 @@ class HTMLParser(Parser):
                 row = self._rows[row_no]
                 for col_no in range(len(row)):
                     value = row[col_no]
-                    try:
-                        value = int(value)
-                    except Exception:
-                        try:
-                            value = float(value)
-                        except Exception:
-                            pass
-                    if isinstance(value, str):
-                        value = value.strip()
+                    value = value.strip()
+                    value = self._parse(value)
                     self._result[col_no][row_no] = value
-        else:
+
+        elif self._type is HTMLParser.HTMLType.PARA:
             content = self._current_cell
             content = content.replace('\r\n', ' ')
             content = content.replace('\r', ' ')
             content = content.replace('\n', ' ')
+            content = content.strip()
+            content = self._parse(content)
             self._result = [ [ content ] ]
+
+        else:
+            content = self._just_data
+            if content != '':
+                content = content.replace('\r\n', ' ')
+                content = content.replace('\r', ' ')
+                content = content.replace('\n', ' ')
+                content = content.strip()
+                content = self._parse(content)
+                self._result = [ [ content ] ]
+            else:
+                self._results = [ [ ] ]
 
     def handle_data(self, data):
         if self._current_cell is not None:
             self._current_cell += data
+        else:
+            self._just_data += data
 
     def handle_starttag(self, tag, attrs):
-
         if self._type is HTMLParser.HTMLType.UNKNOWN:
             if tag == 'table' or tag == 'tr' or tag == 'td' or tag == 'th':
                 self._type = HTMLParser.HTMLType.TABLE
@@ -121,3 +131,13 @@ class HTMLParser(Parser):
             for i in range(1, self._current_span):
                 self._current_row.append(None)
             self._current_cell = None
+
+    def _parse(self, value):
+        try:
+            return int(value)
+        except ValueError:
+            try:
+                return float(value)
+            except ValueError:
+                pass
+        return value
