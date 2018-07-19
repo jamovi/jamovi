@@ -44,7 +44,7 @@ public:
 protected:
 
     DataSetW(MemoryMapW *memoryMap);
-    void initColumn(ColumnStruct **column);
+    void initColumn(ColumnStruct *&column);
 
 private:
 

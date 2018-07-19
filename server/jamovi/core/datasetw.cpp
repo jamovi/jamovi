@@ -136,10 +136,12 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     int n = strlen(name);
     char *chars = _mm->allocate<char>(n + 1);  // +1 for null terminator
     memcpy(chars, name, n + 1);
+    chars = _mm->base<char>(chars);
 
     int n2 = strlen(importName);
     char *chars2 = _mm->allocate<char>(n2 + 1);  // +1 for null terminator
     memcpy(chars2, importName, n2 + 1);
+    chars2 = _mm->base<char>(chars2);
 
     ColumnStruct **columns;
     ColumnStruct *column;
@@ -151,10 +153,10 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 
     column = strucC(columnCount);
 
-    initColumn(&column);
+    initColumn(column);
 
-    column->name = _mm->base<char>(chars);
-    column->importName = _mm->base<char>(chars2);
+    column->name = chars;
+    column->importName = chars2;
     column->id = columnId;
 
     struc()->columnCount++;
@@ -165,9 +167,9 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     return wrapper;
 }
 
-void DataSetW::initColumn(ColumnStruct **columnp)
+void DataSetW::initColumn(ColumnStruct *&columnp)
 {
-    ColumnStruct *column = *columnp;
+    ColumnStruct *column = columnp;
 
     column->name = NULL;
     column->importName = NULL;
@@ -199,7 +201,7 @@ void DataSetW::initColumn(ColumnStruct **columnp)
     column = _mm->resolve(rel);
     column->blocks = blocks;
 
-    columnp = &column;
+    columnp = column;
 }
 
 void DataSetW::setRowCount(size_t count)
@@ -333,7 +335,7 @@ ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)
     if (scratch == NULL)
     {
         scratch = _mm->allocate<ColumnStruct>();
-        initColumn(&scratch);
+        initColumn(scratch);
         scratch = _mm->base(scratch);
     }
 
