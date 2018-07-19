@@ -405,7 +405,7 @@ OptionTypes.Group = function(template, value) {
 SuperClass.create(OptionTypes.Group);
 
 
-const Options = function(def) {
+const Options = function(def=[]) {
 
     this._options = {};
 

@@ -23,6 +23,7 @@ const Analysis = function(id, name, ns) {
     this.incAsText = false;
     this.revision = 0;
     this.deleted = false;
+    this.missingModule = false;
 
     this._parent = null;
     this._defn = null;
@@ -47,6 +48,10 @@ Analysis.prototype.reload = function() {
     ]).then(() => {
         this.isReady = true;
         this.options.setValues(this.values);
+    }, (error) => {
+        this.isReady = true;
+        this.missingModule = true;
+        this.options = new Options();
     });
 };
 

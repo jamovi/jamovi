@@ -39,7 +39,7 @@ class Analysis:
             self.parent._ops.remove(self)
             self.future.set_exception(exception)
 
-    def __init__(self, id, name, ns, options, parent):
+    def __init__(self, id, name, ns, options, parent, load_error=False):
         self.id = id
         self.name = name
         self.ns = ns
@@ -50,6 +50,7 @@ class Analysis:
         self.changes = set()
         self.status = Analysis.Status.NONE
         self.clear_state = False
+        self.load_error = load_error
 
         self._ops = [ ]
 
@@ -176,29 +177,34 @@ class Analyses:
                 self.recreate(id).rerun()
 
     def _construct(self, id, name, ns, options_pb):
-        module = Modules.instance().get(ns)
-        analysis_root = os.path.join(module.path, 'analyses', name.lower())
 
-        a_defn = None
-        r_defn = None
+        try:
+            module = Modules.instance().get(ns)
+            analysis_root = os.path.join(module.path, 'analyses', name.lower())
 
-        with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
-            a_defn = yaml.load(stream)
+            a_defn = None
+            r_defn = None
 
-        if os.path.isfile(analysis_root + '.r.yaml'):
-            with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
-                r_defn = yaml.load(stream)
-        else:
-            r_defn = { 'items': { } }
+            with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
+                a_defn = yaml.load(stream)
 
-        analysis_name = a_defn['name']
-        option_defs = a_defn['options']
-        results_defs = r_defn['items']
+            if os.path.isfile(analysis_root + '.r.yaml'):
+                with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
+                    r_defn = yaml.load(stream)
+            else:
+                r_defn = { 'items': { } }
 
-        options = Options.create(option_defs, results_defs)
-        options.set(options_pb)
+            analysis_name = a_defn['name']
+            option_defs = a_defn['options']
+            results_defs = r_defn['items']
 
-        return Analysis(id, analysis_name, ns, options, self)
+            options = Options.create(option_defs, results_defs)
+            options.set(options_pb)
+
+            return Analysis(id, analysis_name, ns, options, self)
+
+        except Exception:
+            return Analysis(id, name, ns, Options(), self, load_error=True)
 
     def create_from_serial(self, serial):
 
