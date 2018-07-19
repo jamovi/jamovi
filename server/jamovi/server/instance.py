@@ -1096,7 +1096,7 @@ class Instance:
                 raise TypeError("Cannot assign to filter column '{}'".format(column.name))
 
             if column.auto_measure:
-                continue
+                continue  # skip checks
 
             values = cells[i]
 
@@ -1105,7 +1105,7 @@ class Instance:
                     if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
                         raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
 
-            if column.data_type == DataType.INTEGER and column.measure_type == MeasureType.CONTINUOUS:
+            elif column.data_type == DataType.INTEGER:
                 for value in values:
                     if value is not None and value != '' and not isinstance(value, int):
                         raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
@@ -1209,7 +1209,8 @@ class Instance:
                             index = column.get_value_for_label(value)
 
                         column[row_start + j] = index
-            else:
+
+            else:  # elif column.data_type == DataType.INTEGER:
                 for j in range(row_count):
                     value = values[j]
                     if value is None or value == '':
