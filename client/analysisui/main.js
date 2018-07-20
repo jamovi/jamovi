@@ -170,32 +170,40 @@ $(document).ready(function() {
 
 
 function loadAnalysis(def) {
-    return requestData("columns", null, true).then(data => {
 
-        dataResources = { columns: data.columns };
-
-        analysis = new Analysis(def);
-
-        var title = analysis.model.ui.getTitle();
-        console.log("loading - " + title + "...");
-        var $title = $('.silky-options-title');
-        $title.empty();
-        $title.append(title);
-
-        $('body').append(analysis.View.$el);
-        analysis.View.render();
-
-        var $hide = $('.silky-sp-back-button');
-        $hide.on("click", function(event) {
-            closeOptions();
-        });
-
-        analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
-
-        setTimeout(function () {
-          updateContainerHeight();
-        }, 0);
+    let $hide = $('.silky-sp-back-button');
+    $hide.on("click", function(event) {
+        closeOptions();
     });
+
+    let $title = $('.silky-options-title');
+    if (def.error) {
+        $title.empty();
+        $title.append(def.error);
+    }
+    else {
+        return requestData("columns", null, true).then(data => {
+
+            dataResources = { columns: data.columns };
+
+            analysis = new Analysis(def);
+
+            let title = analysis.model.ui.getTitle();
+            console.log("loading - " + title + "...");
+            //var $title = $('.silky-options-title');
+            $title.empty();
+            $title.append(title);
+
+            $('body').append(analysis.View.$el);
+            analysis.View.render();
+
+            analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
+
+            setTimeout(function () {
+              updateContainerHeight();
+            }, 0);
+        });
+    }
 }
 
 function setOptionsValues(data) {

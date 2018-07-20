@@ -113,8 +113,8 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.updateData = function(options) {
         this.options = options;
-
-        this.frameComms.send("initialiseOptions", { options: this.options });
+        if ( ! this.analysis.missingModule)
+            this.frameComms.send("initialiseOptions", { options: this.options });
     };
 
     this.notifyDataChanged = function(dataType, dataInfo) {
@@ -126,11 +126,17 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.ready = Promise.all([
         new Promise((resolve, reject) => {
-            let url = 'analyses/' + analysis.ns + '/' + analysis.name;
-            return $.get(url, (script) => {
-                this.def = script;
-                resolve(script);
-            });
+            if (analysis.missingModule) {
+                this.def = { error: 'Missing module: ' + analysis.name };
+                resolve(this.def);
+            }
+            else {
+                let url = 'analyses/' + analysis.ns + '/' + analysis.name;
+                return $.get(url, (script) => {
+                    this.def = script;
+                    resolve(script);
+                });
+            }
         }),
         new Promise((resolve, reject) => {
             this.notifyDocumentReady= resolve;
