@@ -83,6 +83,15 @@ const AppMenuButton = Backbone.View.extend({
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
+        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
+        this.$syntax.append($('<div>Syntax mode</div>'));
+        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
+
+        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+
+        this.$plots = $('<div class="jmv-results"></div>').appendTo(this.$content);
+        this.$plotsHeading = $('<div class="jmv-ribbon-appmenu-subheading">Plots</div>').appendTo(this.$plots);
+
         this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$theme.append($('<div>Plot theme</div>'));
         this.$themeList = $('<select><option value="default">Default</option><option value="minimal">Minimal</option><option value="iheartspss">I ♥ SPSS</option><option value="hadley">Hadley</option></select>')
@@ -90,9 +99,12 @@ const AppMenuButton = Backbone.View.extend({
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
 
-        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
-        this.$syntax.append($('<div>Syntax mode</div>'));
-        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
+        this.$palette = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$palette.append($('<div>Color palette</div>'));
+        this.$paletteList = $('<select><optgroup label="qualitative"><option value="Dark2">Dark2</option><option value="Set1">Set1</option><option value="Accent">Accent</option><option value="jmv">jmv</option></optgroup><optgroup label="sequential"><option value="grayScale">Grayscale</option><option value="Blues">Blues</option><option value="Greens">Greens</option></optgroup></select>')
+            .appendTo(this.$palette)
+            .click(event => event.stopPropagation())
+            .change(event => this._changePalette(event.target.value));
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
@@ -171,6 +183,7 @@ const AppMenuButton = Backbone.View.extend({
         });
 
         this.model.settings().on('change:theme',        () => this._updateUI());
+        this.model.settings().on('change:palette',      () => this._updateUI());
         this.model.settings().on('change:devMode',      () => this._updateUI());
         this.model.settings().on('change:zoom',         () => this._updateUI());
         this.model.settings().on('change:updateStatus', () => this._updateUI());
@@ -192,6 +205,9 @@ const AppMenuButton = Backbone.View.extend({
     },
     _changeTheme(name) {
         this.model.settings().setSetting('theme', name);
+    },
+    _changePalette(name) {
+        this.model.settings().setSetting('palette', name);
     },
     _changeMissings() {
         let missings = this.$missingsInput.val().trim();
@@ -232,6 +248,8 @@ const AppMenuButton = Backbone.View.extend({
 
         let theme = settings.getSetting('theme', 'default');
         this.$themeList.val(theme);
+        let palette = settings.getSetting('palette', 'Dark2');
+        this.$paletteList.val(palette);
         let devMode = settings.getSetting('devMode', false);
         this.$devModeCheck.prop('checked', devMode);
         let zoom = '' + settings.getSetting('zoom', 100) + '%';

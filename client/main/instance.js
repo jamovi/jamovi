@@ -38,6 +38,7 @@ const Instance = Backbone.Model.extend({
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
         this._settings.on('change:theme', event => this._themeChanged());
+        this._settings.on('change:palette', event => this._paletteChanged());
 
         this._instanceId = null;
 
@@ -360,6 +361,10 @@ const Instance = Backbone.Model.extend({
         for (let analysis of this.analyses())
             this._runAnalysis(analysis, 'theme');
     },
+    _paletteChanged() {
+        for (let analysis of this.analyses())
+            this._runAnalysis(analysis, 'palette');
+    },
     _notify(error) {
         let notification = new Notify({
             title: error.message,
@@ -440,6 +445,7 @@ const Instance = Backbone.Model.extend({
         let ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
         let theme = this._settings.getSetting('theme', 'default');
+        let palette = this._settings.getSetting('palette', 'Dark2');
 
         let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;
@@ -454,7 +460,7 @@ const Instance = Backbone.Model.extend({
         if (analysis.isReady)
             options = analysis.options;
 
-        analysisRequest.setOptions(OptionsPB.toPB(options, { '.ppi' : ppi, 'theme' : theme }, coms.Messages));
+        analysisRequest.setOptions(OptionsPB.toPB(options, { '.ppi' : ppi, 'theme' : theme, 'palette' : palette}, coms.Messages));
 
         if (analysis.deleted)
             analysisRequest.perform = 6; // DELETE
