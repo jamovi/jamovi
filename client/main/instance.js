@@ -445,7 +445,7 @@ const Instance = Backbone.Model.extend({
         let ppi = parseInt(72 * (window.devicePixelRatio || 1));
 
         let theme = this._settings.getSetting('theme', 'default');
-        let palette = this._settings.getSetting('palette', 'Dark2');
+        let palette = this._settings.getSetting('palette', 'jmv');
 
         let analysisRequest = new coms.Messages.AnalysisRequest();
         analysisRequest.analysisId = analysis.id;
