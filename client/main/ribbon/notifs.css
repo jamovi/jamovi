@@ -1,0 +1,31 @@
+
+#jmv-ribbon-notifs {
+    -webkit-app-region: no-drag ;
+    background-color: #F8F8F8 ;
+}
+
+.jmv-ribbon-notif {
+    color: #333333 ;
+    background-color: #FFB533 ;
+    transition: .1s all ;
+    box-sizing: border-box ;
+}
+
+.jmv-ribbon-notif .inner {
+    padding: 10px ;
+    display: flex ;
+    justify-content: space-between ;
+}
+
+.jmv-ribbon-notif:not(:first-child) {
+    margin-top: 1px ;
+}
+
+.jmv-ribbon-notif .options {
+    white-space: nowrap ;
+}
+
+.jmv-ribbon-notif .message {
+    line-height: 120% ;
+    margin-right: 10px ;
+}

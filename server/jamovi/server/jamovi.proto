@@ -55,6 +55,7 @@ message AnalysisRequest {
     string path = 16;
     string part = 17;
     string format = 18;
+    bool enabled = 19;
 }
 
 enum AnalysisStatus {

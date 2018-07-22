@@ -12,6 +12,7 @@ const Modules = require('./modules');
 const tarp = require('./utils/tarp');
 const DataTab = require('./ribbon/datatab');
 const AnalyseTab = require('./ribbon/analysetab');
+const Notifs = require('./ribbon/notifs');
 
 const RibbonModel = Backbone.Model.extend({
 
@@ -86,21 +87,25 @@ const RibbonView = Backbone.View.extend({
 
         this.$el.on('menuActioned', () => { this._closeMenus(); });
 
-        let html = '';
-        html += '<div class="jmv-ribbon-header">';
-        html += '    <div class="jmv-ribbon-appmenu"></div>';
-        html += '</div>';
-        html += '<div class="jmv-ribbon-body jmv-ribbon-group-body-horizontal">';
-        html += '</div>';
-        html += '<div class="jmv-store">';
-        html += '</div>';
-
-        this.$el.append(html);
+        this.$el.append(`
+            <div class="jmv-ribbon-header">
+                <div class="jmv-ribbon-appmenu"></div>
+            </div>
+            <div class="
+                jmv-ribbon-body
+                jmv-ribbon-group-body-horizontal">
+            </div>
+            <div id="jmv-ribbon-notifs"></div>
+            <div class="jmv-store"></div>
+        `);
 
         this.$header = this.$el.find('.jmv-ribbon-header');
         this.$body   = this.$el.find('.jmv-ribbon-body');
         this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
         this.$store = this.$el.find('.jmv-store');
+        let $notifs = this.$el.find('#jmv-ribbon-notifs');
+
+        this.notifs = new Notifs({ el : $notifs });
 
         let currentTabName = this.model.get('selectedTab');
         let tabs = this.model.get('tabs');
@@ -130,6 +135,9 @@ const RibbonView = Backbone.View.extend({
 
         this.store = new Store({ el : this.$store, model : this.model.modules() });
         this.store.on('notification', note => this.trigger('notification', note));
+    },
+    notify(options) {
+        return this.notifs.notify(options);
     },
     _refresh() {
 

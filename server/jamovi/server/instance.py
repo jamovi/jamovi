@@ -525,11 +525,16 @@ class Instance:
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
                 del self._data.analyses[request.analysisId]
             else:
-                analysis.set_options(request.options, request.changed)
+                analysis.set_options(request.options, request.changed, request.enabled)
 
         else:  # create analysis
             try:
-                analysis = self._data.analyses.create(request.analysisId, request.name, request.ns, request.options)
+                analysis = self._data.analyses.create(
+                    request.analysisId,
+                    request.name,
+                    request.ns,
+                    request.options,
+                    request.enabled)
                 self._data.is_edited = True
 
                 response = jcoms.AnalysisResponse()

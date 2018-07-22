@@ -62,6 +62,7 @@ const Instance = Backbone.Model.extend({
         blank : false,
         importPath : '',
         resultsSupplier: null,
+        arbitraryCodePresent: false
     },
     instanceId() {
         return this._instanceId;
@@ -357,6 +358,14 @@ const Instance = Backbone.Model.extend({
 
         return coms.send(request);
     },
+    trustArbitraryCode() {
+        for (let analysis of this.analyses()) {
+            if ( ! analysis.enabled) {
+                analysis.enabled = true;
+                this._runAnalysis(analysis, []);
+            }
+        }
+    },
     _themeChanged() {
         for (let analysis of this.analyses())
             this._runAnalysis(analysis, 'theme');
@@ -415,17 +424,29 @@ const Instance = Backbone.Model.extend({
                 this.set('importPath', info.importPath);
             }
 
-            for (let analysis of info.analyses) {
-                let options = OptionsPB.fromPB(analysis.options, coms.Messages);
-                this._analyses.addAnalysis(
-                    analysis.name,
-                    analysis.ns,
-                    analysis.analysisId,
+            let allReady = [ ];
+
+            for (let analysisPB of info.analyses) {
+                let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
+                let analysis = this._analyses.addAnalysis(
+                    analysisPB.name,
+                    analysisPB.ns,
+                    analysisPB.analysisId,
                     options,
-                    analysis.results,
-                    analysis.incAsText,
-                    analysis.syntax);
+                    analysisPB.results,
+                    analysisPB.incAsText,
+                    analysisPB.syntax);
+                allReady.push(analysis.ready);
             }
+
+            Promise.all(allReady).then(() => {
+                for (let analysis of this._analyses) {
+                    if (analysis.arbitraryCode)
+                        this.set('arbitraryCodePresent', true);
+                    else
+                        analysis.enabled = true;
+                }
+            });
 
             return response;
         });
@@ -452,6 +473,7 @@ const Instance = Backbone.Model.extend({
         analysisRequest.name = analysis.name;
         analysisRequest.ns = analysis.ns;
         analysisRequest.revision = analysis.revision;
+        analysisRequest.enabled = analysis.enabled;
 
         if (changed)
             analysisRequest.changed = changed;

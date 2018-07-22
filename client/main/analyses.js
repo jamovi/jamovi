@@ -24,6 +24,8 @@ const Analysis = function(id, name, ns) {
     this.revision = 0;
     this.deleted = false;
     this.missingModule = false;
+    this.arbitaryCode = false;
+    this.enabled = false;
 
     this._parent = null;
     this._defn = null;
@@ -46,6 +48,7 @@ Analysis.prototype.reload = function() {
             this._notifyFail  = reject;
         })
     ]).then(() => {
+        this.arbitraryCode = this._defn.arbitraryCode === true;
         this.isReady = true;
         this.options.setValues(this.values);
     }, (error) => {
@@ -72,6 +75,7 @@ Analysis.prototype.setResults = function(results, options, incAsText, syntax) {
 
 Analysis.prototype.setOptions = function(values) {
     this.options.setValues(values);
+    this.enabled = true;
     this.revision++;
     if (this.deleted === false && this._parent !== null)
         this._parent._notifyOptionsChanged(this);
@@ -141,6 +145,7 @@ const Analyses = Backbone.Model.extend({
     },
     createAnalysis : function(name, ns) {
         let analysis = new Analysis(this._nextId++, name, ns);
+        analysis.enabled = true;
         analysis._parent = this;
         this._analyses.push(analysis);
         this.trigger('analysisCreated', analysis);
@@ -156,6 +161,7 @@ const Analyses = Backbone.Model.extend({
             this._nextId = id + 1;
 
         this.trigger('analysisCreated', analysis);
+        return analysis;
     },
     deleteAnalysis : function(id) {
         let analysis = this.get(id);

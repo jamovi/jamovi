@@ -160,6 +160,32 @@ $(document).ready(() => {
         }
     });
 
+    instance.on('change:arbitraryCodePresent', (event) => {
+        if ( ! instance.attributes.arbitraryCodePresent)
+            return;
+        let notif = ribbon.notify({
+            text:  `One or more analyses in this data set have been disabled
+                    because they allow the execution of arbitrary code. You
+                    should only enable them if you trust this data set's
+                    source.`,
+            options: [
+                { name: 'more-info', text: 'More info ...', dismiss: false },
+                { name: 'dismiss',   text: "Don't enable" },
+                { name: 'enable-code', text: 'Enable' } ]
+        });
+        // these splitPanel.resized(); should go somewhere else
+        splitPanel.resized();
+        notif.on('click', (event) => {
+            if (event.name === 'enable-code')
+                instance.trustArbitraryCode();
+            else if (event.name === 'more-info')
+                host.openUrl('https://www.jamovi.org/about-arbitrary-code.html');
+        });
+        notif.on('dismissed', (event) => {
+            splitPanel.resized();
+        });
+    });
+
     instance.on('moduleInstalled', (event) => {
         optionspanel.reloadAnalyses(event.name);
     });

@@ -30,6 +30,7 @@ class Analysis:
             self.future = Future()
             self.path = None
             self.part = None
+            self.enabled = False
 
         def set_result(self, result):
             self.parent._ops.remove(self)
@@ -39,7 +40,7 @@ class Analysis:
             self.parent._ops.remove(self)
             self.future.set_exception(exception)
 
-    def __init__(self, id, name, ns, options, parent, load_error=False):
+    def __init__(self, id, name, ns, options, parent, enabled, load_error=False):
         self.id = id
         self.name = name
         self.ns = ns
@@ -50,6 +51,7 @@ class Analysis:
         self.changes = set()
         self.status = Analysis.Status.NONE
         self.clear_state = False
+        self.enabled = enabled
         self.load_error = load_error
 
         self._ops = [ ]
@@ -58,9 +60,12 @@ class Analysis:
     def has_results(self):
         return self.results is not None
 
-    def set_options(self, options, changes=[]):
+    def set_options(self, options, changes=[], enabled=None):
+        wasnt_but_now_is_enabled = (self.enabled is False) and enabled
+        if enabled:
+            self.enabled = True
         non_passive_changes = self.options.set(options)
-        if not non_passive_changes and len(changes) == 0:
+        if not non_passive_changes and len(changes) == 0 and not wasnt_but_now_is_enabled:
             return
         if len(changes) > 0:
             self.changes |= set(changes)
@@ -153,6 +158,8 @@ class AnalysisIterator:
                 analysis = self._iter.__next__()
                 if analysis.status is Analysis.Status.NONE:
                     return analysis
+                if not analysis.enabled:
+                    continue
                 if self._needs_init is False and analysis.status is Analysis.Status.INITED:
                     return analysis
 
@@ -176,7 +183,7 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
-    def _construct(self, id, name, ns, options_pb):
+    def _construct(self, id, name, ns, options_pb, enabled):
 
         try:
             module = Modules.instance().get(ns)
@@ -201,10 +208,10 @@ class Analyses:
             options = Options.create(option_defs, results_defs)
             options.set(options_pb)
 
-            return Analysis(id, analysis_name, ns, options, self)
+            return Analysis(id, analysis_name, ns, options, self, enabled)
 
         except Exception:
-            return Analysis(id, name, ns, Options(), self, load_error=True)
+            return Analysis(id, name, ns, Options(), self, enabled, load_error=True)
 
     def create_from_serial(self, serial):
 
@@ -215,7 +222,8 @@ class Analyses:
             analysis_pb.analysisId,
             analysis_pb.name,
             analysis_pb.ns,
-            analysis_pb.options)
+            analysis_pb.options,
+            False)
 
         analysis.results = analysis_pb
         analysis.status = Analysis.Status.COMPLETE
@@ -223,9 +231,9 @@ class Analyses:
 
         return analysis
 
-    def create(self, id, name, ns, options_pb):
+    def create(self, id, name, ns, options_pb, enabled):
 
-        analysis = self._construct(id, name, ns, options_pb)
+        analysis = self._construct(id, name, ns, options_pb, enabled)
         self._analyses.append(analysis)
         self._notify_options_changed(analysis)
 
@@ -234,7 +242,7 @@ class Analyses:
     def recreate(self, id):
         o = self[id]
         del self[id]
-        return self.create(id, o.name, o.ns, o.options.as_pb())
+        return self.create(id, o.name, o.ns, o.options.as_pb(), o.enabled)
 
     @property
     def needs_init(self):
