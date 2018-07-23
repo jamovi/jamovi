@@ -156,8 +156,6 @@ $(document).ready(function() {
 
     parentFrame.send("frameDocumentReady", null);
 
-    $(window).resize( updateContainerHeight );
-
     tippy('.silky-sp-back-button', {
         placement: 'left',
         animation: 'perspective',
@@ -194,14 +192,10 @@ function loadAnalysis(def) {
             $title.empty();
             $title.append(title);
 
-            $('body').append(analysis.View.$el);
+            $('.jmv-options-block').append(analysis.View.$el);
             analysis.View.render();
 
             analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
-
-            setTimeout(function () {
-              updateContainerHeight();
-            }, 0);
         });
     }
 }
@@ -294,24 +288,4 @@ function mouseDown(event) {
 
 function closeOptions() {
     parentFrame.send("hideOptions", null);
-}
-
-function updateContainerHeight() {
-
-    if (analysis === null)
-        return;
-
-    let element = document.documentElement;
-    void( element.offsetHeight );
-
-    var $content = $('.silky-options-content');
-
-    var pos = $content.position();
-
-    var properties = $('body').css(["height", "padding-top", "padding-bottom", "border-top", "border-bottom"]);
-    var height = parseFloat(properties.height) - parseFloat(properties["padding-top"]) - parseFloat(properties["padding-bottom"]) - parseFloat(properties["border-top"]) - parseFloat(properties["border-bottom"]);
-
-    var value = height - pos.top;
-
-    $content.css("height", value);
 }
