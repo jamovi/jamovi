@@ -101,7 +101,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$palette = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$palette.append($('<div>Color palette</div>'));
-        this.$paletteList = $('<select><optgroup label="qualitative"><option value="jmv">jmv</option><option value="Dark2">Dark2</option><option value="Set1">Set1</option><option value="Accent">Accent</option></optgroup><optgroup label="sequential"><option value="Greys">Greys</option><option value="Blues">Blues</option><option value="Greens">Greens</option></optgroup></select>')
+        this.$paletteList = $('<select><optgroup label="qualitative"><option value="jmv">jmv</option><option value="Dark2">Dark2</option><option value="Set1">Set1</option><option value="Accent">Accent</option><option value="spss">I ♥ SPSS</option></optgroup><optgroup label="sequential"><option value="Greys">Greys</option><option value="Blues">Blues</option><option value="Greens">Greens</option></optgroup></select>')
             .appendTo(this.$palette)
             .click(event => event.stopPropagation())
             .change(event => this._changePalette(event.target.value));
@@ -205,6 +205,8 @@ const AppMenuButton = Backbone.View.extend({
     },
     _changeTheme(name) {
         this.model.settings().setSetting('theme', name);
+        if (name === 'iheartspss')
+            this.model.settings().setSetting('palette', 'spss');
     },
     _changePalette(name) {
         this.model.settings().setSetting('palette', name);
