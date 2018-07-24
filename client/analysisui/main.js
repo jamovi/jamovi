@@ -211,13 +211,13 @@ function setOptionsValues(data) {
 
     var model = analysis.model;
     model.options.beginEdit();
-    if (analysis.View.beginDataInitialization()) {
+    if (analysis.View.beginDataInitialization(data.id)) {
         var params = Options.getDefaultEventParams("changed");
         params.silent = true;
         _.each(data.options, function(value, key, list) {
             model.options.setOptionValue(key, value, params);
         });
-        analysis.View.endDataInitialization();
+        analysis.View.endDataInitialization(data.id);
     }
     model.options.endEdit();
 }

@@ -118,16 +118,16 @@ function View() {
             }
         },
         {
-            onEvent: "view.data-initializing", execute: function(ui) {
+            onEvent: "view.data-initializing", execute: function(ui, event) {
                 this.workspace = {};
                 this._updating = true;
             }
         },
         {
-            onEvent: "view.ready", execute: function(ui) {
+            onEvent: "view.ready", execute: function(ui, event) {
                 this._updating = false;
                 if (this.update) {
-                    this.update(ui);
+                    this.update(ui, event);
                 }
             }
         }

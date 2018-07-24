@@ -344,18 +344,18 @@ const OptionsView = function(uiModel) {
         return ctrl;
     };
 
-    this.beginDataInitialization = function() {
+    this.beginDataInitialization = function(id) {
         if (this._loaded === false)
             return false;
 
         this._initializingData += 1;
-        this.trigger("data-initializing");
+        this.trigger("data-initializing", { id: id });
         this.model.actionManager.beginInitializingData();
 
         return true;
     };
 
-    this.endDataInitialization = function() {
+    this.endDataInitialization = function(id) {
         if (this._loaded === false || this._initializingData === 0)
             return false;
 
@@ -368,7 +368,7 @@ const OptionsView = function(uiModel) {
                 ctrl.update();
         }
 
-        this.trigger("ready");
+        this.trigger("ready", { id: id });
 
         return true;
     };

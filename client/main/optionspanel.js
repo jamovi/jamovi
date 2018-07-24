@@ -114,7 +114,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
     this.updateData = function(options) {
         this.options = options;
         if ( ! this.analysis.missingModule)
-            this.frameComms.send("initialiseOptions", { options: this.options });
+            this.frameComms.send("initialiseOptions", { id: this.analysis.id, options: this.options });
     };
 
     this.notifyDataChanged = function(dataType, dataInfo) {
