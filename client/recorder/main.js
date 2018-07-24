@@ -113,7 +113,8 @@ $(document).ready(() => {
                 });
             }
             else {
-                let name = new Date().toISOString();
+                let timeZoneOffset = new Date().getTimezoneOffset() * 60000;
+                let name = new Date(new Date() - timeZoneOffset).toISOString();
                 name = name.slice(0, 19);
                 name = name.replace('T', ' ');
                 name = name.replace(/\:/g, '.');
