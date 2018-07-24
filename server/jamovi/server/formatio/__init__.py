@@ -2,7 +2,6 @@
 import os
 import os.path
 import re
-import shutil
 import importlib
 
 from collections import OrderedDict
@@ -95,20 +94,20 @@ def _import(data, path, prog_cb, is_example=False):
     else:
         raise RuntimeError('Unrecognised file format')
 
-    if not is_example:
-        data.import_path = path
-
-    if _should_embed(path):
-        try:
-            embedded_name = os.path.basename(path)
-            embedded_path = 'orig' + os.path.splitext(embedded_name)[1].lower()
-            embedded_abs_path = os.path.join(data.instance_path, embedded_path)
-            shutil.copy(path, embedded_abs_path)
-            data.embedded_path = embedded_path
-            data.embedded_name = embedded_name
-        except OSError as e:
-            print(e)
-            pass
+    # if not is_example:
+    #     data.import_path = path
+    #
+    # if _should_embed(path):
+    #     try:
+    #         embedded_name = os.path.basename(path)
+    #         embedded_path = 'orig' + os.path.splitext(embedded_name)[1].lower()
+    #         embedded_abs_path = os.path.join(data.instance_path, embedded_path)
+    #         shutil.copy(path, embedded_abs_path)
+    #         data.embedded_path = embedded_path
+    #         data.embedded_name = embedded_name
+    #     except OSError as e:
+    #         print(e)
+    #         pass
 
 
 def write(data, path, content=None):
