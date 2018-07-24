@@ -16,7 +16,7 @@ _readers = None
 _writers = None
 
 settings = Settings.retrieve('main')
-settings.specify_default('embedCond', '< 10 Mb')
+# settings.specify_default('embedCond', '< 10 Mb')
 
 
 def _init():

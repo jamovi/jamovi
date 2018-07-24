@@ -67,12 +67,12 @@ def write(data, path, html=None):
         metadataset['columnCount'] = data.column_count
         metadataset['fields'] = fields
 
-        if data.import_path is not '':
-            metadataset['importPath'] = data.import_path
-        if data.embedded_path is not '':
-            metadataset['embeddedPath'] = data.embedded_path
-        if data.embedded_name is not '':
-            metadataset['embeddedName'] = data.embedded_name
+        # if data.import_path is not '':
+        #     metadataset['importPath'] = data.import_path
+        # if data.embedded_path is not '':
+        #     metadataset['embeddedPath'] = data.embedded_path
+        # if data.embedded_name is not '':
+        #     metadataset['embeddedName'] = data.embedded_name
 
         metadata['dataSet'] = metadataset
 
@@ -134,12 +134,12 @@ def write(data, path, html=None):
             abs_path = os.path.join(data.instance_path, rel_path)
             zip.write(abs_path, rel_path)
 
-        if data.embedded_path is not '':
-            try:
-                path = os.path.join(data.instance_path, data.embedded_path)
-                zip.write(path, data.embedded_path)
-            except Exception:
-                pass
+        # if data.embedded_path is not '':
+        #     try:
+        #         path = os.path.join(data.instance_path, data.embedded_path)
+        #         zip.write(path, data.embedded_path)
+        #     except Exception:
+        #         pass
 
 
 def read(data, path, prog_cb):
@@ -163,25 +163,25 @@ def read(data, path, prog_cb):
         metadata = json.loads(meta_content)
         meta_dataset = metadata['dataSet']
 
-        if 'importPath' in meta_dataset:
-            try:
-                import_path = meta_dataset.get('importPath')
-                if os.path.isfile(import_path):
-                    data.import_path = import_path
-            except Exception:
-                pass
-
-        if 'embeddedPath' in meta_dataset:
-            try:
-                embedded_path = meta_dataset.get('embeddedPath')
-                embedded_name = meta_dataset.get('embeddedName', embedded_path)
-                zip.extract(embedded_path, data.instance_path)
-                data.embedded_path = embedded_path
-                data.embedded_name = embedded_name
-
-                prog_cb(0.1)
-            except Exception:
-                pass
+        # if 'importPath' in meta_dataset:
+        #     try:
+        #         import_path = meta_dataset.get('importPath')
+        #         if os.path.isfile(import_path):
+        #             data.import_path = import_path
+        #     except Exception:
+        #         pass
+        #
+        # if 'embeddedPath' in meta_dataset:
+        #     try:
+        #         embedded_path = meta_dataset.get('embeddedPath')
+        #         embedded_name = meta_dataset.get('embeddedName', embedded_path)
+        #         zip.extract(embedded_path, data.instance_path)
+        #         data.embedded_path = embedded_path
+        #         data.embedded_name = embedded_name
+        #
+        #         prog_cb(0.1)
+        #     except Exception:
+        #         pass
 
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']

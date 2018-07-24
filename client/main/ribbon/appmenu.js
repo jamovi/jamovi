@@ -121,10 +121,10 @@ const AppMenuButton = Backbone.View.extend({
         this.$missingsInput.on('focus', () => keyboardjs.pause());
         this.$missingsInput.on('blur', () => { keyboardjs.resume(); this._changeMissings(); });
 
-        this.$embed = $('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo(this.$import);
-        this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
-            .appendTo(this.$embed)
-            .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
+        // this.$embed = $('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo(this.$import);
+        // this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
+        //     .appendTo(this.$embed)
+        //     .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
         this.$import.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
@@ -190,7 +190,7 @@ const AppMenuButton = Backbone.View.extend({
         this.model.settings().on('change:autoUpdate',   () => this._updateUI());
         this.model.settings().on('change:format',       () => this._updateUI());
         this.model.settings().on('change:missings',     () => this._updateUI());
-        this.model.settings().on('change:embedCond',    () => this._updateUI());
+        // this.model.settings().on('change:embedCond',    () => this._updateUI());
 
         this._updateUI();
     },
@@ -258,8 +258,8 @@ const AppMenuButton = Backbone.View.extend({
         this.$zoomLevel.text(zoom);
         let missings = settings.getSetting('missings', 'NA');
         this.$missingsInput.val(missings);
-        let embedCond = settings.getSetting('embedCond', '< 10 Mb');
-        this.$embedList.val(embedCond);
+        // let embedCond = settings.getSetting('embedCond', '< 10 Mb');
+        // this.$embedList.val(embedCond);
 
         let autoUpdate = settings.getSetting('autoUpdate', false);
         this.$versionInfoUpdatesCheck.prop('checked', autoUpdate);
