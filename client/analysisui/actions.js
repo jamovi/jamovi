@@ -126,8 +126,9 @@ function View() {
         {
             onEvent: "view.ready", execute: function(ui, event) {
                 this._updating = false;
-                if (this.update) {
+                if (this.update && event.id !== this._id) {
                     this.update(ui, event);
+                    this._id = event.id;
                 }
             }
         }
