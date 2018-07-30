@@ -39,6 +39,11 @@
 .jmv-store.visible {
     height: 600px ;
     box-shadow: 0px 2px 1px 1px rgba(172, 172, 172, 0.5);
+    opacity: 1
+}
+
+.jmv-store:not(.visible) {
+    opacity: 0
 }
 
 .jmv-store-button-close {
