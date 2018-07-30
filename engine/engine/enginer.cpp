@@ -353,7 +353,60 @@ void EngineR::initR()
         "        paths <- paths[dir.exists(paths)]\n"
         "        .lib.loc <<- unique(paths)\n"
         "    } else .lib.loc\n"
-        "}\n");
+        "}\n"
+        "base::lockBinding('.libPaths', base)\n"
+
+        "utils <- base::.getNamespace('utils')\n"
+        "base::unlockBinding('install.packages', utils)\n"
+        "base::unlockBinding('update.packages', utils)\n"
+        "base::unlockBinding('download.packages', utils)\n"
+        "base::unlockBinding('remove.packages', utils)\n"
+
+        "utils$install.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot install packages into the jamovi R', call.=FALSE)\n"
+        "}\n"
+        "base$install.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot install packages into the jamovi R', call.=FALSE)\n"
+        "}\n"
+
+        "utils$update.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot update packages in the jamovi R', call.=FALSE)\n"
+        "}\n"
+        "base$update.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot update packages in the jamovi R', call.=FALSE)\n"
+        "}\n"
+
+        "utils$download.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot download packages with the jamovi R', call.=FALSE)\n"
+        "}\n"
+        "base$update.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot update packages in the jamovi R', call.=FALSE)\n"
+        "}\n"
+
+        "utils$remove.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot remove packages in the jamovi R', call.=FALSE)\n"
+        "}\n"
+        "base$remove.packages <- function(...)"
+        "{\n"
+        "    stop('You cannot remove packages in the jamovi R', call.=FALSE)\n"
+        "}\n"
+
+        "base::lockBinding('install.packages', utils)\n"
+        "base::lockBinding('install.packages', base)\n"
+        "base::lockBinding('update.packages', utils)\n"
+        "base::lockBinding('update.packages', base)\n"
+        "base::lockBinding('download.packages', utils)\n"
+        "base::lockBinding('download.packages', base)\n"
+        "base::lockBinding('remove.packages', utils)\n"
+        "base::lockBinding('remove.packages', base)\n"
+    );
 
     setLibPaths("jmv");
 
