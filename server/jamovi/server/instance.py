@@ -931,6 +931,8 @@ class Instance:
                 reparse.update(dependents)  # dep columns need to be reparsed
             elif old_d_type != column.data_type:
                 reparse.update(dependents)
+            elif old_m_type != column.measure_type:
+                reparse.update(dependents)
 
         if filter_changed:
             # reparse filters, recalc all
