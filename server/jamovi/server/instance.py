@@ -1192,42 +1192,44 @@ class Instance:
                     value = values[j]
 
                     if value is None or value == '':
-                        column[row_start + j] = -2147483648
-                    else:
-                        if isinstance(value, str):
-                            if value == '':
-                                value = -2147483648
-                        elif isinstance(value, float):
-                            if math.isnan(value):
-                                value = -2147483648
-                            else:
-                                value = str(value)
+                        column.clear_at(row_start + j)
+                        continue
+
+                    if isinstance(value, float):
+                        if math.isnan(value):
+                            value = ''
                         else:
                             value = str(value)
+                    else:
+                        value = str(value)
 
+                    if column.measure_type == MeasureType.ID:
+                        column.set_value(row_start + j, value)
+                    else:
                         column.clear_at(row_start + j)  # necessary to clear first with TEXT
-
-                        if value == -2147483648:
+                        if value == '':
                             index = -2147483648
                         elif not column.has_level(value):
                             index = column.level_count
                             column.insert_level(index, value)
                         else:
                             index = column.get_value_for_label(value)
-
-                        column[row_start + j] = index
+                        column.set_value(row_start + j, index)
 
             else:  # elif column.data_type == DataType.INTEGER:
                 for j in range(row_count):
                     value = values[j]
                     if value is None or value == '':
-                        column[row_start + j] = -2147483648
+                        column.clear_at(row_start + j)
                     elif isinstance(value, int):
-                        if not column.has_level(value) and value != -2147483648:
-                            column.insert_level(value, str(value))
-                        column[row_start + j] = value
+                        if column.measure_type != MeasureType.ID:
+                            if not column.has_level(value) and value != -2147483648:
+                                column.insert_level(value, str(value))
+                        column.set_value(row_start + j, value)
                     elif isinstance(value, str):
-                        if column.has_level(value):
+                        if column.measure_type == MeasureType.ID:
+                            raise RuntimeError('Should not get here')
+                        elif column.has_level(value):
                             index = column.get_value_for_label(value)
                         else:
                             column.clear_at(row_start + j)
@@ -1236,7 +1238,7 @@ class Instance:
                                 index = max(index, level[0])
                             index += 1
                             column.insert_level(index, value, str(index))
-                        column[row_start + j] = index
+                        column.set_value(row_start + j, index)
                     else:
                         raise RuntimeError('Should not get here')
 

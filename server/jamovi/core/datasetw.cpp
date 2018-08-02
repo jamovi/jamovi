@@ -216,6 +216,8 @@ void DataSetW::setRowCount(size_t count)
 
         if (column.dataType() == DataType::DECIMAL)
             column.setRowCount<double>(count);
+        else if (column.dataType() == DataType::TEXT && column.measureType() == MeasureType::ID)
+            column.setRowCount<char*>(count);
         else
             column.setRowCount<int>(count);
 
@@ -285,8 +287,8 @@ void DataSetW::deleteRows(int delStart, int delEnd)
             {
                 int from = j + delCount;
                 int to = j;
-                double value = column.value<double>(from);
-                column.setValue<double>(to, value);
+                double value = column.raw<double>(from);
+                column.setDValue(to, value);
             }
 
             column.setRowCount<double>(finalCount);
@@ -297,9 +299,9 @@ void DataSetW::deleteRows(int delStart, int delEnd)
             {
                 int from = j + delCount;
                 int to = j;
-                column.setValue<int>(to, INT_MIN);
-                int value = column.value<int>(from);
-                column.setValue<int>(to, value);
+                column.setIValue(to, INT_MIN);
+                int value = column.raw<int>(from);
+                column.setIValue(to, value);
             }
 
             column.setRowCount<int>(finalCount);

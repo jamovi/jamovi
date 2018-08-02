@@ -106,6 +106,15 @@ int Column::levelCountExFiltered() const
     return count;
 }
 
+const char* Column::raws(int index)
+{
+    const char *value = cellAt<char*>(index);
+    if (value == NULL)
+        return "";
+    else
+        return _mm->resolve(value);
+}
+
 const vector<LevelData> Column::levels() const
 {
     vector<LevelData> m;
@@ -148,6 +157,27 @@ bool Column::hasUnusedLevels() const
     }
 
     return false;
+}
+
+const char *Column::getLabel(const char* value) const
+{
+    if (value[0] == '\0')
+        return value;
+
+    ColumnStruct *s = struc();
+    Level *levels = _mm->resolve(s->levels);
+
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &l = levels[i];
+        const char *importValue = _mm->resolve(l.importValue);
+        if (strcmp(importValue, value) == 0)
+            return _mm->resolve(l.label);
+    }
+
+    stringstream ss;
+    ss << "level " << value << " not found in " << this->name();
+    throw runtime_error(ss.str());
 }
 
 const char *Column::getLabel(int value) const
@@ -218,7 +248,8 @@ int Column::valueForLabel(const char *label) const
 
 bool Column::hasLevels() const
 {
-    return measureType() != MeasureType::CONTINUOUS;
+    return measureType() != MeasureType::CONTINUOUS &&
+           measureType() != MeasureType::ID;
 }
 
 bool Column::hasLevel(const char *label) const

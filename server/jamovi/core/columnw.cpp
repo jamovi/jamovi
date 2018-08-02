@@ -31,7 +31,7 @@ void ColumnW::setName(const char *name)
 
     char *chars = _mm->allocate<char>(length);
 
-    std::memcpy(chars, name, length);
+    memcpy(chars, name, length);
 
     ColumnStruct *s = struc();
     s->name = _mm->base(chars);
@@ -52,7 +52,9 @@ void ColumnW::setDataType(DataType::Type dataType)
     s->changes++;
 
     if (dataType == DataType::DECIMAL)
-        _setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space for doubles
+        _setRowCount<double>(rowCount()); // keeps the row count the same, but allocates space
+    else if (dataType == DataType::TEXT && measureType() == MeasureType::ID)
+        _setRowCount<char*>(rowCount()); // keeps the row count the same, but allocates space
 }
 
 void ColumnW::setMeasureType(MeasureType::Type measureType)
@@ -60,6 +62,9 @@ void ColumnW::setMeasureType(MeasureType::Type measureType)
     ColumnStruct *s = struc();
     s->measureType = (char)measureType;
     s->changes++;
+
+    if (dataType() == DataType::TEXT && measureType == MeasureType::ID)
+        _setRowCount<char*>(rowCount()); // keeps the row count the same, but allocates space
 }
 
 void ColumnW::setAutoMeasure(bool yes)
@@ -116,7 +121,7 @@ void ColumnW::setFormula(const char *value)
     {
         size_t allocated;
         char *space = _mm->allocateSize<char>(needed, &allocated);
-        std::memcpy(space, value, needed);
+        memcpy(space, value, needed);
         s = struc();
         s->formula = _mm->base<char>(space);
         s->formulaCapacity = allocated;
@@ -124,7 +129,7 @@ void ColumnW::setFormula(const char *value)
     else
     {
         char *space = _mm->resolve<char>(s->formula);
-        std::memcpy(space, value, needed);
+        memcpy(space, value, needed);
     }
 
     s->changes++;
@@ -139,7 +144,7 @@ void ColumnW::setFormulaMessage(const char *value)
     {
         size_t allocated;
         char *space = _mm->allocateSize<char>(needed, &allocated);
-        std::memcpy(space, value, needed);
+        memcpy(space, value, needed);
         s = struc();
         s->formulaMessage = _mm->base<char>(space);
         s->formulaMessageCapacity = allocated;
@@ -147,10 +152,90 @@ void ColumnW::setFormulaMessage(const char *value)
     else
     {
         char *space = _mm->resolve<char>(s->formulaMessage);
-        std::memcpy(space, value, needed);
+        memcpy(space, value, needed);
     }
 
     s->changes++;
+}
+
+void ColumnW::setDValue(int rowIndex, double value, bool initing)
+{
+    if ( ! initing)
+        _discardScratchColumn();
+
+    cellAt<double>(rowIndex) = value;
+}
+
+void ColumnW::setSValue(int rowIndex, const char *value, bool initing)
+{
+    if ( ! initing)
+        _discardScratchColumn();
+
+    assert(dataType() == DataType::TEXT);
+    assert(measureType() == MeasureType::ID);
+
+    if (value == NULL || value[0] == '\0')
+    {
+        cellAt<char*>(rowIndex) = NULL;
+    }
+    else
+    {
+        size_t n = strlen(value);
+        char *c = _mm->allocate<char>(n + 1);
+        memcpy(c, value, n + 1);
+        cellAt<char*>(rowIndex) = _mm->base(c);
+    }
+}
+
+void ColumnW::setIValue(int rowIndex, int value, bool initing)
+{
+    if ( ! initing)
+        _discardScratchColumn();
+
+    if (measureType() != MeasureType::CONTINUOUS)
+    {
+        int newValue = (int)value;
+
+        if (initing == false)
+        {
+            int oldValue = this->raw<int>(rowIndex);
+
+            if (oldValue == newValue)
+                return;
+
+            if (oldValue != INT_MIN)
+            {
+                Level *level = rawLevel(oldValue);
+                assert(level != NULL);
+                level->count--;
+
+                if (level->count == 0 && trimLevels())
+                    removeLevel(oldValue);
+                else if ( ! this->_parent->isRowFiltered(rowIndex))
+                    level->countExFiltered--;
+            }
+        }
+
+        if (newValue != INT_MIN)
+        {
+            Level *level = rawLevel(newValue);
+            if (level == NULL)
+            {
+                ostringstream ss;
+                ss << newValue;
+                string str = ss.str();
+                const char *c_str = str.c_str();
+                insertLevel(newValue, c_str, c_str);
+                level = rawLevel(newValue);
+            }
+            assert(level != NULL);
+            level->count++;
+            if ( ! this->_parent->isRowFiltered(rowIndex))
+                level->countExFiltered++;
+        }
+    }
+
+    cellAt<int>(rowIndex) = value;
 }
 
 void ColumnW::insertRows(int insStart, int insEnd)
@@ -224,7 +309,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     int length = strlen(label)+1;
     size_t allocated;
     char *chars = _mm->allocate<char>(length, &allocated);
-    std::memcpy(chars, label, length);
+    memcpy(chars, label, length);
     chars = _mm->base(chars);
 
     if (importValue == NULL)
@@ -232,7 +317,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     length = strlen(importValue)+1;
     size_t importAllocated;
     char *importChars = _mm->allocate<char>(length, &importAllocated);
-    std::memcpy(importChars, importValue, length);
+    memcpy(importChars, importValue, length);
     importChars = _mm->base(importChars);
 
     s = struc();
@@ -411,7 +496,7 @@ int ColumnW::changes() const
     return struc()->changes;
 }
 
-void ColumnW::setLevels(const std::vector<LevelData> &newLevels)
+void ColumnW::setLevels(const vector<LevelData> &newLevels)
 {
     if ( ! hasLevels())
         return;
@@ -430,7 +515,7 @@ void ColumnW::setLevels(const std::vector<LevelData> &newLevels)
         {
             int value = cellAt<int>(i);
             if (value != INT_MIN)
-                setValue(i, value, true);
+                setIValue(i, value, true);
         }
     }
     else if (dataType() == DataType::TEXT)
@@ -464,7 +549,7 @@ void ColumnW::setLevels(const std::vector<LevelData> &newLevels)
         {
             int value = cellAt<int>(i);
             if (value != INT_MIN)
-                setValue(i, recode[value], true);
+                setIValue(i, recode[value], true);
         }
     }
     else
@@ -555,6 +640,8 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
 
     if (dataType == DataType::DECIMAL)
         _setRowCount<double>(_parent->rowCount());
+    else if (dataType == DataType::TEXT && measureType == MeasureType::ID)
+        _setRowCount<char*>(_parent->rowCount());
     else
         _setRowCount<int>(_parent->rowCount());
 
@@ -565,30 +652,41 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
         for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
         {
             int value = old.ivalue(rowNo);
-            setValue(rowNo, value, true);
+            setIValue(rowNo, value, true);
         }
     }
     else if (dataType == DataType::TEXT)
     {
-        for (int rowNo = 0; rowNo < rowCount(); rowNo++)
+        if (measureType == MeasureType::ID)
         {
-            const char *value = old.svalue(rowNo);
-
-            if (value[0] != '\0')
+            for (int rowNo = 0; rowNo < rowCount(); rowNo++)
             {
-                int levelIndex = valueForLabel(value);
-                setValue(rowNo, levelIndex, true);
+                const char *value = old.svalue(rowNo);
+                setSValue(rowNo, value, true);
             }
-            else
+        }
+        else
+        {
+            for (int rowNo = 0; rowNo < rowCount(); rowNo++)
             {
-                setValue(rowNo, INT_MIN, true);
+                const char *value = old.svalue(rowNo);
+
+                if (value[0] != '\0')
+                {
+                    int levelIndex = valueForLabel(value);
+                    setIValue(rowNo, levelIndex, true);
+                }
+                else
+                {
+                    setIValue(rowNo, INT_MIN, true);
+                }
             }
         }
     }
     else if (dataType == DataType::DECIMAL)
     {
         for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
-            setValue(rowNo, old.dvalue(rowNo), true);
+            setDValue(rowNo, old.dvalue(rowNo), true);
     }
 }
 
@@ -608,10 +706,14 @@ int ColumnW::ivalue(int index)
     }
     else // if (dataType() == DataType::TEXT)
     {
-        int value = cellAt<int>(index);
-        if (value != INT_MIN)
+        const char *v = svalue(index);
+        if (v[0] == '\0')
         {
-            const char *v = getImportValue(value);
+            return INT_MIN;
+        }
+        else
+        {
+            int value;
             char junk;
             double d;
             if (sscanf(v, "%i%1c", &value, &junk) == 1)
@@ -620,10 +722,6 @@ int ColumnW::ivalue(int index)
                 return (int) d;
             else
                 return INT_MIN;
-        }
-        else
-        {
-            return INT_MIN;
         }
     }
 }
@@ -662,6 +760,14 @@ const char *ColumnW::svalue(int index)
             tmp = ss.str();
             return tmp.c_str();
         }
+    }
+    else if (dataType() == DataType::TEXT && measureType() == MeasureType::ID)
+    {
+        const char *value = cellAt<char*>(index);
+        if (value == NULL)
+            return "";
+        else
+            return _mm->resolve(value);
     }
     else // if (dataType() == DataType::TEXT)
     {
@@ -721,8 +827,8 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
 
     if (src.hasLevels())
     {
-        std::vector<LevelData> levels = src.levels();
-        std::vector<LevelData>::iterator itr;
+        vector<LevelData> levels = src.levels();
+        vector<LevelData>::iterator itr;
 
         for (itr = levels.begin(); itr != levels.end(); itr++)
         {

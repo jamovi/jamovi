@@ -54,6 +54,7 @@ const DataVarWidget = Backbone.View.extend({
             { label: 'Continuous',   measureType: 'continuous' },
             { label: 'Ordinal',      measureType: 'ordinal' },
             { label: 'Nominal',      measureType: 'nominal' },
+            { label: 'ID',           measureType: 'id' },
         ];
 
         this.resources = { };

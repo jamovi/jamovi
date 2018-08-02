@@ -41,67 +41,13 @@ public:
     void setFormulaMessage(const char *value);
     void setActive(bool active);
     void setTrimLevels(bool trim);
-
+    void setDValue(int rowIndex, double value, bool initing = false);
+    void setIValue(int rowIndex, int value, bool initing = false);
+    void setSValue(int rowIndex, const char *value, bool initing = false);
     void changeDMType(DataType::Type dataType, MeasureType::Type measureType);
     void setLevels(const std::vector<LevelData> &levels);
 
     int changes() const;
-
-    template<typename T> void setValue(int rowIndex, T value, bool initing = false)
-    {
-        if (dataType() == DataType::DECIMAL)
-            assert(sizeof(T) == 8);
-        else
-            assert(sizeof(T) == 4);
-
-        if ( ! initing)
-            _discardScratchColumn();
-
-        if (measureType() != MeasureType::CONTINUOUS)
-        {
-            int newValue = (int)value;
-
-            if (initing == false)
-            {
-                int oldValue = this->value<int>(rowIndex);
-
-                if (oldValue == newValue)
-                    return;
-
-                if (oldValue != INT_MIN)
-                {
-                    Level *level = rawLevel(oldValue);
-                    assert(level != NULL);
-                    level->count--;
-
-                    if (level->count == 0 && trimLevels())
-                        removeLevel(oldValue);
-                    else if ( ! this->_parent->isRowFiltered(rowIndex))
-                        level->countExFiltered--;
-                }
-            }
-
-            if (newValue != INT_MIN)
-            {
-                Level *level = rawLevel(newValue);
-                if (level == NULL)
-                {
-                    std::ostringstream ss;
-                    ss << newValue;
-                    std::string str = ss.str();
-                    const char *c_str = str.c_str();
-                    insertLevel(newValue, c_str, c_str);
-                    level = rawLevel(newValue);
-                }
-                assert(level != NULL);
-                level->count++;
-                if ( ! this->_parent->isRowFiltered(rowIndex))
-                    level->countExFiltered++;
-            }
-        }
-
-        cellAt<T>(rowIndex) = value;
-    }
 
     template<typename T> void setRowCount(size_t count)
     {
