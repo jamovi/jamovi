@@ -174,9 +174,13 @@ cdef extern from "columnw.h":
         void setAutoMeasure(bool auto)
         bool autoMeasure() const
         void append[T](const T &value)
-        void setValue[T](int index, T value, bool init)
-        T value[T](int index)
+        T raw[T](int index)
+        const char *raws(int index);
+        void setIValue(int index, int value, bool init)
+        void setDValue(int index, double value, bool init)
+        void setSValue(int index, const char *value, bool init)
         const char *getLabel(int value) const
+        const char *getLabel(const char* value) const
         const char *getImportValue(int value) const
         int valueForLabel(const char *label) const
         void appendLevel(int value, const char *label, const char *importValue)
@@ -186,6 +190,7 @@ cdef extern from "columnw.h":
         int levelCount() const
         bool hasLevel(const char *label) const
         bool hasLevel(int value) const
+        bool hasLevels() const
         void clearLevels()
         void updateLevelCounts()
         const vector[CLevelData] levels()
@@ -366,9 +371,11 @@ cdef class Column:
         self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
 
     def get_label(self, value):
+        cdef int v
         if value == -2147483648:
             return ''
-        return self._this.getLabel(value).decode('utf-8');
+        v = value
+        return self._this.getLabel(v).decode('utf-8');
 
     def get_value_for_label(self, label):
         return self._this.valueForLabel(label.encode('utf-8'))
@@ -381,7 +388,7 @@ cdef class Column:
 
     @property
     def has_levels(self):
-        return self.measure_type != MeasureType.CONTINUOUS
+        return self._this.hasLevels()
 
     @property
     def level_count(self):
@@ -427,61 +434,76 @@ cdef class Column:
         return self._this.changes();
 
     def clear_at(self, index):
-        if self.data_type is DataType.DECIMAL:
-            self._this.setValue[double](index, float('nan'))
+        if self.data_type == DataType.DECIMAL:
+            self._this.setDValue(index, float('nan'), False)
+        elif self.data_type == DataType.TEXT and self.measure_type == MeasureType.ID:
+            self._this.setSValue(index, '', False)
         else:
-            self._this.setValue[int](index, -2147483648)
+            self._this.setIValue(index, -2147483648, False)
 
     def __setitem__(self, index, value):
+        import warnings
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn('Column.__setitem__() is deprecated',
+                      category=DeprecationWarning,
+                      stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
 
         if index >= self.row_count:
             raise IndexError()
 
         if self.data_type is DataType.DECIMAL:
-            self._this.setValue[double](index, value)
+            self._this.setDValue(index, value, False)
         else:
-            self._this.setValue[int](index, value)
+            self._this.setIValue(index, value, False)
 
     def set_value(self, index, value, initing=False):
         if index >= self.row_count:
             raise IndexError()
 
         if self.data_type is DataType.DECIMAL:
-            self._this.setValue[double](index, value)
+            self._this.setDValue(index, value, False)
         elif self.data_type is DataType.TEXT and isinstance(value, str):
-            if value == '':
-                level_i = -2147483648
-            elif self.has_level(value):
-                level_i = self.get_value_for_label(value)
+            if self.measure_type is MeasureType.ID:
+                self._this.setSValue(index, value.encode(), initing)
             else:
-                level_i = self.level_count
-                level_v = value.encode('utf-8')
-                self._this.appendLevel(level_i, level_v, ''.encode('utf-8'))
-            self._this.setValue[int](index, level_i, initing)
+                if value == '':
+                    level_i = -2147483648
+                elif self.has_level(value):
+                    level_i = self.get_value_for_label(value)
+                else:
+                    level_i = self.level_count
+                    level_v = value.encode('utf-8')
+                    self._this.appendLevel(level_i, level_v, ''.encode('utf-8'))
+                self._this.setIValue(index, level_i, initing)
         else:
-            self._this.setValue[int](index, value, initing)
+            self._this.setIValue(index, value, initing)
 
     def __getitem__(self, index):
+        cdef int raw
 
         if index >= self.row_count:
             raise IndexError()
 
         if self.data_type == DataType.DECIMAL:
-            return self._this.value[double](index)
+            return self._this.raw[double](index)
         elif self.data_type == DataType.TEXT:
-            raw = self._this.value[int](index)
-            return self._this.getLabel(raw).decode()
+            if self.measure_type == MeasureType.ID:
+                return self._this.raws(index).decode()
+            else:
+                raw = self._this.raw[int](index)
+                return self._this.getLabel(raw).decode()
         else:
-            return self._this.value[int](index)
+            return self._this.raw[int](index)
 
     def __iter__(self):
         return CellIterator(self)
 
     def raw(self, index):
         if self.data_type == DataType.DECIMAL:
-            return self._this.value[double](index)
+            return self._this.raw[double](index)
         else:
-            return self._this.value[int](index)
+            return self._this.raw[int](index)
 
     def set_data_type(self, data_type):
         self._this.setDataType(data_type.value)
@@ -681,7 +703,7 @@ class MeasureType(Enum):
         elif measure_type == 'ID':
             return MeasureType.ID
         else:
-            return MeasureType.NONE
+            return MeasureType.CONTINUOUS
 
 class ColumnType(Enum):
     NONE     = CColumnTypeNone

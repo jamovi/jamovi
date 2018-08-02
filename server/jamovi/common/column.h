@@ -113,6 +113,7 @@ public:
     int levelCountExFiltered() const;
     const std::vector<LevelData> levels() const;
     const char *getLabel(int value) const;
+    const char *getLabel(const char* value) const;
     const char *getImportValue(int value) const;
     int valueForLabel(const char *label) const;
     bool hasLevels() const;
@@ -123,7 +124,9 @@ public:
     bool trimLevels() const;
     bool hasUnusedLevels() const;
 
-    template<typename T> T value(int rowIndex)
+    const char *raws(int rowIndex);
+
+    template<typename T> T raw(int rowIndex)
     {
         return cellAt<T>(rowIndex);
     }

@@ -209,6 +209,8 @@ class ColumnWriter:
         self._only_euro_floats = True
         self._is_empty = True
         self._unique_values = set()
+        self._n_uniques = 0
+        self._many_uniques = False
         self._measure_type = None
         self._data_type = None
         self._ruminated = False
@@ -226,7 +228,12 @@ class ColumnWriter:
         else:
             self._is_empty = False
 
-        self._unique_values.add(value)
+        if not self._many_uniques:
+            if value not in self._unique_values:
+                self._unique_values.add(value)
+                self._n_uniques += 1
+                if self._n_uniques > 49:
+                    self._many_uniques = True
 
         try:
             i = int(value)
@@ -253,43 +260,55 @@ class ColumnWriter:
 
     def ruminate(self):
 
-        many_uniques = False
-        if len(self._unique_values) >= 49:
-            many_uniques = True
+        if self._only_integers:
+            if self._many_uniques is False:
+                self._data_type = DataType.INTEGER
+                self._measure_type = MeasureType.NOMINAL
+                self._column.change(
+                    data_type=DataType.INTEGER,
+                    measure_type=MeasureType.NOMINAL)
 
-        if self._only_integers and many_uniques is False:
-            self._data_type = DataType.INTEGER
-            self._measure_type = MeasureType.NOMINAL
-            self._column.set_data_type(DataType.INTEGER)
-            self._column.set_measure_type(MeasureType.NOMINAL)
-
-            self._unique_values = list(self._unique_values)
-            self._unique_values = list(map(lambda x: int(x), self._unique_values))
-            self._unique_values.sort()
-            for level in self._unique_values:
-                self._column.append_level(level, str(level))
-            self._column.dps = self._dps
+                self._unique_values = list(self._unique_values)
+                self._unique_values = list(map(lambda x: int(x), self._unique_values))
+                self._unique_values.sort()
+                for level in self._unique_values:
+                    self._column.append_level(level, str(level))
+            else:
+                self._data_type = DataType.INTEGER
+                self._measure_type = MeasureType.CONTINUOUS
+                self._column.change(
+                    data_type=DataType.INTEGER,
+                    measure_type=MeasureType.CONTINUOUS)
 
         elif self._only_floats or self._only_euro_floats:
             self._data_type = DataType.DECIMAL
             self._measure_type = MeasureType.CONTINUOUS
-            self._column.set_data_type(DataType.DECIMAL)
-            self._column.set_measure_type(MeasureType.CONTINUOUS)
+            self._column.change(
+                data_type=DataType.DECIMAL,
+                measure_type=MeasureType.CONTINUOUS)
 
             if self._only_floats and self._only_euro_floats:
                 self._only_euro_floats = False
 
         else:
-            self._data_type = DataType.TEXT
-            self._measure_type = MeasureType.NOMINAL
-            self._column.set_data_type(DataType.TEXT)
-            self._column.set_measure_type(MeasureType.NOMINAL)
+            if self._many_uniques is False:
+                self._data_type = DataType.TEXT
+                self._measure_type = MeasureType.NOMINAL
+                self._column.change(
+                    data_type=DataType.TEXT,
+                    measure_type=MeasureType.NOMINAL)
 
-            self._unique_values = list(self._unique_values)
-            self._unique_values.sort()
-            for i in range(0, len(self._unique_values)):
-                label = self._unique_values[i]
-                self._column.append_level(i, label)
+                self._unique_values = list(self._unique_values)
+                self._unique_values.sort()
+                for i in range(0, len(self._unique_values)):
+                    label = self._unique_values[i]
+                    self._column.append_level(i, label)
+            else:
+                self._data_type = DataType.TEXT
+                self._measure_type = MeasureType.ID
+                self._column.change(
+                    data_type=DataType.TEXT,
+                    measure_type=MeasureType.ID)
 
         self._column.dps = self._dps
         self._ruminated = True
@@ -309,28 +328,35 @@ class ColumnWriter:
 
         if self._data_type == DataType.INTEGER:
             if value is None:
-                self._column[row_no] = -2147483648
+                self._column.clear_at(row_no)
             else:
-                self._column[row_no] = int(value)
+                self._column.set_value(row_no, int(value))
 
         elif self._data_type == DataType.DECIMAL:
 
             if value is None:
-                self._column[row_no] = float('nan')
+                self._column.set_value(row_no, float('nan'))
             else:
                 if self._only_euro_floats:
                     value = re.sub(
                         ColumnWriter.euro_float_pattern,
                         ColumnWriter.euro_float_repl,
                         value)
-                self._column[row_no] = float(value)
+                self._column.set_value(row_no, float(value))
 
         elif self._data_type == DataType.TEXT:
 
-            if value is None:
-                self._column[row_no] = -2147483648
-            else:
-                self._column[row_no] = self._unique_values.index(value)
+            if self._measure_type != MeasureType.ID:
+                if value is None:
+                    self._column.set_value(row_no, -2147483648)
+                else:
+                    index = self._unique_values.index(value)
+                    self._column.set_value(row_no, index)
+            elif self._measure_type is MeasureType.ID:
+                if value is None:
+                    self._column.set_value(row_no, '')
+                else:
+                    self._column.set_value(row_no, str(value))
 
         else:
-            self._column[row_no] = -2147483648
+            self._column.clear_at(row_no)

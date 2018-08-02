@@ -994,24 +994,24 @@ const TableView = SilkyView.extend({
             }
             else {
                 let number = Number(value);
-                switch (this.currentColumn.measureType) {
-                    case 'continuous':
-                        if ( ! Number.isNaN(number))
-                            value = number;
-                        else if ( ! this.currentColumn.autoMeasure)
-                            throw {
-                                message: 'Could not assign data',
-                                cause: 'Cannot assign non-numeric value to column \'' + this.currentColumn.name + '\'',
-                                type: 'error',
-                            };
-                        break;
-                    case 'nominal':
-                    case 'ordinal':
-                        if (Number.isInteger(number))
-                            value = number;
-                        else if ( ! Number.isNaN(number))
-                            value = number;
-                        break;
+                if (this.currentColumn.measureType === 'continuous') {
+                    if ( ! Number.isNaN(number))
+                        value = number;
+                    else if ( ! this.currentColumn.autoMeasure)
+                        throw {
+                            message: 'Could not assign data',
+                            cause: 'Cannot assign non-numeric value to column \'' + this.currentColumn.name + '\'',
+                            type: 'error',
+                        };
+                }
+                else if (this.currentColumn.dataType === 'text') {
+                    // do nothing
+                }
+                else {
+                    if (Number.isInteger(number))
+                        value = number;
+                    else if ( ! Number.isNaN(number))
+                        value = number;
                 }
             }
 

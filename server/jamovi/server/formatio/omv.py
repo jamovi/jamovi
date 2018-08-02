@@ -23,7 +23,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 4.0\n')
+        content.write('jamovi-Archive-Version: 5.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -31,6 +31,7 @@ def write(data, path, html=None):
             zip.writestr('index.html', html)
 
         content = None
+        string_table_required = False
 
         fields = [ ]
         for column in data:
@@ -46,6 +47,9 @@ def write(data, path, html=None):
             field['formulaMessage'] = column.formula_message
             if column.data_type == DataType.DECIMAL:
                 field['type'] = 'number'
+            elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
+                field['type'] = 'string'
+                string_table_required = True
             else:
                 field['type'] = 'integer'
             field['importName'] = column.import_name
@@ -56,7 +60,8 @@ def write(data, path, html=None):
                 field['hidden'] = column.hidden
                 field['active'] = column.active
             else:
-                field['trimLevels'] = column.trim_levels
+                if column.has_levels:
+                    field['trimLevels'] = column.trim_levels
 
             fields.append(field)
 
@@ -99,6 +104,10 @@ def write(data, path, html=None):
             else:
                 required_bytes += (4 * row_count)
 
+        if string_table_required:
+            cursor = 0
+            string_file = NamedTemporaryFile(delete=False)
+
         temp_file = NamedTemporaryFile(delete=False)
         temp_file.truncate(required_bytes)
 
@@ -110,6 +119,15 @@ def write(data, path, html=None):
                     value = column.raw(i)
                     byts = struct.pack('<d', value)
                     temp_file.write(byts)
+            elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
+                for i in range(0, row_count):
+                    value = column[i]
+                    string_file.write(value.encode('utf-8'))
+                    string_file.write(bytes(1))
+                    n = len(value) + 1
+                    byts = struct.pack('<i', cursor)
+                    temp_file.write(byts)
+                    cursor += n
             else:
                 for i in range(0, row_count):
                     value = column.raw(i)
@@ -117,9 +135,13 @@ def write(data, path, html=None):
                     temp_file.write(byts)
 
         temp_file.close()
-
         zip.write(temp_file.name, 'data.bin')
         os.remove(temp_file.name)
+
+        if string_table_required:
+            string_file.close()
+            zip.write(string_file.name, 'strings.bin')
+            os.remove(string_file.name)
 
         resources = [ ]
 
@@ -142,6 +164,18 @@ def write(data, path, html=None):
         #         pass
 
 
+_buffer = bytearray(512)
+
+
+def _read_string_from_table(stream, pos):
+    stream.seek(pos)
+    try:
+        end = _buffer.index(bytes(1))
+        return _buffer[0:end].decode('utf-8', errors='ignore')
+    except ValueError:
+        return _buffer.decode('utf-8', errors='ignore')
+
+
 def read(data, path, prog_cb):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
@@ -156,7 +190,7 @@ def read(data, path, prog_cb):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 4:
+        if jav[0] > 5:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -258,6 +292,14 @@ def read(data, path, prog_cb):
             data_path = os.path.join(dir, 'data.bin')
             data_file = open(data_path, 'rb')
 
+            try:
+                zip.extract('strings.bin', dir)
+                string_table_present = True
+                string_table_path = os.path.join(dir, 'strings.bin')
+                string_table = open(string_table_path, 'rb')
+            except Exception:
+                string_table_present = False
+
             BUFF_SIZE = 65536
             buff = memoryview(bytearray(BUFF_SIZE))
 
@@ -270,30 +312,48 @@ def read(data, path, prog_cb):
                     elem_fmt = '<d'
                     elem_width = 8
                     repair_levels = False
+                    transform = None
+                elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
+                    elem_fmt = '<i'
+                    elem_width = 4
+                    repair_levels = False
+                    if string_table_present:
+                        def transform(x):
+                            _read_string_from_table(string_table, x)
+                    else:
+                        def transform(x):
+                            str(x)
                 else:
                     elem_fmt = '<i'
                     elem_width = 4
                     repair_levels = column.id in columns_w_bad_levels
+                    transform = None
 
                 for row_offset in range(0, row_count, int(BUFF_SIZE / elem_width)):
                     n_bytes_to_read = min(elem_width * (row_count - row_offset), BUFF_SIZE)
                     buff_view = buff[0:n_bytes_to_read]
                     data_file.readinto(buff_view)
 
-                    # 'if' surrounding two loops, rather than an 'if' inside one loop
-                    # gives a performance improvement
+                    # 'if' surrounding loops, rather than an 'if' inside one loop
+                    # gives a performance improvement (i expect)
                     if repair_levels:
                         i = 0
                         for values in struct.iter_unpack(elem_fmt, buff_view):
                             v = values[0]
                             if v != -2147483648:  # missing value
                                 column.append_level(v, str(v))
-                            column[row_offset + i] = v
+                            column.set_value(row_offset + i, v)
+                            i += 1
+                    if transform:
+                        i = 0
+                        for values in struct.iter_unpack(elem_fmt, buff_view):
+                            value = transform(values[0])
+                            column.set_value(row_offset + i, value)
                             i += 1
                     else:
                         i = 0
                         for values in struct.iter_unpack(elem_fmt, buff_view):
-                            column[row_offset + i] = values[0]
+                            column.set_value(row_offset + i, values[0])
                             i += 1
 
                 prog_cb(0.3 + 0.65 * (col_no + 1) / ncols)

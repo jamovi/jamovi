@@ -429,10 +429,12 @@ class Call(ast.Call):
 
         if dt is DataType.DECIMAL:
             mt = MeasureType.CONTINUOUS
+        elif MeasureType.ID in m_types:
+            mt = MeasureType.ID
+        elif MeasureType.ORDINAL in m_types:
+            mt = MeasureType.ORDINAL
         else:
             mt = MeasureType.NOMINAL
-            if MeasureType.ORDINAL in m_types:
-                mt = MeasureType.ORDINAL
 
         self._d_type = dt
         self._m_type = mt
@@ -463,6 +465,8 @@ class Call(ast.Call):
         if len(self.args) == 0:
             return [ ]
         if self.data_type is not DataType.TEXT:
+            return [ ]
+        if self.measure_type is MeasureType.ID:
             return [ ]
 
         level_use = OrderedDict()
@@ -591,6 +595,10 @@ class BinOp(ast.BinOp):
 
         lmt = self.left.measure_type
         rmt = self.right.measure_type
+
+        if lmt is MeasureType.ID or rmt is MeasureType.ID:
+            if self.data_type is DataType.TEXT:
+                return MeasureType.ID
 
         if lmt is MeasureType.CONTINUOUS or rmt is MeasureType.CONTINUOUS:
             if self.data_type is not DataType.TEXT:
