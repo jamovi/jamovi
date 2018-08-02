@@ -46,7 +46,12 @@ class Column:
     def __setitem__(self, index, value):
         if self._child is None:
             self._create_child()
-        self._child[index] = value
+        self._child.set_value(index, value)
+
+    def set_value(self, index, value):
+        if self._child is None:
+            self._create_child()
+        self._child.set_value(index, value)
 
     def __getitem__(self, index):
         if self._child is not None:

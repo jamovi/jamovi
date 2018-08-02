@@ -187,8 +187,7 @@ def read(data, path, prog_cb):
             name = meta_column['name']
             import_name = meta_column.get('importName', name)
 
-            data.append_column(name, import_name)
-            column = data[data.column_count - 1]
+            column = data.append_column(name, import_name)
 
             column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
             column.column_type = column_type

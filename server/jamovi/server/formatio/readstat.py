@@ -57,8 +57,12 @@ class Parser(ReadStatParser):
 
     def handle_variable(self, index, variable, labels_key):
         name = variable.name
+        label = variable.label
 
-        column = self._data.dataset.append_column(name, name)
+        column = self._data.append_column(name, name)
+        if label is not None:
+            column.description = label
+
         level_labels = self._tmp_value_labels.get(labels_key)
 
         column.column_type = ColumnType.DATA
@@ -134,7 +138,7 @@ class Parser(ReadStatParser):
 
         vt = type(value)
 
-        column = self._data.dataset[var_index]
+        column = self._data[var_index]
 
         if column.data_type is DataType.TEXT:
             if vt is str:

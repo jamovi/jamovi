@@ -66,7 +66,7 @@ class InstanceModel:
         new_column = Column(self, column)
         new_column.index = self.total_column_count
         self._columns.append(new_column)
-        return column
+        return new_column
 
     def set_row_count(self, count):
         self._dataset.set_row_count(count)
