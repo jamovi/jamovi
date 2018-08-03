@@ -59,7 +59,7 @@ class Column:
         else:
             return (-2147483648, '')
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         if self._child is not None:
             if filt and self._parent.is_row_filtered(index):
                 return (-2147483648, '')
@@ -74,8 +74,8 @@ class Column:
         else:
             return (-2147483648, '')
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return False
@@ -317,6 +317,9 @@ class Column:
             return self._child.has_level(index_or_name)
         return False
 
+    def get_levels(self, row_count):
+        return self.levels
+
     @property
     def levels(self):
         if self._child is not None:
@@ -426,7 +429,7 @@ class Column:
         self._child.clear_levels()
 
         if self._node is not None and self._node.has_levels:
-            for level in self._node.levels:
+            for level in self._node.get_levels(self.row_count):
                 self._child.append_level(level[0], level[1])
 
         if self.data_type is DataType.DECIMAL:
@@ -447,11 +450,11 @@ class Column:
             for row_no in range(start, end):
                 try:
                     if self.is_filter:
-                        v = self._node.fvalue(row_no, False)
+                        v = self._node.fvalue(row_no, self.row_count, False)
                     elif self.uses_column_formula and self._parent.is_row_filtered(row_no):
                         v = NaN
                     else:
-                        v = self._node.fvalue(row_no, self.uses_column_formula)
+                        v = self._node.fvalue(row_no, self.row_count, self.uses_column_formula)
                     v = convert(v, ul_type)
                 except Exception as e:
                     if not self.is_filter:

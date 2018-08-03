@@ -30,11 +30,11 @@ class Num(ast.Num):
     def _remove_node_parent(self, node):
         self._node_parents.remove(node)
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         return self.n
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return True
@@ -82,11 +82,11 @@ class Str(ast.Str):
     def _remove_node_parent(self, node):
         self._node_parents.remove(node)
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         return self.s
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return True
@@ -111,9 +111,8 @@ class Str(ast.Str):
     def has_levels(self):
         return True
 
-    @property
-    def levels(self):
-        return [ self.s ]
+    def get_levels(self, row_count):
+        return [ (0, self.s) ]
 
     @property
     def uses_column_formula(self):
@@ -126,9 +125,9 @@ class UnaryOp(ast.UnaryOp):
         ast.UnaryOp.__init__(self, *args, **kwargs)
         self._node_parents = [ ]
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         op = self.op
-        v = self.operand.fvalue(index, filt)
+        v = self.operand.fvalue(index, row_count, filt)
         if isinstance(op, ast.USub):
             if is_missing(v):
                 return v
@@ -157,8 +156,8 @@ class UnaryOp(ast.UnaryOp):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return self.operand.is_atomic_node()
@@ -217,11 +216,11 @@ class BoolOp(ast.BoolOp):
         ast.BoolOp.__init__(self, *args, **kwargs)
         self._node_parents = [ ]
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         if isinstance(self.op, ast.And):
             to_return = 1
             for v in self.values:
-                value = v.fvalue(index, filt)
+                value = v.fvalue(index, row_count, filt)
                 if is_missing(value):
                     to_return = value
                     continue
@@ -233,7 +232,7 @@ class BoolOp(ast.BoolOp):
         elif isinstance(self.op, ast.Or):
             to_return = 0
             for v in self.values:
-                value = v.fvalue(index, filt)
+                value = v.fvalue(index, row_count, filt)
                 if is_missing(value):
                     to_return = value
                     continue
@@ -245,8 +244,8 @@ class BoolOp(ast.BoolOp):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         for value in self.values:
@@ -343,16 +342,16 @@ class Call(ast.Call):
 
         ast.Call.__init__(self, func, args, keywords)
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
         if self._function.__name__ == 'OFFSET':
-            offset = convert(self.args[1].fvalue(index, False), int)
+            offset = convert(self.args[1].fvalue(index, row_count, False), int)
             if index < offset:
                 value = NaN
             else:
-                value = self.args[0].fvalue(index - offset, False)
+                value = self.args[0].fvalue(index - offset, row_count, False)
         elif self._function.meta.is_column_wise:
             if self._cached_value is None:
-                args = list(map(lambda arg: arg.fvalues(filt), self.args))
+                args = list(map(lambda arg: arg.fvalues(row_count, filt), self.args))
                 for i in range(len(args)):
                     arg_type_i = min(i, len(self._arg_types) - 1)
                     arg_type = self._arg_types[arg_type_i]
@@ -360,7 +359,7 @@ class Call(ast.Call):
                 self._cached_value = self._function(*args)
             value = self._cached_value
         else:
-            args = list(map(lambda arg: arg.fvalue(index, False), self.args))
+            args = list(map(lambda arg: arg.fvalue(index, row_count, False), self.args))
             for i in range(len(args)):
                 arg_type_i = min(i, len(self._arg_types) - 1)
                 arg_type = self._arg_types[arg_type_i]
@@ -369,8 +368,8 @@ class Call(ast.Call):
 
         return value
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return False
@@ -454,8 +453,7 @@ class Call(ast.Call):
     def has_levels(self):
         return True
 
-    @property
-    def levels(self):
+    def get_levels(self, row_count):
 
         func_meta = self._function.meta
         arg_level_indices = func_meta.arg_level_indices
@@ -475,10 +473,10 @@ class Call(ast.Call):
                 arg = self.args[arg_i]
                 if not arg.has_levels:
                     continue
-                for level in arg.levels:
+                for level in arg.get_levels(row_count):
                     level_use[level[1]] = 0
 
-        for value in self.fvalues(False):
+        for value in self.fvalues(row_count, False):
             if is_missing(value):
                 continue
             value = convert(value, str)
@@ -509,7 +507,7 @@ class BinOp(ast.BinOp):
         ast.BinOp.__init__(self, *args, **kwargs)
         self._node_parents = [ ]
 
-    def fvalue(self, index, filt):
+    def fvalue(self, index, row_count, filt):
 
         lv = self.left
         rv = self.right
@@ -526,14 +524,14 @@ class BinOp(ast.BinOp):
         if isinstance(lv, ast.Num):
             lv = lv.n
         elif hasattr(lv, 'fvalue'):
-            lv = lv.fvalue(index, filt)
+            lv = lv.fvalue(index, row_count, filt)
 
         lv = convert(lv, ul_type)
 
         if isinstance(rv, ast.Num):
             rv = rv.n
         elif hasattr(rv, 'fvalue'):
-            rv = rv.fvalue(index, filt)
+            rv = rv.fvalue(index, row_count, filt)
 
         rv = convert(rv, ul_type)
 
@@ -563,8 +561,8 @@ class BinOp(ast.BinOp):
         else:
             return get_missing()
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return self.left.is_atomic_node() and self.right.is_atomic_node()
@@ -633,13 +631,13 @@ class Compare(ast.Compare):
         ast.Compare.__init__(self, *args, **kwargs)
         self._node_parents = [ ]
 
-    def fvalue(self, index, filt):
-        v1 = self.left.fvalue(index, filt)
+    def fvalue(self, index, row_count, filt):
+        v1 = self.left.fvalue(index, row_count, filt)
         if is_missing(v1):
             return get_missing(int)
         for i in range(len(self.ops)):
             op = self.ops[i]
-            v2 = self.comparators[i].fvalue(index, filt)
+            v2 = self.comparators[i].fvalue(index, row_count, filt)
             if is_missing(v2):
                 return get_missing(int)
             if not Compare._test(v1, op, v2):
@@ -679,8 +677,8 @@ class Compare(ast.Compare):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, filt):
-        return FValues(self, filt)
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         if self.left.is_atomic_node() is False:
@@ -717,8 +715,7 @@ class Compare(ast.Compare):
     def has_levels(self):
         return True
 
-    @property
-    def levels(self):
+    def get_levels(self, row_count):
         return ((1, 'true'), (0, 'false'))
 
     @property
