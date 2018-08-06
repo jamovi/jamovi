@@ -683,6 +683,7 @@ const DataSetModel = Backbone.Model.extend({
                     let oldName;
                     let oldColumnType;
                     let oldMessage;
+                    let oldTransform;
                     let hiddenChanged = false;
                     let activeChanged = false;
                     let oldDIndex = -1;
@@ -695,6 +696,7 @@ const DataSetModel = Backbone.Model.extend({
                         oldDIndex = column.dIndex;
                         let oldHidden = column.hidden;
                         let oldActive = column.active;
+                        oldTransform = column.transform;
                         this._readColumnPB(column, columnPB);
                         hiddenChanged = oldHidden !== column.hidden;
                         activeChanged = oldActive !== column.active;
@@ -702,6 +704,7 @@ const DataSetModel = Backbone.Model.extend({
                     else {
                         created = true;
                         oldName = columnPB.name;
+                        oldTransform = 0;
                         oldColumnType = 0;
                         oldMessage = '';
                         column = { };
@@ -719,6 +722,7 @@ const DataSetModel = Backbone.Model.extend({
                         index: column.index,
                         dIndex: oldDIndex,
                         oldName: oldName,
+                        transformChanged: oldTransform !== column.transform,
                         hiddenChanged: hiddenChanged,
                         activeChanged: activeChanged,
                         columnTypeChanged: column.columnType !== oldColumnType,

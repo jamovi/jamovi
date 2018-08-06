@@ -857,7 +857,7 @@ class Instance:
                     transform = self._data.get_transform_by_id(transform_pb.id)
                     self._data.set_transform_name(transform, transform_pb.name)
 
-                transform.formula = transform_pb.formula
+                transform.formula = list(transform_pb.formula)
                 transform.description = transform_pb.description
                 trans_changed.add(transform)
 

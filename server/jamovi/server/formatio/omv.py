@@ -38,15 +38,8 @@ def write(data, path, html=None):
             transform_field['name'] = transform.name
             transform_field['id'] = transform.id
 
-            tFormula = [ ]
-            for tF in transform.formula:
-                tFormula.append(tF)
-            transform_field['formula'] = tFormula
-
-            tFormulaMsg = [ ]
-            for tFMsg in transform.formula_message:
-                tFormulaMsg.append(tFMsg)
-            transform_field['formulaMessage'] = tFormulaMsg
+            transform_field['formula'] = transform.formula
+            transform_field['formulaMessage'] = transform.formula_message
 
             transform_field['description'] = transform.description
 

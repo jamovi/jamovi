@@ -120,8 +120,18 @@ const TransformEditor = function(dataset) {
 
 
         this.$bottom = $('<div class="jmv-transform-editor-bottom"></div>').appendTo(this.$el);
-        this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info">This transform is being used by 3 variables.</div>').appendTo(this.$bottom);
+        this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info"></div>').appendTo(this.$bottom);
         this.$viewConnectionInfo = $('<div class="view-button">View</div>').appendTo(this.$bottom);
+
+        this.dataset.on('columnsChanged', (event) => {
+            for (let change of event.changes) {
+                if (change.transformChanged) {
+                    this._populate();
+                    break;
+                }
+            }
+
+        });
     };
 
     this._focusFormulaControls = function() {
@@ -224,6 +234,15 @@ const TransformEditor = function(dataset) {
                 if (updateFormula)
                     this._createFormulaUI();
 
+
+                this.connectedColumns = [];
+                let columns = this.dataset.attributes.columns;
+                let count = 0;
+                for (let column of columns) {
+                    if (column.transform === id)
+                        this.connectedColumns.push(column);
+                }
+                this.$connectionInfo[0].textContent = 'This transform is being used by ' + this.connectedColumns.length + ' ' + (this.connectedColumns.length === 1 ? 'variable' : 'variables');
                 return;
             }
         }
