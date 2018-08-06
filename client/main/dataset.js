@@ -960,38 +960,6 @@ const DataSetModel = Backbone.Model.extend({
                 transformPB.action = 1; // action: 0 - CREATE, 1 - UPDATE, 2 - REMOVE
             }
 
-            /*if ( ! ('name' in values)) {
-                if (newTransform) {
-                    values.name = 'Transform ' + (this.attributes.transforms.length + countAdded + 1);
-                    countAdded += 1;
-                }
-                else
-                    values.name = transform.name;
-            }
-
-            if (values.name === '') {
-                values.name = 'Transform ' + (this.attributes.transforms.length + countAdded + 1);
-                countAdded += 1;
-            }
-
-            let nameChanged = true;
-            let oldName = '';
-            if ( ! newTransform) {
-                nameChanged = (values.name !== transform.name);
-                oldName = transform.name;
-            }
-
-            let testName = values.name;
-            if (nameChanged) {
-                let names = this.attributes.transforms.map((transform) => { return transform.name; } );
-                let i = 2;
-                while (names.includes(testName) && testName !== oldName)
-                    testName = values.name + ' (' + i++ + ')';
-            }
-            let newName = testName;
-
-            transformPB.name = newName;*/
-
             if ('name' in values)
                 transformPB.name = values.name;
             else if ( ! newTransform)
