@@ -95,7 +95,7 @@ class InstanceModel:
         checked_name = name
         i = 2
         while self.check_for_transform_name(checked_name, transform):
-            checked_name =  name + ' (' + str(i) + ')'
+            checked_name = name + ' (' + str(i) + ')'
             i += 1
         transform.name = checked_name
 
