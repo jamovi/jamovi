@@ -1,37 +1,63 @@
-.jmv-variable-recoded-widget {
+.jmv-transform-editor {
     width: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.jmv-variable-recoded-widget > .contents {
+.jmv-transform-editor > .contents {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    background-color: #f8f8f8;
+    padding: 0 3px 0 0;
 }
 
-.jmv-variable-recoded-options {
+.jmv-transform-editor-options {
     flex: 2;
     /* background-color: white; */
     border: 1px solid #dfdfdf;
     padding: 2px 2px 2px 2px;
+    max-height: 130px;
+    overflow-y: auto;
 }
 
-.jmv-variable-recoded-top {
+.jmv-transform-editor-top {
     display: flex;
-    flex-flow: row;
-    align-items: baseline;
+    flex-flow: column;
     color: #848484;
     margin-bottom: 10px;
 }
 
-.jmv-variable-recoded-top .recoded-from {
+.jmv-transform-editor-bottom {
+    display: flex;
+    flex-flow: row;
+    align-items: baseline;
+    color: #848484;
+    margin-top: 10px;
+    justify-content: flex-end;
+    padding-right: 33px;
+}
+
+.jmv-transform-editor-bottom .view-button {
+    border: 1px solid #c4c4c4;
+    border-radius: 2px;
+    margin-left: 5px;
+    padding: 0 4px;
+    line-height: 1.5;
+    background-color: white;
+}
+
+.jmv-transform-editor-bottom .view-button:hover {
+    background-color: white;
+}
+
+.jmv-transform-editor-top .recoded-from {
     margin-left: 1ex;
     margin-right: 1ex;
 }
 
-.jmv-variable-recoded-options > .formula-box {
+.jmv-transform-editor-options > .formula-box {
     display: flex;
     flex-direction: row;
     position: relative;
@@ -39,11 +65,11 @@
     align-items: center;
 }
 
-.jmv-variable-recoded-options > .formula-box > .reorder-cond {
+.jmv-transform-editor-options > .formula-box > .reorder-cond {
 
 }
 
-.jmv-variable-recoded-options > .formula-box > .remove-cond {
+.jmv-transform-editor-options > .formula-box > .remove-cond {
     position: absolute;
     text-align: center;
     margin: 0px 0px 0px 5px;
@@ -54,31 +80,36 @@
     line-height: 21px;
 }
 
-.jmv-variable-recoded-options > .formula-box > .remove-cond:hover {
+.jmv-transform-editor-options > .formula-box > .remove-cond:hover {
     color: #c15050;
 }
 
-.jmv-variable-recoded-widget > .contents > .insert-box {
-    margin-right: 5px;
-    margin-top: 6px;
+.jmv-transform-editor > .contents > .insert-box {
+    padding: 0 4px;
+    align-self: stretch;
 }
 
-.jmv-variable-recoded-widget > .contents > .right-box {
+.jmv-transform-editor > .contents > .right-box {
     margin-left: 5px;
 }
 
-.jmv-variable-recoded-widget > .contents > .insert-box > .insert {
+.jmv-transform-editor > .contents > .insert-box > .insert {
     background-size: 80%;
     background-image: url(assets/filters-add.svg);
     background-position: center;
     background-repeat: no-repeat;
+    height: 100%;
 }
 
-.jmv-variable-recoded-widget > .contents  .button {
+.jmv-transform-editor > .contents > .insert-box:hover {
+    background-color: white;
+}
+
+.jmv-transform-editor > .contents  .button {
     vertical-align: unset;
     width: 25px;
     height: 25px;
-    /*line-height: 25px;*/
+    line-height: 1;
     font-size: 20px;
     text-align: center;
     /*font-weight: bolder;*/
@@ -86,9 +117,11 @@
 }
 
 
-.jmv-variable-recoded-options > .formula-box .show-editor {
+.jmv-transform-editor-options > .formula-box .show-editor {
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
     width: 23px;
+    align-self: stretch;
+    margin-right: 4px;
     border: 1px solid #dadada;
     background-image: url(assets/filters-formula.svg);
     background-position: center left 1px;
@@ -99,12 +132,26 @@
     background-color: white;
 }
 
-.jmv-variable-recoded-options > .formula-box .show-editor:hover, .jmv-variable-recoded-options > .formula-box .show-editor.is-active {
+.jmv-transform-editor-options > .formula-box .show-editor:hover, .jmv-transform-editor-options > .formula-box .show-editor.is-active {
     filter: none;
     background-color: #ffffff;
 }
 
-.jmv-variable-recoded-options > .formula-box .down-arrow {
+.jmv-transform-editor-options > .formula-box .show-editor > .down-arrow {
+    filter: inherit;
+    position: absolute;
+    background-image: url(assets/filters-down-arrow.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    top: 50%;
+    margin-top: -3px;
+    width: 5px;
+    left: 16px;
+    height: 5px;
+}
+
+.jmv-transform-editor-options > .formula-box .formula-list-item > .down-arrow {
     position: absolute;
     background-image: url(assets/filters-down-arrow.svg);
     background-position: right 2px top 1px;
@@ -124,13 +171,13 @@
     line-height: 2;
 }
 
-.jmv-variable-recoded-options > .formula-box .down-arrow:hover {
+.jmv-transform-editor-options > .formula-box .formula-list-item > .down-arrow:hover {
     background-color: rgba(62, 109, 169, 0.05);
     border-right: 1px solid rgba(62, 109, 169, 0.28);
     border-left: 1px solid rgba(62, 109, 169, 0.28);
 }
 
-.jmv-variable-recoded-options > .formula-box .equal {
+.jmv-transform-editor-options > .formula-box .equal {
     position: absolute;
     top: 0;
     left: 0;
@@ -143,7 +190,7 @@
     border: 1px solid transparent;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula-list {
+.jmv-transform-editor-options > .formula-box .formula-list {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
@@ -151,38 +198,38 @@
     border-radius: 4px;
 }
 
-.jmv-variable-recoded-options > .formula-box.recode-else {
+.jmv-transform-editor-options > .formula-box.recode-else {
     margin-top: 10px;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula-list-item {
+.jmv-transform-editor-options > .formula-box .formula-list-item {
     position: relative;
     height: 100%;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula-pair {
+.jmv-transform-editor-options > .formula-box .formula-pair {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
     width: 50%;
 }
 
-.jmv-variable-recoded-options > .formula-box .formulaMessageBox {
+.jmv-transform-editor-options > .formula-box .formulaMessageBox {
     background-color: pink;
     margin-left: 3px;
 }
 
-.jmv-variable-recoded-options > .formula-box .formulaMessageBox > .formulaMessage {
+.jmv-transform-editor-options > .formula-box .formulaMessageBox > .formulaMessage {
     flex: 1;
     flex-grow: 1;
     margin: 5px;
 }
 
-.jmv-variable-recoded-options > .formula-box .formulaMessageBox > .formulaMessage:empty {
+.jmv-transform-editor-options > .formula-box .formulaMessageBox > .formulaMessage:empty {
     display: none;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula {
+.jmv-transform-editor-options > .formula-box .formula {
     flex: 1;
     resize: none;
     text-indent: 1.5em;
@@ -201,11 +248,11 @@
     box-sizing: border-box;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula-pair:first-child .formula {
+.jmv-transform-editor-options > .formula-box .formula-pair:first-child .formula {
     border-left: 1px solid #CCCCCC;
 }
 
-.jmv-variable-recoded-options > .formula-box .formula-pair:last-child .formula {
+.jmv-transform-editor-options > .formula-box .formula-pair:last-child .formula {
     border-right: 1px solid #CCCCCC;
 }
 
@@ -215,7 +262,7 @@
     color: #CCCCCC;
 }
 
-.jmv-variable-recoded-options > .formula-box .caret {
+.jmv-transform-editor-options > .formula-box .caret {
     border-left: 1px solid #888888;
     top: 2px;
     left: 15px;

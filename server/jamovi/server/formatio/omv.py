@@ -23,7 +23,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 4.0\n')
+        content.write('jamovi-Archive-Version: 6.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -31,6 +31,26 @@ def write(data, path, html=None):
             zip.writestr('index.html', html)
 
         content = None
+
+        transforms = [ ]
+        for transform in data.transforms:
+            transform_field = { }
+            transform_field['name'] = transform.name
+            transform_field['id'] = transform.id
+
+            tFormula = [ ]
+            for tF in transform.formula:
+                tFormula.append(tF)
+            transform_field['formula'] = tFormula
+
+            tFormulaMsg = [ ]
+            for tFMsg in transform.formula_message:
+                tFormulaMsg.append(tFMsg)
+            transform_field['formulaMessage'] = tFormulaMsg
+
+            transform_field['description'] = transform.description
+
+            transforms.append(transform_field)
 
         fields = [ ]
         for column in data:
@@ -50,6 +70,7 @@ def write(data, path, html=None):
                 field['type'] = 'integer'
             field['importName'] = column.import_name
             field['description'] = column.description
+            field['transform'] = column.transform
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
@@ -66,6 +87,7 @@ def write(data, path, html=None):
         metadataset['rowCount'] = data.row_count
         metadataset['columnCount'] = data.column_count
         metadataset['fields'] = fields
+        metadataset['transforms'] = transforms
 
         # if data.import_path is not '':
         #     metadataset['importPath'] = data.import_path
@@ -156,7 +178,7 @@ def read(data, path, prog_cb):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 4:
+        if jav[0] > 6:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -182,6 +204,15 @@ def read(data, path, prog_cb):
         #         prog_cb(0.1)
         #     except Exception:
         #         pass
+
+        if 'transforms' in meta_dataset:
+            for meta_transform in meta_dataset['transforms']:
+                name = meta_transform['name']
+                id = meta_transform['id']
+                transform = data.append_transform(name, id)
+                transform.formula = meta_transform.get('formula', [''])
+                transform.formula_message = meta_transform.get('formulaMessage', [''])
+                transform.description = meta_transform.get('description', '')
 
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']
@@ -215,6 +246,7 @@ def read(data, path, prog_cb):
             column.formula = meta_column.get('formula', '')
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
+            column.transform = meta_column.get('transform', 0)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)

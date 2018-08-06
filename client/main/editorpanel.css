@@ -77,11 +77,10 @@
     font-size: 110%;
     color: #555555;
     padding: 0px 4px 0px 2px;
-    margin: 8px 0 0 0;
+    margin: 8px 0 3px 0;
     font-weight: 100;
 }
 
 .jmv-editor-panel-main > .content {
     flex-grow: 1;
-    margin: 10px 0;
 }

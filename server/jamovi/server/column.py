@@ -31,7 +31,7 @@ class Column:
         self._description = ''
         self._hidden = False
         self._filter_no = -1
-        self._trim_levels = True
+        self._transform = 0  # zero mean 'none'
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -156,6 +156,14 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.trim_levels = trim_levels
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @transform.setter
+    def transform(self, transform):
+        self._transform = transform
 
     @property
     def index(self):

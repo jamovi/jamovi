@@ -1,11 +1,12 @@
 
 'use strict';
 
-const _ = require('underscore');
+
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const formulaToolbar = require('./formulatoolbar');
+const dropdown = require('./dropdown');
 
 const keyboardJS = require('keyboardjs');
 
@@ -65,7 +66,8 @@ const ComputedVarWidget = Backbone.View.extend({
             "score > 0.5"
         ];
 
-        formulaToolbar.init(this.model.dataset);
+        dropdown.init();
+        this.formulasetup = new formulaToolbar(this.model.dataset);
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-computed-widget');
@@ -92,7 +94,8 @@ const ComputedVarWidget = Backbone.View.extend({
         });
         this.$formula.blur((event) => {
             keyboardJS.resume();
-            this.model.set('formula', this.$formula[0].textContent);
+            if ( ! dropdown.clicked())
+                this.model.set('formula', this.$formula[0].textContent);
         });
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
@@ -121,14 +124,15 @@ const ComputedVarWidget = Backbone.View.extend({
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
-                formulaToolbar.show(this.$formula, this.model.get('name'));
+                dropdown.show(this.$formula, this.formulasetup);
+                this.formulasetup.show(this.$formula, this.model.get('name'));
                 this.$formula.focus();
                 this.$showEditor.addClass('is-active');
             }
         });
 
         this.$showEditor.on('mousedown', (event) => {
-            this._$wasEditingFormula = formulaToolbar.focusedOn();
+            this._$wasEditingFormula = dropdown.focusedOn();
             this._editorClicked = true;
         });
 
@@ -138,7 +142,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
 
         this.$formula.on('input', (event) => {
-            formulaToolbar.updatePosition();
+            dropdown.updatePosition();
         });
 
         let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);

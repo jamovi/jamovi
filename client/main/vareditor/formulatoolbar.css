@@ -1,37 +1,10 @@
 
-.jmv-formula-toolbar-widget {
-    /*width: 100%;*/
-    display: flex;
-    max-height: 200px;
-    max-width: 600px;
-    min-width: 300px;
-    position: absolute;
-    opacity: 1;
-    padding: 2px;
-    background-color: white;
-    border: 1px solid #c1c1c1;
-    box-shadow: 0px 0px 5px #c1c1c1;
-    transition: 0.3s opacity;
-    z-index: 200;
-    padding-top: 3px;
-}
-
-.jmv-formula-toolbar-widget * {
-
-}
-
-.formula-toolbar-remove {
-    display: none;
-}
-
-.formula-toolbar-hidden {
-    opacity: 0;
-}
 
 .jmv-formula-toolbar-options {
     display: flex;
     flex-direction: column;
     flex: 2;
+    padding: 3px 2px 2px 2px;
 }
 
 .option-label {

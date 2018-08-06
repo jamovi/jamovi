@@ -12,7 +12,8 @@
 
 .jmv-variable-editor-widget-types {
     display: inline-block ;
-    width: 150px ;
+    width: 200px ;
+    margin-bottom: 10px;
 }
 
 .jmv-variable-editor-widget-types-highlight {
@@ -28,7 +29,7 @@
 
 .jmv-variable-editor-autotype {
     display: inline-block ;
-    margin: 6px 0 12px 12px ;
+    margin: 10px 0 0px 12px ;
 }
 
 .jmv-variable-editor-widget-option {
@@ -54,11 +55,20 @@
     vertical-align: middle ;
 }
 
-.jmv-vareditor-datatype {
+.jmv-vareditor-datatype, .jmv-vareditor-transform {
     display: flex ;
     justify-content: space-between ;
     align-items: baseline;
-    padding-top: 24px ;
+    margin-top: 7px ;
+}
+
+.jmv-vareditor-datatype label, .jmv-vareditor-transform label {
+    margin-right: 10px;
+}
+
+.jmv-vareditor-datatype select, .jmv-vareditor-transform select {
+    width: 65%;
+    height: 1.75em;
 }
 
 .jmv-variable-editor-variable-type {
@@ -93,8 +103,13 @@
     flex-direction: column;
 }
 
+.transform-type option {
+    display: none;
+}
+
 .super-focus {
     box-shadow: 0px 0px 15px 0px #949494;
+    z-index: 300;
 }
 
 .super-focus * {

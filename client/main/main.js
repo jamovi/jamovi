@@ -21,6 +21,7 @@ const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
 const EditorPanel = require('./editorpanel');
 const ImportSettings = require('./editors/importsettings');
+const TransformEditor = require('./editors/transformeditor');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
@@ -132,6 +133,8 @@ $(document).ready(() => {
             backstage.activate();
         else if (tabName === 'data')
             optionspanel.hideOptions();
+        else if (tabName === 'analyses')
+            dataSetModel.set('editingVar', null);
     });
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
@@ -242,6 +245,7 @@ $(document).ready(() => {
     });
 
     let importSettings = new ImportSettings();
+    let transformEditor = new TransformEditor(dataSetModel);
     ActionHub.get('editImport').on('request', () => {
         dataSetModel.set('editingVar', null);
         if (editorPanel.item === importSettings)
@@ -250,9 +254,23 @@ $(document).ready(() => {
             editorPanel.attach(importSettings);
     });
 
+    dataSetModel.on('change:editingTrans', event => {
+        if (dataSetModel.get('editingTrans') !== null) {
+            let editingVar = dataSetModel.get('editingVar');
+            dataSetModel.set('editingVar', null);
+            editorPanel.attach(transformEditor, () => {
+                dataSetModel.set('editingTrans', null);
+                if (editingVar !== null)
+                    dataSetModel.set('editingVar', editingVar);
+            });
+        }
+    });
+
     dataSetModel.on('change:editingVar', event => {
-        if (dataSetModel.get('editingVar') !== null)
+        if (dataSetModel.get('editingVar') !== null) {
+            dataSetModel.set('editingTrans', null);
             editorPanel.attach(null);
+        }
     });
 
 
@@ -285,15 +303,12 @@ $(document).ready(() => {
     });
 
     Promise.resolve(() => {
-
         return $.post(host.baseUrl + 'login');
 
     }).then(() => {
-
         return coms.ready;
 
     }).then(() => {
-
         let instanceId;
         if (window.location.search.indexOf('?id=') !== -1)
             instanceId = window.location.search.split('?id=')[1];
@@ -303,7 +318,6 @@ $(document).ready(() => {
         return instance.connect(instanceId);
 
     }).then(instanceId => {
-
         let toOpen = '';  // '' denotes blank data set
         if (window.location.search.indexOf('?open=') !== -1) {
             toOpen = window.location.search.split('?open=')[1];
@@ -317,7 +331,6 @@ $(document).ready(() => {
             return instance.open(toOpen);
 
     }).catch(() => { // if the initial open fails
-
         if ( ! instance.get('hasDataSet'))
             return instance.open('');
 

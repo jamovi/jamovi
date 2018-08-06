@@ -6,12 +6,16 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const DataVarLevelWidget = require('./datavarlevelwidget');
 const tarp = require('../utils/tarp');
+const dropdown = require('./dropdown');
+const TransformList = require('./transformlist');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
     initialize(args) {
 
         this.attached = false;
+
+        dropdown.init();
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor-datavarwidget');
@@ -22,6 +26,8 @@ const DataVarWidget = Backbone.View.extend({
         this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
         this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
+        this.$transform = $('<div class="jmv-vareditor-transform"><label for="data-type">Transform</label></div>').appendTo(this.$left);
+        this.$transformList = $('<select id="transform-type"><option value="None">None</option></select>').appendTo(this.$transform);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
@@ -40,6 +46,48 @@ const DataVarWidget = Backbone.View.extend({
                 tarp.hide('levels');
             }
         });
+
+        this.transformList = new TransformList(this.model.dataset);
+        this.$transformList.on('mousedown', (event) => {
+            dropdown.show(this.$transformList, this.transformList);
+            event.preventDefault();
+            event.stopPropagation();
+            this.$transformList.focus();
+        });
+
+        this.transformList.$el.on('selected-transform', (event, transform) => {
+            let dataset = this.model.dataset;
+            this.model.set('transform', transform.id);
+            dropdown.hide();
+        });
+
+        this.transformList.$el.on('edit-transform', (event, transform) => {
+            let dataset = this.model.dataset;
+            dataset.set('editingTrans', transform.id);
+            dropdown.hide();
+        });
+
+        this.transformList.$el.on('remove-transform', (event, transform) => {
+            let dataset = this.model.dataset;
+            dataset.removeTransforms([transform.id]);
+            let transformId = this.model.get('transform');
+            if (transformId === transform.id)
+                this.model.set('transform', 0);
+        });
+
+        this.transformList.$el.on('create-transform', (event) => {
+            let dataset = this.model.dataset;
+            dataset.setTransforms([ { id: 0, values: { description: '', formula: '' } } ]).then(() => {
+                this.$el.trigger('transform-selected');
+                let transforms = dataset.get('transforms');
+                let transformId = transforms[transforms.length - 1].id;
+                this.model.set('transform', transformId);
+                dataset.set('editingTrans', transformId);
+            }).then(() => {
+                dropdown.hide();
+            });
+        });
+
 
         this.$moveUp.on('click', event => this._moveUp());
         this.$moveDown.on('click', event => this._moveDown());
@@ -83,11 +131,52 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
         this.model.on('change:description', event => this._updateHighlightPosition());
+        this.model.on('change:transform', event => {
+            if (this.attached === false)
+                return;
+
+            let transformId = this.model.get('transform');
+            if (transformId === null || transformId === 0)
+                this.$transformList.val('None');
+            else {
+                let transform = this.model.dataset.getTransformById(transformId);
+                if (transform ===undefined)
+                    this.$transformList.val('None');
+                else
+                    this.$transformList.val(transform.name);
+            }
+        });
+
+        this.model.dataset.on('transformsChanged', this._updateTransformList, this);
+        this.model.dataset.on('dataSetLoaded', this._updateTransformList, this);
 
         this.model.on('change:autoApply', event => {
             if (this.model.get('autoApply'))
                 tarp.hide('levels');
         });
+    },
+    _updateTransformList() {
+        if (this.attached === false)
+            return;
+
+        let transforms = this.model.dataset.get('transforms');
+        this.transformList.populate(transforms);
+
+        this.$transformList.empty();
+        this.$transformList.append('<option value="None">None</option>');
+        for (let transform of transforms)
+            this.$transformList.append('<option value="' + transform.name + '">' + transform.name + '</option>');
+
+        let transformId = this.model.get('transform');
+        if (transformId === null || transformId === 0)
+            this.$transformList.val('None');
+        else {
+            let transform = this.model.dataset.getTransformById(transformId);
+            if (transform ===undefined)
+                this.$transformList.val('None');
+            else
+                this.$transformList.val(transform.name);
+        }
     },
     _moveUp() {
         if (this.attached === false)
@@ -259,6 +348,7 @@ const DataVarWidget = Backbone.View.extend({
             this.model.get('dataType'),
             this.model.get('measureType'),
             this.model.get('levels'));
+        this._updateTransformList();
     }
 });
 
