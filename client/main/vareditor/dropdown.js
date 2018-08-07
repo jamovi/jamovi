@@ -150,4 +150,8 @@ const clicked = function() {
     return _dropdown._inTools;
 };
 
-module.exports = { init, show, hide, updatePosition, focusedOn, clicked };
+const isVisible = function() {
+    return _dropdown._shown;
+}
+
+module.exports = { init, show, hide, updatePosition, focusedOn, clicked, isVisible };

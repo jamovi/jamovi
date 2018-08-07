@@ -214,6 +214,10 @@ const toolbar = function(dataset) {
             }
         }
     };
+
+    this.focusedOn = function() {
+        return this.$formula;
+    };
 };
 
 
