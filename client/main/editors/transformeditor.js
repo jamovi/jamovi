@@ -384,7 +384,8 @@ const TransformEditor = function(dataset) {
         $formula.on('focus', (event) => {
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();
-            this.formulasetup.show($formula, '');
+            if (this.formulasetup.focusedOn() !== $formula)
+                this.formulasetup.show($formula, '');
             if (hasOp)
                 $opEdit.show();
         });
