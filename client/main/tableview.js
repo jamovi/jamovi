@@ -289,7 +289,7 @@ const TableView = SilkyView.extend({
             sel.colNo = visibleColumns - 1;
         }
 
-        this._setSelectedRange(sel, true);
+        this._setSelectedRange(sel, true, true);
     },
     _addResizeListeners($element) {
         let $resizers = $element.find('.jmv-column-header-resizer');
@@ -669,7 +669,7 @@ const TableView = SilkyView.extend({
                 this._beginEditing();
         }
     },
-    _moveCursor(direction, extend) {
+    _moveCursor(direction, extend, ignoreTabStart) {
 
         if (this.selection === null)
             return;
@@ -802,7 +802,7 @@ const TableView = SilkyView.extend({
                 break;
         }
 
-        this._setSelectedRange(range);
+        this._setSelectedRange(range, false, ignoreTabStart);
 
         if (scrollLeft || scrollRight) {
             let x = this._lefts[range.left];
@@ -842,10 +842,13 @@ const TableView = SilkyView.extend({
             left:  colNo,
             right: colNo });
     },
-    _setSelectedRange(range, silent) {
+    _setSelectedRange(range, silent, ignoreTabStart) {
 
         let rowNo = range.rowNo;
         let colNo = range.colNo;
+
+        if ( ! ignoreTabStart)
+            this._tabStart = { row: range.rowNo, col: range.colNo };
 
         if (this.selection !== null) {
 
@@ -1100,7 +1103,12 @@ const TableView = SilkyView.extend({
                 break;
             case 'Enter':
                 this._endEditing().then(() => {
-                    this._moveCursor('down');
+                    if (this._tabStart !== undefined)
+                        this._setSelection(this._tabStart.row, this._tabStart.col);
+                    if (event.shiftKey)
+                        this._moveCursor('up');
+                    else
+                        this._moveCursor('down');
                 }, () => {});
                 break;
             case 'Escape':
@@ -1109,9 +1117,9 @@ const TableView = SilkyView.extend({
             case 'Tab':
                 this._endEditing().then(() => {
                     if (event.shiftKey)
-                        this._moveCursor('left');
+                        this._moveCursor('left', false, true);
                     else
-                        this._moveCursor('right');
+                        this._moveCursor('right', false, true);
                 }, () => {});
                 event.preventDefault();
                 break;
@@ -1161,9 +1169,9 @@ const TableView = SilkyView.extend({
             break;
         case 'Tab':
             if (event.shiftKey)
-                this._moveCursor('left');
+                this._moveCursor('left', false, true);
             else
-                this._moveCursor('right');
+                this._moveCursor('right', false, true);
             event.preventDefault();
             break;
         case 'ArrowRight':
@@ -1188,8 +1196,14 @@ const TableView = SilkyView.extend({
                 }
             }
 
-            if (this.model.get('varEdited') === false)
-                this._moveCursor('down');
+            if (this.model.get('varEdited') === false) {
+                if (this._tabStart !== undefined)
+                    this._setSelection(this._tabStart.row, this._tabStart.col);
+                if (event.shiftKey)
+                    this._moveCursor('up');
+                else
+                    this._moveCursor('down');
+            }
             event.preventDefault();
             break;
         case 'Delete':
