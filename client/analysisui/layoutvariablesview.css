@@ -38,6 +38,10 @@
 }
 
 
+.silky-variable-type-img.silky-variable-type-id {
+    background-image: url('assets/variable-id.svg');
+}
+
 .silky-variable-type-img.silky-variable-type-continuous {
     background-image: url('assets/variable-continuous.svg');
 }

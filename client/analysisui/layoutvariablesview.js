@@ -90,6 +90,9 @@ const LayoutVariablesView = function(params) {
         let suggested = this.getPropertyValue("suggested");
         let permitted = this.getPropertyValue("permitted");
 
+        if (permitted.length === 0)
+            permitted = ['factor', 'numeric'];
+
         let suggestedCount = 0;
         let permittedCount = 0;
 
