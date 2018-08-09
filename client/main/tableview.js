@@ -289,7 +289,7 @@ const TableView = SilkyView.extend({
             sel.colNo = visibleColumns - 1;
         }
 
-        this._setSelectedRange(sel, true);
+        this._setSelectedRange(sel, true, true);
     },
     _addResizeListeners($element) {
         let $resizers = $element.find('.jmv-column-header-resizer');
@@ -802,10 +802,7 @@ const TableView = SilkyView.extend({
                 break;
         }
 
-        if ( ! ignoreTabStart)
-            this._tabStart = { row: range.rowNo, col: range.colNo };
-
-        this._setSelectedRange(range);
+        this._setSelectedRange(range, false, ignoreTabStart);
 
         if (scrollLeft || scrollRight) {
             let x = this._lefts[range.left];
@@ -845,10 +842,13 @@ const TableView = SilkyView.extend({
             left:  colNo,
             right: colNo });
     },
-    _setSelectedRange(range, silent) {
+    _setSelectedRange(range, silent, ignoreTabStart) {
 
         let rowNo = range.rowNo;
         let colNo = range.colNo;
+
+        if ( ! ignoreTabStart)
+            this._tabStart = { row: range.rowNo, col: range.colNo };
 
         if (this.selection !== null) {
 
