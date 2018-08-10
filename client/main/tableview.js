@@ -36,6 +36,7 @@ const TableView = SilkyView.extend({
         this.model.on('columnsVisible', event => this._columnsInserted(event));
         this.model.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
 
+        this._tabStart = { row: 0, col: 0 };
         this.viewport = null;
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
@@ -288,6 +289,8 @@ const TableView = SilkyView.extend({
         if (sel.colNo >= visibleColumns) {
             sel.colNo = visibleColumns - 1;
         }
+        if (this._tabStart.col >= visibleColumns)
+            this._tabStart.col = visibleColumns - 1;
 
         this._setSelectedRange(sel, true, true);
     },
@@ -833,6 +836,35 @@ const TableView = SilkyView.extend({
         }
 
     },
+    _updateScroll() {
+
+        let range = this.selection;
+
+        let x = this._lefts[range.left];
+        let width = this._lefts[range.right] + this._widths[range.right] - x;
+        let selRight = x + width;
+        let scrollX = this.$container.scrollLeft();
+        let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
+        if (selRight > containerRight)
+            this.$container.scrollLeft(scrollX + selRight - containerRight);
+        else if (x - this._rowHeaderWidth < scrollX)
+            this.$container.scrollLeft(x - this._rowHeaderWidth);
+
+
+        let nRows = range.bottom - range.top + 1;
+        let y = range.top * this._rowHeight;
+        let height = this._rowHeight * nRows;
+
+        let selBottom = y + height;
+        let scrollY = this.$container.scrollTop();
+        let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
+
+        if (selBottom > containerBottom)
+            this.$container.scrollTop(scrollY + selBottom - containerBottom);
+        else if (y < scrollY)
+            this.$container.scrollTop(y);
+
+    },
     _setSelection(rowNo, colNo) {
         return this._setSelectedRange({
             rowNo: rowNo,
@@ -1103,8 +1135,7 @@ const TableView = SilkyView.extend({
                 break;
             case 'Enter':
                 this._endEditing().then(() => {
-                    if (this._tabStart !== undefined)
-                        this._setSelection(this._tabStart.row, this._tabStart.col);
+                    this._setSelection(this._tabStart.row, this._tabStart.col);
                     if (event.shiftKey)
                         this._moveCursor('up');
                     else
@@ -1159,12 +1190,20 @@ const TableView = SilkyView.extend({
             }
         }
 
-        if (event.metaKey || event.ctrlKey || event.altKey)
+        if (event.altKey)
+            return;
+
+        if ((event.metaKey || event.ctrlKey) && ! (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown'))
             return;
 
         switch(event.key) {
         case 'ArrowLeft':
-            this._moveCursor('left', event.shiftKey);
+            if (event.metaKey || event.ctrlKey) {
+                this._setSelection(this.selection.rowNo, 0);
+                this._updateScroll();
+            }
+            else
+                this._moveCursor('left', event.shiftKey);
             event.preventDefault();
             break;
         case 'Tab':
@@ -1175,15 +1214,30 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         case 'ArrowRight':
-            this._moveCursor('right', event.shiftKey);
+            if (event.metaKey || event.ctrlKey) {
+                this._setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
+                this._updateScroll();
+            }
+            else
+                this._moveCursor('right', event.shiftKey);
             event.preventDefault();
             break;
         case 'ArrowUp':
-            this._moveCursor('up', event.shiftKey);
+            if (event.metaKey || event.ctrlKey) {
+                this._setSelection(0, this.selection.colNo);
+                this._updateScroll();
+            }
+            else
+                this._moveCursor('up', event.shiftKey);
             event.preventDefault();
             break;
         case 'ArrowDown':
-            this._moveCursor('down', event.shiftKey);
+            if (event.metaKey || event.ctrlKey) {
+                this._setSelection(this.model.attributes.rowCount-1, this.selection.colNo);
+                this._updateScroll();
+            }
+            else
+                this._moveCursor('down', event.shiftKey);
             event.preventDefault();
             break;
         case 'Enter':
@@ -1197,8 +1251,7 @@ const TableView = SilkyView.extend({
             }
 
             if (this.model.get('varEdited') === false) {
-                if (this._tabStart !== undefined)
-                    this._setSelection(this._tabStart.row, this._tabStart.col);
+                this._setSelection(this._tabStart.row, this._tabStart.col);
                 if (event.shiftKey)
                     this._moveCursor('up');
                 else
