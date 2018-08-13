@@ -485,9 +485,22 @@ const TableView = SilkyView.extend({
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
+        if (rowNo >= 0 && colNo >= 0)
+            this._draggingType = 'both';
+        else if (rowNo < 0 && colNo >= 0)
+            this._draggingType = 'columns';
+        else if (rowNo >= 0 && colNo < 0)
+            this._draggingType = 'rows';
+
         if (event.button === 2 || event.button === 0 && event.ctrlKey) {
             if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
                  colNo >= this.selection.left && colNo <= this.selection.right)
+                return Promise.resolve();
+            else if (rowNo === -1 && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
+                colNo >= this.selection.left && colNo <= this.selection.right)
+                return Promise.resolve();
+            else if (colNo === -1 && this.selection.left === 0 && this.selection.right === this.model.attributes.columnCount - 1 &&
+                rowNo >= this.selection.top && rowNo <= this.selection.bottom)
                 return Promise.resolve();
         }
 
@@ -516,6 +529,9 @@ const TableView = SilkyView.extend({
 
                 let left = colNo;
                 let right = colNo;
+                this._isDragging = true;
+                this._isClicking = true;
+                this._clickCoords = pos;
 
                 if (event.shiftKey) {
                     if (this.selection.colNo > colNo)
@@ -539,6 +555,9 @@ const TableView = SilkyView.extend({
 
                 let top = rowNo;
                 let bot = rowNo;
+                this._isDragging = true;
+                this._isClicking = true;
+                this._clickCoords = pos;
 
                 if (event.shiftKey) {
                     if (this.selection.rowNo > rowNo)
@@ -562,7 +581,7 @@ const TableView = SilkyView.extend({
         }, () => {});
     },
     _mouseUp(event) {
-        if (this._isClicking) {
+        if (this._isClicking && this._draggingType === 'both') {
             this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo);
         }
         else if (this._isDragging) {
@@ -579,12 +598,16 @@ const TableView = SilkyView.extend({
                     prom = this._mouseDown(event);
 
                 prom.then(() => {
-                    let colNo = this.selection === null ? 0 : this.selection.colNo;
-                    let column = this.model.getColumn(colNo, true);
-                    if (column.columnType === 'filter')
-                        ContextMenu.showFilterMenu(event.clientX, event.clientY);
-                    else
-                        ContextMenu.showVariableMenu(event.clientX, event.clientY);
+                    if (this._isClicking)
+                        this._mouseUp(event);
+                    else {
+                        let colNo = this.selection === null ? 0 : this.selection.colNo;
+                        let column = this.model.getColumn(colNo, true);
+                        if (column.columnType === 'filter')
+                            ContextMenu.showFilterMenu(event.clientX, event.clientY);
+                        else
+                            ContextMenu.showVariableMenu(event.clientX, event.clientY);
+                    }
                 }, 0);
 
             }
@@ -628,10 +651,20 @@ const TableView = SilkyView.extend({
 
         let pos = this._getPos(event.clientX, event.clientY);
 
-        if (pos.rowNo < 0 || pos.colNo < 0)
+        let dragRows = this._draggingType === 'both' || this._draggingType === 'rows';
+        let dragCols = this._draggingType === 'both' || this._draggingType === 'columns';
+
+        if ((dragRows && pos.rowNo < 0) || (dragCols && pos.colNo < 0))
             return;
-        if (this._lastPos && pos.rowNo === this._lastPos.rowNo && pos.colNo === this._lastPos.colNo)
-            return;
+
+        if (this._lastPos) {
+            if (dragRows && pos.rowNo === this._lastPos.rowNo && dragCols && pos.colNo === this._lastPos.colNo)
+                return;
+            else if (dragRows && pos.rowNo === this._lastPos.rowNo && dragCols === false)
+                return;
+            else if (dragCols && pos.colNo === this._lastPos.colNo && dragRows === false)
+                return;
+        }
 
         this._lastPos = pos;
 
@@ -644,12 +677,12 @@ const TableView = SilkyView.extend({
         let bottom = Math.max(rowNo, this._clickCoords.rowNo);
 
         let range = {
-            rowNo: this._clickCoords.rowNo,
-            colNo: this._clickCoords.colNo,
-            left: left,
-            right: right,
-            top: top,
-            bottom: bottom };
+            rowNo: dragRows ? this._clickCoords.rowNo : this.selection.rowNo,
+            colNo: dragCols ? this._clickCoords.colNo : this.selection.colNo,
+            left: dragCols ? left : this.selection.left,
+            right: dragCols ? right : this.selection.right,
+            top: dragRows ? top : this.selection.top,
+            bottom: dragRows ? bottom : this.selection.bottom };
 
         this._setSelectedRange(range);
     },
