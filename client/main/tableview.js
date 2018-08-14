@@ -91,7 +91,7 @@ const TableView = SilkyView.extend({
 
         this.$body.on('mousedown', event => this._mouseDown(event));
         this.$header.on('mousedown', event => this._mouseDown(event));
-        this.$el.on('mousemove', event => this._mouseMove(event));
+        $(document).on('mousemove', event => this._mouseMove(event));
         $(document).on('mouseup', event => this._mouseUp(event));
         this.$el.on('dblclick', event => this._dblClickHandler(event));
 
@@ -291,6 +291,8 @@ const TableView = SilkyView.extend({
         }
         if (this._tabStart.col >= visibleColumns)
             this._tabStart.col = visibleColumns - 1;
+        if (sel.colFocus >= visibleColumns)
+            sel.colFocus = visibleColumns - 1;
 
         this._setSelectedRange(sel, true, true);
     },
@@ -449,35 +451,38 @@ const TableView = SilkyView.extend({
     _getPos(x, y) {
 
         let rowNo, colNo, vx, vy;
+        let rowHeader = false;
+        let colHeader = false;
 
         let bounds = this.$el[0].getBoundingClientRect();
         let bodyBounds = this.$body[0].getBoundingClientRect();
 
-        vx = x - bounds.left;
-        vy = y - bounds.top;
+        if (y - bounds.top >= 0 && y - bounds.top < this._rowHeight) // on column header
+            colHeader = true;
+        vy = y - bodyBounds.top;
+        rowNo = Math.floor(vy / this._rowHeight);
+        rowNo = rowNo < 0 ? 0 : rowNo;
+        rowNo = rowNo > this.model.attributes.vRowCount - 1 ? this.model.attributes.vRowCount - 1 : rowNo;
 
-        if (vy < this._rowHeight) { // on column header
-            rowNo = -1;
-            vy = y - bodyBounds.top;
+        if (x - bounds.left >= 0 && x - bounds.left < this._rowHeaderWidth) // on row header
+            rowHeader = true;
+        vx = x - bodyBounds.left;
+        for (colNo = 0; colNo < this._lefts.length; colNo++) {
+            if (vx < this._lefts[colNo])
+                break;
         }
-        else {
-            vy = y - bodyBounds.top;
-            rowNo = Math.floor(vy / this._rowHeight);
-        }
+        colNo -= 1;
+        colNo = colNo < 0 ? 0 : colNo;
 
-        if (vx < this._rowHeaderWidth) { // on row header
-            colNo = -1;
-            vx = x - bodyBounds.left;
-        }
-        else {
-            vx = x - bodyBounds.left;
-            for (colNo = -1; colNo < this._lefts.length - 1; colNo++) {
-                if (vx < this._lefts[colNo+1])
-                    break;
-            }
-        }
+        let onHeader = 'none';
+        if (rowHeader && colHeader)
+            onHeader = 'both';
+        else if (rowHeader)
+            onHeader = 'rows';
+        else if (colHeader)
+            onHeader = 'columns';
 
-        return { rowNo: rowNo, colNo: colNo, x: vx, y: vy };
+        return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader  };
     },
     _mouseDown(event) {
 
@@ -485,12 +490,7 @@ const TableView = SilkyView.extend({
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
-        if (rowNo >= 0 && colNo >= 0)
-            this._draggingType = 'both';
-        else if (rowNo < 0 && colNo >= 0)
-            this._draggingType = 'columns';
-        else if (rowNo >= 0 && colNo < 0)
-            this._draggingType = 'rows';
+        this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
         if (event.button === 2 || event.button === 0 && event.ctrlKey) {
             if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
@@ -511,7 +511,7 @@ const TableView = SilkyView.extend({
 
         return this._endEditing().then(() => {
 
-            if (rowNo >= 0 && colNo >= 0) {
+            if (pos.onHeader === 'none') {
 
                 this._isDragging = true;
                 this._isClicking = true;
@@ -525,7 +525,7 @@ const TableView = SilkyView.extend({
                 }
 
             }
-            else if (rowNo < 0 && colNo >= 0) {
+            else if (pos.onHeader === 'columns') {
 
                 let left = colNo;
                 let right = colNo;
@@ -547,11 +547,13 @@ const TableView = SilkyView.extend({
                     left: left,
                     right: right,
                     top: 0,
-                    bottom: this.model.attributes.rowCount - 1 };
+                    bottom: this.model.attributes.rowCount - 1,
+                    colFocus: pos.colNo,
+                    rowFocus: pos.rowNo };
 
                 this._setSelectedRange(range);
             }
-            else if (rowNo >= 0 && colNo < 0) {
+            else if (pos.onHeader === 'rows') {
 
                 let top = rowNo;
                 let bot = rowNo;
@@ -573,7 +575,9 @@ const TableView = SilkyView.extend({
                     left: 0,
                     right: this.model.attributes.columnCount - 1,
                     top: top,
-                    bottom: bot };
+                    bottom: bot,
+                    colFocus: pos.colNo,
+                    rowFocus: pos.rowNo  };
 
                 this._setSelectedRange(range);
             }
@@ -651,11 +655,10 @@ const TableView = SilkyView.extend({
 
         let pos = this._getPos(event.clientX, event.clientY);
 
-        let dragRows = this._draggingType === 'both' || this._draggingType === 'rows';
-        let dragCols = this._draggingType === 'both' || this._draggingType === 'columns';
+        let dragBoth = this._draggingType === 'both';
+        let dragRows = dragBoth || this._draggingType === 'rows';
+        let dragCols = dragBoth || this._draggingType === 'columns';
 
-        if ((dragRows && pos.rowNo < 0) || (dragCols && pos.colNo < 0))
-            return;
 
         if (this._lastPos) {
             if (dragRows && pos.rowNo === this._lastPos.rowNo && dragCols && pos.colNo === this._lastPos.colNo)
@@ -682,7 +685,9 @@ const TableView = SilkyView.extend({
             left: dragCols ? left : this.selection.left,
             right: dragCols ? right : this.selection.right,
             top: dragRows ? top : this.selection.top,
-            bottom: dragRows ? bottom : this.selection.bottom };
+            bottom: dragRows ? bottom : this.selection.bottom,
+            colFocus: dragCols ? pos.colNo : this.selection.colFocus,
+            rowFocus: dragRows ? pos.rowNo : this.selection.rowFocus };
 
         this._setSelectedRange(range);
     },
@@ -724,9 +729,11 @@ const TableView = SilkyView.extend({
                 if (extend) {
                     if (range.right > range.colNo) {
                         range.right--;
+                        range.colFocus = range.right;
                     }
                     else if (range.left > 0) {
                         range.left--;
+                        range.colFocus = range.left;
                         scrollLeft = true;
                     }
                     else {
@@ -741,21 +748,25 @@ const TableView = SilkyView.extend({
                     else {
                         colNo = 0;
                     }
-                    range.left  = colNo;
-                    range.right = colNo;
-                    range.colNo = colNo;
-                    range.rowNo = rowNo;
-                    range.top   = rowNo;
+                    range.top    = rowNo;
                     range.bottom = rowNo;
+                    range.rowNo  = rowNo;
+                    range.rowFocus = rowNo;
+                    range.colNo  = colNo;
+                    range.left   = colNo;
+                    range.right  = colNo;
+                    range.colFocus = colNo;
                 }
                 break;
             case 'right':
                 if (extend) {
                     if (range.left < range.colNo) {
                         range.left++;
+                        range.colFocus = range.left;
                     }
                     else if (range.right < this.model.attributes.vColumnCount - 1) {
                         range.right++;
+                        range.colFocus = range.right;
                         scrollRight = true;
                     }
                     else {
@@ -770,21 +781,25 @@ const TableView = SilkyView.extend({
                     else {
                         colNo = this.model.attributes.vColumnCount - 1;
                     }
-                    range.left  = colNo;
-                    range.right = colNo;
-                    range.colNo = colNo;
-                    range.rowNo = rowNo;
-                    range.top   = rowNo;
+                    range.top    = rowNo;
                     range.bottom = rowNo;
+                    range.rowNo  = rowNo;
+                    range.rowFocus = rowNo;
+                    range.colNo  = colNo;
+                    range.left   = colNo;
+                    range.right  = colNo;
+                    range.colFocus = colNo;
                 }
                 break;
             case 'up':
                 if (extend) {
                     if (range.bottom > range.rowNo) {
                         range.bottom--;
+                        range.rowFocus = range.bottom;
                     }
                     else if (range.top > 0) {
                         range.top--;
+                        range.rowFocus = range.top;
                         scrollUp = true;
                     }
                     else {
@@ -802,18 +817,22 @@ const TableView = SilkyView.extend({
                     range.top    = rowNo;
                     range.bottom = rowNo;
                     range.rowNo  = rowNo;
+                    range.rowFocus = rowNo;
                     range.colNo  = colNo;
                     range.left   = colNo;
                     range.right  = colNo;
+                    range.colFocus = colNo;
                 }
                 break;
             case 'down':
                 if (extend) {
                     if (range.top < range.rowNo) {
                         range.top++;
+                        range.rowFocus = range.top;
                     }
                     else if (range.bottom < this.model.attributes.vRowCount - 1) {
                         range.bottom++;
+                        range.rowFocus = range.bottom;
                         scrollDown = true;
                     }
                     else {
@@ -831,47 +850,25 @@ const TableView = SilkyView.extend({
                     range.top    = rowNo;
                     range.bottom = rowNo;
                     range.rowNo  = rowNo;
+                    range.rowFocus = rowNo;
                     range.colNo  = colNo;
                     range.left   = colNo;
                     range.right  = colNo;
+                    range.colFocus = colNo;
                 }
                 break;
         }
 
         this._setSelectedRange(range, false, ignoreTabStart);
-
-        if (scrollLeft || scrollRight) {
-            let x = this._lefts[range.left];
-            let width = this._lefts[range.right] + this._widths[range.right] - x;
-            let selRight = x + width;
-            let scrollX = this.$container.scrollLeft();
-            let containerRight = scrollX + (this.$container.width() - TableView.getScrollbarWidth());
-            if (scrollRight && selRight > containerRight)
-                this.$container.scrollLeft(scrollX + selRight - containerRight);
-            else if (scrollLeft && x - this._rowHeaderWidth < scrollX)
-                this.$container.scrollLeft(x - this._rowHeaderWidth);
-        }
-
-        if (scrollUp || scrollDown) {
-
-            let nRows = range.bottom - range.top + 1;
-            let y = range.top * this._rowHeight;
-            let height = this._rowHeight * nRows;
-
-            let selBottom = y + height;
-            let scrollY = this.$container.scrollTop();
-            let containerBottom = scrollY + (this.$container.height() - TableView.getScrollbarWidth());
-
-            if (scrollDown && selBottom > containerBottom)
-                this.$container.scrollTop(scrollY + selBottom - containerBottom);
-            else if (scrollUp && y < scrollY)
-                this.$container.scrollTop(y);
-        }
-
     },
-    _updateScroll() {
+    _scrollToPosition(pos) {
+        let range = { left: pos.colNo, right: pos.colNo, colNo: pos.colNo, top: pos.rowNo, bottom: pos.rowNo, rowNo: pos.rowNo };
 
-        let range = this.selection;
+        this._updateScroll(range);
+    },
+    _updateScroll(targetRange) {
+
+        let range = targetRange === undefined ? this.selection : targetRange;
 
         let x = this._lefts[range.left];
         let width = this._lefts[range.right] + this._widths[range.right] - x;
@@ -905,7 +902,9 @@ const TableView = SilkyView.extend({
             top:   rowNo,
             bottom: rowNo,
             left:  colNo,
-            right: colNo });
+            right: colNo,
+            colFocus: colNo,
+            rowFocus: rowNo });
     },
     _setSelectedRange(range, silent, ignoreTabStart) {
 
@@ -968,6 +967,9 @@ const TableView = SilkyView.extend({
         this.$selection.css({ left: x, top: y, width: width, height: height});
 
         this._abortEditing();
+
+        if (this.selection.rowFocus !== undefined && this.selection.colFocus !== undefined)
+            this._scrollToPosition({ rowNo: this.selection.rowFocus, colNo: this.selection.colFocus });
 
         // slide row/column highlight *lines* into position
         this.$selectionRowHighlight.css({ top: y, width: this._rowHeaderWidth, height: height });
@@ -1233,7 +1235,6 @@ const TableView = SilkyView.extend({
         case 'ArrowLeft':
             if (event.metaKey || event.ctrlKey) {
                 this._setSelection(this.selection.rowNo, 0);
-                this._updateScroll();
             }
             else
                 this._moveCursor('left', event.shiftKey);
@@ -1249,7 +1250,6 @@ const TableView = SilkyView.extend({
         case 'ArrowRight':
             if (event.metaKey || event.ctrlKey) {
                 this._setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
-                this._updateScroll();
             }
             else
                 this._moveCursor('right', event.shiftKey);
@@ -1258,7 +1258,6 @@ const TableView = SilkyView.extend({
         case 'ArrowUp':
             if (event.metaKey || event.ctrlKey) {
                 this._setSelection(0, this.selection.colNo);
-                this._updateScroll();
             }
             else
                 this._moveCursor('up', event.shiftKey);
@@ -1267,7 +1266,6 @@ const TableView = SilkyView.extend({
         case 'ArrowDown':
             if (event.metaKey || event.ctrlKey) {
                 this._setSelection(this.model.attributes.rowCount-1, this.selection.colNo);
-                this._updateScroll();
             }
             else
                 this._moveCursor('down', event.shiftKey);
@@ -1331,6 +1329,8 @@ const TableView = SilkyView.extend({
         let rvColumnCount = this.model.visibleRealColumnCount();
         if (newSelection.right >= rvColumnCount)
             newSelection.right = rvColumnCount - 1;
+        if (newSelection.colFocus >= rvColumnCount)
+            newSelection.colFocus = rvColumnCount - 1;
 
         return this._setSelectedRange(newSelection).then(() => {
 
@@ -1383,6 +1383,8 @@ const TableView = SilkyView.extend({
 
         if (newSelection.bottom >= this.model.attributes.rowCount)
             newSelection.bottom = this.model.attributes.rowCount - 1;
+        if (newSelection.rowFocus >= this.model.attributes.rowCount)
+            newSelection.rowFocus = this.model.attributes.rowCount - 1;
 
         return this._setSelectedRange(newSelection).then(() => {
 
@@ -1502,6 +1504,7 @@ const TableView = SilkyView.extend({
                         this.selection.colNo++;
                         this.selection.left++;
                         this.selection.right++;
+                        this.selection.colFocus++;
                         this._setSelectedRange(selection, true);
                     }
                 }
@@ -1756,6 +1759,8 @@ const TableView = SilkyView.extend({
 
                 range.rowNo = range.top;
                 range.colNo = range.left;
+                range.colFocus = range.left;
+                range.rowFocus = range.top;
                 this._setSelectedRange(range);
 
                 this.$selection.addClass('copying');
