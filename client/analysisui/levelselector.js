@@ -59,6 +59,12 @@ const LevelSelector = function(params) {
         let promise = this.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
         promise.then(rData => {
 
+            if (this.isDisposed)
+                return;
+
+            if (variable !== this.getPropertyValue('variable'))
+                return;
+
             if (rData.columnFound === false)
                this.$el.addClass('unavaliable_variable');
            else

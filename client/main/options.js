@@ -469,7 +469,7 @@ const Options = function(def=[]) {
     };
 
     this.setValues = function(values, initializeOnly) {
-
+        let changed = false;
         for (let name in values) {
             let value = values[name];
             if (value === undefined) {
@@ -484,16 +484,22 @@ const Options = function(def=[]) {
                          delete this._options[name];
                     else
                         this._options[name].setValue(value, initializeOnly);
+                    changed = true;
                 }
                 else {
-                    if (value !== null)
+                    if (value !== null) {
                         this._options[name] = new OptionTypes.Option({}, value, true);
+                        changed = true;
+                    }
                 }
             }
             else if (name in this._options) {
                 this._options[name].setValue(value, initializeOnly);
+                changed = true;
             }
         }
+
+        return changed;
     };
 
     this.getValues = function() {
