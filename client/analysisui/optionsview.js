@@ -364,6 +364,9 @@ const OptionsView = function(uiModel) {
 
         for (let ctrlInfo of this._allCtrls) {
             let ctrl = ctrlInfo.ctrl;
+            if (ctrl.isDisposed)
+                continue;
+                
             if (ctrl.update)
                 ctrl.update();
         }

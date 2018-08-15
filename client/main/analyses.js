@@ -74,11 +74,12 @@ Analysis.prototype.setResults = function(results, options, incAsText, syntax) {
 };
 
 Analysis.prototype.setOptions = function(values) {
-    this.options.setValues(values);
-    this.enabled = true;
-    this.revision++;
-    if (this.deleted === false && this._parent !== null)
-        this._parent._notifyOptionsChanged(this);
+    if (this.options.setValues(values)) {
+        this.enabled = true;
+        this.revision++;
+        if (this.deleted === false && this._parent !== null)
+            this._parent._notifyOptionsChanged(this);
+    }
 };
 
 Analysis.prototype.renameColumns = function(columnRenames) {
