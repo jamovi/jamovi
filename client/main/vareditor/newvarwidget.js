@@ -30,7 +30,7 @@ const NewVarWidget = Backbone.View.extend({
         this.$recoded = $('<div class="button"></div>').appendTo(this.$container);
         this.$iconRecoded = $('<div class="icon"</div>').appendTo(this.$recoded);
         this.$iconRecoded.css('background-image', 'url(assets/variable-recoded.svg)');
-        // this.$recoded.append($('<div class="text">New recoded variable</div>'));
+        this.$recoded.append($('<div class="text">New recoded variable</div>'));
 
         this.$data.on('click', (event) => {
             this.model.set('columnType', 'data');

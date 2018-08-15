@@ -1,4 +1,5 @@
 
+from .transform import Transform
 from .column import Column
 from .analyses import Analyses
 from .utils import NullLog
@@ -20,7 +21,9 @@ class InstanceModel:
         self._embedded_name = ''
 
         self._columns = [ ]
+        self._transforms = [ ]
         self._next_id = 0
+        self._transform_next_id = 1  # an id of zero is unasigned... zero is reserved for 'no transform'
 
         self._log = NullLog()
 
@@ -49,19 +52,77 @@ class InstanceModel:
         else:
             raise KeyError('No such column: ' + str(id))
 
-    def append_column(self, name, import_name=None, id=-1):
+    def get_transform_by_id(self, id):
+        for transform in self.transforms:
+            if transform.id == id:
+                return transform
+        else:
+            raise KeyError('No such transform: ' + str(id))
 
+    def remove_transform(self, id):
+        i = 0
+        while i < len(self._transforms):
+            transform = self._transforms[i]
+            if transform.id == id:
+                del self._transforms[i]
+            else:
+                i += 1
+
+    def append_transform(self, name, id=0):
+        use_id = self._transform_next_id
+        if id != 0:
+            if id < self._transform_next_id:
+                for existing_transform in self.transforms:
+                    if existing_transform.id == id:
+                        raise KeyError('Transform id already exists: ' + str(id))
+            elif id > self._transform_next_id:
+                self._transform_next_id = id
+            use_id = id
+
+        new_transform = Transform()
+        new_transform.id = use_id
+        self.set_transform_name(new_transform, name)
+
+        if use_id == self._transform_next_id:
+            self._transform_next_id += 1
+        self._transforms.append(new_transform)
+
+        return new_transform
+
+    def set_transform_name(self, transform, name):
+        if name == '':
+            name = 'Transform ' + str(len(self._transforms) + 1)
+        checked_name = name
+        i = 2
+        while self.check_for_transform_name(checked_name, transform):
+            checked_name = name + ' (' + str(i) + ')'
+            i += 1
+        transform.name = checked_name
+
+    def check_for_transform_name(self, name, exclude_transform):
+        for existing_transform in self.transforms:
+            if name == existing_transform.name and existing_transform is not exclude_transform:
+                return True
+
+        return False
+
+    def append_column(self, name, import_name=None, id=-1):
+        use_id = self._next_id
         if id != -1:
             if id < self._next_id:
                 for existing_column in self:
                     if existing_column.id == id:
                         raise KeyError('Column id already exists: ' + str(id))
-            self._next_id = id
+            elif id > self._next_id:
+                self._next_id = id
+            use_id = id
 
         column = self._dataset.append_column(name, import_name)
         column.column_type = ColumnType.NONE
-        column.id = self._next_id
-        self._next_id += 1
+        column.id = use_id
+
+        if use_id == self._next_id:
+            self._next_id += 1
 
         new_column = Column(self, column)
         new_column.index = self.total_column_count
@@ -146,6 +207,10 @@ class InstanceModel:
             return self._dataset.is_row_filtered(index)
         else:
             return False
+
+    @property
+    def transforms(self):
+        return self._transforms
 
     @property
     def title(self):

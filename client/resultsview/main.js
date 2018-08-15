@@ -44,6 +44,10 @@ class Main {  // this is constructed at the bottom
         // the location of the script should be inside the body
         // so we don't need document.ready()
         this.$body = $('body');
+
+        $(document).mousedown(this, (event) => this._mouseDown(event));
+        $(document).mouseup(this, (event) => this._mouseUp(event));
+        $(document).mousemove(this, (event) => this._mouseMove(event));
     }
 
     _reallyNotifyResize() {
@@ -155,6 +159,51 @@ class Main {  // this is constructed at the bottom
                     height: height + 2 * padTB,
                     opacity: 1 });
                 break;
+        }
+    }
+
+    _mouseUp(event) {
+        let data = {
+            eventName: "mouseup",
+            which: event.which,
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
+
+        if (this.mainWindow) {
+            this.mainWindow.postMessage({
+                type : 'mouseEvent',
+                data : data}, '*');
+        }
+    }
+
+    _mouseMove(event) {
+        let data = {
+            eventName: "mousemove",
+            which: event.which,
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
+
+        if (this.mainWindow) {
+            this.mainWindow.postMessage({
+                type : 'mouseEvent',
+                data : data}, '*');
+        }
+    }
+
+    _mouseDown(event) {
+        let data = {
+            eventName: "mousedown",
+            which: event.which,
+            pageX: event.pageX,
+            pageY: event.pageY
+        };
+
+        if (this.mainWindow) {
+            this.mainWindow.postMessage({
+                type : 'mouseEvent',
+                data : data}, '*');
         }
     }
 }

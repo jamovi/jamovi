@@ -403,6 +403,23 @@ message DataSetSchema {
         bool active = 17;
         int32 filterNo = 18;
         bool trimLevels = 19;
+        int32 transform = 20;
+    }
+    message TransformSchema {
+
+        enum Action {
+            CREATE = 0;
+            UPDATE = 1;
+            REMOVE = 2;
+        }
+
+        int32 id = 1;
+        string name = 2;
+        string description = 3;
+        repeated string formula = 4;
+        repeated string formulaMessage = 5;
+        Action action = 6;
+
     }
     repeated ColumnSchema columns = 1;
 
@@ -411,6 +428,8 @@ message DataSetSchema {
     uint32 vRowCount = 7;
     uint32 vColumnCount = 8;
     uint32 tColumnCount = 9;
+
+    repeated TransformSchema transforms = 10;
 }
 
 enum GetSet {

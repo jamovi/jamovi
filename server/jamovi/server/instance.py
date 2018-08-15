@@ -579,6 +579,10 @@ class Instance:
                 column_schema = response.schema.columns.add()
                 self._populate_column_schema(column, column_schema)
 
+            for transform in self._data.transforms:
+                transform_schema = response.schema.transforms.add()
+                self._populate_transform_schema(transform, transform_schema)
+
         for analysis in self._data.analyses:
             if analysis.has_results:
                 analysis_pb = response.analyses.add()
@@ -708,7 +712,6 @@ class Instance:
         self._populate_schema(request, response)
 
     def _on_dataset_ins_cols(self, request, response):
-
         filter_inserted = False
         to_calc = set()
 
@@ -743,6 +746,7 @@ class Instance:
                 column.active = column_pb.active
                 column.filter_no = column_pb.filterNo
                 column.trim_levels = column_pb.trimLevels
+                column.transform = column_pb.transform
 
                 if column.column_type is ColumnType.FILTER:
                     filter_inserted = True
@@ -825,132 +829,164 @@ class Instance:
                 self._populate_column_schema(column, column_schema)
 
     def _apply_schema(self, request, response):
+        trans_changed = set()
+        for transform_pb in request.schema.transforms:
+            if transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE'):
+                self._data.remove_transform(transform_pb.id)
+                for column_pb in request.schema.columns:  # check for collisions with an existing request
+                    if column_pb.transform == transform_pb.id:
+                        column_pb.transform = 0
+
+                for column in self._data:  # create requests to modify columns that rely on transform
+                    if column.transform == transform_pb.id:
+                        new_request = True
+                        for column_pb in request.schema.columns:
+                            if column_pb.id == column.id:
+                                new_request = False
+                                break
+                        if new_request:
+                            column_pb = request.schema.columns.add()
+                            self._populate_column_schema(column, column_pb)
+                            column_pb.transform = 0
+
+            else:
+                transform = None
+                if transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('CREATE'):
+                    transform = self._data.append_transform(transform_pb.name, transform_pb.id)
+                elif transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE'):
+                    transform = self._data.get_transform_by_id(transform_pb.id)
+                    self._data.set_transform_name(transform, transform_pb.name)
+
+                transform.formula = list(transform_pb.formula)
+                transform.description = transform_pb.description
+                trans_changed.add(transform)
 
         n_cols_before = self._data.total_column_count
-
-        min_index = self._data.total_column_count
-
-        for column_schema in request.schema.columns:
-            column = self._data.get_column_by_id(column_schema.id)
-            if column.index < min_index:
-                min_index = column.index
-
-        cols_changed = set()
-        recalc = set()
-        reparse = set()
         filter_changed = False
+        cols_changed = set()
 
-        # 'realise' any virtual columns to the left of the edit
-        for i in range(self._data.column_count, min_index):
-            column = self._data[i]
-            column.realise()
-            cols_changed.add(column)
+        if len(request.schema.columns) > 0:
+            min_index = self._data.total_column_count
+            for column_schema in request.schema.columns:
+                column = self._data.get_column_by_id(column_schema.id)
+                if column.index < min_index:
+                    min_index = column.index
 
-        for column_pb in request.schema.columns:
-            column = self._data.get_column_by_id(column_pb.id)
-            old_name = column.name
-            old_type = column.column_type
-            old_d_type = column.data_type
-            old_m_type = column.measure_type
-            old_formula = column.formula
-            old_active = column.active
-            old_type = column.column_type
-            old_formula = column.formula
-            old_active = column.active
-            old_filter_no = column.filter_no
-            old_levels = column.levels
-            old_trim = column.trim_levels
+            recalc = set()
+            reparse = set()
 
-            levels = None
-            if column_pb.hasLevels:
-                levels = [ ]
-                for level in column_pb.levels:
-                    levels.append((
-                        level.value,
-                        level.label,
-                        level.importValue))
+            # 'realise' any virtual columns to the left of the edit
+            for i in range(self._data.column_count, min_index):
+                column = self._data[i]
+                column.realise()
+                cols_changed.add(column)
 
-            if column.column_type is ColumnType.NONE:
+            for column_pb in request.schema.columns:
+                column = self._data.get_column_by_id(column_pb.id)
+                old_name = column.name
+                old_type = column.column_type
+                old_d_type = column.data_type
+                old_m_type = column.measure_type
+                old_formula = column.formula
+                old_active = column.active
+                old_type = column.column_type
+                old_filter_no = column.filter_no
+                old_levels = column.levels
+                old_trim = column.trim_levels
+                old_transform = column.transform
+
+                levels = None
+                if column_pb.hasLevels:
+                    levels = [ ]
+                    for level in column_pb.levels:
+                        levels.append((
+                            level.value,
+                            level.label,
+                            level.importValue))
+
+                if column.column_type is ColumnType.NONE:
+                    column.column_type = ColumnType(column_pb.columnType)
+
+                if column.column_type is ColumnType.DATA:
+                    column.change(
+                        data_type=DataType(column_pb.dataType),
+                        measure_type=MeasureType(column_pb.measureType),
+                        levels=levels)
+
+                if column_pb.name != '':
+                    column.name = column_pb.name
+
                 column.column_type = ColumnType(column_pb.columnType)
 
-            if column.column_type is ColumnType.DATA:
-                column.change(
-                    data_type=DataType(column_pb.dataType),
-                    measure_type=MeasureType(column_pb.measureType),
-                    levels=levels)
+                column.formula = column_pb.formula
+                column.auto_measure = column_pb.autoMeasure
+                column.hidden = column_pb.hidden
+                column.active = column_pb.active
+                column.filter_no = column_pb.filterNo
+                column.trim_levels = column_pb.trimLevels
+                column.description = column_pb.description
+                column.transform = column_pb.transform
 
-            if column_pb.name != '':
-                column.name = column_pb.name
+                cols_changed.add(column)
 
-            column.column_type = ColumnType(column_pb.columnType)
+                if (column.name == old_name and
+                        column.column_type == old_type and
+                        column.data_type == old_d_type and
+                        column.measure_type == old_m_type and
+                        column.formula == old_formula and
+                        column.filter_no == old_filter_no and
+                        column.levels == old_levels and
+                        column.active == old_active and
+                        column.trim_levels == old_trim and
+                        column.transform == old_transform):
+                    # if these things haven't changed, no need
+                    # to trigger recalcs
+                    continue
 
-            column.formula = column_pb.formula
-            column.auto_measure = column_pb.autoMeasure
-            column.hidden = column_pb.hidden
-            column.active = column_pb.active
-            column.filter_no = column_pb.filterNo
-            column.trim_levels = column_pb.trimLevels
-            column.description = column_pb.description
+                recalc.add(column)
 
-            cols_changed.add(column)
+                if column.column_type is ColumnType.FILTER:
+                    if column.formula != old_formula:
+                        filter_changed = True
+                    elif column.active != old_active:
+                        filter_changed = True
 
-            if (column.name == old_name and
-                    column.column_type == old_type and
-                    column.data_type == old_d_type and
-                    column.measure_type == old_m_type and
-                    column.formula == old_formula and
-                    column.filter_no == old_filter_no and
-                    column.levels == old_levels and
-                    column.active == old_active and
-                    column.trim_levels == old_trim):
-                # if these things haven't changed, no need
-                # to trigger recalcs
-                continue
+                dependents = column.dependents
 
-            recalc.add(column)
+                for dep in dependents:
+                    # we have to reparse dependent filters in case the formula
+                    # has changed to include a 'V' or column function
+                    if dep.is_filter:
+                        filter_changed = True
+                        reparse.add(dep)
 
-            if column.column_type is ColumnType.FILTER:
-                if column.formula != old_formula:
-                    filter_changed = True
-                elif column.active != old_active:
-                    filter_changed = True
+                cols_changed.update(dependents)
+                recalc.update(dependents)
 
-            dependents = column.dependents
+                if old_name != column.name:     # if a name has changed, then
+                    reparse.update(dependents)  # dep columns need to be reparsed
+                elif old_d_type != column.data_type:
+                    reparse.update(dependents)
+                elif old_m_type != column.measure_type:
+                    reparse.update(dependents)
 
-            for dep in dependents:
-                # we have to reparse dependent filters in case the formula
-                # has changed to include a 'V' or column function
-                if dep.is_filter:
-                    filter_changed = True
-                    reparse.add(dep)
+            if filter_changed:
+                # reparse filters, recalc all
+                for column in self._data:
+                    if column.is_filter:
+                        reparse.add(column)
+                    else:
+                        break
+                recalc = self._data
 
-            cols_changed.update(dependents)
-            recalc.update(dependents)
+            reparse = sorted(reparse, key=lambda x: x.index)
+            for column in reparse:
+                column.parse_formula()
 
-            if old_name != column.name:     # if a name has changed, then
-                reparse.update(dependents)  # dep columns need to be reparsed
-            elif old_d_type != column.data_type:
-                reparse.update(dependents)
-            elif old_m_type != column.measure_type:
-                reparse.update(dependents)
-
-        if filter_changed:
-            # reparse filters, recalc all
-            for column in self._data:
-                if column.is_filter:
-                    reparse.add(column)
-                else:
-                    break
-            recalc = self._data
-
-        reparse = sorted(reparse, key=lambda x: x.index)
-        for column in reparse:
-            column.parse_formula()
-
-        for column in recalc:
-            column.needs_recalc = True
-        for column in recalc:
-            column.recalc()
+            for column in recalc:
+                column.needs_recalc = True
+            for column in recalc:
+                column.recalc()
 
         self._data.is_edited = True
 
@@ -972,6 +1008,10 @@ class Instance:
             for column in cols_changed:
                 column_pb = response.schema.columns.add()
                 self._populate_column_schema(column, column_pb)
+
+            for transform in trans_changed:
+                transform_pb = response.schema.transforms.add()
+                self._populate_transform_schema(transform, transform_pb)
 
     def _parse_cells(self, request):
 
@@ -1396,6 +1436,9 @@ class Instance:
         for column in self._data:
             column_schema = response.schema.columns.add()
             self._populate_column_schema(column, column_schema)
+        for transform in self._data.transforms:
+            transform_schema = response.schema.transforms.add()
+            self._populate_transform_schema(transform, transform_schema)
 
     def _populate_schema_info(self, request, response):
         response.incSchema = True
@@ -1404,6 +1447,15 @@ class Instance:
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.visible_column_count
         response.schema.tColumnCount = self._data.total_column_count
+
+    def _populate_transform_schema(self, transform, transform_schema):
+        transform_schema.name = transform.name
+        transform_schema.id = transform.id
+        for formula in transform.formula:
+            transform_schema.formula.append(formula)
+        for formula_msg in transform.formula_message:
+            transform_schema.formulaMessage.append(formula_msg)
+        transform_schema.description = transform.description
 
     def _populate_column_schema(self, column, column_schema):
         column_schema.name = column.name
@@ -1429,6 +1481,7 @@ class Instance:
         column_schema.active = column.active
         column_schema.filterNo = column.filter_no
         column_schema.trimLevels = column.trim_levels
+        column_schema.transform = column.transform
 
         column_schema.hasLevels = True
 
