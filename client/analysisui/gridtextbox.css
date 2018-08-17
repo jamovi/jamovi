@@ -1,16 +1,18 @@
-/*textbox sizing*/
-.silky-option-text-input.silky-option-short-text {
+
+.silky-option-text-input.silky-option-small-text {
+    width: 25px;
+}
+
+.silky-option-text-input.silky-option-normal-text {
     width: 50px;
 }
 
-/*textbox sizing*/
-.silky-option-text-input.silky-option-Medium-text {
+.silky-option-text-input.silky-option-large-text {
     width: 100px;
 }
 
-/*textbox sizing*/
-.silky-option-text-input.silky-option-long-text {
-    width: 150px;
+.silky-option-text-input.silky-option-largest-text {
+    width: 200px;
 }
 
 .silky-option-text-input {

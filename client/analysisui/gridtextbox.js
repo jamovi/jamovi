@@ -18,6 +18,7 @@ const GridTextbox = function(params) {
     this.registerSimpleProperty('inputPattern', null);
     this.registerSimpleProperty('borderless', false);
     this.registerSimpleProperty('alignText', 'left', new EnumPropertyFilter(['left', 'center', 'right'], 'left'));
+    this.registerSimpleProperty('width', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'largest'], 'normal'));
     this.registerSimpleProperty('suggestedValues', null);
 
 
@@ -80,7 +81,7 @@ const GridTextbox = function(params) {
 
         this.$input = $(t);
         if (this.getPropertyValue('stretchFactor') === 0)
-            this.$input.addClass('silky-option-short-text');
+            this.$input.addClass('silky-option-' + this.getPropertyValue('width') + '-text');
         if (this.getPropertyValue('borderless'))
             this.$input.addClass('frameless-textbox');
         if (this.getPropertyValue('alignText') === 'center')
