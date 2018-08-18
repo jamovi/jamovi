@@ -493,13 +493,13 @@ const TableView = SilkyView.extend({
         this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
         if (event.button === 2 || event.button === 0 && event.ctrlKey) {
-            if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
+            if (pos.onHeader === 'none' && rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
                  colNo >= this.selection.left && colNo <= this.selection.right)
                 return Promise.resolve();
-            else if (rowNo === -1 && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
+            else if (pos.onHeader === 'columns' && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
                 colNo >= this.selection.left && colNo <= this.selection.right)
                 return Promise.resolve();
-            else if (colNo === -1 && this.selection.left === 0 && this.selection.right === this.model.attributes.columnCount - 1 &&
+            else if (pos.onHeader === 'rows' && this.selection.left === 0 && this.selection.right === this.model.attributes.columnCount - 1 &&
                 rowNo >= this.selection.top && rowNo <= this.selection.bottom)
                 return Promise.resolve();
         }
@@ -541,7 +541,7 @@ const TableView = SilkyView.extend({
                     colNo = this.selection.colNo;
                 }
 
-                let range = {
+                this._clickRange = {
                     rowNo: this.selection.rowNo,
                     colNo: colNo,
                     left: left,
@@ -550,8 +550,6 @@ const TableView = SilkyView.extend({
                     bottom: this.model.attributes.rowCount - 1,
                     colFocus: pos.colNo,
                     rowFocus: pos.rowNo };
-
-                this._setSelectedRange(range);
             }
             else if (pos.onHeader === 'rows') {
 
@@ -569,7 +567,7 @@ const TableView = SilkyView.extend({
                     rowNo = this.selection.rowNo;
                 }
 
-                let range = {
+                this._clickRange = {
                     rowNo: rowNo,
                     colNo: this.selection.colNo,
                     left: 0,
@@ -578,8 +576,6 @@ const TableView = SilkyView.extend({
                     bottom: bot,
                     colFocus: pos.colNo,
                     rowFocus: pos.rowNo  };
-
-                this._setSelectedRange(range);
             }
 
         }, () => {});
@@ -587,6 +583,9 @@ const TableView = SilkyView.extend({
     _mouseUp(event) {
         if (this._isClicking && this._draggingType === 'both') {
             this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo);
+        }
+        else if (this._isClicking && (this._draggingType === 'rows' || this._draggingType === 'columns')) {
+            this._setSelectedRange(this._clickRange);
         }
         else if (this._isDragging) {
 
@@ -597,23 +596,29 @@ const TableView = SilkyView.extend({
             let $element = $(element);
             let $header = $element.closest('.jmv-column-header');
             if ($header.length > 0) {
-                let prom = Promise.resolve();
-                if (ContextMenu.isVisible)
-                    prom = this._mouseDown(event);
-
-                prom.then(() => {
-                    if (this._isClicking)
-                        this._mouseUp(event);
-                    else {
-                        let colNo = this.selection === null ? 0 : this.selection.colNo;
-                        let column = this.model.getColumn(colNo, true);
-                        if (column.columnType === 'filter')
-                            ContextMenu.showFilterMenu(event.clientX, event.clientY);
-                        else
-                            ContextMenu.showVariableMenu(event.clientX, event.clientY);
-                    }
-                }, 0);
-
+                if (this._isClicking === false) {
+                    this._mouseDown(event).then(() => {
+                        if (this._isClicking)
+                            this._mouseUp(event);
+                        else {
+                            let colNo = this.selection === null ? 0 : this.selection.colNo;
+                            let column = this.model.getColumn(colNo, true);
+                            if (column.columnType === 'filter')
+                                ContextMenu.showFilterMenu(event.clientX, event.clientY);
+                            else
+                                ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                        }
+                    }, 0);
+                    return;
+                }
+                else {
+                    let colNo = this.selection === null ? 0 : this.selection.colNo;
+                    let column = this.model.getColumn(colNo, true);
+                    if (column.columnType === 'filter')
+                        ContextMenu.showFilterMenu(event.clientX, event.clientY);
+                    else
+                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                }
             }
             else {
                 let $table = $element.closest('.jmv-tableview');
@@ -627,8 +632,12 @@ const TableView = SilkyView.extend({
                                 let column = this.model.getColumn(colNo, true);
                                 if (column.columnType === 'filter')
                                     ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                                else
-                                    ContextMenu.showDataRowMenu(event.clientX, event.clientY);
+                                else {
+                                    if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                                    else
+                                        ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
+                                }
                             }
                         }, () => {});
                         return;
@@ -637,16 +646,18 @@ const TableView = SilkyView.extend({
                     let column = this.model.getColumn(colNo, true);
                     if (column.columnType === 'filter')
                         ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                    else
-                        ContextMenu.showDataRowMenu(event.clientX, event.clientY);
+                    else {
+                        if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                            ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                        else
+                            ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
+                    }
                 }
             }
         }
 
         this._isClicking = false;
         this._isDragging = false;
-
-
     },
     _mouseMove(event) {
         if ( ! this._isDragging)
@@ -674,18 +685,18 @@ const TableView = SilkyView.extend({
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
-        let left  = Math.min(colNo, this._clickCoords.colNo);
-        let right = Math.max(colNo, this._clickCoords.colNo);
-        let top   = Math.min(rowNo, this._clickCoords.rowNo);
-        let bottom = Math.max(rowNo, this._clickCoords.rowNo);
+        let left  = (!dragBoth && dragRows) ? this._clickRange.left : Math.min(colNo, this._clickCoords.colNo);
+        let right = (!dragBoth && dragRows) ? this._clickRange.right : Math.max(colNo, this._clickCoords.colNo);
+        let top   = (!dragBoth && dragCols) ? this._clickRange.top : Math.min(rowNo, this._clickCoords.rowNo);
+        let bottom = (!dragBoth && dragCols) ? this._clickRange.bottom : Math.max(rowNo, this._clickCoords.rowNo);
 
         let range = {
             rowNo: dragRows ? this._clickCoords.rowNo : this.selection.rowNo,
             colNo: dragCols ? this._clickCoords.colNo : this.selection.colNo,
-            left: dragCols ? left : this.selection.left,
-            right: dragCols ? right : this.selection.right,
-            top: dragRows ? top : this.selection.top,
-            bottom: dragRows ? bottom : this.selection.bottom,
+            left: left,
+            right: right,
+            top: top,
+            bottom: bottom,
             colFocus: dragCols ? pos.colNo : this.selection.colFocus,
             rowFocus: dragRows ? pos.rowNo : this.selection.rowFocus };
 

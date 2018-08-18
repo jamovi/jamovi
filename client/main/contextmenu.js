@@ -68,16 +68,16 @@ const ContextMenu = function() { // this is constructed at the bottom
         }, 0);
     };
 
-    this.showDataRowMenu = function(x, y) {
-        this.show(ContextMenus.createRowMenuItems(), x, y);
+    this.showDataRowMenu = function(x, y, plural) {
+        this.show(ContextMenus.createRowMenuItems(plural), x, y);
     };
 
     this.showFilterRowMenu = function(x, y) {
         this.show(ContextMenus.createFilterRowMenuItems(), x, y);
     };
 
-    this.showVariableMenu = function(x, y) {
-        this.show(ContextMenus.createVariableMenuItems(), x, y);
+    this.showVariableMenu = function(x, y, plural) {
+        this.show(ContextMenus.createVariableMenuItems(plural), x, y);
     };
 
     this.showFilterMenu = function(x, y) {
