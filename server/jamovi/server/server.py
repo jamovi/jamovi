@@ -179,7 +179,7 @@ class PDFConverter(RequestHandler):
         self._file = None
 
     def prepare(self):
-        self._file = tempfile.NamedTemporaryFile()
+        self._file = tempfile.NamedTemporaryFile(suffix='.html')
 
     def data_received(self, data):
         self._file.write(data)
