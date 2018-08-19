@@ -7,7 +7,7 @@ const RibbonSeparator = require('../ribbon/ribbonseparator');
 const RibbonGroup = require('../ribbon/ribbongroup');
 const ContextMenuButton = require('./contextmenubutton');
 
-const createRowMenuItems = function() {
+const createRowMenuItems = function(plural) {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Cut', name: 'cut', iconId: 'cut' }),
@@ -21,7 +21,7 @@ const createRowMenuItems = function() {
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Delete Row', name: 'delRow', iconId: 'delrow' })
+            new ContextMenuButton({ title: 'Delete Row' + (plural ? 's' : ''), name: 'delRow', iconId: 'delrow' })
         ]}),
     ];
 };
@@ -43,7 +43,7 @@ const createFilterRowMenuItems = function() {
     ];
 };
 
-const createVariableMenuItems = function() {
+const createVariableMenuItems = function(plural) {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Cut', name: 'cut' }),
@@ -65,7 +65,7 @@ const createVariableMenuItems = function() {
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Delete Variable', name: 'delVar' })
+            new ContextMenuButton({ title: 'Delete Variable' + (plural ? 's' : ''), name: 'delVar' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [

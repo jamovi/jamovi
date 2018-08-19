@@ -493,7 +493,7 @@ const TableView = SilkyView.extend({
         this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
         if (event.button === 2 || event.button === 0 && event.ctrlKey) {
-            if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
+            if (pos.onHeader === 'none' && rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
                  colNo >= this.selection.left && colNo <= this.selection.right)
                 return Promise.resolve();
             else if (pos.onHeader === 'columns' && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
@@ -606,7 +606,7 @@ const TableView = SilkyView.extend({
                             if (column.columnType === 'filter')
                                 ContextMenu.showFilterMenu(event.clientX, event.clientY);
                             else
-                                ContextMenu.showVariableMenu(event.clientX, event.clientY);
+                                ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
                         }
                     }, 0);
                     return;
@@ -617,7 +617,7 @@ const TableView = SilkyView.extend({
                     if (column.columnType === 'filter')
                         ContextMenu.showFilterMenu(event.clientX, event.clientY);
                     else
-                        ContextMenu.showVariableMenu(event.clientX, event.clientY);
+                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
                 }
             }
             else {
@@ -632,8 +632,12 @@ const TableView = SilkyView.extend({
                                 let column = this.model.getColumn(colNo, true);
                                 if (column.columnType === 'filter')
                                     ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                                else
-                                    ContextMenu.showDataRowMenu(event.clientX, event.clientY);
+                                else {
+                                    if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                                    else
+                                        ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
+                                }
                             }
                         }, () => {});
                         return;
@@ -642,8 +646,12 @@ const TableView = SilkyView.extend({
                     let column = this.model.getColumn(colNo, true);
                     if (column.columnType === 'filter')
                         ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                    else
-                        ContextMenu.showDataRowMenu(event.clientX, event.clientY);
+                    else {
+                        if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                            ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+                        else
+                            ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
+                    }
                 }
             }
         }
