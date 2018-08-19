@@ -948,6 +948,10 @@ const TableView = SilkyView.extend({
         let oldSel = Object.assign({}, this.selection);
 
         Object.assign(this.selection, range);
+        if (range.rowFocus === undefined)
+            delete this.selection.rowFocus;
+        if (range.colFocus === undefined)
+            delete this.selection.colFocus;
 
         this._enableDisableActions();
 
