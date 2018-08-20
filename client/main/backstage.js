@@ -31,8 +31,8 @@ const FSEntryListModel = Backbone.Model.extend({
     requestExport : function(path, type) {
         this.trigger('dataSetExportRequested', path, type);
     },
-    requestBrowse : function(list, type, directory, filename) {
-        this.trigger('browseRequested', list, type, directory, filename);
+    requestBrowse : function(list, type, filename) {
+        this.trigger('browseRequested', list, type, filename);
     }
 });
 
@@ -188,10 +188,7 @@ var FSEntryBrowserView = SilkyView.extend({
             filename = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
         }
 
-        let dirInfo = this.model.get('dirInfo');
-        let directory = dirInfo.path;
-
-        this.model.requestBrowse(this.model.fileExtensions, type, directory, filename);
+        this.model.requestBrowse(this.model.fileExtensions, type, filename);
     },
     _createFileTypeSelector: function() {
         let html = '';
@@ -367,7 +364,10 @@ var FSEntryBrowserView = SilkyView.extend({
             this.$items.push($item);
         }
 
-        if (this.$items.length === 0)
+        let errorMessage = this.model.get('error');
+        if (errorMessage !== '')
+            this.$itemsList.append("<span>" + errorMessage + "</span>");
+        else if (this.$items.length === 0)
             this.$itemsList.append("<span>No recognised data files were found.</span>");
     },
     _itemClicked : function(event) {
@@ -681,7 +681,7 @@ var BackstageModel = Backbone.Model.extend({
             }
         ];
     },
-    tryBrowse: function(list, type, directory, filename) {
+    tryBrowse: function(list, type, filename) {
         if (host.isElectron) {
 
             var remote = window.require('electron').remote;
