@@ -238,82 +238,83 @@ class Instance:
             self._coms.send(analysis.results, self._instance_id)
 
     def _on_fs_request(self, request):
-        path = request.path
+        try:
+            path = request.path
 
-        if path != '':
-            abs_path = Instance._normalise_path(path)
-            path = Instance._virtualise_path(path)
-        else:
-            try:
-                path = '{{Documents}}'
-                abs_path = Dirs.documents_dir()
-                if os.path.exists(abs_path):
-                    path = '{{Documents}}'
-                else:
-                    path = '{{Root}}'
-            except Exception:
-                path = '{{Root}}'
-
-        response = jcoms.FSResponse()
-        response.path = path
-        response.osPath = abs_path
-
-        if path.startswith('{{Root}}'):
-
-            try:
-                if os.path.exists(Dirs.documents_dir()):
-                    entry = response.contents.add()
-                    entry.name = 'Documents'
-                    entry.path = '{{Documents}}'
-                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
-            except Exception:
-                pass
-
-            try:
-                if os.path.exists(Dirs.downloads_dir()):
-                    entry = response.contents.add()
-                    entry.name = 'Downloads'
-                    entry.path = '{{Downloads}}'
-                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
-            except Exception:
-                pass
-
-            try:
-                if os.path.exists(Dirs.desktop_dir()):
-                    entry = response.contents.add()
-                    entry.name = 'Desktop'
-                    entry.path = '{{Desktop}}'
-                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
-            except Exception:
-                pass
-
-            try:
-                if os.path.exists(Dirs.home_dir()):
-                    entry = response.contents.add()
-                    entry.name = 'Home'
-                    entry.path = '{{Home}}'
-                    entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
-            except Exception:
-                pass
-
-            if platform.uname().system == 'Windows':
-                for drive_letter in range(ord('A'), ord('Z') + 1):
-                    drive = chr(drive_letter) + ':'
-                    if os.path.exists(drive):
-                        entry = response.contents.add()
-                        entry.name = drive
-                        entry.path = drive
-                        entry.type = jcoms.FSEntry.Type.Value('DRIVE')
+            if path != '':
+                abs_path = Instance._normalise_path(path)
+                path = Instance._virtualise_path(path)
             else:
-                entry = response.contents.add()
-                entry.name = '/'
-                entry.path = '/'
-                entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                try:
+                    path = '{{Documents}}'
+                    abs_path = Dirs.documents_dir()
+                    if os.path.exists(abs_path):
+                        path = '{{Documents}}'
+                    else:
+                        path = '{{Root}}'
+                except BaseException:
+                    path = '{{Root}}'
+                    abs_path = '/'
 
-            self._coms.send(response, self._instance_id, request)
+            response = jcoms.FSResponse()
+            response.path = path
+            response.osPath = abs_path
 
-        else:
-            try:
+            if path.startswith('{{Root}}'):
+
+                try:
+                    if os.path.exists(Dirs.documents_dir()):
+                        entry = response.contents.add()
+                        entry.name = 'Documents'
+                        entry.path = '{{Documents}}'
+                        entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+                except BaseException:
+                    pass
+
+                try:
+                    if os.path.exists(Dirs.downloads_dir()):
+                        entry = response.contents.add()
+                        entry.name = 'Downloads'
+                        entry.path = '{{Downloads}}'
+                        entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+                except BaseException:
+                    pass
+
+                try:
+                    if os.path.exists(Dirs.desktop_dir()):
+                        entry = response.contents.add()
+                        entry.name = 'Desktop'
+                        entry.path = '{{Desktop}}'
+                        entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+                except BaseException:
+                    pass
+
+                try:
+                    if os.path.exists(Dirs.home_dir()):
+                        entry = response.contents.add()
+                        entry.name = 'Home'
+                        entry.path = '{{Home}}'
+                        entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+                except BaseException:
+                    pass
+
+                if platform.uname().system == 'Windows':
+                    for drive_letter in range(ord('A'), ord('Z') + 1):
+                        drive = chr(drive_letter) + ':'
+                        if os.path.exists(drive):
+                            entry = response.contents.add()
+                            entry.name = drive
+                            entry.path = drive
+                            entry.type = jcoms.FSEntry.Type.Value('DRIVE')
+                else:
+                    entry = response.contents.add()
+                    entry.name = '/'
+                    entry.path = '/'
+                    entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+
+                self._coms.send(response, self._instance_id, request)
+
+            else:
                 entries = [ ]
 
                 for direntry in os.scandir(abs_path + '/'):  # add a / in case we get C:
@@ -352,11 +353,16 @@ class Instance:
 
                 self._coms.send(response, self._instance_id, request)
 
-            except OSError as e:
-                base    = os.path.basename(abs_path)
-                message = 'Unable to open {}'.format(base)
-                cause = e.strerror
-                self._coms.send_error(message, cause, self._instance_id, request)
+        except OSError as e:
+            base    = os.path.basename(abs_path)
+            message = 'Unable to open {}'.format(base)
+            cause = e.strerror
+            self._coms.send_error(message, cause, self._instance_id, request)
+        except BaseException as e:
+            base    = os.path.basename(abs_path)
+            message = 'Unable to open {}'.format(base)
+            cause = str(e)
+            self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save(self, request):
         path = request.filename
@@ -386,7 +392,7 @@ class Instance:
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
-        except Exception as e:
+        except BaseException as e:
             log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to save {}'.format(base)

@@ -291,10 +291,11 @@ const Instance = Backbone.Model.extend({
         message.payloadType = 'FSRequest';
         message.instanceId = this.instanceId();
 
-        return coms.send(message)
-            .then(response => {
-                return coms.Messages.FSResponse.decode(response.payload);
-            });
+        let promise = coms.send(message);
+        promise = promise.then((response) => {
+            return coms.Messages.FSResponse.decode(response.payload);
+        });
+        return promise;
     },
     restartEngines() {
 

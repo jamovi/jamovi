@@ -742,7 +742,8 @@ var BackstageModel = Backbone.Model.extend({
         if (type === FSItemType.File)
             this.requestOpen(path);
         else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder)
-            this.setCurrentDirectory(path, type);
+            this.setCurrentDirectory(path, type)
+                .done();
     },
     trySave: function(path, type) {
         this.requestSave(path);
@@ -751,24 +752,45 @@ var BackstageModel = Backbone.Model.extend({
         this.requestExport(path);
     },
     setCurrentDirectory: function(path, type) {
-        return this.instance.browse(path).then(response => {
+        let promise = this.instance.browse(path);
+        promise = promise.then(response => {
             let path = response.path;
 
-            this._pcListModel.set('error', response.errorMessage);
+            this._pcListModel.set('error', '');
             this._pcListModel.set('items', response.contents);
             this._pcListModel.set('dirInfo', { path: path, type: type } );
 
-            this._pcSaveListModel.set('error', response.errorMessage);
+            this._pcSaveListModel.set('error', '');
             this._pcSaveListModel.set('items', response.contents);
             this._pcSaveListModel.set('dirInfo', { path: path, type: type } );
 
-            this._pcExportListModel.set('error', response.errorMessage);
+            this._pcExportListModel.set('error', '');
             this._pcExportListModel.set('items', response.contents);
             this._pcExportListModel.set('dirInfo', { path: path, type: type } );
 
             this._hasCurrentDirectory = true;
             this._osCurrentDirectory = response.osPath;
+        }, (error) => {
+
+            if (path === '')
+                path = '/';
+
+            this._pcListModel.set('error', `${error.message} (${error.cause})`);
+            this._pcListModel.set('items', [ ]);
+            this._pcListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
+
+            this._pcSaveListModel.set('error', `${error.message} (${error.cause})`);
+            this._pcSaveListModel.set('items', [ ]);
+            this._pcSaveListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
+
+            this._pcExportListModel.set('error', `${error.message} (${error.cause})`);
+            this._pcExportListModel.set('items', [ ]);
+            this._pcExportListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
+
+            this._hasCurrentDirectory = true;
+            this._osCurrentDirectory = path;
         });
+        return promise;
     },
     hasCurrentDirectory: function() {
         return this._hasCurrentDirectory;
@@ -806,6 +828,9 @@ var BackstageModel = Backbone.Model.extend({
                 }, 0);
             }
         });
+
+        if (promise.done)  // if Q promise
+            promise.done();
     },
     uploadFile: function(file) {
 
@@ -1214,7 +1239,8 @@ var BackstageChoices = SilkyView.extend({
         }
 
         if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory() === false)
-            this.model.setCurrentDirectory('');  // empty string requests default path
+            this.model.setCurrentDirectory('')  // empty string requests default path
+                .done();
 
         if (old) {
             $old.fadeOut(200);
