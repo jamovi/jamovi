@@ -3,6 +3,12 @@
  */
 
 
+.jmv-variable-editor .hover-header {
+    width: 100%;
+    top: 0px;
+    position: absolute;
+}
+
  .tippy-tooltip.jmv-theme .tippy-backdrop {
     background-color: #999999;
 }
@@ -11,9 +17,18 @@
     background-color: #F8F8F8 ;
     width: 100% ;
     height: 300px ;
-    transition: height .2s, border-top .2s ;
+    transition: height .2s, border-top .2s, background-color .2s ;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC ;
+    position: relative;
+}
+
+.jmv-variable-editor.sub-editor-open {
+    background-color: #e0e0e0
+}
+
+.jmv-variable-editor.sub-editor-open.hover {
+    background-color: #cccccc
 }
 
 .jmv-variable-editor.hidden {
@@ -43,7 +58,6 @@
     box-sizing: border-box;
     font-size: 24px ;
     text-align: center;
-    z-index: 1 ;
     transition: color .2s, border-color .2s ;
 }
 
@@ -59,7 +73,6 @@
     box-sizing: border-box;
     font-size: 13px ;
     text-align: center;
-    z-index: 1 ;
     font-weight: bold ;
     transition: opacity .4s ;
     opacity: 0 ;
@@ -112,7 +125,6 @@
     font-size: 40px ;
     color: #BBBBBB ;
     transition: opacity .2s ;
-    z-index: 1 ;
 }
 
 .jmv-variable-editor-button-left span,
@@ -233,6 +245,7 @@
 .jmv-variable-editor-widget-footer {
     margin-left: 2px;
     margin-right: 27px;
+    padding-top: 5px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-footer {

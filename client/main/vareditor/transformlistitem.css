@@ -1,0 +1,51 @@
+
+.jmv-transform-list-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 200px;
+}
+
+.jmv-transform-list-item > .icon {
+    width: 25px;
+    height: 25px;
+}
+
+.jmv-transform-list-item > .label {
+    flex-grow: 1;
+}
+
+.jmv-transform-list-item .hidden {
+    visibility: hidden;
+}
+
+.jmv-transform-list-item:hover {
+    background-color: #DDDDDD;
+}
+
+.jmv-transform-list-item > .edit {
+    margin: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 2px;
+    height: 1.5em;
+    line-height: 1.5em;
+    padding: 0 5px;
+    background-color: #ffffff;
+}
+
+.jmv-transform-list-item > .edit:hover {
+    background-color: #f6f6f6;
+}
+
+.jmv-transform-list-item > .remove {
+    text-align: center;
+    margin: 0px 10px 0px 5px;
+    font-size: 10px;
+    color: #bbbbbb;
+    cursor: default;
+    line-height: 21px;
+}
+
+.jmv-transform-list-item > .remove:hover {
+    color: #c15050;
+}

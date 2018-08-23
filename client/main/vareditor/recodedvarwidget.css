@@ -1,0 +1,125 @@
+.jmv-variable-recoded-widget {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#transform-type {
+    margin-left: 1ex;
+    margin-right: 1ex;
+}
+
+.jmv-variable-recoded-widget > .contents {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    margin-bottom: 5px;
+}
+
+.jmv-variable-recoded-options {
+    flex: 2;
+    /* background-color: white; */
+    border: 1px solid #dfdfdf;
+    padding: 2px 2px 2px 2px;
+}
+
+.jmv-variable-recoded-top {
+    display: flex;
+    flex-flow: row;
+    align-items: baseline;
+    color: #848484;
+    margin-bottom: 10px;
+}
+
+.jmv-variable-recoded-top .recoded-from {
+    margin-left: 1ex;
+    margin-right: 1ex;
+    padding-left: 17px;
+    background-repeat: no-repeat;
+    background-size: 16px 100%;
+    background-position: 2px center;
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='id'] {
+    background-image: url('assets/variable-id.svg');
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='continuous'] {
+    background-image: url('assets/variable-continuous.svg');
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='nominal'] {
+    background-image: url('assets/variable-nominal.svg');
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='nominal'][data-type='text'] {
+    background-image: url('assets/variable-nominal-text.svg');
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='ordinal'] {
+    background-image: url('assets/variable-ordinal.svg');
+}
+
+.jmv-variable-recoded-top .recoded-from[variable-type='ordinal'][data-type='text'] {
+    background-image: url('assets/variable-ordinal-text.svg');
+}
+
+.jmv-variable-recoded-options > .formula-box {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    margin: 3px;
+    align-items: center;
+}
+
+.jmv-variable-recoded-options > .formula-box > .reorder-cond {
+
+}
+
+.jmv-variable-recoded-options > .formula-box > .remove-cond {
+    position: absolute;
+    text-align: center;
+    margin: 0px 0px 0px 5px;
+    right: 6px;
+    font-size: 10px;
+    color: #bbbbbb;
+    cursor: default;
+    line-height: 21px;
+}
+
+.jmv-variable-recoded-options > .formula-box > .remove-cond:hover {
+    color: #c15050;
+}
+
+.jmv-variable-recoded-widget > .contents > .insert-box {
+    margin-right: 5px;
+    margin-top: 6px;
+}
+
+.jmv-variable-recoded-widget > .contents > .right-box {
+    margin-left: 5px;
+}
+
+.jmv-variable-recoded-widget > .contents > .insert-box > .insert {
+    background-size: 80%;
+    background-image: url(assets/filters-add.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.jmv-variable-recoded-widget > .contents  .button {
+    vertical-align: unset;
+    width: 25px;
+    height: 25px;
+    /*line-height: 25px;*/
+    font-size: 20px;
+    text-align: center;
+    /*font-weight: bolder;*/
+    color: #bbbbbb;
+}
+
+[contenteditable=true]:empty:before {
+    content: attr(placeholder);
+    display: block; /* For Firefox */
+    color: #CCCCCC;
+}
