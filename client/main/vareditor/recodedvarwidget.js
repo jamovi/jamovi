@@ -25,8 +25,6 @@ const RecodedVarWidget = Backbone.View.extend({
         $('<div>using</div>').appendTo(this.$top);
         this.$transformList = $('<select id="transform-type"><option value="None">None</option></select>').appendTo(this.$top);
 
-        $('<div>There are 10 recoded variables using this transform.</div>').appendTo(this.$el);
-
         this._updateChannelList();
 
         this.variableList = new VariableList();
