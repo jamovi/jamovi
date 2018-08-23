@@ -23,7 +23,7 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->columns = columns;
     dss->capacity = 65536;  // "ought to be enough for anybody"
     dss->columnCount = 0;
-    dss->nextColumnId = 0;
+    dss->nextColumnId = 1;  // an id of zero is reserved for 'no column'
     dss->scratch = NULL;
 
     return ds;

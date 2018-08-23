@@ -23,7 +23,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 5.0\n')
+        content.write('jamovi-Archive-Version: 6.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -33,6 +33,19 @@ def write(data, path, html=None):
         content = None
         string_table_required = False
 
+        transforms = [ ]
+        for transform in data.transforms:
+            transform_field = { }
+            transform_field['name'] = transform.name
+            transform_field['id'] = transform.id
+
+            transform_field['formula'] = transform.formula
+            transform_field['formulaMessage'] = transform.formula_message
+
+            transform_field['description'] = transform.description
+
+            transforms.append(transform_field)
+
         fields = [ ]
         for column in data:
             if column.is_virtual is True:
@@ -40,11 +53,13 @@ def write(data, path, html=None):
 
             field = { }
             field['name'] = column.name
+            field['id'] = column.id
             field['columnType'] = ColumnType.stringify(column.column_type)
             field['dataType'] = DataType.stringify(column.data_type)
             field['measureType'] = MeasureType.stringify(column.measure_type)
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
+            field['parentId'] = column.parent_id
             if column.data_type == DataType.DECIMAL:
                 field['type'] = 'number'
             elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
@@ -54,6 +69,7 @@ def write(data, path, html=None):
                 field['type'] = 'integer'
             field['importName'] = column.import_name
             field['description'] = column.description
+            field['transform'] = column.transform
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
@@ -71,6 +87,7 @@ def write(data, path, html=None):
         metadataset['rowCount'] = data.row_count
         metadataset['columnCount'] = data.column_count
         metadataset['fields'] = fields
+        metadataset['transforms'] = transforms
 
         # if data.import_path is not '':
         #     metadataset['importPath'] = data.import_path
@@ -197,7 +214,7 @@ def read(data, path, prog_cb):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 5:
+        if jav[0] > 6:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -224,11 +241,21 @@ def read(data, path, prog_cb):
         #     except Exception:
         #         pass
 
+        if 'transforms' in meta_dataset:
+            for meta_transform in meta_dataset['transforms']:
+                name = meta_transform['name']
+                id = meta_transform['id']
+                transform = data.append_transform(name, id)
+                transform.formula = meta_transform.get('formula', [''])
+                transform.formula_message = meta_transform.get('formulaMessage', [''])
+                transform.description = meta_transform.get('description', '')
+
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']
+            id = meta_column.get('id', 0)
             import_name = meta_column.get('importName', name)
 
-            column = data.append_column(name, import_name)
+            column = data.append_column(name, import_name, id)
 
             column_type = ColumnType.parse(meta_column.get('columnType', 'Data'))
             column.column_type = column_type
@@ -256,6 +283,8 @@ def read(data, path, prog_cb):
             column.formula = meta_column.get('formula', '')
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
+            column.transform = meta_column.get('transform', 0)
+            column.parent_id = meta_column.get('parentId', 0)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)
