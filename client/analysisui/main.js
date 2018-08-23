@@ -125,7 +125,7 @@ const Analysis = function(def) {
 
     this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
 
-    this.View = new OptionsView( this.model);
+    this.View = new OptionsView(this.model);
 
     this.View.setRequestedDataSource(this);
 

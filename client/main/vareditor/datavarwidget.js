@@ -6,12 +6,16 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const DataVarLevelWidget = require('./datavarlevelwidget');
 const tarp = require('../utils/tarp');
+const dropdown = require('./dropdown');
+const TransformList = require('./transformlist');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
     initialize(args) {
 
         this.attached = false;
+
+        dropdown.init();
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor-datavarwidget');
@@ -40,6 +44,7 @@ const DataVarWidget = Backbone.View.extend({
                 tarp.hide('levels');
             }
         });
+
 
         this.$moveUp.on('click', event => this._moveUp());
         this.$moveDown.on('click', event => this._moveDown());
@@ -254,6 +259,7 @@ const DataVarWidget = Backbone.View.extend({
     },
     attach() {
         this.attached = true;
+
         this.selectedLevelIndex = -1;
         this._setAutoMeasure(this.model.get('autoMeasure'));
         this._setOptions(

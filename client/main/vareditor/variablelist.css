@@ -1,0 +1,11 @@
+
+.jmv-variable-list {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+    min-width: 200px;
+}
+
+.jmv-variable-list > .middle {
+    overflow-y: auto;
+}

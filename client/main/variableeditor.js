@@ -13,6 +13,8 @@ const tippy = require('tippy.js');
 
 const VariableModel = require('./vareditor/variablemodel');
 const EditorWidget = require('./vareditor/editorwidget');
+const EditorPanel = require('./editorpanel');
+const TransformEditor = require('./editors/transformeditor');
 
 const VariableEditor = Backbone.View.extend({
     className: 'VariableEditor',
@@ -24,10 +26,38 @@ const VariableEditor = Backbone.View.extend({
 
         this.$main = $('<div class="jmv-variable-editor-main" data-type="none"></div>').appendTo(this.$el);
 
+        this.$stageEditor = $('<div id="import-editor" class="hidden"></div>').appendTo(this.$el);
+        this.$stageEditor.on('editor:hidden', (event) => {
+            this.$stageEditor.outerHeight(0);
+            this.$hoverHeader.outerHeight(0);
+            this.transformEditor.setTransformId(null);
+            this.$el.removeClass('sub-editor-open');
+        });
+        this.$stageEditor.on('editor:visible', (event) => {
+            let h = this.currentEditor.$labelBox.outerHeight(true) + this.currentEditor.$labelBox.position().top + parseFloat(this.currentEditor.$title.css('margin-top'));
+            this.$hoverHeader.outerHeight(h);
+            this.$stageEditor.outerHeight(this.$el.innerHeight() - h);
+            this.$el.addClass('sub-editor-open');
+        });
+
+        this.editorPanel = new EditorPanel({ el : this.$stageEditor[0], model : this.model });
+        this.transformEditor = new TransformEditor(this.model);
+
         this.$ok = $('<div class="jmv-variable-editor-ok jmv-tooltip" data-tippy-dynamictitle="true" title="Hide"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
         this.$revert = $('<div class="jmv-variable-editor-revert jmv-tooltip" title="Revert changes"><span class="mif-undo"></span></div>').appendTo(this.$main);
         this.$left = $('<div class="jmv-variable-editor-button-left  jmv-tooltip" title="Previous variable" data-tippy-placement="left"><span class="mif-chevron-left"></span></div>').appendTo(this.$main);
         this.$right = $('<div class="jmv-variable-editor-button-right  jmv-tooltip" title="Next variable"><span class="mif-chevron-right"></span></div>').appendTo(this.$main);
+
+        this.$hoverHeader = $('<div class="hover-header"></div>').appendTo(this.$el);
+        this.$hoverHeader.on('mouseout', event => {
+            this.$el.removeClass('hover');
+        });
+        this.$hoverHeader.on('mouseenter', event => {
+            this.$el.addClass('hover');
+        });
+        this.$hoverHeader.on('click', event => {
+            this._hideEditor();
+        });
 
         tippy('.jmv-tooltip', {
           placement: 'right',
@@ -66,6 +96,10 @@ const VariableEditor = Backbone.View.extend({
         keyboardJS.bind('', event => this._keyboardListener(event));
         keyboardJS.setContext(this._previousKeyboardContext);
 
+
+        this.model.on('change:editingVar', event => {
+            this._hideEditor();
+        });
 
         this.model.on('columnsChanged', event => {
             if (this.model.attributes.editingVar === null)
@@ -157,8 +191,8 @@ const VariableEditor = Backbone.View.extend({
         });
 
         this.$$editors = [
-            $('<div style="left: 0;    opacity: 1;"></div>').appendTo(this.$main),
-            $('<div style="left: 100%; opacity: 0;"></div>').appendTo(this.$main)
+            $('<div style="left: 0;    opacity: 1;"></div>').prependTo(this.$main),
+            $('<div style="left: 100%; opacity: 0;"></div>').prependTo(this.$main)
         ];
 
         this.editors = [
@@ -166,7 +200,23 @@ const VariableEditor = Backbone.View.extend({
             new EditorWidget({ el : this.$$editors[1], model : this.editorModel })
         ];
 
+        for (let widget of this.editors) {
+            widget.$el.on('edit:transform', (event, transformId) => {
+                this._showTransformEditor(transformId);
+            });
+        }
+
         this.model.on('change:editingVar', event => this._editingVarChanged(event));
+    },
+    _showTransformEditor(transformId) {
+        if (this.transformEditor.transformId() !== transformId) {
+            this.transformEditor.setTransformId(transformId);
+            let editingVar = this.model.get('editingVar');
+            this.editorPanel.attach(this.transformEditor);
+        }
+    },
+    _hideEditor() {
+        this.editorPanel.attach(null);
     },
     _update() {
         let columnIndex = this.model.attributes.editingVar;
@@ -247,6 +297,7 @@ const VariableEditor = Backbone.View.extend({
             this._update();
 
             editor.attach();
+            this.currentEditor = editor;
 
             if (prev !== null) {
                 if (now < prev) {
