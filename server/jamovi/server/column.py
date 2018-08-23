@@ -26,12 +26,13 @@ class Column:
     def __init__(self, parent, child=None):
         self._parent = parent
         self._child = child
-        self._id = -1
+        self._id = 0
         self._index = -1
         self._description = ''
         self._hidden = False
         self._filter_no = -1
-        self._trim_levels = True
+        self._transform = 0  # zero mean 'none'
+        self._parent_id = 0  # zero means 'none'
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -110,6 +111,14 @@ class Column:
             self._child.id = id
 
     @property
+    def parent_id(self):
+        return self._parent_id
+
+    @parent_id.setter
+    def parent_id(self, parent_id):
+        self._parent_id = parent_id
+
+    @property
     def description(self):
         return self._description
 
@@ -156,6 +165,14 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.trim_levels = trim_levels
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @transform.setter
+    def transform(self, transform):
+        self._transform = transform
 
     @property
     def index(self):
