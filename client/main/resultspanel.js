@@ -251,6 +251,16 @@ const ResultsPanel = Backbone.View.extend({
                 case 'openUrl':
                     host.openUrl(eventData.url);
                     break;
+                case 'mouseEvent':
+                    let newEvent = $.Event( eventData.eventName, eventData);
+
+                    let pos = $iframe.offset();
+
+                    newEvent.pageX += pos.left;
+                    newEvent.pageY += pos.top;
+
+                    $(document).trigger(newEvent);
+                    break;
             }
         }
     },
