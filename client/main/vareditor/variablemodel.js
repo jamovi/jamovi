@@ -32,6 +32,18 @@ const VariableModel = Backbone.Model.extend({
                 }, 0);
             }
         });
+
+        this.dataset.on('columnsChanged', (event) => {
+            let id = this.get('id');
+            for (let changes of event.changes) {
+
+                if (changes.created || changes.deleted)
+                    continue;
+
+                if (changes.id === id)
+                    this.setColumn(changes.id);
+            }
+        });
     },
     suspendAutoApply() {
         this.set('autoApply', false);
@@ -54,7 +66,9 @@ const VariableModel = Backbone.Model.extend({
         filterNo: -1,
         importName: '',
         trimLevels: true,
-        autoApply: true
+        autoApply: true,
+        transform: 0, // zero means 'none'
+        parentId: 0
     },
     editLevelLabel(index, label) {
 
@@ -101,7 +115,7 @@ const VariableModel = Backbone.Model.extend({
     },
     setColumn(id) {
         this.trigger('columnChanging');
-        
+
         if (this._applyId) {
             clearTimeout(this._applyId);
             this._applyId = null;
@@ -123,7 +137,9 @@ const VariableModel = Backbone.Model.extend({
             active : column.active,
             filterNo : column.filterNo,
             importName : column.importName,
-            trimLevels : column.trimLevels
+            trimLevels : column.trimLevels,
+            transform : column.transform,
+            parentId : column.parentId
         };
         this.set(this.original);
         this.set('formulaMessage', column.formulaMessage);
@@ -149,7 +165,9 @@ const VariableModel = Backbone.Model.extend({
             active: this.attributes.active,
             filterNo: this.attributes.filterNo,
             importName: this.attributes.importName,
-            trimLevels: this.attributes.trimLevels
+            trimLevels: this.attributes.trimLevels,
+            transform:  this.attributes.transform,
+            parentId:  this.attributes.parentId
         };
 
         let columnId = this.attributes.id;
@@ -170,7 +188,9 @@ const VariableModel = Backbone.Model.extend({
                         active: this.attributes.active,
                         filterNo: this.attributes.filterNo,
                         importName: this.attributes.importName,
-                        trimLevels: this.attributes.trimLevels
+                        trimLevels: this.attributes.trimLevels,
+                        transform: this.attributes.transform,
+                        parentId: this.attributes.parentId
                     };
 
                     this.original = latestValues;

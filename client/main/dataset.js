@@ -43,6 +43,7 @@ const DataSetModel = Backbone.Model.extend({
     defaults : {
         hasDataSet : false,
         columns    : [ ],
+        transforms : [ ],
         rowCount : 0,
         vRowCount : 0,
         columnCount : 0,
@@ -94,15 +95,31 @@ const DataSetModel = Backbone.Model.extend({
                     this.attributes.filtersVisible = firstColumn.hidden === false;
             }
 
+            let transforms = Array(schemaPB.transforms.length);
+            for (let i = 0; i < schemaPB.transforms.length; i++) {
+                let transformPB = schemaPB.transforms[i];
+                let transform = { };
+                this._readTransformPB(transform, transformPB);
+                transforms[i] = transform;
+            }
+            this.attributes.transforms  = transforms;
 
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
         }
     },
     getColumnById(id) {
-        for (let column of this.attributes.columns) {
-            if (column.id === id)
-                return column;
+        if (id >= 0) {
+            for (let column of this.attributes.columns) {
+                if (column.id === id)
+                    return column;
+            }
+        }
+    },
+    getTransformById(id) {
+        for (let transform of this.attributes.transforms) {
+            if (transform.id === id)
+                return transform;
         }
     },
     getColumn(indexOrName, isDisplayIndex) {
@@ -264,6 +281,12 @@ const DataSetModel = Backbone.Model.extend({
 
         if (params.trimLevels === undefined)
             params.trimLevels = true;
+
+        if (params.transform === undefined)
+            params.transform = 0;
+
+        if (params.parentId === undefined)
+            params.parentId = 0;
 
         let columnType = params.columnType;
         if (columnType === undefined)
@@ -589,6 +612,16 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columnPB.trimLevels = column.trimLevels;
 
+            if ('transform' in values)
+                columnPB.transform = values.transform;
+            else
+                columnPB.transform = column.transform;
+
+            if ('parentId' in values)
+                columnPB.parentId = values.parentId;
+            else
+                columnPB.parentId = column.parentId;
+
             if ('columnType' in values)
                 columnPB.columnType = DataSetModel.parseColumnType(values.columnType);
             else
@@ -659,6 +692,8 @@ const DataSetModel = Backbone.Model.extend({
                     let oldName;
                     let oldColumnType;
                     let oldMessage;
+                    let oldTransform;
+                    let oldParentId;
                     let hiddenChanged = false;
                     let activeChanged = false;
                     let oldDIndex = -1;
@@ -671,6 +706,8 @@ const DataSetModel = Backbone.Model.extend({
                         oldDIndex = column.dIndex;
                         let oldHidden = column.hidden;
                         let oldActive = column.active;
+                        oldTransform = column.transform;
+                        oldParentId = column.parentId;
                         this._readColumnPB(column, columnPB);
                         hiddenChanged = oldHidden !== column.hidden;
                         activeChanged = oldActive !== column.active;
@@ -678,6 +715,8 @@ const DataSetModel = Backbone.Model.extend({
                     else {
                         created = true;
                         oldName = columnPB.name;
+                        oldTransform = 0;
+                        oldParentId = 0;
                         oldColumnType = 0;
                         oldMessage = '';
                         column = { };
@@ -695,6 +734,8 @@ const DataSetModel = Backbone.Model.extend({
                         index: column.index,
                         dIndex: oldDIndex,
                         oldName: oldName,
+                        transformChanged: oldTransform !== column.transform,
+                        parentIdChanged: oldParentId !== column.parentId,
                         hiddenChanged: hiddenChanged,
                         activeChanged: activeChanged,
                         columnTypeChanged: column.columnType !== oldColumnType,
@@ -871,6 +912,8 @@ const DataSetModel = Backbone.Model.extend({
         column.filterNo = columnPB.filterNo;
         column.importName = columnPB.importName;
         column.trimLevels = columnPB.trimLevels;
+        column.transform = columnPB.transform;
+        column.parentId = columnPB.parentId;
 
         let levels = null;
         if (columnPB.hasLevels) {
@@ -895,6 +938,188 @@ const DataSetModel = Backbone.Model.extend({
         }
         column.levels = levels;
     },
+
+    _readTransformPB(transform, transformPB) {
+        transform.id = transformPB.id;
+        transform.name = transformPB.name;
+        transform.description = transformPB.description;
+        transform.formula = transformPB.formula;
+        transform.formulaMessage = transformPB.formulaMessage;
+    },
+
+    setTransforms(pairs) {
+
+        let coms = this.attributes.coms;
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.incSchema = true;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+
+        let countAdded = 0;
+
+        for (let pair of pairs) {
+            let id = pair.id;
+            let values = pair.values;
+
+            let transform = this.getTransformById(id);
+            let newTransform = transform === undefined;
+
+            let transformPB = new coms.Messages.DataSetSchema.TransformSchema();
+            if (newTransform) {
+                transformPB.id = 0;
+                transformPB.action = 0; // action: 0 - CREATE, 1 - UPDATE, 2 - REMOVE
+            }
+            else {
+                transformPB.id = id;
+                transformPB.action = 1; // action: 0 - CREATE, 1 - UPDATE, 2 - REMOVE
+            }
+
+            if ('name' in values)
+                transformPB.name = values.name;
+            else if ( ! newTransform)
+                transformPB.name = transform.name;
+            else
+                transformPB.name = '';
+
+            if ('description' in values)
+                transformPB.description = values.description;
+            else if ( ! newTransform)
+                transformPB.description = transform.description;
+            else
+                transformPB.description = '';
+
+            if ('formula' in values)
+                transformPB.formula = values.formula;
+            else if ( ! newTransform)
+                transformPB.formula = transform.formula;
+            else
+                transformPB.formula = [ '' ];
+
+            datasetPB.schema.transforms.push(transformPB);
+        }
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            if (datasetPB.incSchema) {
+
+                let changed = Array(datasetPB.schema.transforms.length);
+                let changes = Array(datasetPB.schema.transforms.length);
+                let nCreated = 0;
+
+                for (let i = 0; i < datasetPB.schema.transforms.length; i++) {
+                    let transformPB = datasetPB.schema.transforms[i];
+                    let id = transformPB.id;
+                    let transform = this.getTransformById(id);
+
+                    let newName = transformPB.name;
+
+                    let created;
+                    let oldName;
+                    let oldMessage;
+
+                    if (transform !== undefined) {
+                        created = false;
+                        oldName = transform.name;
+                        oldMessage = transform.formulaMessage;
+                        this._readTransformPB(transform, transformPB);
+                    }
+                    else {
+                        created = true;
+                        oldName = transformPB.name;
+                        oldMessage = '';
+                        transform = { };
+                        nCreated++;
+                        this._readTransformPB(transform, transformPB);
+                        this.attributes.transforms.push(transform);
+                    }
+                    let nameChanged = (oldName !== transformPB.name);
+
+                    changed[i] = transformPB.name;
+                    changes[i] = {
+                        id: id,
+                        name: transform.name,
+                        oldName: oldName,
+                        nameChanged: nameChanged,
+                        created: created,
+                        formulaMessageChanged: transform.formulaMessage !== oldMessage
+                    };
+                }
+
+                for (let change of changes) {
+                    if (change.created)
+                        this.trigger('transformAdded', { id: change.id });
+                }
+
+                this.trigger('transformsChanged', { changed, changes });
+            }
+        }).catch((error) => {
+            console.log(error);
+            throw error;
+        });
+    },
+
+    removeTransforms(ids) {
+
+        let coms = this.attributes.coms;
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.incSchema = true;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+
+        for (let id of ids) {
+
+            let transform = this.getTransformById(id);
+
+            let transformPB = new coms.Messages.DataSetSchema.TransformSchema();
+            transformPB.id = id;
+            transformPB.action = 2; // action: 0 - CREATE, 1 - UPDATE, 2 - REMOVE
+
+            datasetPB.schema.transforms.push(transformPB);
+        }
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            let changed = [];
+            let changes = [];
+
+            let transform = null;
+            for (let id of ids) {
+
+                for (let i = 0; i < this.attributes.transforms.length; i++) {
+                    transform = this.attributes.transforms[i];
+                    if (transform.id === id) {
+                        this.attributes.transforms.splice(i, 1);
+                        break;
+                    }
+
+                    changed[i] = transform.name;
+                    changes[i] = {
+                        id: id,
+                        name: transform.name,
+                        deleted: true,
+                    };
+                }
+            }
+
+            for (let change of changes)
+                this.trigger('transformRemoved', { id: change.id });
+
+            this.trigger('transformsChanged', { changed, changes });
+        }).catch((error) => {
+            console.log(error);
+            throw error;
+        });
+    }
+
 });
 
 DataSetModel.stringifyMeasureType = function(type) {

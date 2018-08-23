@@ -7,6 +7,7 @@ Backbone.$ = $;
 const keyboardJS = require('keyboardjs');
 const tippy = require('tippy.js');
 const formulaToolbar = require('./formulatoolbar');
+const dropdown = require('./dropdown');
 
 const FilterWidget = Backbone.View.extend({
     className: 'FilterWidget',
@@ -27,7 +28,8 @@ const FilterWidget = Backbone.View.extend({
             "score > 0.5"
         ];
 
-        formulaToolbar.init(this.model.dataset);
+        dropdown.init();
+        this.formulaSetup = new formulaToolbar(this.model.dataset);
 
         this.$el.empty();
         this.$el.addClass('jmv-filter-widget');
@@ -434,7 +436,8 @@ const FilterWidget = Backbone.View.extend({
 
         $showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== $formula) {
-                formulaToolbar.show($formula, null, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
+                dropdown.show($formula, this.formulaSetup, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
+                this.formulaSetup.show($formula, null);
                 $formula.focus();
                 $showEditor.addClass('is-active');
             }
@@ -443,7 +446,7 @@ const FilterWidget = Backbone.View.extend({
         });
 
         $showEditor.on('mousedown', (event) => {
-            this._$wasEditingFormula = formulaToolbar.focusedOn();
+            this._$wasEditingFormula = dropdown.focusedOn();
             this._editorClicked = true;
         });
 
@@ -453,7 +456,7 @@ const FilterWidget = Backbone.View.extend({
         let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" placeholder="e.g. ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
 
         $formula.on('input', (event) => {
-            formulaToolbar.updatePosition();
+            dropdown.updatePosition();
         });
 
         $formula.on('editor:closing', () => {
@@ -488,7 +491,7 @@ const FilterWidget = Backbone.View.extend({
 
     },
     _isRealBlur() {
-        return formulaToolbar.clicked() || this._editorClicked;
+        return dropdown.clicked() || this._editorClicked;
     },
 
     _createFilter(column, index) {
@@ -614,7 +617,7 @@ const FilterWidget = Backbone.View.extend({
             element.removeEventListener('transitionend', e.callee);
             element.style.height = null;
             element.setAttribute('data-expanding', false);
-            formulaToolbar.updatePosition();
+            dropdown.updatePosition();
         });
     },
     _stickyBottom($element) {
