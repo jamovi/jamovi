@@ -172,6 +172,6 @@ const isVisible = function() {
 
 const content = function() {
     return _dropdown.item;
-}
+};
 
 module.exports = { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content };
