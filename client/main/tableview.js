@@ -136,6 +136,21 @@ const TableView = SilkyView.extend({
                 }
             }
         });
+        ActionHub.get('transform').on('request', () => {
+            let column = this.model.getColumn(this.selection.colNo, true);
+            if (column) {
+                if (this.selection.colNo < this.model.visibleRealColumnCount()) {
+                    this._insertColumn({ columnType: 'recoded', name: column.name, parentId: column.id }, true).then(() => {
+                        this.model.set('editingVar', this.selection.colNo + 1);
+                    });
+                }
+                else {
+                    this.model.changeColumn(column.id, { columnType: 'recoded' }).then(() => {
+                        this.model.set('editingVar', this.selection.colNo);
+                    });
+                }
+            }
+        });
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);

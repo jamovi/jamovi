@@ -19,8 +19,6 @@ const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
-const EditorPanel = require('./editorpanel');
-const ImportSettings = require('./editors/importsettings');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
@@ -132,6 +130,8 @@ $(document).ready(() => {
             backstage.activate();
         else if (tabName === 'data')
             optionspanel.hideOptions();
+        else if (tabName === 'analyses')
+            dataSetModel.set('editingVar', null);
     });
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
@@ -232,29 +232,6 @@ $(document).ready(() => {
         }
     });
 
-    let editorPanel = new EditorPanel({ el : '#import-editor', model : dataSetModel });
-    editorPanel.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
-    editorPanel.on('visibility-changing', value => {
-        if (value === false) {
-            let height = parseFloat(splitPanel.$el.css('height'));
-            splitPanel.resized({ height: height + 200 });
-        }
-    });
-
-    let importSettings = new ImportSettings();
-    ActionHub.get('editImport').on('request', () => {
-        dataSetModel.set('editingVar', null);
-        if (editorPanel.item === importSettings)
-            editorPanel.attach(null);
-        else
-            editorPanel.attach(importSettings);
-    });
-
-    dataSetModel.on('change:editingVar', event => {
-        if (dataSetModel.get('editingVar') !== null)
-            editorPanel.attach(null);
-    });
-
 
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
@@ -285,15 +262,12 @@ $(document).ready(() => {
     });
 
     Promise.resolve(() => {
-
         return $.post(host.baseUrl + 'login');
 
     }).then(() => {
-
         return coms.ready;
 
     }).then(() => {
-
         let instanceId;
         if (window.location.search.indexOf('?id=') !== -1)
             instanceId = window.location.search.split('?id=')[1];
@@ -303,7 +277,6 @@ $(document).ready(() => {
         return instance.connect(instanceId);
 
     }).then(instanceId => {
-
         let toOpen = '';  // '' denotes blank data set
         if (window.location.search.indexOf('?open=') !== -1) {
             toOpen = window.location.search.split('?open=')[1];
@@ -317,7 +290,6 @@ $(document).ready(() => {
             return instance.open(toOpen);
 
     }).catch(() => { // if the initial open fails
-
         if ( ! instance.get('hasDataSet'))
             return instance.open('');
 

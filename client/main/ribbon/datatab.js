@@ -21,14 +21,15 @@ const DataTab = function() {
                     new RibbonButton({ title: 'Copy', name: 'copy', size: 'small' })
                 ]})
             ]}),
+            /*new RibbonSeparator(),
+            new RibbonGroup({ title: 'Data', margin: 'large', items: [
+                new RibbonButton({ title: 'Data Source', name: 'editImport', margin: 'large', size: 'large' })
+            ]}),*/
             new RibbonSeparator(),
-            // new RibbonGroup({ title: 'Data', margin: 'large', items: [
-            //     new RibbonButton({ title: 'Import Settings', name: 'editImport', margin: 'large', size: 'large' })
-            // ]}),
-            // new RibbonSeparator(),
             new RibbonGroup({ title: 'Variables', items: [
                 new RibbonButton({ title: 'Setup', name: 'editVar', margin: 'large', size: 'large' }),
                 new RibbonButton({ title: 'Compute', name: 'compute', margin: 'large', size: 'large' }),
+                new RibbonButton({ title: 'Transform', name: 'transform', margin: 'large', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [
@@ -39,10 +40,10 @@ const DataTab = function() {
                             new RibbonButton({ title: 'Insert', name: 'insertComputed' }),
                             new RibbonButton({ title: 'Append', name: 'appendComputed' })
                         ]}),
-                        //new RibbonGroup({ title: 'Recoded Variable', orientation: 'horizontal', titlePosition: 'top', items: [
-                        //    new RibbonButton({ title: 'Insert', name: 'insertRecoded' }),
-                        //    new RibbonButton({ title: 'Append', name: 'appendRecoded' })
-                        //]}),
+                        new RibbonGroup({ title: 'Recoded Variable', orientation: 'horizontal', titlePosition: 'top', items: [
+                            new RibbonButton({ title: 'Insert', name: 'insertRecoded' }),
+                            new RibbonButton({ title: 'Append', name: 'appendRecoded' })
+                        ]}),
                     ]}),
                     new RibbonButton({ title: 'Delete', name: 'delVar' }),
                 ]}),
