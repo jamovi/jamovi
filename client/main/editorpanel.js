@@ -15,7 +15,7 @@ const EditorPanel = Backbone.View.extend({
 
         this.$main = $('<div class="jmv-editor-panel-main"></div>').appendTo(this.$el);
 
-        this.$ok = $('<div class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
+        this.$ok = $('<div class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></div>').appendTo(this.$main);
 
         this.$title = $('<div class="title">Stuff</div>').appendTo(this.$main);
         this.$contents = $('<div class="content"></div>').appendTo(this.$main);
@@ -27,10 +27,11 @@ const EditorPanel = Backbone.View.extend({
                 backCall();
         });
     },
+
     attach(item, onBack) {
 
         this.onBack = onBack;
-        if (item !== null && item === this.item) {
+        if (item !== null && item === this.attachedItem) {
             if (this.$el.hasClass('hidden'))
                 this.$el.removeClass('hidden');
             return;
@@ -38,24 +39,32 @@ const EditorPanel = Backbone.View.extend({
 
         let hide = true;
 
-        if (this.item) {
-            this.item.$el.detach();
+        if (this.attachedItem) {
+            this.attachedItem.$el.detach();
             this.$title.html('');
-            this.item = null;
+            this.attachedItem = null;
         }
 
         if (item) {
              this.$contents.append(item.$el);
              this.$title.html(item.title);
-             this.item = item;
+             this.attachedItem = item;
              hide = false;
         }
 
-        if (hide)
+        if (hide) {
             this.$el.addClass('hidden');
-        else
+            this.$el.trigger('editor:hidden');
+        }
+        else {
             this.$el.removeClass('hidden');
+            this.$el.trigger('editor:visible');
+        }
 
+    },
+
+    isVisible() {
+        return this.$el.hasClass('hidden');
     }
 
 });

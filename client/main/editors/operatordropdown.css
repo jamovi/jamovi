@@ -1,0 +1,109 @@
+
+.jmv-operator-dropdown-widget {
+    /*width: 100%;*/
+    display: flex;
+    max-height: 200px;
+    max-width: 200px;
+    min-width: 100px;
+    position: absolute;
+    opacity: 1;
+    padding: 2px;
+    background-color: white;
+    border: 1px solid #c1c1c1;
+    box-shadow: 0px 0px 5px #c1c1c1;
+    transition: 0.3s opacity;
+    z-index: 500;
+    padding-top: 3px;
+}
+
+.jmv-operator-dropdown-widget * {
+
+}
+
+.operator-dropdown-remove {
+    display: none;
+}
+
+.operator-dropdown-hidden {
+    opacity: 0;
+}
+
+.jmv-operator-dropdown-options {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+}
+
+.option-label {
+    padding: 7px 5px 5px 5px;
+    margin-top: 3px;
+    font-weight: bold;
+    background-color: #f8f8f8;
+}
+
+.option-description {
+    height: 35px;
+    padding: 5px;
+    background-color: #f8f8f8;
+}
+
+.jmv-operator-dropdown-options > .ops-box {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op:nth-child(2) {
+    margin-left: 10px;
+}
+
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content > .subtitle {
+    border-bottom: 1px solid #CCCCCC;
+    /*border-top: 1px solid #CCCCCC;*/
+    text-align: center;
+    padding: 5px 0px;
+    margin: 5px;
+    font-weight: bold
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .title {
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #CCCCCC;
+    text-align: center;
+    padding: 3px 0px;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content > .item {
+    flex-grow: 1;
+    text-align: left;
+    padding: 3px 6px;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content > .item:hover {
+    background-color: #F0F0F0;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content > .item-activated {
+    background-color: #E8E8E8;
+}
+
+.jmv-operator-dropdown-options > .ops-box > .op > .content > .item-grayed-out {
+    -webkit-filter: grayscale(100%);
+    filter: grayscale(100%);
+    opacity: 0.6;
+    filter: alpha(opacity = 60);
+}
