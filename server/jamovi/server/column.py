@@ -32,7 +32,7 @@ class Column:
         self._hidden = False
         self._filter_no = -1
         self._transform = 0  # zero mean 'none'
-        self._parent_id = 0 # zero means 'none'
+        self._parent_id = 0  # zero means 'none'
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
