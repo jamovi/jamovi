@@ -69,13 +69,12 @@
     /*margin-top: 7px ;*/
 }
 
-.jmv-vareditor-datatype label, .jmv-vareditor-transform label {
+.jmv-vareditor-datatype label {
     margin-right: 10px;
 }
 
-.jmv-vareditor-datatype select, .jmv-vareditor-transform select {
+.jmv-vareditor-datatype select{
     width: 65%;
-    height: 1.75em;
 }
 
 .jmv-variable-editor-variable-type {

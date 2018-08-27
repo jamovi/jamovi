@@ -10,8 +10,13 @@ const VariableList = function() {
     };
 
     this.$el = $('<div class="jmv-variable-list"></div>');
+    this.$none =$('<div class="jmv-variable-list-item none-item">None</div>').appendTo(this.$el);
 
     this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
+
+    this.$none.on('click', (event) => {
+        this.$el.trigger('selected-variable', { name: 'None', id: 0 });
+    });
 
     this.populate = function(columns) {
         this.$middle.empty();

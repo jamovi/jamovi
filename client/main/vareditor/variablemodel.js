@@ -68,7 +68,7 @@ const VariableModel = Backbone.Model.extend({
         trimLevels: true,
         autoApply: true,
         transform: 0, // zero means 'none'
-        parentId: -1
+        parentId: 0
     },
     editLevelLabel(index, label) {
 

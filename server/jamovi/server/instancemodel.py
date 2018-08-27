@@ -22,7 +22,7 @@ class InstanceModel:
 
         self._columns = [ ]
         self._transforms = [ ]
-        self._next_id = 0
+        self._next_id = 1  # an id of zero is unasigned... zero is reserved for 'no column'
         self._transform_next_id = 1  # an id of zero is unasigned... zero is reserved for 'no transform'
 
         self._log = NullLog()
@@ -106,9 +106,9 @@ class InstanceModel:
 
         return False
 
-    def append_column(self, name, import_name=None, id=-1):
+    def append_column(self, name, import_name=None, id=0):
         use_id = self._next_id
-        if id != -1:
+        if id != 0:
             if id < self._next_id:
                 for existing_column in self:
                     if existing_column.id == id:
@@ -140,8 +140,8 @@ class InstanceModel:
         self._dataset.insert_rows(start, end)
         self._recalc_all()
 
-    def insert_column(self, index, id=-1):
-        if id != -1:
+    def insert_column(self, index, id=0):
+        if id != 0:
             if id < self._next_id:
                 for existing_column in self:
                     if existing_column.id == id:
@@ -238,7 +238,7 @@ class InstanceModel:
 
     def setup(self):
 
-        self._next_id = 0
+        self._next_id = 1
 
         index = 0
         for child in self._dataset:

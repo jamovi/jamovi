@@ -29,6 +29,7 @@ const DataTab = function() {
             new RibbonGroup({ title: 'Variables', items: [
                 new RibbonButton({ title: 'Setup', name: 'editVar', margin: 'large', size: 'large' }),
                 new RibbonButton({ title: 'Compute', name: 'compute', margin: 'large', size: 'large' }),
+                new RibbonButton({ title: 'Transform', name: 'transform', margin: 'large', size: 'large' }),
                 new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: 'Add', name: 'addVar', subItems: [
                         new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [

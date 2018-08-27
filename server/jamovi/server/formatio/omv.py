@@ -252,7 +252,7 @@ def read(data, path, prog_cb):
 
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']
-            id = meta_column.get('id', -1)
+            id = meta_column.get('id', 0)
             import_name = meta_column.get('importName', name)
 
             column = data.append_column(name, import_name, id)
@@ -284,7 +284,7 @@ def read(data, path, prog_cb):
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
             column.transform = meta_column.get('transform', 0)
-            column.parent_id = meta_column.get('parentId', -1)
+            column.parent_id = meta_column.get('parentId', 0)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)

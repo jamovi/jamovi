@@ -286,7 +286,7 @@ const DataSetModel = Backbone.Model.extend({
             params.transform = 0;
 
         if (params.parentId === undefined)
-            params.parentId = -1;
+            params.parentId = 0;
 
         let columnType = params.columnType;
         if (columnType === undefined)
@@ -716,7 +716,7 @@ const DataSetModel = Backbone.Model.extend({
                         created = true;
                         oldName = columnPB.name;
                         oldTransform = 0;
-                        oldParentId = -1;
+                        oldParentId = 0;
                         oldColumnType = 0;
                         oldMessage = '';
                         column = { };

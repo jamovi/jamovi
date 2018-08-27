@@ -109,15 +109,9 @@ const RecodedVarWidget = Backbone.View.extend({
                 this.$variableList.attr('data-type', column.dataType);
             }
             else {
-                let columns = dataset.attributes.columns;
-                for (let i = 0; i < columns.length; i++) {
-                    if (columns[i].columnType === 'data') {
-                        this.$variableList.val(column.name);
-                        this.$variableList.attr('variable-type', columns[i].measureType);
-                        this.$variableList.attr('data-type', columns[i].dataType);
-                        break;
-                    }
-                }
+                this.$variableList.val('None');
+                this.$variableList.attr('variable-type', 'none');
+                this.$variableList.attr('data-type', 'none');
             }
         });
 
@@ -139,6 +133,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this.variableList.populate(columns);
 
         this.$variableList.empty();
+        this.$variableList.append($('<option>None</option>'));
         for (let i = 0; i < columns.length; i++) {
             if (columns[i].columnType === 'data')
                 this.$variableList.append($('<option>' + columns[i].name + '</option>'));
@@ -152,14 +147,9 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$variableList.attr('data-type', column.dataType);
         }
         else {
-            for (let i = 0; i < columns.length; i++) {
-                if (columns[i].columnType === 'data') {
-                    this.$variableList.val(columns[i].name);
-                    this.$variableList.attr('variable-type', columns[i].measureType);
-                    this.$variableList.attr('data-type', columns[i].dataType);
-                    break;
-                }
-            }
+            this.$variableList.val('None');
+            this.$variableList.attr('variable-type', 'none');
+            this.$variableList.attr('data-type', 'none');
         }
     },
     _updateTransformList() {

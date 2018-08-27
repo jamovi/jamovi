@@ -214,18 +214,18 @@
     width: 50%;
 }
 
-.jmv-transform-editor-options > .formula-box .formulaMessageBox {
+.jmv-transform-editor-options > .formula-box .formula-message-box {
     background-color: pink;
     margin-left: 3px;
 }
 
-.jmv-transform-editor-options > .formula-box .formulaMessageBox > .formulaMessage {
+.jmv-transform-editor-options > .formula-box .formula-message-box > .formula-message {
     flex: 1;
     flex-grow: 1;
     margin: 5px;
 }
 
-.jmv-transform-editor-options > .formula-box .formulaMessageBox > .formulaMessage:empty {
+.jmv-transform-editor-options > .formula-box .formula-message-box > .formula-message:empty {
     display: none;
 }
 

@@ -476,8 +476,8 @@ const TransformEditor = function(dataset) {
             }
         });
 
-        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);
-        elements.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
+        let $formulaMessageBox = $('<div class="formula-message-box"></div>').appendTo($formulaPair);
+        elements.$formulaMessage = $('<div class="formula-message"></div>').appendTo($formulaMessageBox);
 
         return elements;
     };
