@@ -37,6 +37,7 @@ class Column:
         self._node = None
         self._fields = ('name',)  # for AST compatibility
         self._node_parents = [ ]
+        self._needs_parse = False
         self._needs_recalc = False
         self._formula_status = FormulaStatus.EMPTY
 
@@ -84,6 +85,7 @@ class Column:
     def prep_for_deletion(self):
         # removes itself as a dependent
         if self._node is not None:
+            self._node._release()
             self._node._remove_node_parent(self)
             self._node = None
 
@@ -269,7 +271,7 @@ class Column:
         formula = regex.sub(' ', formula)
         if formula != self._child.formula:
             self._child.formula = formula
-            self.parse_formula()
+            self.set_needs_parse()
 
     @property
     def formula_message(self):
@@ -415,18 +417,32 @@ class Column:
         return rer.columns
 
     @property
+    def needs_parse(self):
+        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
+            return False
+        else:
+            return self._needs_parse
+
+    @property
     def needs_recalc(self):
-        if self.column_type is not ColumnType.COMPUTED and self.column_type is not ColumnType.FILTER:
+        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
             return False
         else:
             return self._needs_recalc
 
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
+    def set_needs_parse(self):
+        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
+            return
         for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
-        if self.column_type is ColumnType.COMPUTED or self.column_type is ColumnType.FILTER:
-            self._needs_recalc = needs_recalc
+            parent.set_needs_parse()
+        self._needs_parse = True
+
+    def set_needs_recalc(self):
+        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
+            return
+        for parent in self._node_parents:
+            parent.set_needs_recalc()
+        self._needs_recalc = True
 
     def recalc(self, start=None, end=None):
 
@@ -485,12 +501,25 @@ class Column:
         self._needs_recalc = False
 
     def parse_formula(self):
+
+        if not self.needs_parse:
+            return
+
         try:
             dataset = self._parent
 
             if self._formula_status is FormulaStatus.OK:
+                self._node._release()
                 self._node._remove_node_parent(self)
                 self._node = None
+
+            if self.column_type == ColumnType.RECODED:
+                if self._transform != 0 and self._parent_id != 0:
+                    trans = dataset.get_transform_by_id(self._transform)
+                    parent = dataset.get_column_by_id(self._parent_id)
+                    self.formula = trans.produce_formula(parent)
+                else:
+                    self.formula = ''
 
             node = Parser.parse(self.formula)
             self._child.formula_message = ''
@@ -569,6 +598,10 @@ class Column:
                 self._node._add_node_parent(self)
                 self._formula_status = FormulaStatus.OK
 
+                for dep in self.dependencies:
+                    if dep.needs_parse:
+                        dep.parse_formula()
+
                 self.set_data_type(self._node.data_type)
                 self.set_measure_type(self._node.measure_type)
 
@@ -587,11 +620,16 @@ class Column:
             # import traceback
             # print(traceback.format_exc())
 
+        self._needs_parse = False
+
     def _add_node_parent(self, parent):
         self._node_parents.append(parent)
 
     def _remove_node_parent(self, parent):
         self._node_parents.remove(parent)
+
+    def _release(self):
+        pass
 
     @property
     def uses_column_formula(self):
