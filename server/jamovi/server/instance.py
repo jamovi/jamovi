@@ -766,9 +766,11 @@ class Instance:
             self._data.update_filter_names()
 
         for column in to_calc:
+            column.set_needs_parse()
+        for column in to_calc:
             column.parse_formula()
-            column.needs_recalc = True
-
+        for column in to_calc:
+            column.set_needs_recalc()
         for column in to_calc:
             column.recalc()
 
@@ -811,6 +813,8 @@ class Instance:
         self._data.delete_columns(request.columnStart, request.columnEnd)
 
         for column in to_reparse:
+            column.set_needs_parse()
+        for column in to_reparse:
             column.parse_formula()
 
         if filter_deleted:
@@ -819,68 +823,68 @@ class Instance:
             to_recalc = to_reparse
 
         for column in to_recalc:
-            column.needs_recalc = True
-
+            column.set_needs_recalc()
         for column in to_recalc:
             column.recalc()
-
-        to_reparse = sorted(to_reparse, key=lambda x: x.index)
 
         if filter_deleted:
             self._data.update_filter_status()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)
-            for column in to_reparse:
-                column_schema = response.schema.columns.add()
-                self._populate_column_schema(column, column_schema)
+            for column in sorted(to_reparse, key=lambda x: x.index):
+                column_pb = response.schema.columns.add()
+                self._populate_column_schema(column, column_pb)
 
     def _apply_schema(self, request, response):
+
+        # columns that need to be reparsed, and/or recalced
+        reparse = set()
+        recalc = set()
+
+        # the changes to be sent back to the client in the response
+        cols_changed = set()
         trans_changed = set()
-        for transform_pb in request.schema.transforms:
-            if transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE'):
-                self._data.remove_transform(transform_pb.id)
-                for column_pb in request.schema.columns:  # check for collisions with an existing request
-                    if column_pb.transform == transform_pb.id:
-                        column_pb.transform = 0
 
-                for column in self._data:  # create requests to modify columns that rely on transform
-                    if column.transform == transform_pb.id:
-                        new_request = True
-                        for column_pb in request.schema.columns:
-                            if column_pb.id == column.id:
-                                new_request = False
-                                break
-                        if new_request:
-                            column_pb = request.schema.columns.add()
-                            self._populate_column_schema(column, column_pb)
-                            column_pb.transform = 0
+        for trans_pb in request.schema.transforms:
 
-            else:
-                transform = None
-                if transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('CREATE'):
-                    transform = self._data.append_transform(transform_pb.name, transform_pb.id)
-                elif transform_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE'):
-                    transform = self._data.get_transform_by_id(transform_pb.id)
-                    self._data.set_transform_name(transform, transform_pb.name)
+            trans_id = trans_pb.id
+            trans_name = trans_pb.name
 
-                transform.formula = list(transform_pb.formula)
-                transform.description = transform_pb.description
+            if trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('CREATE'):
+                transform = self._data.append_transform(trans_name, trans_id)
+
+                transform.formula = list(trans_pb.formula)
+                transform.description = trans_pb.description
                 trans_changed.add(transform)
 
-        n_cols_before = self._data.total_column_count
-        filter_changed = False
-        cols_changed = set()
+            elif trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE'):
+                transform = self._data.get_transform_by_id(trans_id)
+                self._data.set_transform_name(transform, trans_name)
+
+                new_formula = list(trans_pb.formula)
+
+                if transform.formula != new_formula:
+                    transform.formula = new_formula
+                    transform.parse_formula()
+                    for column in self._data:
+                        if column.transform == trans_id:
+                            reparse.add(column)
+
+                transform.description = trans_pb.description
+                trans_changed.add(transform)
+            else:
+                pass  # deletion handled further down
 
         if len(request.schema.columns) > 0:
+
             min_index = self._data.total_column_count
             for column_schema in request.schema.columns:
                 column = self._data.get_column_by_id(column_schema.id)
                 if column.index < min_index:
                     min_index = column.index
 
-            recalc = set()
-            reparse = set()
+            n_cols_before = self._data.total_column_count
 
             # 'realise' any virtual columns to the left of the edit
             for i in range(self._data.column_count, min_index):
@@ -955,48 +959,61 @@ class Instance:
 
                 recalc.add(column)
 
-                if column.column_type is ColumnType.FILTER:
-                    if column.formula != old_formula:
-                        filter_changed = True
-                    elif column.active != old_active:
-                        filter_changed = True
-
-                dependents = column.dependents
-
-                for dep in dependents:
-                    # we have to reparse dependent filters in case the formula
-                    # has changed to include a 'V' or column function
-                    if dep.is_filter:
-                        filter_changed = True
-                        reparse.add(dep)
-
-                cols_changed.update(dependents)
-                recalc.update(dependents)
-
-                if old_name != column.name:     # if a name has changed, then
-                    reparse.update(dependents)  # dep columns need to be reparsed
+                if column.formula != old_formula:
+                    reparse.add(column)
+                elif column.transform != old_transform:
+                    reparse.add(column)
+                elif column.parent_id != old_parent_id:
+                    reparse.add(column)
+                elif old_name != column.name:          # if a name has changed, then
+                    reparse.update(column.dependents)  # dep columns need to be reparsed
                 elif old_d_type != column.data_type:
-                    reparse.update(dependents)
+                    reparse.update(column.dependents)
                 elif old_m_type != column.measure_type:
-                    reparse.update(dependents)
+                    reparse.update(column.dependents)
 
-            if filter_changed:
-                # reparse filters, recalc all
+            for i in range(n_cols_before, self._data.total_column_count):  # cols added
+                column = self._data[i]
+                cols_changed.add(column)
+
+        # handle transform deletions
+        for trans_pb in request.schema.transforms:
+            if trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE'):
+                self._data.remove_transform(trans_pb.id)
                 for column in self._data:
-                    if column.is_filter:
+                    if column.transform == trans_pb.id:
+                        column.transform = 0
                         reparse.add(column)
-                    else:
-                        break
+
+        # dependent columns need to be reparsed too
+        dependents = set()
+        for column in reparse:
+            dependents.update(column.dependents)
+        reparse.update(dependents)
+
+        for column in reparse:
+            column.set_needs_parse()
+        for column in reparse:
+            column.parse_formula()
+
+        recalc.update(reparse)
+
+        filter_changed = False
+        for column in recalc:
+            # if a filter has changed, recalc everything
+            if column.is_filter:
+                filter_changed = True
                 recalc = self._data
+                break
 
-            reparse = sorted(reparse, key=lambda x: x.index)
-            for column in reparse:
-                column.parse_formula()
+        for column in recalc:
+            column.set_needs_recalc()
+        for column in recalc:
+            column.recalc()
+            for dep in column.dependents:
+                dep.recalc()
 
-            for column in recalc:
-                column.needs_recalc = True
-            for column in recalc:
-                column.recalc()
+        cols_changed.update(recalc)
 
         self._data.is_edited = True
 
@@ -1008,10 +1025,6 @@ class Instance:
         else:
             self._populate_schema_info(request, response)
 
-            for i in range(n_cols_before, self._data.total_column_count):  # cols added
-                column = self._data[i]
-                cols_changed.add(column)
-
             # sort ascending (the client doesn't like them out of order)
             cols_changed = sorted(cols_changed, key=lambda x: x.index)
 
@@ -1020,8 +1033,8 @@ class Instance:
                 self._populate_column_schema(column, column_pb)
 
             for transform in trans_changed:
-                transform_pb = response.schema.transforms.add()
-                self._populate_transform_schema(transform, transform_pb)
+                trans_pb = response.schema.transforms.add()
+                self._populate_transform_schema(transform, trans_pb)
 
     def _parse_cells(self, request):
 
@@ -1196,7 +1209,7 @@ class Instance:
             search_index = 0
 
             column.column_type = ColumnType.DATA
-            column.needs_recalc = True  # invalidate dependent nodes
+            column.set_needs_recalc()  # invalidate dependent nodes
 
             values = cells[i]
 
@@ -1325,9 +1338,11 @@ class Instance:
             cols_changed = sorted(cols_changed, key=lambda x: x.index)
 
         for column in reparse:
+            column.set_needs_parse()
+        for column in reparse:
             column.parse_formula()
         for column in recalc:
-            column.needs_recalc = True
+            column.set_needs_recalc()
         for column in recalc:
             column.recalc()
 
@@ -1461,10 +1476,8 @@ class Instance:
     def _populate_transform_schema(self, transform, transform_schema):
         transform_schema.name = transform.name
         transform_schema.id = transform.id
-        for formula in transform.formula:
-            transform_schema.formula.append(formula)
-        for formula_msg in transform.formula_message:
-            transform_schema.formulaMessage.append(formula_msg)
+        transform_schema.formula[:] = transform.formula
+        transform_schema.formulaMessage[:] = transform.formula_message
         transform_schema.description = transform.description
 
     def _populate_column_schema(self, column, column_schema):
