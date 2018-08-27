@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 
-function insertText(el, newText, cursorOffset = 0) {
+function insertText(el, newText, cursorOffset = 0, checkEscape = true) {
 
     let sel = window.getSelection();
     let range = sel.getRangeAt(0);
@@ -19,7 +19,7 @@ function insertText(el, newText, cursorOffset = 0) {
         sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
     } else {
 
-        if (cursorOffset !== -1 && newText.search(/[ ~!@#$%^&*\+\-\=()\[\]{};,<>?/\\]/) !== -1)
+        if (checkEscape && cursorOffset !== -1 && newText.search(/[ ~!@#$%^&*\+\-\=()\[\]{};,<>?/\\]/) !== -1)
             newText = '\`' + newText + '\`';
 
         el.textContent = (before + newText + after);
@@ -124,21 +124,13 @@ function allFunctions($functionsContent) {
 
 const toolbar = function(dataset) {
     this.dataset = dataset;
-    this._inTools = false;
 
-    $(window).resize( (event) => {
-        this._findPosition();
-    } );
+    this.isScrollTarget = function(target) {
+        return target === this.$functionsContent[0] || target === this.$varsContent[0];
+    };
 
-    window.addEventListener('scroll', (event) => {
-        if (this._shown && ! this._waiting && event.target !== this.$functionsContent[0] && event.target !== this.$varsContent[0]) {
-            this.hide({ data: this });
-        }
-    }, true);
-
-    this.$el = $('<div class="jmv-formula-toolbar-widget formula-toolbar-hidden formula-toolbar-remove"></div>');
-
-    this.$options = $('<div class="jmv-formula-toolbar-options"></div>').appendTo(this.$el);
+    this.$options = $('<div class="jmv-formula-toolbar-options"></div>');//.appendTo(this.$el);
+    this.$el = this.$options;
 
     this.$ops = $('<div class="ops-box"></div>').appendTo(this.$options);
     this.$label = $('<div class="option-label">This is a label!</div>').appendTo(this.$options);
@@ -190,7 +182,8 @@ const toolbar = function(dataset) {
 
     this.$varsContent.on("dblclick", (event) => {
         if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
-            insertText(this.$formula[0], event.target.dataset.name);
+            let value = event.target.dataset.name;
+            insertText(this.$formula[0], value, 0, value !== '$value');
             this.$formula.trigger('input', { });
         }
     });
@@ -199,12 +192,15 @@ const toolbar = function(dataset) {
         this.$formula.focus();
         $(".content .item").removeClass("item-activated");
         $(event.target).addClass("item-activated");
-        this.$label.html('Variable: ' + $(event.target).text());
-        this.$description.html('This is a data variable.');
-    });
-
-    this.$el.on('mousedown', (event) => {
-        this._inTools = true;
+        let value = $(event.target).text();
+        if (value === '$value') {
+            this.$label.html('Keyword: ' + value);
+            this.$description.html('The current value of the variable to which this transform is applied.');
+        }
+        else {
+            this.$label.html('Variable: ' + value);
+            this.$description.html('This is a data variable.');
+        }
     });
 
     this.$el.on('click', (event) => {
@@ -212,67 +208,13 @@ const toolbar = function(dataset) {
             this.$formula.focus();
     });
 
-    this.hide = function(event) {
-        let self = event.data;
-        if (self._inTools === false) {
-            self.$el.addClass('formula-toolbar-hidden formula-toolbar-remove');
-            self.$formula.off('blur.formula-toolbar', null, this.hide);
-            self.$formula.trigger('editor:closing');
-            self.$formula = null;
-            self._shown = false;
-            self._waiting = false;
-        }
-        else {
-            self._inTools = false;
-        }
-    };
-
-    this._findPosition = function() {
-        if ( ! this.$formula )
-            return;
-
-        if ( ! this._shown)
-            return;
-
-        this.$el.removeClass('formula-toolbar-remove');
-        setTimeout(() => {
-            this.$el.removeClass('formula-toolbar-hidden');
-            this.$el.on('transitionend', (event) => {
-                this._waiting = false;
-            });
-        }, 0);
-
-        let offset = this.$formula.offset();
-        let positionInfo = this.$formula[0].getBoundingClientRect();
-        let height = positionInfo.height;
-        let width = this.$formula.outerWidth(false);
-        let data = {
-            top: offset.top + height + 1,
-            left: offset.left
-        };
-        this.$el.offset(data);
-        this.$el.outerWidth(width);
-    };
-
-    this.show = function($formula, variableName, wait) {
-
-        if (this._shown && $formula === this.$formula)
-            return;
-
-        this._shown = true;
-        this._waiting = wait;
-
-        if (this.$formula)
-            this.$formula.off('blur.formula-toolbar', null, this.hide);
+    this.show = function($formula, variableName, useValue) {
 
         this.$formula = $formula;
 
-        this.$formula.on('blur.formula-toolbar', null, this, this.hide);
-
-        if ( ! wait)
-            this._findPosition();
-
         this.$varsContent.empty();
+        if (useValue)
+            this.$varsContent.append($('<div class="item" data-name="$value">$value</div>'));
         for (let col of this.dataset.get("columns")) {
             if (col.name !== '' && col.columnType !== 'filter') {
                 if (col.name === variableName)
@@ -282,38 +224,12 @@ const toolbar = function(dataset) {
             }
         }
     };
+
+    this.focusedOn = function() {
+        return this.$formula;
+    };
 };
 
-let  _toolbar = null;
 
-const init = function(dataset) {
-    if (_toolbar === null) {
-        _toolbar = new toolbar(dataset);
-        $('body').append(_toolbar.$el);
-    }
-    else {
-        _toolbar.dataset = dataset;
-    }
-};
 
-const show = function($formula, variableName, wait) {
-    _toolbar.show($formula, variableName, wait);
-};
-
-const hide = function() {
-    _toolbar.hide();
-};
-
-const updatePosition = function() {
-    _toolbar._findPosition();
-};
-
-const focusedOn = function() {
-    return _toolbar.$formula;
-};
-
-const clicked = function() {
-    return _toolbar._inTools;
-};
-
-module.exports = { init, show, hide, updatePosition, focusedOn, clicked };
+module.exports = toolbar;
