@@ -18,11 +18,24 @@ from . import functions
 NaN = float('nan')
 
 
-class Num(ast.Num):
-
-    def __init__(self, *args, **kwargs):
-        ast.Num.__init__(self, *args, **kwargs)
+class Node:
+    def __init__(self):
         self._node_parents = [ ]
+
+    def set_needs_recalc(self):
+        for parent in self._node_parents:
+            parent.set_needs_recalc()
+
+    def set_needs_parse(self):
+        for parent in self._node_parents:
+            parent.set_needs_parse()
+
+    @property
+    def needs_recalc(self):
+        return False
+
+    def fvalues(self, row_count, filt):
+        return FValues(self, row_count, filt)
 
     def _add_node_parent(self, node):
         self._node_parents.append(node)
@@ -30,11 +43,18 @@ class Num(ast.Num):
     def _remove_node_parent(self, node):
         self._node_parents.remove(node)
 
+    def _release(self):
+        pass
+
+
+class Num(ast.Num, Node):
+
+    def __init__(self, *args, **kwargs):
+        ast.Num.__init__(self, *args, **kwargs)
+        Node.__init__(self)
+
     def fvalue(self, index, row_count, filt):
         return self.n
-
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return True
@@ -54,14 +74,6 @@ class Num(ast.Num):
             return MeasureType.CONTINUOUS
 
     @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        pass
-
-    @property
     def has_levels(self):
         return False
 
@@ -70,23 +82,14 @@ class Num(ast.Num):
         return False
 
 
-class Str(ast.Str):
+class Str(ast.Str, Node):
 
     def __init__(self, *args, **kwargs):
         ast.Str.__init__(self, *args, **kwargs)
-        self._node_parents = [ ]
-
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
+        Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
         return self.s
-
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
 
     def is_atomic_node(self):
         return True
@@ -100,14 +103,6 @@ class Str(ast.Str):
         return MeasureType.NOMINAL
 
     @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        pass
-
-    @property
     def has_levels(self):
         return True
 
@@ -119,11 +114,11 @@ class Str(ast.Str):
         return False
 
 
-class UnaryOp(ast.UnaryOp):
+class UnaryOp(ast.UnaryOp, Node):
 
     def __init__(self, *args, **kwargs):
         ast.UnaryOp.__init__(self, *args, **kwargs)
-        self._node_parents = [ ]
+        Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
         op = self.op
@@ -156,9 +151,6 @@ class UnaryOp(ast.UnaryOp):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
-
     def is_atomic_node(self):
         return self.operand.is_atomic_node()
 
@@ -186,21 +178,6 @@ class UnaryOp(ast.UnaryOp):
         else:
             return self.operand.measure_type
 
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
-
-    @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
-
     @property
     def has_levels(self):
         return False
@@ -209,12 +186,16 @@ class UnaryOp(ast.UnaryOp):
     def uses_column_formula(self):
         return self.operand.uses_column_formula
 
+    def _release(self):
+        self.operand._release()
+        self.operand._remove_node_parent(self)
 
-class BoolOp(ast.BoolOp):
+
+class BoolOp(ast.BoolOp, Node):
 
     def __init__(self, *args, **kwargs):
         ast.BoolOp.__init__(self, *args, **kwargs)
-        self._node_parents = [ ]
+        Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
         if isinstance(self.op, ast.And):
@@ -244,9 +225,6 @@ class BoolOp(ast.BoolOp):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
-
     def is_atomic_node(self):
         for value in self.values:
             if not value.is_atomic_node():
@@ -261,21 +239,6 @@ class BoolOp(ast.BoolOp):
     def measure_type(self):
         return MeasureType.NOMINAL
 
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
-
-    @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
-
     @property
     def has_levels(self):
         return False
@@ -287,12 +250,17 @@ class BoolOp(ast.BoolOp):
                 return True
         return False
 
+    def _release(self):
+        for v in self.values:
+            v._release()
+            v._remove_node_parent(self)
 
-class Call(ast.Call):
+
+class Call(ast.Call, Node):
 
     def __init__(self, func, args, keywords):
+        Node.__init__(self)
         self._cached_value = None
-        self._node_parents = [ ]
         self._arg_types = [ ]
         self._d_type = None
         self._m_type = None
@@ -368,28 +336,16 @@ class Call(ast.Call):
 
         return value
 
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
-
     def is_atomic_node(self):
         return False
-
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
 
     @property
     def needs_recalc(self):
         return self._cached_value is None
 
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        if needs_recalc:
-            self._cached_value = None
-        for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
+    def set_needs_recalc(self):
+        self._cached_value = None
+        Node.set_needs_recalc(self)
 
     def _determine_d_m_types(self):
         # determine the data and measure type from the function meta
@@ -504,12 +460,17 @@ class Call(ast.Call):
 
         return False
 
+    def _release(self):
+        for arg in self.args:
+            arg._release()
+            arg._remove_node_parent(self)
 
-class BinOp(ast.BinOp):
+
+class BinOp(ast.BinOp, Node):
 
     def __init__(self, *args, **kwargs):
         ast.BinOp.__init__(self, *args, **kwargs)
-        self._node_parents = [ ]
+        Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
 
@@ -565,9 +526,6 @@ class BinOp(ast.BinOp):
         else:
             return get_missing()
 
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
-
     def is_atomic_node(self):
         return self.left.is_atomic_node() and self.right.is_atomic_node()
 
@@ -609,21 +567,6 @@ class BinOp(ast.BinOp):
         else:
             return MeasureType.ORDINAL
 
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
-
-    @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
-
     @property
     def has_levels(self):
         return False
@@ -632,12 +575,18 @@ class BinOp(ast.BinOp):
     def uses_column_formula(self):
         return self.left.uses_column_formula or self.right.uses_column_formula
 
+    def _release(self):
+        self.left._release()
+        self.right._release()
+        self.left._remove_node_parent(self)
+        self.right._remove_node_parent(self)
 
-class Compare(ast.Compare):
+
+class Compare(ast.Compare, Node):
 
     def __init__(self, *args, **kwargs):
         ast.Compare.__init__(self, *args, **kwargs)
-        self._node_parents = [ ]
+        Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
         v1 = self.left.fvalue(index, row_count, filt)
@@ -685,9 +634,6 @@ class Compare(ast.Compare):
         else:
             raise RuntimeError("Shouldn't get here")
 
-    def fvalues(self, row_count, filt):
-        return FValues(self, row_count, filt)
-
     def is_atomic_node(self):
         if self.left.is_atomic_node() is False:
             return False
@@ -703,21 +649,6 @@ class Compare(ast.Compare):
     @property
     def measure_type(self):
         return MeasureType.NOMINAL
-
-    def _add_node_parent(self, node):
-        self._node_parents.append(node)
-
-    def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
-
-    @property
-    def needs_recalc(self):
-        return False
-
-    @needs_recalc.setter
-    def needs_recalc(self, needs_recalc: bool):
-        for parent in self._node_parents:
-            parent.needs_recalc = needs_recalc
 
     @property
     def has_levels(self):
@@ -736,3 +667,11 @@ class Compare(ast.Compare):
                 return True
 
         return False
+
+    def _release(self):
+        self.left._release()
+        self.left._remove_node_parent(self)
+
+        for comp in self.comparators:
+            comp._release()
+            comp._remove_node_parent(self)
