@@ -394,7 +394,7 @@ class InstanceModel:
 
     def _recalc_all(self):
         for column in self:
-            column.needs_recalc = True
+            column.set_needs_recalc()
         for column in self:
             column.recalc()
 
