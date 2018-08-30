@@ -3,46 +3,46 @@
  */
 
 .dialog-widget.background {
-    background-color: rgba(0, 0, 0, .2);
+    background-color: rgba(0, 0, 0, .2) !important;
 }
 
 .dialog-widget.prompt,
 .dialog-widget.confirm {
-    top: calc(33% - 115px);
-    background-color: #F0F0F0;
-    border: 1px solid #ACACAC;
-    border-radius: 2px;
-    box-shadow: none;
+    top: calc(33% - 115px) !important;
+    background-color: #F0F0F0 !important;
+    border: 1px solid #ACACAC !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
 }
 
 .dialog-widget .divider {
-    border-top: none;
+    border-top: none !important;
 }
 
 .dialog-widget input {
-    border-radius: 2px;
-    border-color: #D0D0D0;
+    border-radius: 2px !important;
+    border-color: #D0D0D0 !important;
 }
 
 .dialog-widget input:focus {
     outline: none !important;
-    border: 1px solid #3E6DA9;
+    border: 1px solid #3E6DA9 !important;
 }
 
 .dialog-widget .ok, .dialog-widget .cancel {
-    border-radius: 2px;
-    color: inherit;
-    background-color: #A9C6F2;
-    width: calc(50% - 5px);
+    border-radius: 2px !important;
+    color: inherit !important;
+    background-color: #A9C6F2 !important;
+    width: calc(50% - 5px) !important;
 }
 
 .dialog-widget .ok:hover, .dialog-widget .cancel:hover {
-    background-color: #7fAAEC;
+    background-color: #7fAAEC !important;
 }
 
 .dialog-widget .ok:focus, .dialog-widget .cancel:focus {
     outline: none !important;
-    border: 1px solid #3E6DA9;
+    border: 1px solid #3E6DA9 !important;
 }
 
 .dialog-widget .url {
@@ -50,7 +50,7 @@
 }
 
 .dialog-widget .title {
-    margin-top: 10px;
+    margin-top: 10px !important;
 }
 
 .jmv-tableview.resizing .jmv-column,
