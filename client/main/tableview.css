@@ -196,6 +196,22 @@
     flex: 0 0 16px;
 }
 
+.jmv-column-header-colour {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    position: absolute;
+    right: 5px;
+    top: 3px;
+    opacity: 0;
+    cursor: default;
+    transition: opacity .2s, background-color .2s;
+}
+
+.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour:not(.no-transform) {
+    opacity: 1;
+}
+
 .jmv-row-header-cell.virtual {
     color: #BFBFBF ;
 }
@@ -343,27 +359,33 @@ input.jmv-table-cell-selected.copying {
     background-image: url('assets/variable-computed.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon {
     background-image: url('assets/variable-ordinal-text.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-measuretype="continuous"] > .jmv-column-header-icon {
     background-image: url('assets/variable-continuous.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="id"] > .jmv-column-header-icon {
+.jmv-column-header[data-columntype="data"][data-measuretype="id"] > .jmv-column-header-icon,
+.jmv-column-header[data-columntype="recoded"][data-measuretype="id"] > .jmv-column-header-icon {
     background-image: url('assets/variable-id.svg');
 }
 
@@ -374,9 +396,8 @@ input.jmv-table-cell-selected.copying {
 .jmv-column-header[data-fmlaok="0"][data-active="1"] > .jmv-column-header-icon {
     display: block;
     cursor: default;
-    background-image: url('assets/column-error.svg');
+    background-image: url('assets/column-error.svg') !important;
 }
-
 
 .jmv-table-body {
     position: absolute ;

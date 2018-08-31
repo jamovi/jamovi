@@ -18,14 +18,17 @@ const VariableList = function() {
         this.$el.trigger('selected-variable', { name: 'None', id: 0 });
     });
 
-    this.populate = function(columns) {
+    this.populate = function(columns, excludeNone) {
+        if (excludeNone)
+            this.$none.addClass('hidden');
+        else
+            this.$none.removeClass('hidden');
+
         this.$middle.empty();
         for (let column of columns) {
-            if (column.columnType === 'data') {
-                let item = new VariableListItem(column);
-                item.$el.appendTo(this.$middle);
-                this._createItemEvents(item);
-            }
+            let item = new VariableListItem(column);
+            item.$el.appendTo(this.$middle);
+            this._createItemEvents(item);
         }
     };
 
