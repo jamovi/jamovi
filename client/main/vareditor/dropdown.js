@@ -43,7 +43,6 @@ const dropdown = function() {
         if (inTool) {
             if (this.$formula)
                 this.$formula.focus();
-                this.$formula.select();
         }
     });
 
