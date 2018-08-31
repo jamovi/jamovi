@@ -12,6 +12,7 @@ class Transform:
         self.description = ''
         self.formula = [ '' ]
         self.formula_message = [ '' ]
+        self.colour_index = 0
         self._pieces = [ '1', 'NA' ]
 
     def parse_formula(self):

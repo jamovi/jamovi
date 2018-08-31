@@ -153,8 +153,6 @@ const EditorWidget = Backbone.View.extend({
             var keypressed = event.keyCode || event.which;
             if (keypressed === 13) { // enter key
                 $element.blur();
-                if (this.model.get('changes'))
-                    this.model.apply();
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -224,7 +222,7 @@ const EditorWidget = Backbone.View.extend({
             this.computedVarWidget.attach();
         }
         else if (type === 'recoded') {
-            this.$label[0].textContent = 'RECODED VARIABLE';
+            this.$label[0].textContent = 'TRANSFORMED VARIABLE';
             this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
