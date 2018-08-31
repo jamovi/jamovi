@@ -8,6 +8,7 @@ const keyboardJS = require('keyboardjs');
 const dropdown = require('./dropdown');
 const TransformList = require('./transformlist');
 const VariableList = require('./variablelist');
+const ColourPalette = require('../editors/colourpalette');
 
 const RecodedVarWidget = Backbone.View.extend({
     className: 'RecodedVarWidget',
@@ -20,10 +21,19 @@ const RecodedVarWidget = Backbone.View.extend({
         this.$el.addClass('jmv-variable-recoded-widget');
 
         this.$top = $('<div class="jmv-variable-recoded-top"></div>').appendTo(this.$el);
-        $('<div>recoded from variable</div>').appendTo(this.$top);
+        $('<div class="variable-list-label">Source variable</div>').appendTo(this.$top);
+        this.$variableIcon = $('<div class="variable-type-icon"></div>').appendTo(this.$top);
         this.$variableList = $('<select class="recoded-from"></select>').appendTo(this.$top);
-        $('<div>using</div>').appendTo(this.$top);
+        $('<div class="transform-label">using transform</div>').appendTo(this.$top);
+        this.$transformIcon = $('<div class="transform-icon"></div>').appendTo(this.$top);
         this.$transformList = $('<select id="transform-type"><option value="None">None</option></select>').appendTo(this.$top);
+        this.$editTransform = $('<div class="edit-button">Edit...</div>').appendTo(this.$top);
+        this.$errorMessage = $('<div class="error-msg">This transform is in error and should be edited.</div>').appendTo(this.$top);
+        this.$editTransform.on('click', (event) => {
+            let transformId = this.model.get('transform');
+            if (transformId !== 0)
+                this.$el.trigger('edit:transform', transformId);
+        });
 
         this._updateChannelList();
 
@@ -50,6 +60,7 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this.transformList.$el.on('selected-transform', (event, transform) => {
             this.model.set('transform', transform.id);
+            this._updateTransformColour();
             dropdown.hide();
         });
 
@@ -68,32 +79,38 @@ const RecodedVarWidget = Backbone.View.extend({
         });
 
         this.transformList.$el.on('create-transform', (event) => {
-            let dataset = this.model.dataset;
-            dataset.setTransforms([ { id: 0, values: { description: '', formula: '' } } ]).then(() => {
-                this.$el.trigger('transform-selected');
-                let transforms = dataset.get('transforms');
-                let transformId = transforms[transforms.length - 1].id;
-                this.model.set('transform', transformId);
-                this.$el.trigger('edit:transform', transformId);
-            }).then(() => {
-                dropdown.hide();
-            });
+            this._createTransform();
         });
 
         this.model.on('change:transform', event => {
             if (this.attached === false)
                 return;
 
+            this.$errorMessage.removeClass('show');
             let transformId = this.model.get('transform');
-            if (transformId === null || transformId === 0)
+            if (transformId === null || transformId === 0) {
                 this.$transformList.val('None');
+                this.$editTransform.addClass('disabled');
+            }
             else {
                 let transform = this.model.dataset.getTransformById(transformId);
                 if (transform ===undefined)
+                {
                     this.$transformList.val('None');
-                else
+                    this.$editTransform.addClass('disabled');
+                }
+                else {
                     this.$transformList.val(transform.name);
+                    this.$editTransform.removeClass('disabled');
+                    for (let msg of transform.formulaMessage) {
+                        if (msg !== '') {
+                            this.$errorMessage.addClass('show');
+                            break;
+                        }
+                    }
+                }
             }
+            this._updateTransformColour();
         });
 
         this.model.on('change:parentId', event => {
@@ -105,13 +122,13 @@ const RecodedVarWidget = Backbone.View.extend({
             let column = dataset.getColumnById(parentId);
             if (column) {
                 this.$variableList.val(column.name);
-                this.$variableList.attr('variable-type', column.measureType);
-                this.$variableList.attr('data-type', column.dataType);
+                this.$variableIcon.attr('variable-type', column.measureType);
+                this.$variableIcon.attr('data-type', column.dataType);
             }
             else {
                 this.$variableList.val('None');
-                this.$variableList.attr('variable-type', 'none');
-                this.$variableList.attr('data-type', 'none');
+                this.$variableIcon.attr('variable-type', 'none');
+                this.$variableIcon.attr('data-type', 'none');
             }
         });
 
@@ -119,6 +136,27 @@ const RecodedVarWidget = Backbone.View.extend({
         this.model.dataset.on('dataSetLoaded', this._onDatasetLoaded, this);
         this.model.dataset.on('columnsChanged', this._updateChannelList, this);
 
+    },
+    _updateTransformColour() {
+        let transformId = this.model.get('transform');
+        if (transformId === 0)
+            this.$transformIcon.css('opacity', 0);
+        else {
+            let transform = this.model.dataset.getTransformById(transformId);
+            this.$transformIcon.css({ 'background-color': ColourPalette.get(transform.colourIndex), 'opacity': 1 });
+        }
+    },
+    _createTransform() {
+        let dataset = this.model.dataset;
+        dataset.setTransforms([ { id: 0, values: { description: '', formula: '' } } ]).then(() => {
+            this.$el.trigger('transform-selected');
+            let transforms = dataset.get('transforms');
+            let transformId = transforms[transforms.length - 1].id;
+            this.model.set('transform', transformId);
+            this.$el.trigger('edit:transform', transformId);
+        }).then(() => {
+            dropdown.hide();
+        });
     },
     _onDatasetLoaded() {
         this._updateChannelList();
@@ -129,27 +167,29 @@ const RecodedVarWidget = Backbone.View.extend({
             return;
 
         let dataset = this.model.dataset;
-        let columns = dataset.attributes.columns;
+        let columns = [];
+        for (let column of dataset.attributes.columns) {
+            if (column.columnType === 'data')
+                columns.push(column);
+        }
         this.variableList.populate(columns);
 
         this.$variableList.empty();
         this.$variableList.append($('<option>None</option>'));
-        for (let i = 0; i < columns.length; i++) {
-            if (columns[i].columnType === 'data')
-                this.$variableList.append($('<option>' + columns[i].name + '</option>'));
-        }
+        for (let i = 0; i < columns.length; i++)
+            this.$variableList.append($('<option>' + columns[i].name + '</option>'));
 
         let parentId = this.model.get('parentId');
         let column = dataset.getColumnById(parentId);
         if (column) {
             this.$variableList.val(column.name);
-            this.$variableList.attr('variable-type', column.measureType);
-            this.$variableList.attr('data-type', column.dataType);
+            this.$variableIcon.attr('variable-type', column.measureType);
+            this.$variableIcon.attr('data-type', column.dataType);
         }
         else {
             this.$variableList.val('None');
-            this.$variableList.attr('variable-type', 'none');
-            this.$variableList.attr('data-type', 'none');
+            this.$variableIcon.attr('variable-type', 'none');
+            this.$variableIcon.attr('data-type', 'none');
         }
     },
     _updateTransformList() {
@@ -165,14 +205,27 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$transformList.append('<option value="' + transform.name + '">' + transform.name + '</option>');
 
         let transformId = this.model.get('transform');
-        if (transformId === null || transformId === 0)
+        this.$errorMessage.removeClass('show');
+        if (transformId === null || transformId === 0) {
             this.$transformList.val('None');
+            this.$editTransform.addClass('disabled');
+        }
         else {
             let transform = this.model.dataset.getTransformById(transformId);
-            if (transform ===undefined)
+            if (transform ===undefined) {
                 this.$transformList.val('None');
-            else
+                this.$editTransform.addClass('disabled');
+            }
+            else {
                 this.$transformList.val(transform.name);
+                this.$editTransform.removeClass('disabled');
+                for (let msg of transform.formulaMessage) {
+                    if (msg !== '') {
+                        this.$errorMessage.addClass('show');
+                        break;
+                    }
+                }
+            }
         }
     },
     detach() {
@@ -185,6 +238,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this.attached = true;
         this._updateChannelList();
         this._updateTransformList();
+        this._updateTransformColour();
     }
 
 });

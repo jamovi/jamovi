@@ -850,17 +850,20 @@ class Instance:
 
             trans_id = trans_pb.id
             trans_name = trans_pb.name
+            trans_colour_index = trans_pb.colourIndex
 
             if trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('CREATE'):
-                transform = self._data.append_transform(trans_name, trans_id)
+                transform = self._data.append_transform(trans_name, trans_id, trans_colour_index)
 
                 transform.formula = list(trans_pb.formula)
                 transform.description = trans_pb.description
+
                 trans_changed.add(transform)
 
             elif trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE'):
                 transform = self._data.get_transform_by_id(trans_id)
                 self._data.set_transform_name(transform, trans_name)
+                self._data.set_transform_colour_index(transform, trans_colour_index)
 
                 new_formula = list(trans_pb.formula)
 
@@ -872,6 +875,7 @@ class Instance:
                             reparse.add(column)
 
                 transform.description = trans_pb.description
+                transform.colour_index = trans_pb.colourIndex
                 trans_changed.add(transform)
             else:
                 pass  # deletion handled further down
@@ -1479,6 +1483,7 @@ class Instance:
         transform_schema.formula[:] = transform.formula
         transform_schema.formulaMessage[:] = transform.formula_message
         transform_schema.description = transform.description
+        transform_schema.colourIndex = transform.colour_index
 
     def _populate_column_schema(self, column, column_schema):
         column_schema.name = column.name

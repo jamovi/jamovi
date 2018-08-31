@@ -5,8 +5,9 @@
 }
 
 #transform-type {
-    margin-left: 1ex;
-    margin-right: 1ex;
+    grid-column: 3;
+    grid-row: 2;
+    min-width: 100px;
 }
 
 .jmv-variable-recoded-widget > .contents {
@@ -24,43 +25,73 @@
 }
 
 .jmv-variable-recoded-top {
-    display: flex;
+    display: grid;
+    justify-content: start;
+    justify-items: start;
+    grid-row-gap: 5px;
     flex-flow: row;
-    align-items: baseline;
+    align-items: center;
     color: #848484;
     margin-bottom: 10px;
 }
 
 .jmv-variable-recoded-top .recoded-from {
-    margin-left: 1ex;
-    margin-right: 1ex;
-    padding-left: 17px;
-    background-repeat: no-repeat;
-    background-size: 16px 100%;
-    background-position: 2px center;
+    /*margin-left: 1ex;*/
+    /*margin-right: 1ex;*/
+    /*padding-left: 17px;*/
+
+    grid-column-start: 3;
+    grid-column-end: 7;
+    grid-row: 1;
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='id'] {
+.jmv-variable-recoded-top .transform-icon {
+    width: 8px;
+    height: 8px;
+    margin: 0 9px 0 15px;
+    background-color: #0066ff;
+    border-radius: 4px;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    background-position: center;
+
+    grid-column-start: 2;
+    grid-row: 2;
+}
+
+.jmv-variable-recoded-top .variable-type-icon {
+    width: 16px;
+    height: 16px;
+    margin: 0 5px 0 11px;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    background-position: center;
+
+    grid-column-start: 2;
+    grid-row: 1;
+}
+
+.jmv-variable-recoded-top .variable-type-icon[variable-type='id'] {
     background-image: url('assets/variable-id.svg');
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='continuous'] {
+.jmv-variable-recoded-top .variable-type-icon[variable-type='continuous'] {
     background-image: url('assets/variable-continuous.svg');
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='nominal'] {
+.jmv-variable-recoded-top .variable-type-icon[variable-type='nominal'] {
     background-image: url('assets/variable-nominal.svg');
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='nominal'][data-type='text'] {
+.jmv-variable-recoded-top .variable-type-icon[variable-type='nominal'][data-type='text'] {
     background-image: url('assets/variable-nominal-text.svg');
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='ordinal'] {
+.jmv-variable-recoded-top .variable-type-icon[variable-type='ordinal'] {
     background-image: url('assets/variable-ordinal.svg');
 }
 
-.jmv-variable-recoded-top .recoded-from[variable-type='ordinal'][data-type='text'] {
+.jmv-variable-recoded-top .variable-type-icon[variable-type='ordinal'][data-type='text'] {
     background-image: url('assets/variable-ordinal-text.svg');
 }
 
@@ -111,10 +142,8 @@
     vertical-align: unset;
     width: 25px;
     height: 25px;
-    /*line-height: 25px;*/
     font-size: 20px;
     text-align: center;
-    /*font-weight: bolder;*/
     color: #bbbbbb;
 }
 
@@ -122,4 +151,51 @@
     content: attr(placeholder);
     display: block; /* For Firefox */
     color: #CCCCCC;
+}
+
+.jmv-variable-recoded-top .edit-button {
+    border: 1px solid #a0a0a0;
+    color: #212121;
+    border-radius: 2px;
+    margin-left: 5px;
+    padding: 0 5px;
+    line-height: 1.5;
+    background-color: #eeeeee;
+    grid-column: 4;
+    grid-row: 2;
+    transition: .4s background-color;
+}
+
+.jmv-variable-recoded-top .error-msg {
+    opacity: 0;
+    grid-column-start: 3;
+    grid-column-end: 6;
+    grid-row: 3;
+    color: #be564d;
+    transition: 0.2s opacity;
+}
+
+.jmv-variable-recoded-top .error-msg.show {
+    opacity: 1;
+}
+
+.jmv-variable-recoded-top .edit-button:hover {
+    background-color: rgb(230, 241, 255);
+    border-color: rgb(62, 109, 169);
+}
+
+.jmv-variable-recoded-top .edit-button.disabled {
+    background-color: #eeeeee;
+    color: #a8a8a8;
+    border: 1px solid #c6c6c6;
+}
+
+.jmv-variable-recoded-top .variable-list-label {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.jmv-variable-recoded-top .transform-label {
+    grid-column: 1;
+    grid-row: 2;
 }

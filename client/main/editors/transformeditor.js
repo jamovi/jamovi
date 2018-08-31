@@ -6,6 +6,8 @@ const opsToolbar = require('./operatordropdown');
 const tarp = require('../utils/tarp');
 const formulaToolbar = require('../vareditor/formulatoolbar');
 const dropdown = require('../vareditor/dropdown');
+const VariableList = require('../vareditor/variablelist');
+const ColourPalette = require('./colourpalette');
 
 const TransformEditor = function(dataset) {
 
@@ -14,9 +16,10 @@ const TransformEditor = function(dataset) {
     this.$el = $('<div class="jmv-transform-editor"></div>');
 
     this.title = 'TRANSFORM';
+    this.$icon = $('<div class="transform-colour"></div>');
 
     this._exampleFormulas = [
-        { s: ">", a: "2000", b: "'good'" },
+        { s: ">", a: "2000", b: "$value" },
         { s: "<=", a: "1000", b: "A" },
         { s: "==", a: "5", b: "B" },
         { s: "<", a: "17000", b: "'Male'" },
@@ -101,20 +104,57 @@ const TransformEditor = function(dataset) {
         this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
 
         let $insertBox = $('<div class="insert-box"></div>').appendTo(this.$contents);
-        let $insert = $('<div class="insert button" title="Add condition"></div>').appendTo($insertBox);
+        this.$insert = $('<button class="insert button" title="Add condition"></button>').appendTo($insertBox);
 
-        $insert.on('click', (event) => {
+        this.$insert.on('keydown', (event) => {
+            if ( event.keyCode === 9 ) { //tab
+                if (this._nextFocus) {
+                    this._nextFocus.focus();
+                    this._nextFocus = null;
+                    event.preventDefault();
+                }
+            }
+        });
+
+        this.$insert.on('click', (event) => {
             this._focusFormulaControls();
             this.formula.splice(this.formula.length - 1, 0, '', '');
-            this._addTransformUIItem('', '');
+            this._addTransformUIItem('', '', true);
             this._updateLastFormulaTag();
+
+            setTimeout(() => {
+                let $formulas = this.$options.find('.formula');
+                $($formulas[$formulas.length-3]).focus();
+                this.$options.animate({scrollTop:this.$options[0].scrollHeight}, 'slow');
+            },0);
         });
+
+        this.$insert.focus(() => {
+            keyboardJS.pause('');
+            this._focusFormulaControls();
+        } );
+
+        this.$insert.blur(() => {
+            keyboardJS.resume();
+        } );
 
         this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$contents);
 
         let $rightBox = $('<div class="right-box"></div>').appendTo(this.$contents);
         let $moveup = $('<div class="move-up button"><span class="mif-arrow-up"></span></div>').appendTo($rightBox);
         let $movedown = $('<div class="move-down button"><span class="mif-arrow-down"></span></div>').appendTo($rightBox);
+
+        $moveup.on('mousedown', (event) => {
+            let $item = this.$options.find('.selected');
+            if ($item)
+                this._swapFormulaItems($item, 'up');
+        });
+
+        $movedown.on('mousedown', (event) => {
+            let $item = this.$options.find('.selected');
+            if ($item)
+                this._swapFormulaItems($item, 'down');
+        });
 
         let elements3 = this._addTransformUIItem('');
 
@@ -137,6 +177,21 @@ const TransformEditor = function(dataset) {
         this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info"></div>').appendTo(this.$bottom);
         this.$viewConnectionInfo = $('<div class="view-button">View</div>').appendTo(this.$bottom);
 
+        this.variableList = new VariableList();
+        this.$viewConnectionInfo.on('click', (event) => {
+            let columns = [];
+            for (let column of this.dataset.attributes.columns) {
+                if (column.transform === this._id)
+                    columns.push(column);
+            }
+            if (columns.length > 0) {
+                this.variableList.populate(columns, true);
+                dropdown.show(this.$viewConnectionInfo, this.variableList);
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
         this.dataset.on('columnsChanged', (event) => {
             for (let change of event.changes) {
                 if (change.transformChanged) {
@@ -144,8 +199,26 @@ const TransformEditor = function(dataset) {
                     break;
                 }
             }
-
         });
+
+        this.dataset.on('transformsChanged', (event) => {
+            for (let change of event.changes) {
+                if (change.id === this._id) {
+                    this._updateErrorMessages();
+                    break;
+                }
+            }
+        });
+    };
+
+    this._updateErrorMessages = function() {
+        let transform = this.dataset.getTransformById(this._id);
+
+        let $messageBoxes = this.$options.find('.formula-message');
+        for (let i = 0; i < transform.formulaMessage.length; i++) {
+            let msg = transform.formulaMessage[i];
+            $messageBoxes[i].textContent = msg;
+        }
     };
 
     this._focusFormulaControls = function() {
@@ -164,7 +237,7 @@ const TransformEditor = function(dataset) {
         });
     };
 
-    this._addTransformUIItem = function(formula1, formula2) {
+    this._addTransformUIItem = function(formula1, formula2, hasTransition) {
         let hasCondition = formula2 !== undefined;
 
         let tag = 'if value';
@@ -175,7 +248,7 @@ const TransformEditor = function(dataset) {
                 tag = 'else use';
         }
 
-        let elements = this._createFormulaBox(this.$options, hasCondition);
+        let elements = this._createFormulaBox(this.$options, hasCondition, hasTransition);
 
         this._createSubFormula(elements, tag, hasCondition, formula1, 0);
 
@@ -189,7 +262,7 @@ const TransformEditor = function(dataset) {
             }
             if ( ! $formula ) {
                 $formula = elements.$focusedFormula === null ? elements.$formulas[0] : elements.$focusedFormula;
-                dropdown.show(elements.$formulaList, this.formulasetup);
+                dropdown.show(elements.$formulaGrid, this.formulasetup);
                 this.formulasetup.show($formula, '', true);
                 $formula.focus();
                 elements.$showEditor.addClass('is-active');
@@ -201,12 +274,27 @@ const TransformEditor = function(dataset) {
             elements._editorClicked = true;
         });
 
-        //this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
-        //this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
-
         if (hasCondition) {
             this._createSubFormula(elements, 'use', false, formula2, 1);
-            this._createFormulaButtons(elements.$formulaBox);
+            this._createFormulaButtons(elements);
+        }
+
+        let $items =  elements.$formulaGrid.find('.formula-list-item');
+        $($items[$items.length-1]).addClass('item-last');
+
+        let $msgItems =  elements.$formulaGrid.find('.formula-message-box');
+        $($msgItems[$msgItems.length-1]).addClass('item-last');
+
+
+        if (hasTransition) {
+            setTimeout(() => {
+                let height = elements.$formulaGrid.outerHeight();
+                this._expandSection(elements.$formulaBox[0], height + 'px');
+                elements.$formulaBox.removeClass('hidden');
+            }, 0);
+        }
+        else {
+            elements.$formulaBox.removeClass('hidden');
         }
     };
 
@@ -237,7 +325,7 @@ const TransformEditor = function(dataset) {
     this._createFormulaUI = function() {
         this.$options.empty();
         for (let i = 0; i < this.formula.length; i += 2)
-            this._addTransformUIItem(this.formula[i], this.formula[i+1]);
+            this._addTransformUIItem(this.formula[i], this.formula[i+1], true);
     };
 
     this._populate = function(event) {
@@ -245,6 +333,9 @@ const TransformEditor = function(dataset) {
         if (id !== null) {
             let transform = this.dataset.getTransformById(id);
             if (transform) {
+
+                this.$icon.css('background-color', ColourPalette.get(transform.colourIndex));
+
                 this.$title.val(transform.name);
                 this.$description[0].textContent = transform.description;
 
@@ -272,12 +363,70 @@ const TransformEditor = function(dataset) {
                         this.connectedColumns.push(column);
                 }
                 this.$connectionInfo[0].textContent = 'This transform is being used by ' + this.connectedColumns.length + ' ' + (this.connectedColumns.length === 1 ? 'variable' : 'variables');
+                this._updateErrorMessages();
                 return;
             }
         }
 
         this.$title.html('');
         this.$description.html('');
+    };
+
+    this._swapFormulaItems = function($item, direction) {
+
+        if (!this.formula || this.formula.length <= 1)
+            return;
+
+        let $formula = $item.find(':focus');
+        let index = $item.index();
+
+        if ( ! this._swappingItems &&
+             ! ((index === 0 && direction === 'up' ) || (((index+1) * 2) >= (this.formula.length-1) && direction === 'down'))) {
+            this._swappingItems = true;
+
+            let $items = this.$options.find('.formula-box');
+            let oIndex = index-1;
+            if (direction === 'down')
+                oIndex = index+1;
+
+            let $other = $($items[oIndex]);
+
+            let iHeight = $item.outerHeight(true);
+            let oHeight = $other.outerHeight(true);
+
+            $item.css('top', (parseFloat($item.css('top')) + (direction === 'up' ? (-oHeight) : oHeight)) + 'px');
+            $other.css('top', (parseFloat($other.css('top')) - (direction === 'up' ? (-iHeight) : iHeight)) + 'px');
+
+            $item.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend", (event) => {
+                $item.css('top', '0px');
+                $other.css('top', '0px');
+                $other.css('transition', 'none');
+                $item.detach();
+                if (direction === 'up')
+                    $other.before($item);
+                else
+                    $other.after($item);
+
+                setTimeout(() => {
+                    $other.css('transition', '');
+                    $formula.focus();
+                    this._swappingItems = false;
+
+                    let y1 = this.formula[(index * 2) + 0];
+                    let y2 = this.formula[(index * 2) + 1];
+
+                    this.formula[(index * 2) + 0] = this.formula[(oIndex * 2) + 0];
+                    this.formula[(index * 2) + 1] = this.formula[(oIndex * 2) + 1];
+
+                    this.formula[(oIndex * 2) + 0] = y1;
+                    this.formula[(oIndex * 2) + 1] = y2;
+                }, 0);
+            });
+        }
+
+        setTimeout(() => {
+            $formula.focus();
+        }, 0);
     };
 
     this._dataSetLoaded = function(event) {
@@ -293,20 +442,56 @@ const TransformEditor = function(dataset) {
         this._updateLastFormulaTag();
     };
 
-    this._createFormulaButtons = function($formulaBox) {
-        let $rm = $('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>').appendTo($formulaBox);
+    this._createFormulaButtons = function(elements) {
+        let $rm = $('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>').appendTo(elements.$formulaGrid);
         $rm.on('click', (event) => {
-            this._removeCondition($formulaBox);
+            elements.$formulaBox.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend", (event) => {
+                this._removeCondition(elements.$formulaBox);
+            });
+            elements.$formulaBox.addClass('remove');
+            this._collapseSection(elements.$formulaBox[0]);
         });
     };
 
-    this._createFormulaBox = function($parent, isCondition) {
+    this._collapseSection = function(element) {
+        let sectionHeight = element.scrollHeight;
+
+        let elementTransition = element.style.transition;
+        element.style.transition = '';
+
+        requestAnimationFrame(() => {
+            element.style.height = sectionHeight + 'px';
+            element.style.transition = elementTransition;
+            requestAnimationFrame(() => {
+                element.style.height = 0 + 'px';
+            });
+        });
+    };
+
+    this._expandSection = function(element, value) {
+
+        element.setAttribute('data-expanding', true);
+        let sectionHeight = element.scrollHeight;
+
+        element.style.height = value === undefined ? sectionHeight : value;
+
+        element.addEventListener('transitionend', (e) => {
+            element.removeEventListener('transitionend', e.callee);
+            element.style.height = null;
+            element.setAttribute('data-expanding', false);
+            dropdown.updatePosition();
+        });
+    };
+
+    this._createFormulaBox = function($parent, isCondition, hasTransition) {
         let $elseBox = $parent.find('.recode-else');
         let className = 'recode-if';
         if ( ! isCondition)
             className = 'recode-else';
+        if (hasTransition)
+            className = className + ' hidden';
 
-        let $formulaBox = $('<div class="formula-box ' + className + '"></div>');//.appendTo($parent);
+        let $formulaBox = $('<div class="formula-box ' + className + '"></div>');
 
         if ($elseBox.length > 0) {
             if ( ! isCondition)
@@ -319,9 +504,9 @@ const TransformEditor = function(dataset) {
 
         let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
 
-        let $formulaList = $('<div class="formula-list"></div>').appendTo($formulaBox);
+        let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
 
-        return { $formulaBox,  $showEditor, $formulaList, _editorClicked: false };
+        return { $formulaBox,  $showEditor, $formulaGrid, _editorClicked: false };
     };
 
     this._startsWithValidOps = function($formula) {
@@ -361,8 +546,7 @@ const TransformEditor = function(dataset) {
         if (hasOp === undefined)
             hasOp = false;
 
-        let $formulaList = $formulaBox.find('.formula-list');
-        let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaList);
+        let $formulaGrid = $formulaBox.find('.formula-grid');
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].b;
         let _sign = '';
@@ -371,7 +555,7 @@ const TransformEditor = function(dataset) {
             _sign = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].s + ' ';
         }
 
-        let $fp = $('<div class="formula-list-item"></div>').appendTo($formulaPair);
+        let $fp = $('<div class="formula-list-item item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 1;"></div>').appendTo($formulaGrid);
 
         elements.$focusedFormula = null;
         if (elements.$formulas === undefined)
@@ -385,12 +569,14 @@ const TransformEditor = function(dataset) {
         let $opEdit = null;
 
         $formula.on('blur', (event) => {
+            this.$options.find('.selected').removeClass('selected');
             this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent;
             if (hasOp && elements._editorClicked === false)
                 $opEdit.hide();
         });
 
         $formula.on('focus', (event) => {
+            elements.$formulaBox.addClass('selected');
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();
             if (this.formulasetup.focusedOn() !== $formula)
@@ -471,12 +657,17 @@ const TransformEditor = function(dataset) {
                 event.preventDefault();
             }
 
-            if (event.keyCode === 9) {    //tab
-                event.preventDefault();
+            if ( event.keyCode === 9 ) { //tab
+                let $formulas = this.$options.find('.formula');
+                if ($formulas[$formulas.length - 2] === $formula[0]) {
+                    this._nextFocus = $($formulas[$formulas.length - 1]);
+                    this.$insert.focus();
+                    event.preventDefault();
+                }
             }
         });
 
-        let $formulaMessageBox = $('<div class="formula-message-box"></div>').appendTo($formulaPair);
+        let $formulaMessageBox = $('<div class="formula-message-box  item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 2;"></div>').appendTo($formulaGrid);
         elements.$formulaMessage = $('<div class="formula-message"></div>').appendTo($formulaMessageBox);
 
         return elements;
