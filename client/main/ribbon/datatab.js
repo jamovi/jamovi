@@ -40,7 +40,7 @@ const DataTab = function() {
                             new RibbonButton({ title: 'Insert', name: 'insertComputed' }),
                             new RibbonButton({ title: 'Append', name: 'appendComputed' })
                         ]}),
-                        new RibbonGroup({ title: 'Recoded Variable', orientation: 'horizontal', titlePosition: 'top', items: [
+                        new RibbonGroup({ title: 'Transformed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
                             new RibbonButton({ title: 'Insert', name: 'insertRecoded' }),
                             new RibbonButton({ title: 'Append', name: 'appendRecoded' })
                         ]}),
