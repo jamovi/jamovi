@@ -254,7 +254,7 @@ const DataVarWidget = Backbone.View.extend({
     detach() {
         if ( ! this.attached)
             return;
-        this.model.apply();
+
         this.attached = false;
     },
     attach() {

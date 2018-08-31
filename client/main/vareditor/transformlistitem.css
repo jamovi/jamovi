@@ -11,6 +11,14 @@
     height: 25px;
 }
 
+.jmv-transform-list-item > .colour {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    margin-right: 5px;
+    margin-top: 2px;
+}
+
 .jmv-transform-list-item > .label {
     flex-grow: 1;
 }

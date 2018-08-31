@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 22.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1"
+	 id="svg2" inkscape:version="0.92.2 (5c3e80d, 2017-08-06)" sodipodi:docname="menu-transform.svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:svg="http://www.w3.org/2000/svg"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 1792 1792"
+	 style="enable-background:new 0 0 1792 1792;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#91A3BD;}
+	.st1{fill:none;stroke:#3E6DA9;stroke-width:122;stroke-miterlimit:10;}
+	.st2{fill:#3E6DA9;}
+</style>
+<sodipodi:namedview  bordercolor="#666666" borderopacity="1" gridtolerance="10" guidetolerance="10" id="namedview24" inkscape:current-layer="svg2" inkscape:cx="896" inkscape:cy="896" inkscape:pageopacity="0" inkscape:pageshadow="2" inkscape:window-height="2036" inkscape:window-maximized="1" inkscape:window-width="3710" inkscape:window-x="130" inkscape:window-y="60" inkscape:zoom="0.046561719" objecttolerance="10" pagecolor="#ffffff" showgrid="false">
+	</sodipodi:namedview>
+<g id="g8">
+	<path id="path4" class="st0" d="M107.3,896V92.4h846.4v440.9C808,610.6,697.6,740.4,644.7,896H107.3z"/>
+	<path id="path6" class="st0" d="M907.4,138.5v367.6c-134.3,78.5-238.1,199.5-295,343.7h-459V138.5H907.4 M999.8,46.2H61.1v896
+		h617.5c47.1-168.3,165.8-306.7,321.2-380.4V46.2L999.8,46.2z"/>
+</g>
+<g id="circle13081">
+	<path id="path10" class="st0" d="M1279.2,744.2c50.9,0,100.1,9.9,146.4,29.5c44.8,19,85.1,46.1,119.6,80.6s61.8,74.8,80.6,119.6
+		c19.5,46.3,29.5,95.5,29.5,146.4s-9.9,100.1-29.5,146.4c-19,44.8-46.1,85.1-80.6,119.6s-74.8,61.8-119.6,80.6
+		c-46.3,19.5-95.5,29.5-146.4,29.5s-100.1-9.9-146.4-29.5c-44.8-19-85.1-46.1-119.6-80.6s-61.8-74.8-80.6-119.6
+		c-19.5-46.3-29.5-95.5-29.5-146.4s9.9-100.1,29.5-146.4c19-44.8,46.1-85.1,80.6-119.6s74.8-61.8,119.6-80.6
+		C1179.1,754.2,1228.4,744.2,1279.2,744.2 M1279.2,625.5c-273.5,0-495.1,221.7-495.1,495.1s221.8,495,495.1,495
+		s495.1-221.7,495.1-495.1S1552.7,625.5,1279.2,625.5L1279.2,625.5z"/>
+</g>
+<g>
+	<g>
+		<path class="st1" d="M579.5,1548.6L579.5,1548.6c-197.3,0-357.3-160-357.3-357.3v-179.7"/>
+		<g>
+			<polygon class="st2" points="515.4,1329.6 894.7,1548.6 515.4,1767.6 			"/>
+		</g>
+	</g>
+</g>
+</svg>

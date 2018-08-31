@@ -4,7 +4,7 @@
     height: 270px;
     bottom: 0px;
     width: 100%;
-    transition: height .2s, border-top .2s;
+    transition: height .2s, border-top .2s, opacity .2s;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC;
     position: absolute;
@@ -15,6 +15,7 @@
     height: 0 ;
     transition-timing-function: ease, step-end ;
     border-top: 1px solid #F0F0F0 ;
+    opacity: 0;
 }
 
 .jmv-editor-panel-main {
@@ -27,6 +28,14 @@
     padding: 0 100px;
     display: flex;
     flex-direction: column;
+}
+
+.jmv-editor-panel-main .title-box {
+    display: flex;
+    flex-direction: row;
+    padding: 0px 4px 0px 2px;
+    margin: 6px 0 3px 0;
+    align-items: center;
 }
 
 .jmv-editor-panel-ok {
@@ -76,11 +85,9 @@
     border-color: #999999 ;
 }
 
-.jmv-editor-panel-main > .title {
+.jmv-editor-panel-main .title {
     font-size: 110%;
     color: #555555;
-    padding: 0px 4px 0px 2px;
-    margin: 8px 0 3px 0;
     font-weight: 100;
 }
 
