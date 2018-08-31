@@ -71,6 +71,9 @@ const createVariableMenuItems = function(plural) {
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Setup...', name: 'editVar' })
         ]}),
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Transform...', name: 'transform' })
+        ]}),
     ];
 };
 

@@ -17,7 +17,8 @@ const EditorPanel = Backbone.View.extend({
 
         this.$ok = $('<div class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></div>').appendTo(this.$main);
 
-        this.$title = $('<div class="title">Stuff</div>').appendTo(this.$main);
+        this.$titleBox = $('<div class="title-box"></div>').appendTo(this.$main);
+        this.$title = $('<div class="title"></div>').appendTo(this.$titleBox);
         this.$contents = $('<div class="content"></div>').appendTo(this.$main);
 
         this.$ok.on('click', event => {
@@ -41,6 +42,9 @@ const EditorPanel = Backbone.View.extend({
 
         if (this.attachedItem) {
             this.attachedItem.$el.detach();
+            if (this.$icon)
+                this.$icon.detach();
+            this.$icon = null;
             this.$title.html('');
             this.attachedItem = null;
         }
@@ -48,6 +52,8 @@ const EditorPanel = Backbone.View.extend({
         if (item) {
              this.$contents.append(item.$el);
              this.$title.html(item.title);
+             item.$icon.prependTo(this.$titleBox);
+             this.$icon = item.$icon;
              this.attachedItem = item;
              hide = false;
         }
