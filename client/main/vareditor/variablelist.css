@@ -13,6 +13,11 @@
 .jmv-variable-list-item.none-item {
     min-width: 100px;
     height: 25px;
+    min-height: 25px;
     padding-left: 25px;
     border-bottom: 1px solid #d8d8d8;
+}
+
+.jmv-variable-list-item.hidden {
+    display: none;
 }
