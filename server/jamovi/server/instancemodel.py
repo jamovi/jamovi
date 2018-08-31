@@ -68,7 +68,7 @@ class InstanceModel:
             else:
                 i += 1
 
-    def append_transform(self, name, id=0):
+    def append_transform(self, name, id=0, colour_index=0):
         use_id = self._transform_next_id
         if id != 0:
             if id < self._transform_next_id:
@@ -82,6 +82,7 @@ class InstanceModel:
         new_transform = Transform()
         new_transform.id = use_id
         self.set_transform_name(new_transform, name)
+        self.set_transform_colour_index(new_transform, colour_index)
 
         if use_id == self._transform_next_id:
             self._transform_next_id += 1
@@ -98,6 +99,22 @@ class InstanceModel:
             checked_name = name + ' (' + str(i) + ')'
             i += 1
         transform.name = checked_name
+
+    def set_transform_colour_index(self, transform, colour_index):
+        if colour_index < 0 or self.check_for_transform_colour_index(colour_index, transform):
+            colour_index = 0
+
+        while self.check_for_transform_colour_index(colour_index, transform):
+            colour_index += 1
+
+        transform.colour_index = colour_index
+
+    def check_for_transform_colour_index(self, colour_index, exclude_transform):
+        for existing_transform in self.transforms:
+            if colour_index == existing_transform.colour_index and existing_transform is not exclude_transform:
+                return True
+
+        return False
 
     def check_for_transform_name(self, name, exclude_transform):
         for existing_transform in self.transforms:

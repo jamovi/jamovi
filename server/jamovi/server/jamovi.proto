@@ -420,6 +420,7 @@ message DataSetSchema {
         repeated string formula = 4;
         repeated string formulaMessage = 5;
         Action action = 6;
+        int32 colourIndex = 7;
 
     }
     repeated ColumnSchema columns = 1;
