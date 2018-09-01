@@ -20,7 +20,18 @@ const TransformListItem = function(transform, checked) {
         this.$remove.addClass('hidden');
     });
 
+    this._calculateColour = function(colourIndex) {
+        let base = colourIndex % 12;
+        let g = base % 6;
+        let p = [0, 4, 2, 5, 1, 3];
+        if (base < 6)
+            return 'hsl(' + (p[g] * 60) + ', 48%, 57%)';
+
+        return 'hsl(' + (30 + (p[g] * 60)) + ', 17%, 52%)';
+    };
+
     this.$icon = $('<div class="icon"></div>').appendTo(this.$el);
+    this.$colour = $('<div class="colour" style="background-color: ' + this._calculateColour(transform.colourIndex) + '"></div>').appendTo(this.$el);
     this.$label = $('<div class="label">' + this.name + '</div>').appendTo(this.$el);
     this.$edit = $('<div class="edit hidden">edit</div>').appendTo(this.$el);
     this.$remove = $('<div class="remove hidden"><span class="mif-cross"></span></div>').appendTo(this.$el);

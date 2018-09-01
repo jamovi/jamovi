@@ -6,6 +6,7 @@
 
 const _ = require('underscore');
 const $ = require('jquery');
+const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -175,7 +176,7 @@ const TableView = SilkyView.extend({
 
         this._addResizeListeners($header);
 
-        let $column = $('<div data-fmlaok="' + (column.formulaMessage === '' ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
         this.$body.append($column);
         this.$columns.push($column);
 
@@ -184,6 +185,18 @@ const TableView = SilkyView.extend({
         this._bodyWidth += width;
 
         this.$body.css('width',  this._bodyWidth);
+
+        if (column.columnType === 'recoded') {
+            let $colour = $header.find('.jmv-column-header-colour');
+            let transform = this.model.getTransformById(column.transform);
+            if (transform) {
+                $colour.removeClass('no-transform');
+                $colour.css('background-color', ColourPalette.get(transform.colourIndex));
+                $colour.attr('title', 'Transform: ' + transform.name);
+            }
+            else
+                $colour.addClass('no-transform');
+        }
 
         this._enableDisableActions();
     },
@@ -383,6 +396,21 @@ const TableView = SilkyView.extend({
             dIndex = 0;
         return { dIndex: dIndex, index: index };
     },
+    _isColumnOk(column) {
+        let ok = column.formulaMessage === '';
+        if (ok && column.transform !== 0) {
+            let transform = this.model.getTransformById(column.transform);
+            if (transform) {
+                for (let msg of transform.formulaMessage) {
+                    if (msg !== '') {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+        }
+        return ok;
+    },
     _columnsChanged(event) {
 
         let editingVar = this.model.get('editingVar');
@@ -438,8 +466,28 @@ const TableView = SilkyView.extend({
                 $column.attr('data-measuretype', column.measureType);
             }
 
-            if (changes.formulaMessageChanged) {
-                let ok = column.formulaMessage === '';
+            if (column.columnType === 'recoded') {
+                let $colour = $header.find('.jmv-column-header-colour');
+                let transform = this.model.getTransformById(column.transform);
+                if (transform) {
+                    $colour.removeClass('no-transform');
+                    $colour.css('background-color', ColourPalette.get(transform.colourIndex));
+                    $colour.attr('title', 'Transform: ' + transform.name);
+                }
+                else
+                    $colour.addClass('no-transform');
+            }
+
+            if (column.columnType === 'computed' || column.columnType === 'recoded') {
+                let ok = this._isColumnOk(column);
+                if (ok)
+                    $column.css('background-color', 'hsla(0, 0%, 50%, 0.08)');
+                else
+                    $column.css('background-color', '');
+            }
+
+            //if (changes.formulaMessageChanged) {
+                let ok = this._isColumnOk(column);
                 $column.attr('data-fmlaok', ok ? '1' : '0');
                 $header.attr('data-fmlaok', ok ? '1' : '0');
                 let $icon = $header.find('.jmv-column-header-icon');
@@ -447,7 +495,7 @@ const TableView = SilkyView.extend({
                     $icon.attr('title', 'Issue with formula');
                 else
                     $icon.removeAttr('title');
-            }
+            //}
 
             if (changes.nameChanged) {
                 let $label = $header.find('.jmv-column-header-label');
@@ -723,7 +771,7 @@ const TableView = SilkyView.extend({
 
         let $header = $element.closest('.jmv-column-header:not(.select-all)');
         if ($header.length > 0) {
-            let colNo = $header.data('index');
+            let colNo = parseInt($header.attr('data-index'));
             this._endEditing().then(() => {
                 let rowNo = this.selection === null ? 0 : this.selection.rowNo;
                 this._setSelection(rowNo, colNo);
@@ -1603,7 +1651,7 @@ const TableView = SilkyView.extend({
                 this._addResizeListeners($header);
 
                 $after = $(this.$columns[column.dIndex]);
-                let $column = $('<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+                let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
                 $column.insertBefore($after);
                 this.$columns.splice(column.dIndex, 0, $column);
 
@@ -2160,10 +2208,11 @@ const TableView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div data-fmlaok="' + (column.formulaMessage === "" ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-id="' + column.id + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html += '<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-id="' + column.id + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
         html +=     '<div class="jmv-column-header-icon"></div>';
         html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
         html +=     '<div class="jmv-column-header-resizer" data-index="' + column.dIndex + '" draggable="true"></div>';
+        html +=     '<div class="jmv-column-header-colour"></div>';
         html += '</div>';
 
         return html;
