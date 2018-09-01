@@ -108,11 +108,17 @@ const TransformEditor = function(dataset) {
 
         this.$insert.on('keydown', (event) => {
             if ( event.keyCode === 9 ) { //tab
-                if (this._nextFocus) {
+                if (event.shiftKey === false && this._nextFocus) {
                     this._nextFocus.focus();
-                    this._nextFocus = null;
                     event.preventDefault();
                 }
+                else if (event.shiftKey === true && this._nextShiftFocus) {
+                    this._nextShiftFocus.focus();
+                    event.preventDefault();
+                }
+
+                this._nextFocus = null;
+                this._nextShiftFocus = null;
             }
         });
 
@@ -166,7 +172,7 @@ const TransformEditor = function(dataset) {
             if (event.key === 'Escape' || event.key === 'Enter') {
                 if (undo) {
                     this.formula = this._undoFormula;
-                    this._createFormulaUI();
+                    this._createFormulaUI(false);
                 }
                 tarp.hide('recode-formula');
             }
@@ -322,10 +328,10 @@ const TransformEditor = function(dataset) {
         }, 0);
     };
 
-    this._createFormulaUI = function() {
+    this._createFormulaUI = function(hasTransition) {
         this.$options.empty();
         for (let i = 0; i < this.formula.length; i += 2)
-            this._addTransformUIItem(this.formula[i], this.formula[i+1], true);
+            this._addTransformUIItem(this.formula[i], this.formula[i+1], hasTransition);
     };
 
     this._populate = function(event) {
@@ -352,7 +358,7 @@ const TransformEditor = function(dataset) {
                 }
                 this.formula = transform.formula;
                 if (updateFormula)
-                    this._createFormulaUI();
+                    this._createFormulaUI(true);
 
 
                 this.connectedColumns = [];
@@ -657,12 +663,20 @@ const TransformEditor = function(dataset) {
                 event.preventDefault();
             }
 
-            if ( event.keyCode === 9 ) { //tab
+            if ( event.keyCode === 9) { //tab
                 let $formulas = this.$options.find('.formula');
-                if ($formulas[$formulas.length - 2] === $formula[0]) {
+                if ((event.shiftKey === false && $formulas[$formulas.length - 2] === $formula[0]) ||
+                    (event.shiftKey === true && $formulas[$formulas.length - 1] === $formula[0])) {
+                    this._nextShiftFocus = $($formulas[$formulas.length - 2]);
                     this._nextFocus = $($formulas[$formulas.length - 1]);
                     this.$insert.focus();
                     event.preventDefault();
+                }
+                else if (event.shiftKey === false && $formulas[$formulas.length - 1] === $formula[0]) {
+                        this._nextShiftFocus = $($formulas[$formulas.length - 1]);
+                        this._nextFocus = null;
+                        this.$insert.focus();
+                        event.preventDefault();
                 }
             }
         });

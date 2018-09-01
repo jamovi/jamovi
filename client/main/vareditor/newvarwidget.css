@@ -28,7 +28,8 @@
     background-repeat: no-repeat;
     background-position: center;
     margin-right: 2px;
-    background-color: #a9c6f2;
+    background-color: #cadaf3;
+    border: 1px solid transparent;
     transition: .2s background-color ease-out, .2s border-color ease-out;
 }
 
@@ -39,14 +40,17 @@
     text-transform: uppercase;
     flex: 1;
     padding: 20px;
-    background-color: #a9c6f2;
-    transition: .2s background-color ease-out;
+    background-color: #cadaf3;
+    border: 1px solid transparent;
+    transition: .2s background-color ease-out, .2s border-color ease-out;
 }
 
 .jmv-variable-new-container > .button:hover > .icon {
-    background-color: #7faaec;
+    background-color: #e6ebf3;
+    border: 1px solid #cadaf3;
 }
 
 .jmv-variable-new-container > .button:hover > .text {
-    background-color: #7faaec;
+    background-color: #e6ebf3;
+    border: 1px solid #cadaf3;
 }
