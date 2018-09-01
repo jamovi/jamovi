@@ -192,6 +192,31 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$variableIcon.attr('variable-type', 'none');
             this.$variableIcon.attr('data-type', 'none');
         }
+
+        this._updateErrorMessage();
+    },
+    _updateErrorMessage() {
+        this.$errorMessage.removeClass('show');
+
+        let errorMsg = this.model.get('formulaMessage');
+        if (errorMsg === '') {
+            let transformId = this.model.get('transform');
+            if (transformId !== 0) {
+                let transform = this.model.dataset.getTransformById(transformId);
+                for (let msg of transform.formulaMessage) {
+                    if (msg !== '') {
+                        errorMsg = 'The selected transform is in error and should be edited.';
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (errorMsg !== '') {
+            this.$errorMessage[0].textContent = errorMsg;
+            this.$errorMessage.addClass('show');
+        }
     },
     _updateTransformList() {
         if (this.attached === false)
@@ -206,7 +231,7 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$transformList.append('<option value="' + transform.name + '">' + transform.name + '</option>');
 
         let transformId = this.model.get('transform');
-        this.$errorMessage.removeClass('show');
+
         if (transformId === null || transformId === 0) {
             this.$transformList.val('None');
             this.$editTransform.addClass('disabled');
@@ -220,14 +245,10 @@ const RecodedVarWidget = Backbone.View.extend({
             else {
                 this.$transformList.val(transform.name);
                 this.$editTransform.removeClass('disabled');
-                for (let msg of transform.formulaMessage) {
-                    if (msg !== '') {
-                        this.$errorMessage.addClass('show');
-                        break;
-                    }
-                }
             }
         }
+
+        this._updateErrorMessage();
     },
     detach() {
         if ( ! this.attached)
@@ -240,6 +261,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this._updateChannelList();
         this._updateTransformList();
         this._updateTransformColour();
+        this._updateErrorMessage();
     }
 
 });
