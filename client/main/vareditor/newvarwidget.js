@@ -38,12 +38,10 @@ const NewVarWidget = Backbone.View.extend({
 
         this.$computed.on('click', (event) => {
             this.model.set('columnType', 'computed');
-            this.model.apply();
         });
 
         this.$recoded.on('click', (event) => {
             this.model.set('columnType', 'recoded');
-            this.model.apply();
         });
 
     },

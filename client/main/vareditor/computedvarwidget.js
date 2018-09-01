@@ -165,7 +165,7 @@ const ComputedVarWidget = Backbone.View.extend({
     detach() {
         if ( ! this.attached)
             return;
-        /*this.model.apply();*/
+
         this.$formula.attr('contenteditable', 'false');
         this.attached = false;
     },
