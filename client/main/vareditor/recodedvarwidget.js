@@ -166,10 +166,11 @@ const RecodedVarWidget = Backbone.View.extend({
         if (this.attached === false)
             return;
 
+        let currentColumnId = this.model.attributes.id;
         let dataset = this.model.dataset;
         let columns = [];
         for (let column of dataset.attributes.columns) {
-            if (column.columnType === 'data')
+            if (column.id !== currentColumnId)
                 columns.push(column);
         }
         this.variableList.populate(columns);

@@ -43,6 +43,7 @@
     grid-column-start: 3;
     grid-column-end: 7;
     grid-row: 1;
+    min-width: 100px;
 }
 
 .jmv-variable-recoded-top .transform-icon {
