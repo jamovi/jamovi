@@ -6,6 +6,7 @@ from inspect import Parameter
 from types import FunctionType as function
 import math
 from collections import OrderedDict
+from numbers import Number
 
 from jamovi.core import DataType
 from jamovi.core import MeasureType
@@ -622,13 +623,17 @@ class Compare(ast.Compare, Node):
         elif isinstance(op, ast.LtE):
             return v1 <= v2
         elif isinstance(op, ast.Eq):
-            if isinstance(v1, float) or isinstance(v2, float):
-                return math.isclose(float(v1), float(v2))
+            if isinstance(v1, Number) and isinstance(v2, float):
+                return math.isclose(float(v1), v2)
+            elif isinstance(v1, float) and isinstance(v2, Number):
+                return math.isclose(v1, float(v2))
             else:
                 return v1 == v2
         elif isinstance(op, ast.NotEq):
-            if isinstance(v1, float) or isinstance(v2, float):
-                return not math.isclose(float(v1), float(v2))
+            if isinstance(v1, float) or isinstance(v2, Number):
+                return not math.isclose(v1, float(v2))
+            elif isinstance(v1, Number) or isinstance(v2, float):
+                return not math.isclose(float(v1), v2)
             else:
                 return v1 != v2
         else:

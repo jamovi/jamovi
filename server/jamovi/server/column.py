@@ -13,6 +13,7 @@ from .compute import Transmogrifier
 from .compute import Transfilterifier
 from .compute import Transfudgifier
 from .compute import Checker
+from .compute import Messages
 
 from .utils import FValues
 from .utils import convert
@@ -514,6 +515,7 @@ class Column:
                 self._node._remove_node_parent(self)
                 self._node = None
 
+            parent = None
             if self.column_type == ColumnType.RECODED:
                 if self._transform != 0 and self._parent_id != 0:
                     trans = dataset.get_transform_by_id(self._transform)
@@ -593,8 +595,8 @@ class Column:
             if node is None:
                 self._formula_status = FormulaStatus.EMPTY
             else:
-                Checker.check(self, node)
-                node = Transmogrifier(dataset).visit(node)
+                Checker.check(node, self)
+                node = Transmogrifier(dataset, parent).visit(node)
 
                 self._node = node
                 self._node._add_node_parent(self)
@@ -607,18 +609,9 @@ class Column:
                 self.set_data_type(self._node.data_type)
                 self.set_measure_type(self._node.measure_type)
 
-        except RecursionError:
-            self._formula_status = FormulaStatus.ERROR
-            self._child.formula_message = 'Circular reference detected'
-        except SyntaxError:
-            self._formula_status = FormulaStatus.ERROR
-            self._child.formula_message = 'The formula is mis-specified'
-        except (NameError, TypeError, ValueError) as e:
-            self._formula_status = FormulaStatus.ERROR
-            self._child.formula_message = str(e)
         except BaseException as e:
             self._formula_status = FormulaStatus.ERROR
-            self._child.formula_message = 'Unexpected error ({}, {})'.format(str(e), type(e).__name__)
+            self._child.formula_message = Messages.create_from(e)
             # import traceback
             # print(traceback.format_exc())
 
