@@ -8,6 +8,7 @@
     grid-column: 3;
     grid-row: 2;
     min-width: 100px;
+    max-width: 300px;
 }
 
 .jmv-variable-recoded-widget > .contents {
@@ -36,14 +37,11 @@
 }
 
 .jmv-variable-recoded-top .recoded-from {
-    /*margin-left: 1ex;*/
-    /*margin-right: 1ex;*/
-    /*padding-left: 17px;*/
-
     grid-column-start: 3;
     grid-column-end: 7;
     grid-row: 1;
     min-width: 100px;
+    max-width: 300px;
 }
 
 .jmv-variable-recoded-top .transform-icon {
