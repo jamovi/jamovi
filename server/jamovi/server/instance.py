@@ -795,6 +795,8 @@ class Instance:
     def _on_dataset_del_cols(self, request, response):
 
         to_delete = [None] * (request.columnEnd - request.columnStart + 1)
+        to_reparse = set()
+        tf_reparse = set()
         filter_deleted = False
 
         for i in range(len(to_delete)):
@@ -804,13 +806,26 @@ class Instance:
             if column.column_type is ColumnType.FILTER:
                 filter_deleted = True
 
-        to_reparse = set()
+            for child in self._data:
+                if child.parent_id == column.id:
+                    child.parent_id = 0
+                    to_reparse.add(child)
+
+            for transform in self._data.transforms:
+                if column in transform.dependencies:
+                    tf_reparse.add(transform)
+                    to_reparse.update(transform.dependents)
+
         for column in to_delete:
             dependents = column.dependents
             to_reparse.update(dependents)
+
         to_reparse -= set(to_delete)
 
         self._data.delete_columns(request.columnStart, request.columnEnd)
+
+        for transform in tf_reparse:
+            transform.parse_formula()
 
         for column in to_reparse:
             column.set_needs_parse()
@@ -835,6 +850,9 @@ class Instance:
             for column in sorted(to_reparse, key=lambda x: x.index):
                 column_pb = response.schema.columns.add()
                 self._populate_column_schema(column, column_pb)
+            for transform in tf_reparse:
+                trans_pb = response.schema.transforms.add()
+                self._populate_transform_schema(transform, trans_pb)
 
     def _apply_schema(self, request, response):
 
