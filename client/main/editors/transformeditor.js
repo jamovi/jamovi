@@ -69,9 +69,7 @@ const TransformEditor = function(dataset) {
                         values[propertyName] = $element[0].textContent;
                     else
                         values[propertyName] = $element.val();
-                    this.dataset.setTransforms([{ id: id, values: values }]).then(() => {
-                        this._populate();
-                    });
+                    this.dataset.setTransforms([{ id: id, values: values }]);
                 }
                 _applyOnBlur = true;
             } );
@@ -115,6 +113,9 @@ const TransformEditor = function(dataset) {
                 else if (event.shiftKey === true && this._nextShiftFocus) {
                     this._nextShiftFocus.focus();
                     event.preventDefault();
+                }
+                else if (event.shiftKey === true) {
+                    tarp.hide('recode-formula');
                 }
 
                 this._nextFocus = null;
@@ -246,7 +247,7 @@ const TransformEditor = function(dataset) {
     this._addTransformUIItem = function(formula1, formula2, hasTransition) {
         let hasCondition = formula2 !== undefined;
 
-        let tag = 'if value';
+        let tag = 'if $value';
         if ( ! hasCondition) {
             if (this.formula.length === 1)
                 tag = '=';
@@ -519,7 +520,6 @@ const TransformEditor = function(dataset) {
         let validOps = ['==', '!=', '=', '<=', '>=', '<', '>'];
 
         let text = $formula.text().trim();
-
         if (text === '') {
             text = $formula.attr('placeholder');
         }
@@ -529,11 +529,19 @@ const TransformEditor = function(dataset) {
                 let count = validOps[i].length;
                 if (count < text.length && text[count] !== ' ') {
 
-                    let startPosition = $formula[0].selectionStart;
-                    let endPosition = $formula[0].selectionEnd;
+                    let sel = window.getSelection();
+                    let range = sel.getRangeAt(0);
+                    let start = range.startOffset;
+                    let end = range.endOffset;
+
+                    let amount = 1;
+                    if (start === count && start === end && this._backspacePressed)
+                        amount = 0;
 
                     text = text.slice(0, count) + ' ' + text.slice(count);
-                    $formula.text(text);
+                    $formula[0].textContent = text;
+                    sel.setBaseAndExtent($formula[0].firstChild, start+amount, $formula[0].firstChild, end+amount);
+                    this.prevStart = start+amount;
                 }
                 return validOps[i].length;
 
@@ -568,6 +576,14 @@ const TransformEditor = function(dataset) {
             elements.$formulas = [ ];
 
         let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '" style="text-indent:' + indent + '">' + formula + '</div>').appendTo($fp);
+
+        let indexOfDollar = prefix.indexOf('$');
+        if (indexOfDollar !== -1) {
+            prefix = prefix.slice(0, indexOfDollar) + "<span>" + prefix.slice(indexOfDollar);
+            indexOfDollar = prefix.indexOf('$');
+            prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
+        }
+
         $('<div class="equal">' + prefix + '</div>').appendTo($fp);
 
         elements.$formulas.push($formula);
@@ -579,9 +595,11 @@ const TransformEditor = function(dataset) {
             this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent;
             if (hasOp && elements._editorClicked === false)
                 $opEdit.hide();
+            keyboardJS.resume();
         });
 
         $formula.on('focus', (event) => {
+            keyboardJS.pause('');
             elements.$formulaBox.addClass('selected');
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();
@@ -615,20 +633,12 @@ const TransformEditor = function(dataset) {
                     dropdown.show($formula, this.opsToolbar);
 
                     let sel = window.getSelection();
-                    /*let range = sel.getRangeAt(0);
-                    let start = range.startOffset;
-                    let end = range.endOffset;
-                    let text = el.textContent;
-                    let before = text.substring(0, start);
-                    let after  = text.substring(end, text.length);*/
 
                     let count = this._startsWithValidOps($formula);
 
-                    /*let textSelected = text.substring(start, end);
-                    el.textContent = (before + newText + after);*/
                     sel.setBaseAndExtent($formula[0].firstChild, 0, $formula[0].firstChild, count);
                     $formula[0].focus();
-                    //elements.$formula.focus();
+
                     $opEdit.addClass('is-active');
                 }
                 event.stopPropagation();
@@ -646,21 +656,25 @@ const TransformEditor = function(dataset) {
             });
         }
 
-        $formula.focus(() => {
-            keyboardJS.pause();
-        });
         $formula.blur((event) => {
             if (this._isRealBlur(elements)) {
                 elements._editorClicked = false;
                 return;
             }
-
-            keyboardJS.resume();
         });
         $formula.on('keydown', (event) => {
+            if (event.keyCode === 8)  //backspace
+                this._backspacePressed = true;
+            else
+                this._backspacePressed = false;
+
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 $formula.blur();
+                setTimeout(() => {
+                    tarp.hide('recode-formula');
+                }, 0);
                 event.preventDefault();
+                event.stopPropagation();
             }
 
             if ( event.keyCode === 9) { //tab
@@ -671,12 +685,14 @@ const TransformEditor = function(dataset) {
                     this._nextFocus = $($formulas[$formulas.length - 1]);
                     this.$insert.focus();
                     event.preventDefault();
+                    event.stopPropagation();
                 }
                 else if (event.shiftKey === false && $formulas[$formulas.length - 1] === $formula[0]) {
-                        this._nextShiftFocus = $($formulas[$formulas.length - 1]);
-                        this._nextFocus = null;
-                        this.$insert.focus();
-                        event.preventDefault();
+                    this._nextShiftFocus = $($formulas[$formulas.length - 1]);
+                    this._nextFocus = null;
+                    this.$insert.focus();
+                    event.preventDefault();
+                    event.stopPropagation();
                 }
             }
         });

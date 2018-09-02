@@ -536,6 +536,8 @@ const DataSetModel = Backbone.Model.extend({
 
             this.trigger('columnsDeleted', { start: start, end: end, dStart: dStart,  dEnd: dEnd });
             this.trigger('columnsChanged', { changed, changes });
+
+            this._processTransformData(datasetPB);
         });
     },
     changeColumn(id, values) {
@@ -1130,6 +1132,10 @@ const DataSetModel = Backbone.Model.extend({
                 this.trigger('transformRemoved', { id: change.id });
 
             this.trigger('transformsChanged', { changed, changes });
+
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            this._processColumnData(datasetPB);
+
         }).catch((error) => {
             console.log(error);
             throw error;
