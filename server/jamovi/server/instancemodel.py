@@ -79,7 +79,7 @@ class InstanceModel:
                 self._transform_next_id = id
             use_id = id
 
-        new_transform = Transform()
+        new_transform = Transform(self)
         new_transform.id = use_id
         self.set_transform_name(new_transform, name)
         self.set_transform_colour_index(new_transform, colour_index)
@@ -272,8 +272,11 @@ class InstanceModel:
                 self._next_id = column.id + 1
 
         for column in self:
-            if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.FILTER:
+            if column.column_type is not ColumnType.DATA:
                 column.parse_formula()
+
+        for transform in self._transforms:
+            transform.parse_formula()
 
         self._add_virtual_columns()
 
