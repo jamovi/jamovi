@@ -17,18 +17,21 @@ class Checker(NodeVisitor):
                     'BoolOp', 'And', 'Or' ]
 
     @staticmethod
-    def check(column, node):
+    def check(node, column=None, dataset=None):
         for child in walk(node):
             if child.__class__.__name__ not in Checker.LEGAL_NODES:
                 raise SyntaxError('Formula contains illegal node')
 
-        checker = Checker(column)
+        if dataset is None:
+            dataset = column._parent
+
+        checker = Checker(column, dataset)
         checker.visit(node)  # throws if problem
 
-    def __init__(self, column):
+    def __init__(self, column, dataset):
         NodeVisitor.__init__(self)
         self._column = column
-        self._dataset = column._parent
+        self._dataset = dataset
 
     def visit_Call(self, node):
 
@@ -80,17 +83,23 @@ class Checker(NodeVisitor):
         if depcy_name == 'NA':
             return
 
-        if self._column.name == depcy_name:
+        if depcy_name == '$value':
+            return
+
+        if self._column is not None and self._column.name == depcy_name:
             raise RecursionError()
+
         try:
             depcy = self._dataset[depcy_name]
+
+            if self._column is None:
+                return
 
             if self._column.is_filter:
                 if not depcy.is_filter and depcy.uses_column_formula:
                     raise ValueError("Filters may not reference columns using 'V' or column functions")
 
             depcies = depcy.dependencies
-
             depcies_names = map(lambda x: x.name, depcies)
             if self._column.name in depcies_names:
                 raise RecursionError()
