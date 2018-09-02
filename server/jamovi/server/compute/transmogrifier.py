@@ -12,12 +12,15 @@ from .nodes import Compare
 
 class Transmogrifier(NodeTransformer):
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, parent=None):
         self._dataset = dataset
+        self._parent = parent
 
     def visit_Name(self, node):
         if node.id == 'NA':
             return Num(-2147483648)
+        elif node.id == '$value' and self._parent is not None:
+            return self._parent
         try:
             return self._dataset[node.id]
         except KeyError:

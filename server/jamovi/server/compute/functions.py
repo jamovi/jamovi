@@ -243,7 +243,7 @@ def INT(index, x: str):
 def RECODE(index, x, *args):
     for i in range(0, len(args) - 1, 2):
         cond = args[i]
-        if cond:
+        if not is_missing(cond) and cond:
             return args[i + 1]
     if len(args) % 2 == 1:
         return args[-1]
