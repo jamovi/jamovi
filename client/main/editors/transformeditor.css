@@ -183,7 +183,7 @@
     border-top: 1px solid transparent;
     border-bottom: 1px solid transparent;
     width: 3ch;
-    left: 9.5ch;
+    left: 10.5ch;
     border-right: 1px dashed rgba(62, 109, 169, 0.28);
     border-left: 1px dashed rgba(62, 109, 169, 0.28);
     box-sizing: border-box;
@@ -210,6 +210,10 @@
     line-height: inherit;
     padding: 0 0 0px 1ch;
     border: 1px solid transparent;
+}
+
+.jmv-transform-editor-options > .formula-box .equal span {
+    color: rgba(62, 109, 169, 0.35);
 }
 
 .jmv-transform-editor-options > .formula-box .formula-grid {
