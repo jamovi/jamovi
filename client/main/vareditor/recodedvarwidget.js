@@ -39,7 +39,10 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this.variableList = new VariableList();
         this.$variableList.on('mousedown', (event) => {
-            dropdown.show(this.$variableList, this.variableList);
+            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
+                dropdown.hide();
+            else
+                dropdown.show(this.$variableList, this.variableList);
             event.preventDefault();
             event.stopPropagation();
             this.$variableList.focus();
@@ -52,7 +55,10 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this.transformList = new TransformList();
         this.$transformList.on('mousedown', (event) => {
-            dropdown.show(this.$transformList, this.transformList);
+            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$transformList)
+                dropdown.hide();
+            else
+                dropdown.show(this.$transformList, this.transformList);
             event.preventDefault();
             event.stopPropagation();
             this.$transformList.focus();
@@ -170,7 +176,7 @@ const RecodedVarWidget = Backbone.View.extend({
         let dataset = this.model.dataset;
         let columns = [];
         for (let column of dataset.attributes.columns) {
-            if (column.id !== currentColumnId)
+            if (column.id !== currentColumnId && column.columnType !== 'none' && column.columnType !== 'filter')
                 columns.push(column);
         }
         this.variableList.populate(columns);

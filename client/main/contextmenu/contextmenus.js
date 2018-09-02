@@ -60,8 +60,12 @@ const createVariableMenuItems = function(plural) {
                 new RibbonGroup({ title: 'Computed Variable', orientation: 'vertical', titlePosition: 'top', items: [
                     new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
                     new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
+                ]}),
+                new RibbonGroup({ title: 'Transformed Variable', orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: 'Insert', name: 'insertRecoded' }),
+                    new ContextMenuButton({ title: 'Append', name: 'appendRecoded' })
                 ]})
-            ]}),
+            ]})
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
