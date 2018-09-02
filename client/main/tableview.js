@@ -36,6 +36,7 @@ const TableView = SilkyView.extend({
         this.model.on('columnsHidden', event => this._columnsDeleted(event));
         this.model.on('columnsVisible', event => this._columnsInserted(event));
         this.model.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
+        this.model.on('transformsChanged', event => this._transformsChanged(event));
 
         this._tabStart = { row: 0, col: 0 };
         this.viewport = null;
@@ -164,6 +165,36 @@ const TableView = SilkyView.extend({
         else
             keyboardJS.setContext('');
     },
+    _updateColumnColour(column, $header, $column) {
+        if (column.columnType === 'recoded') {
+            let $colour = $header.find('.jmv-column-header-colour');
+            let transform = this.model.getTransformById(column.transform);
+            if (transform) {
+                $colour.removeClass('no-transform');
+                $colour.css('background-color', ColourPalette.get(transform.colourIndex));
+                $colour.attr('title', 'Transform: ' + transform.name);
+            }
+            else
+                $colour.addClass('no-transform');
+        }
+        else if (column.columnType === 'computed') {
+            let $colour = $header.find('.jmv-column-header-colour');
+            $colour.css('background-color', '#515151');
+            $colour.attr('title', 'Computed variable');
+        }
+
+        if (column.columnType === 'recoded' || column.columnType === 'computed') {
+            let ok = this._isColumnOk(column);
+            if (ok)
+                $column.css('background-color', 'hsla(0, 0%, 50%, 0.05)');
+            else
+                $column.css('background-color', '');
+
+            return ok;
+        }
+
+        return true;
+    },
     _addColumnToView(column) {
         let width  = column.width;
         let left = this._bodyWidth;
@@ -186,17 +217,7 @@ const TableView = SilkyView.extend({
 
         this.$body.css('width',  this._bodyWidth);
 
-        if (column.columnType === 'recoded') {
-            let $colour = $header.find('.jmv-column-header-colour');
-            let transform = this.model.getTransformById(column.transform);
-            if (transform) {
-                $colour.removeClass('no-transform');
-                $colour.css('background-color', ColourPalette.get(transform.colourIndex));
-                $colour.attr('title', 'Transform: ' + transform.name);
-            }
-            else
-                $colour.addClass('no-transform');
-        }
+        this._updateColumnColour(column, $header, $column);
 
         this._enableDisableActions();
     },
@@ -411,6 +432,29 @@ const TableView = SilkyView.extend({
         }
         return ok;
     },
+    _transformsChanged(event) {
+
+        for (let changes of event.changes) {
+
+            for (let column of this.model.attributes.columns) {
+                if (column.hidden || column.columnType !== 'recoded' || column.transform !== changes.id)
+                    continue;
+
+                let $header = $(this.$headers[column.dIndex]);
+                let $column = $(this.$columns[column.dIndex]);
+
+                let ok = this._updateColumnColour(column, $header, $column);
+
+                $column.attr('data-fmlaok', ok ? '1' : '0');
+                $header.attr('data-fmlaok', ok ? '1' : '0');
+                let $icon = $header.find('.jmv-column-header-icon');
+                if ( ! ok)
+                    $icon.attr('title', 'Issue with formula');
+                else
+                    $icon.removeAttr('title');
+            }
+        }
+    },
     _columnsChanged(event) {
 
         let editingVar = this.model.get('editingVar');
@@ -466,36 +510,15 @@ const TableView = SilkyView.extend({
                 $column.attr('data-measuretype', column.measureType);
             }
 
-            if (column.columnType === 'recoded') {
-                let $colour = $header.find('.jmv-column-header-colour');
-                let transform = this.model.getTransformById(column.transform);
-                if (transform) {
-                    $colour.removeClass('no-transform');
-                    $colour.css('background-color', ColourPalette.get(transform.colourIndex));
-                    $colour.attr('title', 'Transform: ' + transform.name);
-                }
-                else
-                    $colour.addClass('no-transform');
-            }
+            let ok = this._updateColumnColour(column, $header, $column);
 
-            if (column.columnType === 'computed' || column.columnType === 'recoded') {
-                let ok = this._isColumnOk(column);
-                if (ok)
-                    $column.css('background-color', 'hsla(0, 0%, 50%, 0.08)');
-                else
-                    $column.css('background-color', '');
-            }
-
-            //if (changes.formulaMessageChanged) {
-                let ok = this._isColumnOk(column);
-                $column.attr('data-fmlaok', ok ? '1' : '0');
-                $header.attr('data-fmlaok', ok ? '1' : '0');
-                let $icon = $header.find('.jmv-column-header-icon');
-                if ( ! ok)
-                    $icon.attr('title', 'Issue with formula');
-                else
-                    $icon.removeAttr('title');
-            //}
+            $column.attr('data-fmlaok', ok ? '1' : '0');
+            $header.attr('data-fmlaok', ok ? '1' : '0');
+            let $icon = $header.find('.jmv-column-header-icon');
+            if ( ! ok)
+                $icon.attr('title', 'Issue with formula');
+            else
+                $icon.removeAttr('title');
 
             if (changes.nameChanged) {
                 let $label = $header.find('.jmv-column-header-label');
@@ -1857,10 +1880,12 @@ const TableView = SilkyView.extend({
         ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
         ActionHub.get('insertVar').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
         ActionHub.get('insertComputed').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
+        ActionHub.get('insertRecoded').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
         ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
         ActionHub.get('cut').set('enabled', column.columnType !== 'filter');
         ActionHub.get('paste').set('enabled', column.columnType !== 'filter');
         ActionHub.get('compute').set('enabled', column.columnType !== 'filter');
+        ActionHub.get('transform').set('enabled', column.columnType !== 'filter');
     },
     _toggleFilterEditor() {
         let editingIndex = this.model.get('editingVar');
