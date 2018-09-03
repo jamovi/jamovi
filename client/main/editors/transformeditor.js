@@ -153,13 +153,13 @@ const TransformEditor = function(dataset) {
 
         $moveup.on('mousedown', (event) => {
             let $item = this.$options.find('.selected');
-            if ($item)
+            if ($item.length > 0)
                 this._swapFormulaItems($item, 'up');
         });
 
         $movedown.on('mousedown', (event) => {
             let $item = this.$options.find('.selected');
-            if ($item)
+            if ($item.length > 0)
                 this._swapFormulaItems($item, 'down');
         });
 
@@ -388,7 +388,7 @@ const TransformEditor = function(dataset) {
         let index = $item.index();
 
         if ( ! this._swappingItems &&
-             ! ((index === 0 && direction === 'up' ) || (((index+1) * 2) >= (this.formula.length-1) && direction === 'down'))) {
+             ! ((((index+1) * 2) >  this.formula.length) || (index === 0 && direction === 'up' ) || (((index+1) * 2) >= (this.formula.length-1) && direction === 'down'))) {
             this._swappingItems = true;
 
             let $items = this.$options.find('.formula-box');
