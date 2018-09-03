@@ -138,6 +138,10 @@
     color: #bbbbbb;
 }
 
+.jmv-transform-editor > .contents  .button:hover {
+    color: #999999 ;
+}
+
 
 .jmv-transform-editor-options > .formula-box .show-editor {
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
