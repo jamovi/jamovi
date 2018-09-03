@@ -197,9 +197,9 @@
 }
 
 .jmv-column-header-colour {
-    width: 8px;
-    height: 8px;
-    border-radius: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
     position: absolute;
     right: 5px;
     top: 3px;
