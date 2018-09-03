@@ -1,4 +1,5 @@
 
+import re
 
 from .compute import Parser
 from .compute import Checker
@@ -14,13 +15,27 @@ class Transform:
         self.name = ''
         self.id = 0  # an id of zero is unasigned
         self.description = ''
-        self.formula = [ '' ]
+        self._formula = [ '' ]
         self.formula_message = [ '' ]
         self.colour_index = 0
         self.status = FormulaStatus.EMPTY
         self._dataset = dataset
         self._pieces = [ '1', 'NA' ]
         self._dependencies = set()
+
+    @property
+    def formula(self):
+        return self._formula
+
+    @formula.setter
+    def formula(self, formulas):
+        regex = re.compile(r'\s+')
+        for i in range(0, len(formulas)):
+            formula = formulas[i]
+            formula = formula.strip()
+            formula = regex.sub(' ', formula)
+            formulas[i] = formula
+        self._formula = formulas
 
     @property
     def has_formula(self):
