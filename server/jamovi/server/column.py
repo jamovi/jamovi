@@ -516,16 +516,29 @@ class Column:
                 self._node = None
 
             parent = None
+            trans_error = False
+            trans_name = None
+
             if self.column_type == ColumnType.RECODED:
-                if self._transform != 0 and self._parent_id != 0:
+                if self._transform != 0:
                     trans = dataset.get_transform_by_id(self._transform)
-                    parent = dataset.get_column_by_id(self._parent_id)
-                    self.formula = trans.produce_formula(parent)
+                    if trans.status == FormulaStatus.ERROR:
+                        trans_name = trans.name
+                        trans_error = True
+                    if self._parent_id != 0:
+                        parent = dataset.get_column_by_id(self._parent_id)
+                        self.formula = trans.produce_formula(parent)
+                    else:
+                        self.formula = ''
                 else:
                     self.formula = ''
 
             node = Parser.parse(self.formula)
-            self._child.formula_message = ''
+
+            if trans_error:
+                self.formula_message = "'%s' is in error" % (trans_name)
+            else:
+                self.formula_message = ''
 
             if node is not None:
                 node = Transfudgifier().visit(node)
