@@ -238,7 +238,7 @@ def INT(index, x: str):
 
 
 @row_wise
-@returns(DataType.INTEGER, MeasureType.NOMINAL, range(0, 10000, 2))
+@returns(DataType.INTEGER, MeasureType.NOMINAL, range(2, 10000, 2))
 @levels(range(0, 10000, 2))
 def RECODE(index, x, *args):
     for i in range(0, len(args) - 1, 2):
