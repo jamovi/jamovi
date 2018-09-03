@@ -17,6 +17,7 @@ class Transform:
         self.formula = [ '' ]
         self.formula_message = [ '' ]
         self.colour_index = 0
+        self.status = FormulaStatus.EMPTY
         self._dataset = dataset
         self._pieces = [ '1', 'NA' ]
         self._dependencies = set()
@@ -41,6 +42,7 @@ class Transform:
     def parse_formula(self):
 
         self._dependencies = set()
+        self.status = FormulaStatus.OK
 
         pieces = list(self.formula)  # clone
         self.formula_message = [''] * len(self.formula)
@@ -62,6 +64,7 @@ class Transform:
                 self.formula_message[cond_i] = Messages.create_from(e)
                 to_remove.append(cond_i)
                 to_remove.append(cond_i + 1)
+                self.status = FormulaStatus.ERROR
             else:
                 self._dependencies.update(depcies)
 
@@ -71,6 +74,7 @@ class Transform:
             if status == FormulaStatus.ERROR:
                 self.formula_message[then_i] = Messages.create_from(e)
                 pieces[then_i] = 'NA'
+                self.status = FormulaStatus.ERROR
             elif status == FormulaStatus.EMPTY:
                 pieces[then_i] = 'NA'
             else:
