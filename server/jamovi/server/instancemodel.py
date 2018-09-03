@@ -271,12 +271,12 @@ class InstanceModel:
             if column.id >= self._next_id:
                 self._next_id = column.id + 1
 
+        for transform in self._transforms:
+            transform.parse_formula()
+
         for column in self:
             if column.column_type is not ColumnType.DATA:
                 column.parse_formula()
-
-        for transform in self._transforms:
-            transform.parse_formula()
 
         self._add_virtual_columns()
 
