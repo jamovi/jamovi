@@ -66,9 +66,9 @@ const TransformEditor = function(dataset) {
                     let id = this._id;
                     let values = { };
                     if (isDiv)
-                        values[propertyName] = $element[0].textContent;
+                        values[propertyName] = $element[0].textContent.trim();
                     else
-                        values[propertyName] = $element.val();
+                        values[propertyName] = $element.val().trim();
                     this.dataset.setTransforms([{ id: id, values: values }]);
                 }
                 _applyOnBlur = true;
@@ -211,7 +211,7 @@ const TransformEditor = function(dataset) {
         this.dataset.on('transformsChanged', (event) => {
             for (let change of event.changes) {
                 if (change.id === this._id) {
-                    this._updateErrorMessages();
+                    this._updateFormulas();
                     break;
                 }
             }
@@ -225,6 +225,27 @@ const TransformEditor = function(dataset) {
         for (let i = 0; i < transform.formulaMessage.length; i++) {
             let msg = transform.formulaMessage[i];
             $messageBoxes[i].textContent = msg;
+        }
+    };
+
+    this._updateFormulas = function() {
+        let transform = this.dataset.getTransformById(this._id);
+
+        let $formula = this.$options.find('.formula');
+
+        if ($formula.length !== transform.formula.length)
+            this._populate();
+        else {
+            this.$title.val(transform.name);
+            this.$description[0].textContent = transform.description;
+
+            let $messageBoxes = this.$options.find('.formula-message');
+            for (let i = 0; i < transform.formula.length; i++) {
+                let formula = transform.formula[i];
+                $formula[i].textContent = formula;
+                let msg = transform.formulaMessage[i];
+                $messageBoxes[i].textContent = msg;
+            }
         }
     };
 
@@ -592,7 +613,7 @@ const TransformEditor = function(dataset) {
 
         $formula.on('blur', (event) => {
             this.$options.find('.selected').removeClass('selected');
-            this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent;
+            this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent.trim();
             if (hasOp && elements._editorClicked === false)
                 $opEdit.hide();
             keyboardJS.resume();
