@@ -38,17 +38,17 @@ function allFunctions($functionsContent) {
 
     //$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
     $functionsContent.append($('<div class="item item-activated" data-name="equal" data-value="=">=</div>'));
-    descriptions.equal = { label: 'Equal To', content: '' };
-    $functionsContent.append($('<div class="item" data-name="equal" data-value="!=">!=</div>'));
-    descriptions.equal = { label: 'Not Equal To', content: '' };
+    descriptions.equal = { label: 'Equal to', content: '' };
+    $functionsContent.append($('<div class="item" data-name="notequal" data-value="!=">!=</div>'));
+    descriptions.notequal = { label: 'Not equal to', content: '' };
     $functionsContent.append($('<div class="item" data-name="gt" data-value=">">&gt;</div>'));
-    descriptions.gt = { label: 'Greater Than', content: '' };
+    descriptions.gt = { label: 'Greater than', content: '' };
     $functionsContent.append($('<div class="item" data-name="lt" data-value="<">&lt;</div>'));
-    descriptions.lt = { label: 'Less Than', content: '' };
+    descriptions.lt = { label: 'Less than', content: '' };
     $functionsContent.append($('<div class="item" data-name="gte" data-value=">=">&gt;=</div>'));
-    descriptions.gte = { label: 'Greater Than or egual to', content: '' };
+    descriptions.gte = { label: 'Greater than or equal to', content: '' };
     $functionsContent.append($('<div class="item" data-name="lte" data-value="<=">&lt;=</div>'));
-    descriptions.lte = { label: 'Less Than or equal to', content: '' };
+    descriptions.lte = { label: 'Less than or equal to', content: '' };
 
     return descriptions;
 }
