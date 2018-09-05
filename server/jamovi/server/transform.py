@@ -119,7 +119,7 @@ class Transform:
         cond = self.formula[i].strip()
         if cond == '':
             return (FormulaStatus.EMPTY, [], None)
-        cond = '$value ' + cond
+        cond = '$source ' + cond
         try:
             node = Parser.parse(cond)
             Checker.check(node, dataset=self._dataset)
@@ -156,7 +156,7 @@ class Transform:
             return self._columns
 
         def visit_Name(self, node):
-            if node.id != 'NA' and node.id != '$value':
+            if node.id != 'NA' and node.id != '$source':
                 self._columns.add(node.id)
 
         def visit_Call(self, node):
