@@ -83,7 +83,7 @@ class Checker(NodeVisitor):
         if depcy_name == 'NA':
             return
 
-        if depcy_name == '$value':
+        if depcy_name == '$source':
             return
 
         if self._column is not None and self._column.name == depcy_name:
