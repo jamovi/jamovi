@@ -1,5 +1,8 @@
 
 from ast import NodeTransformer
+from ast import Name
+from ast import Eq
+from ast import NotEq
 
 from .nodes import Call
 from .nodes import Num
@@ -74,6 +77,27 @@ class Transmogrifier(NodeTransformer):
         return nu
 
     def visit_Compare(self, node):
+
+        if len(node.comparators) == 1:
+            left = node.left
+            right = node.comparators[0]
+            op = node.ops[0]
+            args = None
+            # special handling of X == NA, NA == X, X != NA, NA != X
+            if isinstance(right, Name) and right.id == 'NA':
+                if isinstance(op, Eq):
+                    args = [ left, Num(n=1), Num(n=0) ]
+                elif isinstance(op, NotEq):
+                    args = [ left, Num(n=0), Num(n=1) ]
+            elif isinstance(left, Name) and left.id == 'NA':
+                if isinstance(op, Eq):
+                    args = [ right, Num(n=1), Num(n=0) ]
+                elif isinstance(op, NotEq):
+                    args = [ right, Num(n=0), Num(n=1) ]
+            if args is not None:
+                nu = Call(func=Name(id='IFMISS'), args=args, keywords=[ ])
+                return self.visit(nu)
+
         left = self.visit(node.left)
         new_comps = node.comparators
         for i in range(len(new_comps)):
