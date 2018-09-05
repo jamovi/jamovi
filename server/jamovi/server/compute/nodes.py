@@ -386,6 +386,13 @@ class Call(ast.Call, Node):
 
         if dt is DataType.DECIMAL:
             mt = MeasureType.CONTINUOUS
+        elif self.func.id == 'RECODE':
+            # special handling for RECODE
+            source = self.args[0]
+            if dt is DataType.TEXT and source.measure_type is MeasureType.CONTINUOUS:
+                mt = MeasureType.ORDINAL
+            else:
+                mt = source.measure_type
         elif MeasureType.ID in m_types:
             mt = MeasureType.ID
         elif MeasureType.ORDINAL in m_types:
