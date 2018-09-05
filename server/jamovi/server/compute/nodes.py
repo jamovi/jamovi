@@ -38,6 +38,17 @@ class Node:
     def fvalues(self, row_count, filt):
         return FValues(self, row_count, filt)
 
+    @property
+    def has_levels(self):
+        return False
+
+    @property
+    def uses_column_formula(self):
+        return False
+
+    def is_atomic_node(self):
+        return True
+
     def _add_node_parent(self, node):
         self._node_parents.append(node)
 
@@ -687,3 +698,27 @@ class Compare(ast.Compare, Node):
         for comp in self.comparators:
             comp._release()
             comp._remove_node_parent(self)
+
+
+class Tuple(ast.Tuple, Node):
+    def __init__(self, *args, **kwargs):
+        ast.Tuple.__init__(self, *args, **kwargs)
+        Node.__init__(self)
+
+    def fvalue(self, index, row_count, filt):
+        return (self.elts[0].n, self.elts[1].s)
+
+    @property
+    def data_type(self):
+        return DataType.INTEGER
+
+    @property
+    def measure_type(self):
+        return MeasureType.ORDINAL
+
+    @property
+    def has_levels(self):
+        return True
+
+    def get_levels(self, row_count):
+        return ((self.elts[0].n, self.elts[1].s),)
