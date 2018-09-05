@@ -23,7 +23,7 @@ class Transmogrifier(NodeTransformer):
     def visit_Name(self, node):
         if node.id == 'NA':
             return Num(-2147483648)
-        elif node.id == '$value' and self._parent is not None:
+        elif node.id == '$source' and self._parent is not None:
             return self._parent
         try:
             return self._dataset[node.id]
