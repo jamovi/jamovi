@@ -8,6 +8,7 @@ from .nodes import BinOp
 from .nodes import UnaryOp
 from .nodes import BoolOp
 from .nodes import Compare
+from .nodes import Tuple
 
 
 class Transmogrifier(NodeTransformer):
@@ -42,6 +43,9 @@ class Transmogrifier(NodeTransformer):
 
     def visit_Str(self, node):
         return Str(node.s)
+
+    def visit_Tuple(self, node):
+        return Tuple(node.elts, node.ctx)
 
     def visit_BinOp(self, node):
         left = self.visit(node.left)
