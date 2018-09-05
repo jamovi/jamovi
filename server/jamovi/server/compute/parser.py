@@ -127,10 +127,10 @@ class Parser:
 
         i = 0
         while i < len(chunks) - 1:
-            # $value is special, so here we put $ + value back together
+            # $source is special, so here we put $ + source back together
             chunk = chunks[i]
-            if chunk == '$' and chunks[i + 1] == 'value':
-                chunks[i] = '$value'
+            if chunk == '$' and chunks[i + 1] == 'source':
+                chunks[i] = '$source'
                 chunks.pop(i + 1)
             else:
                 i += 1
