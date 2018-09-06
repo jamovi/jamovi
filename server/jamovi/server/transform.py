@@ -46,6 +46,10 @@ class Transform:
         return self._dependencies
 
     @property
+    def in_error(self):
+        return self.status == FormulaStatus.ERROR
+
+    @property
     def dependents(self):
         deps = set()
         for column in self._dataset:
