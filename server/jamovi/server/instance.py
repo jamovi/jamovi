@@ -765,6 +765,26 @@ class Instance:
         if filter_inserted:
             self._data.update_filter_names()
 
+        trans_changed = [ ]
+        # see if we can clear errors in other transforms
+        # as a result of the new column(s)
+        for trans in self._data.transforms:
+            if trans.in_error:  # broken
+                trans.parse_formula()
+                if not trans.in_error:  # fixed
+                    to_calc.update(trans.dependents)
+                    trans_changed.append(trans)
+
+        cols_changed = [ ]
+        # see if we can clear errors in other columns
+        for column in self._data:
+            message = column.formula_message
+            if message != '':
+                column.set_needs_parse()
+                column.parse_formula()
+                if column.formula_message != message:
+                    cols_changed.append(column)
+
         for column in to_calc:
             column.set_needs_parse()
         for column in to_calc:
@@ -787,6 +807,14 @@ class Instance:
             column = self._data[i]
             column_pb = response.schema.columns.add()
             self._populate_column_schema(column, column_pb)
+
+        for column in cols_changed:
+            column_pb = response.schema.columns.add()
+            self._populate_column_schema(column, column_pb)
+
+        for transform in trans_changed:
+            trans_pb = response.schema.transforms.add()
+            self._populate_transform_schema(transform, trans_pb)
 
     def _on_dataset_del_rows(self, request, response):
         self._data.delete_rows(request.rowStart, request.rowEnd)
@@ -1012,6 +1040,23 @@ class Instance:
         for column in reparse:
             dependents.update(column.dependents)
         reparse.update(dependents)
+
+        # see if we can clear errors in other transforms
+        # maybe something has changed as a result of a column
+        # being renamed
+        for trans in self._data.transforms:
+            if trans in trans_changed:  # skip ones already processed
+                continue
+            if trans.in_error:  # broken
+                trans.parse_formula()
+                if not trans.in_error:  # fixed
+                    reparse.update(trans.dependents)
+                    trans_changed.add(trans)
+
+        # see if we can clear errors in other columns
+        for column in self._data:
+            if column.formula_message != '':
+                reparse.add(column)
 
         for column in reparse:
             column.set_needs_parse()
