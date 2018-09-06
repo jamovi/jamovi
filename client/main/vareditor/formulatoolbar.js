@@ -183,7 +183,7 @@ const toolbar = function(dataset) {
     this.$varsContent.on("dblclick", (event) => {
         if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
             let value = event.target.dataset.name;
-            insertText(this.$formula[0], value, 0, value !== '$value');
+            insertText(this.$formula[0], value, 0, value !== '$source');
             this.$formula.trigger('input', { });
         }
     });
@@ -193,7 +193,7 @@ const toolbar = function(dataset) {
         $(".content .item").removeClass("item-activated");
         $(event.target).addClass("item-activated");
         let value = $(event.target).text();
-        if (value === '$value') {
+        if (value === '$source') {
             this.$label.html('Keyword: ' + value);
             this.$description.html('The current value of the variable to which this transform is applied.');
         }
@@ -214,7 +214,7 @@ const toolbar = function(dataset) {
 
         this.$varsContent.empty();
         if (useValue)
-            this.$varsContent.append($('<div class="item" data-name="$value">$value</div>'));
+            this.$varsContent.append($('<div class="item" data-name="$source">$source</div>'));
         for (let col of this.dataset.get("columns")) {
             if (col.name !== '' && col.columnType !== 'filter') {
                 if (col.name === variableName)
