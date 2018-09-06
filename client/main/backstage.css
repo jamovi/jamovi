@@ -189,6 +189,12 @@
     height: 20px;
 }
 
+.silky-bs-op-recents .silky-bs-fslist-entry-name {
+    width: 180px ;
+    overflow: hidden ;
+    text-overflow: ellipsis ;
+}
+
 .silky-bs-mid {
     color: #555555 ;
     flex: 1;
