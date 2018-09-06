@@ -380,6 +380,8 @@ const DataSetModel = Backbone.Model.extend({
 
                 this.trigger('columnsChanged', { changed, changes });
             }
+            
+            this._processTransformData(datasetPB);
 
         });
     },
@@ -674,6 +676,7 @@ const DataSetModel = Backbone.Model.extend({
         return coms.send(request).then(response => {
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             this._processColumnData(datasetPB);
+            this._processTransformData(datasetPB);
         }).catch((error) => {
             console.log(error);
             throw error;
