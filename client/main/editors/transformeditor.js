@@ -19,7 +19,7 @@ const TransformEditor = function(dataset) {
     this.$icon = $('<div class="transform-colour"></div>');
 
     this._exampleFormulas = [
-        { s: ">", a: "2000", b: "$value" },
+        { s: ">", a: "2000", b: "$source" },
         { s: "<=", a: "1000", b: "A" },
         { s: "==", a: "5", b: "B" },
         { s: "<", a: "17000", b: "'Male'" },
@@ -268,7 +268,7 @@ const TransformEditor = function(dataset) {
     this._addTransformUIItem = function(formula1, formula2, hasTransition) {
         let hasCondition = formula2 !== undefined;
 
-        let tag = 'if $value';
+        let tag = 'if $source';
         if ( ! hasCondition) {
             if (this.formula.length === 1)
                 tag = '=';
