@@ -167,4 +167,4 @@ class Transform:
             # we deliberately don't visit the Call name, so we can
             # assume that calls to visit_Call are function names
             for arg in node.args:
-                self.generic_visit(arg)
+                self.visit(arg)
