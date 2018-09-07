@@ -37,7 +37,7 @@ class InstanceModel:
                 if column.name == name:
                     return column
             else:
-                raise KeyError()
+                raise KeyError(name)
 
     def __iter__(self):
         return self._columns.__iter__()
