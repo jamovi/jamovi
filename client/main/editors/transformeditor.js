@@ -101,18 +101,21 @@ const TransformEditor = function(dataset) {
 
         this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
 
-        let $insertBox = $('<div class="insert-box"></div>').appendTo(this.$contents);
-        this.$insert = $('<button class="insert button" title="Add condition"></button>').appendTo($insertBox);
+        this.$insertBox = $('<div class="insert-box" tabindex="0"></div>').appendTo(this.$contents);
+        this.$insert = $('<div class="insert"></div>').appendTo(this.$insertBox);
+        $('<div>Add recode condition</div>').appendTo(this.$insertBox);
 
-        this.$insert.on('keydown', (event) => {
+        this.$insertBox.on('keydown', (event) => {
             if ( event.keyCode === 9 ) { //tab
                 if (event.shiftKey === false && this._nextFocus) {
                     this._nextFocus.focus();
                     event.preventDefault();
+                    event.stopPropagation();
                 }
                 else if (event.shiftKey === true && this._nextShiftFocus) {
                     this._nextShiftFocus.focus();
                     event.preventDefault();
+                    event.stopPropagation();
                 }
                 else if (event.shiftKey === true) {
                     tarp.hide('recode-formula');
@@ -121,9 +124,14 @@ const TransformEditor = function(dataset) {
                 this._nextFocus = null;
                 this._nextShiftFocus = null;
             }
+            else if ( event.keyCode === 13) {   //enter
+                this._createRecodeConditionUI();
+                event.preventDefault();
+                event.stopPropagation();
+            }
         });
 
-        this.$insert.on('click', (event) => {
+        this._createRecodeConditionUI = function() {
             this._focusFormulaControls();
             this.formula.splice(this.formula.length - 1, 0, '', '');
             this._addTransformUIItem('', '', true);
@@ -134,20 +142,25 @@ const TransformEditor = function(dataset) {
                 $($formulas[$formulas.length-3]).focus();
                 this.$options.animate({scrollTop:this.$options[0].scrollHeight}, 'slow');
             },0);
+        };
+
+        this.$insertBox.on('click', (event) => {
+            this._createRecodeConditionUI();
         });
 
-        this.$insert.focus(() => {
+        this.$insertBox.focus(() => {
             keyboardJS.pause('');
             this._focusFormulaControls();
         } );
 
-        this.$insert.blur(() => {
+        this.$insertBox.blur(() => {
             keyboardJS.resume();
         } );
 
-        this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$contents);
+        this.$list = $('<div class="content-list"></div>').appendTo(this.$contents);
+        this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$list);
 
-        let $rightBox = $('<div class="right-box"></div>').appendTo(this.$contents);
+        let $rightBox = $('<div class="right-box"></div>').appendTo(this.$list);
         let $moveup = $('<div class="move-up button"><span class="mif-arrow-up"></span></div>').appendTo($rightBox);
         let $movedown = $('<div class="move-down button"><span class="mif-arrow-down"></span></div>').appendTo($rightBox);
 
@@ -704,14 +717,14 @@ const TransformEditor = function(dataset) {
                     (event.shiftKey === true && $formulas[$formulas.length - 1] === $formula[0])) {
                     this._nextShiftFocus = $($formulas[$formulas.length - 2]);
                     this._nextFocus = $($formulas[$formulas.length - 1]);
-                    this.$insert.focus();
+                    this.$insertBox.focus();
                     event.preventDefault();
                     event.stopPropagation();
                 }
                 else if (event.shiftKey === false && $formulas[$formulas.length - 1] === $formula[0]) {
                     this._nextShiftFocus = $($formulas[$formulas.length - 1]);
                     this._nextFocus = null;
-                    this.$insert.focus();
+                    this.$insertBox.focus();
                     event.preventDefault();
                     event.stopPropagation();
                 }
