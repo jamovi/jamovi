@@ -6,11 +6,18 @@
 
 .jmv-transform-editor > .contents {
     display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    margin-bottom: 7px;
+    background-color: #f8f8f8;
+    padding: 3px;
+}
+
+.jmv-transform-editor > .contents > .content-list {
+    display: flex;
     flex-direction: row;
     flex-grow: 1;
-    margin-bottom: 10px;
     background-color: #f8f8f8;
-    padding: 0 3px 0 0;
 }
 
 .jmv-editor-panel-main .title-box .transform-colour {
@@ -25,7 +32,7 @@
     flex: 2;
     border: 1px solid #dfdfdf;
     padding: 2px 5px 2px 5px;
-    height: 130px;
+    height: 105px;
     overflow-y: auto;
 }
 
@@ -106,25 +113,40 @@
 }
 
 .jmv-transform-editor > .contents > .insert-box {
-    align-self: stretch;
+    display: flex;
+    flex-direction: row;
+    align-self: flex-start;
+    align-items: center;
+    border: 1px solid #e7e7e7;
+    border-radius: 2px;
+    padding: 0 5px;
+    line-height: 1.5;
+    background-color: #eeeeee;
+    transition: .4s background-color;
+    color: #575757;
+    margin-bottom: 3px;
 }
 
-.jmv-transform-editor > .contents > .right-box {
+.jmv-transform-editor > .contents > .content-list > .right-box {
     margin-left: 5px;
 }
 
 .jmv-transform-editor > .contents > .insert-box > .insert {
-    background-size: 70%;
+    background-size: 100%;
     background-image: url(assets/filters-add.svg);
-    background-position: center 10px;
+    background-position: center;
     background-repeat: no-repeat;
     height: 100%;
     background-color: transparent;
     border: none;
+    width: 11px;
+    height: 11px;
+    margin-right: 6px;
 }
 
 .jmv-transform-editor > .contents > .insert-box:hover {
-    background-color: white;
+    background-color: rgb(230, 241, 255);
+    border-color: rgb(62, 109, 169);
 }
 
 .jmv-transform-editor > .contents  .button {
