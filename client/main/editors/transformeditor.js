@@ -7,6 +7,7 @@ const tarp = require('../utils/tarp');
 const formulaToolbar = require('../vareditor/formulatoolbar');
 const dropdown = require('../vareditor/dropdown');
 const VariableList = require('../vareditor/variablelist');
+const MeasureList = require('../vareditor/measurelist');
 const ColourPalette = require('./colourpalette');
 
 const TransformEditor = function(dataset) {
@@ -194,8 +195,40 @@ const TransformEditor = function(dataset) {
 
 
         this.$bottom = $('<div class="jmv-transform-editor-bottom"></div>').appendTo(this.$el);
-        this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info"></div>').appendTo(this.$bottom);
-        this.$viewConnectionInfo = $('<div class="view-button">View</div>').appendTo(this.$bottom);
+
+        this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$bottom);
+        $('<div class="transform-label">Measure Type</div>').appendTo(this.$measureBox);
+        this.$measureList = $(`<select id="transform-measure-type">
+                                    <option value="none">Auto</option>
+                                    <option value="nominal">Nominal</option>
+                                    <option value="ordinal">Ordinal</option>
+                                    <option value="continuous">Continuous</option>
+                                    <option value="id">ID</option>
+                                </select>`).appendTo(this.$measureBox);
+        this.$measureList.val('none');
+        this.$measureIcon = $('<div class="transform-measure-icon"></div>').appendTo(this.$measureBox);
+
+        this.measureList = new MeasureList();
+        this.$measureList.on('mousedown', (event) => {
+            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+                dropdown.hide();
+            else
+                dropdown.show(this.$measureList, this.measureList);
+            event.preventDefault();
+            event.stopPropagation();
+            this.$measureList.focus();
+        });
+
+        this.measureList.$el.on('selected-measure-type', (event, measureType) => {
+            let id = this._id;
+            let values = { measureType: measureType };
+            this.dataset.setTransforms([{ id: id, values: values }]);
+            dropdown.hide();
+        });
+
+        this.$usageBox = $('<div class="usage-box"></div>').appendTo(this.$bottom);
+        this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info"></div>').appendTo(this.$usageBox);
+        this.$viewConnectionInfo = $('<div class="view-button">View</div>').appendTo(this.$usageBox);
 
         this.variableList = new VariableList();
         this.$viewConnectionInfo.on('click', (event) => {
@@ -251,6 +284,8 @@ const TransformEditor = function(dataset) {
         else {
             this.$title.val(transform.name);
             this.$description[0].textContent = transform.description;
+            this.$measureList.val(transform.measureType);
+            this.$measureIcon.attr('measure-type', transform.measureType);
 
             let $messageBoxes = this.$options.find('.formula-message');
             for (let i = 0; i < transform.formula.length; i++) {
@@ -379,6 +414,8 @@ const TransformEditor = function(dataset) {
 
                 this.$title.val(transform.name);
                 this.$description[0].textContent = transform.description;
+                this.$measureList.val(transform.measureType);
+                this.$measureIcon.attr('measure-type', transform.measureType);
 
                 let updateFormula = false;
                 if ( ! this.formula || this.formula.length !== transform.formula.length)
@@ -395,7 +432,6 @@ const TransformEditor = function(dataset) {
                 if (updateFormula)
                     this._createFormulaUI(true);
 
-
                 this.connectedColumns = [];
                 let columns = this.dataset.attributes.columns;
                 let count = 0;
@@ -403,7 +439,7 @@ const TransformEditor = function(dataset) {
                     if (column.transform === id)
                         this.connectedColumns.push(column);
                 }
-                this.$connectionInfo[0].textContent = 'This transform is being used by ' + this.connectedColumns.length + ' ' + (this.connectedColumns.length === 1 ? 'variable' : 'variables');
+                this.$connectionInfo[0].textContent = 'Transform used by ' + this.connectedColumns.length + ' ' + (this.connectedColumns.length === 1 ? 'variable' : 'variables');
                 this._updateErrorMessages();
                 return;
             }
