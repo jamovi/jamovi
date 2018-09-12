@@ -903,6 +903,7 @@ class Instance:
 
                 transform.formula = list(trans_pb.formula)
                 transform.description = trans_pb.description
+                transform.measure_type = MeasureType(trans_pb.measureType)
 
                 trans_changed.add(transform)
 
@@ -921,6 +922,7 @@ class Instance:
                             reparse.add(column)
 
                 transform.description = trans_pb.description
+                transform.measure_type = MeasureType(trans_pb.measureType)
                 transform.colour_index = trans_pb.colourIndex
                 trans_changed.add(transform)
             else:
@@ -1546,6 +1548,7 @@ class Instance:
         transform_schema.formula[:] = transform.formula
         transform_schema.formulaMessage[:] = transform.formula_message
         transform_schema.description = transform.description
+        transform_schema.measureType = transform.measure_type.value
         transform_schema.colourIndex = transform.colour_index
 
     def _populate_column_schema(self, column, column_schema):
