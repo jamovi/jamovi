@@ -120,7 +120,19 @@ class Transform:
         name = '`' + parent.name + '`'
         for i in range(0, len(pieces) - 2, 2):
             pieces[i] = name + ' ' + pieces[i]
-        return 'RECODE(' + name + ',' + ','.join(pieces) + ')'
+
+        if self.measure_type == MeasureType.NOMINAL:
+            recode_fun = '_RECODE_NOM'
+        elif self.measure_type == MeasureType.ORDINAL:
+            recode_fun = '_RECODE_ORD'
+        elif self.measure_type == MeasureType.CONTINUOUS:
+            recode_fun = '_RECODE_CONT'
+        elif self.measure_type == MeasureType.ID:
+            recode_fun = '_RECODE_ID'
+        else:
+            recode_fun = 'RECODE'
+
+        return recode_fun + '(' + name + ',' + ','.join(pieces) + ')'
 
     def _parse_cond(self, i):
         cond = self.formula[i].strip()
