@@ -368,6 +368,14 @@ enum ColumnType {
 }
 
 message DataSetSchema {
+
+    enum MeasureType {
+        NONE = 0;
+        NOMINAL = 2;
+        ORDINAL = 3;
+        CONTINUOUS = 4;
+    }
+
     message ColumnSchema {
         int32 id = 1;
         string name = 2;
@@ -378,13 +386,6 @@ message DataSetSchema {
             INTEGER = 1;
             DECIMAL = 2;
             TEXT = 3;
-        }
-
-        enum MeasureType {
-            NONE = 0;
-            NOMINAL = 2;
-            ORDINAL = 3;
-            CONTINUOUS = 4;
         }
 
         ColumnType columnType = 4;
@@ -406,6 +407,7 @@ message DataSetSchema {
         int32 transform = 20;
         int32 parentId = 21;
     }
+
     message TransformSchema {
 
         enum Action {
@@ -421,6 +423,7 @@ message DataSetSchema {
         repeated string formulaMessage = 5;
         Action action = 6;
         int32 colourIndex = 7;
+        MeasureType measureType = 8;
 
     }
     repeated ColumnSchema columns = 1;

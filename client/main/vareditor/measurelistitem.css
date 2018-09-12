@@ -1,0 +1,41 @@
+
+.jmv-measure-list-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 100px;
+    height: 25px;
+}
+
+.jmv-measure-list-item > .icon {
+    width: 16px;
+    height: 16px;
+    margin: 0 5px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100%;
+}
+
+.jmv-measure-list-item > .label {
+    flex-grow: 1;
+}
+
+.jmv-measure-list-item:hover {
+    background-color: #DDDDDD;
+}
+
+.jmv-measure-list-item > .icon.measure-type-id {
+    background-image: url('assets/variable-id.svg');
+}
+
+.jmv-measure-list-item > .icon.measure-type-continuous {
+    background-image: url('assets/variable-continuous.svg');
+}
+
+.jmv-measure-list-item > .icon.measure-type-nominal {
+    background-image: url('assets/variable-nominal.svg');
+}
+
+.jmv-measure-list-item > .icon.measure-type-ordinal {
+    background-image: url('assets/variable-ordinal.svg');
+}
