@@ -380,7 +380,7 @@ const DataSetModel = Backbone.Model.extend({
 
                 this.trigger('columnsChanged', { changed, changes });
             }
-            
+
             this._processTransformData(datasetPB);
 
         });
@@ -699,17 +699,20 @@ const DataSetModel = Backbone.Model.extend({
                 let created;
                 let oldName;
                 let oldMessage;
+                let oldMeasureType;
 
                 if (transform !== undefined) {
                     created = false;
                     oldName = transform.name;
                     oldMessage = transform.formulaMessage;
+                    oldMeasureType = transform.measureType;
                     this._readTransformPB(transform, transformPB);
                 }
                 else {
                     created = true;
                     oldName = transformPB.name;
                     oldMessage = '';
+                    oldMeasureType = '';
                     transform = { };
                     nCreated++;
                     this._readTransformPB(transform, transformPB);
@@ -724,7 +727,8 @@ const DataSetModel = Backbone.Model.extend({
                     oldName: oldName,
                     nameChanged: nameChanged,
                     created: created,
-                    formulaMessageChanged: transform.formulaMessage !== oldMessage
+                    formulaMessageChanged: transform.formulaMessage !== oldMessage,
+                    measureTypeChanged: transform.measureType !== oldMeasureType,
                 };
             }
 
@@ -1009,6 +1013,7 @@ const DataSetModel = Backbone.Model.extend({
         transform.formula = transformPB.formula;
         transform.formulaMessage = transformPB.formulaMessage;
         transform.colourIndex = transformPB.colourIndex;
+        transform.measureType = DataSetModel.stringifyMeasureType(transformPB.measureType);
     },
 
     setTransforms(pairs) {
@@ -1058,6 +1063,13 @@ const DataSetModel = Backbone.Model.extend({
                 transformPB.colourIndex = transform.colourIndex;
             else
                 transformPB.colourIndex = 0;
+
+            if ('measureType' in values)
+                transformPB.measureType = DataSetModel.parseMeasureType(values.measureType);
+            else if ( ! newTransform)
+                transformPB.measureType = DataSetModel.parseMeasureType(transform.measureType);
+            else
+                transformPB.measureType = DataSetModel.parseMeasureType('None');
 
             if ('formula' in values)
                 transformPB.formula = values.formula;
