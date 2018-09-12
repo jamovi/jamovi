@@ -1,6 +1,8 @@
 
 import re
 
+from jamovi.core import MeasureType
+
 from .compute import Parser
 from .compute import Checker
 from .compute import Messages
@@ -22,6 +24,7 @@ class Transform:
         self._dataset = dataset
         self._pieces = [ '1', 'NA' ]
         self._dependencies = set()
+        self.measure_type = MeasureType.NONE
 
     @property
     def formula(self):

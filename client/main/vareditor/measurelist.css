@@ -1,0 +1,15 @@
+
+.jmv-measure-list {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+    min-width: 200px;
+}
+
+.jmv-measure-list > .middle {
+    overflow-y: auto;
+}
+
+.jmv-measure-list-item.hidden {
+    display: none;
+}
