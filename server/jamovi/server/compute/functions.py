@@ -249,3 +249,9 @@ def RECODE(index, x, *args):
         return args[-1]
     else:
         return x
+
+
+_RECODE_NOM = RECODE
+_RECODE_ORD = RECODE
+_RECODE_CONT = RECODE
+_RECODE_ID  = RECODE
