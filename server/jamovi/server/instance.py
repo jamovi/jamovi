@@ -913,16 +913,17 @@ class Instance:
                 self._data.set_transform_colour_index(transform, trans_colour_index)
 
                 new_formula = list(trans_pb.formula)
+                new_m_type = MeasureType(trans_pb.measureType)
 
-                if transform.formula != new_formula:
+                if transform.formula != new_formula or transform.measure_type != new_m_type:
                     transform.formula = new_formula
+                    transform.measure_type = new_m_type
                     transform.parse_formula()
                     for column in self._data:
                         if column.transform == trans_id:
                             reparse.add(column)
 
                 transform.description = trans_pb.description
-                transform.measure_type = MeasureType(trans_pb.measureType)
                 transform.colour_index = trans_pb.colourIndex
                 trans_changed.add(transform)
             else:

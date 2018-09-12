@@ -395,7 +395,23 @@ class Call(ast.Call, Node):
                 dt = DataType.TEXT
                 break
 
-        if dt is DataType.DECIMAL:
+        if self.func.id == '_RECODE_CONT':
+            if dt == DataType.TEXT:
+                dt = DataType.DECIMAL
+            mt = MeasureType.CONTINUOUS
+        elif self.func.id == '_RECODE_NOM':
+            if dt == DataType.DECIMAL:
+                dt = DataType.TEXT
+            mt = MeasureType.NOMINAL
+        elif self.func.id == '_RECODE_ORD':
+            if dt == DataType.DECIMAL:
+                dt = DataType.TEXT
+            mt = MeasureType.ORDINAL
+        elif self.func.id == '_RECODE_ID':
+            if dt == DataType.DECIMAL:
+                dt = DataType.TEXT
+            mt = MeasureType.ID
+        elif dt is DataType.DECIMAL:
             mt = MeasureType.CONTINUOUS
         elif self.func.id == 'RECODE':
             # special handling for RECODE
