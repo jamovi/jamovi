@@ -99,10 +99,20 @@ private:
         int oldCount = cs->rowCount;
         cs->rowCount = count;
 
-        for (size_t i = oldCount; i < count; i++) {
-            if (sizeof(T) == 8)
+        if (dataType() == DataType::DECIMAL)
+        {
+            for (size_t i = oldCount; i < count; i++)
                 cellAt<double>(i) = NAN;
-            else
+        }
+        else if (dataType() == DataType::TEXT &&
+                 measureType() == MeasureType::ID)
+        {
+            for (size_t i = oldCount; i < count; i++)
+                cellAt<char*>(i) = NULL;
+        }
+        else
+        {
+            for (size_t i = oldCount; i < count; i++)
                 cellAt<int>(i) = INT_MIN;
         }
     }

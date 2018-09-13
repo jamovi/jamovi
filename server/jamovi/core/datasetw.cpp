@@ -243,6 +243,12 @@ void DataSetW::appendRows(int n)
             for (int j = 0; j < n; j++)
                 column.append<double>(NAN);
         }
+        else if (column.dataType() == DataType::TEXT &&
+                 column.measureType() == MeasureType::ID)
+        {
+            for (int j = 0; j < n; j++)
+                column.append<char*>(NULL);
+        }
         else
         {
             for (int j = 0; j < n; j++)
@@ -292,6 +298,19 @@ void DataSetW::deleteRows(int delStart, int delEnd)
             }
 
             column.setRowCount<double>(finalCount);
+        }
+        else if (column.dataType() == DataType::TEXT &&
+                 column.measureType() == MeasureType::ID)
+        {
+             for (int j = delStart; j < finalCount; j++)
+             {
+                 int from = j + delCount;
+                 int to = j;
+                 const char* value = column.raws(from);
+                 column.setSValue(to, value);
+             }
+
+             column.setRowCount<char*>(finalCount);
         }
         else
         {

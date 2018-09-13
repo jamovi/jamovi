@@ -192,7 +192,7 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
     if ( ! initing)
         _discardScratchColumn();
 
-    if (measureType() != MeasureType::CONTINUOUS)
+    if (hasLevels())
     {
         int newValue = (int)value;
 
