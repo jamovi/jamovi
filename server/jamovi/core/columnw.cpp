@@ -337,7 +337,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
 
 void ColumnW::updateLevelCounts() {
 
-    if (measureType() != MeasureType::CONTINUOUS)
+    if (hasLevels())
     {
         ColumnStruct *s = struc();
         Level *levels = _mm->resolve(s->levels);
