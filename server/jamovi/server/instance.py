@@ -1018,6 +1018,8 @@ class Instance:
                     reparse.add(column)
                 elif column.parent_id != old_parent_id:
                     reparse.add(column)
+                elif column.active != old_active:
+                    reparse.add(column)
                 elif old_name != column.name:          # if a name has changed, then
                     reparse.update(column.dependents)  # dep columns need to be reparsed
                 elif old_d_type != column.data_type:
