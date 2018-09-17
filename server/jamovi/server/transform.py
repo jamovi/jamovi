@@ -108,8 +108,8 @@ class Transform:
             pieces.pop(i - offset)
             offset += 1
 
-        # insert the 'true' for the final if-else
-        pieces.insert(-1, '1')
+        # insert the 'if' for the final if-else
+        pieces.insert(-1, 'IFMISS($source, NA, 1)')
 
         # these pieces are then used to produce a formula for each column
         self._pieces = pieces
