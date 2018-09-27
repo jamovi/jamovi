@@ -232,8 +232,8 @@ def VALUE(index, x: str):
 
 
 @row_wise
-@returns(DataType.INTEGER, MeasureType.ORDINAL)
-def INT(index, x: str):
+@returns(DataType.INTEGER, MeasureType.CONTINUOUS)
+def INT(index, x):
     return int(float(x))
 
 
