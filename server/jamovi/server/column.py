@@ -545,17 +545,22 @@ class Column:
 
             if self.column_type is ColumnType.FILTER:
                 if node is None:
-                    node = ast.Num(1)
+                    node = ast.Num(1)  # 1 is true
                 else:
-                    node2 = deepcopy(node)
                     node = ast.Call(
+                        # if missing, treat as 0 (false)
                         func=ast.Name(id='IFMISS', ctx=ast.Load()),
                         args=[
                             node,
                             ast.Num(0),
-                            node2 ],
-                        keywords=[ ] )
+                            ast.Call(
+                                # convert value to int
+                                func=ast.Name(id='INT', ctx=ast.Load()),
+                                args=[ deepcopy(node) ],
+                                keywords=[ ]) ],
+                        keywords=[ ])
 
+                # here we determine the parent filters
                 parent_filter_no = self.filter_no - 1
                 parent_filter_start = None
 
@@ -573,6 +578,7 @@ class Column:
                         break
 
                 if parent_filter_no >= 0:
+                    # if it has parent filters
                     parent_filter_end = self.index
                     for i in range(parent_filter_start, self.index):
                         filter_no = self._parent[i].filter_no
@@ -594,6 +600,8 @@ class Column:
 
                     Transfilterifier(parents).visit(node)
 
+                    # we construct a new node, which incorporates all the
+                    # parent filters
                     node = ast.Call(
                         func=ast.Name(id='IF', ctx=ast.Load()),
                         args=[
@@ -695,6 +703,15 @@ class Column:
         def visit_Call(self, node):
             for arg in node.args:
                 self.visit(arg)
+
+        def visit_Compare(self, node):
+            self.visit(node.left)
+            for comp in node.comparators:
+                self.visit(comp)
+
+        def visit_BoolOp(self, node):
+            for value in node.values:
+                self.visit(value)
 
         @property
         def columns(self):
