@@ -1019,7 +1019,14 @@ class Instance:
                 elif column.parent_id != old_parent_id:
                     reparse.add(column)
                 elif column.active != old_active:
+                    # this is only relevant for filters
                     reparse.add(column)
+                    for filter in self._data:
+                        if not filter.is_filter:
+                            break
+                        # reparse subsequent filters
+                        if filter.filter_no > column.filter_no:
+                            reparse.add(filter)
                 elif old_name != column.name:          # if a name has changed, then
                     reparse.update(column.dependents)  # dep columns need to be reparsed
                 elif old_d_type != column.data_type:
