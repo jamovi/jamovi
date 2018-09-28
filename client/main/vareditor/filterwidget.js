@@ -13,8 +13,8 @@ const FilterWidget = Backbone.View.extend({
     className: 'FilterWidget',
     initialize(args) {
 
+        this.dataset = this.model;
         this.attached = false;
-        this._inited = false;
 
         this._exampleFormulas = [
             "gender == 'female'",
@@ -29,7 +29,7 @@ const FilterWidget = Backbone.View.extend({
         ];
 
         dropdown.init();
-        this.formulaSetup = new formulaToolbar(this.model.dataset);
+        this.formulaSetup = new formulaToolbar(this.dataset);
 
         this.$el.empty();
         this.$el.addClass('jmv-filter-widget');
@@ -58,21 +58,20 @@ const FilterWidget = Backbone.View.extend({
             theme: 'jmv-filter'
         });
 
-        this.model.dataset.on('dataSetLoaded', this._dataSetLoaded, this);
-        this.model.dataset.on('columnsDeleted', event => this._columnsDeleted(event));
-        this.model.dataset.on('columnsInserted', event => this._columnsInserted(event));
-        this.model.dataset.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
-        this.model.dataset.on('columnsChanged', event => this._columnsChanged(event));
+        this.dataset.on('dataSetLoaded', this._dataSetLoaded, this);
+        this.dataset.on('columnsDeleted', event => this._columnsDeleted(event));
+        this.dataset.on('columnsInserted', event => this._columnsInserted(event));
+        this.dataset.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
+        this.dataset.on('columnsChanged', event => this._columnsChanged(event));
 
-        let filtersVisible = this.model.dataset.get('filtersVisible');
+        let filtersVisible = this.dataset.get('filtersVisible');
 
         this.$showFilter = $('<div class="filter-button filter-button-tooltip ' + (filtersVisible ? 'show-filter-columns' : 'hide-filter-columns') + '" title="Show filter columns" data-tippy-placement="left" data-tippy-dynamictitle="true"></div>').appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
             this.$showFilter[0]._tippy.hide();
             this.$showFilter[0]._tippy.disable();
 
-            let dataset = this.model.dataset;
-            dataset.toggleFilterVisibility().then(() => {
+            this.dataset.toggleFilterVisibility().then(() => {
                 this._updateEyeButton();
             });
         });
@@ -91,8 +90,7 @@ const FilterWidget = Backbone.View.extend({
 
     },
     _updateEyeButton() {
-        let dataset = this.model.dataset;
-        if (dataset.get('filtersVisible')) {
+        if (this.dataset.get('filtersVisible')) {
             this.$showFilter.removeClass('show-filter-columns');
             this.$showFilter.addClass('hide-filter-columns');
             this.$showFilter.attr('title', 'Hide filter columns');
@@ -104,20 +102,22 @@ const FilterWidget = Backbone.View.extend({
         }
     },
     _addFilter() {
-        let dataset = this.model.dataset;
         let i = -1;
         let column = null;
         do {
             i += 1;
-            column = dataset.getColumn(i);
+            column = this.dataset.getColumn(i);
         } while(column.columnType === 'filter');
-        dataset.insertColumn(i, { columnType: 'filter', hidden: dataset.get('filtersVisible') === false }).then(() => {
-            column = dataset.getColumn(i);
-            this.model.setColumnForEdit(column.id);
+        this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false }).then(() => {
+            column = this.dataset.getColumn(i);
+            this.setColumnForEdit(column.id);
         });
     },
+    setColumnForEdit(id) {
+        this.dataset.set('editingVar', [id]);
+    },
     _isColumnRoot(column) {
-        let columns = this.model.dataset.attributes.columns;
+        let columns = this.dataset.attributes.columns;
         for (let i = 0; i < columns.length; i++) {
             if (column.columnType !== 'filter')
                 break;
@@ -132,7 +132,7 @@ const FilterWidget = Backbone.View.extend({
     },
     _columnsActiveChanged(event) {
         for (let c = event.start; c <= event.end; c++) {
-            let column = this.model.dataset.getColumn(c);
+            let column = this.dataset.getColumn(c);
             if (column.columnType === 'filter' && this._isColumnRoot(column)) {
                 let $filter = this.$filterList.find('.jmv-filter-options[data-columnid=' + column.id + ']:not(.remove)');
 
@@ -180,7 +180,7 @@ const FilterWidget = Backbone.View.extend({
         return details;
     },
     _dataSetLoaded() {
-        let columns = this.model.dataset.attributes.columns;
+        let columns = this.dataset.attributes.columns;
         let index = 0;
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
@@ -192,7 +192,6 @@ const FilterWidget = Backbone.View.extend({
         }
     },
     _columnsDeleted(event) {
-        let dataset = this.model.dataset;
         let removed = false;
 
         let removeBase = (details) => {
@@ -231,14 +230,32 @@ const FilterWidget = Backbone.View.extend({
             }
         };
 
-        let removedCount = 0;
-        for (let c = event.start; c <= event.end; c++) {
+        //let removedCount = 0;
+        let indices = $.extend(true, {}, event.indices);
+
+        event.ids.sort((a,b) => {
+            if (indices[a].index < indices[b].index)
+                return -1;
+            else if (indices[a].index > indices[b].index)
+                return 1;
+            else
+                return 0;
+        });
+
+        for (let id of event.ids) {
+            let index = indices[id].index;
             let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
-            let details = this._getFilterDetails($filters, c - removedCount);
+            let details = this._getFilterDetails($filters, index);
             if (details === null)
                 break;
 
             removed = true;
+
+            for (let x in indices) {
+                let i = indices[x];
+                if (i.index > index)
+                    i.index -= 1;
+            }
 
             if (details.isBase) {
                 removeSub(details);
@@ -252,8 +269,6 @@ const FilterWidget = Backbone.View.extend({
             }
             else
                 removeSub(details);
-
-            removedCount += 1;
         }
     },
     _convertRemoveBoxToAddBox($element) {
@@ -270,10 +285,24 @@ const FilterWidget = Backbone.View.extend({
     },
     _columnsInserted(event) {
 
-        for (let c = event.start; c<= event.start; c++) {
-            let column = this.model.dataset.getColumn(c);
+        if (event.ids.length === 0)
+            return;
+
+        let ids = event.ids.slice();
+        ids.sort((a, b) => {
+            if (event.indices[a].dIndex < event.indices[b].dIndex)
+                return -1;
+            else if (event.indices[a].dIndex > event.indices[b].dIndex)
+                return 1;
+            else
+                return 0;
+        });
+
+        for (let id of ids) {
+            let c = event.indices[id].index;
+            let column = this.dataset.getColumn(c);
             if (column.columnType === 'filter') {
-                let columns = this.model.dataset.attributes.columns;
+                let columns = this.dataset.attributes.columns;
                 if (this._isColumnRoot(column)) {
                     let index = 0;
                     for (let i = 0; i < columns.length; i++) {
@@ -297,10 +326,10 @@ const FilterWidget = Backbone.View.extend({
                     this._createFormulaBox(rColumn, column, column.index - rColumn.index, $filter, $formulaList);
                 }
             }
-            setTimeout(() => {
-                this.$filterList.find('[contenteditable=false]').attr('contenteditable', 'true');
-            }, 0);
         }
+        setTimeout(() => {
+            this.$filterList.find('[contenteditable=false]').attr('contenteditable', 'true');
+        }, 0);
     },
     _columnsChanged(event) {
 
@@ -309,7 +338,7 @@ const FilterWidget = Backbone.View.extend({
             if (changes.created || changes.deleted)
                 continue;
 
-            let column = this.model.dataset.getColumnById(changes.id);
+            let column = this.dataset.getColumnById(changes.id);
             if (column.columnType !== 'filter')
                 continue;
 
@@ -330,51 +359,19 @@ const FilterWidget = Backbone.View.extend({
         if (id === -1 && id !== null)
             return Promise.resolve();
 
-        let dataset = this.model.dataset;
-        let column = dataset.getColumnById(id);
+        let column = this.dataset.getColumnById(id);
         if (column === undefined || column.columnType !== 'filter')
             return Promise.resolve();
 
-        let deleteFunction = (dF, id) => {
-            let relatedColumns = this.columnsOf(id);
-            if (relatedColumns.length === 0)
-                return;
+        let relatedColumns = this.columnsOf(id);
+        if (relatedColumns.length === 0)
+            return Promise.resolve();
 
-            relatedColumns.sort((a, b) => {
-                if (a.index < b.index)
-                    return -1;
+        let ids = [];
+        for (let i = 0; i < relatedColumns.length; i++)
+            ids.push(relatedColumns[i].column.id);
 
-                if (a.index > b.index)
-                    return 1;
-
-                return 0;
-            });
-            let dataset = this.model.dataset;
-            let d = [];
-            let nextId = -1;
-            for (let i = 0; i < relatedColumns.length; i++) {
-                if (d.length === 0) {
-                    d[0] = relatedColumns[i].index;
-                    d[1] = relatedColumns[i].index;
-                }
-                else if (relatedColumns[i].index === d[1] + 1)
-                    d[1] = relatedColumns[i].index;
-                else {
-                    nextId = relatedColumns[i].column.id;
-                    break;
-                }
-            }
-            if (d.length === 2) {
-                return dataset.deleteColumns(d[0], d[1]).then(() => {
-                    if (nextId !== -1)
-                        return dF(dF, nextId);
-                });
-            }
-        };
-
-        this.model.setColumnForEdit(id);
-
-        return deleteFunction(deleteFunction, id);
+        return this.dataset.deleteColumns(ids);
     },
 
     _setFormula($formulaBox, formula, formulaMessage) {
@@ -495,8 +492,6 @@ const FilterWidget = Backbone.View.extend({
     },
 
     _createFilter(column, index) {
-        let edittingId = this.model.get("id");
-
         let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
         let insertBefore = -1;
@@ -539,6 +534,9 @@ const FilterWidget = Backbone.View.extend({
             this._removeFilter(columnId).then(() => {
                 this._removingFilter = false;
             });
+
+            event.stopPropagation();
+            event.preventDefault();
         });
 
         $filter.on('click', (event) => {
@@ -546,8 +544,7 @@ const FilterWidget = Backbone.View.extend({
                 return;
 
             let columnId = parseInt($filter.attr('data-columnid'));
-            let fColumn = this.model.dataset.getColumnById(columnId);
-            this.model.dataset.set('editingVar', fColumn.index);
+            this.dataset.set('editingVar', [columnId]);
         });
 
         let relatedColumns = this.columnsOf(column.id);
@@ -562,7 +559,7 @@ const FilterWidget = Backbone.View.extend({
         let activeChanged = (event) => {
 
             let columnId = parseInt($filter.attr('data-columnid'));
-            let fColumn = this.model.dataset.getColumnById(columnId);
+            let fColumn = this.dataset.getColumnById(columnId);
             let active = fColumn.active;
             let related = this.columnsOf(fColumn.id);
             let pairs = [];
@@ -655,22 +652,21 @@ const FilterWidget = Backbone.View.extend({
         let timeoutId = setTimeout(function () {
             $title.addClass('think');
         }, 400);
-        return this.model.dataset.changeColumns(pairs).then(() => {
+        return this.dataset.changeColumns(pairs).then(() => {
             clearTimeout(timeoutId);
             $title.removeClass("think");
         });
     },
     addNestedEvents($element, id) {
         $element.on('click.addnested', (event) => {
-            let dataset = this.model.dataset;
             let relatedColumns = this.columnsOf(id);
             let parentInfo = relatedColumns[relatedColumns.length - 1];
             let index = parentInfo.index + 1;
             let filterNo = parentInfo.column.filterNo;
             this._internalCreate = true;
-            dataset.insertColumn(index, { columnType: 'filter', filterNo: filterNo, hidden: dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
-                let column = dataset.getColumn(index);
-                this.model.setColumnForEdit(column.id);
+            this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
+                let column = this.dataset.getColumn(index);
+                this.setColumnForEdit(column.id);
             });
             event.stopPropagation();
             event.preventDefault();
@@ -684,8 +680,7 @@ const FilterWidget = Backbone.View.extend({
 
             this._removingFilter = true;
 
-            let dataset = this.model.dataset;
-            dataset.deleteColumn(id).then(() => {
+            this.dataset.deleteColumn(id).then(() => {
                 this._removingFilter = false;
             });
 
@@ -708,9 +703,7 @@ const FilterWidget = Backbone.View.extend({
             }
 
             keyboardJS.pause();
-            let column = this.model.dataset.getColumnById(columnId);
-            if (column !== undefined)
-                this.model.dataset.set('editingVar', column.index);
+            this.dataset.set('editingVar', [columnId]);
 
             $element.select();
         });
@@ -741,23 +734,21 @@ const FilterWidget = Backbone.View.extend({
         });
     },
     _moveRight() {
-        let dataset = this.model.dataset;
-        let colNo = dataset.attributes.editingVar;
+        let colNo = this.dataset.getColumnById(this.dataset.attributes.editingVar[0]).index;
         colNo++;
-        if (colNo <= dataset.attributes.vColumnCount - 1) {
-            let column = dataset.getColumn(colNo);
+        if (colNo <= this.dataset.attributes.vColumnCount - 1) {
+            let column = this.dataset.getColumn(colNo);
             if (column.columnType === 'filter')
-                dataset.set('editingVar', colNo);
+                this.dataset.set('editingVar', [column.id]);
         }
     },
     _moveLeft() {
-        let dataset = this.model.dataset;
-        let colNo = dataset.attributes.editingVar;
+        let colNo = this.dataset.getColumnById(this.dataset.attributes.editingVar[0]).index;
         colNo--;
         if (colNo >= 0) {
-            let column = dataset.getColumn(colNo);
+            let column = this.dataset.getColumn(colNo);
             if (column.columnType === 'filter')
-                dataset.set('editingVar', colNo);
+                this.dataset.set('editingVar', [column.id]);
         }
     },
     detach() {
@@ -772,26 +763,24 @@ const FilterWidget = Backbone.View.extend({
         this.attached = false;
     },
     columnsOf(id) {
-        let dataset = this.model.dataset;
         let children = [];
-        let column = dataset.getColumnById(id);
-        let columns = dataset.get("columns");
+        let column = this.dataset.getColumnById(id);
+        let columns = this.dataset.get("columns");
         for (let i = 0; i < columns.length; i++) {
             let col = columns[i];
             if (col.columnType !== 'filter')
                 break;
 
             if (column.filterNo === col.filterNo)
-                children.push({ column: col, index: i });
+                children.push({ column: col, index: i, id: col.id });
         }
 
         return children;
     },
     rootOf(id) {
-        let dataset = this.model.dataset;
-        let column = dataset.getColumnById(id);
+        let column = this.dataset.getColumnById(id);
         let children = [];
-        let columns = dataset.get("columns");
+        let columns = this.dataset.get("columns");
         for (let i = 0; i < columns.length; i++) {
             let col = columns[i];
             if (col.columnType !== 'filter')
@@ -830,7 +819,7 @@ const FilterWidget = Backbone.View.extend({
 
         let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
-        let edittingIndex = this.model.dataset.get('editingVar');
+        let edittingIds = this.dataset.get('editingVar');
         for (let i = 0; i < $filters.length; i++) {
             let $filter = $($filters[i]);
 
@@ -840,12 +829,12 @@ const FilterWidget = Backbone.View.extend({
             let relatedColumns = this.columnsOf(columnId);
             for (let rc = 0; rc < relatedColumns.length; rc++) {
                 let relatedColumn = relatedColumns[rc];
-                if (relatedColumn.index === edittingIndex) {
+                if (relatedColumn.id === edittingIds[0]) {
                     $filter.addClass('selected');
-                    if (edittingIndex === relatedColumn.index) {
+                    //if (edittingIndex[0] === relatedColumn.index) {
                         let $formula = $($filter.find('.formula')[rc]);
                         $formula.addClass('selected');
-                    }
+                    //}
                 }
             }
         }

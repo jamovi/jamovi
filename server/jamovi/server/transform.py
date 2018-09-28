@@ -17,6 +17,7 @@ class Transform:
         self.name = ''
         self.id = 0  # an id of zero is unasigned
         self.description = ''
+        self.suffix = ''
         self._formula = [ '$source' ]
         self.formula_message = [ '' ]
         self.colour_index = 0
@@ -60,6 +61,12 @@ class Transform:
                 deps.add(column)
                 deps.update(column.dependents)
         return deps
+
+    def get_suffix(self):
+        if self.suffix == '':
+            return self.name
+
+        return self.suffix
 
     def parse_formula(self):
 

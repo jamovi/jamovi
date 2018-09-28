@@ -53,6 +53,7 @@ const TableView = SilkyView.extend({
         html += '<div class="jmv-table-container">';
         html += '    <div class="jmv-table-body">';
         html += '        <div class="jmv-column-row-header" style="left: 0 ;"></div>';
+        html += '        <div class="jmv-sub-selections"></div>';
         html += '    </div>';
         html += '</div>';
 
@@ -116,47 +117,71 @@ const TableView = SilkyView.extend({
         ActionHub.get('editVar').on('request', this._toggleVariableEditor, this);
         ActionHub.get('editFilters').on('request', this._toggleFilterEditor, this);
 
-        ActionHub.get('insertVar').on('request', () => this._insertColumn({ columnType: 'data' }));
+        ActionHub.get('insertVar').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'data'; }, 'left'));
         ActionHub.get('appendVar').on('request', () => this._appendColumn('data'));
-        ActionHub.get('insertComputed').on('request', () => this._insertColumn({ columnType: 'computed' }));
+        ActionHub.get('insertComputed').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'computed'; }, 'left'));
         ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
-        ActionHub.get('insertRecoded').on('request', () => this._insertColumn({ columnType: 'recoded' }));
+        ActionHub.get('insertRecoded').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'recoded'; }, 'left'));
         ActionHub.get('appendRecoded').on('request', () => this._appendColumn('recoded'));
         ActionHub.get('delVar').on('request', () => this._deleteColumns());
         ActionHub.get('compute').on('request', () => {
-            let column = this.model.getColumn(this.selection.colNo, true);
-            if (column) {
-                if (this.selection.colNo < this.model.visibleRealColumnCount()) {
-                    this._insertColumn({ columnType: 'computed', name: column.name }, true).then(() => {
-                        this.model.set('editingVar', this.selection.colNo + 1);
-                    });
-                }
-                else {
-                    this.model.changeColumn(column.id, { columnType: 'computed' }).then(() => {
-                        this.model.set('editingVar', this.selection.colNo);
-                    });
-                }
-            }
+            this._insertFromSelectedColumns((item, column) => {
+                item.columnType = 'computed';
+            }, 'right');
         });
         ActionHub.get('transform').on('request', () => {
-            let column = this.model.getColumn(this.selection.colNo, true);
-            if (column) {
-                if (this.selection.colNo < this.model.visibleRealColumnCount()) {
-                    this._insertColumn({ columnType: 'recoded', name: column.name, parentId: column.id }, true).then(() => {
-                        this.model.set('editingVar', this.selection.colNo + 1);
-                    });
-                }
-                else {
-                    this.model.changeColumn(column.id, { columnType: 'recoded' }).then(() => {
-                        this.model.set('editingVar', this.selection.colNo);
-                    });
-                }
-            }
+            this._insertFromSelectedColumns((item, column) => {
+                item.columnType = 'recoded';
+                item.parentId = column.id;
+            }, 'right');
         });
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);
         ActionHub.get('delRow').on('request', this._deleteRows, this);
+
+        this._clearSelectionList();
+    },
+    _insertFromSelectedColumns(itemConstruction, direction) {
+        if (direction === undefined)
+            direction = 'right';
+
+        let blocks = this._selectionToColumnBlocks();
+
+        let inserts = [];
+        let emptyIds = [];
+        for (let block of blocks) {
+            for (let i = 0; i < block.right - block.left + 1; i++) {
+                let column = this.model.getColumn(block.right - i, true);
+                if (column.columnType === 'none')
+                    emptyIds.push(column.id);
+                else {
+                    let props = { /*name: column.name,*/ index: block[direction] + (direction === 'right' ? 1 : 0) };
+                    itemConstruction(props, column);
+                    inserts.push(props);
+                }
+            }
+        }
+
+        let promise = Promise.resolve();
+        if (emptyIds.length > 0) {
+            let pairs = [];
+            for (let id of emptyIds) {
+                let item = { };
+                itemConstruction(item, this.model.getColumnById(id));
+                pairs.push({ id: id, values: item });
+            }
+            promise = this.model.changeColumns(pairs);
+        }
+
+        return promise.then(() => {
+            if (inserts.length > 0) {
+                return this.model.insertColumn(inserts, true).then((data) => {
+                    let ids = data._list.concat(emptyIds);
+                    this.model.set('editingVar', ids);
+                });
+            }
+        });
     },
     setActive(active) {
         this._active = active;
@@ -207,7 +232,8 @@ const TableView = SilkyView.extend({
 
         this._addResizeListeners($header);
 
-        let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column jmv-column-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+
         this.$body.append($column);
         this.$columns.push($column);
 
@@ -230,7 +256,7 @@ const TableView = SilkyView.extend({
             top: 0,
             bottom: this.model.attributes.rowCount - 1 };
 
-        this._setSelectedRange(range);
+        this._setSelections(range);
     },
     _dataSetLoaded() {
 
@@ -284,20 +310,15 @@ const TableView = SilkyView.extend({
         });
 
         this.model.on('change:editingVar', event => {
-            let now  = this.model.get('editingVar');
-            if (now !== null) {
-                let column = this.model.getColumn(now);
-                now = this.model.indexToDisplayIndex(now);
+            if (this._modifiedFromSelection)
+                return;
+
+            let now  = this.model.getDisplayedEditingColumns();
+            if (now !== null && now.length > 0) {
                 if (this.selection !== null) {
                     this._endEditing().then(() => {
-                        if (column.hidden === false) {
-                            if (now === this.selection.colNo)
-                                this._refreshColumnSelection();
-                            else {
-                                let rowNo = this.selection === null ? 0 : this.selection.rowNo;
-                                this._setSelection(rowNo, now);
-                            }
-                        }
+                        this._createSelectionsFromColumns(this.selection.rowNo, now);
+                        this._updateScroll(this.selection);
                     }, () => {});
                 }
             }
@@ -309,41 +330,16 @@ const TableView = SilkyView.extend({
 
         this._setSelection(0, 0);
     },
-    _refreshColumnSelection(focusSelection) {
-        let visibleColumns = this.model.get('vColumnCount');
-        let sel = Object.assign({}, this.selection);
-
-        let changed = false;
-
-        let editingVar = this.model.get('editingVar');
-        if (editingVar !== null) {
-            let column = this.model.getColumn(editingVar);
-            if (column && column.hidden === false) {
-                let y = this.model.indexToDisplayIndex(editingVar);
-                if (y !== -1) {
-                    let diff = sel.colNo - y;
-                    sel.colNo = y;
-                    sel.left = y;
-                    sel.right = focusSelection ? y : sel.right - diff;
-                }
-            }
+    _refreshSelection() {
+        if (this.model.attributes.editingVar !== null) {
+            let now  = this.model.getDisplayedEditingColumns();
+            if (now !== null && now.length > 0)
+                this._createSelectionsFromColumns(this.selection.rowNo, now);
+            else
+                this._setSelections(this.selection, this._selectionList, true);
         }
-
-        if (sel.left >= visibleColumns) {
-            sel.left = visibleColumns - 1;
-        }
-        if (sel.right >= visibleColumns) {
-            sel.right = visibleColumns - 1;
-        }
-        if (sel.colNo >= visibleColumns) {
-            sel.colNo = visibleColumns - 1;
-        }
-        if (this._tabStart.col >= visibleColumns)
-            this._tabStart.col = visibleColumns - 1;
-        if (sel.colFocus >= visibleColumns)
-            sel.colFocus = visibleColumns - 1;
-
-        this._setSelectedRange(sel, true, true);
+        else
+            this._setSelections(this.selection, this._selectionList, true);
     },
     _addResizeListeners($element) {
         let $resizers = $element.find('.jmv-column-header-resizer');
@@ -370,38 +366,63 @@ const TableView = SilkyView.extend({
     },
     _columnsDeleted(event) {
 
-        if (event.dStart === -1 || event.dEnd === -1)
+        let indices = $.extend(true, {}, event.indices);
+
+        if (event.ids.length === 0)
             return;
 
-        let headersToRemove = this.$headers.slice(event.dStart, event.dEnd + 1);
-        let columnsToRemove = this.$columns.slice(event.dStart, event.dEnd + 1);
+        let lowestIndex = -1;
+        let totalWidthReduction = 0;
+        for (let id of event.ids) {
+            let dIndex = indices[id].dIndex;
+            if (dIndex === -1)
+                continue;
 
-        for (let header of headersToRemove)
-            $(header).remove();
-        for (let column of columnsToRemove)
-            $(column).remove();
+            this.$el.find('.jmv-column-header-' + id).remove();
+            this.$el.find('.jmv-column-' + id).remove();
 
-        let widthReduction = this._widths.slice(event.dStart, event.dEnd + 1).reduce((acc, val) => acc + val, 0);
+            let widthReduction = this._widths[dIndex];
+            totalWidthReduction += widthReduction;
 
-        let exclude = (elem, index) => index < event.dStart || index > event.dEnd;
+            let removedHeaders = this.$headers.splice(dIndex, 1);
+            let removedColumns = this.$columns.splice(dIndex, 1);
+            this._lefts.splice(dIndex, 1);
+            this._widths.splice(dIndex, 1);
 
-        this.$headers = this.$headers.filter(exclude);
-        this.$columns = this.$columns.filter(exclude);
-        this._lefts  = this._lefts.filter(exclude);
-        this._widths = this._widths.filter(exclude);
+            for (let $header of removedHeaders)
+                $($header).remove();
+            for (let $column of removedColumns)
+                $($column).remove();
 
-        for (let i = event.dStart; i < this._lefts.length; i++) {
-            this._lefts[i] -= widthReduction;
-            let $header = $(this.$headers[i]);
-            let $column = $(this.$columns[i]);
-            $header.attr('data-index', i);
-            $header.children().attr('data-index', i);
-            $header.css('left', '' + this._lefts[i] + 'px');
-            $column.css('left', '' + this._lefts[i] + 'px');
+
+            for (let x in indices) {
+                let i = indices[x];
+                if (i.dIndex > dIndex)
+                    i.dIndex -= 1;
+            }
+
+            for (let i = dIndex; i < this._lefts.length; i++)
+                this._lefts[i] -= widthReduction;
+
+            if (lowestIndex == -1 || dIndex < lowestIndex)
+                lowestIndex = dIndex;
         }
 
-        this._bodyWidth -= widthReduction;
+        if (lowestIndex !== -1) {
+            for (let i = lowestIndex; i < this._lefts.length; i++) {
+                let $header = $(this.$headers[i]);
+                let $column = $(this.$columns[i]);
+                $header.attr('data-index', i);
+                $header.children().attr('data-index', i);
+                $header.css('left', '' + this._lefts[i] + 'px');
+                $column.css('left', '' + this._lefts[i] + 'px');
+            }
+        }
+
+        this._bodyWidth -= totalWidthReduction;
         this.$body.css('width', this._bodyWidth);
+
+        this._refreshSelection();
 
         this.viewport = this.model.attributes.viewport;
 
@@ -456,41 +477,12 @@ const TableView = SilkyView.extend({
         }
     },
     _columnsChanged(event) {
-
-        let editingVar = this.model.get('editingVar');
-        let editingVarCleared = false;
-        let focusSelection = false;
         let aFilterChanged = false;
 
         for (let changes of event.changes) {
 
             if (changes.deleted || changes.created || changes.hiddenChanged)
-                focusSelection = true;
-
-            if (changes.deleted) {
-                if (editingVarCleared === false && editingVar !== null) {
-
-                    let selIndex = changes.index;
-                    if (changes.columnType === 'filter') {
-                        let column = this.model.getColumn(changes.index);
-                        if (selIndex > 0 && column.columnType !== 'filter')
-                            selIndex -= 1;
-                    }
-
-                    if (changes.columnType === 'filter' && selIndex > 0)
-                        this.model.set('editingVar', selIndex - 1, { silent: true });
-                    else
-                        this.model.set('editingVar', selIndex + 1, { silent: true });
-                    this.model.set('editingVar', selIndex);
-                    editingVarCleared = true;
-                }
                 continue;
-            }
-
-            if (changes.created && changes.index === editingVar) {
-                this.model.set('editingVar', changes.index + 1, { silent: true });
-                this.model.set('editingVar', changes.index);
-            }
 
             let column = this.model.getColumnById(changes.id);
 
@@ -525,8 +517,6 @@ const TableView = SilkyView.extend({
                 $label.text(column.name);
             }
         }
-
-        this._refreshColumnSelection(focusSelection);
 
         this._enableDisableActions();
         this._updateViewRange();
@@ -570,17 +560,54 @@ const TableView = SilkyView.extend({
 
         return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader  };
     },
+    _cellInSelection(rowNo, colNo) {
+        if (rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
+             colNo >= this.selection.left && colNo <= this.selection.right) {
+                 return true;
+             }
+
+        for (let selection of this._selectionList) {
+            if (rowNo >= selection.top && rowNo <= selection.bottom &&
+                 colNo >= selection.left && colNo <= selection.right) {
+                     return true;
+                 }
+        }
+
+        return false;
+    },
     _mouseDown(event) {
 
         let pos = this._getPos(event.clientX, event.clientY);
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
+        if (event.button === 0) {
+            if (event.ctrlKey || event.metaKey) {
+                let range = {
+                    rowNo: rowNo,
+                    colNo: colNo,
+                    left: colNo,
+                    right: colNo,
+                    top: rowNo,
+                    bottom: rowNo,
+                    colFocus: colNo,
+                    rowFocus: rowNo };
+                if (this._cellInSelection(rowNo, colNo))
+                    this._addNewSelectionToList(range, 'negative');
+                else
+                    this._addNewSelectionToList(range);
+            }
+            else
+                this._clearSelectionList();
+        }
+        else if (pos.onHeader !== 'none' || !this._cellInSelection(rowNo, colNo))
+            this._clearSelectionList();
+
+
         this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
-        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
-            if (pos.onHeader === 'none' && rowNo >= this.selection.top && rowNo <= this.selection.bottom &&
-                 colNo >= this.selection.left && colNo <= this.selection.right)
+        if (event.button === 2) {
+            if (pos.onHeader === 'none' && this._cellInSelection(rowNo, colNo))
                 return Promise.resolve();
             else if (pos.onHeader === 'columns' && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
                 colNo >= this.selection.left && colNo <= this.selection.right)
@@ -667,17 +694,21 @@ const TableView = SilkyView.extend({
         }, () => {});
     },
     _mouseUp(event) {
+
         if (this._isClicking && this._draggingType === 'both') {
-            this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo);
+            this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo, false);
         }
         else if (this._isClicking && (this._draggingType === 'rows' || this._draggingType === 'columns')) {
-            this._setSelectedRange(this._clickRange);
-        }
-        else if (this._isDragging) {
-
+            this._setSelections(this._clickRange, null);
         }
 
-        if (event.button === 2 || event.button === 0 && event.ctrlKey) {
+        if (this._resolveSelectionList()) {
+            this._isClicking = false;
+            this._isDragging = false;
+            return;
+        }
+
+        if (event.button === 2) {
             let element = document.elementFromPoint(event.clientX, event.clientY);
             let $element = $(element);
             let $header = $element.closest('.jmv-column-header');
@@ -786,7 +817,7 @@ const TableView = SilkyView.extend({
             colFocus: dragCols ? pos.colNo : this.selection.colFocus,
             rowFocus: dragRows ? pos.rowNo : this.selection.rowFocus };
 
-        this._setSelectedRange(range);
+        this._setSelections(range, this._selectionList);
     },
     _dblClickHandler(event) {
         let element = document.elementFromPoint(event.clientX, event.clientY);
@@ -794,13 +825,13 @@ const TableView = SilkyView.extend({
 
         let $header = $element.closest('.jmv-column-header:not(.select-all)');
         if ($header.length > 0) {
-            let colNo = parseInt($header.attr('data-index'));
+            let colId = parseInt($header.attr('data-id'));
             this._endEditing().then(() => {
-                let rowNo = this.selection === null ? 0 : this.selection.rowNo;
-                this._setSelection(rowNo, colNo);
+                //let rowNo = this.selection === null ? 0 : this.selection.rowNo;
+                //this._setSelection(rowNo, colNo);
             }, () => {});
             if (this.model.get('editingVar') === null)
-                this.model.set('editingVar', this.model.indexFromDisplayIndex(colNo));
+                this.model.set('editingVar', [colId]);
         }
         else {
             if ( ! this._editing)
@@ -956,7 +987,7 @@ const TableView = SilkyView.extend({
                 break;
         }
 
-        this._setSelectedRange(range, false, ignoreTabStart);
+        this._setSelections(range, [], false, ignoreTabStart);
     },
     _scrollToPosition(pos) {
         let range = { left: pos.colNo, right: pos.colNo, colNo: pos.colNo, top: pos.rowNo, bottom: pos.rowNo, rowNo: pos.rowNo };
@@ -992,8 +1023,8 @@ const TableView = SilkyView.extend({
             this.$container.scrollTop(y);
 
     },
-    _setSelection(rowNo, colNo) {
-        return this._setSelectedRange({
+    _setSelection(rowNo, colNo, clearSelectionList) {
+        return this._setSelections({
             rowNo: rowNo,
             colNo: colNo,
             top:   rowNo,
@@ -1001,7 +1032,456 @@ const TableView = SilkyView.extend({
             left:  colNo,
             right: colNo,
             colFocus: colNo,
-            rowFocus: rowNo });
+            rowFocus: rowNo }, clearSelectionList ? [] : null);
+    },
+    _rangesOverlap(range1, range2) {
+        let verticalOverlap = ((range1.top < range2.top && range1.bottom < range2.top) || (range1.top > range2.bottom && range1.bottom > range2.bottom)) === false;
+        let horizontalOverlap = ((range1.left < range2.left && range1.right < range2.left) || (range1.left > range2.right && range1.right > range2.right)) === false;
+        return verticalOverlap && horizontalOverlap;
+    },
+    _resolveSelectionList() {
+        if ( ! this._selectionNegative)
+            return false;
+
+        for (let i = 0; i < this._selectionList.length; i++) {
+            let $subSel = this.$body.find('.jmv-table-cell-secondary-selected');
+            let subSel = this._selectionList[i];
+            if (subSel.left >= this.selection.left && subSel.right <= this.selection.right &&
+                    subSel.top >= this.selection.top && subSel.bottom <= this.selection.bottom) {
+                $($subSel[i]).remove();
+                this._selectionList.splice(i, 1);
+                i -= 1;
+            }
+            else if (this._rangesOverlap(this.selection, subSel)) {
+
+                $($subSel[i]).remove();
+                this._selectionList.splice(i, 1);
+
+                let overlapRange = {
+                    top:   Math.max(this.selection.top, subSel.top),
+                    bottom: Math.min(this.selection.bottom, subSel.bottom),
+                    left:  Math.max(this.selection.left, subSel.left),
+                    right: Math.min(this.selection.right, subSel.right)
+                };
+
+                let top = overlapRange.top - subSel.top;
+                let bottom = subSel.bottom - overlapRange.bottom;
+                let left = overlapRange.left - subSel.left;
+                let right = subSel.right - overlapRange.right;
+
+                let toAdd = [];
+                if (top > 0) {
+                    let topSelection = {
+                        top:   subSel.top,
+                        bottom: subSel.top + top - 1,
+                        left:  subSel.left,
+                        right: subSel.right };
+                    topSelection.rowNo = topSelection.top;
+                    topSelection.colNo = topSelection.left;
+                    toAdd.push(topSelection);
+                }
+
+                if (bottom > 0) {
+                    let bottomSelection = {
+                        top:   subSel.bottom - bottom + 1,
+                        bottom: subSel.bottom,
+                        left:  subSel.left,
+                        right: subSel.right };
+                    bottomSelection.rowNo = bottomSelection.top;
+                    bottomSelection.colNo = bottomSelection.left;
+                    toAdd.push(bottomSelection);
+                }
+
+                if (left > 0) {
+                    let leftSelection = {
+                        top:   subSel.top + top,
+                        bottom: subSel.bottom - bottom,
+                        left:  subSel.left,
+                        right: subSel.left + left - 1 };
+                    leftSelection.rowNo = leftSelection.top;
+                    leftSelection.colNo = leftSelection.left;
+                    toAdd.push(leftSelection);
+                }
+
+                if (right > 0) {
+                    let rightSelection = {
+                        top:   subSel.top + top,
+                        bottom: subSel.bottom - bottom,
+                        left:  subSel.right - right + 1,
+                        right: subSel.right };
+                    rightSelection.rowNo = rightSelection.top;
+                    rightSelection.colNo = rightSelection.left;
+                    toAdd.push(rightSelection);
+                }
+
+                this._selectionList.splice.apply(this._selectionList, [i, 0].concat(toAdd));
+                //this._createSecondarySelections(toAdd, i);
+                i += toAdd.length - 1;
+            }
+        }
+
+        this._selectionNegative = false;
+        this.$selection.removeClass('negative');
+
+        if (this._selectionList.length > 0) {
+            let $subSel = this.$body.find('.jmv-table-cell-secondary-selected');
+            $($subSel[0]).remove();
+            let mainSelection = this._selectionList[0];
+            this._selectionList.splice(0, 1);
+            this._setSelections(mainSelection, this._selectionList);
+        }
+        else
+            this._setSelection(this.selection.rowNo, this.selection.colNo);
+
+        return true;
+    },
+    _createSelectionsFromColumns(rowNo, columns, silent, ignoreTabStart) {
+        columns.sort((a, b) => {
+            if (a.dIndex < b.dIndex)
+                return -1;
+            else if (a.dIndex > b.dIndex)
+                return 1;
+            else
+                return 0;
+        });
+
+        let selections = [];
+        let selection = { };
+        for (let column of columns) {
+            if (selection.colNo !== undefined) {
+                if (column.dIndex === selection.right + 1) {
+                    selection.right += 1;
+                }
+                else {
+                    selections.push(selection);
+                    selection = { };
+                }
+            }
+
+            if (selection.colNo === undefined) {
+                selection = {
+                    rowNo: rowNo,
+                    top: rowNo,
+                    bottom: rowNo,
+                    left: column.dIndex,
+                    right: column.dIndex,
+                    colNo: column.dIndex
+                };
+
+            }
+        }
+
+        this._setSelections(selection, selections, silent, ignoreTabStart);
+    },
+    _clipSelection(selection) {
+        for (let prop in selection) {
+            if (selection[prop] < 0)
+                selection[prop] = 0;
+        }
+
+        if (selection.colNo >= this.model.attributes.vColumnCount - 1)
+            selection.colNo = this.model.attributes.vColumnCount - 1;
+        if (selection.left >= this.model.attributes.vColumnCount - 1)
+            selection.left = this.model.attributes.vColumnCount - 1;
+        if (selection.right >= this.model.attributes.vColumnCount - 1)
+            selection.right = this.model.attributes.vColumnCount - 1;
+        if (selection.colFocus >= this.model.attributes.vColumnCount - 1)
+            selection.colFocus = this.model.attributes.vColumnCount - 1;
+
+
+        if (selection.rowNo >= this.model.attributes.vRowCount - 1)
+            selection.rowNo = this.model.attributes.vRowCount - 1;
+        if (selection.top >= this.model.attributes.vRowCount - 1)
+            selection.top = this.model.attributes.vRowCount - 1;
+        if (selection.bottom >= this.model.attributes.vRowCount - 1)
+            selection.bottom = this.model.attributes.vRowCount - 1;
+        if (selection.rowFocus >= this.model.attributes.vRowCount - 1)
+            selection.rowFocus = this.model.attributes.vRowCount - 1;
+    },
+    _setSelections(mainSelection, subSelections, silent, ignoreTabStart) {
+
+        if (mainSelection)
+            this._clipSelection(mainSelection);
+
+        if (subSelections) {
+            for (let selection of subSelections)
+                this._clipSelection(selection);
+        }
+
+        if (subSelections === undefined || Array.isArray(subSelections))
+            this._clearSelectionList();
+
+        if (subSelections && subSelections.length > 0) {
+            this._selectionList = subSelections;
+            this._createSecondarySelections(subSelections);
+            if (this.$selection) {
+                this.$selection.addClass('multi');
+                this._selectionTransitionActive = false;
+            }
+        }
+        else if (this._selectionList.length === 0) {
+            if (this._selectionTransitionActive === false) {
+                setTimeout(() => {
+                    this.$selection.removeClass('multi');
+                    this._selectionTransitionActive = true;
+                }, 0);
+            }
+        }
+        let promise = this._setSelectedRange(mainSelection, silent, ignoreTabStart);
+
+        if ( !silent && this.model.get('editingVar') !== null) {
+            this._updateEditingVarFromSelection();
+        }
+
+        return promise;
+    },
+    _mostCommonColumnType(ids) {
+        let types = { };
+        let greatest = null;
+        for (let id of ids) {
+            let column = this.model.getColumnById(id);
+            let typeInfo = types[column.columnType];
+            if (typeInfo === undefined) {
+                typeInfo = { column: column, count: 1 };
+                types[column.columnType] = typeInfo;
+            }
+            else
+                typeInfo.count += 1;
+
+            if (greatest === null || greatest.count < typeInfo.count)
+                greatest = typeInfo;
+        }
+        return greatest;
+    },
+    _updateEditingVarFromSelection() {
+        let types = { };
+        let greatest = null;
+
+        let countType = (column) => {
+            let typeInfo = types[column.columnType];
+            if (typeInfo === undefined) {
+                typeInfo = { column: column, count: 1 };
+                types[column.columnType] = typeInfo;
+            }
+            else
+                typeInfo.count += 1;
+
+            if (greatest === null || greatest.count < typeInfo.count)
+                greatest = typeInfo;
+        };
+
+        let ids = [];
+        for (let c = this.selection.left; c <= this.selection.right; c++) {
+            let column = this.model.getColumn(c, true);
+            countType(column);
+            ids.push(column.id);
+        }
+
+        for (let selection of this._selectionList) {
+            for (let c = selection.left; c <= selection.right; c++) {
+                let column = this.model.getColumn(c, true);
+                countType(column);
+                if (ids.includes(column.id) === false)
+                    ids.push(column.id);
+            }
+        }
+        if (ids.length === 0)
+            ids = null;
+        else
+            ids = ids.filter((id) => { return this.model.getColumnById(id).columnType === greatest.column.columnType; });
+
+
+        this._modifiedFromSelection = true;
+        this.model.set('editingVar', ids);
+        this._modifiedFromSelection = false;
+    },
+    _addNewSelectionToList(range, type) {
+        this._clipSelection(range);
+
+        this._selectionNegative = type === 'negative';
+
+        let prevSel = Object.assign({}, this.selection);
+        this._selectionList.unshift(prevSel);
+        if (this.$selection) {
+            this.$selection.addClass('multi');
+            this._selectionTransitionActive = false;
+            if (this._selectionNegative)
+                this.$selection.addClass('negative');
+        }
+        this._setSelectedRange(range);
+
+        this._createSecondarySelections(prevSel, 0);
+
+        if (this.model.get('editingVar') !== null)
+            this._updateEditingVarFromSelection();
+    },
+    _createSecondarySelections(selections, index) {
+        if (Array.isArray(selections) === false)
+            selections = [ selections ];
+
+        let $elements = [];
+        for (let selection of selections) {
+            let $secondarySelection = $('<div class="jmv-table-cell-secondary-selected"></div>');
+
+            let nRows = selection.bottom - selection.top + 1;
+            let x = this._lefts[selection.left];
+            let y = selection.top * this._rowHeight;
+            let width = this._lefts[selection.right] + this._widths[selection.right] - x;
+            let height = this._rowHeight * nRows;
+
+            $secondarySelection.css({ left: x, top: y, width: width, height: height});
+            $elements.push($secondarySelection);
+        }
+
+        let $subSels = this.$body.find('.jmv-table-cell-secondary-selected');
+        if (index === undefined || index === -1 || $subSels.length === 0 || index >= $subSels.length)
+            this.$body.find('.jmv-sub-selections').append($elements);
+        else
+            $($subSels[index]).before($elements);
+    },
+    _selectionToColumnBlocks() {
+        let blocks = [{ left: this.selection.left, right: this.selection.right }];
+
+        let tryApply = (selection, index) => {
+            let obsorbed = false;
+            let modified = false;
+            for (let i = 0; i < blocks.length; i++) {
+                let block = blocks[i];
+                if (block === selection)
+                    continue;
+                let leftIn = selection.left >= block.left && selection.left <= (block.right + 1);
+                let leftDown = selection.left < block.left;
+                let rightIn = selection.right >= (block.left - 1) && selection.right <= block.right;
+                let rightUp = selection.right > block.right;
+
+                if (!leftIn && !rightIn && leftDown && rightUp) {
+                    block.right = selection.right;
+                    block.left = selection.left;
+                    obsorbed = true;
+                    modified = true;
+                }
+                else if (leftIn && rightUp) {
+                    block.right = selection.right;
+                    obsorbed = true;
+                    modified = true;
+                }
+                else if (leftDown && rightIn) {
+                    block.left = selection.left;
+                    obsorbed = true;
+                    modified = true;
+                }
+                else if (leftIn && rightIn)
+                    obsorbed = true;
+
+                if (obsorbed) {
+                    if (index !== undefined) {
+                        blocks.splice(index, 1);
+                        i = index <= i ? i - 1 : i;
+                    }
+                    if (modified)
+                        tryApply(block, i);
+                    break;
+                }
+            }
+            if (obsorbed === false && index === undefined)
+                blocks.push({ left: selection.left, right: selection.right });
+        };
+
+        for (let selection of this._selectionList)
+            tryApply(selection);
+
+        blocks.sort((a,b) => {
+            if (a.start < b.start)
+                return -1;
+            else if (a.start > b.start)
+                return 1;
+            else
+                return 0;
+        });
+
+        return blocks;
+    },
+    _clearSelectionList() {
+        if (this.$selection && this._selectionTransitionActive === false) {
+            this.$selection.removeClass('multi');
+            this._selectionTransitionActive = true;
+        }
+        this._selectionList = [];
+        this.$body.find('.jmv-table-cell-secondary-selected').remove();
+    },
+    _applyHeaderHighlight(range, isSubSelection) {
+        // add column header highlight
+        for (let colNo = range.left; colNo <= range.right; colNo++) {
+            let $header = $(this.$headers[colNo]);
+            $header.addClass('highlighted');
+            if (isSubSelection)
+                $header.addClass('is-sub-selection');
+        }
+
+        // add row header highlight
+        for (let rowNo = range.top; rowNo <= range.bottom; rowNo++) {
+            if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
+                let vRowNo = rowNo - this.viewport.top;
+                let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
+                $cell.addClass('highlighted');
+                if (isSubSelection)
+                    $cell.addClass('is-sub-selection');
+            }
+        }
+    },
+    _updateHeaderHighlight() {
+
+        this.$el.find('.jmv-column-header.highlighted, .jmv-row-header-cell.highlighted').removeClass('highlighted is-sub-selection');
+
+        this._applyHeaderHighlight(this.selection, false);
+        for (let range of this._selectionList) {
+            this._applyHeaderHighlight(range, true);
+        }
+    },
+    _currentSelectionToColumns() {
+        let columnsObj = {};
+
+        for (let c = this.selection.left; c <= this.selection.right; c++) {
+            let column = this.model.getColumn(c, true);
+            columnsObj[column.id] = column;
+        }
+
+        for (let selection of this._selectionList) {
+            for (let c = selection.left; c <= selection.right; c++) {
+                let column = this.model.getColumn(c, true);
+                columnsObj[column.id] = column;
+            }
+        }
+
+        let columns = [];
+        for (let id in columnsObj)
+            columns.push(columnsObj[id]);
+
+        columns.sort((a, b) => {
+            if (a.dIndex < b.dIndex)
+                return -1;
+            else if (a.dIndex > b.dIndex)
+                return 1;
+            else
+                return 0;
+        });
+
+        return columns;
+    },
+    _currentSelectionToRowIndices() {
+        let rowIndices = [];
+
+        for (let r = this.selection.top; r <= this.selection.bottom; r++)
+            rowIndices.push(r);
+
+        for (let selection of this._selectionList) {
+            for (let r = selection.top; r <= selection.bottom; r++) {
+                if (rowIndices.includes(r) === false)
+                    rowIndices.push(r);
+            }
+        }
+
+        return rowIndices;
     },
     _setSelectedRange(range, silent, ignoreTabStart) {
 
@@ -1011,23 +1491,7 @@ const TableView = SilkyView.extend({
         if ( ! ignoreTabStart)
             this._tabStart = { row: range.rowNo, col: range.colNo };
 
-        if (this.selection !== null) {
-
-            // remove row/column highlights from last time
-
-            for (let colNo = this.selection.left; colNo <= this.selection.right; colNo++)
-                $(this.$headers[colNo]).removeClass('highlighted');
-
-            for (let rowNo = this.selection.top; rowNo <= this.selection.bottom; rowNo++) {
-                if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
-                    let vRowNo = rowNo - this.viewport.top;
-                    let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
-                    $cell.removeClass('highlighted');
-                }
-            }
-
-        } else {
-
+        if (this.selection === null)  {
             this.selection = {};
         }
 
@@ -1042,21 +1506,11 @@ const TableView = SilkyView.extend({
         this._enableDisableActions();
 
         this.currentColumn = this.model.getColumn(colNo, true);
-        if ( !silent && this.model.get('editingVar') !== null)
-            this.model.set('editingVar', this.model.indexFromDisplayIndex(colNo));
+        //if ( !silent && this.model.get('editingVar') !== null) {
+        //    this.model.set('editingVar', [this.model.indexFromDisplayIndex(colNo)]);
+        //}
 
-        // add column header highlight
-        for (let colNo = range.left; colNo <= range.right; colNo++)
-            $(this.$headers[colNo]).addClass('highlighted');
-
-        // add row header highlight
-        for (let rowNo = range.top; rowNo <= range.bottom; rowNo++) {
-            if (rowNo <= this.viewport.bottom && rowNo >= this.viewport.top) {
-                let vRowNo = rowNo - this.viewport.top;
-                let $cell = this.$rhColumn.children(':nth-child(' + (vRowNo + 1) + ')');
-                $cell.addClass('highlighted');
-            }
-        }
+        this._updateHeaderHighlight();
 
         // move selection cell to new location
         let nRows = range.bottom - range.top + 1;
@@ -1083,17 +1537,34 @@ const TableView = SilkyView.extend({
                 return Promise.resolve();
 
         this.$selection.removeClass('not-editable');
-        for (let c = this.selection.left; c <= this.selection.right; c++) {
-            let column = this.model.getColumn(c, true);
-            if (this._isColumnEditable(column) === false) {
-                this.$selection.addClass('not-editable');
-                break;
+        if (this._selectionList.length === 0) {
+            for (let c = this.selection.left; c <= this.selection.right; c++) {
+                let column = this.model.getColumn(c, true);
+                if (this._isColumnEditable(column) === false) {
+                    this.$selection.addClass('not-editable');
+                    break;
+                }
             }
         }
 
-        return new Promise((resolve, reject) => {
-            this.$selection.one('transitionend', resolve);
-        });
+        if ( ! this._selectionTransitioning) {
+            this._selectionTransitioning = true;
+
+            this._selectionTransitionPromise = new Promise((resolve, reject) => {
+                if (this._selectionTransitionActive === false) {
+                    this._selectionTransitioning = false;
+                    resolve();
+                }
+                else {
+                    this.$selection.one('transitionend', () => {
+                        this._selectionTransitioning = false;
+                        resolve();
+                    });
+                }
+            });
+        }
+
+        return this._selectionTransitionPromise;
     },
     _isColumnEditable(column) {
         return ! (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'filter');
@@ -1331,7 +1802,7 @@ const TableView = SilkyView.extend({
                 let newSelection = Object.assign({}, this.selection);
                 newSelection.left = 0;
                 newSelection.right = this.model.visibleRealColumnCount() - 1;
-                this._setSelectedRange(newSelection);
+                this._setSelections(newSelection);
             }
 
         }
@@ -1340,7 +1811,7 @@ const TableView = SilkyView.extend({
                 let newSelection = Object.assign({}, this.selection);
                 newSelection.top = 0;
                 newSelection.bottom = this.model.attributes.rowCount - 1;
-                this._setSelectedRange(newSelection);
+                this._setSelections(newSelection);
             }
         }
 
@@ -1367,7 +1838,7 @@ const TableView = SilkyView.extend({
                     else
                         newSelection.rowFocus = newSelection.top;
 
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else {
                     let rowNo = this.selection.rowNo + count1;
@@ -1392,7 +1863,7 @@ const TableView = SilkyView.extend({
                         newSelection.rowFocus = newSelection.top;
                     else
                         newSelection.rowFocus = newSelection.bottom;
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else {
                     let rowNo = this.selection.rowNo - count;
@@ -1409,7 +1880,7 @@ const TableView = SilkyView.extend({
                     newSelection.left = 0;
                     if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
                         newSelection.colFocus = 0;
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else
                     this._setSelection(this.selection.rowNo, 0);
@@ -1432,7 +1903,7 @@ const TableView = SilkyView.extend({
                     newSelection.right = this.model.visibleRealColumnCount() - 1;
                     if (newSelection.left !== 0)
                         newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else
                     this._setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
@@ -1448,7 +1919,7 @@ const TableView = SilkyView.extend({
                     newSelection.top = 0;
                     if (newSelection.bottom !== this.model.attributes.rowCount-1)
                         newSelection.rowFocus = 0;
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else
                     this._setSelection(0, this.selection.colNo);
@@ -1464,7 +1935,7 @@ const TableView = SilkyView.extend({
                     newSelection.bottom = this.model.attributes.rowCount-1;
                     if (newSelection.top !== 0)
                         newSelection.rowFocus = this.model.attributes.rowCount-1;
-                    this._setSelectedRange(newSelection);
+                    this._setSelections(newSelection);
                 }
                 else
                     this._setSelection(this.model.attributes.rowCount-1, this.selection.colNo);
@@ -1474,9 +1945,9 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         case 'Enter':
-            let editingIndex = this.model.get('editingVar');
-            if (editingIndex !== null) {
-                let column = this.model.getColumn(editingIndex);
+            let editingIds = this.model.get('editingVar');
+            if (editingIds !== null) {
+                let column = this.model.getColumnById(editingIds[0]);
                 if (column.hidden && column.columnType === 'filter') {
                     event.preventDefault();
                     break;
@@ -1494,12 +1965,10 @@ const TableView = SilkyView.extend({
             break;
         case 'Delete':
         case 'Backspace':
-            let viewport = {
-                left:  this.selection.left,
-                right: this.selection.right,
-                top:   this.selection.top,
-                bottom: this.selection.bottom };
-            this.model.changeCells(viewport, null);
+            this._deleteCellContents(this.selection);
+
+            for (let selection of this._selectionList)
+                this._deleteCellContents(selection);
             break;
         case 'F2':
             this._beginEditing();
@@ -1517,24 +1986,84 @@ const TableView = SilkyView.extend({
             break;
         }
     },
+    _deleteCellContents(selection) {
+        let viewport = {
+            left:  selection.left,
+            right: selection.right,
+            top:   selection.top,
+            bottom: selection.bottom };
+        this.model.changeCells(viewport, null);
+    },
     _deleteColumns() {
-        let start = this.selection.left;
-        let end = this.selection.right;
+
+        let columns = this._currentSelectionToColumns();
+        let contains = (nextColumn) => {
+            return columns.some(element => { return element.id === nextColumn.id; });
+        };
+
+        for (let i = 0; i < columns.length; i++) {
+            if (columns[i].columnType === 'none') {
+                columns.splice(i, 1);
+                i -= 1;
+            }
+            else if (columns[i].columnType === 'filter') {
+                let prevColumn = this.model.getColumn(columns[i].dIndex - 1, true);
+                if (!prevColumn || prevColumn.filterNo !== columns[i].filterNo) {
+                    let index = this.model.indexFromDisplayIndex(columns[i].dIndex);
+                    do {
+                        index += 1;
+                        let nextColumn = this.model.attributes.columns[index];
+                        if (nextColumn.columnType === 'filter' && nextColumn.filterNo === columns[i].filterNo) {
+                            if (contains(nextColumn) === false)
+                                columns.push(nextColumn);
+                        }
+                        else
+                            break;
+                    }
+                    while (index < this.model.attributes.columns.length - 1);
+                }
+            }
+        }
+
+        columns.sort((a, b) => {
+            if (a.dIndex < b.dIndex)
+                return -1;
+            else if (a.dIndex > b.dIndex)
+                return 1;
+            else
+                return 0;
+        });
 
         let oldSelection = Object.assign({}, this.selection);
-        let newSelection = Object.assign({}, this.selection);
+        let oldSubSelections = this._selectionList;
 
-        newSelection.rowNo = 0;
-        newSelection.top = 0;
-        newSelection.bottom = this.model.attributes.vRowCount - 1;
+        let selections = [];
+        let selection = { };
+        for (let column of columns) {
+            if (selection.colNo !== undefined) {
+                if (column.dIndex === selection.right + 1) {
+                    selection.right += 1;
+                }
+                else {
+                    selections.push(selection);
+                    selection = { };
+                }
+            }
 
-        let rvColumnCount = this.model.visibleRealColumnCount();
-        if (newSelection.right >= rvColumnCount)
-            newSelection.right = rvColumnCount - 1;
-        if (newSelection.colFocus >= rvColumnCount)
-            newSelection.colFocus = rvColumnCount - 1;
+            if (selection.colNo === undefined) {
+                selection = {
+                    rowNo: 0,
+                    top: 0,
+                    bottom: this.model.attributes.vRowCount - 1,
+                    left: column.dIndex,
+                    right: column.dIndex,
+                    colNo: column.dIndex
+                };
 
-        return this._setSelectedRange(newSelection).then(() => {
+            }
+        }
+
+        return this._setSelections(selection, selections).then(() => {
 
             return new Promise((resolve, reject) => {
 
@@ -1548,47 +2077,66 @@ const TableView = SilkyView.extend({
                         reject();
                 };
 
-                if (newSelection.left === newSelection.right) {
-                    let column = this.model.getColumn(newSelection.left, true);
+                if (columns.length === 1) {
+                    let column = columns[0];
                     dialogs.confirm('Delete column \'' + column.name + '\' ?', cb);
                 }
                 else {
-                    dialogs.confirm('Delete columns ' + (newSelection.left+1) + ' - ' + (newSelection.right+1) + '?', cb);
+                    dialogs.confirm('Delete ' + columns.length + ' columns?', cb);
                 }
             });
 
         }).then(() => {
+            let ids = [];
+            for (let column of columns)
+                ids.push(column.id);
 
-            return this.model.deleteColumns(newSelection.left, newSelection.right, true);
+            return this.model.deleteColumns(ids);
 
         }).then(() => {
-
-            return this._setSelection(oldSelection.top, oldSelection.left);
-
+            return this._setSelections(oldSelection, oldSubSelections);
         }).then(undefined, (error) => {
             if (error)
                 console.log(error);
-            return this._setSelectedRange(oldSelection);
+            return this._setSelections(oldSelection, oldSubSelections);
         });
 
     },
     _deleteRows() {
-        let start = this.selection.top;
-        let end = this.selection.bottom;
+
+        let rows = this._currentSelectionToRowIndices();
+        rows.sort((a, b) => a - b);
 
         let oldSelection = Object.assign({}, this.selection);
-        let newSelection = Object.assign({}, this.selection);
+        let oldSubSelections = this._selectionList;
 
-        newSelection.colNo = 0;
-        newSelection.left = 0;
-        newSelection.right = this.model.attributes.vColumnCount - 1;
+        let selections = [];
+        let selection = { };
+        for (let r of rows) {
+            if (selection.rowNo !== undefined) {
+                if (r === selection.bottom + 1) {
+                    selection.bottom += 1;
+                }
+                else {
+                    selections.push(selection);
+                    selection = { };
+                }
+            }
 
-        if (newSelection.bottom >= this.model.attributes.rowCount)
-            newSelection.bottom = this.model.attributes.rowCount - 1;
-        if (newSelection.rowFocus >= this.model.attributes.rowCount)
-            newSelection.rowFocus = this.model.attributes.rowCount - 1;
+            if (selection.rowNo === undefined) {
+                selection = {
+                    rowNo: r,
+                    top: r,
+                    bottom: r,
+                    left: 0,
+                    right: this.model.attributes.vColumnCount - 1,
+                    colNo: 0
+                };
 
-        return this._setSelectedRange(newSelection).then(() => {
+            }
+        }
+
+        return this._setSelections(selection, selections).then(() => {
 
             return new Promise((resolve, reject) => {
 
@@ -1602,15 +2150,15 @@ const TableView = SilkyView.extend({
                         reject();
                 };
 
-                if (newSelection.top === newSelection.bottom)
-                    dialogs.confirm('Delete row ' + (newSelection.top+1) + '?', cb);
+                if (rows.length === 1)
+                    dialogs.confirm('Delete row ' + (rows[0]+1) + '?', cb);
                 else
-                    dialogs.confirm('Delete rows ' + (newSelection.top+1) + ' - ' + (newSelection.bottom+1) + '?', cb);
+                    dialogs.confirm('Delete ' + rows.length + ' rows?', cb);
             });
 
         }).then(() => {
 
-            return this.model.deleteRows(newSelection.top, newSelection.bottom);
+            return this.model.deleteRows(rows);
 
         }).then(() => {
 
@@ -1618,28 +2166,46 @@ const TableView = SilkyView.extend({
             this._refreshRHCells(this.viewport);
             this.model.readCells(this.viewport);
 
-            return this._setSelection(oldSelection.top, oldSelection.left);
+            return this._setSelections(oldSelection, oldSubSelections);
 
         }).then(undefined, (error) => {
             if (error)
                 console.log(error);
-            return this._setSelectedRange(oldSelection);
+            return this._setSelections(oldSelection, oldSubSelections);
         });
     },
     _insertColumn(properties, right) {
         let index = this.selection.colNo;
         if (right)
             index += 1;
-        return this.model.insertColumn(index, properties, true);
+        properties.index = index;
+        return this.model.insertColumn(properties, true);
     },
     _columnsInserted(event, ignoreSelection) {
-
         let aNewFilterInserted = false;
-        let dIndex = this.model.indexToDisplayIndex(event.start);
+        let indices = $.extend(true, {}, event.indices);
 
-        if (dIndex >= this._lefts.length) {
-            // append columns to end of data set
-            for (let index = event.start; index <= event.end; index++) {
+        if (event.ids.length === 0)
+            return;
+
+        let filterList = (list, exclude) => { return list.filter((i) => ! exclude.includes(i)); };
+
+        let ids = event.ids.slice();
+        ids.sort((a, b) => {
+            if (indices[a].dIndex < indices[b].dIndex)
+                return -1;
+            else if (indices[a].dIndex > indices[b].dIndex)
+                return 1;
+            else
+                return 0;
+        });
+
+        for (let id of ids) {
+            let dIndex = indices[id].dIndex;
+            let index = indices[id].index;
+
+            if (dIndex >= this._lefts.length) {
+                // append columns to end of data set
                 let column = this.model.getColumn(index);
                 if (column.columnType === 'filter')
                     aNewFilterInserted = true;
@@ -1647,127 +2213,115 @@ const TableView = SilkyView.extend({
                     continue;
                 this._addColumnToView(column);
             }
-        }
-        else {
+            else {
 
-            let widthIncrease = 0;
-            let nInserted = 0;
-
-            for (let index = event.start; index <= event.end; index++) {
+                let widthIncrease = 0;
+                let nInserted = 0;
 
                 let column = this.model.getColumn(index);
                 if (column.columnType === 'filter')
                     aNewFilterInserted = true;
-                if (column.hidden)
-                    continue;
 
-                let dIndex = column.dIndex;
+                if (column.hidden === false) {
+                    let dIndex = column.dIndex;
 
-                let left = this._lefts[dIndex];
-                let html = this._createHeaderHTML(dIndex, left);
+                    let left = this._lefts[dIndex];
+                    let html = this._createHeaderHTML(dIndex, left);
 
-                let $after = $(this.$headers[column.dIndex]);
-                let $header = $(html);
-                $header.insertBefore($after);
-                this.$headers.splice(column.dIndex, 0, $header);
+                    let $after = $(this.$headers[column.dIndex]);
+                    let $header = $(html);
+                    $header.insertBefore($after);
+                    this.$headers.splice(column.dIndex, 0, $header);
 
-                this._addResizeListeners($header);
+                    this._addResizeListeners($header);
 
-                $after = $(this.$columns[column.dIndex]);
-                let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
-                $column.insertBefore($after);
-                this.$columns.splice(column.dIndex, 0, $column);
+                    $after = $(this.$columns[column.dIndex]);
+                    let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column jmv-column-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+                    $column.insertBefore($after);
+                    this.$columns.splice(column.dIndex, 0, $column);
 
-                this._lefts.splice(column.dIndex, 0, this._lefts[column.dIndex]);
-                this._widths.splice(column.dIndex, 0, column.width);
+                    this._lefts.splice(column.dIndex, 0, this._lefts[column.dIndex]);
+                    this._widths.splice(column.dIndex, 0, column.width);
 
-                widthIncrease += column.width;
-                nInserted++;
+                    widthIncrease += column.width;
+                    nInserted++;
 
-                for (let i = column.dIndex + 1; i < this._lefts.length; i++) {
-                    this._lefts[i] += column.width;
-                    let $header = $(this.$headers[i]);
-                    let $column = $(this.$columns[i]);
-                    $header.attr('data-index', i);
-                    $header.children().attr('data-index', i);
-                    $header.css('left', '' + this._lefts[i] + 'px');
-                    $column.css('left', '' + this._lefts[i] + 'px');
-                }
-            }
-
-            if (nInserted > 0) {
-
-                this._bodyWidth += widthIncrease;
-                this.$body.css('width', this._bodyWidth);
-
-                if ( ! ignoreSelection) {
-                    let selection = Object.assign({}, this.selection);
-                    if (dIndex <= this.selection.colNo) {
-                        this.selection.colNo++;
-                        this.selection.left++;
-                        this.selection.right++;
-                        this.selection.colFocus++;
-                        this._setSelectedRange(selection, true);
+                    for (let i = column.dIndex + 1; i < this._lefts.length; i++) {
+                        this._lefts[i] += column.width;
+                        let $header = $(this.$headers[i]);
+                        let $column = $(this.$columns[i]);
+                        $header.attr('data-index', i);
+                        $header.children().attr('data-index', i);
+                        $header.css('left', '' + this._lefts[i] + 'px');
+                        $column.css('left', '' + this._lefts[i] + 'px');
                     }
                 }
 
-                let insertedAt = this.model.indexToDisplayIndex(event.start);
-                let nWereVisible = this.viewport.right - this.viewport.left + 1;
-                let wereVisible = new Array(nWereVisible);
+                if (nInserted > 0) {
 
-                for (let i = 0; i < nWereVisible; i++) {
-                    let index = this.viewport.left + i;
-                    if (index >= insertedAt)
-                        index += nInserted;
-                    wereVisible[i] = index;
-                }
+                    this._bodyWidth += widthIncrease;
+                    this.$body.css('width', this._bodyWidth);
 
-                let viewRange = this._getViewRange();
+                    this._refreshSelection();
 
-                let nowVisible = [ ];
-                for (let i = 0; i < this._lefts.length; i++) {
-                    let colLeft = this._lefts[i];
-                    let colRight = colLeft + this._widths[i];
-                    if (colLeft > viewRange.right)
-                        break;
-                    if (colLeft > viewRange.left && colLeft < viewRange.right)
-                        nowVisible.push(i);
-                    else if (colRight > viewRange.left && colRight < viewRange.right)
-                        nowVisible.push(i);
-                }
+                    let insertedAt = dIndex;
+                    let nWereVisible = this.viewport.right - this.viewport.left + 1;
+                    let wereVisible = new Array(nWereVisible);
 
-                let needsPopulation = nowVisible.filter((i) => ! wereVisible.includes(i));
-                let needsClear = wereVisible.filter((i) => ! nowVisible.includes(i));
-
-                for (let i of needsPopulation) {
-                    let index = this.model.indexFromDisplayIndex(i);
-                    let column = this.model.attributes.columns[index];
-                    let $column = this.$columns[i];
-                    for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
-                        let top   = rowNo * this._rowHeight;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
-                        $column.append($cell);
+                    for (let i = 0; i < nWereVisible; i++) {
+                        let index = this.viewport.left + i;
+                        if (index >= insertedAt)
+                            index += nInserted;
+                        wereVisible[i] = index;
                     }
-                }
 
-                for (let i of needsClear)
-                    this.$columns[i].empty();
+                    let viewRange = this._getViewRange();
 
-                this.viewport.left = nowVisible[0];
-                this.viewport.right = nowVisible[nowVisible.length - 1];
-                this.model.attributes.viewport = Object.assign({}, this.viewport);
+                    let nowVisible = [ ];
+                    for (let i = 0; i < this._lefts.length; i++) {
+                        let colLeft = this._lefts[i];
+                        let colRight = colLeft + this._widths[i];
+                        if (colLeft > viewRange.right)
+                            break;
+                        if (colLeft > viewRange.left && colLeft < viewRange.right)
+                            nowVisible.push(i);
+                        else if (colRight > viewRange.left && colRight < viewRange.right)
+                            nowVisible.push(i);
+                    }
 
-                this.$el.find(".highlighted").removeClass('highlighted');
+                    let needsPopulation = filterList(nowVisible, wereVisible);
+                    let needsClear = filterList(wereVisible, nowVisible);
 
-                this._updateViewRange();
+                    for (let i of needsPopulation) {
+                        let index = this.model.indexFromDisplayIndex(i);
+                        let column = this.model.attributes.columns[index];
+                        let $column = this.$columns[i];
+                        for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
+                            let top   = rowNo * this._rowHeight;
+                            let $cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
+                            $column.append($cell);
+                        }
+                    }
 
-                if (aNewFilterInserted === false && needsPopulation.length > 0) {
-                    this.model.readCells({
-                        left: needsPopulation[0],
-                        right: needsPopulation[needsPopulation.length - 1],
-                        top: this.viewport.top,
-                        bottom: this.viewport.bottom,
-                    });
+                    for (let i of needsClear)
+                        this.$columns[i].empty();
+
+                    this.viewport.left = nowVisible[0];
+                    this.viewport.right = nowVisible[nowVisible.length - 1];
+                    this.model.attributes.viewport = Object.assign({}, this.viewport);
+
+                    this.$el.find(".highlighted").removeClass('highlighted');
+
+                    this._updateViewRange();
+
+                    if (aNewFilterInserted === false && needsPopulation.length > 0) {
+                        this.model.readCells({
+                            left: needsPopulation[0],
+                            right: needsPopulation[needsPopulation.length - 1],
+                            top: this.viewport.top,
+                            bottom: this.viewport.bottom,
+                        });
+                    }
                 }
             }
         }
@@ -1878,9 +2432,9 @@ const TableView = SilkyView.extend({
 
         ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom);
         ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
-        ActionHub.get('insertVar').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
-        ActionHub.get('insertComputed').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
-        ActionHub.get('insertRecoded').set('enabled', selection.left === selection.right && selection.colNo <= dataSetBounds.right && column.columnType !== 'filter');
+        ActionHub.get('insertVar').set('enabled', selection.right <= dataSetBounds.right && column.columnType !== 'filter');
+        ActionHub.get('insertComputed').set('enabled', selection.right <= dataSetBounds.right && column.columnType !== 'filter');
+        ActionHub.get('insertRecoded').set('enabled',  selection.right <= dataSetBounds.right && column.columnType !== 'filter');
         ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
         ActionHub.get('cut').set('enabled', column.columnType !== 'filter');
         ActionHub.get('paste').set('enabled', column.columnType !== 'filter');
@@ -1888,23 +2442,27 @@ const TableView = SilkyView.extend({
         ActionHub.get('transform').set('enabled', column.columnType !== 'filter');
     },
     _toggleFilterEditor() {
-        let editingIndex = this.model.get('editingVar');
-        let startIndex = editingIndex;
-        if (startIndex === null)
-            startIndex = this.model.indexFromDisplayIndex(this.selection.colNo);
+        let editingId = this.model.get('editingVar');
+        let startId = editingId;
+        if (startId === null)
+            startId = [this.model.getColumn(this.selection.colNo, true).id];
 
-        let column = this.model.getColumn(startIndex);
+        let column = this.model.getColumnById(startId[0]);
         if (column.columnType !== 'filter') {
-            startIndex = 0;
-            column = this.model.getColumn(startIndex);
+            column = this.model.getColumn(0);
+            startId = [column.id];
         }
 
         let isFilter = column.columnType === 'filter';
-        if (editingIndex === null || isFilter === false || startIndex !== editingIndex) {
+        if (editingId === null || isFilter === false || startId[0] !== editingId[0]) {
             if (isFilter)
-                this.model.set('editingVar', column.index);
+                this.model.set('editingVar', [column.id]);
             else
-                this.model.insertColumn(0, { columnType: 'filter', hidden: this.model.get('filtersVisible') === false }).then(() => this.model.set('editingVar', 0));
+                this.model.insertColumn({
+                    index: 0,
+                    columnType: 'filter',
+                    hidden: this.model.get('filtersVisible') === false
+                }).then(() => this.model.set('editingVar', [this.model.getColumn(0).id]));
         }
         else
             this.model.set('editingVar', null);
@@ -1920,15 +2478,15 @@ const TableView = SilkyView.extend({
         return column;
     },
     _toggleVariableEditor() {
-        let editingIndex = this.model.get('editingVar');
+        let editingIds = this.model.get('editingVar');
         let editingColumn = null;
-        if (editingIndex !== null)
-            editingColumn = this.model.getColumn(editingIndex);
+        if (editingIds !== null)
+            editingColumn = this.model.getColumnById(editingIds[0]);
 
-        if (editingIndex === null || (editingColumn.columnType === 'filter' && editingColumn.hidden)) {
+        if (editingIds === null || (editingColumn.columnType === 'filter' && editingColumn.hidden)) {
             let startIndex = this.model.indexFromDisplayIndex(this.selection.colNo);
             let column = this._findFirstVisibleColumn(startIndex);
-            this.model.set('editingVar', column.index);
+            this.model.set('editingVar', [column.id]);
         }
         else
             this.model.set('editingVar', null);
@@ -1965,7 +2523,7 @@ const TableView = SilkyView.extend({
                 range.colNo = range.left;
                 range.colFocus = range.left;
                 range.rowFocus = range.top;
-                this._setSelectedRange(range);
+                this._setSelections(range);
 
                 this.$selection.addClass('copying');
                 setTimeout(() => this.$selection.removeClass('copying'), 200);
@@ -2019,7 +2577,7 @@ const TableView = SilkyView.extend({
             $column.css(css);
         }
 
-        if (colNo <= this.selection.colNo) {
+        if (colNo <= this.selection.left) {
             let x = this._lefts[this.selection.colNo];
             let y = this.selection.rowNo * this._rowHeight;
             let width = this._widths[this.selection.colNo];
@@ -2238,6 +2796,7 @@ const TableView = SilkyView.extend({
         html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
         html +=     '<div class="jmv-column-header-resizer" data-index="' + column.dIndex + '" draggable="true"></div>';
         html +=     '<div class="jmv-column-header-colour"></div>';
+        html +=     '<div class="sub-selection-bar"></div>';
         html += '</div>';
 
         return html;
@@ -2263,7 +2822,7 @@ const TableView = SilkyView.extend({
         if (rowNo >= this.model.attributes.rowCount)
             virtual = ' virtual';
 
-        let $cell = $('<div class="jmv-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px; line-height:' + (height-3) + 'px;">' + content + '</div>');
+        let $cell = $('<div class="jmv-row-header-cell' + highlighted + virtual + '" style="top : ' + top + 'px ; height : ' + height + 'px; line-height:' + (height-3) + 'px;">' + content + '<div class="sub-selection-bar"></div></div>');
 
         return $cell;
     },
@@ -2298,6 +2857,13 @@ const TableView = SilkyView.extend({
             this.$selectionColumnHighlight.css('left', leftCol + deltaWidth);
             this.$selectionRowHighlight.css('width', this._rowHeaderWidth);
             this.$selection.css('left', leftSel + deltaWidth);
+
+            let $selections = this.$body.find('.jmv-table-cell-secondary-selected');
+            for (let i = 0; i < $selections.length; i++) {
+                let $selection = $($selections[i]);
+                leftSel = $selection.position().left;
+                $selection.css('left', leftSel + deltaWidth);
+            }
 
             this._lefts = this._lefts.map(x => x += deltaWidth);
             for (let i = 0; i < this._lefts.length; i++) {

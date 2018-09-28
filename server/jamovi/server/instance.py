@@ -5,6 +5,7 @@
 import os
 import os.path
 import platform
+import re
 
 from jamovi.core import ColumnType
 from jamovi.core import DataType
@@ -721,46 +722,46 @@ class Instance:
         filter_inserted = False
         to_calc = set()
 
-        for i in range(request.columnStart, request.columnEnd + 1):
-            self._data.insert_column(i)
-            column = self._data[i]
+        for i in range(0, len(request.schema.columns)):
+            column_pb = request.schema.columns[i]
+            has_name = column_pb.name != ''
+            self._data.insert_column(column_pb.index)
+            column = self._data[column_pb.index]
 
-            if request.incSchema:
-                column_pb = request.schema.columns[i - request.columnStart]
+            for j in range(i + 1, len(request.schema.columns)):
+                if request.schema.columns[i].index >= column_pb.index:
+                    request.schema.columns[i].index += 1
 
-                name = None
-                if column_pb.name != '':
-                    name = column_pb.name
-                    orig_name = name
-                    used_names = list(map(lambda x: x.name, self._data))
-                    i = 2
-                    while name in used_names:
-                        name = '{} ({})'.format(orig_name, i)
-                        i += 1
+            column.column_type = ColumnType(column_pb.columnType)
 
-                    column.name = name
+            column.change(
+                data_type=DataType(column_pb.dataType),
+                measure_type=MeasureType(column_pb.measureType))
 
-                column.column_type = ColumnType(column_pb.columnType)
+            column.formula = column_pb.formula
+            column.auto_measure = column_pb.autoMeasure
+            column.hidden = column_pb.hidden
+            column.active = column_pb.active
+            column.filter_no = column_pb.filterNo
+            column.trim_levels = column_pb.trimLevels
+            column.transform = column_pb.transform
+            column.parent_id = column_pb.parentId
 
-                column.change(
-                    data_type=DataType(column_pb.dataType),
-                    measure_type=MeasureType(column_pb.measureType))
+            name = column_pb.name
+            if has_name is False and column.column_type == ColumnType.RECODED:
+                name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+                self._data.set_column_name(column, name)
+                name = self._calc_column_name(column, '', '')
 
-                column.formula = column_pb.formula
-                column.auto_measure = column_pb.autoMeasure
-                column.hidden = column_pb.hidden
-                column.active = column_pb.active
-                column.filter_no = column_pb.filterNo
-                column.trim_levels = column_pb.trimLevels
-                column.transform = column_pb.transform
-                column.parent_id = column_pb.parentId
+            if name != '':
+                self._data.set_column_name(column, name)
 
-                if column.column_type is ColumnType.FILTER:
-                    filter_inserted = True
-                    to_calc.add(column)
+            if column.column_type is ColumnType.FILTER:
+                filter_inserted = True
+                to_calc.add(column)
 
-                if column.column_type is ColumnType.COMPUTED:
-                    to_calc.add(column)
+            if column.column_type is ColumnType.COMPUTED:
+                to_calc.add(column)
 
         if filter_inserted:
             self._data.update_filter_names()
@@ -803,8 +804,8 @@ class Instance:
         self._populate_schema_info(request, response)
 
         # has to be after the filter names are renamed
-        for i in range(request.columnStart, request.columnEnd + 1):
-            column = self._data[i]
+        for i in range(0, len(request.schema.columns)):
+            column = self._data[request.schema.columns[i].index]
             column_pb = response.schema.columns.add()
             self._populate_column_schema(column, column_pb)
 
@@ -817,18 +818,38 @@ class Instance:
             self._populate_transform_schema(transform, trans_pb)
 
     def _on_dataset_del_rows(self, request, response):
-        self._data.delete_rows(request.rowStart, request.rowEnd)
+        sortedIndices = sorted(request.rowIndices)
+
+        start = -1
+        end = -1
+        for i in range(0, len(sortedIndices)):
+            if start == -1:
+                start = sortedIndices[i]
+                end = start
+            elif sortedIndices[i] == end + 1:
+                end += 1
+            else:
+                self._data.delete_rows(start, end)
+                for j in range(i, len(sortedIndices)):
+                    sortedIndices[j] -= end - start + 1
+                start = sortedIndices[i]
+                end = start
+
+        if start is not -1:
+            self._data.delete_rows(start, end)
+
         self._populate_schema(request, response)
 
     def _on_dataset_del_cols(self, request, response):
 
-        to_delete = [None] * (request.columnEnd - request.columnStart + 1)
+        to_delete = [None] * (len(request.columnIds))
         to_reparse = set()
         tf_reparse = set()
+
         filter_deleted = False
 
         for i in range(len(to_delete)):
-            column = self._data[i + request.columnStart]
+            column = self._data.get_column_by_id(request.columnIds[i])
             column.prep_for_deletion()
             to_delete[i] = column
             if column.column_type is ColumnType.FILTER:
@@ -836,8 +857,18 @@ class Instance:
 
             for child in self._data:
                 if child.parent_id == column.id:
+                    parent_name = ''
+                    if child.parent_id > 0:
+                        parent = self._data.get_column_by_id(child.parent_id)
+                        parent_name = parent.name
+                    transform_name = ''
+                    if child.transform > 0:
+                        transform = self._data.get_transform_by_id(child.transform)
+                        transform_name = transform.get_suffix()
                     child.parent_id = 0
                     to_reparse.add(child)
+                    new_column_name = self._calc_column_name(child, parent_name, transform_name)
+                    self._apply_column_name(child, new_column_name, None, to_reparse)
 
             for transform in self._data.transforms:
                 if column in transform.dependencies:
@@ -850,7 +881,7 @@ class Instance:
 
         to_reparse -= set(to_delete)
 
-        self._data.delete_columns(request.columnStart, request.columnEnd)
+        self._data.delete_column_ids(request.columnIds)
 
         for transform in tf_reparse:
             transform.parse_formula()
@@ -882,6 +913,88 @@ class Instance:
                 trans_pb = response.schema.transforms.add()
                 self._populate_transform_schema(transform, trans_pb)
 
+    def _calc_column_name(self, column, old_parent_name, old_transform_name):
+
+        pass_test = False
+
+        is_none = old_parent_name == '' and old_transform_name == ''
+
+        current_column_name = column.name
+        match = re.match(r'(^.+)(?=( \(\d+\))$)|(^.+)', current_column_name)
+        if match:
+            current_column_name = match.group(0)
+
+        if is_none:
+            match = re.match(r'^T(\d+$)', current_column_name)
+            if match:
+                pass_test = True
+        else:
+            test_name = ''
+            if '...' not in old_transform_name:
+                if old_transform_name == '':
+                    test_name = old_parent_name
+                elif old_parent_name == '':
+                    test_name = '? - ' + old_transform_name
+                else:
+                    test_name = old_parent_name + ' - ' + old_transform_name
+            else:
+                insert = old_parent_name
+                if insert == '':
+                    insert = '?'
+                test_name = old_transform_name.replace('...', insert, 1)
+            pass_test = current_column_name == test_name.strip()
+
+        if pass_test:
+            transform_name = ''
+            if column.transform > 0:
+                transform = self._data.get_transform_by_id(column.transform)
+                transform_name = transform.get_suffix()
+
+            parent_name = ''
+            if column.parent_id > 0:
+                parent = self._data.get_column_by_id(column.parent_id)
+                parent_name = parent.name
+
+            new_name = ''
+            if column.transform == 0 and column.parent_id == 0:
+                new_name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+            elif '...' not in transform_name:
+                if column.transform == 0:
+                    new_name = parent_name
+                elif column.parent_id == 0:
+                    new_name = '? - ' + transform_name
+                else:
+                    new_name = parent_name + ' - ' + transform_name
+            else:
+                insert = parent_name
+                if insert == '':
+                    insert = '?'
+                new_name = transform_name.replace('...', insert, 1)
+            return new_name.strip()
+
+        return column.name
+
+    def _apply_column_name(self, column, new_column_name, cols_changed, reparse):
+        if new_column_name != column.name:
+            is_circular = self._data.has_circular_parenthood(column)
+
+            old_name = column.name
+            self._data.set_column_name(column, new_column_name)
+
+            if cols_changed is not None:
+                cols_changed.add(column)
+            reparse.update(column.dependents)
+
+            if is_circular is False:
+                for check_column in self._data:
+                    if check_column.parent_id == column.id:
+                        transform_name = ''
+                        if check_column.transform > 0:
+                            transform = self._data.get_transform_by_id(check_column.transform)
+                            transform_name = transform.get_suffix()
+                        next_column_name = self._calc_column_name(check_column, old_name, transform_name)
+                        self._apply_column_name(check_column, next_column_name, cols_changed, reparse)
+
     def _apply_schema(self, request, response):
 
         # columns that need to be reparsed, and/or recalced
@@ -903,18 +1016,22 @@ class Instance:
 
                 transform.formula = list(trans_pb.formula)
                 transform.description = trans_pb.description
+                transform.suffix = trans_pb.suffix
                 transform.measure_type = MeasureType(trans_pb.measureType)
 
                 trans_changed.add(transform)
 
             elif trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE'):
                 transform = self._data.get_transform_by_id(trans_id)
-                self._data.set_transform_name(transform, trans_name)
+                old_transform_name = transform.get_suffix()
+                transform_name_changed = self._data.set_transform_name(transform, trans_name)
                 self._data.set_transform_colour_index(transform, trans_colour_index)
+
+                transform_name_changed = transform_name_changed or transform.suffix != trans_pb.suffix
+                transform.suffix = trans_pb.suffix
 
                 new_formula = list(trans_pb.formula)
                 new_m_type = MeasureType(trans_pb.measureType)
-
                 if transform.formula != new_formula or transform.measure_type != new_m_type:
                     transform.formula = new_formula
                     transform.measure_type = new_m_type
@@ -922,6 +1039,15 @@ class Instance:
                     for column in self._data:
                         if column.transform == trans_id:
                             reparse.add(column)
+                elif transform_name_changed:
+                    for column in self._data:
+                        if column.transform == trans_id:
+                            parent_name = ''
+                            if column.parent_id > 0:
+                                parent = self._data.get_column_by_id(column.parent_id)
+                                parent_name = parent.name
+                            new_column_name = self._calc_column_name(column, parent_name, old_transform_name)
+                            self._apply_column_name(column, new_column_name, cols_changed, reparse)
 
                 transform.description = trans_pb.description
                 transform.colour_index = trans_pb.colourIndex
@@ -978,9 +1104,6 @@ class Instance:
                         measure_type=MeasureType(column_pb.measureType),
                         levels=levels)
 
-                if column_pb.name != '':
-                    column.name = column_pb.name
-
                 column.column_type = ColumnType(column_pb.columnType)
 
                 column.formula = column_pb.formula
@@ -992,6 +1115,24 @@ class Instance:
                 column.description = column_pb.description
                 column.transform = column_pb.transform
                 column.parent_id = column_pb.parentId
+
+                if old_type == ColumnType.NONE and column.column_type == ColumnType.RECODED:
+                    new_column_name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+                    self._apply_column_name(column, new_column_name, cols_changed, reparse)
+                elif column_pb.name != '':
+                    new_column_name = column_pb.name
+                    if column_pb.transform != old_transform or column_pb.parentId != old_parent_id:
+                        transform_name = ''
+                        if old_transform > 0:
+                            transform = self._data.get_transform_by_id(old_transform)
+                            transform_name = transform.get_suffix()
+                        parent_name = ''
+                        if old_parent_id > 0:
+                            parent = self._data.get_column_by_id(old_parent_id)
+                            parent_name = parent.name
+
+                        new_column_name = self._calc_column_name(column, parent_name, transform_name)
+                    self._apply_column_name(column, new_column_name, cols_changed, reparse)
 
                 cols_changed.add(column)
 
@@ -1041,11 +1182,17 @@ class Instance:
         # handle transform deletions
         for trans_pb in request.schema.transforms:
             if trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE'):
-                self._data.remove_transform(trans_pb.id)
+                removed_transform = self._data.remove_transform(trans_pb.id)
                 for column in self._data:
                     if column.transform == trans_pb.id:
                         column.transform = 0
                         reparse.add(column)
+                        parent_name = ''
+                        if column.parent_id > 0:
+                            parent = self._data.get_column_by_id(column.parent_id)
+                            parent_name = parent.name
+                        new_column_name = self._calc_column_name(column, parent_name, removed_transform.get_suffix())
+                        self._apply_column_name(column, new_column_name, cols_changed, reparse)
 
         # dependent columns need to be reparsed too
         dependents = set()
@@ -1558,6 +1705,7 @@ class Instance:
         transform_schema.formula[:] = transform.formula
         transform_schema.formulaMessage[:] = transform.formula_message
         transform_schema.description = transform.description
+        transform_schema.suffix = transform.suffix
         transform_schema.measureType = transform.measure_type.value
         transform_schema.colourIndex = transform.colour_index
 
