@@ -51,8 +51,10 @@ const TransformEditor = function(dataset) {
         this.formula = [ '' ];
 
         this.$top = $('<div class="jmv-transform-editor-top"></div>').appendTo(this.$el);
-        this.$title = $('<input class="jmv-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$top);
-        this.$description = $('<div class="jmv-variable-editor-widget-description" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$top);
+        this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" maxlength="63">').appendTo(this.$top);
+        this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$top);
+        this.$description = $('<div class="jmv-transform-editor-widget-description" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$descBox);
+        this.$shortname = $('<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="Variable suffix" contenteditable="true">').appendTo(this.$descBox);
 
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
@@ -99,6 +101,7 @@ const TransformEditor = function(dataset) {
 
         this.setInputEvents(this.$title, false, 'name');
         this.setInputEvents(this.$description, true, 'description');
+        this.setInputEvents(this.$shortname, true, 'suffix');
 
         this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
 
@@ -142,6 +145,8 @@ const TransformEditor = function(dataset) {
                 let $formulas = this.$options.find('.formula');
                 $($formulas[$formulas.length-3]).focus();
                 this.$options.animate({scrollTop:this.$options[0].scrollHeight}, 'slow');
+                if ($formulas.length > 3)
+                    this.$rightBox.removeClass('hidden');
             },0);
         };
 
@@ -161,9 +166,9 @@ const TransformEditor = function(dataset) {
         this.$list = $('<div class="content-list"></div>').appendTo(this.$contents);
         this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$list);
 
-        let $rightBox = $('<div class="right-box"></div>').appendTo(this.$list);
-        let $moveup = $('<div class="move-up button"><span class="mif-arrow-up"></span></div>').appendTo($rightBox);
-        let $movedown = $('<div class="move-down button"><span class="mif-arrow-down"></span></div>').appendTo($rightBox);
+        this.$rightBox = $('<div class="right-box hidden"></div>').appendTo(this.$list);
+        let $moveup = $('<div class="move-up button"><span class="mif-arrow-up"></span></div>').appendTo(this.$rightBox);
+        let $movedown = $('<div class="move-down button"><span class="mif-arrow-down"></span></div>').appendTo(this.$rightBox);
 
         $moveup.on('mousedown', (event) => {
             let $item = this.$options.find('.selected');
@@ -197,7 +202,7 @@ const TransformEditor = function(dataset) {
         this.$bottom = $('<div class="jmv-transform-editor-bottom"></div>').appendTo(this.$el);
 
         this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$bottom);
-        $('<div class="transform-label">Measure Type</div>').appendTo(this.$measureBox);
+        $('<div class="transform-label">Measure type</div>').appendTo(this.$measureBox);
         this.$measureList = $(`<select id="transform-measure-type">
                                     <option value="none">Auto</option>
                                     <option value="nominal">Nominal</option>
@@ -227,8 +232,8 @@ const TransformEditor = function(dataset) {
         });
 
         this.$usageBox = $('<div class="usage-box"></div>').appendTo(this.$bottom);
-        this.$connectionInfo = $('<div class="jmv-transform-editor-widget-info"></div>').appendTo(this.$usageBox);
-        this.$viewConnectionInfo = $('<div class="view-button">View</div>').appendTo(this.$usageBox);
+        this.$connectionInfo = $('<div class="usage-label">used by</div>').appendTo(this.$usageBox);
+        this.$viewConnectionInfo = $('<div class="view-button"></div>').appendTo(this.$usageBox);
 
         this.variableList = new VariableList();
         this.$viewConnectionInfo.on('click', (event) => {
@@ -239,7 +244,10 @@ const TransformEditor = function(dataset) {
             }
             if (columns.length > 0) {
                 this.variableList.populate(columns, true);
-                dropdown.show(this.$viewConnectionInfo, this.variableList);
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$viewConnectionInfo)
+                    dropdown.hide();
+                else
+                    dropdown.show(this.$viewConnectionInfo, this.variableList);
             }
             event.preventDefault();
             event.stopPropagation();
@@ -283,6 +291,7 @@ const TransformEditor = function(dataset) {
             this._populate();
         else {
             this.$title.val(transform.name);
+            this.$shortname[0].textContent = transform.suffix;
             this.$description[0].textContent = transform.description;
             this.$measureList.val(transform.measureType);
             this.$measureIcon.attr('measure-type', transform.measureType);
@@ -413,6 +422,7 @@ const TransformEditor = function(dataset) {
                 this.$icon.css('background-color', ColourPalette.get(transform.colourIndex));
 
                 this.$title.val(transform.name);
+                this.$shortname[0].textContent = transform.suffix;
                 this.$description[0].textContent = transform.description;
                 this.$measureList.val(transform.measureType);
                 this.$measureIcon.attr('measure-type', transform.measureType);
@@ -439,7 +449,7 @@ const TransformEditor = function(dataset) {
                     if (column.transform === id)
                         this.connectedColumns.push(column);
                 }
-                this.$connectionInfo[0].textContent = 'Transform used by ' + this.connectedColumns.length + ' ' + (this.connectedColumns.length === 1 ? 'variable' : 'variables');
+                this.$viewConnectionInfo[0].textContent = this.connectedColumns.length;
                 this._updateErrorMessages();
                 return;
             }
@@ -447,6 +457,7 @@ const TransformEditor = function(dataset) {
 
         this.$title.html('');
         this.$description.html('');
+        this.$shortname.html('');
     };
 
     this._swapFormulaItems = function($item, direction) {
@@ -517,6 +528,9 @@ const TransformEditor = function(dataset) {
         this.formula.splice(index, 2);
         $formulaBox.remove();
         this._updateLastFormulaTag();
+
+        if (this.formula.length <= 3)
+            this.$rightBox.addClass('hidden');
     };
 
     this._createFormulaButtons = function(elements) {

@@ -13,6 +13,7 @@ const DataVarWidget = require('./datavarwidget');
 const ComputedVarWidget = require('./computedvarwidget');
 const RecodedVarWidget = require('./recodedvarwidget');
 const FilterWidget = require('./filterwidget');
+const VariableListItem = require('./variablelistitem');
 
 const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
@@ -26,8 +27,8 @@ const EditorWidget = Backbone.View.extend({
         this.$labelBox = $('<div class="label-box"></div>').appendTo(this.$el);
         this.$label = $('<div class="jmv-variable-editor-widget-label"></div>').appendTo(this.$labelBox);
         $('<div class="label-spacer"></div>').appendTo(this.$labelBox);
-        this.$importedAs = $('<div class="imported-as"></div>').appendTo(this.$labelBox);
-        this.$importedAsLabel = $('<div class="label">Imported as:</div>').appendTo(this.$importedAs);
+        this.$importedAs = $('<div class="imported-as single-variable-support"></div>').appendTo(this.$labelBox);
+        this.$importedAsLabel = $('<div class="label ">Imported as:</div>').appendTo(this.$importedAs);
         this.$importedAsName = $('<div class="name"></div>').appendTo(this.$importedAs);
 
         this.model.on('change:importName change:name', event => {
@@ -36,7 +37,9 @@ const EditorWidget = Backbone.View.extend({
             this._updateImportAsLabel(columnType, name);
         });
 
-        this.$title = $('<input class="jmv-variable-editor-widget-title" type="text" maxlength="63">').appendTo(this.$el);
+        this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$el);
+
+        this.$title = $('<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63">').appendTo(this.$descBox);
         this._addTextEvents(this.$title, 'name');
         this.model.on('change:name', event => {
             if ( ! this.attached)
@@ -50,7 +53,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('name', this.$title.val());
         } );
 
-        this.$description = $('<div class="jmv-variable-editor-widget-description" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$el);
+        this.$description = $('<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$descBox);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
             if ( ! this.attached)
@@ -63,6 +66,11 @@ const EditorWidget = Backbone.View.extend({
         this.$description.on('blur', () => {
             this.model.set('description', this.$description[0].textContent);
         } );
+
+        this.$multiVarBox = $('<div class="multi-var-info"></div>').appendTo(this.$descBox);
+        this.$multiVarLabel = $('<div class="multi-var-info-label">Selected:</div>').appendTo(this.$multiVarBox);
+        this.$scrollWrapper = $('<div class="scroll-wrapper"></div>').appendTo(this.$multiVarBox);
+        this.$multiVarList = $('<div class="multi-var-info-list"></div>').appendTo(this.$scrollWrapper);
 
         this.model.on('columnChanging', () => {
             if (this.$description.is(":focus"))
@@ -104,6 +112,9 @@ const EditorWidget = Backbone.View.extend({
                 this.$active.removeClass('retain-levels');
         });
 
+        this.model.on('change:ids', event => this._updateMultiVariableState());
+        this.model.dataset.on('columnsChanged', event => this._updateMultiVariableState());
+
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
         this.dataVarWidget = new DataVarWidget({ el: this.$dataVarWidget, model: this.model });
 
@@ -114,7 +125,7 @@ const EditorWidget = Backbone.View.extend({
         this.recodedVarWidget = new RecodedVarWidget({ el: this.$recodedVarWidget, model: this.model });
 
         this.$filterWidget = $('<div></div>').appendTo(this.$body);
-        this.filterWidget = new FilterWidget({ el: this.$filterWidget, model: this.model });
+        this.filterWidget = new FilterWidget({ el: this.$filterWidget, model: this.model.dataset });
 
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);
         this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
@@ -126,6 +137,21 @@ const EditorWidget = Backbone.View.extend({
             this.$filterWidget,
             this.$newVarWidget,
         ];
+    },
+    _updateMultiVariableState() {
+        let ids = this.model.get('ids');
+        if (ids !== null && this.model.columns.length > 1) {
+            this.$el.addClass('multiple-variables');
+            this.$multiVarList.empty();
+            for (let column of this.model.columns) {
+                let item = new VariableListItem(column);
+                item.$el.appendTo(this.$multiVarList);
+            }
+        }
+        else
+            this.$el.removeClass('multiple-variables');
+
+        this._updateHeading();
     },
     _updateImportAsLabel(columnType, name) {
         if (columnType === 'data' || columnType === 'computed' || columnType === 'recoded') {
@@ -182,6 +208,32 @@ const EditorWidget = Backbone.View.extend({
         this.recodedVarWidget.detach();
         this.filterWidget.detach();
     },
+    _updateHeading() {
+        let type = this.model.get('columnType');
+        let ids = this.model.get('ids');
+        let multiSupport = ids !== null && this.model.columns.length > 1;
+        if (type === 'data') {
+            if (multiSupport)
+                this.$label[0].textContent = 'MULTIPLE DATA VARIABLES (' + this.model.columns.length + ')';
+            else
+                this.$label[0].textContent = 'DATA VARIABLE';
+        }
+        else if (type === 'computed') {
+            if (multiSupport)
+                this.$label[0].textContent = 'MULTIPLE COMPUTED VARIABLES (' + this.model.columns.length + ')';
+            else
+                this.$label[0].textContent = 'COMPUTED VARIABLE';
+        }
+        else if (type === 'recoded') {
+            if (multiSupport)
+                this.$label[0].textContent = 'MULTIPLE TRANSFORMED VARIABLES (' + this.model.columns.length + ')';
+            else
+                this.$label[0].textContent = 'TRANSFORMED VARIABLE';
+        }
+        else if (type === 'filter') {
+            this.$label[0].textContent = 'ROW FILTERS';
+        }
+    },
     attach() {
         this.attached = true;
         let name = this.model.get('name');
@@ -201,8 +253,9 @@ const EditorWidget = Backbone.View.extend({
 
         this._updateImportAsLabel(type, name);
 
+        this._updateHeading();
+
         if (type === 'data') {
-            this.$label[0].textContent = 'DATA VARIABLE';
             this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
@@ -212,7 +265,6 @@ const EditorWidget = Backbone.View.extend({
             this.dataVarWidget.attach();
         }
         else if (type === 'computed') {
-            this.$label[0].textContent = 'COMPUTED VARIABLE';
             this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
@@ -222,7 +274,6 @@ const EditorWidget = Backbone.View.extend({
             this.computedVarWidget.attach();
         }
         else if (type === 'recoded') {
-            this.$label[0].textContent = 'TRANSFORMED VARIABLE';
             this.$footer.show();
             this.$labelBox.show();
             this.$label.show();
@@ -232,7 +283,6 @@ const EditorWidget = Backbone.View.extend({
             this.recodedVarWidget.attach();
         }
         else if (type === 'filter') {
-            this.$label[0].textContent = 'ROW FILTERS';
             this.$footer.hide();
             this.$labelBox.show();
             this.$importedAs.hide();

@@ -57,6 +57,24 @@ body.windows #header {
     line-height: 32px ;
 }
 
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #CCCCCC;
+    opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: #CCCCCC;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+    color: #CCCCCC;
+}
+
+div[placeholder]:empty::before {
+    content: attr(placeholder);
+    color: #CCCCCC;
+}
+
 #header-text {
     display: none ;
 }

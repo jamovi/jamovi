@@ -104,13 +104,12 @@ const VariableEditor = Backbone.View.extend({
         this.model.on('columnsChanged', event => {
             if (this.model.attributes.editingVar === null)
                 return;
-            let column = this.model.attributes.columns[this.model.attributes.editingVar];
+            let ids = this.model.attributes.editingVar;
             for (let changes of event.changes) {
-                if (changes.id === column.id) {
+                if (ids.includes(changes.id)) {
                     if (changes.columnTypeChanged) {
-                        let index = column.index;
-                        this.model.set('editingVar', index - 1, { silent: true });
-                        this.model.set('editingVar', index);
+                        this.model.set('editingVar', [-1], { silent: true });
+                        this.model.set('editingVar', ids);
                         this._update();
                     }
                     else if (changes.measureTypeChanged || changes.dataTypeChanged || changes.levelsChanged || changes.nameChanged) {
@@ -141,10 +140,12 @@ const VariableEditor = Backbone.View.extend({
         });
 
         this._moveLeft = function() {
-            let colNo = this.model.attributes.editingVar;
+            let colId = this.model.attributes.editingVar[0];
+            let colNo = this.model.getColumnById(colId).dIndex;
             colNo--;
-            if (colNo >= 0)
-                this.model.set('editingVar', colNo);
+            let newColumn = this.model.getColumn(colNo, true);
+            if (newColumn)
+                this.model.set('editingVar', [newColumn.id]);
         };
 
         this.$left.on('click', event => {
@@ -159,10 +160,12 @@ const VariableEditor = Backbone.View.extend({
         });
 
         this._moveRight = function() {
-            let colNo = this.model.attributes.editingVar;
+            let colId = this.model.attributes.editingVar[0];
+            let colNo = this.model.getColumnById(colId).dIndex;
             colNo++;
-            if (colNo <= this.model.attributes.vColumnCount - 1)
-                this.model.set('editingVar', colNo);
+            let newColumn = this.model.getColumn(colNo, true);
+            if (newColumn)
+                this.model.set('editingVar', [newColumn.id]);
         };
 
         this.$right.on('click', event => {
@@ -219,22 +222,48 @@ const VariableEditor = Backbone.View.extend({
         this.editorPanel.attach(null);
     },
     _update() {
-        let columnIndex = this.model.attributes.editingVar;
-        let column = this.model.attributes.columns[columnIndex];
-        this.$main.attr('data-type', column.columnType);
-        this.editorModel.setColumn(column.id);
+        if (this.commonColumn) {
+            this.$main.attr('data-type', this.commonColumn.columnType);
+            this.editorModel.setColumn(this.model.attributes.editingVar, this.commonColumn.columnType);
+        }
     },
     _editingVarChanged(event) {
 
-        let prev = this.model.previous('editingVar');
-        let now  = this.model.get('editingVar');
+        let prevIds = this.model.previous('editingVar');
+        let nowIds  = this.model.get('editingVar');
 
-        if ((prev === null || now === null) && prev !== now)
-            this.trigger('visibility-changing', prev === null && now !== null);
+        if ((prevIds === null || nowIds === null) && prevIds !== nowIds)
+            this.trigger('visibility-changing', prevIds === null && nowIds !== null);
 
-        if (now === null) {
+        let prev = null;
+        let now  = null;
+
+        if (prevIds !== null) {
+            let prevColumn = this.model.getColumnById(prevIds[0]);
+            if (prevColumn)
+                prev = prevColumn.index;
+            else
+                prev = null;
+        }
+
+        this.commonColumn = null;
+        if (nowIds !== null) {
+            this.commonColumn = this.model.getColumnById(nowIds[0]);
+            if (this.commonColumn)
+                now  = this.commonColumn.index;
+            else
+                now = null;
+        }
+
+        if (nowIds !== null && prevIds !== null) {
+            let isSame = nowIds.length === prevIds.length && nowIds.every(a => { return prevIds.includes(a); });
+            if (isSame)
+                return;
+        }
+
+        if (nowIds === null) {
             this.$el.addClass('hidden');
-            if (prev !== null)
+            if (prevIds !== null)
                 this.editors[0].detach();
             keyboardJS.setContext(this._previousKeyboardContext);
         }
@@ -261,9 +290,11 @@ const VariableEditor = Backbone.View.extend({
             this._previousKeyboardContext = keyboardJS.getContext();
             keyboardJS.setContext('spreadsheet');
 
-            if (prev !== null && now !== null) {
-                let nowColumn = this.model.getColumn(now);
-                if (this.editorModel.get('columnType') === 'filter' && nowColumn.columnType === 'filter') {
+            if (prevIds !== null && nowIds !== null) {
+                if ((this.editorModel.get('columnType') === 'filter' && this.commonColumn.columnType === 'filter') ||
+                    (this.editorModel.get('columnType') === this.commonColumn.columnType &&
+                     (nowIds.length > 1 || (nowIds.length === 1 && prevIds.length > 1)) &&
+                     ((nowIds.length > 1 && prevIds.length > 1) || (nowIds.length === 1 && prevIds.includes(nowIds[0])) || (prevIds.length === 1 && nowIds.includes(prevIds[0]))))) {
                     this._update();
                     this.editors[0].update();
                     return;
@@ -275,7 +306,7 @@ const VariableEditor = Backbone.View.extend({
             let old;
             let $old;
 
-            if (prev !== null) {
+            if (prevIds !== null) {
                 editor = this.editors[1];
                 $editor = this.$$editors[1];
                 old = this.editors[0];
@@ -299,8 +330,9 @@ const VariableEditor = Backbone.View.extend({
             editor.attach();
             this.currentEditor = editor;
 
-            if (prev !== null) {
-                if (now < prev) {
+            if (prevIds !== null) {
+                let goLeft = now < prev || (now === prev && prevIds.length > nowIds.length);
+                if (goLeft) {
                     $editor.addClass('inactive');
                     $editor.css('left', '-100%');
                     $old.css('left', '100%');

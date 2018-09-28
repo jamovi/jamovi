@@ -9,7 +9,7 @@ const tarp = require('../utils/tarp');
 const dropdown = require('./dropdown');
 const TransformList = require('./transformlist');
 
-const DataVarWidget = Backbone.View.extend({
+const MultiDataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
     initialize(args) {
 
@@ -88,14 +88,13 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:measureType', event => this._setOptions(this.model.get('dataType'), event.changed.measureType, this.model.get('levels')));
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
-        this.model.on('change:ids', event => this._updateHighlightPosition());
+        this.model.on('change:description', event => this._updateHighlightPosition());
 
         this.model.on('change:autoApply', event => {
             if (this.model.get('autoApply'))
                 tarp.hide('levels');
         });
     },
-
     _moveUp() {
         if (this.attached === false)
             return;
@@ -136,8 +135,8 @@ const DataVarWidget = Backbone.View.extend({
         if (this.model.attributes.measureType !== 'continuous') {
             let levels = this.model.get('levels');
             let index  = this.selectedLevelIndex;
-            this.$moveUp.toggleClass('disabled', levels === null || index < 1);
-            this.$moveDown.toggleClass('disabled', levels === null || index >= levels.length - 1 || index === -1);
+            this.$moveUp.toggleClass('disabled', index < 1);
+            this.$moveDown.toggleClass('disabled', index >= levels.length - 1 || index === -1);
         }
         else {
             this.$moveUp.addClass('disabled');
@@ -152,12 +151,9 @@ const DataVarWidget = Backbone.View.extend({
                 let css = $option.position();
                 css.width = $option.width();
                 css.height = $option.height();
-                css.visibility = 'visible';
                 this.$typesHighlight.css(css);
             }
         }
-        else
-            this.$typesHighlight.css('visibility', 'hidden');
     },
     _focusLevelControls() {
         this.model.suspendAutoApply();
@@ -175,7 +171,7 @@ const DataVarWidget = Backbone.View.extend({
             return;
 
         this.$dataTypeList.val(dataType);
-        this.$typesHighlight.css('visibility', 'hidden');
+
         for (let t in this.resources) {
             let $option = this.resources[t].$option;
 
@@ -187,18 +183,15 @@ const DataVarWidget = Backbone.View.extend({
                 let css = $option.position();
                 css.width = $option.width();
                 css.height = $option.height();
-                css.visibility = 'visible';
 
                 this.$typesHighlight.css(css);
             }
             else {
-                let $input  = this.resources[t].$input;
-                $input.prop('checked', false);
                 $option.removeClass('selected');
             }
         }
 
-        if (levels === null || levels.length === 0) {
+        if (levels.length === 0) {
             this.$levels.empty();
             this.levelCtrls = [];
         }
@@ -224,9 +217,6 @@ const DataVarWidget = Backbone.View.extend({
                 this._enableDisableMoveButtons();
             };
 
-            if (this.selectedLevelIndex !== -1 && levels[this.selectedLevelIndex].label === null)
-                this.selectedLevelIndex = -1;
-                
             this.$levelItems.removeClass('selected');
             for (let i = 0; i < levels.length; i++) {
                 let level = levels[i];
@@ -279,4 +269,4 @@ const DataVarWidget = Backbone.View.extend({
     }
 });
 
-module.exports = DataVarWidget;
+module.exports = MultiDataVarWidget;
