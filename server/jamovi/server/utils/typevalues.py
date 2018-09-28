@@ -26,10 +26,13 @@ class FValues:
         def __next__(self):
             if self._index >= self._parent._row_count:
                 raise StopIteration()
-            v = self._parent._parent.fvalue(
-                self._index,
-                self._parent._row_count,
-                self._parent._filt)
+            try:
+                v = self._parent._parent.fvalue(
+                    self._index,
+                    self._parent._row_count,
+                    self._parent._filt)
+            except BaseException:
+                v = get_missing()
             self._index += 1
             return v
 
