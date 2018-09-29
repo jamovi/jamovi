@@ -374,6 +374,7 @@ def read(data, path, prog_cb):
                 col_no += 1
 
             data_file.close()
+            string_table.close()
 
         for column in data:
             column.determine_dps()
