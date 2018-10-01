@@ -378,8 +378,7 @@ const TableView = SilkyView.extend({
             if (dIndex === -1)
                 continue;
 
-            this.$el.find('[data-column-id="' + id + '"').remove();
-            //this.$el.find('.jmv-column-' + id).remove();
+            this.$el.find('[data-column-id="' + id + '"]').remove();
 
             let widthReduction = this._widths[dIndex];
             totalWidthReduction += widthReduction;
