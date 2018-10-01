@@ -530,6 +530,9 @@ class Column:
                         self.formula = trans.produce_formula(parent)
                     else:
                         self.formula = ''
+                elif self._parent_id != 0:
+                    parent = dataset.get_column_by_id(self._parent_id)
+                    self.formula = '`{0}`'.format(parent.name)
                 else:
                     self.formula = ''
 
