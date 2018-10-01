@@ -729,8 +729,8 @@ class Instance:
             column = self._data[column_pb.index]
 
             for j in range(i + 1, len(request.schema.columns)):
-                if request.schema.columns[i].index >= column_pb.index:
-                    request.schema.columns[i].index += 1
+                if request.schema.columns[j].index >= column_pb.index:
+                    request.schema.columns[j].index += 1
 
             column.column_type = ColumnType(column_pb.columnType)
 
@@ -749,7 +749,7 @@ class Instance:
 
             name = column_pb.name
             if has_name is False and column.column_type == ColumnType.RECODED:
-                name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+                name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
                 self._data.set_column_name(column, name)
                 name = self._calc_column_name(column, '', '')
 
@@ -804,8 +804,8 @@ class Instance:
         self._populate_schema_info(request, response)
 
         # has to be after the filter names are renamed
-        for i in range(0, len(request.schema.columns)):
-            column = self._data[request.schema.columns[i].index]
+        for col_pb in request.schema.columns:
+            column = self._data[col_pb.index]
             column_pb = response.schema.columns.add()
             self._populate_column_schema(column, column_pb)
 
@@ -881,7 +881,7 @@ class Instance:
 
         to_reparse -= set(to_delete)
 
-        self._data.delete_column_ids(request.columnIds)
+        self._data.delete_columns_by_id(request.columnIds)
 
         for transform in tf_reparse:
             transform.parse_formula()
@@ -957,7 +957,7 @@ class Instance:
 
             new_name = ''
             if column.transform == 0 and column.parent_id == 0:
-                new_name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+                new_name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
             elif '...' not in transform_name:
                 if column.transform == 0:
                     new_name = parent_name
@@ -1117,7 +1117,7 @@ class Instance:
                 column.parent_id = column_pb.parentId
 
                 if old_type == ColumnType.NONE and column.column_type == ColumnType.RECODED:
-                    new_column_name = 'T' + str(self._data.get_typed_column_count(ColumnType.RECODED))
+                    new_column_name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
                     self._apply_column_name(column, new_column_name, cols_changed, reparse)
                 elif column_pb.name != '':
                     new_column_name = column_pb.name

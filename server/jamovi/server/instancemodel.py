@@ -261,7 +261,7 @@ class InstanceModel:
 
         self.update_filter_names
 
-    def delete_column_ids(self, ids):
+    def delete_columns_by_id(self, ids):
         sortedIds = sorted(ids, key=lambda id: self.get_column_by_id(id).index)
 
         start = -1
@@ -440,7 +440,7 @@ class InstanceModel:
     def is_blank(self, blank):
         self._dataset.blank = blank
 
-    def get_typed_column_count(self, columnType):
+    def get_column_count_by_type(self, columnType):
         count = 0
         for column in self._columns:
             if column.column_type == columnType:

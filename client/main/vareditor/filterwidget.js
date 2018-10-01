@@ -289,14 +289,7 @@ const FilterWidget = Backbone.View.extend({
             return;
 
         let ids = event.ids.slice();
-        ids.sort((a, b) => {
-            if (event.indices[a].dIndex < event.indices[b].dIndex)
-                return -1;
-            else if (event.indices[a].dIndex > event.indices[b].dIndex)
-                return 1;
-            else
-                return 0;
-        });
+        ids.sort((a, b) => event.indices[a].dIndex - event.indices[b].dIndex);
 
         for (let id of ids) {
             let c = event.indices[id].index;
@@ -831,10 +824,8 @@ const FilterWidget = Backbone.View.extend({
                 let relatedColumn = relatedColumns[rc];
                 if (relatedColumn.id === edittingIds[0]) {
                     $filter.addClass('selected');
-                    //if (edittingIndex[0] === relatedColumn.index) {
-                        let $formula = $($filter.find('.formula')[rc]);
-                        $formula.addClass('selected');
-                    //}
+                    let $formula = $($filter.find('.formula')[rc]);
+                    $formula.addClass('selected');
                 }
             }
         }
