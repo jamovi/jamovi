@@ -201,6 +201,7 @@
     height: 6px;
     border-radius: 3px;
     position: absolute;
+    background-color: #acacac;
     right: 5px;
     top: 3px;
     opacity: 0;
@@ -209,7 +210,7 @@
 }
 
 .jmv-column-header[data-columntype="computed"] > .jmv-column-header-colour,
-.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour:not(.no-transform) {
+.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour {
     opacity: 1;
 }
 
@@ -304,6 +305,54 @@
 
     left: -100px ; /* overridden by code */
     top: -100px ;
+}
+
+.jmv-row-header-cell > .sub-selection-bar {
+    opacity: 0;
+    transition: opacity .2s;
+    width: 100%;
+    position: absolute;
+    border-right: 2px solid #5e8bc4;
+    box-sizing: border-box;
+    top: 0px;
+    right: -1px;
+    bottom: -1px;
+    background-color: transparent;
+}
+
+.jmv-column-header > .sub-selection-bar {
+    opacity: 0;
+    transition: opacity .2s;
+    height: 100%;
+    position: absolute;
+    border-bottom: 2px solid #5e8bc4;
+    box-sizing: border-box;
+    left: 0px;
+    bottom: -1px;
+    right: -1px;
+    background-color: transparent;
+}
+
+.highlighted.is-sub-selection > .sub-selection-bar {
+    opacity: 1;
+}
+
+.jmv-table-cell-secondary-selected, .jmv-table-cell-selected.multi {
+    position: absolute;
+    border: 1px solid #989898;
+    z-index: 9;
+    box-sizing: border-box;
+    box-shadow: inset 0px 0px 0px 1px #ffffff;
+    background-color: rgba(37, 37, 37, 0.1);
+    transition: none;
+    left: -100px;
+    top: -100px;
+}
+
+.jmv-table-cell-selected.negative {
+    border: 1px solid #989898;
+    box-shadow: inset 0px 0px 0px 1px #ffffff;
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .jmv-table-cell-selected.not-editable {

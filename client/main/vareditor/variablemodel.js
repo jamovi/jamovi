@@ -11,13 +11,13 @@ const VariableModel = Backbone.Model.extend({
     initialize(dataset) {
         this.dataset = dataset;
         this.original = { };
-
+        this._hasChanged = { };
         this.on('change', event => {
             let changes = false;
             for (let name in this.original) {
                 if ( ! _.isEqual(this.attributes[name], this.original[name])) {
                     changes = true;
-                    break;
+                    this._hasChanged[name] = true;
                 }
             }
             this.set('changes', changes);
@@ -34,15 +34,23 @@ const VariableModel = Backbone.Model.extend({
         });
 
         this.dataset.on('columnsChanged', (event) => {
-            let id = this.get('id');
+            let ids = this.get('ids');
+            if (ids === null)
+                return;
+
+            let changed = false;
             for (let changes of event.changes) {
 
                 if (changes.created || changes.deleted)
                     continue;
 
-                if (changes.id === id)
-                    this.setColumn(changes.id);
+                if (ids.includes(changes.id)) {
+                    changed = true;
+                    break;
+                }
             }
+            if (changed)
+                this.setColumn(ids, this.typeFilter);
         });
     },
     suspendAutoApply() {
@@ -50,7 +58,7 @@ const VariableModel = Backbone.Model.extend({
     },
     defaults : {
         name : null,
-        id: null,
+        ids: null,
         columnType: null,
         dataType: null,
         measureType : null,
@@ -77,11 +85,13 @@ const VariableModel = Backbone.Model.extend({
         let level = levels[index];
         if (level.label === label)
             return level;
+        if (label === '' && level.label === null)
+            return level;
 
         level = Object.assign({}, level);  // clones
         levels = levels.slice();
 
-        let valueAsString = Number(level.value).toString();
+        let valueAsString = level.importValue;
 
         if (label === '') {
             // if empty, set back to the original
@@ -113,7 +123,7 @@ const VariableModel = Backbone.Model.extend({
         this.original = dict;
         this.set(dict);
     },
-    setColumn(id) {
+    setColumn(ids, typeFilter) {
         this.trigger('columnChanging');
 
         if (this._applyId) {
@@ -122,27 +132,96 @@ const VariableModel = Backbone.Model.extend({
             this.apply();
         }
 
-        let column = this.dataset.getColumnById(id);
+        this.columns = [];
+        this.typeFilter = typeFilter;
+        this.excludedColumns = [];
         this.original = {
-            name : column.name,
-            id : column.id,
-            columnType: column.columnType,
-            dataType: column.dataType,
-            measureType : column.measureType,
-            autoMeasure : column.autoMeasure,
-            description: column.description,
-            levels : column.levels,
-            formula : column.formula,
-            hidden : column.hidden,
-            active : column.active,
-            filterNo : column.filterNo,
-            importName : column.importName,
-            trimLevels : column.trimLevels,
-            transform : column.transform,
-            parentId : column.parentId
+            name : null,
+            ids : ids,
+            columnType: null,
+            dataType: null,
+            measureType : null,
+            autoMeasure : null,
+            description: null,
+            levels : null,
+            formula : null,
+            hidden : null,
+            active : null,
+            filterNo : null,
+            importName : null,
+            trimLevels : null,
+            transform : null,
+            parentId : null
         };
+
+        let first = true;
+        for (let id of ids) {
+            let column = this.dataset.getColumnById(id);
+            if (column.columnType === typeFilter) {
+                this.columns.push(column);
+                for (let prop in this.original) {
+                    if (prop === 'ids')
+                        continue;
+                    else if (first) {
+                        let obj = column[prop];
+                        if (Array.isArray(obj))
+                            this.original[prop] = $.extend(true, [], obj);
+                        else if (typeof obj === 'object')
+                            this.original[prop] = $.extend(true, {}, obj);
+                        else
+                            this.original[prop] = column[prop];
+                    }
+                    else if (prop === 'levels')
+                        this._filterLevels(column);
+                    else if (column[prop] !== this.original[prop])
+                        this.original[prop] = null;
+                }
+                first = false;
+            }
+            else
+                this.excludedColumns.push(column);
+        }
+
         this.set(this.original);
-        this.set('formulaMessage', column.formulaMessage);
+        if (this.columns.length > 0)
+            this.set('formulaMessage', this.columns[0].formulaMessage);
+    },
+    _filterLevels(column) {
+        if (this.original.levels === null)
+            return;
+
+        this.original.levels = this.original.levels.filter(a => {
+            return column.levels.some(b => {
+                return b.importValue === a.importValue;
+            });
+        });
+        if (this.original.levels.length === 0)
+            this.original.levels = null;
+        else {
+            let level = null;
+            let compare = a => { return a.importValue === level.importValue && a.label === level.label; };
+            for (level of this.original.levels) {
+                if (column.levels.some(compare) === false)
+                    level.label = null;
+            }
+        }
+    },
+    _constructAppyValues(column, values) {
+        let level = null;
+        let findLevel = (levels, level) => {
+            return levels.find(a => { return a.importValue === level.importValue; });
+        };
+
+        let newValues = $.extend(true, {}, values);
+        if (newValues.levels) {
+            for (level of column.levels) {
+                let editLevel = findLevel(newValues.levels, level);
+                if (editLevel && editLevel.label !== null)
+                    level.label = editLevel.label;
+            }
+            newValues.levels = column.levels;
+        }
+        return newValues;
     },
     apply() {
 
@@ -151,29 +230,36 @@ const VariableModel = Backbone.Model.extend({
         if (this.attributes.changes === false)
             return Promise.resolve();
 
-        let values = {
-            name: this.attributes.name.trim(),
-            columnType: this.attributes.columnType,
-            dataType: this.attributes.dataType,
-            measureType: this.attributes.measureType,
-            autoMeasure: this.attributes.autoMeasure,
-            levels: this.attributes.levels,
-            dps: this.attributes.dps,
-            formula: this.attributes.formula,
-            description: this.attributes.description,
-            hidden: this.attributes.hidden,
-            active: this.attributes.active,
-            filterNo: this.attributes.filterNo,
-            importName: this.attributes.importName,
-            trimLevels: this.attributes.trimLevels,
-            transform:  this.attributes.transform,
-            parentId:  this.attributes.parentId
-        };
 
-        let columnId = this.attributes.id;
-        return this.dataset.changeColumn(this.attributes.id, values)
+        let values = { };
+        let cancel = true;
+        for (let prop in this._hasChanged) {
+            if (prop === 'ids')
+                continue;
+
+            let value = this.attributes[prop];
+            if (value !== undefined && value !== null) {
+                values[prop] = value;
+                cancel = false;
+            }
+        }
+
+        if (cancel)
+            return Promise.resolve();
+
+        let pairs = [];
+        for (let column of this.columns) {
+            let newValues = this._constructAppyValues(column, values);
+            pairs.push({ id: column.id, values: newValues });
+        }
+
+        return this.dataset.changeColumns(pairs)
             .then(() => {
-                if (columnId === this.attributes.id) {
+                let ids = this.attributes.ids;
+                if (ids.length === pairs.length && pairs.every(a => {
+                    return ids.includes(a.id);
+                })) {
+
                     let latestValues = {
                         name: this.attributes.name.trim(),
                         columnType: this.attributes.columnType,
@@ -196,24 +282,16 @@ const VariableModel = Backbone.Model.extend({
                     this.original = latestValues;
                     this.set(this.original);
                     this.set('changes', false);
+                    this._hasChanged = { };
                     this.dataset.set('varEdited', false);
 
-                    let column = this.dataset.getColumnById(this.attributes.id);
+                    let column = this.dataset.getColumnById(this.attributes.ids[0]);
                     this.set('formulaMessage', column.formulaMessage);
                 }
             });
     },
     revert() {
         this.set(this.original);
-    },
-    setColumnForEdit(id) {
-        let columns = this.dataset.get('columns');
-        for (let i = 0; i < columns.length; i++) {
-            if (columns[i].id === id) {
-                this.dataset.set('editingVar', i);
-                break;
-            }
-        }
     }
 });
 

@@ -8,16 +8,21 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    margin-bottom: 7px;
-    background-color: #f8f8f8;
+    margin-bottom: 10px;
+    background-color: hsla(0, 0%, 99%, 1);
     padding: 3px;
+    border: 1px solid #dfdfdf;
+    height: 140px;
+    box-sizing: border-box;
 }
 
 .jmv-transform-editor > .contents > .content-list {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
-    background-color: #f8f8f8;
+    background-color: #fdfdfd;
+    margin-top: 3px;
+    margin-left: 5px;
 }
 
 .jmv-editor-panel-main .title-box .transform-colour {
@@ -30,16 +35,65 @@
 
 .jmv-transform-editor-options {
     flex: 2;
-    border: 1px solid #dfdfdf;
-    padding: 2px 5px 2px 5px;
-    height: 105px;
     overflow-y: auto;
+    padding-right: 5px;
+    margin-bottom: 3px;
+}
+
+.jmv-transform-editor-widget-title {
+    font-size: 150%;
+    color: #555555;
+    background-color: white;
+    padding: 3px 4px 3px 4px;
+    border: 1px solid #CCCCCC;
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.jmv-transform-editor-widget-description {
+    font-size: 100%;
+    color: #555555;
+    background-color: white;
+    padding: 3px 4px 3px 4px;
+    margin: 3px 0px 0px 0px;
+    border: 1px solid #CCCCCC;
+    max-height: 3.2em;
+    overflow: auto;
+    cursor: text;
+    flex-shrink: 0;
+    flex-grow: 1;
+}
+
+.jmv-transform-editor-widget-shortname {
+    font-size: 100%;
+    color: #555555;
+    background-color: white;
+    padding: 3px 4px 3px 4px;
+    margin: 3px 0px 0px 0px;
+    border: 1px solid #CCCCCC;
+    max-height: 3.2em;
+    overflow: auto;
+    cursor: text;
+    flex-shrink: 0;
+    flex-grow: 0;
+    width: 8em;
+    margin-left: 5px;
+}
+
+.jmv-transform-editor-top .desc-box {
+    display: flex;
 }
 
 .jmv-transform-editor-top {
     display: flex;
     flex-flow: column;
     color: #848484;
+    margin: 3px 0 5px 0;
+}
+.jmv-transform-editor-bottom .usage-box {
+    position: absolute;
+    top: 3px;
+    right: 100px;
 }
 
 .jmv-transform-editor-bottom .measure-box, .jmv-transform-editor-bottom .usage-box {
@@ -82,7 +136,7 @@
     display: flex;
     flex-flow: row;
     align-items: baseline;
-    color: #848484;
+    color: #575757;
     justify-content: space-between;
     padding-right: 33px;
 }
@@ -108,6 +162,10 @@
     margin-right: 1ex;
 }
 
+.jmv-transform-editor-bottom .usage-box .usage-label {
+    color: #b2b2b2;
+}
+
 .jmv-transform-editor-options > .formula-box {
     display: flex;
     flex-direction: row;
@@ -118,6 +176,10 @@
     overflow: hidden;
     opacity: 1;
     top: 0px;
+}
+
+.jmv-transform-editor-options > .formula-box:first-child {
+    margin-top: 0px;
 }
 
 .jmv-transform-editor-options > .formula-box.hidden {
@@ -153,18 +215,28 @@
     flex-direction: row;
     align-self: flex-start;
     align-items: center;
-    border: 1px solid #e8e8e8;
+    border: 1px solid hsla(0, 0%, 88%, 0);
     border-radius: 2px;
     padding: 0 5px;
     line-height: 1.5;
-    background-color: #f0f0f0;
+    background-color: hsla(0, 0%, 99%, 1);
     transition: .4s background-color;
     color: #575757;
-    margin-bottom: 3px;
+    flex-shrink: 0;
+    margin-left: 5px;
 }
 
 .jmv-transform-editor > .contents > .content-list > .right-box {
-    margin-left: 5px;
+    margin-left: 3px;
+    overflow: hidden;
+    width: 25px;
+    transition: 0.2s width, .2s opacity, .2s margin;
+}
+
+.jmv-transform-editor > .contents > .content-list > .right-box.hidden {
+    width: 0px;
+    opacity: 0;
+    margin-left: 0px;
 }
 
 .jmv-transform-editor > .contents > .insert-box > .insert {
@@ -192,7 +264,6 @@
     line-height: 1;
     font-size: 20px;
     text-align: center;
-    /*font-weight: bolder;*/
     color: #bbbbbb;
 }
 
@@ -283,7 +354,7 @@
     background-color: transparent;
     border-radius: 4px;
     width: 100%;
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 65% 35%;
     line-height: 2;
 }
 
