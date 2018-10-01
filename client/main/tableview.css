@@ -201,6 +201,7 @@
     height: 6px;
     border-radius: 3px;
     position: absolute;
+    background-color: #acacac;
     right: 5px;
     top: 3px;
     opacity: 0;
@@ -209,7 +210,7 @@
 }
 
 .jmv-column-header[data-columntype="computed"] > .jmv-column-header-colour,
-.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour:not(.no-transform) {
+.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour {
     opacity: 1;
 }
 

@@ -199,8 +199,11 @@ const TableView = SilkyView.extend({
                 $colour.css('background-color', ColourPalette.get(transform.colourIndex));
                 $colour.attr('title', 'Transform: ' + transform.name);
             }
-            else
+            else {
                 $colour.addClass('no-transform');
+                $colour.css('background-color', '#acacac');
+                $colour.attr('title', 'Transform: None');
+            }
         }
         else if (column.columnType === 'computed') {
             let $colour = $header.find('.jmv-column-header-colour');

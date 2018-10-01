@@ -354,7 +354,7 @@
     background-color: transparent;
     border-radius: 4px;
     width: 100%;
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 65% 35%;
     line-height: 2;
 }
 
