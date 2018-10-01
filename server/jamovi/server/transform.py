@@ -17,12 +17,12 @@ class Transform:
         self.name = ''
         self.id = 0  # an id of zero is unasigned
         self.description = ''
-        self._formula = [ '' ]
+        self._formula = [ '$source' ]
         self.formula_message = [ '' ]
         self.colour_index = 0
         self.status = FormulaStatus.EMPTY
         self._dataset = dataset
-        self._pieces = [ '1', 'NA' ]
+        self._pieces = [ '1', '$source' ]
         self._dependencies = set()
         self.measure_type = MeasureType.NONE
 
