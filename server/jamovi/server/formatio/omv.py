@@ -38,6 +38,7 @@ def write(data, path, html=None):
             transform_field = { }
             transform_field['name'] = transform.name
             transform_field['id'] = transform.id
+            transform_field['suffix'] = transform.suffix
 
             transform_field['formula'] = transform.formula
             transform_field['formulaMessage'] = transform.formula_message
@@ -292,6 +293,7 @@ def read(data, path, prog_cb):
                 measure_type_str = meta_transform.get('measureType', 'None')
                 transform.measure_type = MeasureType.parse(measure_type_str)
                 transform.description = meta_transform.get('description', '')
+                transform.suffix = meta_transform.get('suffix', '')
 
         for meta_column in meta_dataset['fields']:
             name = meta_column['name']
