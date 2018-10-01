@@ -154,6 +154,10 @@
     right: 10px ;
 }
 
+.jmv-variable-editor-widget.multiple-variables .single-variable-support {
+    visibility: hidden;
+}
+
 .jmv-variable-editor-widget {
     position: absolute ;
     padding: 8px 100px 10px 100px ;
@@ -166,6 +170,76 @@
 
 .jmv-variable-editor-widget:not(.inactive) {
     transition: left .3s, opacity .3s ;
+}
+
+.jmv-variable-editor-widget .desc-box {
+    display: flex;
+    flex-direction: column;
+    /*border-bottom: 1px solid transparent;*/
+    margin-bottom: 7px;
+    flex-shrink: 0;
+}
+
+.jmv-variable-editor-widget.multiple-variables .desc-box {
+    /*border-bottom: 1px solid #dfdfdf;*/
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info {
+    display: flex;
+    flex-direction: row;
+    visibility: hidden;
+    position: absolute;
+    width: 500px;
+    border-bottom: 1px solid #dfdfdf;
+    align-items: center;
+}
+
+.jmv-variable-editor-widget.multiple-variables .desc-box .multi-var-info {
+    visibility: visible;
+}
+
+.jmv-variable-editor-main[data-type='none'] .jmv-variable-editor-widget.multiple-variables .desc-box .multi-var-info {
+    visibility: hidden;
+}
+
+.jmv-variable-editor-main[data-type='filter'] .jmv-variable-editor-widget.multiple-variables .desc-box .multi-var-info {
+    visibility: hidden;
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info .scroll-wrapper {
+    box-sizing: content-box;
+    overflow: hidden;
+    height: 36px;
+    /*margin-top: 3px;*/
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list {
+    display: flex;
+    flex-direction: row;
+    margin: 5px 0 7px 0;
+    overflow-x: scroll;
+    padding-bottom: 100px;
+    align-items: center;
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list .jmv-variable-list-item {
+    background-color: #E8E8E8;
+    margin-right: 3px;
+    min-width: unset;
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list .jmv-variable-list-item > .label {
+    margin-right: 7px;
+    max-width: 77px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-label {
+    margin: 0 5px 0 2px;
+    color: #888888;
+    font-weight: 100;
 }
 
 .jmv-variable-editor-widget-title {
@@ -184,7 +258,7 @@
     color: #555555 ;
     background-color: white;
     padding: 3px 4px 3px 4px;
-    margin: 3px 27px 10px 0px;
+    margin: 3px 27px 3px 0px;
     border: 1px solid #CCCCCC;
     max-height: 3.2em;
     overflow: auto;

@@ -424,6 +424,7 @@ message DataSetSchema {
         Action action = 6;
         int32 colourIndex = 7;
         MeasureType measureType = 8;
+        string suffix = 9;
 
     }
     repeated ColumnSchema columns = 1;
@@ -476,6 +477,8 @@ message DataSetRR {
     uint32 columnStart = 5;
     uint32 rowEnd = 6;
     uint32 columnEnd = 7;
+    repeated uint32 columnIds = 15;
+    repeated uint32 rowIndices = 16;
 
 
     message ColumnData {

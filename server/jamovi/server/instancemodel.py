@@ -59,14 +59,28 @@ class InstanceModel:
         else:
             raise KeyError('No such transform: ' + str(id))
 
+    def is_parent_of(self, parent, column, deep):
+        if column.parent_id == parent.id:
+            return True
+        elif deep and column.parent_id > 0:
+            return self.is_parent_of(parent, self.get_column_by_id(column.parent_id), True)
+        else:
+            return False
+
+    def has_circular_parenthood(self, column):
+        return self.is_parent_of(column, column, True)
+
     def remove_transform(self, id):
         i = 0
+        transform = None
         while i < len(self._transforms):
             transform = self._transforms[i]
             if transform.id == id:
                 del self._transforms[i]
+                break
             else:
                 i += 1
+        return transform
 
     def append_transform(self, name, id=0, colour_index=0):
         use_id = self._transform_next_id
@@ -90,6 +104,24 @@ class InstanceModel:
 
         return new_transform
 
+    def set_column_name(self, column, name):
+        if name == '':
+            filter_count = self.filter_column_count
+            nIndex = column.index
+            if column.index >= filter_count:
+                nIndex = column.index - filter_count
+            name = self._gen_column_name(nIndex)
+
+        checked_name = name
+        i = 2
+        while self.check_for_column_name(checked_name, column):
+            checked_name = name + ' (' + str(i) + ')'
+            i += 1
+        changed = column.name != checked_name
+        column.name = checked_name
+
+        return changed
+
     def set_transform_name(self, transform, name):
         if name == '':
             name = 'Transform ' + str(len(self._transforms) + 1)
@@ -98,7 +130,10 @@ class InstanceModel:
         while self.check_for_transform_name(checked_name, transform):
             checked_name = name + ' (' + str(i) + ')'
             i += 1
+        changed = transform.name != checked_name
         transform.name = checked_name
+
+        return changed
 
     def set_transform_colour_index(self, transform, colour_index):
         if colour_index < 0 or self.check_for_transform_colour_index(colour_index, transform):
@@ -119,6 +154,13 @@ class InstanceModel:
     def check_for_transform_name(self, name, exclude_transform):
         for existing_transform in self.transforms:
             if name == existing_transform.name and existing_transform is not exclude_transform:
+                return True
+
+        return False
+
+    def check_for_column_name(self, name, exclude_column):
+        for existing_column in self:
+            if name == existing_column.name and existing_column is not exclude_column:
                 return True
 
         return False
@@ -216,6 +258,28 @@ class InstanceModel:
 
         for i in range(start, len(self._columns)):
             self._columns[i].index = i
+
+        self.update_filter_names()
+
+    def delete_columns_by_id(self, ids):
+        sortedIds = sorted(ids, key=lambda id: self.get_column_by_id(id).index)
+
+        start = -1
+        end = -1
+        for i in range(0, len(sortedIds)):
+            column = self.get_column_by_id(sortedIds[i])
+            if start == -1:
+                start = column.index
+                end = start
+            elif column.index == end + 1:
+                end += 1
+            else:
+                self.delete_columns(start, end)
+                start = column.index
+                end = start
+
+        if start is not -1:
+            self.delete_columns(start, end)
 
         self.update_filter_names()
 
@@ -322,6 +386,17 @@ class InstanceModel:
     def embedded_name(self, name):
         self._embedded_name = name
 
+    def index_from_visible_index(self, d_index):
+            count = -1
+            i = 0
+            for column in self._columns:
+                i += 1
+                if column.hidden is False:
+                    count += 1
+                if count == d_index:
+                    return column.index
+            return -1
+
     @property
     def virtual_row_count(self):
         return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
@@ -375,6 +450,13 @@ class InstanceModel:
     @is_blank.setter
     def is_blank(self, blank):
         self._dataset.blank = blank
+
+    def get_column_count_by_type(self, columnType):
+        count = 0
+        for column in self._columns:
+            if column.column_type == columnType:
+                count += 1
+        return count
 
     def _gen_column_name(self, index):
         name = ''
