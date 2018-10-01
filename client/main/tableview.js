@@ -366,14 +366,17 @@ const TableView = SilkyView.extend({
     },
     _columnsDeleted(event) {
 
-        let indices = $.extend(true, {}, event.indices);
+        let indices = event.indices;
 
         if (event.ids.length === 0)
             return;
 
+        let ids = event.ids.slice();
+        ids.sort((a,b) => indices[b].dIndex - indices[a].dIndex);
+
         let lowestIndex = -1;
         let totalWidthReduction = 0;
-        for (let id of event.ids) {
+        for (let id of ids) {
             let dIndex = indices[id].dIndex;
             if (dIndex === -1)
                 continue;
@@ -392,13 +395,6 @@ const TableView = SilkyView.extend({
                 $($header).remove();
             for (let $column of removedColumns)
                 $($column).remove();
-
-
-            for (let x in indices) {
-                let i = indices[x];
-                if (i.dIndex > dIndex)
-                    i.dIndex -= 1;
-            }
 
             for (let i = dIndex; i < this._lefts.length; i++)
                 this._lefts[i] -= widthReduction;
@@ -2149,7 +2145,7 @@ const TableView = SilkyView.extend({
     },
     _columnsInserted(event, ignoreSelection) {
         let aNewFilterInserted = false;
-        let indices = $.extend(true, {}, event.indices);
+        let indices = event.indices;
 
         if (event.ids.length === 0)
             return;
