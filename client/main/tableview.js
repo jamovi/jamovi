@@ -232,7 +232,7 @@ const TableView = SilkyView.extend({
 
         this._addResizeListeners($header);
 
-        let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column jmv-column-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+        let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" data-column-id="' + column.id + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
 
         this.$body.append($column);
         this.$columns.push($column);
@@ -366,20 +366,22 @@ const TableView = SilkyView.extend({
     },
     _columnsDeleted(event) {
 
-        let indices = $.extend(true, {}, event.indices);
+        let indices = event.indices;
 
         if (event.ids.length === 0)
             return;
 
+        let ids = event.ids.slice();
+        ids.sort((a,b) => indices[b].dIndex - indices[a].dIndex);
+
         let lowestIndex = -1;
         let totalWidthReduction = 0;
-        for (let id of event.ids) {
+        for (let id of ids) {
             let dIndex = indices[id].dIndex;
             if (dIndex === -1)
                 continue;
 
-            this.$el.find('.jmv-column-header-' + id).remove();
-            this.$el.find('.jmv-column-' + id).remove();
+            this.$el.find('[data-column-id="' + id + '"]').remove();
 
             let widthReduction = this._widths[dIndex];
             totalWidthReduction += widthReduction;
@@ -393,13 +395,6 @@ const TableView = SilkyView.extend({
                 $($header).remove();
             for (let $column of removedColumns)
                 $($column).remove();
-
-
-            for (let x in indices) {
-                let i = indices[x];
-                if (i.dIndex > dIndex)
-                    i.dIndex -= 1;
-            }
 
             for (let i = dIndex; i < this._lefts.length; i++)
                 this._lefts[i] -= widthReduction;
@@ -825,7 +820,7 @@ const TableView = SilkyView.extend({
 
         let $header = $element.closest('.jmv-column-header:not(.select-all)');
         if ($header.length > 0) {
-            let colId = parseInt($header.attr('data-id'));
+            let colId = parseInt($header.attr('data-column-id'));
             this._endEditing();
             if (this.model.get('editingVar') === null)
                 this.model.set('editingVar', [colId]);
@@ -1380,14 +1375,7 @@ const TableView = SilkyView.extend({
         for (let selection of this._selectionList)
             tryApply(selection);
 
-        blocks.sort((a,b) => {
-            if (a.start < b.start)
-                return -1;
-            else if (a.start > b.start)
-                return 1;
-            else
-                return 0;
-        });
+        blocks.sort((a,b) => a.start - b.start);
 
         return blocks;
     },
@@ -1531,6 +1519,7 @@ const TableView = SilkyView.extend({
             this._selectionTransitioning = true;
 
             this._selectionTransitionPromise = new Promise((resolve, reject) => {
+                //When in multi-select mode there are no css transitions so the selection promise is immediately resolved.
                 if (this._selectionTransitionActive === false) {
                     this._selectionTransitioning = false;
                     resolve();
@@ -2156,7 +2145,7 @@ const TableView = SilkyView.extend({
     },
     _columnsInserted(event, ignoreSelection) {
         let aNewFilterInserted = false;
-        let indices = $.extend(true, {}, event.indices);
+        let indices = event.indices;
 
         if (event.ids.length === 0)
             return;
@@ -2202,7 +2191,7 @@ const TableView = SilkyView.extend({
                     this._addResizeListeners($header);
 
                     $after = $(this.$columns[column.dIndex]);
-                    let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column jmv-column-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
+                    let $column = $('<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" data-column-id="' + column.id + '" class="jmv-column" style="left: ' + left + 'px ; width: ' + column.width + 'px ; "></div>');
                     $column.insertBefore($after);
                     this.$columns.splice(column.dIndex, 0, $column);
 
@@ -2757,7 +2746,7 @@ const TableView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-id="' + column.id + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" class="jmv-column-header jmv-column-header-' + column.id + '" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
+        html += '<div data-fmlaok="' + (this._isColumnOk(column) ? '1' : '0') + '" data-active="' + (column.active ? '1' : '0') + '" data-index="' + column.dIndex + '" data-columntype="' + column.columnType + '" data-datatype="' + column.dataType + '" data-measuretype="' + column.measureType + '" data-column-id="' + column.id + '" class="jmv-column-header" style="left: ' + left + 'px ; width: ' + column.width + 'px ; height: ' + this._rowHeight + 'px">';
         html +=     '<div class="jmv-column-header-icon"></div>';
         html +=     '<div class="jmv-column-header-label">' + column.name + '</div>';
         html +=     '<div class="jmv-column-header-resizer" data-index="' + column.dIndex + '" draggable="true"></div>';

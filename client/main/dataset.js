@@ -349,14 +349,8 @@ const DataSetModel = Backbone.Model.extend({
 
 
                 let columns = this.attributes.columns;
-                datasetPB.schema.columns.sort((a,b) => {
-                    if (a.index < b.index)
-                        return -1;
-                    else if (a.index > b.index)
-                        return 1;
-                    else
-                        return 0;
-                });
+                datasetPB.schema.columns.sort((a,b) => a.index - b.index );
+                
                 for (let i = 0; i < datasetPB.schema.columns.length; i++) {
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;

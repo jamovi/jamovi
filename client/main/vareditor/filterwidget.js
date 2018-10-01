@@ -233,14 +233,7 @@ const FilterWidget = Backbone.View.extend({
         //let removedCount = 0;
         let indices = $.extend(true, {}, event.indices);
 
-        event.ids.sort((a,b) => {
-            if (indices[a].index < indices[b].index)
-                return -1;
-            else if (indices[a].index > indices[b].index)
-                return 1;
-            else
-                return 0;
-        });
+        event.ids.sort((a,b) => indices[a].index - indices[b].index);
 
         for (let id of event.ids) {
             let index = indices[id].index;
