@@ -759,7 +759,7 @@ class Instance:
                     filter_inserted = True
                     to_calc.add(column)
 
-                if column.column_type is ColumnType.COMPUTED:
+                if column.column_type is ColumnType.COMPUTED or column.column_type is ColumnType.RECODED:
                     to_calc.add(column)
 
         if filter_inserted:

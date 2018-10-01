@@ -154,7 +154,7 @@ const RecodedVarWidget = Backbone.View.extend({
     },
     _createTransform() {
         let dataset = this.model.dataset;
-        dataset.setTransforms([ { id: 0, values: { description: '', formula: '' } } ]).then(() => {
+        dataset.setTransforms([ { id: 0, values: { description: '', formula: '$source' } } ]).then(() => {
             this.$el.trigger('transform-selected');
             let transforms = dataset.get('transforms');
             let transformId = transforms[transforms.length - 1].id;
