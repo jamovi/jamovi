@@ -333,7 +333,8 @@ const DataSetModel = Backbone.Model.extend({
 
         return coms.send(request).then(response => {
 
-            let insertedIds = { _list: [] };
+            let insertedIds = [];
+            let insertedIndices = { };
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             if (datasetPB.incSchema) {
 
@@ -402,13 +403,13 @@ const DataSetModel = Backbone.Model.extend({
                         created: created,
                         dataChanged: created };
 
-                    insertedIds._list.push(id);
-                    insertedIds[id] = { index: columnPB.index, dIndex: column.dIndex };
+                    insertedIds.push(id);
+                    insertedIndices[id] = { index: columnPB.index, dIndex: column.dIndex };
                 }
 
                 let transformEvent = this._processTransformData(datasetPB);
 
-                this.trigger('columnsInserted', { ids: insertedIds._list, indices: insertedIds });
+                this.trigger('columnsInserted', { ids: insertedIds, indices: insertedIndices });
 
                 this.trigger('columnsChanged', { changed, changes });
 
@@ -422,9 +423,9 @@ const DataSetModel = Backbone.Model.extend({
                 }
 
                 if (this.attributes.editingVar !== null)
-                    this.set('editingVar', insertedIds._list);
+                    this.set('editingVar', insertedIds);
 
-                return insertedIds;
+                return { ids: insertedIds, indices: insertedIndices };
             }
         });
     },
@@ -472,7 +473,8 @@ const DataSetModel = Backbone.Model.extend({
 
         return coms.send(request).then(response => {
 
-            let deletedIds = { _list: [ ] };
+            let deletedIds = [ ];
+            let deletedIndices = { };
             let changed = [];
             let changes = [];
 
@@ -482,8 +484,8 @@ const DataSetModel = Backbone.Model.extend({
                 let column = this.columnsById.get(id);
                 changed.push(column.name);
                 changes.push( { id: column.id, name: column.name, columnType: column.columnType, index: column.index, dIndex: column.dIndex, deleted: true });
-                deletedIds._list.push(id);
-                deletedIds[id] = { dIndex: column.dIndex, index: column.index };
+                deletedIds.push(id);
+                deletedIndices[id] = { dIndex: column.dIndex, index: column.index };
                 this.columnsById.delete(id);
                 this.attributes.columns.splice(column.index, 1);
                 for (let j = column.index; j < this.attributes.columns.length; j++)
@@ -537,7 +539,7 @@ const DataSetModel = Backbone.Model.extend({
 
             let transformEvent = this._processTransformData(datasetPB);
 
-            this.trigger('columnsDeleted', { ids: deletedIds._list, indices: deletedIds });
+            this.trigger('columnsDeleted', { ids: deletedIds, indices: deletedIndices });
             this.trigger('columnsChanged', { changed, changes });
 
             if (transformEvent !== null) {
@@ -601,7 +603,7 @@ const DataSetModel = Backbone.Model.extend({
 
             let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
             columnPB.id = id;
-            
+
             if ('name' in values)
                 columnPB.name = values.name;
             else
@@ -769,13 +771,6 @@ const DataSetModel = Backbone.Model.extend({
             }
 
             return { changed, changes };
-
-            /*for (let change of changes) {
-                if (change.created)
-                    this.trigger('transformAdded', { id: change.id });
-            }
-
-            this.trigger('transformsChanged', { changed, changes });*/
         }
         return null;
     },
@@ -921,37 +916,40 @@ const DataSetModel = Backbone.Model.extend({
             this.attributes.viewport = viewport;
 
 
-            let hiddenIds = { _list: [] };
+            let hiddenIds = [];
+            let hiddenIndices = { };
             for (let change of changes) {
                 if (change.hiddenChanged && this.attributes.columns[change.index].hidden === true) {
-                    hiddenIds._list.push(change.id);
-                    hiddenIds[change.id] = { dIndex: change.dIndex, index: change.index };
+                    hiddenIds.push(change.id);
+                    hiddenIndices[change.id] = { dIndex: change.dIndex, index: change.index };
                 }
             }
-            if (hiddenIds._list.length > 0)
-                this.trigger('columnsHidden', { ids: hiddenIds._list, indices: hiddenIds } );
+            if (hiddenIds.length > 0)
+                this.trigger('columnsHidden', { ids: hiddenIds, indices: hiddenIndices } );
 
 
-            let visibleIds = { _list: [] };
+            let visibleIds = [];
+            let visibleIndices = { };
             for (let change of changes) {
                 if (change.hiddenChanged && this.attributes.columns[change.index].hidden === false) {
-                    visibleIds._list.push(change.id);
-                    visibleIds[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
+                    visibleIds.push(change.id);
+                    visibleIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
                 }
             }
-            if (visibleIds._list.length > 0)
-                this.trigger('columnsVisible', { ids: visibleIds._list, indices: visibleIds });
+            if (visibleIds.length > 0)
+                this.trigger('columnsVisible', { ids: visibleIds, indices: visibleIndices });
 
 
-            let createdIds = { _list: [] };
+            let createdIds = [];
+            let createdIndices = { };
             for (let change of changes) {
                 if (change.created) {
-                    createdIds._list.push(change.id);
-                    createdIds[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
+                    createdIds.push(change.id);
+                    createdIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
                 }
             }
-            if (createdIds._list.length > 0)
-                this.trigger('columnsInserted', { ids: createdIds._list, indices: createdIds });
+            if (createdIds.length > 0)
+                this.trigger('columnsInserted', { ids: createdIds, indices: createdIndices });
 
             let activeChangeRanges = this._clumpPropertyChanges(changes, 'active', true);
             activeChangeRanges = activeChangeRanges.concat(this._clumpPropertyChanges(changes, 'active', false));
@@ -1702,15 +1700,16 @@ const DataSetViewModel = DataSetModel.extend({
                 this.set('vRowCount', datasetPB.schema.vRowCount);
             }
 
-            let createdIds = { _list: [] };
+            let createdIds = [];
+            let createdIndices = { };
             for (let change of changes) {
                 if (change.created) {
-                    createdIds._list.push(change.id);
-                    createdIds[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
+                    createdIds.push(change.id);
+                    createdIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
                 }
             }
-            if (createdIds._list.length > 0)
-                this.trigger('columnsInserted', { ids: createdIds._list, indices: createdIds });
+            if (createdIds.length > 0)
+                this.trigger('columnsInserted', { ids: createdIds, indices: createdIndices });
 
             this.set('edited', true);
             this.trigger('columnsChanged', { changed, changes });

@@ -177,7 +177,7 @@ const TableView = SilkyView.extend({
         return promise.then(() => {
             if (inserts.length > 0) {
                 return this.model.insertColumn(inserts, true).then((data) => {
-                    let ids = data._list.concat(emptyIds);
+                    let ids = data.ids.concat(emptyIds);
                     this.model.set('editingVar', ids);
                 });
             }
@@ -826,10 +826,7 @@ const TableView = SilkyView.extend({
         let $header = $element.closest('.jmv-column-header:not(.select-all)');
         if ($header.length > 0) {
             let colId = parseInt($header.attr('data-id'));
-            this._endEditing().then(() => {
-                //let rowNo = this.selection === null ? 0 : this.selection.rowNo;
-                //this._setSelection(rowNo, colNo);
-            }, () => {});
+            this._endEditing();
             if (this.model.get('editingVar') === null)
                 this.model.set('editingVar', [colId]);
         }
@@ -1136,14 +1133,7 @@ const TableView = SilkyView.extend({
         return true;
     },
     _createSelectionsFromColumns(rowNo, columns, silent, ignoreTabStart) {
-        columns.sort((a, b) => {
-            if (a.dIndex < b.dIndex)
-                return -1;
-            else if (a.dIndex > b.dIndex)
-                return 1;
-            else
-                return 0;
-        });
+        columns.sort((a, b) => a.dIndex - b.dIndex);
 
         let selections = [];
         let selection = { };
@@ -1343,7 +1333,7 @@ const TableView = SilkyView.extend({
         let blocks = [{ left: this.selection.left, right: this.selection.right }];
 
         let tryApply = (selection, index) => {
-            let obsorbed = false;
+            let absorbed = false;
             let modified = false;
             for (let i = 0; i < blocks.length; i++) {
                 let block = blocks[i];
@@ -1357,23 +1347,23 @@ const TableView = SilkyView.extend({
                 if (!leftIn && !rightIn && leftDown && rightUp) {
                     block.right = selection.right;
                     block.left = selection.left;
-                    obsorbed = true;
+                    absorbed = true;
                     modified = true;
                 }
                 else if (leftIn && rightUp) {
                     block.right = selection.right;
-                    obsorbed = true;
+                    absorbed = true;
                     modified = true;
                 }
                 else if (leftDown && rightIn) {
                     block.left = selection.left;
-                    obsorbed = true;
+                    absorbed = true;
                     modified = true;
                 }
                 else if (leftIn && rightIn)
-                    obsorbed = true;
+                    absorbed = true;
 
-                if (obsorbed) {
+                if (absorbed) {
                     if (index !== undefined) {
                         blocks.splice(index, 1);
                         i = index <= i ? i - 1 : i;
@@ -1383,7 +1373,7 @@ const TableView = SilkyView.extend({
                     break;
                 }
             }
-            if (obsorbed === false && index === undefined)
+            if (absorbed === false && index === undefined)
                 blocks.push({ left: selection.left, right: selection.right });
         };
 
@@ -1457,14 +1447,7 @@ const TableView = SilkyView.extend({
         for (let id in columnsObj)
             columns.push(columnsObj[id]);
 
-        columns.sort((a, b) => {
-            if (a.dIndex < b.dIndex)
-                return -1;
-            else if (a.dIndex > b.dIndex)
-                return 1;
-            else
-                return 0;
-        });
+        columns.sort((a, b) => a.dIndex - b.dIndex);
 
         return columns;
     },
@@ -1506,9 +1489,6 @@ const TableView = SilkyView.extend({
         this._enableDisableActions();
 
         this.currentColumn = this.model.getColumn(colNo, true);
-        //if ( !silent && this.model.get('editingVar') !== null) {
-        //    this.model.set('editingVar', [this.model.indexFromDisplayIndex(colNo)]);
-        //}
 
         this._updateHeaderHighlight();
 
@@ -2025,14 +2005,7 @@ const TableView = SilkyView.extend({
             }
         }
 
-        columns.sort((a, b) => {
-            if (a.dIndex < b.dIndex)
-                return -1;
-            else if (a.dIndex > b.dIndex)
-                return 1;
-            else
-                return 0;
-        });
+        columns.sort((a, b) => a.dIndex - b.dIndex);
 
         let oldSelection = Object.assign({}, this.selection);
         let oldSubSelections = this._selectionList;
@@ -2191,14 +2164,7 @@ const TableView = SilkyView.extend({
         let filterList = (list, exclude) => { return list.filter((i) => ! exclude.includes(i)); };
 
         let ids = event.ids.slice();
-        ids.sort((a, b) => {
-            if (indices[a].dIndex < indices[b].dIndex)
-                return -1;
-            else if (indices[a].dIndex > indices[b].dIndex)
-                return 1;
-            else
-                return 0;
-        });
+        ids.sort((a, b) => indices[a].dIndex - indices[b].dIndex);
 
         for (let id of ids) {
             let dIndex = indices[id].dIndex;
