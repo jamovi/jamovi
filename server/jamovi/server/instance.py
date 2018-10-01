@@ -931,12 +931,15 @@ class Instance:
         else:
             test_name = ''
             if '...' not in old_transform_name:
+                joiner = ''
+                if old_transform_name.startswith('_') is False and old_transform_name.startswith('-') is False:
+                    joiner = ' - '
                 if old_transform_name == '':
                     test_name = old_parent_name
                 elif old_parent_name == '':
-                    test_name = '? - ' + old_transform_name
+                    test_name = '?' + joiner + old_transform_name
                 else:
-                    test_name = old_parent_name + ' - ' + old_transform_name
+                    test_name = old_parent_name + joiner + old_transform_name
             else:
                 insert = old_parent_name
                 if insert == '':
@@ -959,12 +962,15 @@ class Instance:
             if column.transform == 0 and column.parent_id == 0:
                 new_name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
             elif '...' not in transform_name:
+                joiner = ''
+                if transform_name.startswith('_') is False and transform_name.startswith('-') is False:
+                    joiner = ' - '
                 if column.transform == 0:
                     new_name = parent_name
                 elif column.parent_id == 0:
-                    new_name = '? - ' + transform_name
+                    new_name = '?' + joiner + transform_name
                 else:
-                    new_name = parent_name + ' - ' + transform_name
+                    new_name = parent_name + joiner + transform_name
             else:
                 insert = parent_name
                 if insert == '':
