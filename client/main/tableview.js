@@ -152,11 +152,11 @@ const TableView = SilkyView.extend({
         let emptyIds = [];
         for (let block of blocks) {
             for (let i = 0; i < block.right - block.left + 1; i++) {
-                let column = this.model.getColumn(block.right - i, true);
+                let column = this.model.getColumn(block.left + i, true);
                 if (column.columnType === 'none')
                     emptyIds.push(column.id);
                 else {
-                    let props = { /*name: column.name,*/ index: block[direction] + (direction === 'right' ? 1 : 0) };
+                    let props = { index: block[direction] + (direction === 'right' ? 1 : 0) };
                     itemConstruction(props, column);
                     inserts.push(props);
                 }
