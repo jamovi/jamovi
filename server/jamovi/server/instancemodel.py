@@ -259,7 +259,7 @@ class InstanceModel:
         for i in range(start, len(self._columns)):
             self._columns[i].index = i
 
-        self.update_filter_names
+        self.update_filter_names()
 
     def delete_columns_by_id(self, ids):
         sortedIds = sorted(ids, key=lambda id: self.get_column_by_id(id).index)
@@ -385,6 +385,17 @@ class InstanceModel:
     @embedded_name.setter
     def embedded_name(self, name):
         self._embedded_name = name
+
+    def index_from_visible_index(self, d_index):
+            count = -1
+            i = 0
+            for column in self._columns:
+                i += 1
+                if column.hidden is False:
+                    count += 1
+                if count == d_index:
+                    return column.index
+            return -1
 
     @property
     def virtual_row_count(self):

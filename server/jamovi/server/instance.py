@@ -721,15 +721,14 @@ class Instance:
     def _on_dataset_ins_cols(self, request, response):
         filter_inserted = False
         to_calc = set()
-
         for i in range(0, len(request.schema.columns)):
             column_pb = request.schema.columns[i]
             has_name = column_pb.name != ''
             self._data.insert_column(column_pb.index)
             column = self._data[column_pb.index]
 
-            for j in range(i + 1, len(request.schema.columns)):
-                if request.schema.columns[j].index >= column_pb.index:
+            for j in range(0, len(request.schema.columns)):
+                if j != i and request.schema.columns[j].index >= column_pb.index:
                     request.schema.columns[j].index += 1
 
             column.column_type = ColumnType(column_pb.columnType)
@@ -1364,6 +1363,10 @@ class Instance:
 
         row_start = selection['row_start']
         col_start = selection['col_start']
+        col_start_index = col_start
+        if exclude_hidden_cols:
+            col_start_index = self._data.index_from_visible_index(col_start)
+
         row_end   = selection['row_end']
         col_end   = selection['col_end']
         row_count = row_end - row_start + 1
@@ -1424,7 +1427,7 @@ class Instance:
         reparse = set()
         recalc = set()  # computed columns that need to update from these changes
 
-        for i in range(self._data.column_count, col_start):
+        for i in range(self._data.column_count, col_start_index):
             column = self._data[i]
             column.realise()
             cols_changed.add(column)
