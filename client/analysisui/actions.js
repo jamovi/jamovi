@@ -119,7 +119,8 @@ function View() {
         },
         {
             onEvent: "view.data-initializing", execute: function(ui, event) {
-                this.workspace = {};
+                if (event.id !== this._id)
+                    this.workspace = {};
                 this._updating = true;
             }
         },
