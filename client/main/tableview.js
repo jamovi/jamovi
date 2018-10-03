@@ -2388,16 +2388,19 @@ const TableView = SilkyView.extend({
 
         let column = this.model.getColumn(selection.colNo, true);
 
+        let columns = this._currentSelectionToColumns();
+        let hasFilters = columns.some(a => a.columnType === 'filter');
+
         ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom);
         ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
-        ActionHub.get('insertVar').set('enabled', selection.right <= dataSetBounds.right && column.columnType !== 'filter');
-        ActionHub.get('insertComputed').set('enabled', selection.right <= dataSetBounds.right && column.columnType !== 'filter');
-        ActionHub.get('insertRecoded').set('enabled',  selection.right <= dataSetBounds.right && column.columnType !== 'filter');
+        ActionHub.get('insertVar').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
+        ActionHub.get('insertComputed').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
+        ActionHub.get('insertRecoded').set('enabled',  selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertRow').set('enabled', selection.top === selection.bottom && selection.rowNo <= dataSetBounds.bottom);
-        ActionHub.get('cut').set('enabled', column.columnType !== 'filter');
-        ActionHub.get('paste').set('enabled', column.columnType !== 'filter');
-        ActionHub.get('compute').set('enabled', column.columnType !== 'filter');
-        ActionHub.get('transform').set('enabled', column.columnType !== 'filter');
+        ActionHub.get('cut').set('enabled', hasFilters === false);
+        ActionHub.get('paste').set('enabled', hasFilters === false);
+        ActionHub.get('compute').set('enabled', hasFilters === false);
+        ActionHub.get('transform').set('enabled', hasFilters === false);
     },
     _toggleFilterEditor() {
         let editingId = this.model.get('editingVar');
@@ -2442,9 +2445,9 @@ const TableView = SilkyView.extend({
             editingColumn = this.model.getColumnById(editingIds[0]);
 
         if (editingIds === null || (editingColumn.columnType === 'filter' && editingColumn.hidden)) {
-            let startIndex = this.model.indexFromDisplayIndex(this.selection.colNo);
-            let column = this._findFirstVisibleColumn(startIndex);
-            this.model.set('editingVar', [column.id]);
+            let columns = this._currentSelectionToColumns();
+            let ids = columns.map(x => x.id);
+            this.model.set('editingVar', ids);
         }
         else
             this.model.set('editingVar', null);
