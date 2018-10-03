@@ -195,6 +195,7 @@ const TransformEditor = function(dataset) {
                     this._createFormulaUI(false);
                 }
                 tarp.hide('recode-formula');
+                dropdown.hide();
             }
         });
 
@@ -356,7 +357,6 @@ const TransformEditor = function(dataset) {
 
         elements.$showEditor.on('mousedown', (event) => {
             this._$wasEditingFormula = dropdown.focusedOn() !== null ? this.formulasetup.focusedOn() : null;
-            elements._editorClicked = true;
         });
 
         if (hasCondition) {
@@ -527,6 +527,7 @@ const TransformEditor = function(dataset) {
         let index = condIndex * 2;
         this.formula.splice(index, 2);
         $formulaBox.remove();
+        dropdown.hide();
         this._updateLastFormulaTag();
 
         if (this.formula.length <= 3)
@@ -597,7 +598,7 @@ const TransformEditor = function(dataset) {
 
         let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
 
-        return { $formulaBox,  $showEditor, $formulaGrid, _editorClicked: false };
+        return { $formulaBox,  $showEditor, $formulaGrid, _subFocusClicked: false, _opEditClicked: false };
     };
 
     this._startsWithValidOps = function($formula) {
@@ -677,8 +678,9 @@ const TransformEditor = function(dataset) {
         $formula.on('blur', (event) => {
             this.$options.find('.selected').removeClass('selected');
             this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent.trim();
-            if (hasOp && elements._editorClicked === false)
+            if (hasOp && elements._opEditClicked === false)
                 $opEdit.hide();
+            elements._opEditClicked = false;
             keyboardJS.resume();
         });
 
@@ -691,6 +693,10 @@ const TransformEditor = function(dataset) {
                 this.formulasetup.show($formula, '', true);
             if (hasOp)
                 $opEdit.show();
+        });
+
+        $formula.on('mousedown', (event) => {
+            elements._subFocusClicked = true;
         });
 
         $formula.on('input', (event) => {
@@ -731,7 +737,7 @@ const TransformEditor = function(dataset) {
 
             $opEdit.on('mousedown', (event) => {
                 this._$wasEditingOpsFormula = dropdown.focusedOn() !== null ? this.opsToolbar.focusedOn() : null;
-                elements._editorClicked = true;
+                elements._opEditClicked = true;
             });
 
             $formula.on('editor:closing', () => {
@@ -741,10 +747,9 @@ const TransformEditor = function(dataset) {
         }
 
         $formula.blur((event) => {
-            if (this._isRealBlur(elements)) {
-                elements._editorClicked = false;
-                return;
-            }
+            if (this._isRealBlur(elements))
+                dropdown.hide();
+            elements._subFocusClicked = false;
         });
         $formula.on('keydown', (event) => {
             if (event.keyCode === 8)  //backspace
@@ -754,6 +759,7 @@ const TransformEditor = function(dataset) {
 
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 $formula.blur();
+                dropdown.hide();
                 setTimeout(() => {
                     tarp.hide('recode-formula');
                 }, 0);
@@ -788,7 +794,7 @@ const TransformEditor = function(dataset) {
     };
 
     this._isRealBlur = function(elements) {
-        return dropdown.clicked() || elements._editorClicked;
+        return dropdown.clicked() === false && elements._subFocusClicked === false;
     };
 
     this._init();
