@@ -5,6 +5,7 @@ const $ = require('jquery');
 
 const dropdown = function() {
     this._inTools = false;
+    this.$formula = null;
 
     $(window).resize( (event) => {
         this._findPosition();
