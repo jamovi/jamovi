@@ -702,6 +702,8 @@ class MeasureType(Enum):
             return MeasureType.NOMINAL
         elif measure_type == 'ID':
             return MeasureType.ID
+        elif measure_type == 'None':
+            return MeasureType.NONE
         else:
             return MeasureType.CONTINUOUS
 
