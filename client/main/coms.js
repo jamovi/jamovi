@@ -1,11 +1,11 @@
 
 'use strict';
 
-var $ = require('jquery');
-var ProtoBuf = require('protobufjs');
-var Q = require('q');
+const $ = require('jquery');
+const ProtoBuf = require('protobufjs');
+const Q = require('q');
 
-var Coms = function() {
+const Coms = function() {
 
     this._baseUrl = null;
     this._transId = 0;
@@ -28,11 +28,11 @@ Coms.prototype.connect = function(sessionId) {
 
     if ( ! this.connected) {
 
-        this.connected = Q.all([
+        this.connected = Promise.all([
 
-            new Q.promise((resolve, reject) => {
+            new Promise((resolve, reject) => {
 
-                var protoUrl = this._baseUrl + 'proto/coms.proto';
+                const protoUrl = this._baseUrl + 'proto/coms.proto';
 
                 ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
                     if (err) {
@@ -44,7 +44,7 @@ Coms.prototype.connect = function(sessionId) {
                     }
                 });
             }),
-            new Q.promise((resolve, reject) => {
+            new Promise((resolve, reject) => {
 
                 let url = this._baseUrl + 'coms';
                 url = url.replace('http', 'ws'); // http -> ws, https -> wss
@@ -104,18 +104,18 @@ Coms.prototype.send = function(request) {
 
 Coms.prototype.receive = function(event) {
 
-    var response = this.Messages.ComsMessage.decode(event.data);
+    let response = this.Messages.ComsMessage.decode(event.data);
 
     if (response.id === 0) {
         this._notifyEvent('broadcast', response);
         return;
     }
 
-    var found = false;
+    let found = false;
 
-    for (var i = 0; i < this._transactions.length; i++) {
+    for (let i = 0; i < this._transactions.length; i++) {
 
-        var trans = this._transactions[i];
+        let trans = this._transactions[i];
         if (trans.id === response.id) {
             found = true;
             if (response.status === this.Messages.Status.COMPLETE)
