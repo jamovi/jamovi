@@ -573,6 +573,40 @@ const TableView = SilkyView.extend({
 
         return false;
     },
+    _isFullColumnSelectionClick(colNo) {
+        let check = false;
+        if (colNo >= this.selection.left && colNo <= this.selection.right)
+            check = this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1;
+
+        if (check === false) {
+            for (let selection of this._selectionList) {
+                if (colNo >= selection.left && colNo <= selection.right) {
+                    check = selection.top === 0 && selection.bottom === this.model.attributes.rowCount - 1;
+                }
+                if (check)
+                    break;
+            }
+        }
+
+        return check;
+    },
+    _isFullRowSelectionClick(rowNo) {
+        let check = false;
+        if (rowNo >= this.selection.top && rowNo <= this.selection.bottom)
+            check = this.selection.left === 0 && this.selection.right === this.model.attributes.columnCount - 1;
+
+        if (check === false) {
+            for (let selection of this._selectionList) {
+                if (rowNo >= selection.top && rowNo <= selection.bottom) {
+                    check = selection.left === 0 && selection.right === this.model.attributes.columnCount - 1;
+                }
+                if (check)
+                    break;
+            }
+        }
+
+        return check;
+    },
     _mouseDown(event) {
 
         let pos = this._getPos(event.clientX, event.clientY);
@@ -598,7 +632,7 @@ const TableView = SilkyView.extend({
             else
                 this._clearSelectionList();
         }
-        else if (pos.onHeader !== 'none' || !this._cellInSelection(rowNo, colNo))
+        else if (! this._cellInSelection(rowNo, colNo))
             this._clearSelectionList();
 
 
@@ -607,11 +641,9 @@ const TableView = SilkyView.extend({
         if (event.button === 2) {
             if (pos.onHeader === 'none' && this._cellInSelection(rowNo, colNo))
                 return Promise.resolve();
-            else if (pos.onHeader === 'columns' && this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1 &&
-                colNo >= this.selection.left && colNo <= this.selection.right)
+            else if (pos.onHeader === 'columns' && this._isFullColumnSelectionClick(colNo))
                 return Promise.resolve();
-            else if (pos.onHeader === 'rows' && this.selection.left === 0 && this.selection.right === this.model.attributes.columnCount - 1 &&
-                rowNo >= this.selection.top && rowNo <= this.selection.bottom)
+            else if (pos.onHeader === 'rows' && this._isFullRowSelectionClick(rowNo))
                 return Promise.resolve();
         }
 
