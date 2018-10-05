@@ -289,6 +289,7 @@ def read(data, path, prog_cb):
                 id = meta_transform['id']
                 transform = data.append_transform(name, id)
                 transform.formula = meta_transform.get('formula', [''])
+                transform.formula = list(map(replace_single_equals, transform.formula))
                 transform.formula_message = meta_transform.get('formulaMessage', [''])
                 measure_type_str = meta_transform.get('measureType', 'None')
                 transform.measure_type = MeasureType.parse(measure_type_str)
