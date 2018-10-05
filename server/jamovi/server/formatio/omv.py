@@ -183,6 +183,46 @@ def _read_string_from_table(stream, pos):
         return _buffer.decode('utf-8', errors='ignore')
 
 
+def replace_single_equals(formula):
+    if formula == '':
+        return ''
+
+    new_formula = []
+    is_string = False
+    safe = False
+    safe_count = 0
+
+    for index in range(0, len(formula)):
+        char = formula[index]
+        if safe_count == 0:
+            safe = False
+
+        if char == '`':
+            is_string = not is_string
+            safe = is_string
+            safe_count = -1
+
+        if not safe:
+            if char == '!' or char == '<' or char == '>':
+                safe = True
+                safe_count = 2
+            elif char == '=':
+                if index < (len(formula) - 1) and formula[index + 1] == '=':
+                    safe = True
+                    safe_count = 2
+                else:
+                    new_formula.append(formula[:index])
+                    new_formula.append('=')
+                    new_formula.append(formula[index:])
+
+        safe_count -= 1
+
+    if len(new_formula) > 0:
+        return ''.join(new_formula)
+
+    return formula
+
+
 def read(data, path, prog_cb):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
@@ -253,7 +293,7 @@ def read(data, path, prog_cb):
 
             column.change(data_type=data_type, measure_type=measure_type)
 
-            column.formula = meta_column.get('formula', '')
+            column.formula = replace_single_equals(meta_column.get('formula', ''))
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
 
