@@ -182,6 +182,7 @@ def _read_string_from_table(stream, pos):
     except ValueError:
         return _buffer.decode('utf-8', errors='ignore')
 
+
 def replace_single_equals(formula):
     if formula == '':
         return ''
@@ -220,6 +221,7 @@ def replace_single_equals(formula):
         return ''.join(new_formula)
 
     return formula
+
 
 def read(data, path, prog_cb):
 
