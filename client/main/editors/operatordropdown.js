@@ -37,7 +37,7 @@ function allFunctions($functionsContent) {
     let descriptions = { };
 
     //$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
-    $functionsContent.append($('<div class="item item-activated" data-name="equal" data-value="=">=</div>'));
+    $functionsContent.append($('<div class="item item-activated" data-name="equal" data-value="==">==</div>'));
     descriptions.equal = { label: 'Equal to', content: '' };
     $functionsContent.append($('<div class="item" data-name="notequal" data-value="!=">!=</div>'));
     descriptions.notequal = { label: 'Not equal to', content: '' };
