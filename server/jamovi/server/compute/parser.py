@@ -17,17 +17,21 @@ class Parser:
         if len(tree.body) == 0:
             return None
 
+        if isinstance(tree.body[0], ast.Assign):
+            raise TypeError("Formula is mis-specified (If you're wanting to test equality, use two equals signs '==')")
+
         tree = tree.body[0].value
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Name):
                 node.id = Parser.unescape_chunk(node.id)
+            elif isinstance(node, ast.keyword):
+                node.arg = Parser.unescape_chunk(node.arg)
 
         return tree
 
     @staticmethod
     def escape_chunk(chunk):
-
         if len(chunk) == 0:
             return chunk
         elif chunk == '^':
@@ -38,16 +42,6 @@ class Parser:
             return 'or'
         elif chunk == 'not':
             return 'not'
-        elif chunk == '=':
-            return '=='
-        elif chunk == '==':
-            return '=='
-        elif chunk == '>=':
-            return '>='
-        elif chunk == '<=':
-            return '<='
-        elif chunk == '!=':
-            return '!='
         elif len(chunk) == 1 and chunk in Parser._SPECIAL_CHARS:
             return chunk
         elif chunk.startswith('"') and chunk.endswith('"'):
@@ -86,10 +80,6 @@ class Parser:
                 if sc not in Parser._SPECIAL_CHARS:
                     break
                 else:
-                    if sc == '=' or sc == '!' or sc == '>' or sc == '<':
-                        if s + 1 < n and (str[s + 1] == '='):
-                            s += 1
-                            sc += '='
                     chunks.append(sc)
                     s += 1
 
@@ -108,10 +98,6 @@ class Parser:
                 elif q is '' and ec in Parser._SPECIAL_CHARS:
                     term = ''.join(str[s:e])
                     chunks.append(term)
-                    if ec == '=' or ec == '!' or ec == '>' or ec == '<':
-                        if e + 1 < n and (str[e + 1] == '='):
-                            e += 1
-                            ec += '='
                     chunks.append(ec)
                     break
                 else:

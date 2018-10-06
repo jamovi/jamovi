@@ -14,7 +14,7 @@ class Checker(NodeVisitor):
                     'UnaryOp', 'UAdd', 'USub', 'Not', 'Invert',
                     'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod', 'Pow',
                     'Compare', 'Eq', 'NotEq', 'Gt', 'GtE', 'Lt', 'LtE',
-                    'BoolOp', 'And', 'Or' ]
+                    'BoolOp', 'And', 'Or', 'keyword' ]
 
     @staticmethod
     def check(column, node):
@@ -44,6 +44,7 @@ class Checker(NodeVisitor):
             raise NameError('Function {}() does not exist'.format(name))
 
         sig = signature(func)
+        fun_kwargs = [ ]
 
         for arg_name in sig.parameters:
             if skip_first:
@@ -57,8 +58,16 @@ class Checker(NodeVisitor):
                     min_args += 1
             elif arg.kind is Parameter.VAR_POSITIONAL:
                 max_args = float('nan')
+            elif arg.kind is Parameter.KEYWORD_ONLY:
+                fun_kwargs.append(arg.name)
+                max_args += 1
             else:
                 raise RuntimeError('Bad function definition')
+
+        kwargs_provided = map(lambda x: x.arg, node.keywords)
+        for kwarg in kwargs_provided:
+            if kwarg not in fun_kwargs:
+                raise TypeError("'{}' is not an argument for {}()\n(If you're wanting to test equality, use two equal signs '==')".format(kwarg, name))
 
         if len(node.args) > max_args or len(node.args) < min_args:
             plural = 's' if min_args != 1 else ''
@@ -72,7 +81,7 @@ class Checker(NodeVisitor):
         for arg in node.args:
             self.visit(arg)
         for arg in node.keywords:
-            self.visit(arg)
+            self.visit(arg.value)
 
     def visit_Name(self, node):
         depcy_name = node.id
