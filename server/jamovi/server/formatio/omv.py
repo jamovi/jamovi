@@ -23,7 +23,7 @@ def write(data, path, html=None):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 6.0\n')
+        content.write('jamovi-Archive-Version: 7.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
         zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
 
@@ -256,7 +256,7 @@ def read(data, path, prog_cb):
             raise Exception('File is corrupt (no JAV)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 6:
+        if jav[0] > 7:
             raise Exception('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
@@ -289,7 +289,8 @@ def read(data, path, prog_cb):
                 id = meta_transform['id']
                 transform = data.append_transform(name, id)
                 transform.formula = meta_transform.get('formula', [''])
-                transform.formula = list(map(replace_single_equals, transform.formula))
+                if jav[0] <= 6:
+                    transform.formula = list(map(replace_single_equals, transform.formula))
                 transform.formula_message = meta_transform.get('formulaMessage', [''])
                 measure_type_str = meta_transform.get('measureType', 'None')
                 transform.measure_type = MeasureType.parse(measure_type_str)
@@ -325,8 +326,10 @@ def read(data, path, prog_cb):
                 measure_type = MeasureType.parse(measure_type_str)
 
             column.change(data_type=data_type, measure_type=measure_type)
-
-            column.formula = replace_single_equals(meta_column.get('formula', ''))
+            formula = meta_column.get('formula', '')
+            if jav[0] <= 6:
+                formula = replace_single_equals(formula)
+            column.formula = formula
             column.formula_message = meta_column.get('formulaMessage', '')
             column.description = meta_column.get('description', '')
             column.transform = meta_column.get('transform', 0)
