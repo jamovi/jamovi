@@ -21,16 +21,20 @@ NaN = float('nan')
 
 
 @row_wise
-def MEAN(index, arg0: float, *args: float):
+def MEAN(index, arg0: float, *args: float, ignore_missing: int=0):
     values = [ arg0 ]
     values.extend(args)
+    if ignore_missing != 0:
+        values = list(filter(lambda x: not is_missing(x), values))
     return stats.mean(values)
 
 
 @row_wise
-def SUM(index, arg0: float, *args: float):
+def SUM(index, arg0: float, *args: float, ignore_missing: int=0):
     values = [ arg0 ]
     values.extend(args)
+    if ignore_missing != 0:
+        values = list(filter(lambda x: not is_missing(x), values))
     return math.fsum(values)
 
 
