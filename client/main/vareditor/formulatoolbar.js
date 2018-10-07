@@ -61,11 +61,11 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
     descriptions.BOXCOX = { label: 'BOXCOX( <i>variable, lambda</i> )', content: 'Returns a Box Cox transformation of the variable.' };
     $functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
-    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i> )', content: 'Returns the mean of a set of numbers.' };
+    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
     descriptions.SCALE = { label: 'SCALE( <i>variable</i> )', content: 'Returns the normalized values of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
-    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i> )', content: 'Returns the sum of a set of numbers.' };
+    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the sum of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
     descriptions.VMEAN = { label: 'VMEAN( <i>variable</i> )', content: 'Returns the overall mean of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VMED">VMED</div>'));
