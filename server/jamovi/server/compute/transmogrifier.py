@@ -12,6 +12,7 @@ from .nodes import UnaryOp
 from .nodes import BoolOp
 from .nodes import Compare
 from .nodes import Tuple
+from .nodes import keyword
 
 
 class Transmogrifier(NodeTransformer):
@@ -36,9 +37,16 @@ class Transmogrifier(NodeTransformer):
             new_arg = new_args[i]
             new_arg = self.visit(new_arg)
             new_args[i] = new_arg
-        nu = Call(func=node.func, args=new_args, keywords=node.keywords)
+        new_kws = node.keywords
+        for i in range(len(new_kws)):
+            new_kw = new_kws[i]
+            new_kw = self.visit(new_kw)
+            new_kws[i] = new_kw
+        nu = Call(func=node.func, args=new_args, keywords=new_kws)
         for arg in new_args:
             arg._add_node_parent(nu)
+        for kw in new_kws:
+            kw._add_node_parent(nu)
         return nu
 
     def visit_Num(self, node):
@@ -49,6 +57,12 @@ class Transmogrifier(NodeTransformer):
 
     def visit_Tuple(self, node):
         return Tuple(node.elts, node.ctx)
+
+    def visit_keyword(self, node):
+        new_value = self.visit(node.value)
+        nu = keyword(arg=node.arg, value=new_value)
+        new_value._add_node_parent(nu)
+        return nu
 
     def visit_BinOp(self, node):
         left = self.visit(node.left)

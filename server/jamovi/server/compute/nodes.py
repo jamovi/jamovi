@@ -274,6 +274,7 @@ class Call(ast.Call, Node):
         Node.__init__(self)
         self._cached_value = None
         self._arg_types = [ ]
+        self._kw_types = [ ]
         self._d_type = None
         self._m_type = None
 
@@ -298,7 +299,10 @@ class Call(ast.Call, Node):
             annot = param.annotation
             if annot is Parameter.empty:
                 annot = None
-            self._arg_types.append(annot)
+            if param.kind is Parameter.KEYWORD_ONLY:
+                self._kw_types.append(annot)
+            else:
+                self._arg_types.append(annot)
 
         sub_arg_len = len(param_names)
         for param_name in reversed(param_names):
@@ -344,7 +348,14 @@ class Call(ast.Call, Node):
                 arg_type_i = min(i, len(self._arg_types) - 1)
                 arg_type = self._arg_types[arg_type_i]
                 args[i] = convert(args[i], arg_type)
-            value = self._function(index, *args)
+            kwargs = {}
+            for i, kwarg in enumerate(self.keywords):
+                kw_name = kwarg.arg
+                kw_value = kwarg.fvalue(index, row_count, False)
+                kw_type = self._kw_types[i]
+                kw_value = convert(kw_value, kw_type)
+                kwargs[kw_name] = kw_value
+            value = self._function(index, *args, **kwargs)
 
         return value
 
@@ -714,6 +725,39 @@ class Compare(ast.Compare, Node):
         for comp in self.comparators:
             comp._release()
             comp._remove_node_parent(self)
+
+
+class keyword(ast.keyword, Node):
+
+    def __init__(self, *args, **kwargs):
+        ast.keyword.__init__(self, *args, **kwargs)
+        Node.__init__(self)
+
+    def fvalue(self, index, row_count, filt):
+        return self.value.fvalue(index, row_count, filt)
+
+    def is_atomic_node(self):
+        return self.value.is_atomic_node()
+
+    @property
+    def data_type(self):
+        self.value.data_type
+
+    @property
+    def measure_type(self):
+        self.value.measure_type
+
+    @property
+    def has_levels(self):
+        return self.value.has_levels
+
+    @property
+    def uses_column_formula(self):
+        return self.value.uses_column_formula
+
+    def _release(self):
+        self.value._release()
+        self.value._remove_node_parent(self)
 
 
 class Tuple(ast.Tuple, Node):
