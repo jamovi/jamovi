@@ -244,8 +244,10 @@ const VariableModel = Backbone.Model.extend({
             }
         }
 
-        if (cancel)
+        if (cancel) {
+            this.set('changes', false);
             return Promise.resolve();
+        }
 
         let pairs = [];
         for (let column of this.columns) {
@@ -261,7 +263,7 @@ const VariableModel = Backbone.Model.extend({
                 })) {
 
                     let latestValues = {
-                        name: this.attributes.name.trim(),
+                        name: this.attributes.name === null ? this.attributes.name : this.attributes.name.trim(),
                         columnType: this.attributes.columnType,
                         dataType: this.attributes.dataType,
                         measureType: this.attributes.measureType,
