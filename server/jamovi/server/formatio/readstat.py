@@ -92,6 +92,8 @@ class Parser(ReadStatParser):
             if level_labels is not None:
                 level_i = 0
                 for value in level_labels:
+                    if variable.is_missing(value):
+                        continue
                     label = level_labels[value]
                     column.append_level(level_i, label, value)
                     level_i += 1
@@ -116,6 +118,8 @@ class Parser(ReadStatParser):
                     new_labels = OrderedDict()
                     if var_type is float:
                         for value in level_labels:
+                            if variable.is_missing(value):
+                                continue
                             label = level_labels[value]
                             new_labels[int(value)] = label
                         level_labels = new_labels
