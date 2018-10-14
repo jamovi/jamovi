@@ -213,7 +213,7 @@ const VariableModel = Backbone.Model.extend({
         };
 
         let newValues = $.extend(true, {}, values);
-        if (newValues.levels) {
+        if (newValues.levels && this.attributes.ids.length > 1) {
             for (level of column.levels) {
                 let editLevel = findLevel(newValues.levels, level);
                 if (editLevel && editLevel.label !== null)
