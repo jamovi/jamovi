@@ -337,6 +337,27 @@ let ready = new Promise(resolve => {
     app.on('ready', resolve);
 });
 
+let splash = null;
+
+if (os.platform() === 'win32') {
+    ready.then(() => {
+        if ('open' in argvCmd) {
+            splash = new BrowserWindow({
+                width: 200,
+                height: 200,
+                frame: false,
+                transparent: true,
+                center: true,
+                focusable: false,
+                alwaysOnTop: true,
+                skipTaskbar: true,
+            });
+            splash.loadURL('file://' + __dirname + '/splash.html');
+            splash.show();
+        }
+    });
+}
+
 Promise.all([ready, spawn]).then(() => {
     handleCommand(argvCmd);
 });
@@ -429,6 +450,13 @@ const createWindow = function(open) {
         if (recorderWindow !== null) {
             let script = `window.notifyCurrentWindowChanged(${event.sender.id})`;
             recorderWindow.webContents.executeJavaScript(script);
+        }
+    });
+
+    wind.webContents.on('did-finish-load', (event) => {
+        if (splash != null) {
+            splash.close();
+            splash = null;
         }
     });
 
