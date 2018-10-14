@@ -101,6 +101,8 @@ const DataVarWidget = Backbone.View.extend({
             return;
         if (this.model.attributes.measureType === 'continuous')
             return;
+        if (this.model.attributes.ids !== null && this.model.attributes.ids.length > 1)
+            return;
         let index = this.selectedLevelIndex;
         if (index < 1)
             return;
@@ -119,6 +121,8 @@ const DataVarWidget = Backbone.View.extend({
             return;
         if (this.model.attributes.measureType === 'continuous')
             return;
+        if (this.model.attributes.ids !== null && this.model.attributes.ids.length > 1)
+            return;
         let index = this.selectedLevelIndex;
         let levels = this.model.get('levels');
         if (index === -1 || index >= levels.length - 1)
@@ -133,7 +137,7 @@ const DataVarWidget = Backbone.View.extend({
         this.model.set('levels', clone);
     },
     _enableDisableMoveButtons() {
-        if (this.model.attributes.measureType !== 'continuous') {
+        if (this.model.attributes.measureType !== 'continuous' && this.model.attributes.ids !== null && this.model.attributes.ids.length === 1) {
             let levels = this.model.get('levels');
             let index  = this.selectedLevelIndex;
             this.$moveUp.toggleClass('disabled', levels === null || index < 1);
@@ -224,9 +228,12 @@ const DataVarWidget = Backbone.View.extend({
                 this._enableDisableMoveButtons();
             };
 
+            if (this.selectedLevelIndex >= levels.length)
+                this.selectedLevelIndex = -1;
+
             if (this.selectedLevelIndex !== -1 && levels[this.selectedLevelIndex].label === null)
                 this.selectedLevelIndex = -1;
-                
+
             this.$levelItems.removeClass('selected');
             for (let i = 0; i < levels.length; i++) {
                 let level = levels[i];
