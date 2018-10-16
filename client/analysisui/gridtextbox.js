@@ -75,8 +75,11 @@ const GridTextbox = function(params) {
 
         let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
         let inputPattern = this.getPropertyValue('inputPattern');
-        if (inputPattern !== null)
+        if (inputPattern !== null) {
+            if (inputPattern === '[0-9]+')
+                inputPattern = '^\\-?[0-9]*\\.?[0-9]+?$';
             t += ' pattern="'+ inputPattern + '"';
+        }
         t += '>';
 
         this.$input = $(t);
