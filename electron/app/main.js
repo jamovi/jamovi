@@ -127,15 +127,18 @@ if (argvCmd.exit) {
     process.exit(0);
 }
 
-let alreadyRunning = app.makeSingleInstance((argv, wd) => {
-    argv.shift(); // remove exe
-    let cmd = marshallArgs(argv, wd);
-    handleCommand(cmd);
-});
+let firstInstance = app.requestSingleInstanceLock();
 
-if (alreadyRunning) {
+if ( ! firstInstance) {
     app.quit();
     process.exit(0);
+}
+else {
+    app.on('second-instance', (e, argv, wd) => {
+        argv.shift(); // remove exe
+        let cmd = marshallArgs(argv, wd);
+        handleCommand(cmd);
+    });
 }
 
 // proxy servers can interfere with accessing localhost
