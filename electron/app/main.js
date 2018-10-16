@@ -6,6 +6,7 @@ const app = electron.app;
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const shell = electron.shell;
 
 const ini = require('./ini');
 const tmp = require('./tmp');
@@ -343,8 +344,8 @@ if (os.platform() === 'win32') {
     ready.then(() => {
         if ('open' in argvCmd) {
             splash = new BrowserWindow({
-                width: 200,
-                height: 200,
+                width: 390,
+                height: 110,
                 frame: false,
                 transparent: true,
                 center: true,
@@ -354,6 +355,9 @@ if (os.platform() === 'win32') {
             });
             splash.loadURL('file://' + __dirname + '/splash.html');
             splash.show();
+            splash.webContents.on('will-navigate', (e, url) => {
+                shell.openExternal(url);
+            });
         }
     });
 }
