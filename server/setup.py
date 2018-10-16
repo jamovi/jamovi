@@ -46,8 +46,8 @@ elif os.uname()[0] == "Linux":
 elif os.uname()[0] == "Darwin":
     libraries = [ "boost_filesystem-mt", "boost_system-mt" ]
     library_dirs = [ tld + '/../Frameworks' ]
-    extra_compile_args = [ ]
-    extra_link_args = [ "-framework", "Foundation" ]
+    extra_compile_args = [ '-mmacosx-version-min=10.9' ]
+    extra_link_args = [ "-framework", "Foundation", '-mmacosx-version-min=10.9' ]
 else:
     raise RuntimeError("Shouldn't get here!")
 
