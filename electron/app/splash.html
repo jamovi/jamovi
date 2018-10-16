@@ -6,21 +6,199 @@
             background-color: transparent ;
             overflow: hidden ;
         }
+
+        #container {
+            height: 30px;
+            width: 170px;
+            position: absolute;
+            top: 35px;
+            left: 180px;
+            transition: .3s top;
+        }
+
+        .label {
+            height: 30px;
+            line-height: 25px;
+            vertical-align: middle;
+
+
+            font-size: 20px;
+            color: #aaaaaa;
+            font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+        }
+
+        #msg {
+            height: 15px;
+            width: 170px;
+            line-height: 13px;
+            vertical-align: middle;
+
+            opacity: 0;
+            transition: .5s opacity;
+            font-size: 10px;
+            color: #aaaaaa;
+            font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+        }
+
+        .box {
+            width: 380px;
+            height: 100px;
+            position: absolute;
+            left: 50%;
+            margin-left: -180px;
+            margin-top: -50px;
+            top: 50%;
+            transition: .2s opacity;
+            border: 1px solid #aaaaaa;
+            background-color: white;
+            border-radius: 0px;
+            overflow: hidden;
+        }
+
+        .bar {
+            border-left: 2px solid #aaaaaa;
+            height: 66px;
+            top: 50%;
+            margin-top: -33px;
+            left: 143px;
+            position: absolute;
+        }
+
+
+
+        .icon {
+            width:120px;
+            height:120px;
+            top:50%;
+            left: 20px;
+            margin-top: -45px;
+            position: absolute;
+        }
+
+        .spinner2 {
+            animation: rotate 1s linear infinite;
+            -webkit-animation: rotate 1s linear infinite;
+            -moz-animation: rotate 1s linear infinite;
+            width:131px;
+            height:131px;
+            top:-50;
+            left: -31;
+            position: absolute;
+        }
+
+        .spinner3 {
+            animation: rotate 1.4s linear infinite;
+            -webkit-animation: rotate 1.4s linear infinite;
+            -moz-animation: rotate 1.4s linear infinite;
+            width:135px;
+            height:135px;
+            top:-50;
+            left: -31;
+            position: absolute;
+        }
+
+        .spinner {
+            animation: rotate 1.8s linear infinite;
+            -webkit-animation: rotate 1.8s linear infinite;
+            -moz-animation: rotate 1.8s linear infinite;
+            width:129px;
+            height:129px;
+            top:-50;
+            left: -31;
+            position: absolute;
+        }
+
+        .spinner-dot {
+            width:274px;
+            height:274px;
+            position: relative;
+            top: 0;
+        }
+
+
+        @keyframes rotate {
+            to {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @-webkit-keyframes rotate {
+            to {
+                -webkit-transform: rotate(-360deg);
+            }
+        }
+
+        @-moz-keyframes rotate {
+            to {
+                transform: rotate(-360deg);
+            }
+        }
+
+        .path {
+            stroke-dasharray: 170;
+            stroke-dashoffset: 20;
+        }
     </style>
+    <script>
+        setTimeout(() => {
+            let msg = document.getElementById("msg");
+            msg.style.opacity = "1";
+            let container = document.getElementById("container");
+            container.style.height = "45px";
+            container.style.top = "27.5px";
+
+        }, 10000);
+    </script>
   </head>
   <body>
-    <svg id="svg4159" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="100%" viewBox="0 0 64.256546 64.256608" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
-     <metadata id="metadata4164">
-      <rdf:RDF>
-       <cc:Work rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-        <dc:title/>
-       </cc:Work>
-      </rdf:RDF>
-     </metadata>
-     <path id="path4134" stroke-linejoin="round" d="m63.023 32.745a30.9 30.9 0 0 1 -31.491 30.278 30.9 30.9 0 0 1 -30.299 -31.472 30.9 30.9 0 0 1 31.453 -30.318 30.9 30.9 0 0 1 30.339 31.433" stroke="#eee" stroke-linecap="round" stroke-width="0.8" fill="#3e6da9"/>
-     <path id="path4694-7" d="m16.279 34.148v-18.582h4.8989 4.8989v12.861 12.861l0.76019-0.23575c2.9978-0.92972 7.5704-4.0743 10.455-7.1895 4.354-4.7028 6.6096-9.7003 7.5343-16.692l0.21223-1.6048h4.846 4.846l-0.14848 1.4359c-0.862 8.3299-2.841 13.774-7.263 19.976-4.308 6.044-10.592 10.768-18.06 13.579-2.849 1.0724-8.3816 2.1734-10.921 2.1734h-2.0585z" stroke="#27456a" stroke-width=".5" fill="#fff"/>
-    </svg>
+    <div class="box">
+        <div class="bar"></div>
+        <svg class="icon" id="svg4159" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" width="160px" height="160px" viewBox="0 0 66 66" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <path style="fill:#3e6da9;fill-opacity:1;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" d="m 8.1769712,24.932055 0,-18.6389698 4.9139108,0 4.9139,0 0,12.9006798 0,12.90065 0.76252,-0.23647 c 3.00696,-0.93257 7.59364,-4.08677 10.4866,-7.21152 4.36735,-4.71726 6.62991,-9.73005 7.5574,-16.7436098 l 0.21288,-1.60973 4.86088,0 4.86089,0 -0.14893,1.44028 c -0.8641,8.3553198 -2.84932,13.8160698 -7.28434,20.0367298 -4.32197,6.06215 -10.62508,10.80121 -18.1162,13.62085 -2.85777,1.07567 -8.407311,2.18007 -10.954671,2.18007 l -2.0648398,0 z" sodipodi:nodetypes="cccccccssccccssscc"></path>
+        </svg>
+        <svg class="spinner" width="174px" height="174px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+            <circle class="path" fill="transparent" stroke-width="3" cx="33" cy="33" r="30" stroke="url(#gradient)"/>
+                <linearGradient id="gradient">
+                    <stop offset="50%" stop-color="#ffffff" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                </linearGradient>
+            </circle>
+            <svg class="spinner-dot dot" width="5px" height="5px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg" x="37" y="1.5">
+                <circle class="path" fill="#3e6da9" cx="33" cy="33" r="30"/>
+                </circle>
+            </svg>
+        </svg>
+
+        <svg class="spinner2" width="174px" height="174px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+            <circle class="path" fill="transparent" stroke-width="3" cx="33" cy="33" r="30" stroke="url(#gradient)"/>
+               <linearGradient id="gradient">
+                    <stop offset="50%" stop-color="#ffffff" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+               </linearGradient>
+            </circle>
+            <svg class="spinner-dot dot" width="5px" height="5px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg" x="37" y="1.5">
+                <circle class="path" fill="#3e6da9" cx="33" cy="33" r="30"/>
+                </circle>
+            </svg>
+        </svg>
+
+        <svg class="spinner3" width="174px" height="174px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+            <circle class="path" fill="transparent" stroke-width="3" cx="33" cy="33" r="30" stroke="url(#gradient)"/>
+               <linearGradient id="gradient">
+                    <stop offset="50%" stop-color="#ffffff" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+               </linearGradient>
+            </circle>
+            <svg class="spinner-dot dot" width="5px" height="5px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg" x="37" y="1.5">
+                <circle class="path" fill="#3e6da9" cx="33" cy="33" r="30"/>
+                </circle>
+            </svg>
+        </svg>
+
+         <div id="container">
+            <div class="label">starting jamovi...</div>
+            <div id="msg">start-up is slow, <span><i><a href="www.jamovi.org/startup-is-slow.html">what can cause this?</a></i></span></div>
+         </div>
+    </div>
   </body>
 </html>
