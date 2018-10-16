@@ -15,7 +15,6 @@ const GridTextbox = function(params) {
     GridOptionControl.extendTo(this, params);
     this.registerSimpleProperty('format', FormatDef.string);
     this.registerSimpleProperty('suffix', null);
-    this.registerSimpleProperty('inputPattern', null);
     this.registerSimpleProperty('borderless', false);
     this.registerSimpleProperty('alignText', 'left', new EnumPropertyFilter(['left', 'center', 'right'], 'left'));
     this.registerSimpleProperty('width', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'largest'], 'normal'));
@@ -74,9 +73,12 @@ const GridTextbox = function(params) {
         this.$suggestValues = $(dd);
 
         let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
-        let inputPattern = this.getPropertyValue('inputPattern');
-        if (inputPattern !== null)
-            t += ' pattern="'+ inputPattern + '"';
+
+        // this code block has been commented out because of a bug in electron 3.X that caused a crash if
+        // the validation failed.
+        /*let format = this.getPropertyValue('format');
+        if (format.name === 'number')
+            t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';*/
         t += '>';
 
         this.$input = $(t);
