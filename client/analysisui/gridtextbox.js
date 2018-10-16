@@ -73,10 +73,13 @@ const GridTextbox = function(params) {
         this.$suggestValues = $(dd);
 
         let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
-        let format = this.getPropertyValue('format');
-        if (format === 'number')
-            t += ' pattern="^\\-?[0-9]*\\.?[0-9]+$"';
-        t += '>';
+
+        // this code block has been commented out because of a bug in electron 3.X that caused a crash if
+        // the validation failed.
+        /*let format = this.getPropertyValue('format');
+        if (format.name === 'number')
+            t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';
+        t += '>';*/
 
         this.$input = $(t);
         if (this.getPropertyValue('stretchFactor') === 0)
