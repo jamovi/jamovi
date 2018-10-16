@@ -78,8 +78,8 @@ const GridTextbox = function(params) {
         // the validation failed.
         /*let format = this.getPropertyValue('format');
         if (format.name === 'number')
-            t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';
-        t += '>';*/
+            t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';*/
+        t += '>';
 
         this.$input = $(t);
         if (this.getPropertyValue('stretchFactor') === 0)
