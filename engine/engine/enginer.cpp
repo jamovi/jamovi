@@ -418,6 +418,9 @@ void EngineR::initR()
 
     // calls to methods functions on windows fail without this
     _rInside->parseEvalQNT("suppressPackageStartupMessages(library('methods'))");
+
+    // preload jmv
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(requireNamespace('jmv'))");
 }
 
 string EngineR::makeAbsolute(const string &paths)
