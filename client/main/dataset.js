@@ -1611,6 +1611,8 @@ const DataSetViewModel = DataSetModel.extend({
 
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
 
+            this._processColumnData(datasetPB);
+
             let viewport = {
                 top:    datasetPB.rowStart,
                 bottom: datasetPB.rowEnd,
