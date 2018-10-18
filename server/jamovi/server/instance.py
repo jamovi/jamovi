@@ -1427,7 +1427,7 @@ class Instance:
         reparse = set()
         recalc = set()  # computed columns that need to update from these changes
 
-        for i in range(self._data.column_count, col_start_index):
+        for i in range(self._data.column_count, col_start_index + col_count):
             column = self._data[i]
             column.realise()
             cols_changed.add(column)
