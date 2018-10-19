@@ -1393,12 +1393,14 @@ class Instance:
             base_index = column.index + 1
             search_index = 0
 
-            if column.column_type == ColumnType.COMPUTED:
-                raise TypeError("Cannot assign to computed column '{}'".format(column.name))
-            elif column.column_type == ColumnType.RECODED:
-                raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
-            elif column.column_type == ColumnType.FILTER:
-                raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+            if col_count == 1:
+                if column.column_type == ColumnType.COMPUTED:
+                    raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+                elif column.column_type == ColumnType.RECODED:
+                    raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
+                elif column.column_type == ColumnType.FILTER:
+                    raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+
 
             if column.auto_measure:
                 continue  # skip checks
@@ -1442,6 +1444,9 @@ class Instance:
                 break
             base_index = column.index + 1
             search_index = 0
+
+            if column.column_type in { ColumnType.COMPUTED, ColumnType.RECODED, ColumnType.FILTER }:
+                continue
 
             column.column_type = ColumnType.DATA
             column.set_needs_recalc()  # invalidate dependent nodes
