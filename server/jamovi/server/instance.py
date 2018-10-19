@@ -1383,6 +1383,7 @@ class Instance:
         # check that the assignments are possible
         base_index = 0
         search_index = col_start
+        data_col_count = 0
         for i in range(col_count):
 
             column = self._get_column(search_index, base_index, exclude_hidden_cols)
@@ -1393,12 +1394,16 @@ class Instance:
             base_index = column.index + 1
             search_index = 0
 
-            if column.column_type == ColumnType.COMPUTED:
-                raise TypeError("Cannot assign to computed column '{}'".format(column.name))
-            elif column.column_type == ColumnType.RECODED:
-                raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
-            elif column.column_type == ColumnType.FILTER:
-                raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+            if column.column_type == ColumnType.DATA or column.column_type == ColumnType.NONE:
+                data_col_count += 1
+
+            if col_count == 1:
+                if column.column_type == ColumnType.COMPUTED:
+                    raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+                elif column.column_type == ColumnType.RECODED:
+                    raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
+                elif column.column_type == ColumnType.FILTER:
+                    raise TypeError("Cannot assign to filter column '{}'".format(column.name))
 
             if column.auto_measure:
                 continue  # skip checks
@@ -1415,6 +1420,8 @@ class Instance:
                     if value is not None and value != '' and not isinstance(value, int):
                         raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
 
+        if col_count > 0 and data_col_count == 0:
+            raise TypeError("Cannot assign to these columns.")
         # assign
 
         n_cols_before = self._data.total_column_count
@@ -1442,6 +1449,9 @@ class Instance:
                 break
             base_index = column.index + 1
             search_index = 0
+
+            if column.column_type in { ColumnType.COMPUTED, ColumnType.RECODED, ColumnType.FILTER }:
+                continue
 
             column.column_type = ColumnType.DATA
             column.set_needs_recalc()  # invalidate dependent nodes
