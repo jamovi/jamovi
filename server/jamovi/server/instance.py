@@ -1401,7 +1401,6 @@ class Instance:
                 elif column.column_type == ColumnType.FILTER:
                     raise TypeError("Cannot assign to filter column '{}'".format(column.name))
 
-
             if column.auto_measure:
                 continue  # skip checks
 
