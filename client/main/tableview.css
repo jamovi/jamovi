@@ -60,6 +60,11 @@
     transition: none ;
 }
 
+.cell-edited {
+    color: blue;
+    background-color: #0000ff08;
+}
+
 .jmv-table-container {
     position: relative ;
     overflow: auto ;

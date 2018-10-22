@@ -19,6 +19,7 @@ class InstanceModel:
         self._import_path = ''
         self._embedded_path = ''
         self._embedded_name = ''
+        self._edit_tracking_suspended = False
 
         self._columns = [ ]
         self._transforms = [ ]
@@ -188,15 +189,40 @@ class InstanceModel:
         self._columns.append(new_column)
         return new_column
 
+    def suspend_data_tracking(self):
+        self._edit_tracking_suspended = True
+
+    def resume_data_tracking(self):
+        self._edit_tracking_suspended = False
+
+    @property
+    def is_edit_tracking_suspended(self):
+        return self._edit_tracking_suspended
+
+    def set_cells_as_edited(self, column, row_start, row_end):
+        if self._edit_tracking_suspended is False:
+            column.cell_tracker.set_cells_as_edited(row_start, row_end)
+
     def set_row_count(self, count):
+        if self._edit_tracking_suspended is False:
+            if count > self._dataset.row_count:
+                for column in self:
+                    if column.column_type == ColumnType.DATA:
+                        column.cell_tracker.insert_rows(self._dataset.row_count, count - 1)
         self._dataset.set_row_count(count)
 
     def delete_rows(self, start, end):
         self._dataset.delete_rows(start, end)
+        if self._edit_tracking_suspended is False:
+            for column in self:
+                column.cell_tracker.remove_rows(start, end)
         self._recalc_all()
 
     def insert_rows(self, start, end):
         self._dataset.insert_rows(start, end)
+        for column in self:
+            if column.column_type == ColumnType.DATA:
+                column.cell_tracker.insert_rows(start, end)
         self._recalc_all()
 
     def insert_column(self, index, id=0):
@@ -288,6 +314,13 @@ class InstanceModel:
             return self._dataset.is_row_filtered(index)
         else:
             return False
+
+    @property
+    def has_edited_cells(self):
+        for column in self._columns:
+            if column.is_edited:
+                return True
+        return False
 
     @property
     def transforms(self):

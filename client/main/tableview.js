@@ -493,6 +493,13 @@ const TableView = SilkyView.extend({
             let $header = $(this.$headers[column.dIndex]);
             let $column = $(this.$columns[column.dIndex]);
 
+            let viewport = this.viewport;
+            let $cells  = $column.children();
+            for (let rowNo = viewport.top; rowNo <= viewport.bottom; rowNo++) {
+                let $cell = $($cells[rowNo - viewport.top]);
+                this.refreshCellColour($cell, column, rowNo);
+            }
+
             if (changes.levelsChanged || changes.measureTypeChanged || changes.dataTypeChanged || changes.columnTypeChanged) {
                 $header.attr('data-measuretype', column.measureType);
                 $header.attr('data-columntype', column.columnType);
@@ -2289,6 +2296,7 @@ const TableView = SilkyView.extend({
                         for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
                             let top   = rowNo * this._rowHeight;
                             let $cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
+                            this.refreshCellColour($cell, column, rowNo);
                             $column.append($cell);
                         }
                     }
@@ -2614,6 +2622,13 @@ const TableView = SilkyView.extend({
         }
 
     },
+    _isCellEdited(column, rowNo) {
+        for (let range of column.editedCellRanges) {
+            if (rowNo >= range.start && rowNo <= range.end)
+                return true;
+        }
+        return false;
+    },
     _cellsChanged(range) {
 
         let viewport = this.viewport;
@@ -2869,6 +2884,12 @@ const TableView = SilkyView.extend({
         }
 
     },
+    refreshCellColour($cell, columnInfo, rowNo) {
+        if (this._isCellEdited(columnInfo, rowNo))
+            $cell.addClass('cell-edited');
+        else
+            $cell.removeClass('cell-edited');
+    },
     refreshCells(oldViewport, newViewport) {
 
         let o = oldViewport;
@@ -2900,6 +2921,7 @@ const TableView = SilkyView.extend({
                     let rowNo = n.top + j;
                     let top   = rowNo * this._rowHeight;
                     let $cell = this._createCell(top, this._rowHeight, rowNo, i);
+                    this.refreshCellColour($cell, column, rowNo);
                     $column.append($cell);
                 }
             }
@@ -2924,6 +2946,7 @@ const TableView = SilkyView.extend({
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
                         let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour($cell, column, rowNo);
                         $column.append($cell);
                     }
                 }
@@ -2953,6 +2976,7 @@ const TableView = SilkyView.extend({
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
                         let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour($cell, column, rowNo);
                         $column.append($cell);
                     }
                 }
@@ -2982,6 +3006,7 @@ const TableView = SilkyView.extend({
                         let rowNo = o.bottom + j + 1;
                         let top   = rowNo * this._rowHeight;
                         let $cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour($cell, column, rowNo);
                         $column.append($cell);
                     }
                 }
@@ -3021,6 +3046,7 @@ const TableView = SilkyView.extend({
                         let rowNo = o.top - j - 1;
                         let top   = rowNo * this._rowHeight;
                         let $cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour($cell, column, rowNo);
                         $column.prepend($cell);
                     }
                 }
