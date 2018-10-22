@@ -1383,6 +1383,7 @@ class Instance:
         # check that the assignments are possible
         base_index = 0
         search_index = col_start
+        data_col_count = 0
         for i in range(col_count):
 
             column = self._get_column(search_index, base_index, exclude_hidden_cols)
@@ -1392,6 +1393,9 @@ class Instance:
 
             base_index = column.index + 1
             search_index = 0
+
+            if column.column_type == ColumnType.DATA or column.column_type == ColumnType.NONE:
+                data_col_count += 1
 
             if col_count == 1:
                 if column.column_type == ColumnType.COMPUTED:
@@ -1416,6 +1420,8 @@ class Instance:
                     if value is not None and value != '' and not isinstance(value, int):
                         raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
 
+        if col_count > 0 and data_col_count == 0:
+            raise TypeError("Cannot assign to these columns.")
         # assign
 
         n_cols_before = self._data.total_column_count
