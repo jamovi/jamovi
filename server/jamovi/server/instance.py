@@ -503,6 +503,8 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
+        self._data.begin_edit_tracking()
+
     def _open_callback(self, task, progress):
         response = jcoms.ComsMessage()
         response.open.status = jcoms.Status.Value('IN_PROGRESS')
@@ -745,6 +747,9 @@ class Instance:
             column.trim_levels = column_pb.trimLevels
             column.transform = column_pb.transform
             column.parent_id = column_pb.parentId
+
+            if column.column_type == ColumnType.DATA:
+                self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
             name = column_pb.name
             if has_name is False and column.column_type == ColumnType.RECODED:
@@ -1075,6 +1080,7 @@ class Instance:
                 column = self._data[i]
                 column.realise()
                 cols_changed.add(column)
+                self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
             for column_pb in request.schema.columns:
                 column = self._data.get_column_by_id(column_pb.id)
@@ -1102,6 +1108,8 @@ class Instance:
 
                 if column.column_type is ColumnType.NONE:
                     column.column_type = ColumnType(column_pb.columnType)
+                    if column.column_type == ColumnType.DATA:
+                        self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
                 if column.column_type is ColumnType.DATA:
                     column.change(
@@ -1438,6 +1446,7 @@ class Instance:
             column = self._data[i]
             column.realise()
             cols_changed.add(column)
+            self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
         base_index = 0
         search_index = col_start
@@ -1549,6 +1558,9 @@ class Instance:
                         column.set_value(row_start + j, index)
                     else:
                         raise RuntimeError('Should not get here')
+
+            self._data.set_cells_as_edited(column, row_start, row_start + row_count - 1)
+            cols_changed.add(column)
 
             if column.auto_measure:
                 self._auto_adjust(column)
@@ -1763,6 +1775,12 @@ class Instance:
                 level_pb.value = level[0]
                 level_pb.label = level[1]
                 level_pb.importValue = level[2]
+
+        if column.cell_tracker.is_edited:
+            for range in column.cell_tracker.edited_cell_ranges:
+                cell_range_pb = column_schema.editedCellRanges.add()
+                cell_range_pb.start = range['start']
+                cell_range_pb.end = range['end']
 
     def _add_to_recents(self, path):
 

@@ -7,6 +7,7 @@ from jamovi.core import ColumnType
 from jamovi.core import MeasureType
 from jamovi.core import DataType
 
+from .celltracker import CellTracker
 from .compute import Parser
 from .compute import FormulaStatus
 from .compute import Transmogrifier
@@ -35,6 +36,7 @@ class Column:
         self._filter_no = -1
         self._transform = 0  # zero mean 'none'
         self._parent_id = 0  # zero means 'none'
+        self._cell_tracker = CellTracker()
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -62,6 +64,10 @@ class Column:
             return self._child[index]
         else:
             return (-2147483648, '')
+
+    @property
+    def cell_tracker(self):
+        return self._cell_tracker
 
     def fvalue(self, index, row_count, filt):
         if self._child is not None:

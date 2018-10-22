@@ -359,6 +359,11 @@ message VariableLevel {
     string importValue = 3;
 }
 
+message ColumnCellRange {
+    int32 start = 1;
+    int32 end = 2;
+}
+
 enum ColumnType {
     NONE = 0;
     DATA = 1;
@@ -406,6 +411,7 @@ message DataSetSchema {
         bool trimLevels = 19;
         int32 transform = 20;
         int32 parentId = 21;
+        repeated ColumnCellRange editedCellRanges = 22;
     }
 
     message TransformSchema {

@@ -350,7 +350,7 @@ const DataSetModel = Backbone.Model.extend({
 
                 let columns = this.attributes.columns;
                 datasetPB.schema.columns.sort((a,b) => a.index - b.index );
-                
+
                 for (let i = 0; i < datasetPB.schema.columns.length; i++) {
                     let columnPB = datasetPB.schema.columns[i];
                     let id = columnPB.id;
@@ -1026,6 +1026,13 @@ const DataSetModel = Backbone.Model.extend({
         column.trimLevels = columnPB.trimLevels;
         column.transform = columnPB.transform;
         column.parentId = columnPB.parentId;
+
+        let editedCellRanges = new Array(columnPB.editedCellRanges.length);
+        for (let i = 0; i < editedCellRanges.length; i++) {
+            let rangePB = columnPB.editedCellRanges[i];
+            editedCellRanges[i] = { start: rangePB.start, end: rangePB.end };
+        }
+        column.editedCellRanges = editedCellRanges;
 
         let levels = null;
         if (columnPB.hasLevels) {

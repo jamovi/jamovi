@@ -60,6 +60,11 @@
     transition: none ;
 }
 
+.cell-edited {
+    color: #376095;
+    background-color: rgba(55, 96, 149, .06);
+}
+
 .jmv-table-container {
     position: relative ;
     overflow: auto ;

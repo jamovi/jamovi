@@ -72,6 +72,7 @@ def write(data, path, html=None):
             field['importName'] = column.import_name
             field['description'] = column.description
             field['transform'] = column.transform
+            field['edits'] = column.edited_cell_ranges
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
@@ -334,6 +335,7 @@ def read(data, path, prog_cb):
             column.description = meta_column.get('description', '')
             column.transform = meta_column.get('transform', 0)
             column.parent_id = meta_column.get('parentId', 0)
+            column.edited_cell_ranges = meta_column.get('edits', [])
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)
