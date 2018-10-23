@@ -189,15 +189,8 @@ class InstanceModel:
         self._columns.append(new_column)
         return new_column
 
-    def suspend_data_tracking(self):
-        self._edit_tracking_suspended = True
-
-    def resume_data_tracking(self):
+    def begin_edit_tracking(self):
         self._edit_tracking_suspended = False
-
-    @property
-    def is_edit_tracking_suspended(self):
-        return self._edit_tracking_suspended
 
     def set_cells_as_edited(self, column, row_start, row_end):
         if self._edit_tracking_suspended is False:

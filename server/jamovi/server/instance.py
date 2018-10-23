@@ -503,7 +503,7 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
-        self._data.resume_data_tracking()
+        self._data.begin_edit_tracking()
 
     def _open_callback(self, task, progress):
         response = jcoms.ComsMessage()
