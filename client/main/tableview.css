@@ -61,8 +61,8 @@
 }
 
 .cell-edited {
-    color: blue;
-    background-color: #0000ff08;
+    color: #376095;
+    background-color: rgba(55, 96, 149, .06);
 }
 
 .jmv-table-container {
