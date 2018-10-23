@@ -461,8 +461,6 @@ class Instance:
     def _on_open(self, request):
         path = request.filename
 
-        if path != '':
-            self._data.suspend_data_tracking()
         try:
             norm_path = Instance._normalise_path(path)
             virt_path = Instance._virtualise_path(path)
@@ -505,8 +503,7 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
-        if path != '':
-            self._data.resume_data_tracking()
+        self._data.resume_data_tracking()
 
     def _open_callback(self, task, progress):
         response = jcoms.ComsMessage()

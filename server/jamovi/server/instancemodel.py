@@ -19,7 +19,7 @@ class InstanceModel:
         self._import_path = ''
         self._embedded_path = ''
         self._embedded_name = ''
-        self._edit_tracking_suspended = False
+        self._edit_tracking_suspended = True
 
         self._columns = [ ]
         self._transforms = [ ]
