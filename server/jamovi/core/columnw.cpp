@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <iomanip>
+#include <cmath>
 
 #include "dataset.h"
 
@@ -865,7 +866,7 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
                 {
                     double value = src.dvalue(i);
                     if ( ! isnan(value))
-                        values.insert((int)(value * 1000));
+                        values.insert((int)round(value * 1000));
                 }
 
                 int count = 0;
