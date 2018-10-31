@@ -154,8 +154,8 @@ class Parser(ReadStatParser):
                 column.set_value(row_index, value)
             else:
                 column.set_value(row_index, '')
-        elif (column.measure_type is MeasureType.NOMINAL or
-                column.measure_type is MeasureType.ORDINAL):
+        elif (column.measure_type is MeasureType.NOMINAL
+                or column.measure_type is MeasureType.ORDINAL):
             if isinstance(value, Number):
                 if not math.isclose(float(value) % 1.0, 0.0):
                     column.change(data_type=DataType.DECIMAL)

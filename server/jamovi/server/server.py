@@ -225,8 +225,8 @@ class DatasetsList(RequestHandler):
 
 class Server:
 
-    ETRON_RESP_REGEX = re.compile('^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
-    ETRON_NOTF_REGEX = re.compile('^notification: ([a-z-]+) ?(.*)\n?$')
+    ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
+    ETRON_NOTF_REGEX = re.compile(r'^notification: ([a-z-]+) ?(.*)\n?$')
 
     def __init__(self, port, host='127.0.0.1', slave=False, stdin_slave=False, debug=False):
 

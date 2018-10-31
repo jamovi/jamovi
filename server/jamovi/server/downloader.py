@@ -48,7 +48,7 @@ class Download:
                 self._callback('error', e)
 
     def _header_callback(self, line):
-        match = re.match('Content-Length:[\s]*([0-9]+)', line)
+        match = re.match(r'Content-Length:[\s]*([0-9]+)', line)
         if match:
             self._size = int(match.group(1))
 

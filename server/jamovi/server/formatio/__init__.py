@@ -183,7 +183,7 @@ def _should_embed(path):
     elif import_cond == 'always':
         return True
     else:
-        m = re.compile('^\< ([1-9][0-9]*) ([KMB])b$', re.IGNORECASE).match(import_cond)
+        m = re.compile(r'^\< ([1-9][0-9]*) ([KMB])b$', re.IGNORECASE).match(import_cond)
         if m is None:
             return False
 

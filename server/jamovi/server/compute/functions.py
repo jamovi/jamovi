@@ -21,7 +21,7 @@ NaN = float('nan')
 
 
 @row_wise
-def MEAN(index, arg0: float, *args: float, ignore_missing: int=0):
+def MEAN(index, arg0: float, *args: float, ignore_missing: int = 0):
     values = [ arg0 ]
     values.extend(args)
     if ignore_missing != 0:
@@ -30,7 +30,7 @@ def MEAN(index, arg0: float, *args: float, ignore_missing: int=0):
 
 
 @row_wise
-def SUM(index, arg0: float, *args: float, ignore_missing: int=0):
+def SUM(index, arg0: float, *args: float, ignore_missing: int = 0):
     values = [ arg0 ]
     values.extend(args)
     if ignore_missing != 0:
@@ -67,22 +67,22 @@ def SQRT(index, value: float):
 
 
 @row_wise
-def UNIF(index, a: float=0.0, b: float=1.0):
+def UNIF(index, a: float = 0.0, b: float = 1.0):
     return random.uniform(a, b)
 
 
 @row_wise
-def NORM(index, mu: float=0.0, sd: float=1.0):
+def NORM(index, mu: float = 0.0, sd: float = 1.0):
     return random.gauss(mu, sd)
 
 
 @row_wise
-def BETA(index, alpha: float=1.0, beta: float=1.0):
+def BETA(index, alpha: float = 1.0, beta: float = 1.0):
     return random.betavariate(alpha, beta)
 
 
 @row_wise
-def GAMMA(index, alpha: float=1.0, beta: float=1.0):
+def GAMMA(index, alpha: float = 1.0, beta: float = 1.0):
     return random.gammavariate(alpha, beta)
 
 
@@ -166,7 +166,7 @@ def VBOXCOXLAMBDA(values: float):
 
 
 @row_wise
-def BOXCOX(index, x: float, lmbda: float=VBOXCOXLAMBDA):
+def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
     # numpy returns numpy.float64, so need to convert back to float
     return float(boxcox(x=x, lmbda=lmbda))
 
