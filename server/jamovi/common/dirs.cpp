@@ -15,6 +15,7 @@
 #include "macdirs.h"
 #else
 #include <pwd.h>
+#include "xdg-user-dir-lookup.c"
 #endif
 
 #include <sstream>
@@ -308,8 +309,11 @@ string Dirs::documentsDir()
         if (cpath == NULL)
             throwError("Could not retrieve documents directory", 0);
         dir = cpath;
-#else
-        dir = homeDir() + "/Documents";
+#else // linux
+        string fallback = homeDir() + "/Documents";
+        char *path = xdg_user_dir_lookup_with_fallback("DOCUMENTS", fallback.c_str());
+        dir = path;
+        free(path);
 #endif
 
 #ifdef _WIN32
