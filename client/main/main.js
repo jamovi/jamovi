@@ -34,7 +34,7 @@ let backstageModel = new BackstageModel({ instance: instance });
 let modules = new Modules({ instance: instance });
 let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
 
-coms.on('close', function() {
+coms.on('failure', function() {
     window.alert('Connection lost\n\nThe processing engine has ended unexpectedly.\nThis jamovi window will now close down. Sorry for the inconvenience.\n\nIf you could report your experiences to the jamovi team, that would be appreciated.');
     host.closeWindow(true);
 });

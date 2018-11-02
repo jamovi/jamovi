@@ -65,10 +65,11 @@ Coms.prototype.connect = function(sessionId) {
                 };
 
                 this._ws.onerror = reject;
-                this._ws.onclose = (msg) => {
+                this._ws.onclose = (event) => {
                     console.log('websocket closed!');
-                    console.log(msg);
-                    this._notifyEvent('close');
+                    if (event.code !== 1000 && event.code !== 1001)
+                        this._notifyEvent('failure');
+                    this._notifyEvent('closed');
                 };
             })
         ]);
