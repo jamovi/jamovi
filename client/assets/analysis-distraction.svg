@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 22.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1"
+	 id="svg13659" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 74 44"
+	 style="enable-background:new 0 0 74 44;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#3E6DA9;stroke-miterlimit:10;}
+	.st1{fill:none;stroke:#3E6DA9;stroke-miterlimit:10;stroke-dasharray:1.8555,1.8555;}
+	.st2{clip-path:url(#SVGID_2_);fill:#6B9DE8;stroke:#3E6DA9;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#3E6DA9;stroke-width:0.5;stroke-miterlimit:10;}
+	.st4{fill:none;stroke:#9F9F9F;stroke-width:2;}
+</style>
+<g>
+	<g>
+		<line class="st0" x1="52.7" y1="24.6" x2="52.7" y2="25.6"/>
+		<line class="st1" x1="52.7" y1="27.5" x2="52.7" y2="37.7"/>
+		<line class="st0" x1="52.7" y1="38.6" x2="52.7" y2="39.6"/>
+	</g>
+</g>
+<g>
+	<defs>
+		<rect id="SVGID_1_" x="-5" y="-2.1" width="42" height="47.8"/>
+	</defs>
+	<clipPath id="SVGID_2_">
+		<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+	</clipPath>
+	<path class="st2" d="M67.1,40.7C52.4,40.7,50.3,2.8,37,2.8S21.8,40.7,6.9,40.7"/>
+</g>
+<g>
+	<g>
+		<line class="st0" x1="21.3" y1="24.6" x2="21.3" y2="25.6"/>
+		<line class="st1" x1="21.3" y1="27.5" x2="21.3" y2="37.7"/>
+		<line class="st0" x1="21.3" y1="38.6" x2="21.3" y2="39.6"/>
+	</g>
+</g>
+<path class="st0" d="M67.1,40.7C52.4,40.7,50.3,2.8,37,2.8S21.8,40.7,6.9,40.7"/>
+<line class="st3" x1="37" y1="2.8" x2="37" y2="41.1"/>
+<line class="st4" x1="0.9" y1="41.1" x2="73.1" y2="41.1"/>
+</svg>
