@@ -55,6 +55,10 @@
     background-image: url('assets/analysis-statkat.svg');
 }
 
+.jmv-ribbon-button[data-name=distraction] .jmv-ribbon-button-icon {
+    background-image: url('assets/analysis-distraction.svg');
+}
+
 .jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-more.svg');
 }
