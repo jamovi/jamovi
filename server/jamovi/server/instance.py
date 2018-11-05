@@ -34,6 +34,7 @@ import yaml
 import logging
 import time
 import asyncio
+import functools
 
 from .utils import fs
 
@@ -211,13 +212,13 @@ class Instance:
     def get_path_to_resource(self, resourceId):
         return os.path.join(self._data.instance_path, resourceId)
 
-    def on_request(self, request):
+    async def on_request(self, request):
         if type(request) == jcoms.DataSetRR:
             self._on_dataset(request)
         elif type(request) == jcoms.OpenRequest:
-            self._on_open(request)
+            await self._on_open(request)
         elif type(request) == jcoms.SaveRequest:
-            self._on_save(request)
+            await self._on_save(request)
         elif type(request) == jcoms.InfoRequest:
             self._on_info(request)
         elif type(request) == jcoms.SettingsRequest:
@@ -365,7 +366,7 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
-    def _on_save(self, request):
+    async def _on_save(self, request):
         path = request.filename
         path = Instance._normalise_path(path)
 
@@ -373,7 +374,7 @@ class Instance:
             file_exists = os.path.isfile(path)
             if file_exists is False or request.overwrite is True:
                 if path.endswith('.omv'):
-                    self._on_save_everything(request)
+                    await self._on_save_everything(request)
                 elif request.incContent:
                     self._on_save_content(request)
                 elif request.part != '':
@@ -411,13 +412,14 @@ class Instance:
         response.success = True
         self._coms.send(response, self._instance_id, request)
 
-    def _on_save_everything(self, request):
+    async def _on_save_everything(self, request):
         path = request.filename
         path = Instance._normalise_path(path)
         is_export = request.export
         content = request.content
 
-        formatio.write(self._data, path, content)
+        ioloop = asyncio.get_event_loop()
+        await ioloop.run_in_executor(None, formatio.write, self._data, path, content)
 
         if not is_export:
             self._data.title = os.path.splitext(os.path.basename(path))[0]
@@ -458,7 +460,7 @@ class Instance:
         except Exception as e:
             self._coms.send_error('Unable to save', str(e), self._instance_id, request)
 
-    def _on_open(self, request):
+    async def _on_open(self, request):
         path = request.filename
 
         try:
@@ -472,14 +474,16 @@ class Instance:
 
             is_example = path.startswith('{{Examples}}')
 
-            def prog_cb(p):
-                self._coms.send(None,
-                                self._instance_id,
-                                request,
-                                complete=False,
-                                progress=(1000 * p, 1000))
+            ioloop = asyncio.get_event_loop()
 
-            formatio.read(self._data, norm_path, prog_cb, is_example)
+            def prog_cb(p):
+                coms = self._coms
+                ioloop.call_soon_threadsafe(
+                    functools.partial(
+                        coms.send, None, self._instance_id, request,
+                        complete=False, progress=(1000 * p, 1000)))
+
+            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example)
 
             response = jcoms.OpenProgress()
             response.path = virt_path

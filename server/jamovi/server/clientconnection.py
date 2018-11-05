@@ -6,6 +6,7 @@ from tornado.websocket import WebSocketHandler
 
 from . import jamovi_pb2 as jcoms
 from .instance import Instance
+import asyncio
 
 import logging
 
@@ -35,6 +36,9 @@ class ClientConnection(WebSocketHandler):
             listener()
 
     def on_message(self, m_bytes):
+        asyncio.ensure_future(self.on_message_async(m_bytes))
+
+    async def on_message_async(self, m_bytes):
         try:
             message = jcoms.ComsMessage()
             message.ParseFromString(m_bytes)
@@ -53,7 +57,7 @@ class ClientConnection(WebSocketHandler):
                 self.send(response, instance.id, request)
             else:
                 instance = Instance.instances[message.instanceId]
-                instance.on_request(request)
+                await instance.on_request(request)
         except Exception as e:
             # would be nice to send_error()
             log.exception(e)
