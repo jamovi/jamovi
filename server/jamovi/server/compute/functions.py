@@ -21,12 +21,28 @@ NaN = float('nan')
 
 
 @row_wise
+def MAX(index, arg0: float, *args: float):
+    values = [ arg0 ]
+    values.extend(args)
+    values = list(filter(lambda x: not is_missing(x), values))
+    return max(values)
+
+
+@row_wise
 def MEAN(index, arg0: float, *args: float, ignore_missing: int = 0):
     values = [ arg0 ]
     values.extend(args)
     if ignore_missing != 0:
         values = list(filter(lambda x: not is_missing(x), values))
     return stats.mean(values)
+
+
+@row_wise
+def MIN(index, arg0: float, *args: float):
+    values = [ arg0 ]
+    values.extend(args)
+    values = list(filter(lambda x: not is_missing(x), values))
+    return min(values)
 
 
 @row_wise
@@ -155,6 +171,18 @@ def VSUM(values: float):
 @returns(DataType.INTEGER, MeasureType.ORDINAL)
 def VROWS(values):
     return sum(1 for _ in values)
+
+
+@column_wise
+def VMIN(values: float):
+    values = filter(lambda x: not math.isnan(x), values)
+    return min(values)
+
+
+@column_wise
+def VMAX(values: float):
+    values = filter(lambda x: not math.isnan(x), values)
+    return max(values)
 
 
 @column_wise
