@@ -321,6 +321,17 @@ void EngineR::initR()
     nowide::setenv("R_LIBS_SITE", "something-which-doesnt-exist", 1);
     nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
 
+#ifdef _WIN32
+    // ensure C:\Windows\System32 is on the path
+    // necessary for stan, because it invokes the compiler via cmd.exe
+    string path;
+    char *cPath = nowide::getenv("PATH");
+    if (cPath != NULL)
+        path = cPath;
+    path += ";C:\\Windows\\System32";
+    nowide::setenv("PATH", path.c_str(), 1);
+#endif
+
     _rInside = new RInside();
 
     // set english locale (the arrogance!)
