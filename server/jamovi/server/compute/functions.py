@@ -46,6 +46,15 @@ def MIN(index, arg0: float, *args: float):
 
 
 @row_wise
+def STDEV(index, arg0: float, *args: float, ignore_missing: int = 0):
+    values = [ arg0 ]
+    values.extend(args)
+    if ignore_missing != 0:
+        values = list(filter(lambda x: not is_missing(x), values))
+    return stats.stdev(values)
+
+
+@row_wise
 def SUM(index, arg0: float, *args: float, ignore_missing: int = 0):
     values = [ arg0 ]
     values.extend(args)
@@ -134,6 +143,15 @@ def VSTDEV(values: float):
 def VSE(values: float):
     values = filter(lambda x: not math.isnan(x), values)
     return stats.pstdev(values)
+
+
+@row_wise
+def VAR(index, arg0: float, *args: float, ignore_missing: int = 0):
+    values = [ arg0 ]
+    values.extend(args)
+    if ignore_missing != 0:
+        values = list(filter(lambda x: not is_missing(x), values))
+    return stats.variance(values)
 
 
 @column_wise

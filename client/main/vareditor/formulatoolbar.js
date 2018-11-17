@@ -68,6 +68,8 @@ function allFunctions($functionsContent) {
     descriptions.MIN = { label: 'MIN( <i>variable</i> )', content: 'Returns the smallest value of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
     descriptions.SCALE = { label: 'SCALE( <i>variable</i> )', content: 'Returns the normalized values of a set of numbers.' };
+    $functionsContent.append($('<div class="item" data-name="STDEV">STDEV</div>'));
+    descriptions.STDEV = { label: 'STDEV( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the standard deviation of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
     descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the sum of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VMAX">VMAX</div>'));
@@ -88,6 +90,8 @@ function allFunctions($functionsContent) {
     descriptions.VSTDEV = { label: 'VSTDEV( <i>variable</i> )', content: 'Returns the standard deviation of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VSUM">VSUM</div>'));
     descriptions.VSUM = { label: 'VSUM( <i>variable</i> )', content: 'Returns the overall sum of a variable.' };
+    $functionsContent.append($('<div class="item" data-name="VAR">VAR</div>'));
+    descriptions.VAR = { label: 'VAR( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the variance of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
     descriptions.VVAR = { label: 'VVAR( <i>variable</i> )', content: 'Returns the variance of a variable.' };
     $functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
