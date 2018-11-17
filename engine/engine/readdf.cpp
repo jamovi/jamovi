@@ -61,6 +61,16 @@ DataFrame readDF(
     if (Rf_isNull(columnsReq))
     {
         readAllColumns = true;
+
+        // but not filters
+        for (int i = 0; i < dataset.columnCount(); i++)
+        {
+            if (dataset[i].columnType() == ColumnType::FILTER)
+                columnCount--;
+            else
+                break; // filters are only at the beginning of the dataset
+        }
+
         columns = List(columnCount);
         columnNames = CharacterVector(columnCount);
     }
@@ -89,10 +99,19 @@ DataFrame readDF(
             if ( ! required)
                 continue;
         }
+        else
+        {
+            if (column.columnType() == ColumnType::FILTER)
+                continue;
+        }
 
         columnNames[colNo] = String(columnName);
 
-        if (column.dataType() == DataType::DECIMAL)
+        if (column.columnType() == ColumnType::FILTER)
+        {
+            columns[colNo] = LogicalVector(rowCountExFiltered, true);
+        }
+        else if (column.dataType() == DataType::DECIMAL)
         {
             NumericVector v(rowCountExFiltered, NumericVector::get_na());
             rowNo = 0;
