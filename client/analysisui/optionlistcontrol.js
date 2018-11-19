@@ -286,17 +286,19 @@ const OptionListControl = function(params) {
 
             let hadAddButton = this.getPropertyValue("addButton") !== null;
             if (hadAddButton) {
-                let $closeButton = $('<div class="list-item-delete-button"><span class="mif-cross"></span></div>');
-                $closeButton.click((event) => {
-                    let selectedIndices = this.getSelectedRowIndices();
-                    this.getOption().removeAt(ctrl.getItemKey());
-                    this.setSelectedRowIndices(selectedIndices);
-                });
-                $closeButton.on("mousedown", null, this, (event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
-                });
-                ctrl.$el.prepend($closeButton);
+                if (columnInfo === this._columnInfo._list[this._columnInfo._list.length - 1]) {
+                    let $closeButton = $('<div class="list-item-delete-button"><span class="mif-cross"></span></div>');
+                    $closeButton.click((event) => {
+                        let selectedIndices = this.getSelectedRowIndices();
+                        this.getOption().removeAt(ctrl.getItemKey());
+                        this.setSelectedRowIndices(selectedIndices);
+                    });
+                    $closeButton.on("mousedown", null, this, (event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                    });
+                    ctrl.$el.prepend($closeButton);
+                }
             }
 
             cell.clickable(columnInfo.selectable);
@@ -508,7 +510,7 @@ const OptionListControl = function(params) {
 
             let defaultValue = columns[i].template.default;
 
-            if (defaultValue === undefined)
+            if (defaultValue === undefined && columns[i].format)
                 defaultValue = columns[i].format.default;
 
             if (defaultValue === undefined)

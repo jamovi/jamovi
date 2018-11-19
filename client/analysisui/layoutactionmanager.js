@@ -341,6 +341,8 @@ const LayoutActionManager = function(view) {
         else
             useId = null;
 
+        let hasNewActions = false;
+
         if (events !== null && Array.isArray(events)) {
             for (let i = 0; i < events.length; i++) {
                 let execute = events[i].execute;
@@ -369,7 +371,24 @@ const LayoutActionManager = function(view) {
                 this.addDirectAction(useId, params);
             }
 
-            if (this._initialised) {
+            hasNewActions = true;
+        }
+
+        if (this._initialised) {
+            if (resource.properties !== undefined) {
+                for (let property in resource.properties) {
+                    let prop = resource.properties[property];
+                    if (prop.binding !== undefined) {
+                        let resolvedBindData = this._resolveBinding(prop.binding.trim(), 0);
+                        let params = this.bindActionParams(resource, property, resolvedBindData);
+                        this.addDirectAction(resId, params, true);
+                        params.execute(this._resources);
+                        hasNewActions = true;
+                    }
+                }
+            }
+
+            if (hasNewActions) {
                 for (let action of this._actions)
                     action.tryConnectTo(useId, resource);
 
