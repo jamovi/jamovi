@@ -127,18 +127,30 @@ if (argvCmd.exit) {
     process.exit(0);
 }
 
-let firstInstance = app.requestSingleInstanceLock();
-
-if ( ! firstInstance) {
-    app.quit();
-    process.exit(0);
+if (app.requestSingleInstanceLock) {
+    let firstInstance = app.requestSingleInstanceLock();
+    if ( ! firstInstance) {
+        app.quit();
+        process.exit(0);
+    }
+    else {
+        app.on('second-instance', (e, argv, wd) => {
+            argv.shift(); // remove exe
+            let cmd = marshallArgs(argv, wd);
+            handleCommand(cmd);
+        });
+    }
 }
 else {
-    app.on('second-instance', (e, argv, wd) => {
+    let secondInstance = app.makeSingleInstance((argv, wd) => {
         argv.shift(); // remove exe
         let cmd = marshallArgs(argv, wd);
         handleCommand(cmd);
     });
+    if (secondInstance) {
+        app.quit();
+        process.exit(0);
+    }
 }
 
 const BrowserWindow = electron.BrowserWindow;
