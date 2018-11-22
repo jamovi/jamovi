@@ -15,6 +15,15 @@ from .downloader import Downloader
 log = logging.getLogger('jamovi')
 
 
+class DataSetMeta:
+    def __init__(self):
+        self.module = None
+        self.name = None
+        self.title = None
+        self.description = None
+        self.tags = [ ]
+
+
 class ModuleMeta:
     def __init__(self):
         self.name = None
@@ -23,6 +32,7 @@ class ModuleMeta:
         self.description = None
         self.authors = [ ]
         self.analyses = [ ]
+        self.datasets = [ ]
         self.path = None
         self.is_sys = False
         self.new = False
@@ -60,6 +70,12 @@ class Modules:
         self._original = None
 
     def get(self, name):
+        for module in self._modules:
+            if module.name == name:
+                return module
+        raise KeyError()
+
+    def __getitem__(self, name):
         for module in self._modules:
             if module.name == name:
                 return module
@@ -253,5 +269,15 @@ class Modules:
                     analysis.menuSubtitle = analysis_defn['menuSubtitle']
 
                 module.analyses.append(analysis)
+
+        if 'datasets' in defn:
+            for dataset_defn in defn['datasets']:
+                dataset = DataSetMeta()
+                dataset.name = dataset_defn['name']
+                dataset.path = dataset_defn['path']
+                dataset.description = dataset_defn['description']
+                if 'tags' in dataset_defn:
+                    dataset.tags[:] = dataset_defn['tags']
+                module.datasets.append(dataset)
 
         return module

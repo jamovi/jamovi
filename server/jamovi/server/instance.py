@@ -132,7 +132,24 @@ class Instance:
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
         elif path.startswith('{{Examples}}'):
-            nor_path = path.replace('{{Examples}}', conf.get('examples_path'))
+            examples_path = conf.get('examples_path')
+            if path == '{{Examples}}':
+                nor_path = examples_path
+            elif os.path.dirname(path) == '{{Examples}}':
+                # {{Examples}}/file_name.ext
+                nor_path = path.replace('{{Examples}}', examples_path)
+            else:
+                # {{Examples}}/module_name/[file_name.ext]
+                file_name = os.path.basename(path)
+                module_name = os.path.basename(os.path.dirname(path))
+                modules = Modules.instance()
+                try:
+                    module = modules[module_name]
+                    nor_path = os.path.join(module.path, 'data', file_name)
+                except KeyError:
+                    # return something default-y, let somewhere else error
+                    nor_path = path.replace('{{Examples}}', examples_path)
+
         return nor_path
 
     def _virtualise_path(path):
@@ -300,6 +317,11 @@ class Instance:
                 except BaseException:
                     pass
 
+                entry = response.contents.add()
+                entry.name = 'Examples'
+                entry.path = '{{Examples}}'
+                entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
+
                 if platform.uname().system == 'Windows':
                     for drive_letter in range(ord('A'), ord('Z') + 1):
                         drive = chr(drive_letter) + ':'
@@ -313,6 +335,44 @@ class Instance:
                     entry.name = '/'
                     entry.path = '/'
                     entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+
+                self._coms.send(response, self._instance_id, request)
+
+            elif path.startswith('{{Examples}}'):
+
+                if path == '{{Examples}}' or path == '{{Examples}}/':
+
+                    index_path = os.path.join(conf.get('examples_path'), 'index.yaml')
+                    with open(index_path, encoding='utf-8') as index:
+                        for dataset in yaml.safe_load(index):
+                            entry = response.contents.add()
+                            entry.name = dataset['name'] + '.csv'
+                            entry.path = posixpath.join('{{Examples}}', dataset['path'])
+                            entry.type = jcoms.FSEntry.Type.Value('FILE')
+                            entry.description = dataset['description']
+                            entry.isExample = True
+
+                    for module in Modules.instance():
+                        if module.datasets:
+                            entry = response.contents.add()
+                            entry.name = module.title
+                            entry.path = posixpath.join('{{Examples}}', module.name)
+                            entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                else:
+                    module_name = os.path.basename(path)
+                    modules = Modules.instance()
+                    try:
+                        module = modules[module_name]
+                        if module.datasets:
+                            for dataset in module.datasets:
+                                entry = response.contents.add()
+                                entry.name = dataset.name + '.csv'
+                                entry.path = posixpath.join('{{Examples}}', module_name, dataset.path)
+                                entry.description = dataset.description
+                                entry.tags[:] = dataset.tags
+                                entry.isExample = True
+                    except KeyError:
+                        pass
 
                 self._coms.send(response, self._instance_id, request)
 
