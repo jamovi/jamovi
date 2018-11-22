@@ -273,6 +273,9 @@ message FSEntry {
 
     Type type = 2;
     string name = 3;
+    string description = 4;
+    bool isExample = 8;
+    repeated string tags = 9;
 }
 
 message FSRequest {
