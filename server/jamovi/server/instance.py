@@ -346,7 +346,7 @@ class Instance:
                     with open(index_path, encoding='utf-8') as index:
                         for dataset in yaml.safe_load(index):
                             entry = response.contents.add()
-                            entry.name = dataset['name'] + '.csv'
+                            entry.name = dataset['name']
                             entry.path = posixpath.join('{{Examples}}', dataset['path'])
                             entry.type = jcoms.FSEntry.Type.Value('FILE')
                             entry.description = dataset['description']
@@ -366,7 +366,7 @@ class Instance:
                         if module.datasets:
                             for dataset in module.datasets:
                                 entry = response.contents.add()
-                                entry.name = dataset.name + '.csv'
+                                entry.name = dataset.name
                                 entry.path = posixpath.join('{{Examples}}', module_name, dataset.path)
                                 entry.description = dataset.description
                                 entry.tags[:] = dataset.tags

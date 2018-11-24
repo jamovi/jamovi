@@ -330,13 +330,15 @@ var FSEntryBrowserView = SilkyView.extend({
             var itemPath = item.path;
             var itemType = item.type;
 
-            if (itemType === FSItemType.File && this._hasValidExtension(name) === false)
+            if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
                 continue;
 
             html += '<div class="silky-bs-fslist-item">';
             html += '   <div class="silky-bs-flist-item-icon">';
             if (itemType === FSItemType.File) { //file
-                if (name.endsWith('.csv'))
+                if (item.isExample) // examples don't have extensions
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                else if (name.endsWith('.csv'))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
                 else if (name.endsWith('.omv'))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
@@ -352,7 +354,17 @@ var FSEntryBrowserView = SilkyView.extend({
             else if (itemType === FSItemType.Drive) //drive
                 html += '       <span class="mif-drive"></span>';
             html += '   </div>';
-            html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+
+            if (item.description) {
+                html += '   <div class="silky-bs-fslist-entry-group">';
+                html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+                html += '       <div class="silky-bs-fslist-entry-location">' + item.description + '</div>';
+                html += '   </div>';
+            }
+            else {
+                html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+            }
+
             html += '</div>';
 
             var $item = $(html);
