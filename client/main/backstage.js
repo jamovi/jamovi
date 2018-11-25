@@ -21,6 +21,9 @@ const ActionHub = require('./actionhub');
 const FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ],
+        error: '',
+        browseable: true,
+        extensions: true,
     },
     requestOpen : function(path, type) {
         this.trigger('dataSetOpenRequested', path, type);
@@ -263,7 +266,7 @@ var FSEntryBrowserView = SilkyView.extend({
         html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
 
-        if (host.isElectron) {
+        if (this.model.attributes.browseable && host.isElectron) {
             html += '       <div class="silky-bs-fslist-browse-button">';
             html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
             html += '           <span>Browse</span>';
@@ -281,18 +284,21 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        this.filterExtensions = this.model.fileExtensions[0].extensions;
         if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
             }, 50);
         }
 
-        this._createFooter();
+        if (this.model.attributes.extensions) {
+            this.filterExtensions = this.model.fileExtensions[0].extensions;
 
-        let extValue = this._validExtension(extension);
-        if (extValue != -1)
-            this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+            this._createFooter();
+
+            let extValue = this._validExtension(extension);
+            if (extValue != -1)
+                this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+        }
     },
     _nameKeypressHandle: function(event) {
 
@@ -579,8 +585,15 @@ var BackstageModel = Backbone.Model.extend({
         this._recentsListModel = new FSEntryListModel();
         this._recentsListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
+        // this._examplesListModel = new FSEntryListModel();
+        // this._examplesListModel.on('dataSetOpenRequested', this.tryOpen, this);
+
         this._examplesListModel = new FSEntryListModel();
+        this._examplesListModel.attributes.browseable = false;
+        this._examplesListModel.attributes.extensions = false;
+        this._examplesListModel.clickProcess = 'open';
         this._examplesListModel.on('dataSetOpenRequested', this.tryOpen, this);
+        this._examplesListModel.set('dirInfo', { path: '{{Examples}}', type: FSItemType.Folder } );
 
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = 'open';
@@ -637,7 +650,7 @@ var BackstageModel = Backbone.Model.extend({
                     //{ name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
                     //{ name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
-                    { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryListView, separator: true },
+                    { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryBrowserView },
                     //{ name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
             },
@@ -997,8 +1010,6 @@ var BackstageModel = Backbone.Model.extend({
     _settingsChanged : function(event) {
         if ('recents' in event.changed)
             this._recentsListModel.set('items', event.changed.recents);
-        if ('examples' in event.changed)
-            this._examplesListModel.set('items', event.changed.examples);
     },
     recentsModel : function() {
         return this._recentsListModel;
