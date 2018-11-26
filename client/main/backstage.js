@@ -714,7 +714,7 @@ var BackstageModel = Backbone.Model.extend({
     },
     addToWorkingDirData: function(model) {
         let wdType = model.attributes.wdType;
-        if (this._wdData[wdType] === undefined) {
+        if (this._wdData[wdType].models === undefined) {
             let wdTypeData = this._wdData[wdType];
             wdTypeData.wd =  this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
             wdTypeData.models = [ ];
@@ -725,7 +725,7 @@ var BackstageModel = Backbone.Model.extend({
                 this._wdData[wdType].defaultPath = this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
             });
         }
-        this._wdData[model.attributes.wdType].models.push(model);
+        this._wdData[wdType].models.push(model);
     },
     tryBrowse: function(list, type, filename) {
         if (host.isElectron) {
