@@ -24,18 +24,19 @@ const FSEntryListModel = Backbone.Model.extend({
         error: '',
         browseable: true,
         extensions: true,
+        wdType: 'main'
     },
     requestOpen : function(path, type) {
-        this.trigger('dataSetOpenRequested', path, type);
+        this.trigger('dataSetOpenRequested', path, type, this.get('wdType'));
     },
     requestSave : function(path, type) {
-        this.trigger('dataSetSaveRequested', path, type);
+        this.trigger('dataSetSaveRequested', path, type, this.get('wdType'));
     },
     requestExport : function(path, type) {
-        this.trigger('dataSetExportRequested', path, type);
+        this.trigger('dataSetExportRequested', path, type, this.get('wdType'));
     },
     requestBrowse : function(list, type, filename) {
-        this.trigger('browseRequested', list, type, filename);
+        this.trigger('browseRequested', list, type, filename, this.get('wdType'));
     }
 });
 
@@ -541,8 +542,12 @@ var FSEntryBrowserView = SilkyView.extend({
                 index = path.lastIndexOf("/", path.length - 2);
         }
 
-        if (index === -1)
-            return "{{Root}}";
+        if (index === -1) {
+            if (this.model.attributes.wdType === 'examples')
+                return '{{Examples}}';
+
+            return '{{Root}}';
+        }
 
         return path.substring(0, index);
     }
@@ -580,20 +585,24 @@ var BackstageModel = Backbone.Model.extend({
         this.instance.settings().on('change:examples',
             (event) => this._settingsChanged(event));
 
+        this._wdData = {
+            main: { defaultPath: '{{Documents}}' },
+            examples: { defaultPath: '{{Examples}}' }
+        };
+
         this.on('change:operation', this._opChanged, this);
+        this.on('change:place',     this._placeChanged, this);
 
         this._recentsListModel = new FSEntryListModel();
         this._recentsListModel.on('dataSetOpenRequested', this.tryOpen, this);
-
-        // this._examplesListModel = new FSEntryListModel();
-        // this._examplesListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
         this._examplesListModel = new FSEntryListModel();
         this._examplesListModel.attributes.browseable = false;
         this._examplesListModel.attributes.extensions = false;
         this._examplesListModel.clickProcess = 'open';
         this._examplesListModel.on('dataSetOpenRequested', this.tryOpen, this);
-        this._examplesListModel.set('dirInfo', { path: '{{Examples}}', type: FSItemType.Folder } );
+        this._examplesListModel.attributes.wdType = 'examples';
+        this.addToWorkingDirData(this._examplesListModel);
 
         this._pcListModel = new FSEntryListModel();
         this._pcListModel.clickProcess = 'open';
@@ -611,6 +620,7 @@ var BackstageModel = Backbone.Model.extend({
         ];
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcListModel.on('browseRequested', this.tryBrowse, this);
+        this.addToWorkingDirData(this._pcListModel);
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = 'save';
@@ -619,7 +629,7 @@ var BackstageModel = Backbone.Model.extend({
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
         this._pcSaveListModel.on('browseRequested', this.tryBrowse, this);
-
+        this.addToWorkingDirData(this._pcSaveListModel);
 
         this._pcExportListModel = new FSEntryListModel();
         this._pcExportListModel.clickProcess = 'export';
@@ -628,6 +638,7 @@ var BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcExportListModel.on('browseRequested', this.tryBrowse, this);
+        this.addToWorkingDirData(this._pcExportListModel);
 
         this._savePromiseResolve = null;
 
@@ -643,22 +654,19 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'open',
                 title: 'Open',
                 action: () => {
+                    this.set('place', this.instance.settings().getSetting('openPlace', 'thispc'));
                     let path = this._determineSavePath();
-                    return this.setCurrentDirectory(Path.dirname(path));
+                    return this.setCurrentDirectory('main', Path.dirname(path));
                 },
                 places: [
-                    //{ name: 'recent', title: 'Recent', model: this._recentsListModel, view: FSEntryListView, separator: true },
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                    //{ name: 'osf',    title: 'OSF', model: { title: "Access to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
                     { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryBrowserView },
-                    //{ name: 'browse', title: 'Browse', action: () => { this._browse('open'); } }
                 ]
             },
             {
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    //this._updateSavePath(this.instance.get('path'));
                     this.requestSave(this.instance.get('path'), true);
                 }
             },
@@ -667,14 +675,12 @@ var BackstageModel = Backbone.Model.extend({
                 title: 'Save As',
                 action: () => {
                     let path = this._determineSavePath();
-                    return this.setCurrentDirectory(Path.dirname(path)).then(() => {
+                    return this.setCurrentDirectory('main', Path.dirname(path)).then(() => {
                         this._pcSaveListModel.suggestedPath = path;
                     });
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
-                    //{ name: 'osf',    title: 'OSF', separator: true, model: { title: "Saving to the OSF is under development", msg: "Support for saving your data to the OSF is coming soon!" }, view: InDevelopmentView },
-                    //{ name: 'browse', title: 'Browse', action: () => { this._browse('saveAs'); } },
                 ]
             },
             {
@@ -706,6 +712,21 @@ var BackstageModel = Backbone.Model.extend({
             }
         ];
     },
+    addToWorkingDirData: function(model) {
+        let wdType = model.attributes.wdType;
+        if (this._wdData[wdType] === undefined) {
+            let wdTypeData = this._wdData[wdType];
+            wdTypeData.wd =  this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
+            wdTypeData.models = [ ];
+            wdTypeData.path = '';
+            wdTypeData.initialised = false;
+            wdTypeData.wd = '';
+            this.instance.settings().on('change:' + wdType + 'WorkingDir', (event) => {
+                this._wdData[wdType].defaultPath = this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
+            });
+        }
+        this._wdData[model.attributes.wdType].models.push(model);
+    },
     tryBrowse: function(list, type, filename) {
         if (host.isElectron) {
 
@@ -716,10 +737,11 @@ var BackstageModel = Backbone.Model.extend({
             let filters = [];
             for (let i = 0; i < list.length; i++)
                 filters.push({ name: list[i].description, extensions: list[i].extensions });
+            let osPath = this._wdData.main.oswd;
 
             if (type === 'open') {
 
-                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(this._osCurrentDirectory, '') }, (fileNames) => {
+                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(osPath, '') }, (fileNames) => {
                     if (fileNames) {
                         var path = fileNames[0].replace(/\\/g, '/');
                         this.requestOpen(path);
@@ -728,7 +750,7 @@ var BackstageModel = Backbone.Model.extend({
             }
             else if (type === 'save') {
 
-                dialog.showSaveDialog(browserWindow, { filters : filters, defaultPath: Path.join(this._osCurrentDirectory, filename) }, (fileName) => {
+                dialog.showSaveDialog(browserWindow, { filters : filters, defaultPath: Path.join(osPath, filename) }, (fileName) => {
                     if (fileName) {
                         fileName = fileName.replace(/\\/g, '/');
                         this.requestSave(fileName, true);
@@ -763,12 +785,14 @@ var BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
-    tryOpen: function(path, type) {
+    tryOpen: function(path, type, wdType) {
         if (type === FSItemType.File)
             this.requestOpen(path);
-        else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder)
-            this.setCurrentDirectory(path, type)
+        else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder) {
+            wdType = wdType === undefined ? 'main' : wdType;
+            this.setCurrentDirectory(wdType, path, type)
                 .done();
+        }
     },
     trySave: function(path, type) {
         this.requestSave(path);
@@ -776,49 +800,43 @@ var BackstageModel = Backbone.Model.extend({
     tryExport: function(path, type) {
         this.requestExport(path);
     },
-    setCurrentDirectory: function(path, type) {
+    setCurrentDirectory: function(wdType, path, type) {
+        if (path === '')
+            path = this._wdData[wdType].defaultPath;
+
         let promise = this.instance.browse(path);
         promise = promise.then(response => {
             let path = response.path;
-
-            this._pcListModel.set('error', '');
-            this._pcListModel.set('items', response.contents);
-            this._pcListModel.set('dirInfo', { path: path, type: type } );
-
-            this._pcSaveListModel.set('error', '');
-            this._pcSaveListModel.set('items', response.contents);
-            this._pcSaveListModel.set('dirInfo', { path: path, type: type } );
-
-            this._pcExportListModel.set('error', '');
-            this._pcExportListModel.set('items', response.contents);
-            this._pcExportListModel.set('dirInfo', { path: path, type: type } );
-
-            this._hasCurrentDirectory = true;
-            this._osCurrentDirectory = response.osPath;
+            let wdData = this._wdData[wdType];
+            this.instance.settings().setSetting(wdType + 'WorkingDir', path);
+            wdData.path = path;
+            wdData.oswd = response.osPath;
+            for (let model of wdData.models) {
+                model.set('error', '');
+                model.set('items', response.contents);
+                model.set('dirInfo', { path: path, type: type } );
+            }
+            wdData.initialised = true;
         }, (error) => {
 
             if (path === '')
                 path = '/';
 
-            this._pcListModel.set('error', `${error.message} (${error.cause})`);
-            this._pcListModel.set('items', [ ]);
-            this._pcListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
+            let wdData = this._wdData[wdType];
+            wdData.path = path;
+            wdData.oswd = path;
+            for (let model of wdData.models) {
+                model.set('error', `${error.message} (${error.cause})`);
+                model.set('items', [ ]);
+                model.set('dirInfo', { path: path, type: FSItemType.Folder } );
+            }
 
-            this._pcSaveListModel.set('error', `${error.message} (${error.cause})`);
-            this._pcSaveListModel.set('items', [ ]);
-            this._pcSaveListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
-
-            this._pcExportListModel.set('error', `${error.message} (${error.cause})`);
-            this._pcExportListModel.set('items', [ ]);
-            this._pcExportListModel.set('dirInfo', { path: path, type: FSItemType.Folder } );
-
-            this._hasCurrentDirectory = true;
-            this._osCurrentDirectory = path;
+            wdData.initialised = true;
         });
         return promise;
     },
-    hasCurrentDirectory: function() {
-        return this._hasCurrentDirectory;
+    hasCurrentDirectory: function(wdType) {
+        return this._wdData[wdType].initialised;
     },
     _opChanged: function() {
 
@@ -856,6 +874,10 @@ var BackstageModel = Backbone.Model.extend({
 
         if (promise.done)  // if Q promise
             promise.done();
+    },
+    _placeChanged : function() {
+        if (this.attributes.place !== '')
+            this.instance.settings().setSetting('openPlace', this.attributes.place);
     },
     uploadFile: function(file) {
 
@@ -928,7 +950,7 @@ var BackstageModel = Backbone.Model.extend({
         this.instance.save(path, options, overwrite)
             .then(() => {
                 this.setSavingState(false);
-                this.setCurrentDirectory(Path.dirname(path));
+                this.setCurrentDirectory('main', Path.dirname(path));
                 this.set('activated', false);
             }).catch(() => {
                 this.setSavingState(false);
@@ -1005,7 +1027,8 @@ var BackstageModel = Backbone.Model.extend({
                 return Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) + '.omv');
         }
 
-        return Path.join('{{Documents}}', this.instance.get('title') + '.omv');
+        let base = this.instance.settings().getSetting('mainWorkingDir', '{{Documents}}');
+        return Path.join(base, this.instance.get('title') + '.omv');
     },
     _settingsChanged : function(event) {
         if ('recents' in event.changed)
@@ -1261,8 +1284,8 @@ var BackstageChoices = SilkyView.extend({
             this.$current.fadeIn(200);
         }
 
-        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory() === false)
-            this.model.setCurrentDirectory('')  // empty string requests default path
+        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory(place.model.attributes.wdType) === false)
+            this.model.setCurrentDirectory(place.model.attributes.wdType, '')  // empty string requests default path
                 .done();
 
         if (old) {
