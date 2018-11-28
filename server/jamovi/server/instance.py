@@ -435,7 +435,7 @@ class Instance:
                 elif request.part != '':
                     self._on_save_part(request)
                 else:
-                    self._on_save_everything(request)
+                    await self._on_save_everything(request)
             else:
                 response = jcoms.SaveProgress()
                 response.fileExists = True
