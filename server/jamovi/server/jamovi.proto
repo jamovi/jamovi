@@ -276,6 +276,8 @@ message FSEntry {
     string description = 4;
     bool isExample = 8;
     repeated string tags = 9;
+    string license = 10;
+    string licenseUrl = 11;
 }
 
 message FSRequest {

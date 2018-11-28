@@ -24,6 +24,12 @@ class DataSetMeta:
         self.tags = [ ]
 
 
+class License:
+    def __init__(self):
+        self.name = ''
+        self.url = ''
+
+
 class ModuleMeta:
     def __init__(self):
         self.name = None
@@ -37,6 +43,8 @@ class ModuleMeta:
         self.is_sys = False
         self.new = False
         self.min_app_version = 0
+        self.license = None
+        self.datasets_license = None
 
 
 class AnalysisMeta:
@@ -279,5 +287,24 @@ class Modules:
                 if 'tags' in dataset_defn:
                     dataset.tags[:] = dataset_defn['tags']
                 module.datasets.append(dataset)
+
+        if 'license' in defn:
+            license_info = defn['license']
+            if 'name' in license_info:
+                module.license = License()
+                module.license.name = license_info['name']
+                module.license.url = license_info['url']
+            else:
+                if 'main' in license_info:
+                    module.license = License()
+                    module.license.name = license_info['main']['name']
+                    module.license.url  = license_info['main']['url']
+                    module.datasets_license = License()
+                    module.datasets_license.name = license_info['main']['name']
+                    module.datasets_license.url  = license_info['main']['url']
+                if 'datasets' in license_info:
+                    module.datasets_license = License()
+                    module.datasets_license.name = license_info['datasets']['name']
+                    module.datasets_license.url  = license_info['datasets']['url']
 
         return module

@@ -18,6 +18,24 @@ const pathtools = require('./utils/pathtools');
 const host = require('./host');
 const ActionHub = require('./actionhub');
 
+function crc16(s) {
+    if (s.length === 0)
+        return 0;
+    let crc = 0xFFFF;
+    let n = s.length;
+    let sum = 0;
+    let x = 0;
+    let j = 0;
+    for (let i = 0; i < n; i++) {
+        j = s.charCodeAt(i);
+        sum += ((i + 1) * j);
+        x = ((crc >> 8) ^ j) & 0xFF;
+        x ^= x >> 4;
+        crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF;
+    }
+    return crc;
+}
+
 const FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ],
@@ -83,7 +101,7 @@ const FSEntryListView = SilkyView.extend({
                 html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
             html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-            html += '       <div class="silky-bs-fslist-entry-location">' + location + '</div>';
+            html += '       <div class="silky-bs-fslist-entry-meta">' + location + '</div>';
             html += '   </div>';
             html += '</div>';
         }
@@ -362,10 +380,25 @@ var FSEntryBrowserView = SilkyView.extend({
                 html += '       <span class="mif-drive"></span>';
             html += '   </div>';
 
-            if (item.description) {
+            if (item.description || item.tags || item.license) {
                 html += '   <div class="silky-bs-fslist-entry-group">';
                 html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-                html += '       <div class="silky-bs-fslist-entry-location">' + item.description + '</div>';
+                html += '       <div class="silky-bs-fslist-entry-meta">';
+                if (item.description) {
+                    html += '<span class="description">' + item.description + '</span>';
+                }
+                if (item.tags) {
+                    html += '<div class="tags">';
+                    for (let tag of item.tags) {
+                        let hue = crc16(tag) % 360;
+                        html += '<div class="tag" style="color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
+                    }
+                    html += '</div>';
+                }
+                if (item.license) {
+                    html += '<div class="license">Licensed ' + item.license + '</div>';
+                }
+                html += '       </div>';
                 html += '   </div>';
             }
             else {
@@ -660,7 +693,7 @@ var BackstageModel = Backbone.Model.extend({
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                    { name: 'examples', title: 'Examples', model: this._examplesListModel, view: FSEntryBrowserView },
+                    { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
                 ]
             },
             {

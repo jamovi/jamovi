@@ -180,7 +180,7 @@
     background-color: #f3f6fb ;
 }
 
-.silky-bs-op-recents .silky-bs-fslist-entry-location {
+.silky-bs-op-recents .silky-bs-fslist-entry-meta {
     display: none;
 }
 
@@ -325,6 +325,7 @@
     flex-flow: row nowrap;
     box-sizing: border-box;
     align-items: center;
+    padding-right: 4px ;
 }
 
 .silky-bs-fslist-item > * {
@@ -392,6 +393,10 @@
     position: relative;
 }
 
+.silky-bs-fslist-entry-group {
+    width: 100% ;
+}
+
 .silky-bs-fslist-entry-group,
 .silky-bs-fslist-entry-icon,
 .silky-bs-flist-item-icon {
@@ -408,10 +413,39 @@
     cursor: default ;
 }
 
-.silky-bs-fslist-entry-location {
+.silky-bs-fslist-entry-meta {
     margin-top: 3px ;
     font-size: 75% ;
+    display: grid ;
+    grid-template-columns: 1fr max-content max-content ;
+    align-items: center ;
 }
+
+.silky-bs-fslist-entry-meta .description {
+    grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+.silky-bs-fslist-entry-meta .tags {
+    grid-column: 2 / 3;
+    grid-row: 1;
+}
+
+.silky-bs-fslist-entry-meta .tag {
+    display: inline-block ;
+    padding: 2px 3px ;
+    border-radius: 3px ;
+    border-width: 1px ;
+    border-style: solid ;
+    margin: 2px ;
+    color: white ;
+}
+
+.silky-bs-fslist-entry-meta .license {
+    grid-column: 3 / 3;
+    grid-row: 1;
+}
+
 
 .silky-bs-fslist-entry-path {
     display: none ;

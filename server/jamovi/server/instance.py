@@ -353,6 +353,9 @@ class Instance:
                             entry.name = module.title
                             entry.path = posixpath.join('{{Examples}}', module.name)
                             entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                            if module.datasets_license:
+                                entry.license = module.datasets_license.name
+                                entry.licenseUrl = module.datasets_license.url
                 else:
                     module_name = os.path.basename(path)
                     modules = Modules.instance()

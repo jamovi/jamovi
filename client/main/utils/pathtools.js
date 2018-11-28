@@ -14,7 +14,7 @@ module.exports = {
         else if (path.startsWith('{{Root}}'))
             path = path.replace('{{Root}}', 'This PC');
         else if (path.startsWith('{{Examples}}'))
-            path = path.replace('{{Examples}}', 'Examples');
+            path = path.replace('{{Examples}}', 'Data Library');
 
         path = path.replace(/\/$/, "");
         return path;
