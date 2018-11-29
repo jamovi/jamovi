@@ -519,7 +519,7 @@ const TableView = SilkyView.extend({
                 $header.attr('data-measuretype', column.measureType);
 
                 $column.attr('data-columntype', column.columnType);
-                $header.attr('data-datatype', column.dataType);
+                $column.attr('data-datatype', column.dataType);
                 $column.attr('data-measuretype', column.measureType);
             }
 
