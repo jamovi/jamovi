@@ -81,6 +81,12 @@
     height: 100%;
 }
 
+.jmv-column[data-columntype='computed'],
+.jmv-column[data-columntype='recoded'],
+.jmv-column[data-columntype='filter'] {
+    background-color: hsla(0, 0%, 50%, 0.05) ;
+}
+
 .jmv-column[data-fmlaok="0"] {
     background-color: #D5AEAB ;
 }
