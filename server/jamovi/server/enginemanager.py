@@ -84,19 +84,28 @@ class Engine:
         address = self._conn_root + '-' + str(self._index)
         con = '--con={}'.format(address)
         pth = '--path={}'.format(self._session_path)
-        self._process = subprocess.Popen(
-            [exe_path, con, pth],
-            startupinfo=si,
-            stdout=stdout,
-            stderr=stderr,
-            env=env)
 
-        self._socket = nanomsg.Socket(nanomsg.PAIR)
-        self._socket._set_recv_timeout(500)
-        self._socket.bind(address)
+        try:
+            self._process = subprocess.Popen(
+                [exe_path, con, pth],
+                startupinfo=si,
+                stdout=stdout,
+                stderr=stderr,
+                env=env)
 
-        self._thread = threading.Thread(target=self._run)
-        self._thread.start()
+            self._socket = nanomsg.Socket(nanomsg.PAIR)
+            self._socket._set_recv_timeout(500)
+            self._socket.bind(address)
+
+            self._thread = threading.Thread(target=self._run)
+            self._thread.start()
+
+        except BaseException as e:
+            self._parent._notify_engine_event({
+                'type': 'error',
+                'message': 'Engine process could not be started',
+                'cause': str(e),
+            })
 
     def stop(self):
         if self._stopped:
@@ -139,8 +148,6 @@ class Engine:
 
             self._process.poll()
             if self._process.returncode is not None:
-                if self._restarting is False and self._stopping is False:
-                    log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
                 break
 
         self._ioloop.call_soon_threadsafe(self._on_closing)
@@ -153,7 +160,12 @@ class Engine:
             self.start()
         else:
             self._stopped = True
-            self._parent._notify_engine_event({ 'type': 'terminated' })
+            log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
+            self._parent._notify_engine_event({
+                'type': 'error',
+                'message': 'Engine process terminated',
+                'cause': 'Exit code: {}'.format(self._process.returncode),
+            })
 
     def __del__(self):
         if self._process is not None:

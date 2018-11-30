@@ -1,11 +1,11 @@
 
 'use strict';
 
-var $ = require('jquery');
-var ProtoBuf = require('protobufjs');
-var Q = require('q');
+const $ = require('jquery');
+const ProtoBuf = require('protobufjs');
+const Q = require('q');
 
-var Coms = function() {
+const Coms = function() {
 
     this._baseUrl = null;
     this._transId = 0;
@@ -32,11 +32,11 @@ Coms.prototype.connect = function(sessionId) {
 
             new Q.promise((resolve, reject) => {
 
-                var protoUrl = this._baseUrl + 'proto/coms.proto';
+                let protoUrl = this._baseUrl + 'proto/coms.proto';
 
                 ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
                     if (err) {
-                        reject(err);
+                        reject('Unable to load proto definitions');
                     }
                     else {
                         this.Messages = builder.build().jamovi.coms;
@@ -56,7 +56,6 @@ Coms.prototype.connect = function(sessionId) {
                 this._ws.binaryType = 'arraybuffer';
 
                 this._ws.onopen = () => {
-                    console.log('opened!');
                     resolve();
                 };
 
@@ -66,13 +65,12 @@ Coms.prototype.connect = function(sessionId) {
 
                 this._ws.onerror = reject;
                 this._ws.onclose = (event) => {
-                    console.log('websocket closed!');
                     if (event.code !== 1000 && event.code !== 1001)
                         this._notifyEvent('failure');
                     this._notifyEvent('closed');
                 };
             })
-        ]);
+        ]).timeout(1500, 'connection timed out');
     }
 
     return this.connected;
@@ -105,18 +103,18 @@ Coms.prototype.send = function(request) {
 
 Coms.prototype.receive = function(event) {
 
-    var response = this.Messages.ComsMessage.decode(event.data);
+    let response = this.Messages.ComsMessage.decode(event.data);
 
     if (response.id === 0) {
         this._notifyEvent('broadcast', response);
         return;
     }
 
-    var found = false;
+    let found = false;
 
-    for (var i = 0; i < this._transactions.length; i++) {
+    for (let i = 0; i < this._transactions.length; i++) {
 
-        var trans = this._transactions[i];
+        let trans = this._transactions[i];
         if (trans.id === response.id) {
             found = true;
             if (response.status === this.Messages.Status.COMPLETE)

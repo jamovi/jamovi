@@ -70,9 +70,9 @@ if (window.require) {
 
     version = Promise.resolve(remote.getGlobal('version'));
     nameAndVersion = Promise.resolve(APP_NAME + ' ' + remote.getGlobal('version'));
-    baseUrl = 'http://localhost:' + remote.getGlobal('mainPort') + '/';
-    analysisUIUrl  = 'http://localhost:' + remote.getGlobal('analysisUIPort') + '/';
-    resultsViewUrl = 'http://localhost:' + remote.getGlobal('resultsViewPort') + '/';
+    baseUrl = 'http://127.0.0.1:' + remote.getGlobal('mainPort') + '/';
+    analysisUIUrl  = 'http://127.0.0.1:' + remote.getGlobal('analysisUIPort') + '/';
+    resultsViewUrl = 'http://127.0.0.1:' + remote.getGlobal('resultsViewPort') + '/';
 
     const ipc = electron.ipcRenderer;
 

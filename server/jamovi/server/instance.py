@@ -79,11 +79,15 @@ class Instance:
     def get(instance_id):
         return Instance.instances.get(instance_id)
 
-    def __init__(self, session_path, instance_id=None):
+    def __init__(self, coms, session_path, instance_id=None):
         if Instance._garbage_collector is None:
             ioloop = asyncio.get_event_loop()
             gc = GarbageCollection()
             Instance._garbage_collector = ioloop.create_task(gc)
+
+        self._coms = coms
+        self._coms.add_close_listener(self._close)
+        self._inactive_since = None
 
         self._session_path = session_path
         if instance_id is None:
@@ -93,7 +97,6 @@ class Instance:
         self._mm = None
         self._data = InstanceModel()
 
-        self._coms = None
         self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
         self._inactive_since = None
 
@@ -1992,8 +1995,10 @@ class Instance:
             analysis_pb.menuSubtitle = analysis.menuSubtitle
 
     def _on_engine_event(self, event):
-        if event['type'] == 'terminated' and self._coms is not None:
-            self._coms.close()
+        if event['type'] == 'error' and self._coms is not None:
+            message = event.get('message', '')
+            cause = event.get('cause', '')
+            self._coms.send_error(message=message, cause=cause)
 
     class LogHandler(logging.Handler):
         def __init__(self, instance):

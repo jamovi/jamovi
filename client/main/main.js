@@ -34,10 +34,35 @@ let backstageModel = new BackstageModel({ instance: instance });
 let modules = new Modules({ instance: instance });
 let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
 
-coms.on('failure', function() {
-    window.alert('Connection lost\n\nThe processing engine has ended unexpectedly.\nThis jamovi window will now close down. Sorry for the inconvenience.\n\nIf you could report your experiences to the jamovi team, that would be appreciated.');
-    host.closeWindow(true);
+coms.on('failure', (event) => {
+    die('Connection to the server has been lost', '');
 });
+
+coms.on('broadcast', (message) => {
+
+    if (message.instanceId === '' &&
+        message.payloadType === '' &&
+        message.status === coms.Messages.Status.ERROR) {
+
+        let error = message.error;
+        die(error.message, error.cause);
+    }
+});
+
+function die(message, cause) {
+    window.alert(
+`An unexpected error has occured, and jamovi must now close.
+
+        ${message}
+
+        ${cause}
+
+Sorry for the inconvenience.
+
+If you could report your experiences to the jamovi team, that would be appreciated.`);
+
+    host.closeWindow(true);
+}
 
 if (window.navigator.platform === 'MacIntel') {
     host.constructMenu([
@@ -263,6 +288,7 @@ $(document).ready(() => {
         return $.post(host.baseUrl + 'login');
 
     }).then(() => {
+
         return coms.ready;
 
     }).then(() => {
@@ -273,6 +299,11 @@ $(document).ready(() => {
             resultsView.showWelcome();
 
         return instance.connect(instanceId);
+
+    }).catch((err) => {
+
+        die('Unable to connect to the server', err);
+        throw err;
 
     }).then(instanceId => {
         let toOpen = '';  // '' denotes blank data set
@@ -287,9 +318,9 @@ $(document).ready(() => {
         if ( ! instance.get('hasDataSet'))
             return instance.open(toOpen);
 
-    }).catch(() => { // if the initial open fails
+    }).catch((err) => { // if the initial open fails
+
         if ( ! instance.get('hasDataSet'))
             return instance.open('');
-
     });
 });

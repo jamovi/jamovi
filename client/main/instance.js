@@ -104,13 +104,14 @@ const Instance = Backbone.Model.extend({
         let promise;
         let coms = this.attributes.coms;
 
+        let progress = new Notify({
+            title: 'Opening',
+            duration: 0
+        });
+
         if (this.attributes.hasDataSet) {
 
             let instance = new Instance({ coms : coms });
-            let progress = new Notify({
-                title: 'Opening',
-                duration: 0
-            });
 
             promise = instance.connect().then(() => {
                 return instance.open(filePath);
@@ -142,6 +143,8 @@ const Instance = Backbone.Model.extend({
 
             let onresolve = (response) => {
 
+                progress.dismiss();
+
                 let info = coms.Messages.OpenProgress.decode(response.payload);
                 let filePath = info.path;
                 let ext = path.extname(filePath);
@@ -151,11 +154,14 @@ const Instance = Backbone.Model.extend({
                 this._retrieveInfo();
             };
 
-            let onprogress = (progress) => {
+            let onreject = (error) => {
+                progress.dismiss();
+                this._notify(error);
             };
 
-            let onreject = (error) => {
-                this._notify(error);
+            let onprogress = (prog) => {
+                progress.set('progress', prog);
+                this.trigger('notification', progress);
             };
 
             promise = coms.send(request);
@@ -234,8 +240,26 @@ const Instance = Backbone.Model.extend({
             request.payloadType = 'SaveRequest';
             request.instanceId = this._instanceId;
 
-            return coms.send(request)
-                .catch((err) => { throw err.cause; });
+            let progress = new Notify({
+                title: 'Saving',
+                duration: 0
+            });
+
+            return coms.send(request).then(
+                (response) => {
+                    progress.dismiss();
+                    return response;
+                },
+                (err) => {
+                    progress.dismiss();
+                    throw err.cause;
+                },
+                (prog) => {
+                    progress.set('progress', prog);
+                    this.trigger('notification', progress);
+                    return prog;
+                }
+            );
 
         }).then(response => {
 

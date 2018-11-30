@@ -48,16 +48,21 @@ class ClientConnection(WebSocketHandler):
             self._transactions[message.id] = request
 
             if type(request) == jcoms.InstanceRequest:
-                if message.instanceId != '':
-                    instance = Instance.instances[message.instanceId]
+                if message.instanceId == '':
+                    instance = Instance(self, session_path=self._session_path)  # create new
+                elif message.instanceId not in Instance.instances:
+                    raise KeyError('No such instance')
                 else:
-                    instance = Instance(session_path=self._session_path)  # create new
-                instance.set_coms(self)
+                    instance = Instance.instances.get(message.instanceId)
+                    instance.set_coms(self)
+
                 response = jcoms.InstanceResponse()
                 self.send(response, instance.id, request)
             else:
                 instance = Instance.instances[message.instanceId]
                 await instance.on_request(request)
+        except KeyError as e:
+            self.send_error(message='No such instance', response_to=message)
         except Exception as e:
             # would be nice to send_error()
             log.exception(e)
@@ -97,9 +102,6 @@ class ClientConnection(WebSocketHandler):
         self.write_message(m.SerializeToString(), binary=True)
 
     def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
-
-        if message is None and response_to is None:
-            return
 
         m = jcoms.ComsMessage()
 
