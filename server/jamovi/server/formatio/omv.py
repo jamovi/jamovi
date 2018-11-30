@@ -131,7 +131,8 @@ def write(data, path, html=None):
         temp_file = NamedTemporaryFile(delete=False)
         temp_file.truncate(required_bytes)
 
-        for column in data:
+        for col_no in range(data.column_count):
+            column = data[col_no]
             if column.is_virtual is True:
                 continue
             if column.data_type == DataType.DECIMAL:
@@ -139,6 +140,8 @@ def write(data, path, html=None):
                     value = column.raw(i)
                     byts = struct.pack('<d', value)
                     temp_file.write(byts)
+                    if i % 100000 == 0:
+                        yield (col_no + i / row_count) / data.column_count
             elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
                 for i in range(0, row_count):
                     value = column[i]
@@ -152,11 +155,15 @@ def write(data, path, html=None):
                     else:
                         byts = struct.pack('<i', -2147483648)
                         temp_file.write(byts)
+                    if i % 100000 == 0:
+                        yield (col_no + i / row_count) / data.column_count
             else:
                 for i in range(0, row_count):
                     value = column.raw(i)
                     byts = struct.pack('<i', value)
                     temp_file.write(byts)
+                    if i % 100000 == 0:
+                        yield (col_no + i / row_count) / data.column_count
 
         temp_file.close()
         zip.write(temp_file.name, 'data.bin')
@@ -243,7 +250,7 @@ def replace_single_equals(formula):
     return formula
 
 
-def read(data, path, prog_cb):
+def read(data, path):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
 
@@ -280,7 +287,7 @@ def read(data, path, prog_cb):
         #         data.embedded_path = embedded_path
         #         data.embedded_name = embedded_name
         #
-        #         prog_cb(0.1)
+        #         yield 0.1
         #     except Exception:
         #         pass
 
@@ -372,7 +379,7 @@ def read(data, path, prog_cb):
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
             columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
 
-        prog_cb(0.3)
+        yield 0.03
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
@@ -449,7 +456,7 @@ def read(data, path, prog_cb):
                             column.set_value(row_offset + i, values[0])
                             i += 1
 
-                    prog_cb(0.3 + 0.65 * (col_no + row_offset / row_count) / ncols)
+                    yield 0.1 + 0.85 * (col_no + row_offset / row_count) / ncols
 
                 col_no += 1
 

@@ -19,6 +19,9 @@ def get_readers():
 
 def write(data, path):
 
+    if False:  # make the function a generator
+        yield None
+
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
@@ -89,7 +92,7 @@ def write(data, path):
         os.remove(temp_file.name)
 
 
-def read(data, path, prog_cb):
+def read(data, path):
 
     with ZipFile(path, 'r') as zip:
         # manifest = zip.read('META-INF/MANIFEST.MF')

@@ -61,7 +61,7 @@ class ClientConnection(WebSocketHandler):
             else:
                 instance = Instance.instances[message.instanceId]
                 await instance.on_request(request)
-        except KeyError as e:
+        except KeyError:
             self.send_error(message='No such instance', response_to=message)
         except Exception as e:
             # would be nice to send_error()

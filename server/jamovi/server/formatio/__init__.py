@@ -64,21 +64,23 @@ def get_writers():
     return _writers
 
 
-def read(data, path, prog_cb, is_example=False):
+def read(data, path, is_example=False):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
     ext = os.path.splitext(path)[1].lower()
 
-    prog_cb(0)
+    yield 0
 
     if path == '':
         blank.read(data)
     elif ext == '.omv':
-        omv.read(data, path, prog_cb)
+        for progress in omv.read(data, path):
+            yield progress
         if not is_example:
             data.path = path
     else:
-        _import(data, path, prog_cb, is_example)
+        for progress in _import(data, path, is_example):
+            yield progress
 
     fix_column_names(data)
 
@@ -90,7 +92,8 @@ def _import(data, path, prog_cb, is_example=False):
 
     ext = os.path.splitext(path)[1].lower()[1:]
     if ext in readers:
-        readers[ext][1](data, path, prog_cb)
+        for progress in readers[ext][1](data, path):
+            yield progress
     else:
         raise RuntimeError('Unrecognised file format')
 
@@ -117,9 +120,11 @@ def write(data, path, content=None):
         temp_path = path + '.tmp'
         ext = os.path.splitext(path)[1].lower()[1:]
         if ext == 'omv':
-            omv.write(data, temp_path, content)
+            for progress in omv.write(data, temp_path, content):
+                yield progress
         elif ext in writers:
-            writers[ext][1](data, temp_path)
+            for progress in writers[ext][1](data, temp_path):
+                yield progress
         else:
             raise RuntimeError('Unrecognised file format')
         os.replace(temp_path, path)
