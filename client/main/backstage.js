@@ -391,7 +391,7 @@ var FSEntryBrowserView = SilkyView.extend({
                     html += '<div class="tags">';
                     for (let tag of item.tags) {
                         let hue = crc16(tag) % 360;
-                        html += '<div class="tag" style="color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
+                        html += '<div class="tag" style="background-color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
                     }
                     html += '</div>';
                 }
