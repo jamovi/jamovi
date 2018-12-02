@@ -54,8 +54,10 @@ Coms.prototype.connect = function(sessionId) {
 
                 this._ws = new WebSocket(url);
                 this._ws.binaryType = 'arraybuffer';
+                this._opened = false;
 
                 this._ws.onopen = () => {
+                    this._opened = true;
                     resolve();
                 };
 
@@ -63,9 +65,13 @@ Coms.prototype.connect = function(sessionId) {
                     this.receive(event);
                 };
 
-                this._ws.onerror = reject;
+                this._ws.onerror = (err) => {
+                    if ( ! this._opened)
+                        reject(err);
+                };
+
                 this._ws.onclose = (event) => {
-                    if (event.code !== 1000 && event.code !== 1001)
+                    if (this._opened && event.code !== 1000 && event.code !== 1001)
                         this._notifyEvent('failure');
                     this._notifyEvent('closed');
                 };
