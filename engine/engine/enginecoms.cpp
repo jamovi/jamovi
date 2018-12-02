@@ -72,7 +72,7 @@ void EngineComs::parse(char *data, int len)
         options,
         analysisRequest.revision());
 
-    analysis->datasetId = analysisRequest.datasetid();
+    analysis->instanceId = analysisRequest.instanceid();
     analysis->perform = analysisRequest.perform();
     analysis->clearState = analysisRequest.clearstate();
 

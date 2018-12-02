@@ -178,7 +178,7 @@ class Engine:
 
         request = jcoms.AnalysisRequest()
 
-        request.datasetId = self._instance_id
+        request.instanceId = self._instance_id
         request.analysisId = analysis.id
         request.name = analysis.name
         request.ns = analysis.ns

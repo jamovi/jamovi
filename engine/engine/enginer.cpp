@@ -65,7 +65,7 @@ void EngineR::run(Analysis *analysis)
         "'" << analysis->ns << "', " <<
         "'" << analysis->name << "', " <<
         "optionsPB, " <<
-        "'" << analysis->datasetId << "', " <<
+        "'" << analysis->instanceId << "', " <<
         analysis->id << ", " <<
         analysis->revision << ")\n";
 
@@ -79,19 +79,19 @@ void EngineR::run(Analysis *analysis)
     std::function<Rcpp::DataFrame(Rcpp::List)> readDatasetHeader;
     std::function<Rcpp::DataFrame(Rcpp::List)> readDataset;
 
-    readDatasetHeader = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, true);
+    readDatasetHeader = std::bind(&EngineR::readDataset, this, analysis->instanceId, std::placeholders::_1, true);
     rInside["readDatasetHeader"] = Rcpp::InternalFunction(readDatasetHeader);
     rInside.parseEvalQNT("analysis$.setReadDatasetHeaderSource(readDatasetHeader)\n");
 
-    readDataset = std::bind(&EngineR::readDataset, this, analysis->datasetId, std::placeholders::_1, false);
+    readDataset = std::bind(&EngineR::readDataset, this, analysis->instanceId, std::placeholders::_1, false);
     rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
     rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
 
-    std::function<string()> statePath = std::bind(&EngineR::statePath, this, analysis->datasetId, analysis->nameAndId);
+    std::function<string()> statePath = std::bind(&EngineR::statePath, this, analysis->instanceId, analysis->nameAndId);
     rInside["statePath"] = Rcpp::InternalFunction(statePath);
     rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
 
-    std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(&EngineR::resourcesPath, this, analysis->datasetId, analysis->nameAndId, std::placeholders::_1, std::placeholders::_2);
+    std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(&EngineR::resourcesPath, this, analysis->instanceId, analysis->nameAndId, std::placeholders::_1, std::placeholders::_2);
     rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
     rInside.parseEvalQNT("analysis$.setResourcesPathSource(resourcesPath)");
 
@@ -102,7 +102,7 @@ void EngineR::run(Analysis *analysis)
     if (analysis->ns == "Rj")
     {
         // Rj needs special access to this
-        string datasetPath = _path + PATH_SEP + analysis->datasetId + PATH_SEP + "buffer";
+        string datasetPath = _path + PATH_SEP + analysis->instanceId + PATH_SEP + "buffer";
         rInside[".datasetPath"] = datasetPath;
     }
 
@@ -244,12 +244,12 @@ SEXP EngineR::checkpoint(SEXP results)
     return R_NilValue;
 }
 
-Rcpp::DataFrame EngineR::readDataset(const string &datasetId, Rcpp::List columnsRequired, bool headerOnly)
+Rcpp::DataFrame EngineR::readDataset(const string &instanceId, Rcpp::List columnsRequired, bool headerOnly)
 {
     if (_rInside == NULL)
         initR();
 
-    string path = _path + PATH_SEP + datasetId + PATH_SEP + "buffer";
+    string path = _path + PATH_SEP + instanceId + PATH_SEP + "buffer";
 
     Rcpp::StringVector req(columnsRequired.size());
     int count = 0;
@@ -264,10 +264,10 @@ void EngineR::setCheckForNewCB(std::function<Analysis*()> check)
     _checkForNew = check;
 }
 
-string EngineR::analysisDirPath(const std::string &datasetId, const string &analysisId)
+string EngineR::analysisDirPath(const std::string &instanceId, const string &analysisId)
 {
     stringstream ss;
-    ss << _path << "/" << datasetId << "/" << analysisId;
+    ss << _path << "/" << instanceId << "/" << analysisId;
     string path = ss.str();
 
     EngineR::createDirectories(path);
@@ -275,14 +275,14 @@ string EngineR::analysisDirPath(const std::string &datasetId, const string &anal
     return path;
 }
 
-std::string EngineR::statePath(const string &datasetId, const string &analysisId)
+std::string EngineR::statePath(const string &instanceId, const string &analysisId)
 {
-    return analysisDirPath(datasetId, analysisId) + "/analysis";
+    return analysisDirPath(instanceId, analysisId) + "/analysis";
 }
 
-Rcpp::List EngineR::resourcesPath(const std::string &datasetId, const string &analysisId, const std::string &elementId, const std::string &suffix)
+Rcpp::List EngineR::resourcesPath(const std::string &instanceId, const string &analysisId, const std::string &elementId, const std::string &suffix)
 {
-    string rootPath = _path + "/" + datasetId;
+    string rootPath = _path + "/" + instanceId;
     string relPath = analysisId + "/resources";
     string fullPath = rootPath + "/" + relPath;
 

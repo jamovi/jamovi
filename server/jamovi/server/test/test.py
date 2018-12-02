@@ -60,7 +60,7 @@ class TestEngine(unittest.TestCase):
         request = jcoms.AnalysisRequest()
         request.ns = 'jmv'
         request.name = 'Descriptives'
-        request.datasetId = 'instance'
+        request.instanceId = 'instance'
         request.analysisId = 1
         request.options = '{ "vars": [ "a", "b", "f" ]}'
         request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')

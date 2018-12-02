@@ -28,5 +28,5 @@ Analysis::Analysis(int id, std::string name, std::string ns, std::string options
     this->nameAndId = ss.str();
 
     this->requiresDataset = true;
-    this->datasetId = "";
+    this->instanceId = "";
 }

@@ -31,7 +31,7 @@ message ComsMessage {
 }
 
 message AnalysisRequest {
-    string datasetId = 1;
+    string instanceId = 1;
     int32 analysisId = 2;
     string name = 3;
     string ns = 4;
@@ -69,7 +69,7 @@ enum AnalysisStatus {
 
 message AnalysisResponse {
 
-    string datasetId = 1;
+    string instanceId = 1;
     int32 analysisId = 2;
     string name = 3;
     string ns = 4;

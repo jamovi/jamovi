@@ -38,10 +38,10 @@ private:
 
     std::function<Analysis*()> _checkForNew;
 
-    Rcpp::DataFrame readDataset(const std::string &datasetId, Rcpp::List columns, bool headerOnly);
-    std::string analysisDirPath(const std::string &datasetId, const std::string &analysisId);
-    std::string statePath(const std::string &datasetId, const std::string &analysisId);
-    Rcpp::List resourcesPath(const std::string &datasetId, const std::string &analysisId, const std::string &elementId, const std::string &suffix);
+    Rcpp::DataFrame readDataset(const std::string &instanceId, Rcpp::List columns, bool headerOnly);
+    std::string analysisDirPath(const std::string &instanceId, const std::string &analysisId);
+    std::string statePath(const std::string &instanceId, const std::string &analysisId);
+    Rcpp::List resourcesPath(const std::string &instanceId, const std::string &analysisId, const std::string &elementId, const std::string &suffix);
 
     void sendResults(bool incAsText = false);
 

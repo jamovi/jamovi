@@ -28,7 +28,7 @@ public:
     bool clearState;
 
     bool requiresDataset;
-    std::string datasetId;
+    std::string instanceId;
 
     std::string path;
     std::string format;
