@@ -153,6 +153,9 @@ else {
     }
 }
 
+// proxy servers can interfere with accessing localhost
+app.commandLine.appendSwitch('no-proxy-server');
+
 const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
 const dialog = electron.dialog;
