@@ -152,7 +152,10 @@ class Modules:
                     continue
                 try:
                     module = self._read_module(entry.path, True)
-                    self._modules.append(module)
+                    if module.name == 'jmv':
+                        self._modules.insert(0, module)
+                    else:
+                        self._modules.append(module)
                 except Exception as e:
                     log.exception(e)
 
