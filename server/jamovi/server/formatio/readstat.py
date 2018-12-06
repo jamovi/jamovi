@@ -119,17 +119,41 @@ class Parser(ReadStatParser):
                 column.set_measure_type(measure_type)
 
                 if level_labels is not None:
-                    new_labels = OrderedDict()
-                    if var_type is float:
+
+                    too_wide = False
+                    if level_labels is not None:
+                        for value in level_labels:
+                            if int(value).bit_length() > 32:
+                                too_wide = True
+                                break
+
+                    if too_wide:
+                        column.set_data_type(DataType.TEXT)
+                        n = 0
+                        for value in level_labels:
+                            if variable.is_missing(value):
+                                continue
+                            label = level_labels[value]
+                            column.append_level(n, label, str(value))
+                            n += 1
+
+                    elif var_type is float:
+                        new_labels = OrderedDict()
                         for value in level_labels:
                             if variable.is_missing(value):
                                 continue
                             label = level_labels[value]
                             new_labels[int(value)] = label
                         level_labels = new_labels
-                    for value in level_labels:
-                        label = level_labels[value]
-                        column.append_level(value, label, str(value))
+
+                        for value in level_labels:
+                            label = level_labels[value]
+                            column.append_level(value, label, str(value))
+
+                    else:
+                        for value in level_labels:
+                            label = level_labels[value]
+                            column.append_level(value, label, str(value))
             else:
                 if var_type is float:
                     data_type = DataType.DECIMAL
@@ -149,7 +173,9 @@ class Parser(ReadStatParser):
         column = self._data[var_index]
 
         if column.data_type is DataType.TEXT:
-            if vt is str:
+            if value is not None:
+                if vt is not str:
+                    value = str(value)
                 if not column.has_level(value):
                     column.append_level(
                         column.level_count,
