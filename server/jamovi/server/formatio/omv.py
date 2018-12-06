@@ -16,7 +16,7 @@ from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
 
 
-def write(data, path, html=None):
+def write(data, path, prog_cb, html=None):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
 
@@ -141,7 +141,7 @@ def write(data, path, html=None):
                     byts = struct.pack('<d', value)
                     temp_file.write(byts)
                     if i % 100000 == 0:
-                        yield (col_no + i / row_count) / data.column_count
+                        prog_cb((col_no + i / row_count) / data.column_count)
             elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
                 for i in range(0, row_count):
                     value = column[i]
@@ -156,14 +156,14 @@ def write(data, path, html=None):
                         byts = struct.pack('<i', -2147483648)
                         temp_file.write(byts)
                     if i % 100000 == 0:
-                        yield (col_no + i / row_count) / data.column_count
+                        prog_cb((col_no + i / row_count) / data.column_count)
             else:
                 for i in range(0, row_count):
                     value = column.raw(i)
                     byts = struct.pack('<i', value)
                     temp_file.write(byts)
                     if i % 100000 == 0:
-                        yield (col_no + i / row_count) / data.column_count
+                        prog_cb((col_no + i / row_count) / data.column_count)
 
         temp_file.close()
         zip.write(temp_file.name, 'data.bin')
@@ -250,7 +250,7 @@ def replace_single_equals(formula):
     return formula
 
 
-def read(data, path):
+def read(data, path, prog_cb):
 
     data.title = os.path.splitext(os.path.basename(path))[0]
 
@@ -287,7 +287,7 @@ def read(data, path):
         #         data.embedded_path = embedded_path
         #         data.embedded_name = embedded_name
         #
-        #         yield 0.1
+        #         prog_cb(0.1)
         #     except Exception:
         #         pass
 
@@ -379,7 +379,7 @@ def read(data, path):
             columns_w_bad_levels = filter(lambda col: col.measure_type is not MeasureType.CONTINUOUS, data.dataset)
             columns_w_bad_levels = map(lambda col: col.id, columns_w_bad_levels)
 
-        yield 0.03
+        prog_cb(0.03)
 
         with TemporaryDirectory() as dir:
             zip.extract('data.bin', dir)
@@ -456,7 +456,7 @@ def read(data, path):
                             column.set_value(row_offset + i, values[0])
                             i += 1
 
-                    yield 0.1 + 0.85 * (col_no + row_offset / row_count) / ncols
+                    prog_cb(0.1 + 0.85 * (col_no + row_offset / row_count) / ncols)
 
                 col_no += 1
 

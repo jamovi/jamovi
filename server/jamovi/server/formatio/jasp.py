@@ -17,10 +17,7 @@ def get_readers():
     return [ ( 'jasp', read ) ]
 
 
-def write(data, path):
-
-    if False:  # make the function a generator
-        yield None
+def write(data, path, prog_cb):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
         content = io.StringIO()
@@ -92,7 +89,7 @@ def write(data, path):
         os.remove(temp_file.name)
 
 
-def read(data, path):
+def read(data, path, prog_cb):
 
     with ZipFile(path, 'r') as zip:
         # manifest = zip.read('META-INF/MANIFEST.MF')

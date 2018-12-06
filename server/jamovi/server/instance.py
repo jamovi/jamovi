@@ -481,14 +481,14 @@ class Instance:
 
         ioloop = asyncio.get_event_loop()
 
-        def save_task():
+        def prog_cb(p):
             coms = self._coms
-            for progress in formatio.write(self._data, path, content):
-                ioloop.call_soon_threadsafe(
-                    functools.partial(
-                        coms.send, None, self._instance_id, request,
-                        complete=False, progress=(1000 * progress, 1000)))
-        await ioloop.run_in_executor(None, save_task)
+            ioloop.call_soon_threadsafe(
+                functools.partial(
+                    coms.send, None, self._instance_id, request,
+                    complete=False, progress=(1000 * p, 1000)))
+
+        await ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content)
 
         if not is_export:
             self._data.title = os.path.splitext(os.path.basename(path))[0]
@@ -545,14 +545,14 @@ class Instance:
 
             ioloop = asyncio.get_event_loop()
 
-            def open_task():
+            def prog_cb(p):
                 coms = self._coms
-                for progress in formatio.read(self._data, norm_path, is_example):
-                    ioloop.call_soon_threadsafe(
-                        functools.partial(
-                            coms.send, None, self._instance_id, request,
-                            complete=False, progress=(1000 * progress, 1000)))
-            await ioloop.run_in_executor(None, open_task)
+                ioloop.call_soon_threadsafe(
+                    functools.partial(
+                        coms.send, None, self._instance_id, request,
+                        complete=False, progress=(1000 * p, 1000)))
+
+            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example)
 
             response = jcoms.OpenProgress()
             response.path = virt_path

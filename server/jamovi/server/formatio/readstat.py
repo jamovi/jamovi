@@ -14,20 +14,16 @@ from jamovi.readstat import Measure
 
 def get_readers():
     return [
-        ( 'sav', lambda data, path: read(data, path, 'sav') ),
-        ( 'zsav', lambda data, path: read(data, path, 'sav') ),
-        ( 'dta', lambda data, path: read(data, path, 'dta') ),
-        ( 'por', lambda data, path: read(data, path, 'por') ),
-        ( 'xpt', lambda data, path: read(data, path, 'xpt') ),
-        ( 'sas7bdat', lambda data, path: read(data, path, 'sas7bdat') ) ]
+        ( 'sav', lambda data, path, prog_cb: read(data, path, prog_cb, 'sav') ),
+        ( 'zsav', lambda data, path, prog_cb: read(data, path, prog_cb, 'sav') ),
+        ( 'dta', lambda data, path, prog_cb: read(data, path, prog_cb, 'dta') ),
+        ( 'por', lambda data, path, prog_cb: read(data, path, prog_cb, 'por') ),
+        ( 'xpt', lambda data, path, prog_cb: read(data, path, prog_cb, 'xpt') ),
+        ( 'sas7bdat', lambda data, path, prog_cb: read(data, path, prog_cb, 'sas7bdat') ) ]
 
 
-def read(data, path, format):
-
-    if False:
-        yield None
-
-    parser = Parser(data)
+def read(data, path, prog_cb, format):
+    parser = Parser(data, prog_cb)
     parser.parse(path, format)
     for column in data.dataset:
         column.determine_dps()
@@ -38,9 +34,10 @@ TIME_START = date(1970, 1, 1)
 
 class Parser(ReadStatParser):
 
-    def __init__(self, data):
+    def __init__(self, data, prog_cb):
 
         self._data = data
+        self._prog_cb = prog_cb
 
         self._tmp_value_labels = { }
 
@@ -167,6 +164,9 @@ class Parser(ReadStatParser):
 
         if row_index >= self._data.row_count:
             self._data.set_row_count(row_index + 1)
+        else:
+            if var_index == 0 and row_index % 100 == 0:
+                self._prog_cb(row_index / self._data.row_count)
 
         vt = type(value)
 

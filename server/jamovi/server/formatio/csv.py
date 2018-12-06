@@ -29,7 +29,7 @@ def get_writers():
     return [ ( 'csv', write ), ( 'txt', write ) ]
 
 
-def write(data, path):
+def write(data, path, prog_cb):
 
     with open(path, 'w', encoding='utf-8') as file:
         sep = ''
@@ -62,7 +62,7 @@ def write(data, path):
             file.write('\n')
 
             if row_no % 1000 == 0:
-                yield row_no / data.row_count
+                prog_cb(row_no / data.row_count)
 
 
 def calc_dps(value, max_dp=3):
@@ -85,7 +85,7 @@ def calc_dps(value, max_dp=3):
     return max_dp_required
 
 
-def read(data, path):
+def read(data, path, prog_cb):
 
     file_size = os.stat(path).st_size
 
@@ -146,7 +146,7 @@ def read(data, path):
                 row_count += 1
 
             if row_count % 1000 == 0:
-                yield 0.33333 * file.tell() / file_size
+                prog_cb(0.33333 * file.tell() / file_size)
 
         for column_writer in column_writers:
             column_writer.ruminate()
@@ -168,7 +168,7 @@ def read(data, path):
                 row_no += 1
 
             if row_no % 1000 == 0:
-                yield .33333 + .66666 * file.tell() / file_size
+                prog_cb(.33333 + .66666 * file.tell() / file_size)
 
 
 def trim_after_last_newline(text):
