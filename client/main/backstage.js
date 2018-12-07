@@ -687,9 +687,15 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'open',
                 title: 'Open',
                 action: () => {
-                    this.set('place', this.instance.settings().getSetting('openPlace', 'thispc'));
-                    let path = this._determineSavePath();
-                    return this.setCurrentDirectory('main', Path.dirname(path));
+                    let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                    if (place === 'thispc') {
+                        let path = this._determineSavePath();
+                        return this.setCurrentDirectory('main', Path.dirname(path)).then(() => {
+                            this.set('place', place);
+                        });
+                    }
+                    else
+                        this.set('place', place);
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
@@ -1317,9 +1323,14 @@ var BackstageChoices = SilkyView.extend({
             this.$current.fadeIn(200);
         }
 
-        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory(place.model.attributes.wdType) === false)
-            this.model.setCurrentDirectory(place.model.attributes.wdType, '')  // empty string requests default path
-                .done();
+        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
+            if (place.model.attributes.wdType === 'thispc') {
+                let path = this.model._determineSavePath();
+                this.model.setCurrentDirectory('main', Path.dirname(path)).done();
+            }
+            else
+                this.model.setCurrentDirectory(place.model.attributes.wdType, '').done();  // empty string requests default path
+        }
 
         if (old) {
             $old.fadeOut(200);
