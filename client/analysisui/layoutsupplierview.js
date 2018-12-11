@@ -47,7 +47,7 @@ const LayoutSupplierView = function(params) {
             this.supplierGrid.resumeLayout();
         }
 
-        this.trigger("value_changed");
+        this.trigger('value_changed');
     };
 
     this.getList = function() {
@@ -62,16 +62,18 @@ const LayoutSupplierView = function(params) {
         this.setList(value);
     };
 
-    this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
-    this.registerSimpleProperty("persistentItems", false);
-    this.registerSimpleProperty("label", null);
-    this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
-    this.registerSimpleProperty("format", null);
+    this.registerComplexProperty('value', this.getList, this.setList, 'value_changed');
+    this.registerSimpleProperty('persistentItems', false);
+    this.registerSimpleProperty('label', null);
+    this.registerSimpleProperty('margin', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'none'], 'normal'));
+    this.registerSimpleProperty('format', null);
+    this.registerSimpleProperty('higherOrders', false);
 
     this._persistentItems = this.getPropertyValue('persistentItems');
+    this._higherOrder = this.getPropertyValue('higherOrders');
 
-    this.$el.addClass("silky-options-supplier-group");
-    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
+    this.$el.addClass('silky-options-supplier-group');
+    this.$el.addClass('silky-control-margin-' + this.getPropertyValue('margin'));
 
     this._items = [];
     this._targets = {};
@@ -85,11 +87,13 @@ const LayoutSupplierView = function(params) {
             baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
-        this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
+        this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
         this.supplierGrid.stretchEndCells = false;
         this.supplierGrid._animateCells = true;
         this.supplierGrid.setMinimumHeight(200);
         this.supplierGrid.setMaximumHeight(200);
+        this.supplierGrid.setAutoSizeHeight(false);
+        this.supplierGrid.allocateSpaceForScrollbars = false;
         this.ignoreTransform = true;
         let cell = baseLayout.addCell(0, label !== null ? 1 : 0, false, this.supplierGrid);
         this.ignoreTransform = false;
@@ -130,10 +134,10 @@ const LayoutSupplierView = function(params) {
     };
 
     this.getColumnIndexFromName = function(name) {
-        if (name === "aux")
+        if (name === 'aux')
             return 0;
 
-        if (name === "main")
+        if (name === 'main')
             return 1;
 
         return -1;
@@ -219,7 +223,7 @@ const LayoutSupplierView = function(params) {
             if (target.itemCount)
                 count += target.itemCount(item);
             else {
-                throw "Target is missing an itemCount function";
+                throw 'Target is missing an itemCount function';
             }
         }
 
@@ -227,7 +231,7 @@ const LayoutSupplierView = function(params) {
     };
 
     this.removeTarget = function(target) {
-        let id = "_" + target._dropId;
+        let id = '_' + target._dropId;
         if ((id in this._targets) === false)
             return;
 
@@ -255,7 +259,7 @@ const LayoutSupplierView = function(params) {
 
     this.addTarget = function(target) {
 
-        let id = "_" + target._dropId;
+        let id = '_' + target._dropId;
         if (id in this._targets)
             return false;
 
@@ -348,7 +352,7 @@ const LayoutSupplierView = function(params) {
         let $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
         if (item.properties.permitted === false)
-            $item.addClass("silky-grayed-out");
+            $item.addClass('silky-grayed-out');
 
         let variableType = 'none';
         if (item.properties.measureType !== undefined)
@@ -358,8 +362,61 @@ const LayoutSupplierView = function(params) {
         if (item.properties.dataType !== undefined)
             dataType = item.properties.dataType;
 
+        item.properties.power = 1;
+
         $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + ' jmv-data-type-' + dataType + '"></div>');
         $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+
+        if (this._higherOrder) {
+            $item.append(
+                            `<div class="power-box">
+                                <div class="value" contenteditable="true">1</div>
+                                <div class="button-box">
+                                    <div class="up button"></div>
+                                    <div class="down button"></div>
+                                </div>
+                            </div>`
+                        );
+            let $powerItem = $item.find('.power-box');
+            $powerItem.on('mousedown', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            $powerItem.on('mouseup', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            $powerItem.on('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            let $powerValueItem = $item.find('.power-box .value');
+            $powerValueItem.on('blur', (event) => {
+                let value = parseInt($powerValueItem.text()) - 1;
+                if (value < 1 || value == 'NaN')
+                    value = 1;
+                else if (value > 5)
+                    value = 5;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+            let $upItem = $item.find('.power-box .up');
+            $upItem.on('mouseup', (event) => {
+                let value = parseInt($powerValueItem.text()) + 1;
+                if (value > 5 || value == 'NaN')
+                    value = 5;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+            let $downItem = $item.find('.power-box .down');
+            $downItem.on('mouseup', (event) => {
+                let value = parseInt($powerValueItem.text()) - 1;
+                if (value < 1 || value == 'NaN')
+                    value = 1;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+        }
 
         let c1 = this.supplierGrid.getCell(0, row);
 
@@ -371,6 +428,17 @@ const LayoutSupplierView = function(params) {
             c1.$content.remove();
             c1.setContent($item);
         }
+        c1.off('layoutcell.selectionChanged');
+        c1.on('layoutcell.selectionChanged', () => {
+            if (c1.isSelected()) {
+                $item.find('.power-box').addClass('power-visible');
+                let $powerValueItem = $item.find('.power-box .value');
+                $powerValueItem.text('1');
+                item.properties.power = 1;
+            }
+            else
+                $item.find('.power-box').removeClass('power-visible');
+        });
 
         c1.setStretchFactor(1);
 

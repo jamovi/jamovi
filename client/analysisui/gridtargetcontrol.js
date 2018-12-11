@@ -20,7 +20,7 @@ const TargetListSupport = function(supplier) {
 
     this._supplier = supplier;
 
-    this.registerSimpleProperty("itemDropBehaviour", "insert", new EnumPropertyFilter(["overwrite", "insert", "emptyspace"], "insert"));
+    this.registerSimpleProperty('itemDropBehaviour', 'insert', new EnumPropertyFilter(['overwrite', 'insert', 'emptyspace'], 'insert'));
 
     this._findValueWithKey = function(data, key) {
         let value = data;
@@ -97,11 +97,11 @@ const TargetListSupport = function(supplier) {
     };
 
     this.checkDropBehaviour = function() {
-        let dropBehaviour = this.getPropertyValue("itemDropBehaviour");
+        let dropBehaviour = this.getPropertyValue('itemDropBehaviour');
 
         let hasMaxItemCount = this.maxItemCount >= 0;
         if (hasMaxItemCount && this.getOption().getLength(this.getValueKey()) >= this.maxItemCount)
-            dropBehaviour = "overwrite";
+            dropBehaviour = 'overwrite';
 
         return dropBehaviour;
     };
@@ -114,13 +114,13 @@ const TargetListSupport = function(supplier) {
         let pos = null;
         let destFormat = null;
         let onCell = false;
-        if (dropBehaviour !== "emptyspace" && cell !== null) {
+        if (dropBehaviour !== 'emptyspace' && cell !== null) {
             let cellInfo = this.getCellInfo(cell);
             pos = this.getRelativeKey(cellInfo.valueIndex);
             destFormat = cellInfo.format;
             onCell = cellInfo.isValueCell;
         }
-        let insert = dropBehaviour === "insert";
+        let insert = dropBehaviour === 'insert';
 
         let itemsList = items;
         let overflowStartIndex = -1;
@@ -168,10 +168,10 @@ const TargetListSupport = function(supplier) {
 
     this.onDraggingLeave = function() {
         if (this._$hoverCell !== null) {
-            this._$hoverCell.removeClass("item-hovering");
-            this._$hoverCell.removeClass("item-overwrite-on-drop");
-            this._$hoverCell.removeClass("item-insert-on-drop");
-            this._$hoverCell.removeClass("item-emptyspace-on-drop");
+            this._$hoverCell.removeClass('item-hovering');
+            this._$hoverCell.removeClass('item-overwrite-on-drop');
+            this._$hoverCell.removeClass('item-insert-on-drop');
+            this._$hoverCell.removeClass('item-emptyspace-on-drop');
             this._$hoverCell = null;
         }
     };
@@ -187,10 +187,10 @@ const TargetListSupport = function(supplier) {
     this.onDraggingOver = function(xpos, ypos) {
         let dropBehaviour = this.checkDropBehaviour();
         if (this._$hoverCell !== null) {
-            this._$hoverCell.removeClass("item-hovering");
-            this._$hoverCell.removeClass("item-overwrite-on-drop");
-            this._$hoverCell.removeClass("item-insert-on-drop");
-            this._$hoverCell.removeClass("item-emptyspace-on-drop");
+            this._$hoverCell.removeClass('item-hovering');
+            this._$hoverCell.removeClass('item-overwrite-on-drop');
+            this._$hoverCell.removeClass('item-insert-on-drop');
+            this._$hoverCell.removeClass('item-emptyspace-on-drop');
             this._$hoverCell = null;
         }
 
@@ -209,8 +209,8 @@ const TargetListSupport = function(supplier) {
                 dropBehaviour = 'insert';
 
             this._$hoverCell = cell.$content;
-            this._$hoverCell.addClass("item-hovering");
-            this._$hoverCell.addClass("item-" + dropBehaviour + "-on-drop");
+            this._$hoverCell.addClass('item-hovering');
+            this._$hoverCell.addClass('item-' + dropBehaviour + '-on-drop');
         }
     };
 
@@ -219,16 +219,16 @@ const TargetListSupport = function(supplier) {
     };
 
     this.dropTargetElement = function() {
-        let parent = this.getPropertyValue("_parentControl");
+        let parent = this.getPropertyValue('_parentControl');
         let $dropArea = this.$el;
         while (parent !== null) {
             let isTargetChain = false;
-            if (parent.hasProperty("targetArea") === true && parent.getPropertyValue("targetArea") === true)
+            if (parent.hasProperty('targetArea') === true && parent.getPropertyValue('targetArea') === true)
                 $dropArea = parent.$el;
             else
                 break;
 
-            parent = parent.getPropertyValue("_parentControl");
+            parent = parent.getPropertyValue('_parentControl');
         }
         return $dropArea;
     };
@@ -244,7 +244,7 @@ const TargetListSupport = function(supplier) {
         }
 
         let data = { items: items, intoSelf: intoSelf, action: action };
-        this.trigger("preprocess", data);
+        this.trigger('preprocess', data);
 
         let testedItems = [];
         for (let i = 0; i < data.items.length; i++) {
@@ -276,11 +276,11 @@ const GridTargetContainer = function(params) {
     GridControl.extendTo(this, params);
     Object.assign(this, Backbone.Events);
 
-    this.registerSimpleProperty("label", null);
-    this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
-    this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
-    this.registerSimpleProperty("dropOverflow", "tryNext", new EnumPropertyFilter(["discard", "tryNext"], "tryNext"));
-    this.registerSimpleProperty("transferAction", "none", new EnumPropertyFilter(["none", "interactions"], "none"));
+    this.registerSimpleProperty('label', null);
+    this.registerSimpleProperty('margin', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'none'], 'normal'));
+    this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(['list', 'inline'], 'list'));
+    this.registerSimpleProperty('dropOverflow', 'tryNext', new EnumPropertyFilter(['discard', 'tryNext'], 'tryNext'));
+    this.registerSimpleProperty('transferAction', 'none', new EnumPropertyFilter(['none', 'interactions'], 'none'));
 
     this.gainOnClick = true;
     this._supplier = null;
@@ -327,7 +327,7 @@ const GridTargetContainer = function(params) {
             if (listbox.disposeDragDrop)
                 listbox.disposeDragDrop(listbox.$el);
 
-            listbox.$el.removeClass("silky-target-list");
+            listbox.$el.removeClass('silky-target-list');
 
             listbox.off();
             listbox.$el.off();
@@ -354,16 +354,16 @@ const GridTargetContainer = function(params) {
     };
 
     this.addListBox = function(listbox) {
-        listbox.setCellBorders(listbox._columnInfo._list.length > 1 ? "columns" : null);
+        listbox.setCellBorders(listbox._columnInfo._list.length > 1 ? 'columns' : null);
 
-        listbox._override("onListItemAdded", (baseFunction, item, index) => {
+        listbox._override('onListItemAdded', (baseFunction, item, index) => {
 
             this.searchForListControls(item);
 
             return baseFunction.call(listbox, item, index);
         });
 
-        listbox._override("onListItemRemoved", (baseFunction, item) => {
+        listbox._override('onListItemRemoved', (baseFunction, item) => {
 
             this.searchForListControls(item, true);
 
@@ -422,7 +422,7 @@ const GridTargetContainer = function(params) {
             TargetListSupport.extendTo(listbox, this._supplier);
             listbox.setPickupSourceElement(listbox.$el);
 
-            listbox.$el.addClass("silky-target-list");
+            listbox.$el.addClass('silky-target-list');
 
             let dropOverflow = this.getPropertyValue('dropOverflow');
             if (dropOverflow !== 'discard') {
@@ -575,12 +575,26 @@ const GridTargetContainer = function(params) {
 
         let values = this.itemsToValues(items);
 
+        if (this.valueTransferConversion) {
+            let newValues = this.valueTransferConversion(action, values);
+            if (newValues !== null) {
+                return this.valuesToItems(newValues, action.resultFormat);
+            }
+        }
+
         switch (action.name) {
             case 'none':
             case 'maineffects':
                 return this.convertItems(items, action.resultFormat);
             case 'interaction':
-                return this.valuesToItems([values], action.resultFormat);
+                let interaction = [];
+                for (let value of values) {
+                    if (Array.isArray(value))
+                        interaction = interaction.concat(value);
+                    else
+                        interaction.push(value);
+                }
+                return this.valuesToItems([interaction], action.resultFormat);
             case 'all2way':
                 return this.valuesToItems(this.getInteractions(values, 2, 2), action.resultFormat);
             case 'all3way':
@@ -623,7 +637,10 @@ const GridTargetContainer = function(params) {
 
                 let newVar = JSON.parse(JSON.stringify(f));
 
-                newVar.push(rawVar);
+                //if (Array.isArray(rawVar))
+                //    newVar = newVar.concat(rawVar);
+                //else
+                    newVar.push(rawVar);
 
                 if (counts[newVar.length - 1] === undefined)
                     counts[newVar.length - 1] = 1;
@@ -631,40 +648,65 @@ const GridTargetContainer = function(params) {
                     counts[newVar.length - 1] += 1;
                 list.splice(findPosition(newVar.length), 0, newVar);
             }
-            list.splice(i, 0, [rawVar]);
+            //if (Array.isArray(rawVar))
+            //    list.splice(i, 0, JSON.parse(JSON.stringify(rawVar)));
+            //else
+                list.splice(i, 0, [rawVar]);
             counts[0] += 1;
         }
 
         if (minLength > 1)
             list.splice(0, findPosition(minLength - 1));
 
+        for (let i = 0; i < list.length; i++)
+            list[i] = this._flattenList(list[i]);
+
         return list;
+    };
+
+    this._flattenList = function(list) {
+        let flatList = [];
+        for (let value of list) {
+            if (Array.isArray(value))
+                flatList = flatList.concat(this._flattenList(value));
+            else
+                flatList.push(value);
+        }
+        return flatList;
     };
 
     this.convertItems = function(items, toFormat) {
         let newItems = [];
         for (let i = 0; i < items.length; i++)
-            newItems.push({ value: items[i].value.convert(toFormat) });
+            newItems.push({ value: items[i].value.convert(toFormat, { power: items[i].properties.power }) });
 
         return newItems;
     };
 
     this.valuesToItems = function(values, format) {
-        var list = [];
-        for (var i = 0; i < values.length; i++) {
-            let value = values[i];
-            if (format !== undefined)
-                value = new FormatDef.constructor(value, format);
-
-            list.push({ value: value });
+        let list = [];
+        for (let i = 0; i < values.length; i++) {
+            if (format == FormatDef.variable && Array.isArray(values[i]))
+                list.push({ value: new FormatDef.constructor(values[i][0], format), properties: { power: values[i].length } });
+            else
+                list.push({ value: new FormatDef.constructor(values[i], format) });
         }
         return list;
     };
 
     this.itemsToValues = function(items) {
-        var list = [];
-        for (var i = 0; i < items.length; i++)
-            list.push(items[i].value.raw);
+        let list = [];
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].properties.power > 1) {
+                let g = [];
+                for (let h = 0; h < items[i].properties.power; h++)
+                    g.push(items[i].value.raw);
+
+                list.push(g);
+            }
+            else
+                list.push(items[i].value.raw);
+        }
         return list;
     };
 
@@ -734,7 +776,7 @@ const GridTargetContainer = function(params) {
                     let selectedItem = selectedItems[i];
                     if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
                         postProcessSelectionIndex = selectedItem.index;
-                        if (this._supplier.getPropertyValue("persistentItems"))
+                        if (this._supplier.getPropertyValue('persistentItems'))
                             postProcessSelectionIndex += 1;
                     }
 
@@ -803,7 +845,7 @@ const GridTargetContainer = function(params) {
 
     this.checkEnableState = function(button, disableSupplyOnly) {
         if (disableSupplyOnly) {
-            if (button.name === 'interactions')
+            if (button.name === 'transferActions')
                 return false;
         }
 
@@ -886,12 +928,12 @@ const GridTargetContainer = function(params) {
         }
     };
 
-    this._override("onPropertyChanged", (baseFunction, name) => {
+    this._override('onPropertyChanged', (baseFunction, name) => {
 
         if (baseFunction !== null)
             baseFunction.call(this, name);
 
-        if (name === "label" && this.$label) {
+        if (name === 'label' && this.$label) {
             let label = this.getPropertyValue('label');
             this.$label.text(label);
         }
@@ -960,7 +1002,7 @@ const GridTargetContainer = function(params) {
 
         let label = this.getPropertyValue('label');
         if (label !== null) {
-            this.$label = $('<div style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-' + this.getPropertyValue("margin") + '">' + label + '</div>');
+            this.$label = $('<div style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-' + this.getPropertyValue('margin') + '">' + label + '</div>');
             grid.addCell(column, row, true, this.$label);
         }
 
@@ -971,18 +1013,28 @@ const GridTargetContainer = function(params) {
                 new ToolbarButton({ title: '', name: 'normal', size: 'small', classes: 'jmv-variable-transfer' })
             ];
 
-            if (transferAction === 'interactions') {
-                buttons.push(
-                    new ToolbarButton({ title: '', name: 'interactions', size: 'small', classes: 'jmv-variable-transfer-collection jmv-variable-interaction-transfer', items: [
-                        new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarSeparator({ orientation: 'vertical' }),
+            if (transferAction === 'interactions' || this.populateTransferActions) {
+                let transferActionItems = [
+                    new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
+                    new ToolbarGroup({ title: 'Interactions', name: 'interactions', orientation: 'vertical', items: [
                         new ToolbarButton({ title: 'Main Effects', name: 'maineffects', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 2 way', name: 'all2way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 3 way', name: 'all3way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 4 way', name: 'all4way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 5 way', name: 'all5way', hasIcon: false, resultFormat: FormatDef.term })
                     ]})
-                );
+                ];
+
+                if (this.populateTransferActions)
+                    transferActionItems = transferActionItems.concat(this.populateTransferActions());
+
+                buttons.push(new ToolbarButton({
+                    title: '',
+                    name: 'transferActions',
+                    size: 'small',
+                    classes: 'jmv-variable-transfer-collection jmv-variable-interaction-transfer',
+                    items: transferActionItems
+                }));
             }
 
             this.toolbar = new Toolbar([
@@ -991,7 +1043,7 @@ const GridTargetContainer = function(params) {
 
 
             this.toolbar.$el.addClass();
-            this.$buttons = this.toolbar.$el;//$('<button type="button" class="silky-option-variable-button"><span class="mif-arrow-right"></span></button>');
+            this.$buttons = this.toolbar.$el;
             this.$buttons.addClass('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)
@@ -1001,6 +1053,7 @@ const GridTargetContainer = function(params) {
                         case 'normal':
                             this.onAddButtonClick();
                             break;
+                        case 'transferActions':
                         case 'interactions':
                             this._enableButtons(item, true);
                             break;

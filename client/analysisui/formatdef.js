@@ -65,11 +65,11 @@ const FormatDef = {
             return this.format !== null;
         };
 
-        this.convert = function(format) {
+        this.convert = function(format, properties) {
             if (format.from === undefined)
                 throw 'Format "' + format.name + '" does not have a "from" converter function.';
 
-            return new FormatDef.constructor(format.from(this), format);
+            return new FormatDef.constructor(format.from(this, properties), format);
         };
     }
 };
@@ -137,7 +137,7 @@ FormatDef.variable = new Format ({
     },
 
     isValid: function(raw) {
-        return (typeof raw === 'string');
+        return (typeof raw === 'string') || Array.isArray(raw);
     },
 
     isEqual: function(raw1, raw2) {
@@ -189,6 +189,7 @@ FormatDef.variable = new Format ({
                     counts[newVar.length - 1] += 1;
                 list.splice(findPosition(newVar.length), 0, isFormatted ? new FormatDef.constructor(newVar, FormatDef.term) : newVar);
             }
+
             list.splice(i, 0, isFormatted ? new FormatDef.constructor([rawVar], FormatDef.term) : [rawVar]);
             counts[0] += 1;
         }
@@ -196,7 +197,21 @@ FormatDef.variable = new Format ({
         if (minLength > 1)
             list.splice(0, findPosition(minLength - 1));
 
+        for (let i = 0; i < list.length; i++)
+            list[i] = this._flattenList(list[i]);
+
         return list;
+    },
+
+    _flattenList: function(list) {
+        let flatList = [];
+        for (let value of list) {
+            if (Array.isArray(value))
+                flatList = flatList.concat(this._flattenList(value));
+            else
+                flatList.push(value);
+        }
+        return flatList;
     }
 });
 
@@ -305,17 +320,29 @@ FormatDef.term = new Format ({
         return '-';
     },
 
-    _itemToString: function(item, level) {
+    getSuperscript: function(value) {
+        return '<sup> ' + value + '</sup>';
+    },
+
+    _itemToString: function(item, level, power) {
         if (typeof item === 'string')
-            return item;
+            return item + (power > 1 ? this.getSuperscript(power) : '');
 
         if (item === null || item.length === 0)
             return '';
 
         let joiner = FormatDef.term._getJoiner(level);
-        let combined = FormatDef.term._itemToString(item[0], level + 1);
-        for (let i = 1; i < item.length; i++)
-            combined = combined + " " + joiner + " " + FormatDef.term._itemToString(item[i], level + 1);
+
+        let combined = '';
+        let npower = 1;
+        for (let i = 0; i < item.length; i++) {
+            if (i < item.length - 1 && item[i] === item[i+1])
+                npower += 1;
+            else {
+                combined = (combined !== '' ? (combined + ' ' + joiner + ' ') : '') + FormatDef.term._itemToString(item[i], level + 1, npower);
+                npower = 1;
+            }
+        }
 
         return combined;
     },
@@ -334,17 +361,30 @@ FormatDef.term = new Format ({
         return true;
     },
 
-    from: function(raw, format) {
+    from: function(raw, properties) {
+        let format = properties.format;
         if (format === undefined) {
             format = raw.format;
             raw = raw.raw;
         }
 
+        let power = properties.power;
+        if (power === undefined)
+            power = 1;
+
         if (format.name === 'term')
             return raw;
 
-        if (format.name === 'variable')
-            return [raw];
+        if (format.name === 'variable') {
+            if (Array.isArray(raw))
+                return raw;
+            else {
+                let term = [];
+                for (let p = 0; p < power; p++)
+                    term.push(raw);
+                return term;
+            }
+        }
 
         return null;
     }

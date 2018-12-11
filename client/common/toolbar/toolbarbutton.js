@@ -64,11 +64,26 @@ const ToolbarButton = function(params) {
             this.items = params.items;
     };
 
-    this.setParent = function(parent) {
+    this.getParent = function(level) {
+        if (level === undefined)
+            return this.parent;
+        else if (level === this._level)
+            return this;
+
+        return this.parent.getParent(level);
+    };
+
+    this.getLevel = function() {
+        return this._level;
+    };
+
+    this.setParent = function(root, parent) {
+        this.root = root;
         this.parent = parent;
+        this._level = parent.getLevel() + 1;
 
         if (this._menuGroup !== undefined)
-            this._menuGroup.setParent(parent);
+            this._menuGroup.setParent(root, this);
     };
 
     this.setEnabled = function(enabled) {
@@ -86,7 +101,7 @@ const ToolbarButton = function(params) {
             return;
 
         let menuWasVisible = this.menuVisible;
-        this.parent._buttonClicked(this);
+        this.root._buttonClicked(this);
 
         if (this._menuGroup !== undefined) {
             if (menuWasVisible === false)

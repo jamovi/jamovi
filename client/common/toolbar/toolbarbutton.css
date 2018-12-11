@@ -6,6 +6,7 @@
     margin-bottom: 0;
     flex-direction: column;
     position: relative;
+    justify-content: space-between;
 }
 
 .jmv-toolbar-disabled.jmv-toolbar-button {
@@ -18,14 +19,22 @@
     background-color: #d8d8d8;
 }
 
-.jmv-toolbar-group-body .jmv-toolbar-button .jmv-toolbar-button-menu {
+.jmv-toolbar-group-body .jmv-toolbar-button > .jmv-toolbar-button-menu {
     top: 100%;
     left: 0px;
     margin-top: 0px;
-    border: 1px solid #bebebe;
+    border: 1px solid #d8d8d8;
     border-radius: 0px;
-    background-color: #e6e6e6;
+    background-color: #f8f8f8;
     position: absolute;
+    box-shadow: 0px 0px 5px #c1c1c1;
+}
+
+.jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-medium > .jmv-toolbar-button-menu {
+    top: 0px;
+    left: 100%;
+    margin-top: -1px;
+    margin-left: -1px;
 }
 
 .jmv-toolbar-button .jmv-toolbar-button {
@@ -39,6 +48,10 @@
     background-position: center;
     background-repeat: no-repeat ;
     background-size: contain;
+}
+
+.jmv-toolbar-button-size-medium > .jmv-toolbar-menu-arrow {
+    transform: rotate(270deg);
 }
 
 .jmv-toolbar-group-body .jmv-toolbar-button-icon {
@@ -75,6 +88,7 @@
     width: auto;
     flex-direction: row;
     align-items: center;
+    padding-left: 10px;
 }
 
 .jmv-toolbar-button-size-medium .jmv-toolbar-button-icon {
@@ -84,6 +98,7 @@
 
 .jmv-toolbar-button-size-medium .jmv-toolbar-button-label {
     margin-left: 3px;
+    margin-right: 15px;
     margin-top: 0px;
     white-space: nowrap;
 }

@@ -6,15 +6,19 @@
 }
 
 .jmv-toolbar-group-label {
-    text-align: center;
-    width: 100%;
-    font-size: 70%;
-    bottom: 0px;
-    position: absolute;
+    font-size: 75%;
+    background-color: #e3e3e3;
+    padding: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    text-indent: 3px;
 }
 
 .jmv-toolbar-group {
     position: relative;
+    display: flex;
+    flex-direction: column-reverse;
+    margin: 3px 0;
 }
 
 .jmv-toolbar-group-body-vertical {
