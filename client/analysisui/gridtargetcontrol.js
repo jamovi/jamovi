@@ -575,6 +575,13 @@ const GridTargetContainer = function(params) {
 
         let values = this.itemsToValues(items);
 
+        if (this.valueTransferConversion) {
+            let newValues = this.valueTransferConversion(action, values);
+            if (newValues !== null) {
+                return this.valuesToItems(newValues, action.resultFormat);
+            }
+        }
+
         switch (action.name) {
             case 'none':
             case 'maineffects':
@@ -623,7 +630,10 @@ const GridTargetContainer = function(params) {
 
                 let newVar = JSON.parse(JSON.stringify(f));
 
-                newVar.push(rawVar);
+                if (Array.isArray(rawVar))
+                    newVar = newVar.concat(rawVar);
+                else
+                    newVar.push(rawVar);
 
                 if (counts[newVar.length - 1] === undefined)
                     counts[newVar.length - 1] = 1;
@@ -631,7 +641,10 @@ const GridTargetContainer = function(params) {
                     counts[newVar.length - 1] += 1;
                 list.splice(findPosition(newVar.length), 0, newVar);
             }
-            list.splice(i, 0, [rawVar]);
+            if (Array.isArray(rawVar))
+                list.splice(i, 0, JSON.parse(JSON.stringify(rawVar)));
+            else
+                list.splice(i, 0, [rawVar]);
             counts[0] += 1;
         }
 
@@ -652,19 +665,27 @@ const GridTargetContainer = function(params) {
     this.valuesToItems = function(values, format) {
         var list = [];
         for (var i = 0; i < values.length; i++) {
-            let value = values[i];
-            if (format !== undefined)
-                value = new FormatDef.constructor(value, format);
-
-            list.push({ value: value });
+            if (format == FormatDef.variable && Array.isArray(values[i]))
+                list.push({ value: new FormatDef.constructor(values[i][0], format), properties: { power: values[i].length } });
+            else
+                list.push({ value: new FormatDef.constructor(values[i], format) });
         }
         return list;
     };
 
     this.itemsToValues = function(items) {
         var list = [];
-        for (var i = 0; i < items.length; i++)
-            list.push(items[i].value.raw);
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].properties.power > 1) {
+                let g = [];
+                for (let h = 0; h < items[i].properties.power; h++)
+                    g.push(items[i].value.raw);
+
+                list.push(g);
+            }
+            else
+                list.push(items[i].value.raw);
+        }
         return list;
     };
 
@@ -803,7 +824,7 @@ const GridTargetContainer = function(params) {
 
     this.checkEnableState = function(button, disableSupplyOnly) {
         if (disableSupplyOnly) {
-            if (button.name === 'interactions')
+            if (button.name === 'transferActions')
                 return false;
         }
 
@@ -971,18 +992,28 @@ const GridTargetContainer = function(params) {
                 new ToolbarButton({ title: '', name: 'normal', size: 'small', classes: 'jmv-variable-transfer' })
             ];
 
-            if (transferAction === 'interactions') {
-                buttons.push(
-                    new ToolbarButton({ title: '', name: 'interactions', size: 'small', classes: 'jmv-variable-transfer-collection jmv-variable-interaction-transfer', items: [
-                        new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarSeparator({ orientation: 'vertical' }),
+            if (transferAction === 'interactions' || this.populateTransferActions) {
+                let transferActionItems = [
+                    new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
+                    new ToolbarGroup({ title: 'Interactions', name: 'interactions', orientation: 'vertical', items: [
                         new ToolbarButton({ title: 'Main Effects', name: 'maineffects', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 2 way', name: 'all2way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 3 way', name: 'all3way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 4 way', name: 'all4way', hasIcon: false, resultFormat: FormatDef.term }),
                         new ToolbarButton({ title: 'All 5 way', name: 'all5way', hasIcon: false, resultFormat: FormatDef.term })
                     ]})
-                );
+                ];
+
+                if (this.populateTransferActions)
+                    transferActionItems = transferActionItems.concat(this.populateTransferActions());
+
+                buttons.push(new ToolbarButton({
+                    title: '',
+                    name: 'transferActions',
+                    size: 'small',
+                    classes: 'jmv-variable-transfer-collection jmv-variable-interaction-transfer',
+                    items: transferActionItems
+                }));
             }
 
             this.toolbar = new Toolbar([
@@ -1001,6 +1032,7 @@ const GridTargetContainer = function(params) {
                         case 'normal':
                             this.onAddButtonClick();
                             break;
+                        case 'transferActions':
                         case 'interactions':
                             this._enableButtons(item, true);
                             break;

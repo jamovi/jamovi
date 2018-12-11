@@ -33,7 +33,7 @@ const TermLabel = function(params) {
         if (this.$label) {
             let value = this.getValue();
             let displayValue = this._format.toString(value);
-            this.$label.text(displayValue);
+            this.$label.html(displayValue);
             if (value !== null)
                 this.updateView(value);
         }

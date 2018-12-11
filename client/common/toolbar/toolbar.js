@@ -18,6 +18,15 @@ const Toolbar = function(items) {
     this.$el.click(this._menuClosed);
     this._rendered = false;
 
+    this.getLevel = function() {
+        return 0;
+    };
+
+    this.getParent = function(level) {
+        if (level === 0)
+            return this;
+    };
+
     this.render = function(items) {
 
         if (this._rendered)
@@ -31,7 +40,7 @@ const Toolbar = function(items) {
         for (let i = 0; i < items.length; i++) {
             let button = items[i];
             if (button.setParent)
-                button.setParent(this);
+                button.setParent(this, this);
 
             if (button.dock === 'right')
                 button.$el.insertAfter(this.$separator);
@@ -73,7 +82,20 @@ const Toolbar = function(items) {
     };
 
     this._buttonClicked = function(action) {
-        this._menuClosed();
+        if (action._menuGroup === undefined)
+            this._menuClosed();
+        else {
+            let child = action;
+            let parent = child.getParent();
+            while (parent) {
+                for (let button of parent.items) {
+                    if (button !== child && button.hideMenu && button.getLevel)
+                        button.hideMenu();
+                }
+                child = parent;
+                parent = parent.getParent();
+            }
+        }
         this.trigger("buttonClicked", action);
     };
 

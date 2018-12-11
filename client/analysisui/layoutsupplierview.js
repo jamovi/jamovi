@@ -67,8 +67,10 @@ const LayoutSupplierView = function(params) {
     this.registerSimpleProperty("label", null);
     this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
     this.registerSimpleProperty("format", null);
+    this.registerSimpleProperty("higherOrders", false);
 
     this._persistentItems = this.getPropertyValue('persistentItems');
+    this._higherOrder = this.getPropertyValue('higherOrders');
 
     this.$el.addClass("silky-options-supplier-group");
     this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
@@ -90,6 +92,8 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid._animateCells = true;
         this.supplierGrid.setMinimumHeight(200);
         this.supplierGrid.setMaximumHeight(200);
+        this.supplierGrid.setAutoSizeHeight(false);
+        this.supplierGrid.allocateSpaceForScrollbars = false;
         this.ignoreTransform = true;
         let cell = baseLayout.addCell(0, label !== null ? 1 : 0, false, this.supplierGrid);
         this.ignoreTransform = false;
@@ -358,8 +362,61 @@ const LayoutSupplierView = function(params) {
         if (item.properties.dataType !== undefined)
             dataType = item.properties.dataType;
 
+        item.properties.power = 1;
+
         $item.append('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + ' jmv-data-type-' + dataType + '"></div>');
         $item.append('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>');
+
+        if (this._higherOrder) {
+            $item.append(
+                            `<div class="power-box">
+                                <div class="value" contenteditable="true">1</div>
+                                <div class="button-box">
+                                    <div class="up button"></div>
+                                    <div class="down button"></div>
+                                </div>
+                            </div>`
+                        );
+            let $powerItem = $item.find('.power-box');
+            $powerItem.on('mousedown', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            $powerItem.on('mouseup', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            $powerItem.on('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+            });
+            let $powerValueItem = $item.find('.power-box .value');
+            $powerValueItem.on('blur', (event) => {
+                let value = parseInt($powerValueItem.text()) - 1;
+                if (value < 1 || value == 'NaN')
+                    value = 1;
+                else if (value > 5)
+                    value = 5;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+            let $upItem = $item.find('.power-box .up');
+            $upItem.on('mouseup', (event) => {
+                let value = parseInt($powerValueItem.text()) + 1;
+                if (value > 5 || value == 'NaN')
+                    value = 5;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+            let $downItem = $item.find('.power-box .down');
+            $downItem.on('mouseup', (event) => {
+                let value = parseInt($powerValueItem.text()) - 1;
+                if (value < 1 || value == 'NaN')
+                    value = 1;
+                $powerValueItem.text(value.toString());
+                item.properties.power = value;
+            });
+        }
 
         let c1 = this.supplierGrid.getCell(0, row);
 
@@ -371,6 +428,17 @@ const LayoutSupplierView = function(params) {
             c1.$content.remove();
             c1.setContent($item);
         }
+        c1.off('layoutcell.selectionChanged');
+        c1.on('layoutcell.selectionChanged', () => {
+            if (c1.isSelected()) {
+                $item.find('.power-box').addClass('power-visible');
+                let $powerValueItem = $item.find('.power-box .value');
+                $powerValueItem.text('1');
+                item.properties.power = 1;
+            }
+            else
+                $item.find('.power-box').removeClass('power-visible');
+        });
 
         c1.setStretchFactor(1);
 

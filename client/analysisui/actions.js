@@ -406,15 +406,28 @@ function View() {
 
     this.valuesToItems = function(values, format) {
         var list = [];
-        for (var i = 0; i < values.length; i++)
-            list.push({ value: new FormatDef.constructor(values[i], format) });
+        for (var i = 0; i < values.length; i++) {
+            if (format == FormatDef.variable && Array.isArray(values[i]))
+                list.push({ value: new FormatDef.constructor(values[i][0], format), properties: { power: values[i].length } });
+            else
+                list.push({ value: new FormatDef.constructor(values[i], format) });
+        }
         return list;
     };
 
     this.itemsToValues = function(items) {
         var list = [];
-        for (var i = 0; i < items.length; i++)
-            list.push(items[i].value.raw);
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].properties.power > 1) {
+                let g = [];
+                for (let h = 0; h < items[i].properties.power; h++)
+                    g.push(items[i].value.raw);
+
+                list.push(g);
+            }
+            else
+                list.push(items[i].value.raw);
+        }
         return list;
     };
 }

@@ -29,6 +29,8 @@ const ToolbarGroup = function(params) {
 
         this.$el = $el;
         this.$el.addClass('jmv-toolbar-group');
+        if (title !== null)
+            this.$el.addClass('titled');
 
         this.title = title;
         this.dock = right ? 'right' : 'left';
@@ -58,11 +60,11 @@ const ToolbarGroup = function(params) {
         }
     };
 
-    this.setParent = function(parent) {
+    this.setParent = function(root, parent) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setParent)
-                item.setParent(parent);
+                item.setParent(root, parent);
         }
     };
 

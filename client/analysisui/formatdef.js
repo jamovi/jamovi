@@ -305,17 +305,29 @@ FormatDef.term = new Format ({
         return '-';
     },
 
-    _itemToString: function(item, level) {
+    getSuperscript: function(value) {
+        return '<sup> ' + value + '</sup>';
+    },
+
+    _itemToString: function(item, level, power) {
         if (typeof item === 'string')
-            return item;
+            return item + (power > 1 ? this.getSuperscript(power) : '');
 
         if (item === null || item.length === 0)
             return '';
 
         let joiner = FormatDef.term._getJoiner(level);
-        let combined = FormatDef.term._itemToString(item[0], level + 1);
-        for (let i = 1; i < item.length; i++)
-            combined = combined + " " + joiner + " " + FormatDef.term._itemToString(item[i], level + 1);
+
+        let combined = '';
+        let npower = 1;
+        for (let i = 0; i < item.length; i++) {
+            if (i < item.length - 1 && item[i] === item[i+1])
+                npower += 1;
+            else {
+                combined = (combined !== '' ? (combined + " " + joiner + " ") : '') + FormatDef.term._itemToString(item[i], level + 1, npower);
+                npower = 1;
+            }
+        }
 
         return combined;
     },

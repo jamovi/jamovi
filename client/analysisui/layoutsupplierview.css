@@ -1,0 +1,42 @@
+
+.silky-list-item .power-box .button-box .button {
+    width: 8px;
+    height: 8px;
+    filter: hue-rotate(40deg) saturate(5) grayscale(100%);
+}
+
+.silky-list-item .power-box .value {
+    cursor: text;
+}
+
+.silky-list-item .power-box .button-box .up {
+    background-image: url('assets/filters-up-arrow.svg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    margin-bottom: 1px;
+}
+
+.silky-list-item .power-box .button-box .down {
+    background-image: url('assets/filters-down-arrow.svg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    margin-top: 1px;
+}
+
+.silky-list-item .power-box {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.silky-list-item .power-box.power-visible {
+    opacity: 1;
+}
+
+.silky-list-item .power-box .button-box {
+    margin-right: 3px;
+    margin-left: 3px;
+}
