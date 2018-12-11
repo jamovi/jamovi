@@ -90,7 +90,7 @@ message AnalysisOption {
     enum Other {
         FALSE = 0;
         TRUE  = 1;
-        NULL  = 2;
+        NONE  = 2;
     }
 
     oneof type {

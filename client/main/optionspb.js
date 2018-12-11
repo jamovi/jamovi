@@ -61,7 +61,7 @@ const _toPB = function(value, Messages) {
     }
     else if (value === null) {
         let option = new Messages.AnalysisOption();
-        option.setO(Messages.AnalysisOption.Other.NULL);
+        option.setO(Messages.AnalysisOption.Other.NONE);
         option.type = 'o';
         return option;
     }

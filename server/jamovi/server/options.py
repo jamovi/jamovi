@@ -88,7 +88,7 @@ class Options:
                 child_pb = dest_pb.c.options.add()
                 Options._populate_pb(child_pb, v)
         else:
-            dest_pb.o = AnalysisOption.Other.Value('NULL')
+            dest_pb.o = AnalysisOption.Other.Value('NONE')
 
     def __init__(self):
         self._options = { }
@@ -143,7 +143,7 @@ class Options:
         while i < len(self._pb.names):
             name = self._pb.names[i]
             pb = self._pb.options[i]
-            if name.startswith('results/') and pb.o is AnalysisOption.Other.Value('NULL'):
+            if name.startswith('results/') and pb.o is AnalysisOption.Other.Value('NONE'):
                 del self._pb.names[i]
                 del self._pb.options[i]
             else:
