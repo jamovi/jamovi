@@ -47,7 +47,7 @@ const LayoutSupplierView = function(params) {
             this.supplierGrid.resumeLayout();
         }
 
-        this.trigger("value_changed");
+        this.trigger('value_changed');
     };
 
     this.getList = function() {
@@ -62,18 +62,18 @@ const LayoutSupplierView = function(params) {
         this.setList(value);
     };
 
-    this.registerComplexProperty("value", this.getList, this.setList, "value_changed");
-    this.registerSimpleProperty("persistentItems", false);
-    this.registerSimpleProperty("label", null);
-    this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
-    this.registerSimpleProperty("format", null);
-    this.registerSimpleProperty("higherOrders", false);
+    this.registerComplexProperty('value', this.getList, this.setList, 'value_changed');
+    this.registerSimpleProperty('persistentItems', false);
+    this.registerSimpleProperty('label', null);
+    this.registerSimpleProperty('margin', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'none'], 'normal'));
+    this.registerSimpleProperty('format', null);
+    this.registerSimpleProperty('higherOrders', false);
 
     this._persistentItems = this.getPropertyValue('persistentItems');
     this._higherOrder = this.getPropertyValue('higherOrders');
 
-    this.$el.addClass("silky-options-supplier-group");
-    this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
+    this.$el.addClass('silky-options-supplier-group');
+    this.$el.addClass('silky-control-margin-' + this.getPropertyValue('margin'));
 
     this._items = [];
     this._targets = {};
@@ -87,7 +87,7 @@ const LayoutSupplierView = function(params) {
             baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
-        this.supplierGrid.$el.addClass("silky-layout-grid multi-item silky-variable-supplier");
+        this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
         this.supplierGrid.stretchEndCells = false;
         this.supplierGrid._animateCells = true;
         this.supplierGrid.setMinimumHeight(200);
@@ -134,10 +134,10 @@ const LayoutSupplierView = function(params) {
     };
 
     this.getColumnIndexFromName = function(name) {
-        if (name === "aux")
+        if (name === 'aux')
             return 0;
 
-        if (name === "main")
+        if (name === 'main')
             return 1;
 
         return -1;
@@ -223,7 +223,7 @@ const LayoutSupplierView = function(params) {
             if (target.itemCount)
                 count += target.itemCount(item);
             else {
-                throw "Target is missing an itemCount function";
+                throw 'Target is missing an itemCount function';
             }
         }
 
@@ -231,7 +231,7 @@ const LayoutSupplierView = function(params) {
     };
 
     this.removeTarget = function(target) {
-        let id = "_" + target._dropId;
+        let id = '_' + target._dropId;
         if ((id in this._targets) === false)
             return;
 
@@ -259,7 +259,7 @@ const LayoutSupplierView = function(params) {
 
     this.addTarget = function(target) {
 
-        let id = "_" + target._dropId;
+        let id = '_' + target._dropId;
         if (id in this._targets)
             return false;
 
@@ -352,7 +352,7 @@ const LayoutSupplierView = function(params) {
         let $item = $('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 
         if (item.properties.permitted === false)
-            $item.addClass("silky-grayed-out");
+            $item.addClass('silky-grayed-out');
 
         let variableType = 'none';
         if (item.properties.measureType !== undefined)

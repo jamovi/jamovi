@@ -23,7 +23,7 @@ function View() {
         this.customVariables = variables;
         let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
         this.emit('customVariablesChanged', event);
-        //this._fireEvent("customVariablesChanged", event);
+        //this._fireEvent('customVariablesChanged', event);
     };
 
     this.setCustomVariable = function(name, measureType, dataType, levels) {
@@ -111,21 +111,21 @@ function View() {
             }
         },
         {
-            onEvent: "view.loaded", execute: function(ui) {
+            onEvent: 'view.loaded', execute: function(ui) {
                 this._loaded = true;
                 if (this.loaded)
                     this.loaded(ui);
             }
         },
         {
-            onEvent: "view.data-initializing", execute: function(ui, event) {
+            onEvent: 'view.data-initializing', execute: function(ui, event) {
                 if (event.id !== this._id)
                     this.workspace = {};
                 this._updating = true;
             }
         },
         {
-            onEvent: "view.ready", execute: function(ui, event) {
+            onEvent: 'view.ready', execute: function(ui, event) {
                 this._updating = false;
                 if (this.update && event.id !== this._id) {
                     this.update(ui, event);
@@ -283,7 +283,7 @@ function View() {
     };
 
     this.initializeValue = function(option, defaultValue) {
-        var value = option.value();
+        let value = option.value();
         if (value === null) {
             option.setValue(defaultValue);
             return true;
@@ -305,17 +305,17 @@ function View() {
     };
 
     this.sortArraysByLength = function(arrays, itemPropertyName) {
-        var changed = false;
-        for (var i = 0; i < arrays.length - 1; i++) {
+        let changed = false;
+        for (let i = 0; i < arrays.length - 1; i++) {
             let item1 = itemPropertyName === undefined ? arrays[i] : arrays[i][itemPropertyName];
             let item2 = itemPropertyName === undefined ? arrays[i+1] : arrays[i+1][itemPropertyName];
 
-            var l1 = item1.length;
-            var l2 = item2.length;
+            let l1 = item1.length;
+            let l2 = item2.length;
 
             if (arrays.length > i + 1 && (l1 > l2)) {
                 changed = true;
-                var temp = arrays[i+1];
+                let temp = arrays[i+1];
                 arrays[i+1] = arrays[i];
                 arrays[i] = temp;
                 if (i > 0)
@@ -327,7 +327,7 @@ function View() {
     };
 
     this.listContains = function(list, value, format, itemPropertyName) {
-        for (var i = 0; i < list.length; i++) {
+        for (let i = 0; i < list.length; i++) {
             let item = itemPropertyName === undefined ? list[i] : list[i][itemPropertyName];
             if (format === undefined) {
                 if (item === value)
@@ -341,9 +341,9 @@ function View() {
     };
 
     this.findDifferences = function(from, to, format, itemPropertyName) {
-        var j = 0;
+        let j = 0;
 
-        var obj = { removed: [], added: [] };
+        let obj = { removed: [], added: [] };
 
         if ((from === null || from === undefined) && (to === null || to === undefined))
             return obj;
@@ -373,40 +373,48 @@ function View() {
     };
 
     this.getCombinations = function(values, baseList) {
-        var list = [];
+        let list = [];
         if (baseList !== undefined && Array.isArray(baseList))
             list = baseList;
 
         for (let i = 0; i < values.length; i++) {
-            var listLength = list.length;
-            var value = values[i];
+            let listLength = list.length;
+            let value = values[i];
 
             for (let j = 0; j < listLength; j++) {
-                var newValue = this.clone(list[j]);
-                if (Array.isArray(value))
-                    newValue = newValue.concat(value);
-                else
-                    newValue.push(value);
+                let newValue = this.clone(list[j]);
+                newValue.push(value);
                 list.push(newValue);
             }
-            if (Array.isArray(value))
-                list.push(this.clone(value));
-            else
-                list.push([value]);
+            list.push([value]);
         }
+
+        for (let i = 0; i < list.length; i++)
+            list[i] = this.flattenList(list[i]);
 
         return list;
     };
 
+    this.flattenList = function(list) {
+        let flatList = [];
+        for (let value of list) {
+            if (Array.isArray(value))
+                flatList = flatList.concat(this.flattenList(value));
+            else
+                flatList.push(value);
+        }
+        return flatList;
+    }
+
     this.getItemCombinations = function(items) {
-        var values = this.itemsToValues(items);
-        var combinations = this.getCombinations(values);
+        let values = this.itemsToValues(items);
+        let combinations = this.getCombinations(values);
         return this.valuesToItems(combinations, FormatDef.term);
     };
 
     this.valuesToItems = function(values, format) {
-        var list = [];
-        for (var i = 0; i < values.length; i++) {
+        let list = [];
+        for (let i = 0; i < values.length; i++) {
             if (format == FormatDef.variable && Array.isArray(values[i]))
                 list.push({ value: new FormatDef.constructor(values[i][0], format), properties: { power: values[i].length } });
             else
@@ -416,8 +424,8 @@ function View() {
     };
 
     this.itemsToValues = function(items) {
-        var list = [];
-        for (var i = 0; i < items.length; i++) {
+        let list = [];
+        for (let i = 0; i < items.length; i++) {
             if (items[i].properties.power > 1) {
                 let g = [];
                 for (let h = 0; h < items[i].properties.power; h++)
