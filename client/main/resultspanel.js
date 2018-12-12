@@ -302,15 +302,33 @@ const ResultsPanel = Backbone.View.extend({
     },
     _menuEvent(event) {
 
-        let type = (this.mode === 'rich' ? 'text/html' : 'text/plain');
-
         if (event.op === 'copy') {
 
+            let incHtml = this.mode === 'rich';
+
             let $results = this._getElement(event.address);
+            if ($results.hasClass('jmv-results-syntax'))
+                incHtml = false;
 
-            formatIO.exportElem($results, type).then((content) => {
+            let content = { };
 
-                return clipboard.copy({ [ type ]: content });
+            Promise.resolve().then(() => {
+
+                return formatIO.exportElem($results, 'text/plain');
+
+            }).then((text) => {
+
+                content['text/plain'] = text;
+
+                if (incHtml)
+                    return formatIO.exportElem($results, 'text/html');
+
+            }).then((html) => {
+
+                if (html)
+                    content['text/html'] = html;
+
+                return clipboard.copy(content);
 
             }).then(() => {
                 let note = new Notify({
