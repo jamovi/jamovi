@@ -647,8 +647,8 @@ var BackstageModel = Backbone.Model.extend({
             { description: 'jamovi files (.omv)', extensions: ['omv'] },
             { description: 'CSV (Comma delimited) (.csv, .txt)', extensions: ['csv', 'txt'] },
             { description: 'SPSS files (.sav, .zsav, .por)', extensions: ['sav', 'zsav', 'por'] },
-            { description: 'Stata files (.dta, .sas7bdat)', extensions: ['dta', 'sas7bdat'] },
-            { description: 'SAS files (.xpt)', extensions: ['xpt'] },
+            { description: 'Stata files (.dta)', extensions: ['dta'] },
+            { description: 'SAS files (.xpt, .sas7bdat)', extensions: ['xpt', 'sas7bdat'] },
             { description: 'JASP files (.jasp)', extensions: ['jasp'] },
         ];
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
