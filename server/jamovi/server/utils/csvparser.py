@@ -30,9 +30,10 @@ class CSVParser:
             self._result = [ ]
             return
 
-        row = csv.reader(lines, dialect).__iter__().__next__()
-        n_cols = len(row)
         n_rows = len(lines)
+        n_cols = 1
+        for row in csv.reader(lines, dialect):
+            n_cols = max(n_cols, len(row))
 
         cells = [None] * n_cols
         for i in range(n_cols):

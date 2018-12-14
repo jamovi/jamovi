@@ -60,7 +60,7 @@ const htmlifyCells = function(cells, options={}) {
 
 const exportElem = function($el, format, options={images:'absolute'}) {
     if (format === 'text/plain') {
-        return Promise.resolve(_textify($el[0]));
+        return Promise.resolve(_textify($el[0]).trim());
     }
     else {
         return _htmlify($el[0], options).then((content) => {
