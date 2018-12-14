@@ -28,6 +28,9 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
         if (isNaN(value))
             continue;
 
+        if (formats.includes('log10'))
+            value = Math.pow(10, value);
+
         let absValue = Math.abs(value);
         if (absValue >= minNS && absValue <= maxNS) {
 
@@ -99,12 +102,23 @@ let format = function(value, format) {
         return 'NaN';
     }
     else if ( ! isFinite(value)) {
-        if (value  > 0)
+        if (value > 0)
             return 'Inf';
         else
             return '-Inf';
     }
-    else if (format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
+
+    if (format.format.includes('log10')) {
+        value = Math.pow(10, value);
+        if ( ! isFinite(value)) {
+            if (value  > 0)
+                return 'Inf';
+            else
+                return '-Inf';
+        }
+    }
+
+    if (format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
         return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).substring(1);
     }
     else if (format.format.includes('pc')) {
