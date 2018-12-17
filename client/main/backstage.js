@@ -521,7 +521,7 @@ var FSEntryBrowserView = SilkyView.extend({
         if (this.filterExtensions) {
             found = false;
             for (let extIndex = 0; extIndex < this.filterExtensions.length; extIndex++) {
-                if (name.endsWith('.' + this.filterExtensions[extIndex])) {
+                if (name.toLowerCase().endsWith('.' + this.filterExtensions[extIndex])) {
                     found = true;
                     break;
                 }
@@ -642,11 +642,12 @@ var BackstageModel = Backbone.Model.extend({
         this._pcListModel.fileExtensions = [
             { description: 'Data files', extensions: [
                 'omv', 'csv', 'txt', 'sav', 'zsav', 'por',
-                'dta', 'sas7bdat', 'xpt', 'jasp',
+                'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
             ]},
             { description: 'jamovi files (.omv)', extensions: ['omv'] },
             { description: 'CSV (Comma delimited) (.csv, .txt)', extensions: ['csv', 'txt'] },
             { description: 'SPSS files (.sav, .zsav, .por)', extensions: ['sav', 'zsav', 'por'] },
+            { description: 'R data files (.RData, .RDS)', extensions: ['rdata', 'rds'] },
             { description: 'Stata files (.dta)', extensions: ['dta'] },
             { description: 'SAS files (.xpt, .sas7bdat)', extensions: ['xpt', 'sas7bdat'] },
             { description: 'JASP files (.jasp)', extensions: ['jasp'] },
