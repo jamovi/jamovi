@@ -755,9 +755,13 @@ const char *ColumnW::svalue(int index)
         }
         else
         {
+            // we round and divide so it matches _transferLevels()
+            int thous = (int)round(value * 1000);
+
             stringstream ss;
             ss.setf(ios::fixed);
-            ss << setprecision(dps()) << value;
+            ss << setprecision(dps());
+            ss << ((double)thous) / 1000;
             tmp = ss.str();
             return tmp.c_str();
         }
