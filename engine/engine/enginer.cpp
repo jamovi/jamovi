@@ -125,6 +125,8 @@ void EngineR::run(Analysis *analysis)
         rInside.parseEvalQ("try(analysis$.load(changed))");
     }
 
+    rInside.parseEvalQ("analysis$postInit(noThrow=TRUE)");
+
     if (analysis->perform == 5)  // SAVE
     {
         ss.str("");
