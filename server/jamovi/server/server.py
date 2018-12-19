@@ -30,6 +30,10 @@ import asyncio
 
 log = logging.getLogger('jamovi')
 
+tornado_major = int(tornado.version.split('.')[0])
+if tornado_major < 5:
+    raise RuntimeError('tornado 5+ is required')
+
 
 class SingleFileHandler(RequestHandler):
 
