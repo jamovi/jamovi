@@ -323,8 +323,10 @@ void DataSetW::deleteRows(int delStart, int delEnd)
                 column.setIValue(to, value);
             }
 
+            for (int j = finalCount; j < startCount; j++)
+                column.setIValue(j, INT_MIN);
+
             column.setRowCount<int>(finalCount);
-            column.updateLevelCounts();
         }
     }
 
