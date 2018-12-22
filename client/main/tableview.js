@@ -2547,6 +2547,16 @@ const TableView = SilkyView.extend({
         if (text.trim() === '' && html.trim() === '')
             return;
 
+        if ((text.length + html.length) > (9 * 1024 * 1024)) {
+            let notification = new Notify({
+                title: 'Unable to paste',
+                message: 'Too much data, use import instead',
+                duration: 4000,
+            });
+            this.trigger('notification', notification);
+            return;
+        }
+
         return this.model.changeCells(this.selection, text, html)
             .then(range => {
 
