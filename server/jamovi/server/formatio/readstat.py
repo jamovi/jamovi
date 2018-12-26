@@ -9,6 +9,7 @@ from jamovi.core import DataType
 from jamovi.core import MeasureType
 
 from jamovi.readstat import Parser as ReadStatParser
+from jamovi.readstat import Writer
 from jamovi.readstat import Measure
 
 
@@ -20,6 +21,15 @@ def get_readers():
         ( 'por', lambda data, path, prog_cb: read(data, path, prog_cb, 'por') ),
         ( 'xpt', lambda data, path, prog_cb: read(data, path, prog_cb, 'xpt') ),
         ( 'sas7bdat', lambda data, path, prog_cb: read(data, path, prog_cb, 'sas7bdat') ) ]
+
+
+def get_writers():
+    return [
+        ( 'sav', lambda data, path, prog_cb: write(data, path, prog_cb, 'sav') ),
+        ( 'dta', lambda data, path, prog_cb: write(data, path, prog_cb, 'dta') ),
+        ( 'por', lambda data, path, prog_cb: write(data, path, prog_cb, 'por') ),
+        ( 'xpt', lambda data, path, prog_cb: write(data, path, prog_cb, 'xpt') ),
+        ( 'sas7bdat', lambda data, path, prog_cb: write(data, path, prog_cb, 'sas7bdat') ) ]
 
 
 def read(data, path, prog_cb, format):
@@ -219,3 +229,61 @@ class Parser(ReadStatParser):
                 column.set_value(row_index, int(value))
             else:
                 column.set_value(row_index, -2147483648)
+
+
+def write(data, path, prog_cb, format):
+    writer = Writer()
+    writer.open(path, format)
+    writer.set_file_label('jamovi data set')
+
+    for column in data:
+        if column.is_virtual:
+            break
+
+        if column.data_type is DataType.TEXT:
+            data_type = str
+            storage_width = 0
+            if column.has_levels:
+                for level in column.levels:
+                    storage_width = max(storage_width, len(level[1].encode('utf-8')))
+            else:
+                for value in column:
+                    storage_width = max(storage_width, len(value.encode('utf-8')))
+        elif column.data_type is DataType.DECIMAL:
+            data_type = float
+            storage_width = 8
+        else:
+            data_type = int
+            storage_width = 4
+
+        if column.measure_type is MeasureType.NOMINAL:
+            measure_type = Measure.NOMINAL
+        elif column.measure_type is MeasureType.ORDINAL:
+            measure_type = Measure.ORDINAL
+        elif column.measure_type is MeasureType.CONTINUOUS:
+            measure_type = Measure.SCALE
+        else:
+            measure_type = Measure.UNKNOWN
+
+        var = writer.add_variable(
+            column.name,
+            data_type,
+            storage_width)
+
+        var.measure = measure_type
+
+        if column.has_levels:
+            if column.data_type is DataType.INTEGER:
+                levels = map(lambda x: (x[0], x[1]), column.levels)
+            else:
+                levels = map(lambda x: (x[2], x[1]), column.levels)
+            writer.add_value_labels(var, data_type, levels)
+
+    writer.set_row_count(data.row_count)
+
+    for row_no in range(data.row_count):
+        for col_no in range(data.column_count):
+            value = data[col_no][row_no]
+            writer.insert_value(row_no, col_no, value)
+
+    writer.close()

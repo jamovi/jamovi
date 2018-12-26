@@ -5,10 +5,18 @@ from jamovi.core import MeasureType
 
 from jamovi.librdata import Parser as RDataParser
 from jamovi.librdata import DataType as RDataType
+from jamovi.librdata import Writer
 
 
 def get_readers():
     return [ ( 'rds', read ), ( 'rdata', read )  ]
+
+
+def get_writers():
+    return [
+        ( 'rds', lambda data, path, prog_cb: write(data, path, prog_cb, 'rds') ),
+        ( 'rdata', lambda data, path, prog_cb: write(data, path, prog_cb, 'rdata') ),
+    ]
 
 
 def read(data, path, prog_cb):
@@ -16,6 +24,63 @@ def read(data, path, prog_cb):
     parser.parse(path)
     for column in data.dataset:
         column.determine_dps()
+
+
+def write(data, path, prog_cb, format):
+    writer = Writer()
+    writer.open(path, format)
+    writer.set_row_count(data.row_count)
+
+    for column in data:
+        if column.is_virtual:
+            break
+
+        if column.data_type is DataType.TEXT:
+            if column.measure_type is MeasureType.ID:
+                data_type = str
+            else:
+                data_type = int
+        elif column.data_type is DataType.DECIMAL:
+            data_type = float
+        else:
+            data_type = int
+
+        rcol = writer.add_column(
+            column.name,
+            data_type)
+
+        def treat_as_factor(column):
+            if column.data_type is DataType.TEXT:
+                return column.measure_type is MeasureType.NOMINAL \
+                    or column.measure_type is MeasureType.ORDINAL
+            elif column.data_type is DataType.INTEGER:
+                return not column.levels_are_unchanged
+            else:
+                return False
+
+        if treat_as_factor(column):
+            labels = map(lambda x: x[1], column.levels)
+            rcol.add_level_labels(labels)
+
+    for col_no in range(data.column_count):
+        column = data[col_no]
+        if treat_as_factor(column):
+            if column.data_type == DataType.TEXT:
+                values = list(map(lambda x: x[1], column.levels))
+            else:
+                values = list(map(lambda x: x[0], column.levels))
+            for row_no in range(data.row_count):
+                value = column[row_no]
+                if value != '' and value != -2147483648:
+                    writer.insert_value(row_no, col_no, values.index(value) + 1)
+                else:
+                    writer.insert_value(row_no, col_no, -2147483648)
+        else:
+            for row_no in range(data.row_count):
+                value = column[row_no]
+                writer.insert_value(row_no, col_no, value)
+
+    writer.close()
 
 
 class Parser(RDataParser):

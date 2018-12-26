@@ -348,6 +348,21 @@ class Column:
         return self.levels
 
     @property
+    def levels_are_unchanged(self):
+        if not self.has_levels:
+            return True
+
+        if self.data_type == DataType.TEXT:
+            for level in self.levels:
+                if level[1] != level[2]:
+                    return False
+        else:
+            for level in self.levels:
+                if level[1] != str(level[0]):
+                    return False
+        return True
+
+    @property
     def levels(self):
         if self._child is not None:
             return self._child.levels
