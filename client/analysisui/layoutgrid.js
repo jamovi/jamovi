@@ -740,6 +740,9 @@ const LayoutGrid = function() {
 
     this.getCell = function(columnIndex, rowIndex) {
 
+        if (columnIndex < 0 || rowIndex < 0)
+            return null;
+
         let row = this._orderedCells[rowIndex];
         if (row === undefined)
             return null;
