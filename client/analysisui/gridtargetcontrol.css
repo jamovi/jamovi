@@ -89,3 +89,7 @@
 .item-hovering.item-overwrite-on-drop {
     background-color: rgba(0, 0, 0, 0.1);
 }
+
+.jmv-variable-transfer-toolbar {
+    margin: 0;
+}
