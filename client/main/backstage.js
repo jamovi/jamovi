@@ -741,7 +741,14 @@ var BackstageModel = Backbone.Model.extend({
                         title: 'Data',
                         separator: true,
                         action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extensions: ['csv'], description: "CSV (Comma delimited) (.csv)" } ];
+                            this._pcExportListModel.fileExtensions = [ { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
+                            { extensions: ['rds'], description: 'R object (.rds)' },
+                            { extensions: ['RData'], description: 'R object (.RData)' },
+                            { extensions: ['sav'], description: 'SPSS sav (.sav)' },
+                            // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
+                            { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
+                            // { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },  // crashes on open
+                            { extensions: ['dta'], description: 'Stata (.dta)' }, ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView

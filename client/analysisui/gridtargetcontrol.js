@@ -1038,7 +1038,7 @@ const GridTargetContainer = function(params) {
             }
 
             this.toolbar = new Toolbar([
-                new ToolbarGroup({ orientation: 'vertical', items: buttons })
+                new ToolbarGroup({ orientation: 'vertical', items: buttons, classes: 'jmv-variable-transfer-toolbar' })
             ]);
 
 

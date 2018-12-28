@@ -26,9 +26,11 @@ const ToolbarGroup = function(params) {
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let classes = params.classes === undefined ? '' : params.classes;
 
         this.$el = $el;
         this.$el.addClass('jmv-toolbar-group');
+        this.$el.addClass(classes);
         if (title !== null)
             this.$el.addClass('titled');
 

@@ -88,11 +88,13 @@
 
 .silky-option-list-header {
     padding: 5px;
-    color: white;
+    font-weight: 700;
+    color: #555555;
 }
 
 .silky-option-list-header-cell {
-    background-color: #adadad;
+    background-color: #fafafa;
+    border-bottom: 1px solid #e4e4e4;
 }
 
 .silky-option-list.multi-item:not(.silky-target-list) > .silky-layout-cell:not(.silky-option-list-filler).selected {
