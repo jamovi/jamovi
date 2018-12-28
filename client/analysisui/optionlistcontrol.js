@@ -399,7 +399,7 @@ const OptionListControl = function(params) {
 
     this.rowIndexToDisplayIndex = function(rowIndex) {
         if (rowIndex < 0)
-            return rowIndex
+            return rowIndex;
         return rowIndex + (this.showHeaders ? 1 : 0);
     };
 
