@@ -11,9 +11,10 @@ class InstanceModel:
     N_VIRTUAL_COLS = 5
     N_VIRTUAL_ROWS = 50
 
-    def __init__(self):
+    def __init__(self, instance):
+        self._instance = instance
         self._dataset = None
-        self._analyses = Analyses()
+        self._analyses = Analyses(self)
         self._path = ''
         self._title = ''
         self._import_path = ''
@@ -27,6 +28,14 @@ class InstanceModel:
         self._transform_next_id = 1  # an id of zero is unasigned... zero is reserved for 'no transform'
 
         self._log = NullLog()
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @property
+    def instance_path(self):
+        return self._instance.instance_path
 
     def __getitem__(self, index_or_name):
         if type(index_or_name) is int:

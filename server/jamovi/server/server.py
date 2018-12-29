@@ -10,12 +10,13 @@ from tornado.concurrent import Future
 from tornado import gen
 
 from .clientconnection import ClientConnection
-from .instance import Instance
+from .session import Session
 from .modules import Modules
 from .utils import conf
 from jamovi.core import Dirs
 
 import sys
+import os
 import os.path
 import uuid
 import mimetypes
@@ -62,8 +63,11 @@ class SingleFileHandler(RequestHandler):
 
 class ResourceHandler(RequestHandler):
 
+    def initialize(self, session):
+        self._session = session
+
     def get(self, instance_id, resource_id):
-        instance = Instance.get(instance_id)
+        instance = self._session.get(instance_id)
         if instance is None:
             self.set_status(404)
             self.write('<h1>404</h1>')
@@ -86,7 +90,7 @@ class ResourceHandler(RequestHandler):
 class ModuleAssetHandler(RequestHandler):
 
     def get(self, instance_id, analysis_id, path):
-        instance = Instance.get(instance_id)
+        instance = self._session.get(instance_id)
         if instance is None:
             self.set_status(404)
             self.write('<h1>404</h1>')
@@ -212,11 +216,13 @@ class PDFConverter(RequestHandler):
 
 class DatasetsList(RequestHandler):
 
+    def initialize(self, session):
+        self._session = session
+
     def get(self):
-        instances = [ ]
-        for id in Instance.instances:
-            instance = Instance.get(id)
-            instances.append({
+        datasets = [ ]
+        for id, instance in self._session.items():
+            datasets.append({
                 'id': id,
                 'title': instance._data.title,
                 'buffer': instance._buffer_path,
@@ -224,7 +230,7 @@ class DatasetsList(RequestHandler):
                 'columnCount': instance._data.column_count,
             })
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(instances))
+        self.write(json.dumps(datasets))
 
 
 class Server:
@@ -233,6 +239,8 @@ class Server:
     ETRON_NOTF_REGEX = re.compile(r'^notification: ([a-z-]+) ?(.*)\n?$')
 
     def __init__(self, port, host='127.0.0.1', slave=False, stdin_slave=False, debug=False):
+
+        self._session = None
 
         if port == 0:
             self._ports = [ 0, 0, 0 ]
@@ -255,8 +263,6 @@ class Server:
 
         self._etron_reqs = [ ]
         self._etron_req_id = 0
-
-        Instance.set_update_request_handler(self._set_update_status)
 
     def _set_update_status(self, status):
         self._request({
@@ -307,22 +313,21 @@ class Server:
             notification_type = match.group(1)
             notification_message = match.group(2)
             if notification_type == 'update':
-                Instance.set_update_status(notification_message)
+                self._session.set_update_status(notification_message)
             return
 
         if line.startswith('install: '):
             path = line[9:]
             Modules.instance().install(path, lambda t, res: None)
-            for instanceId, instance in Instance.instances.items():
-                if instance.is_active:
-                    instance._on_settings()
-                    instance.rerun()
+            self._session.notify_global_changes()
+            self._session.restart_engines()
+            self._session.rerun_analyses()
         else:
             sys.stderr.write(line)
             sys.stderr.flush()
 
     def _lonely_suicide(self):
-        if len(Instance.instances) == 0:
+        if len(self._session) == 0:
             self.stop()
 
     def stop(self):
@@ -336,15 +341,21 @@ class Server:
             version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
-        session_dir = tempfile.TemporaryDirectory()
-        session_path = session_dir.name
+        data_dir = tempfile.TemporaryDirectory()
+        data_path = data_dir.name
+        session_id = str(uuid.uuid4())
+        session_path = os.path.join(data_path, session_id)
+        os.makedirs(session_path)
+
+        self._session = Session(data_path, session_id)
+        self._session.set_update_request_handler(self._set_update_status)
 
         self._main_app = tornado.web.Application([
             (r'/version', SingleFileHandler, { 'path': version_path }),
             (r'/login', LoginHandler),
-            (r'/coms', ClientConnection, { 'session_path': session_path }),
+            (r'/coms', ClientConnection, { 'session': self._session }),
             (r'/upload', UploadHandler),
-            (r'/proto/coms.proto',   SingleFileHandler, {
+            (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain',
@@ -352,7 +363,7 @@ class Server:
             (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
             (r'/analyses/(.*)/(.*)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
-            (r'/api/datasets', DatasetsList),
+            (r'/api/datasets', DatasetsList, { 'session': self._session }),
             (r'/(.*)', SFHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',
@@ -392,7 +403,7 @@ class Server:
             (r'/.*/.*/assets/(.*)', SFHandler, {
                 'path': assets_path,
                 'no_cache': self._debug }),
-            (r'/(.*)/.*/res/(.*)', ResourceHandler),
+            (r'/(.*)/.*/res/(.*)', ResourceHandler, { 'session': self._session }),
             (r'/(.*)/(.*)/module/(.*)', ModuleAssetHandler),
         ])
 
@@ -437,4 +448,7 @@ class Server:
         except KeyboardInterrupt:
             pass
 
-        os.remove(port_file)
+        try:
+            os.remove(port_file)
+        except Exception:
+            pass

@@ -40,7 +40,8 @@ class Analysis:
             self.parent._ops.remove(self)
             self.future.set_exception(exception)
 
-    def __init__(self, id, name, ns, options, parent, enabled, load_error=False):
+    def __init__(self, dataset, id, name, ns, options, parent, enabled, load_error=False):
+        self.dataset = dataset
         self.id = id
         self.name = name
         self.ns = ns
@@ -59,6 +60,10 @@ class Analysis:
     @property
     def has_results(self):
         return self.results is not None
+
+    @property
+    def instance(self):
+        return self.dataset.instance
 
     def set_options(self, options, changes=[], enabled=None):
         wasnt_but_now_is_enabled = (self.enabled is False) and enabled
@@ -165,7 +170,8 @@ class AnalysisIterator:
 
 
 class Analyses:
-    def __init__(self):
+    def __init__(self, dataset):
+        self._dataset = dataset
         self._analyses = []
         self._options_changed_listeners = []
         self._results_changed_listeners = []
@@ -208,10 +214,10 @@ class Analyses:
             options = Options.create(option_defs, results_defs)
             options.set(options_pb)
 
-            return Analysis(id, analysis_name, ns, options, self, enabled)
+            return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled)
 
         except Exception:
-            return Analysis(id, name, ns, Options(), self, enabled, load_error=True)
+            return Analysis(self._dataset, id, name, ns, Options(), self, enabled, load_error=True)
 
     def create_from_serial(self, serial):
 
@@ -276,7 +282,7 @@ class Analyses:
         for listener in self._results_changed_listeners:
             listener(analysis)
 
-    def get(self, id):
+    def get(self, id, instance_id=None):
         for analysis in self._analyses:
             if analysis.id == id:
                 return analysis

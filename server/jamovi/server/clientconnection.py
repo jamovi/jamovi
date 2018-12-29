@@ -5,7 +5,6 @@
 from tornado.websocket import WebSocketHandler
 
 from . import jamovi_pb2 as jcoms
-from .instance import Instance
 import asyncio
 
 import logging
@@ -17,9 +16,9 @@ class ClientConnection(WebSocketHandler):
 
     number_of_connections = 0
 
-    def initialize(self, session_path):
+    def initialize(self, session):
 
-        self._session_path = session_path
+        self._session = session
         self._transactions = { }
         self._close_listeners = [ ]
 
@@ -49,17 +48,16 @@ class ClientConnection(WebSocketHandler):
 
             if type(request) == jcoms.InstanceRequest:
                 if message.instanceId == '':
-                    instance = Instance(self, session_path=self._session_path)  # create new
-                elif message.instanceId not in Instance.instances:
+                    instance = self._session.create()  # create new
+                elif message.instanceId not in self._session:
                     raise KeyError('No such instance')
                 else:
-                    instance = Instance.instances.get(message.instanceId)
-                    instance.set_coms(self)
-
+                    instance = self._session[message.instanceId]
+                instance.set_coms(self)
                 response = jcoms.InstanceResponse()
                 self.send(response, instance.id, request)
             else:
-                instance = Instance.instances[message.instanceId]
+                instance = self._session[message.instanceId]
                 await instance.on_request(request)
         except KeyError:
             self.send_error(message='No such instance', response_to=message)

@@ -8,6 +8,7 @@ import threading
 import tempfile
 import subprocess
 from enum import Enum
+from uuid import uuid4
 
 import nanomsg
 
@@ -17,6 +18,7 @@ from .analyses import Analysis
 
 import logging
 import asyncio
+from asyncio import Queue
 
 log = logging.getLogger('jamovi')
 
@@ -29,12 +31,10 @@ class Engine:
         RUNNING = 2
         OPPING = 3  # performing operation
 
-    def __init__(self, parent, instance_id, index, session_path, conn_root):
+    def __init__(self, parent, data_path, conn_path):
         self._parent = parent
-        self._instance_id = instance_id
-        self._index = index
-        self._session_path = session_path
-        self._conn_root = conn_root
+        self._data_path = data_path
+        self._conn_path = conn_path
 
         self.analysis = None
         self.status = Engine.Status.WAITING
@@ -81,9 +81,8 @@ class Engine:
         # be a bit wary to make changes to the Popen call
         # seemingly inconsequential changes can break things on windows
 
-        address = self._conn_root + '-' + str(self._index)
-        con = '--con={}'.format(address)
-        pth = '--path={}'.format(self._session_path)
+        con = '--con={}'.format(self._conn_path)
+        pth = '--path={}'.format(self._data_path)
 
         try:
             self._process = subprocess.Popen(
@@ -95,7 +94,7 @@ class Engine:
 
             self._socket = nanomsg.Socket(nanomsg.PAIR)
             self._socket._set_recv_timeout(500)
-            self._socket.bind(address)
+            self._socket.bind(self._conn_path)
 
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
@@ -178,7 +177,8 @@ class Engine:
 
         request = jcoms.AnalysisRequest()
 
-        request.instanceId = self._instance_id
+        request.sessionId = analysis.instance.session.id
+        request.instanceId = analysis.instance.id
         request.analysisId = analysis.id
         request.name = analysis.name
         request.ns = analysis.ns
@@ -250,14 +250,14 @@ class Engine:
 
 class EngineManager:
 
-    def __init__(self, instance_id, analyses, session_path):
+    def __init__(self, data_path, analyses):
 
-        self._instance_id = instance_id
+        self._data_path = data_path
         self._analyses = analyses
         self._analyses.add_options_changed_listener(self._send_next)
 
         if platform.uname().system == 'Windows':
-            self._conn_root = "ipc://{}".format(instance_id)
+            self._conn_root = "ipc://{}".format(str(uuid4()))
         else:
             self._dir = tempfile.TemporaryDirectory()  # assigned to self so it doesn't get cleaned up
             self._conn_root = "ipc://{}/conn".format(self._dir.name)
@@ -266,13 +266,14 @@ class EngineManager:
 
         self._engines = [ ]
         for index in range(3):
+            conn_path = '{}-{}'.format(self._conn_root, index)
             engine = Engine(
                 parent=self,
-                instance_id=instance_id,
-                index=index,
-                session_path=session_path,
-                conn_root=self._conn_root)
+                data_path=data_path,
+                conn_path=conn_path)
             self._engines.append(engine)
+
+        self._restart_task = Queue()
 
     def start(self):
         for index in range(len(self._engines)):
@@ -282,16 +283,14 @@ class EngineManager:
         for index in range(len(self._engines)):
             self._engines[index].stop()
 
-    def restart_engines(self):
-        self._engines_restarted = 0
-        for index in range(len(self._engines)):
-            self._engines[index].restart()
+    async def restart_engines(self):
+        for engine in self._engines:
+            engine.restart()
+            self._restart_task.put_nowait(engine)
+        await self._restart_task.join()
 
     def _notify_engine_restarted(self, engine):
-        self._engines_restarted += 1
-        if self._engines_restarted == len(self._engines):
-            for analysis in self._analyses:
-                analysis.rerun()
+        self._restart_task.task_done()
 
     def add_engine_listener(self, listener):
         self._engine_listeners.append(listener)

@@ -13,11 +13,20 @@ class Analysis
     friend class AnalysisLoader;
 
 public:
-    Analysis(int id, std::string name, std::string ns, std::string options, int revision);
+    Analysis(
+      const std::string &sessionId,
+      const std::string &instanceId,
+      int analysisId,
+      const std::string &name,
+      const std::string &ns,
+      const std::string &options,
+      int revision);
 
     enum Type { R, Python };
 
-    int id;
+    std::string sessionId;
+    std::string instanceId;
+    int analysisId;
     std::string name;
     std::string ns;
     int revision;
@@ -28,7 +37,6 @@ public:
     bool clearState;
 
     bool requiresDataset;
-    std::string instanceId;
 
     std::string path;
     std::string format;

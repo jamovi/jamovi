@@ -31,6 +31,7 @@ message ComsMessage {
 }
 
 message AnalysisRequest {
+    string sessionId = 7;
     string instanceId = 1;
     int32 analysisId = 2;
     string name = 3;
@@ -46,7 +47,6 @@ message AnalysisRequest {
 
     Perform perform = 5;
     AnalysisOptions options = 6;
-    // int32 ppi = 7;
     repeated string changed = 8;
     int32 revision = 9;
     bool restartEngines = 10;

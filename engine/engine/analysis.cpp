@@ -9,9 +9,18 @@
 
 using namespace std;
 
-Analysis::Analysis(int id, std::string name, std::string ns, std::string options, int revision)
+Analysis::Analysis(
+  const string &sessionId,
+  const string &instanceId,
+  int analysisId,
+  const string &name,
+  const string &ns,
+  const string &options,
+  int revision)
 {
-    this->id = id;
+    this->sessionId = sessionId;
+    this->instanceId = instanceId;
+    this->analysisId = analysisId;
     this->name = name;
     this->ns = ns;
     this->options = options;
@@ -21,12 +30,11 @@ Analysis::Analysis(int id, std::string name, std::string ns, std::string options
 
     stringstream ss;
     ss << setfill('0') << setw(2);
-    ss << id;
+    ss << analysisId;
     ss << " ";
     ss << name;
 
     this->nameAndId = ss.str();
-
     this->requiresDataset = true;
     this->instanceId = "";
 }

@@ -66,6 +66,8 @@ void EngineComs::parse(char *data, int len)
     analysisRequest.options().SerializeToString(&options);
 
     Analysis *analysis = new Analysis(
+        analysisRequest.sessionid(),
+        analysisRequest.instanceid(),
         analysisRequest.analysisid(),
         analysisRequest.name(),
         analysisRequest.ns(),

@@ -22,12 +22,10 @@ from .utils import conf
 from .utils import FileEntry
 from .utils import CSVParser
 from .utils import HTMLParser
-from .enginemanager import EngineManager
 from .modules import Modules
 from .instancemodel import InstanceModel
 from . import formatio
 
-import uuid
 import posixpath
 import math
 import yaml
@@ -50,69 +48,25 @@ Settings.retrieve('main').specify_default('autoUpdate', def4ult)
 
 class Instance:
 
-    instances = { }
-    _garbage_collector = None
-    _update_status = 'na'
+    def __init__(self, session, instance_path, instance_id):
 
-    def _update_status_req(x):
-        # this gets assigned to
-        pass
-
-    @staticmethod
-    def set_update_status(status):
-        Instance._update_status = status
-        for instanceId, instance in Instance.instances.items():
-            if instance.is_active:
-                instance._on_settings()
-
-        if status == 'available':
-            settings = Settings.retrieve('main')
-            settings.sync()
-            if settings.get('autoUpdate', False):
-                Instance._update_status_req('downloading')
-
-    @staticmethod
-    def set_update_request_handler(request_fun):
-        Instance._update_status_req = request_fun
-
-    @staticmethod
-    def get(instance_id):
-        return Instance.instances.get(instance_id)
-
-    def __init__(self, coms, session_path, instance_id=None):
-        if Instance._garbage_collector is None:
-            ioloop = asyncio.get_event_loop()
-            gc = GarbageCollection()
-            Instance._garbage_collector = ioloop.create_task(gc)
-
-        self._coms = coms
-        self._coms.add_close_listener(self._close)
-        self._inactive_since = None
-
-        self._session_path = session_path
-        if instance_id is None:
-            instance_id = str(uuid.uuid4())
+        self._session = session
+        self._instance_path = instance_path
         self._instance_id = instance_id
 
-        self._mm = None
-        self._data = InstanceModel()
+        os.makedirs(instance_path, exist_ok=True)
+        self._buffer_path = os.path.join(instance_path, 'buffer')
 
-        self._em = EngineManager(self._instance_id, self._data.analyses, session_path)
+        self._mm = None
+        self._data = InstanceModel(self)
+        self._coms = None
+
         self._inactive_since = None
 
         self._data.analyses.add_results_changed_listener(self._on_results)
-        self._em.add_engine_listener(self._on_engine_event)
 
         settings = Settings.retrieve()
         settings.sync()
-
-        self._data.instance_path = os.path.join(self._session_path, self._instance_id)
-        os.makedirs(self._data.instance_path, exist_ok=True)
-        self._buffer_path = os.path.join(self._data.instance_path, 'buffer')
-
-        self._em.start()
-
-        Instance.instances[self._instance_id] = self
 
         Modules.instance().add_listener(self._module_event)
 
@@ -124,6 +78,15 @@ class Instance:
         self._log.addHandler(handler)
         self._data.set_log(self._log)
 
+    @property
+    def id(self):
+        return self._instance_id
+
+    @property
+    def session(self):
+        return self._session
+
+    @staticmethod
     def _normalise_path(path):
         nor_path = path
         if path.startswith('{{Documents}}'):
@@ -155,6 +118,7 @@ class Instance:
 
         return nor_path
 
+    @staticmethod
     def _virtualise_path(path):
 
         try:
@@ -190,11 +154,17 @@ class Instance:
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
             module_name = event['data']['name']
-            self._notify_module_installed(module_name)
+
+            broadcast = jcoms.ModuleRR()
+            broadcast.command = jcoms.ModuleRR.ModuleCommand.Value('INSTALL')
+            broadcast.name = module_name
+
+            if self._coms is not None:
+                self._coms.send(broadcast, self._instance_id)
 
     @property
-    def id(self):
-        return self._instance_id
+    def instance_path(self):
+        return self._instance_path
 
     def set_coms(self, coms):
         if self._coms is not None:
@@ -207,7 +177,6 @@ class Instance:
         Modules.instance().remove_listener(self._module_event)
         if self._mm is not None:
             self._mm.close()
-        self._em.stop()
 
     def _close(self):
         self._coms.remove_close_listener(self._close)
@@ -230,7 +199,7 @@ class Instance:
         return self._data.analyses
 
     def get_path_to_resource(self, resourceId):
-        return os.path.join(self._data.instance_path, resourceId)
+        return os.path.join(self._instance_path, resourceId)
 
     async def on_request(self, request):
         if type(request) == jcoms.DataSetRR:
@@ -244,7 +213,7 @@ class Instance:
         elif type(request) == jcoms.SettingsRequest:
             self._on_settings(request)
         elif type(request) == jcoms.AnalysisRequest:
-            self._on_analysis(request)
+            await self._on_analysis(request)
         elif type(request) == jcoms.FSRequest:
             self._on_fs_request(request)
         elif type(request) == jcoms.ModuleRR:
@@ -586,13 +555,12 @@ class Instance:
 
         self._coms.send(response, self._instance_id)
 
-    def rerun(self):
-        self._em.restart_engines()
-
-    def _on_analysis(self, request):
+    async def _on_analysis(self, request):
 
         if request.restartEngines:
-            self.rerun()
+            await self.session.restart_engines()
+            for analysis in self._data.analyses:
+                analysis.rerun()
             return
 
         if request.analysisId == 0:
@@ -722,7 +690,7 @@ class Instance:
             try:
                 modules.uninstall(request.name)
                 self._coms.send(None, self._instance_id, request)
-                self._notify_modules_changed()
+                self._session.notify_global_changes()
             except Exception as e:
                 log.exception(e)
                 self._coms.send_error(str(e), None, self._instance_id, request)
@@ -734,7 +702,7 @@ class Instance:
             self._coms.send_error('Unable to install module', str(result), self._instance_id, request)
         elif t == 'success':
             self._coms.send(None, self._instance_id, request)
-            self._notify_modules_changed()
+            self._session.notify_global_changes()
         else:
             log.error("Instance._on_module_callback(): shouldn't get here")
 
@@ -762,20 +730,6 @@ class Instance:
             self._coms.send(response, self._instance_id, request)
         else:
             log.error('_on_store_callback(): shouldnt get here')
-
-    def _notify_modules_changed(self):
-        for instanceId, instance in Instance.instances.items():
-            if instance.is_active:
-                instance._on_settings()
-
-    def _notify_module_installed(self, name):
-
-        broadcast = jcoms.ModuleRR()
-        broadcast.command = jcoms.ModuleRR.ModuleCommand.Value('INSTALL')
-        broadcast.name = name
-
-        if self._coms is not None:
-            self._coms.send(broadcast, self._instance_id)
 
     def _on_dataset_set(self, request, response):
         if request.incData or request.incCBData:
@@ -1876,9 +1830,7 @@ class Instance:
         settings.set('recents', recents)
         settings.sync()
 
-        for instanceId, instance in Instance.instances.items():
-            if instance.is_active:
-                instance._on_settings()
+        self._session.notify_global_changes()
 
     def _on_settings(self, request=None):
 
@@ -1902,21 +1854,19 @@ class Instance:
                     continue
 
                 if name == 'updateStatus':
-                    Instance._update_status_req(value)
+                    self._session.request_update(value)
                 else:
                     settings.set(name, value)
 
             settings.sync()
 
-            for instanceId, instance in Instance.instances.items():
-                if instance is not self and instance.is_active:
-                    instance._on_settings()
+            self._session.notify_global_changes()
 
         response = jcoms.SettingsResponse()
 
         setting_pb = response.settings.add()
         setting_pb.name = 'updateStatus'
-        setting_pb.s = Instance._update_status
+        setting_pb.s = self._session.update_status
 
         for name in settings:
             value = settings.get(name)
@@ -2002,11 +1952,8 @@ class Instance:
             analysis_pb.menuTitle = analysis.menuTitle
             analysis_pb.menuSubtitle = analysis.menuSubtitle
 
-    def _on_engine_event(self, event):
-        if event['type'] == 'error' and self._coms is not None:
-            message = event.get('message', '')
-            cause = event.get('cause', '')
-            self._coms.send_error(message=message, cause=cause)
+    def terminate(self, message, cause=''):
+        self._coms.send_error(message=message, cause=cause)
 
     class LogHandler(logging.Handler):
         def __init__(self, instance):
@@ -2022,15 +1969,3 @@ class Instance:
             broadcast = jcoms.LogRR(
                 content=message)
             self._instance._coms.send(broadcast, self._instance._instance_id)
-
-
-async def GarbageCollection():
-
-    while True:
-        await asyncio.sleep(.3)
-        for id, instance in Instance.instances.items():
-            if instance.inactive_for > 2:
-                log.info('cleaning up: ' + str(id))
-                instance.close()
-                del Instance.instances[id]
-                break
