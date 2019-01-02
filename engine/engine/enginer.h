@@ -27,7 +27,7 @@ public:
     void setCheckForNewCB(std::function<Analysis*()> check);
 
     boost::signals2::signal<void (const std::string &)> opEventReceived;
-    boost::signals2::signal<void (const std::string &)> resultsReceived;
+    boost::signals2::signal<void (const std::string &, bool complete)> resultsReceived;
 
 private:
 
@@ -61,7 +61,7 @@ private:
         const std::string &elementId,
         const std::string &suffix);
 
-    void sendResults(bool incAsText = false);
+    void sendResults(bool incAsText, bool complete);
 
     static void createDirectories(const std::string &path);
     static void setLibPaths(const std::string &moduleName);

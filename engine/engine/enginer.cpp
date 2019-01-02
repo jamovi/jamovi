@@ -71,8 +71,13 @@ void EngineR::run(Analysis *analysis)
 
     rInside.parseEvalQNT(ss.str());
 
+    bool INC_SYNTAX = true;
+    bool NO_SYNTAX = false;
+    bool COMPLETE = true;
+    bool IN_PROGRESS = false;
+
     if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(true);
+        sendResults(INC_SYNTAX, COMPLETE);
         return;
     }
 
@@ -140,7 +145,7 @@ void EngineR::run(Analysis *analysis)
     rInside.parseEvalQNT("analysis$init(noThrow=TRUE)");
 
     if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(true);
+        sendResults(INC_SYNTAX, COMPLETE);
         rInside.parseEvalQNT("options(.options)"); // restore options
         return;
     }
@@ -176,43 +181,44 @@ void EngineR::run(Analysis *analysis)
     }
     else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
-        sendResults(true);
+        sendResults(INC_SYNTAX, COMPLETE);
         rInside.parseEvalQ("try(analysis$.save())");
     }
     else if (analysis->perform == 0)   // INIT
     {
-        sendResults();
+        sendResults(NO_SYNTAX, COMPLETE);
         rInside.parseEvalQ("try(analysis$.save())");
     }
     else
     {
-        sendResults();
+        // sendResults(NO_SYNTAX, IN_PROGRESS);
 
         bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
+        // shouldn't send if aborted by callback (for example)
         if ( ! shouldSend)
         {
             rInside.parseEvalQNT("options(.options)"); // restore options
             return;
         }
 
-        sendResults();
+        sendResults(NO_SYNTAX, IN_PROGRESS);
         rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
-        sendResults();
-        sendResults(true);
+        sendResults(NO_SYNTAX, IN_PROGRESS);
+        sendResults(INC_SYNTAX, COMPLETE);
         rInside.parseEvalQ("try(analysis$.save())");
     }
 
     rInside.parseEvalQNT("options(.options)"); // restore options
 }
 
-void EngineR::sendResults(bool incAsText)
+void EngineR::sendResults(bool incAsText, bool complete)
 {
     stringstream ss;
     ss << "analysis$serialize(";
     ss << "incAsText=" << (incAsText ? "TRUE" : "FALSE") << ")\n";
     Rcpp::RawVector rawVec = _rInside->parseEval(ss.str());
     string raw(rawVec.begin(), rawVec.end());
-    resultsReceived(raw);
+    resultsReceived(raw, complete);
 }
 
 void EngineR::setLibPaths(const std::string &moduleName)
@@ -267,7 +273,7 @@ SEXP EngineR::checkpoint(SEXP results)
     if ( ! Rf_isNull(results)) {
         Rcpp::RawVector rawVec = Rcpp::as<Rcpp::RawVector>(results);
         std::string raw(rawVec.begin(), rawVec.end());
-        resultsReceived(raw);
+        resultsReceived(raw, false);
     }
 
     return R_NilValue;

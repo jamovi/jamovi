@@ -38,7 +38,7 @@ Engine::Engine()
     _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
     _coms.restartRequested.connect(bind(&Engine::terminate, this));
     _R->opEventReceived.connect(bind(&Engine::opEventReceived, this, _1));
-    _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1));
+    _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1, _2));
 }
 
 void Engine::setSlave(bool slave)
@@ -162,7 +162,7 @@ void Engine::opEventReceived(const string &msg)
     nn_send(_socket, data.data(), data.size(), 0);
 }
 
-void Engine::resultsReceived(const string &results)
+void Engine::resultsReceived(const string &results, bool complete)
 {
     // this is called from the main thread
 
@@ -171,6 +171,7 @@ void Engine::resultsReceived(const string &results)
     message.set_id(_currentRequestId);
     message.set_payload(results);
     message.set_payloadtype("AnalysisResponse");
+    message.set_status(complete ? Status::COMPLETE : Status::IN_PROGRESS);
 
     string data;
     message.SerializeToString(&data);
