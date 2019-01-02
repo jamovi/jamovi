@@ -121,6 +121,8 @@ void Engine::periodicChecks()
 
 void Engine::terminate()
 {
+    _exiting = true;
+    nn_term();
     std::exit(0);
 }
 
