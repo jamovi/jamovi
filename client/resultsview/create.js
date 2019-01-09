@@ -44,11 +44,19 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
     }
     else if (element.type === 'group') {
 
-        let visible = false;
+        let visible;
 
-        for (let child of element.group.elements) {
-            if (child.visible === 0 || child.visible === 2)
-                visible = true;
+        if (element.visible === 2) {
+            visible = true;
+        }
+        else {
+            visible = false;
+            for (let child of element.group.elements) {
+                if (child.visible === 0 || child.visible === 2) {
+                    visible = true;
+                    break;
+                }
+            }
         }
 
         if (visible) {

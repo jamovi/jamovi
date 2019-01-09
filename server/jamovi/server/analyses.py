@@ -3,6 +3,7 @@ import os.path
 import yaml
 from enum import Enum
 from concurrent.futures import Future
+from copy import deepcopy
 
 from .modules import Modules
 from .options import Options
@@ -85,6 +86,19 @@ class Analysis:
         self.status = Analysis.Status(results.status)
         self.clear_state = False
         self.parent._notify_results_changed(self)
+
+    def copy_from(self, analysis):
+        self.revision = analysis.revision
+        results = deepcopy(analysis.results)
+        results.instanceId = self.instance.id
+        results.analysisId = self.id
+        results.index = 0
+        self.set_results(results)
+
+    def run(self):
+        self.revision += 1
+        self.status = Analysis.Status.NONE
+        self.parent._notify_options_changed(self)
 
     def rerun(self):
         self.revision += 1
@@ -189,7 +203,7 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
-    def _construct(self, id, name, ns, options_pb, enabled):
+    def _construct(self, id, name, ns, options_pb, enabled=None):
 
         try:
             module = Modules.instance().get(ns)
@@ -211,6 +225,9 @@ class Analyses:
             option_defs = a_defn['options']
             results_defs = r_defn['items']
 
+            if enabled is None:
+                enabled = not a_defn.get('arbitraryCode', False)
+
             options = Options.create(option_defs, results_defs)
             options.set(options_pb)
 
@@ -228,8 +245,7 @@ class Analyses:
             analysis_pb.analysisId,
             analysis_pb.name,
             analysis_pb.ns,
-            analysis_pb.options,
-            False)
+            analysis_pb.options)
 
         analysis.results = analysis_pb
         analysis.status = Analysis.Status.COMPLETE
@@ -237,18 +253,20 @@ class Analyses:
 
         return analysis
 
-    def create(self, id, name, ns, options_pb, enabled):
+    def create(self, id, name, ns, options_pb, index=None):
 
-        analysis = self._construct(id, name, ns, options_pb, enabled)
-        self._analyses.append(analysis)
-        self._notify_options_changed(analysis)
+        analysis = self._construct(id, name, ns, options_pb, True)
+        if index is not None:
+            self._analyses.insert(index, analysis)
+        else:
+            self._analyses.append(analysis)
 
         return analysis
 
     def recreate(self, id):
         o = self[id]
         del self[id]
-        return self.create(id, o.name, o.ns, o.options.as_pb(), o.enabled)
+        return self.create(id, o.name, o.ns, o.options.as_pb())
 
     @property
     def needs_init(self):

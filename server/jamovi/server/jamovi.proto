@@ -43,6 +43,7 @@ message AnalysisRequest {
         RENDER = 4;
         SAVE = 5;
         DELETE = 6;
+        DUPLICATE = 7;
     }
 
     Perform perform = 5;
@@ -52,6 +53,7 @@ message AnalysisRequest {
     bool restartEngines = 10;
     bool clearState = 11;
 
+    int32 index = 15;
     string path = 16;
     string part = 17;
     string format = 18;
@@ -83,6 +85,7 @@ message AnalysisResponse {
     bool restartEngines = 12;
     string stacktrace = 13;
     uint32 version = 14;
+    int32 index = 15;
 }
 
 message AnalysisOption {

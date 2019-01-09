@@ -9,10 +9,10 @@ const host = require('./host');
 const ResultsPanel = require('./resultspanel');
 
 const ResultsView = Backbone.View.extend({
-    className: "ResultsView",
+    className: 'ResultsView',
     initialize: function(args) {
 
-        this.$el.addClass('silky-results');
+        this.$el.addClass('jmv-results');
 
         this.$richView = $('<div></div>');
         this.$richView.appendTo(this.$el);
@@ -24,7 +24,7 @@ const ResultsView = Backbone.View.extend({
 
         this.$textView = $('<div></div>');
         this.$textView.appendTo(this.$el);
-        this.$textView.addClass('silky-results-panel-hidden');
+        this.$textView.addClass('jmv-results-panel-hidden');
         this.textView = new ResultsPanel({
             el: this.$textView,
             iframeUrl: args.iframeUrl,
@@ -33,9 +33,9 @@ const ResultsView = Backbone.View.extend({
 
         this.model.settings().on('change:syntaxMode', event => {
             if (event.changed.syntaxMode)
-                this.$textView.removeClass('silky-results-panel-hidden');
+                this.$textView.removeClass('jmv-results-panel-hidden');
             else
-                this.$textView.addClass('silky-results-panel-hidden');
+                this.$textView.addClass('jmv-results-panel-hidden');
         });
 
         this.model.set('resultsSupplier', this);

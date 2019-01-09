@@ -42,6 +42,18 @@ Analysis.prototype.reload = function() {
         Promise.resolve($.get(url, null, null, 'text')).then(response => {
             this._defn = yaml.safeLoad(response);
             this.options = new Options(this._defn.options);
+            if (this.results === null) {
+                this.results = {
+                    name: '',
+                    type: 'group',
+                    title: this._defn.title,
+                    visible: 2,
+                    group: { elements: [ ] },
+                    status: 'running',
+                    error: null,
+                };
+                this._parent._notifyResultsChanged(this);
+            }
         }),
         new Promise((resolve, reject) => {
             this._notifySetup = resolve;
@@ -112,7 +124,7 @@ Analysis.prototype.getUsing = function() {
 
 const Analyses = Backbone.Model.extend({
 
-    initialize : function() {
+    initialize() {
         this._analyses = [ ];
         this._nextId = 1;
 
@@ -137,21 +149,24 @@ const Analyses = Backbone.Model.extend({
     defaults : {
         dataSetModel : null
     },
-    hasActiveAnalyses : function() {
+    hasActiveAnalyses() {
         for (let i = 0; i < this._analyses.length; i++) {
             if (this._analyses[i].deleted === false)
                 return true;
         }
         return false;
     },
-    createAnalysis : function(name, ns) {
+    create(name, ns, index) {
         let analysis = new Analysis(this._nextId++, name, ns);
         analysis.enabled = true;
         analysis._parent = this;
-        this._analyses.push(analysis);
-        this.trigger('analysisCreated', analysis);
+        if (index !== undefined)
+            this._analyses.splice(index, 0, analysis);
+        else
+            this._analyses.push(analysis);
+        return analysis;
     },
-    addAnalysis : function(name, ns, id, values, results, incAsText, syntax) {
+    addAnalysis(name, ns, id, values, results, incAsText, syntax) {
         let analysis = new Analysis(id, name, ns);
         analysis._parent = this;
         this._analyses.push(analysis);
@@ -164,13 +179,13 @@ const Analyses = Backbone.Model.extend({
         this.trigger('analysisCreated', analysis);
         return analysis;
     },
-    deleteAnalysis : function(id) {
+    deleteAnalysis(id) {
         let analysis = this.get(id);
         analysis.deleted = true;
         this._notifyOptionsChanged(analysis);
         this._notifyResultsChanged(analysis);
     },
-    get : function(id) {
+    get(id) {
         for (let i = 0; i < this._analyses.length; i++) {
             let analysis = this._analyses[i];
             if (analysis.id === id)
@@ -178,10 +193,18 @@ const Analyses = Backbone.Model.extend({
         }
         return null;
     },
-    _notifyResultsChanged : function(analysis) {
+    indexOf(id) {
+        for (let i = 0; i < this._analyses.length; i++) {
+            let analysis = this._analyses[i];
+            if (analysis.id === id)
+                return i;
+        }
+        return -1;
+    },
+    _notifyResultsChanged(analysis) {
         this.trigger('analysisResultsChanged', analysis);
     },
-    _notifyOptionsChanged : function(analysis) {
+    _notifyOptionsChanged(analysis) {
         this.trigger('analysisOptionsChanged', analysis);
     },
 });

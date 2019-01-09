@@ -579,20 +579,35 @@ class Instance:
 
         else:  # create analysis
             try:
+                duplicating = request.perform == jcoms.AnalysisRequest.Perform.Value('DUPLICATE')
+
+                if duplicating:
+                    names = list(request.options.names)
+                    index = names.index('duplicate')
+                    dupliceeId = request.options.options[index].i
+                    duplicee = self._data.analyses.get(dupliceeId)
+
                 analysis = self._data.analyses.create(
                     request.analysisId,
                     request.name,
                     request.ns,
                     request.options,
-                    request.enabled)
+                    None if request.index == 0 else request.index - 1)
+
                 self._data.is_edited = True
 
-                response = jcoms.AnalysisResponse()
-                response.analysisId = request.analysisId
-                response.options.ParseFromString(analysis.options.as_bytes())
-                response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
+                if duplicating:
+                    analysis.copy_from(duplicee)
+                    self._coms.send(analysis.results, self._instance_id, request, True)
+                else:
+                    analysis.run()
+                    response = jcoms.AnalysisResponse()
+                    response.analysisId = request.analysisId
+                    response.options.ParseFromString(analysis.options.as_bytes())
+                    response.index = request.index
+                    response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
-                self._coms.send(response, self._instance_id, request, False)
+                    self._coms.send(response, self._instance_id, request, False)
 
             except OSError as e:
 

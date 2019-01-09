@@ -99,6 +99,12 @@ const GroupView = Elem.View.extend({
         }
 
         this.ready = Promise.all(promises);
+    },
+    _menuOptions(event) {
+        if (this.isRoot())
+            return [ { label: 'Copy' }, { label: 'Duplicate' }, { label: 'Save' } ];
+        else
+            return Elem.View.prototype._menuOptions.call(this);
     }
 });
 

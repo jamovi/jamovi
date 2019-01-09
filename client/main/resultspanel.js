@@ -20,7 +20,7 @@ const ResultsPanel = Backbone.View.extend({
     initialize(args) {
 
         this.$el.empty();
-        this.$el.addClass('silky-results-panel');
+        this.$el.addClass('jmv-results-panel');
 
         this._menuId = null;
         ContextMenu.$el.on('menuClicked', (event, button) => {
@@ -72,14 +72,28 @@ const ResultsPanel = Backbone.View.extend({
 
             let element = '<iframe \
                 scrolling="no" \
-                class="id' + analysis.id + '" \
+                class="id' + analysis.id + ' analysis" \
                 src="' + this.iframeUrl + this.model.instanceId() + '/' + analysis.id + '/" \
                 sandbox="allow-scripts allow-same-origin" \
                 style="border: 0 ; height : 0 ;" \
+                data-id="' + analysis.id + '" \
                 ></iframe>';
 
-            let $container = $('<div class="silky-results-container"></div>').appendTo(this.$el);
-            let $cover = $('<div class="silky-results-cover"></div>').appendTo($container);
+            let $container = $('<div class="jmv-results-container"></div>');
+
+            if (analysis.results.index > 0) {
+                let $siblings = this.$el.children('.jmv-results-container');
+                let index = analysis.results.index - 1;
+                if (index < $siblings.length)
+                    $container.insertBefore($siblings[index]);
+                else
+                    this.$el.append($container);
+            }
+            else {
+                this.$el.append($container);
+            }
+
+            let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
             let $iframe = $(element).appendTo($container);
             let iframe = $iframe[0];
 
@@ -159,7 +173,6 @@ const ResultsPanel = Backbone.View.extend({
         }
 
     },
-
     _tryGetResource(xpos, ypos) {
         for (let id in this.resources) {
             let $container = this.resources[id].$container;
@@ -379,6 +392,11 @@ const ResultsPanel = Backbone.View.extend({
                     this.model.save(path, { name: 'Image', export: true, part: part }, true);
                 }
             }
+        }
+        else if (event.op === 'duplicate') {
+            let parentId = this.resources[this._menuId].id;
+            let analysis = this.model.duplicateAnalysis(parentId);
+            this.model.set('selectedAnalysis', analysis);
         }
         else if (event.op === 'remove') {
             this.model.set('selectedAnalysis', null);

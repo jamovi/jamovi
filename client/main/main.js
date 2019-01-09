@@ -145,7 +145,7 @@ $(document).ready(() => {
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
     ribbon.on('analysisSelected', function(analysis) {
-        analyses.createAnalysis(analysis.name, analysis.ns);
+        instance.createAnalysis(analysis.name, analysis.ns);
     });
 
     ribbon.on('tabSelected', function(tabName) {

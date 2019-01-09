@@ -476,48 +476,96 @@ const Instance = Backbone.Model.extend({
             return response;
         });
     },
-    _analysisCreated(analysis) {
-
-        if (analysis.results === null) {
-            this.set('selectedAnalysis', analysis);
-            this._runAnalysis(analysis);
-        }
-    },
-    _runAnalysis(analysis, changed) {
+    createAnalysis(name, ns) {
 
         this._dataSetModel.set('edited', true);
 
-        let coms = this.attributes.coms;
-        let ppi = parseInt(72 * (window.devicePixelRatio || 1));
+        let analysis = this._analyses.create(name, ns);
+        this.set('selectedAnalysis', analysis);
 
+        let request = this._constructAnalysisRequest(analysis, { });
+        request.perform = 0; // INIT
+
+        this._sendAnalysisRequest(request);
+
+        return analysis;
+    },
+    duplicateAnalysis(dupliceeId) {
+
+        let duplicee = this._analyses.get(dupliceeId);
+        let index = this._analyses.indexOf(duplicee.id) + 1;
+        let analysis = this._analyses.create(duplicee.name, duplicee.ns, index);
+        let results = duplicee.results;
+        let options = duplicee.options.getValues();
+
+        results = Object.assign({}, results);
+        results.index = index + 1;
+
+        analysis.setup(options);
+        analysis.setResults(results, options, duplicee.incAsText, duplicee.syntax);
+
+        let request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
+        request.perform = 7; // DUPLICATE
+        request.index = index + 1;
+        this._sendAnalysisRequest(request);
+
+        return analysis;
+    },
+    _optionsExtras() {
+        let ppi = parseInt(72 * (window.devicePixelRatio || 1));
         let theme = this._settings.getSetting('theme', 'default');
         let palette = this._settings.getSetting('palette', 'jmv');
 
-        let analysisRequest = new coms.Messages.AnalysisRequest();
-        analysisRequest.analysisId = analysis.id;
-        analysisRequest.name = analysis.name;
-        analysisRequest.ns = analysis.ns;
-        analysisRequest.revision = analysis.revision;
-        analysisRequest.enabled = analysis.enabled;
+        return { '.ppi': ppi, theme: theme, palette: palette };
+    },
+    _constructAnalysisRequest(analysis, options) {
+
+        let coms = this.attributes.coms;
+
+        let request = new coms.Messages.AnalysisRequest();
+        request.analysisId = analysis.id;
+        request.name = analysis.name;
+        request.ns = analysis.ns;
+        request.revision = analysis.revision;
+        request.enabled = analysis.enabled;
+
+        if (options === undefined) {
+            if (analysis.isReady)
+                options = analysis.options;
+            else
+                options = { };
+        }
+        let extras = this._optionsExtras();
+
+        request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
+        return request;
+    },
+    _sendAnalysisRequest(request) {
+
+        let coms = this.attributes.coms;
+
+        let message = new coms.Messages.ComsMessage();
+        message.payload = request.toArrayBuffer();
+        message.payloadType = 'AnalysisRequest';
+        message.instanceId = this._instanceId;
+
+        coms.sendP(message);
+    },
+    _runAnalysis(analysis, changed) {
+
+        let coms = this.attributes.coms;
+        this._dataSetModel.set('edited', true);
+
+        let request = this._constructAnalysisRequest(analysis);
+        request.perform = 0; // INIT
 
         if (changed)
-            analysisRequest.changed = changed;
-
-        let options = { };
-        if (analysis.isReady)
-            options = analysis.options;
-
-        analysisRequest.setOptions(OptionsPB.toPB(options, { '.ppi' : ppi, 'theme' : theme, 'palette' : palette}, coms.Messages));
+            request.changed = changed;
 
         if (analysis.deleted)
-            analysisRequest.perform = 6; // DELETE
+            request.perform = 6; // DELETE
 
-        let request = new coms.Messages.ComsMessage();
-        request.payload = analysisRequest.toArrayBuffer();
-        request.payloadType = 'AnalysisRequest';
-        request.instanceId = this._instanceId;
-
-        return coms.sendP(request);
+        this._sendAnalysisRequest(request);
     },
     _onReceive(message) {
 
