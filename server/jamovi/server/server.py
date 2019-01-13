@@ -287,12 +287,12 @@ class Server:
         try:
             for line in sys.stdin:
                 line = line.strip()
-                self._ioloop.call_soon_threadsafe(self._stdin, line)
+                asyncio.run_coroutine_threadsafe(self._process_stdin(line), self._ioloop)
         except OSError:
             pass
         self._ioloop.call_soon_threadsafe(self.stop)
 
-    def _stdin(self, line):
+    async def _process_stdin(self, line):
 
         match = Server.ETRON_RESP_REGEX.match(line)
 
@@ -320,7 +320,7 @@ class Server:
             path = line[9:]
             Modules.instance().install(path, lambda t, res: None)
             self._session.notify_global_changes()
-            self._session.restart_engines()
+            await self._session.restart_engines()
             self._session.rerun_analyses()
         else:
             sys.stderr.write(line)
