@@ -701,11 +701,11 @@ var BackstageModel = Backbone.Model.extend({
                     if (place === 'thispc') {
                         let path = this._determineSavePath();
                         return this.setCurrentDirectory('main', Path.dirname(path)).then(() => {
-                            this.set('place', place);
+                            this.attributes.place = place;
                         });
                     }
                     else
-                        this.set('place', place);
+                        this.attributes.place = place;
                 },
                 places: [
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
@@ -1325,19 +1325,28 @@ var BackstageChoices = SilkyView.extend({
 
         var place = this.model.getCurrentPlace();
 
-        if (place === null)
-            return;
-
         var  old = this.current;
         var $old = this.$current;
 
+        if (place === null) {
+            if ($old)
+                $old.removeClass('fade-in');
+            if (old)
+                setTimeout(function() { old.remove(); }, 200);
+            return;
+        }
+
         if (place.model) {
-            this.$current = $('<div class="silky-bs-choices-list" style="display: none; width:100%; height:100%;"></div>');
+            if ($old)
+                $old.removeClass('fade-in');
+            this.$current = $('<div class="silky-bs-choices-list" style="width:500px; height:100%;"></div>');
             this.$current.appendTo(this.$el);
             if (this.current)
                 this.current.close();
             this.current = new place.view({ el: this.$current, model: place.model });
-            this.$current.fadeIn(200);
+            setTimeout(() => {
+                this.$current.addClass('fade-in');
+            }, 0);
         }
 
         if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
@@ -1350,7 +1359,7 @@ var BackstageChoices = SilkyView.extend({
         }
 
         if (old) {
-            $old.fadeOut(200);
+            //$old.fadeOut(200);
             setTimeout(function() { old.remove(); }, 200);
         }
 

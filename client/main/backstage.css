@@ -290,6 +290,12 @@
     min-width: 100px ;
     overflow: hidden;
     padding: 20px;
+    transition: .2s opacity ease-out;
+    opacity: 0;
+}
+
+.silky-bs-choices-list.fade-in {
+    opacity: 1;
 }
 
 .silky-bs-fslist {
