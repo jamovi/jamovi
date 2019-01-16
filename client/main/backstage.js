@@ -675,7 +675,7 @@ var BackstageModel = Backbone.Model.extend({
             { extensions: ['sav'], description: 'SPSS sav (.sav)' },
             // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
             { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
-            // { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },  // crashes on open
+            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },
             { extensions: ['dta'], description: 'Stata (.dta)' },
         ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);

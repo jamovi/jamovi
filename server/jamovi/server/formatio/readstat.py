@@ -186,11 +186,14 @@ class Parser(ReadStatParser):
             if value is not None:
                 if vt is not str:
                     value = str(value)
-                if not column.has_level(value):
-                    column.append_level(
-                        column.level_count,
-                        value,
-                        value)
+                if column.has_levels:
+                    if not column.has_level(value):
+                        column.append_level(
+                            column.level_count,
+                            value,
+                            value)
+                    if column.level_count > 50:
+                        column.change(measure_type=MeasureType.ID)
                 column.set_value(row_index, value)
             else:
                 column.set_value(row_index, '')
