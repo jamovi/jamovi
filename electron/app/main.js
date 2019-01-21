@@ -55,12 +55,17 @@ function readConfig() {
     let serverExe = path.resolve(execDir, serverCmd[0]);
     let serverArgs = serverCmd.slice(1);
 
+    let iconPath = env.JAMOVI_ICON_PATH;
+    if (iconPath)
+        path.resolve(execDir, iconPath);
+
     _config = {
         clientPath,
         serverExe,
         serverArgs,
         version,
         env,
+        iconPath,
     };
 
     return _config;
@@ -448,7 +453,9 @@ const createWindow = function(open) {
         minHeight: 600,
         vibrancy: 'titlebar',
         defaultEncoding: 'UTF-8',
-        frame: process.platform !== 'win32' });
+        frame: process.platform !== 'win32',
+        icon: config.iconPath,
+    });
 
     // as of electron 1.7.9 on linux, drag and drop from the fs to electron
     // doesn't seem to work, the drop event is never fired. so we handle the
