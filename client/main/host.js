@@ -66,6 +66,7 @@ if (window.require) {
     const dialog = remote.dialog;
     const Menu = remote.Menu;
     const clipboard = electron.clipboard;
+    const nativeImage = electron.nativeImage;
     const shell = electron.shell;
 
     version = Promise.resolve(remote.getGlobal('version'));
@@ -223,6 +224,8 @@ if (window.require) {
     };
 
     copyToClipboard = function(data) {
+        if ('image' in data)
+            data.image = nativeImage.createFromDataURL(data.image);
         clipboard.write(data);
     };
 

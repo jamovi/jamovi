@@ -64,12 +64,14 @@ const ImageView = ResultsElement.View.extend({
             backgroundImage = "url('" + url + "')";
         }
 
-        $('<div style=" \
-            background-image: ' + backgroundImage + '; \
-            width: ' + element.width + 'px ; \
-            height: ' + element.height + 'px ; \
-            background-size: ' + element.width + 'px ; \
-            ">').appendTo(this.$el);
+        $(`<div
+            class="jmv-results-image-image"
+            style="
+                background-image: ${ backgroundImage };
+                width: ${ element.width }px ;
+                height: ${ element.height }px ;
+                background-size: ${ element.width }px ;
+            ">`).appendTo(this.$el);
 
     }
 });

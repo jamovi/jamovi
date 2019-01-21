@@ -4,7 +4,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const clipboard = require('clipboard-js');
 const formatIO = require('./utils/formatio');
 
 const Menu = require('./menu');
@@ -318,20 +317,38 @@ const ResultsPanel = Backbone.View.extend({
         if (event.op === 'copy') {
 
             let incHtml = this.mode === 'rich';
+            let incText = true;
+            let incImage = false;
 
             let $results = this._getElement(event.address);
+
             if ($results.hasClass('jmv-results-syntax'))
                 incHtml = false;
 
-            let content = { };
+            if ($results.hasClass('jmv-results-image')) {
+                incText = false;
+                incImage = true;
+            }
+
+            let data = { };
 
             Promise.resolve().then(() => {
 
-                return formatIO.exportElem($results, 'text/plain');
+                if (incText)
+                    return formatIO.exportElem($results, 'text/plain');
 
             }).then((text) => {
 
-                content['text/plain'] = text;
+                if (text)
+                    data.text = text;
+
+                if (incImage)
+                    return formatIO.exportElem($results, 'image/png');
+
+            }).then((image) => {
+
+                if (image)
+                    data.image = image;
 
                 if (incHtml)
                     return formatIO.exportElem($results, 'text/html');
@@ -339,9 +356,9 @@ const ResultsPanel = Backbone.View.extend({
             }).then((html) => {
 
                 if (html)
-                    content['text/html'] = html;
+                    data.html = html;
 
-                return clipboard.copy(content);
+                return host.copyToClipboard(data);
 
             }).then(() => {
                 let note = new Notify({
