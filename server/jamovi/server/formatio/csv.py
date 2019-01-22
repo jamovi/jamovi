@@ -102,13 +102,15 @@ def read(data, path, prog_cb):
         csvfile = TextIOWrapper(file, encoding=encoding, errors='replace')
 
         try:
-            some_data = csvfile.read(4096)
-            if len(some_data) == 4096:  # csv sniffer doesn't like partial lines
+            some_data = csvfile.read(131072)
+            if len(some_data) == 131072:  # csv sniffer doesn't like partial lines
                 some_data = trim_after_last_newline(some_data)
             dialect = csv.Sniffer().sniff(some_data, ', \t;')
         except csv.Error as e:
             log.exception(e)
             dialect = csv.excel
+
+        dialect.doublequote = True
 
         csvfile.seek(0)
         reader = csv.reader(csvfile, dialect)
