@@ -10,6 +10,7 @@ from scipy.stats import boxcox
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.utils import is_missing
+from jamovi.server.utils import is_equal
 
 from .funcmeta import row_wise
 from .funcmeta import column_wise
@@ -104,6 +105,29 @@ def NORM(index, mu: float = 0.0, sd: float = 1.0):
 @row_wise
 def BETA(index, alpha: float = 1.0, beta: float = 1.0):
     return random.betavariate(alpha, beta)
+
+
+@row_wise
+@returns(DataType.INTEGER, MeasureType.ORDINAL)
+def MATCH(index, needle, *haystack):
+    if is_missing(needle):
+        -2147483648
+    for index, value in enumerate(haystack):
+        if is_equal(needle, value):
+            return index + 1
+    else:
+        return -2147483648
+
+
+@row_wise
+@returns(DataType.INTEGER, MeasureType.NOMINAL, range(1, 10000))
+@levels(range(1, 10000))
+def HLOOKUP(index, lookup_index: int, *args):
+    lookup_index -= 1  # was indexed from 1
+    if lookup_index >= 0 and lookup_index < len(args):
+        return args[lookup_index]
+    else:
+        return -2147483648
 
 
 @row_wise

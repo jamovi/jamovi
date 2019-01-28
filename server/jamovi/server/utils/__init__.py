@@ -10,4 +10,5 @@ from .nulllog import NullLog
 from .typevalues import FValues
 from .typevalues import convert
 from .typevalues import is_missing
+from .typevalues import is_equal
 from .typevalues import get_missing

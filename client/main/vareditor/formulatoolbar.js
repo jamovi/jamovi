@@ -105,6 +105,12 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
     descriptions.NOT = { label: 'NOT( <i>value</i> )', content: 'Inverts the value.' };
 
+    $functionsContent.append($('<div class="subtitle" data-name="">Reference</div>'));
+    $functionsContent.append($('<div class="item" data-name="HLOOKUP">HLOOKUP</div>'));
+    descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ...</i> )', content: 'The value in the provided values at index.' };
+    $functionsContent.append($('<div class="item" data-name="MATCH">MATCH</div>'));
+    descriptions.MATCH = { label: 'MATCH( <i>value, value 1, value 2, ...</i> )', content: 'The index of value in the provided values.' };
+
     $functionsContent.append($('<div class="subtitle" data-name="">Misc</div>'));
     $functionsContent.append($('<div class="item" data-name="FILTER">FILTER</div>'));
     descriptions.FILTER = { label: 'FILTER( <i>variable, filter expression</i> )', content: 'Filters a variable using the filter expression.' };

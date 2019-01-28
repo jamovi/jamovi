@@ -66,6 +66,38 @@ def is_missing(value, empty_str_is_missing=False):
         return True
 
 
+def is_equal(a, b):
+
+    if is_missing(a) or is_missing(b):
+        return False
+
+    a_type = type(a)
+    b_type = type(b)
+    comp_type = None
+
+    if a_type is tuple and b_type is tuple:
+        return a[0] == b[0]
+
+    if a_type is tuple:
+        comp_type = b_type
+    elif b_type is tuple:
+        comp_type = a_type
+    elif a_type is str or b_type is str:
+        comp_type = str
+    elif a_type is float or b_type is float:
+        comp_type = float
+    else:
+        comp_type = int
+
+    a = convert(a, comp_type)
+    b = convert(b, comp_type)
+
+    if comp_type is float:
+        return math.isclose(a, b)
+    else:
+        return a == b
+
+
 def convert(value, to_type):
     from_type = type(value)
     if from_type is to_type:
