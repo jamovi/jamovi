@@ -3,6 +3,7 @@ class CellTracker:
 
     def __init__(self):
         self._edited_cell_ranges = []
+        self.state_id = 0
 
     @property
     def edited_cell_ranges(self):
@@ -19,12 +20,14 @@ class CellTracker:
     def set_cells_as_edited(self, start, end):
         if len(self._edited_cell_ranges) == 0:
             self._edited_cell_ranges.append({ 'start': start, 'end': end })
+            self.state_id += 1
             return
 
         insert_at = -1
         consume_start = -1
         consume_end = -1
         modified_range = None
+        changed = True
         for index, range in enumerate(self._edited_cell_ranges):
             if start < range['start'] and end > range['end']:
                 if consume_start == -1:
@@ -41,6 +44,7 @@ class CellTracker:
                     break
                 elif start >= range['start'] and end <= range['end']:
                     modified_range = range
+                    changed = False
                     break
                 elif start < range['start'] and end >= range['start'] - 1:
                     range['start'] = start
@@ -61,7 +65,11 @@ class CellTracker:
             else:
                 self._edited_cell_ranges.insert(insert_at, { 'start': start, 'end': end })
 
+        if changed:
+            self.state_id += 1
+
     def remove_rows(self, start, end):
+        self.state_id += 1
         current = start
         row_end = end
         consume_start = -1
@@ -99,11 +107,12 @@ class CellTracker:
             del self._edited_cell_ranges[consume_start:(consume_end + 1)]
 
     def insert_rows(self, start, end):
+        self.state_id += 1
         count = end - start + 1
         for edited_range in self._edited_cell_ranges:
             if start <= edited_range['start']:
                 edited_range['start'] += count
                 edited_range['end'] += count
             elif start <= edited_range['end']:
-                edited_range['end'] = end
+                edited_range['end'] += count
         self.set_cells_as_edited(start, end)

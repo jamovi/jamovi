@@ -390,9 +390,17 @@ message DataSetSchema {
     }
 
     message ColumnSchema {
+
+        enum Action {
+            MODIFY = 0;
+            REMOVE = 1;
+            INSERT = 2;
+        }
+
         int32 id = 1;
         string name = 2;
         int32 index = 3;
+        Action action = 23;
 
         enum DataType {
             NO_DATA_TYPE = 0;
@@ -420,6 +428,7 @@ message DataSetSchema {
         int32 transform = 20;
         int32 parentId = 21;
         repeated ColumnCellRange editedCellRanges = 22;
+
     }
 
     message TransformSchema {
@@ -455,10 +464,8 @@ message DataSetSchema {
 enum GetSet {
     GET = 0;
     SET = 1;
-    DEL_ROWS = 2;
-    DEL_COLS = 3;
-    INS_ROWS = 4;
-    INS_COLS = 5;
+    UNDO = 2;
+    REDO = 3;
 }
 
 message InfoRequest {
@@ -482,21 +489,7 @@ enum SpecialValues {
 
 message DataSetRR {
 
-    GetSet op = 1;
-
-    bool incData = 2;
-    bool incSchema = 3;
-
-    uint32 rowStart = 4;
-    uint32 columnStart = 5;
-    uint32 rowEnd = 6;
-    uint32 columnEnd = 7;
-    repeated uint32 columnIds = 15;
-    repeated uint32 rowIndices = 16;
-
-
-    message ColumnData {
-
+    message DataBlock {
         message CellValue {
             oneof type {
                 int32 i = 1;
@@ -506,17 +499,43 @@ message DataSetRR {
             }
         }
 
-        repeated CellValue values = 1;
+        uint32 rowStart = 1;
+        uint32 rowCount = 2;
+        uint32 columnStart = 3;
+        uint32 columnCount = 4;
+        repeated CellValue values = 5;
+
+        bool incCBData = 6;
+        string cbText = 7;
+        string cbHtml = 8;
+
+        bool clear = 9;
     }
 
-    repeated ColumnData data = 8;
-    bytes filtered = 14;
-    DataSetSchema schema = 9;
+    message RowData {
 
-    bool incCBData = 10;
-    string cbText = 11;
-    string cbHtml = 12;
-    bool excHiddenCols = 13;
+        enum RowDataAction {
+            REMOVE = 0;
+            INSERT = 1;
+            MODIFY = 2;
+        }
+
+        uint32 rowStart = 1;
+        uint32 rowCount = 2;
+        bytes filterData = 3;
+        RowDataAction action = 4;
+    }
+
+    GetSet op = 1;
+    bool incData = 2;
+    bool incSchema = 3;
+    repeated DataBlock data = 4;
+    repeated RowData rows = 5;
+    DataSetSchema schema = 6;
+    uint32 changesCount = 7;
+    int32 changesPosition = 8;
+    bool noUndo = 9;
+    bool refresh = 10;
 }
 
 message ModuleRR {

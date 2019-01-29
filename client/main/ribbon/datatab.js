@@ -21,10 +21,11 @@ const DataTab = function() {
                     new RibbonButton({ title: 'Copy', name: 'copy', size: 'small' })
                 ]})
             ]}),
-            /*new RibbonSeparator(),
-            new RibbonGroup({ title: 'Data', margin: 'large', items: [
-                new RibbonButton({ title: 'Data Source', name: 'editImport', margin: 'large', size: 'large' })
-            ]}),*/
+            new RibbonSeparator(),
+            new RibbonGroup({ title: 'Edit', margin: 'large', alignContents: 'center', items: [
+                new RibbonButton({ title: 'Undo Edit', name: 'undo', size: 'small' }),
+                new RibbonButton({ title: 'Redo Edit', name: 'redo', size: 'small' })
+            ]}),
             new RibbonSeparator(),
             new RibbonGroup({ title: 'Variables', items: [
                 new RibbonButton({ title: 'Setup', name: 'editVar', margin: 'large', size: 'large' }),

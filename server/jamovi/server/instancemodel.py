@@ -4,6 +4,7 @@ from .column import Column
 from .analyses import Analyses
 from .utils import NullLog
 from ..core import ColumnType
+import collections
 
 
 class InstanceModel:
@@ -20,7 +21,7 @@ class InstanceModel:
         self._import_path = ''
         self._embedded_path = ''
         self._embedded_name = ''
-        self._edit_tracking_suspended = True
+        self._reuseable_virtual_ids = collections.deque([])
 
         self._columns = [ ]
         self._transforms = [ ]
@@ -198,42 +199,27 @@ class InstanceModel:
         self._columns.append(new_column)
         return new_column
 
-    def begin_edit_tracking(self):
-        self._edit_tracking_suspended = False
-
-    def set_cells_as_edited(self, column, row_start, row_end):
-        if self._edit_tracking_suspended is False:
-            column.cell_tracker.set_cells_as_edited(row_start, row_end)
-
     def set_row_count(self, count):
-        if self._edit_tracking_suspended is False:
-            if count > self._dataset.row_count:
-                for column in self:
-                    if column.column_type == ColumnType.DATA:
-                        column.cell_tracker.insert_rows(self._dataset.row_count, count - 1)
         self._dataset.set_row_count(count)
 
     def delete_rows(self, start, end):
         self._dataset.delete_rows(start, end)
-        if self._edit_tracking_suspended is False:
-            for column in self:
-                column.cell_tracker.remove_rows(start, end)
         self._recalc_all()
 
-    def insert_rows(self, start, end):
-        self._dataset.insert_rows(start, end)
-        for column in self:
-            if column.column_type == ColumnType.DATA:
-                column.cell_tracker.insert_rows(start, end)
+    def insert_rows(self, start, count):
+        self._dataset.insert_rows(start, start + count - 1)
         self._recalc_all()
 
     def insert_column(self, index, id=0):
+        use_id = self._next_id
         if id != 0:
             if id < self._next_id:
                 for existing_column in self:
                     if existing_column.id == id:
                         raise KeyError('Column id already exists: ' + str(id))
-            self._next_id = id
+            elif id > self._next_id:
+                self._next_id = id
+            use_id = id
 
         filter_count = self.filter_column_count
 
@@ -244,8 +230,9 @@ class InstanceModel:
 
         ins = self._dataset.insert_column(index, name)
         ins.auto_measure = True
-        ins.id = self._next_id
-        self._next_id += 1
+        ins.id = use_id
+        if use_id == self._next_id:
+            self._next_id += 1
 
         child = self._dataset[index]
         column = Column(self, child)
@@ -384,10 +371,14 @@ class InstanceModel:
         for i in range(n_virtual, InstanceModel.N_VIRTUAL_COLS):
             index = self.total_column_count
             column = Column(self)
-            column.id = self._next_id
+            id = self._next_id
+            if len(self._reuseable_virtual_ids) > 0:
+                id = self._reuseable_virtual_ids.popleft()
+            else:
+                self._next_id += 1
+            column.id = id
             column.index = index
             self._columns.append(column)
-            self._next_id += 1
 
     @property
     def path(self):
@@ -421,6 +412,29 @@ class InstanceModel:
     def embedded_name(self, name):
         self._embedded_name = name
 
+    def get_column(self, index, base=0, is_display_index=False):
+        column = None
+        if is_display_index is True:
+            count = 0
+            i = 0
+            while True:
+                next_index = base + count + i
+                if next_index >= self.total_column_count:
+                    break
+                column = self[next_index]
+                if column.hidden is False:
+                    if count == index:
+                        break
+                    count += 1
+                else:
+                    i += 1
+        else:
+            next_index = base + index
+            if next_index < self.total_column_count:
+                column = self[next_index]
+
+        return column
+
     def index_from_visible_index(self, d_index):
             count = -1
             i = 0
@@ -431,6 +445,17 @@ class InstanceModel:
                 if count == d_index:
                     return column.index
             return -1
+
+    def index_to_visible_index(self, index):
+        i = 0
+        for column in self._columns:
+            if column.index == index:
+                return i
+
+            if column.hidden is False:
+                i += 1
+
+        return -1
 
     @property
     def virtual_row_count(self):
@@ -446,6 +471,17 @@ class InstanceModel:
         for column in self._columns:
             if column.hidden is False:
                 count += 1
+        return count
+
+    @property
+    def visible_real_column_count(self):
+        count = 0
+        for column in self._columns:
+            if column.is_virtual:
+                break
+            elif column.hidden is False:
+                count += 1
+
         return count
 
     @property
@@ -516,6 +552,22 @@ class InstanceModel:
             try_name = name + ' (' + str(i) + ')'
             i += 1
         return name
+
+    def _virtualise_column(self, column):
+        index = column.index
+        for i in range(self.column_count - 1, index - 1, -1):
+            wrapper = self[i]
+            wrapper._child = None
+            wrapper.prep_for_deletion()
+
+        self._dataset.delete_columns(index, self.column_count - 1)
+
+        deleted_columns = [None] * ((self.total_column_count - self.column_count) - InstanceModel.N_VIRTUAL_COLS)
+        for i in range(len(deleted_columns)):
+            deleted_columns[i] = self._columns[-1 - i]
+            self._reuseable_virtual_ids.appendleft(deleted_columns[i].id)
+        self._columns = self._columns[:-len(deleted_columns)]
+        return deleted_columns
 
     def _realise_column(self, column):
         index = column.index

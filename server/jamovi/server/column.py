@@ -30,6 +30,8 @@ class Column:
         self._parent = parent
         self._child = child
         self._id = 0
+        if child is not None:
+            self._id = child.id
         self._index = -1
         self._description = ''
         self._hidden = False
@@ -96,6 +98,19 @@ class Column:
             self._node._release()
             self._node._remove_node_parent(self)
             self._node = None
+
+        self._description = ''
+        self._hidden = False
+        self._filter_no = -1
+        self._transform = 0  # zero mean 'none'
+        self._parent_id = 0  # zero means 'none'
+        self._cell_tracker = CellTracker()
+
+        self._fields = ('name',)  # for AST compatibility
+        self._node_parents = [ ]
+        self._needs_parse = False
+        self._needs_recalc = False
+        self._formula_status = FormulaStatus.EMPTY
 
     @property
     def is_filter(self):
