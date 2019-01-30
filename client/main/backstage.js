@@ -47,6 +47,9 @@ const FSEntryListModel = Backbone.Model.extend({
     requestOpen : function(path, type) {
         this.trigger('dataSetOpenRequested', path, type, this.get('wdType'));
     },
+    requestImport : function(path, type) {
+        this.trigger('dataSetImportRequested', path, type, this.get('wdType'));
+    },
     requestSave : function(path, type) {
         this.trigger('dataSetSaveRequested', path, type, this.get('wdType'));
     },
@@ -209,6 +212,8 @@ var FSEntryBrowserView = SilkyView.extend({
             type = 'save';
             filename = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
         }
+        else if (this.model.clickProcess === 'import')
+            type = 'import';
 
         this.model.requestBrowse(this.model.fileExtensions, type, filename);
     },
@@ -428,6 +433,8 @@ var FSEntryBrowserView = SilkyView.extend({
         var itemPath = $target.data('path');
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
             this.model.requestOpen(itemPath, itemType);
+        else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
+            this.model.requestImport(itemPath, itemType);
         else {
 
             if (this._selectedIndex !== -1)
@@ -462,6 +469,8 @@ var FSEntryBrowserView = SilkyView.extend({
                     var itemPath = $target.data('path');
                     if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
                         this.model.requestOpen(itemPath, itemType);
+                    else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
+                        this.model.requestImport(itemPath, itemType);
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
                         this.model.requestSave(itemPath, itemType);
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'export')
@@ -502,6 +511,8 @@ var FSEntryBrowserView = SilkyView.extend({
         var itemPath = $target.data('path');
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
             this.model.requestOpen(itemPath, itemType);
+        else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
+            this.model.requestImport(itemPath, itemType);
         else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
             this.model.requestSave(itemPath, itemType);
         else if (itemType === FSItemType.File && this.model.clickProcess === 'export')
@@ -637,9 +648,7 @@ var BackstageModel = Backbone.Model.extend({
         this._examplesListModel.attributes.wdType = 'examples';
         this.addToWorkingDirData(this._examplesListModel);
 
-        this._pcListModel = new FSEntryListModel();
-        this._pcListModel.clickProcess = 'open';
-        this._pcListModel.fileExtensions = [
+        let openExts = [
             { description: 'Data files', extensions: [
                 'omv', 'csv', 'txt', 'sav', 'zsav', 'por',
                 'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
@@ -652,9 +661,21 @@ var BackstageModel = Backbone.Model.extend({
             { description: 'SAS files (.xpt, .sas7bdat)', extensions: ['xpt', 'sas7bdat'] },
             { description: 'JASP files (.jasp)', extensions: ['jasp'] },
         ];
+
+        this._pcListModel = new FSEntryListModel();
+        this._pcListModel.clickProcess = 'open';
+        this._pcListModel.fileExtensions = openExts;
         this._pcListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcListModel);
+
+        this._pcImportListModel = new FSEntryListModel();
+        this._pcImportListModel.clickProcess = 'import';
+        this._pcImportListModel.fileExtensions = openExts;
+        this._pcImportListModel.on('dataSetOpenRequested', this.tryOpen, this);
+        this._pcImportListModel.on('dataSetImportRequested', this.tryImport, this);
+        this._pcImportListModel.on('browseRequested', this.tryBrowse, this);
+        this.addToWorkingDirData(this._pcImportListModel);
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = 'save';
@@ -711,6 +732,23 @@ var BackstageModel = Backbone.Model.extend({
                     { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
                     { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
                 ]
+            },
+            {
+                name: 'import',
+                title: 'Import',
+                action: () => {
+                    let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                    if (place === 'thispc') {
+                        let path = this._determineSavePath();
+                        return this.setCurrentDirectory('main', Path.dirname(path)).then(() => {
+                            this.attributes.place = place;
+                        });
+                    }
+                    else
+                        this.attributes.place = place;
+                },
+                places: [
+                    { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView }]
             },
             {
                 name: 'save',
@@ -804,6 +842,15 @@ var BackstageModel = Backbone.Model.extend({
                     }
                 });
             }
+            else if (type === 'import') {
+
+                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(osPath, '') }, (fileNames) => {
+                    if (fileNames) {
+                        var path = fileNames[0].replace(/\\/g, '/');
+                        this.requestImport(path);
+                    }
+                });
+            }
             else if (type === 'save') {
 
                 dialog.showSaveDialog(browserWindow, { filters : filters, defaultPath: Path.join(osPath, filename) }, (fileName) => {
@@ -849,6 +896,9 @@ var BackstageModel = Backbone.Model.extend({
             this.setCurrentDirectory(wdType, path, type)
                 .done();
         }
+    },
+    tryImport: function(path, type, wdType) {
+        this.requestImport(path);
     },
     trySave: function(path, type) {
         this.requestSave(path);
@@ -965,6 +1015,17 @@ var BackstageModel = Backbone.Model.extend({
             }
         };
         this.instance.open(path)
+            .then(deactivate, undefined, deactivate);
+    },
+    requestImport: function(path) {
+        let deactivated = false;
+        let deactivate = () => {
+            if ( ! deactivated) {
+                this.set('activated', false);
+                deactivated = true;
+            }
+        };
+        this.instance.import(path)
             .then(deactivate, undefined, deactivate);
     },
     externalRequestSave: function(path, overwrite) {
