@@ -99,6 +99,9 @@ const Instance = Backbone.Model.extend({
         });
 
     },
+    import(filePath) {
+        return Promise.resolve();
+    },
     open(filePath) {
 
         let promise;
