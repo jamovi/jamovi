@@ -76,7 +76,7 @@ Coms.prototype.connect = function(sessionId) {
                     this._notifyEvent('closed');
                 };
             })
-        ]).timeout(1500, 'connection timed out');
+        ]).timeout(5000, 'connection timed out');
     }
 
     return this.connected;
