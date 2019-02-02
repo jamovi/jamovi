@@ -505,15 +505,15 @@ class InstanceModel:
         self._embedded_name = name
 
     def index_from_visible_index(self, d_index):
-            count = -1
-            i = 0
-            for column in self._columns:
-                i += 1
-                if column.hidden is False:
-                    count += 1
-                if count == d_index:
-                    return column.index
-            return -1
+        count = -1
+        i = 0
+        for column in self._columns:
+            i += 1
+            if column.hidden is False:
+                count += 1
+            if count == d_index:
+                return column.index
+        return -1
 
     @property
     def virtual_row_count(self):

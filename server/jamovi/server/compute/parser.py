@@ -95,7 +95,7 @@ class Parser:
                     chunks.append(term)
                     q = ''
                     break
-                elif q is '' and ec in Parser._SPECIAL_CHARS:
+                elif q == '' and ec in Parser._SPECIAL_CHARS:
                     term = ''.join(str[s:e])
                     chunks.append(term)
                     chunks.append(ec)

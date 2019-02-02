@@ -1232,17 +1232,17 @@ class Instance:
                 # if these things haven't changed, no need
                 # to trigger recalcs
                 if (column.name == old_name
-                    and column.column_type == old_type
-                    and column.data_type == old_d_type
-                    and column.measure_type == old_m_type
-                    and column.formula == old_formula
-                    and column.filter_no == old_filter_no
-                    and column.levels == old_levels
-                    and column.active == old_active
-                    and column.trim_levels == old_trim
-                    and column.transform == old_transform
-                    and column.parent_id == old_parent_id):
-                        continue
+                        and column.column_type == old_type
+                        and column.data_type == old_d_type
+                        and column.measure_type == old_m_type
+                        and column.formula == old_formula
+                        and column.filter_no == old_filter_no
+                        and column.levels == old_levels
+                        and column.active == old_active
+                        and column.trim_levels == old_trim
+                        and column.transform == old_transform
+                        and column.parent_id == old_parent_id):
+                    continue
 
                 recalc.add(column)
 
