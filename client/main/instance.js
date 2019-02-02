@@ -100,7 +100,46 @@ const Instance = Backbone.Model.extend({
 
     },
     import(filePath) {
-        return Promise.resolve();
+
+        let promise;
+        let coms = this.attributes.coms;
+
+        let progress = new Notify({
+            title: 'Importing',
+            duration: 2000,
+        });
+
+        let open = new coms.Messages.OpenRequest(filePath);
+        open.op = coms.Messages.OpenRequest.Op.IMPORT_REPLACE;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = open.toArrayBuffer();
+        request.payloadType = 'OpenRequest';
+        request.instanceId = this._instanceId;
+
+        let onresolve = (response) => {
+            progress.dismiss();
+            this._retrieveInfo();
+            this._notify({
+                message: 'File imported',
+                cause: 'Import successful',
+            });
+        };
+
+        let onreject = (error) => {
+            progress.dismiss();
+            this._notify(error);
+        };
+
+        let onprogress = (prog) => {
+            progress.set('progress', prog);
+            this.trigger('notification', progress);
+        };
+
+        promise = coms.send(request);
+        promise.then(onresolve, onreject, onprogress);
+
+        return promise;
     },
     open(filePath) {
 

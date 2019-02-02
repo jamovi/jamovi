@@ -21,7 +21,7 @@ const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');
 
 const TableView = SilkyView.extend({
-    className: "tableview",
+    className: 'tableview',
     initialize() {
 
         $(window).on('resize', event => this._resizeHandler(event));
@@ -37,6 +37,7 @@ const TableView = SilkyView.extend({
         this.model.on('columnsVisible', event => this._columnsInserted(event));
         this.model.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
         this.model.on('transformsChanged', event => this._transformsChanged(event));
+        this.model.on('change:vRowCount', event => this._updateHeight());
 
         this._tabStart = { row: 0, col: 0 };
         this.viewport = null;
@@ -44,25 +45,34 @@ const TableView = SilkyView.extend({
 
         this.$el.addClass('jmv-tableview');
 
-
-
-        let html = '';
-        html += '<div class="jmv-table-header">';
-        html += '    <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>';
-        html += '</div>';
-        html += '<div class="jmv-table-container">';
-        html += '    <div class="jmv-table-body">';
-        html += '        <div class="jmv-column-row-header" style="left: 0 ;"></div>';
-        html += '        <div class="jmv-sub-selections"></div>';
-        html += '    </div>';
-        html += '</div>';
-
-        this.$el.html(html);
+        this.$el.html(`
+            <div class="jmv-table-header">
+                <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>
+                <div class="jmv-table-header-background"></div>
+                <div class="jmv-column-header select-all"></div>
+                <div class="jmv-table-column-highlight"></div>
+            </div>
+            <div class="jmv-table-container">
+                <div class="jmv-table-body">
+                    <div class="jmv-column-row-header" style="left: 0 ;"></div>
+                    <div class="jmv-sub-selections"></div>
+                    <input class="jmv-table-cell-selected" contenteditable>
+                    <div class="jmv-table-row-highlight"></div>
+                </div>
+            </div>`);
 
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
         this.$body      = this.$container.find('.jmv-table-body');
         this.$rhColumn  = this.$body.find('.jmv-column-row-header');
+
+        this.$topLeftCell = this.$el.find('.select-all');
+        this.$topLeftCell.on('click', event => this.selectAll());
+
+        this.$selection = this.$body.find('.jmv-table-cell-selected');
+        this.$selectionRowHighlight = this.$body.find('.jmv-table-row-highlight');
+        this.$selectionColumnHighlight = this.$header.find('.jmv-table-column-highlight');
+
         this.$columns   = [ ];
         this.$headers   = [ ];
 
@@ -89,6 +99,9 @@ const TableView = SilkyView.extend({
 
         this.$rhColumn.css('width', this._rowHeaderWidth);
         this.$rhColumn.empty();
+
+        this.$topLeftCell.css('height', this._rowHeight);
+        this.$topLeftCell.css('width', this._rowHeaderWidth);
 
         this.selection = null;
 
@@ -141,6 +154,31 @@ const TableView = SilkyView.extend({
         ActionHub.get('delRow').on('request', this._deleteRows, this);
 
         this._clearSelectionList();
+
+        this.model.on('change:editingVar', event => {
+            if (this._modifiedFromSelection)
+                return;
+
+            let now  = this.model.getDisplayedEditingColumns();
+            if (now !== null && now.length > 0) {
+                if (this.selection !== null) {
+                    this._endEditing().then(() => {
+                        this._createSelectionsFromColumns(this.selection.rowNo, now);
+                        this._updateScroll(this.selection);
+                    }, () => {});
+                }
+            }
+        });
+
+        this.$selection.on('focus', event => this._beginEditing());
+        this.$selection.on('blur', event => {
+            if (this._editing)
+                this._endEditing();
+        });
+        this.$selection.on('click', event => {
+            if (this._editing)
+                this._modifyingCellContents = true;
+        });
     },
     _insertFromSelectedColumns(itemConstruction, direction) {
         if (direction === undefined)
@@ -267,24 +305,13 @@ const TableView = SilkyView.extend({
     },
     _dataSetLoaded() {
 
-        this.$header.empty();  // clear the temporary cell
+        for (let header of this.$headers)
+            $(header).remove();
+        for (let column of this.$columns)
+            $(column).remove();
 
-        // add a background for its border line
-        this.$header.append('<div class="jmv-table-header-background"></div>');
-
-        // add the top-left corner cell
-        this.$topLeftCell = $(`
-            <div
-                class="jmv-column-header select-all"
-                style="
-                    width: ${ this._rowHeaderWidth }px ;
-                    height: ${ this._rowHeight }px ;
-                "
-            >
-                &nbsp;
-            </div>`)
-            .on('click', event => this.selectAll())
-            .appendTo(this.$header);
+        this.$columns = [ ];
+        this.$headers = [ ];
 
         let vColumnCount = this.model.get('vColumnCount');
 
@@ -302,47 +329,8 @@ const TableView = SilkyView.extend({
         let totalHeight = vRowCount * this._rowHeight;
         this.$body.css('height', totalHeight);
 
+        this.viewport = null; // reset
         this._updateViewRange();
-
-        this.$selection = $('<input class="jmv-table-cell-selected" contenteditable>');
-        this.$selection.width(this._lefts[0]);
-        this.$selection.height(this._rowHeight);
-        this.$selection.appendTo(this.$body);
-
-        this.$selectionRowHighlight = $('<div class="jmv-table-row-highlight"></div>');
-        this.$selectionRowHighlight.appendTo(this.$body);
-
-        this.$selectionColumnHighlight = $('<div class="jmv-table-column-highlight"></div>');
-        this.$selectionColumnHighlight.appendTo(this.$header);
-
-        this.$selection.on('focus', event => this._beginEditing());
-        this.$selection.on('blur', event => {
-            if (this._editing)
-                this._endEditing();
-        });
-        this.$selection.on('click', event => {
-            if (this._editing)
-                this._modifyingCellContents = true;
-        });
-
-        this.model.on('change:editingVar', event => {
-            if (this._modifiedFromSelection)
-                return;
-
-            let now  = this.model.getDisplayedEditingColumns();
-            if (now !== null && now.length > 0) {
-                if (this.selection !== null) {
-                    this._endEditing().then(() => {
-                        this._createSelectionsFromColumns(this.selection.rowNo, now);
-                        this._updateScroll(this.selection);
-                    }, () => {});
-                }
-            }
-        });
-
-        this.model.on('change:vRowCount', event => {
-            this._updateHeight();
-        });
 
         this._setSelection(0, 0);
     },

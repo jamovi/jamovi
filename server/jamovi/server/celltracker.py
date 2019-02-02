@@ -16,6 +16,9 @@ class CellTracker:
     def is_edited(self):
         return len(self._edited_cell_ranges) > 0
 
+    def clear(self):
+        del self._edited_cell_ranges[:]
+
     def set_cells_as_edited(self, start, end):
         if len(self._edited_cell_ranges) == 0:
             self._edited_cell_ranges.append({ 'start': start, 'end': end })

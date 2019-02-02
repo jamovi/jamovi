@@ -242,6 +242,13 @@ message InstanceResponse {
 
 message OpenRequest {
     string filename = 1;
+
+    enum Op {
+        OPEN = 0;
+        IMPORT_REPLACE = 1;
+    }
+
+    Op op = 2;
 }
 
 message OpenProgress {

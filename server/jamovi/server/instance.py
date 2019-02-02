@@ -34,6 +34,9 @@ import time
 import asyncio
 import functools
 
+from tempfile import NamedTemporaryFile
+from tempfile import mktemp
+
 from .utils import fs
 
 log = logging.getLogger('jamovi')
@@ -501,14 +504,30 @@ class Instance:
     async def _on_open(self, request):
         path = request.filename
 
+        temp_buffer_file = None
+        temp_buffer_path = None
+        mm = None
+
         try:
             norm_path = Instance._normalise_path(path)
             virt_path = Instance._virtualise_path(path)
 
-            self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
-            dataset = DataSet.create(self._mm)
+            importing = (request.op == jcoms.OpenRequest.Op.Value('IMPORT_REPLACE'))
 
-            self._data.dataset = dataset
+            if importing:
+                model = InstanceModel(self)
+                if os.name == 'nt':
+                    buffer_path = mktemp()
+                else:
+                    temp_buffer_file = NamedTemporaryFile(delete=False)
+                    buffer_path = temp_buffer_file.name
+                temp_buffer_path = buffer_path
+            else:
+                model = self._data
+                buffer_path = self._buffer_path
+
+            mm = MemoryMap.create(buffer_path, 4 * 1024 * 1024)
+            model.dataset = DataSet.create(mm)
 
             is_example = path.startswith('{{Examples}}')
 
@@ -521,7 +540,15 @@ class Instance:
                         coms.send, None, self._instance_id, request,
                         complete=False, progress=(1000 * p, 1000)))
 
-            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example)
+            await ioloop.run_in_executor(None, formatio.read, model, norm_path, prog_cb, is_example)
+
+            if importing:
+                self._data.import_from(model)
+                self._data.analyses.rerun()
+            else:
+                temp_mm = self._mm
+                self._mm = mm
+                mm = temp_mm
 
             response = jcoms.OpenProgress()
             response.path = virt_path
@@ -544,6 +571,17 @@ class Instance:
             message = 'Unable to open {}'.format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
+
+        finally:
+            if mm is not None:
+                mm.close()
+            if temp_buffer_file is not None:
+                temp_buffer_file.close()
+            if temp_buffer_path is not None:
+                try:
+                    os.remove(temp_buffer_path)
+                except Exception:
+                    pass
 
         self._data.begin_edit_tracking()
 

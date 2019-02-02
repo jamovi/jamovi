@@ -4,6 +4,7 @@ from .column import Column
 from .analyses import Analyses
 from .utils import NullLog
 from ..core import ColumnType
+from ..core import DataType
 
 
 class InstanceModel:
@@ -227,7 +228,7 @@ class InstanceModel:
                 column.cell_tracker.insert_rows(start, end)
         self._recalc_all()
 
-    def insert_column(self, index, id=0):
+    def insert_column(self, index, name=None, import_name=None, id=0):
         if id != 0:
             if id < self._next_id:
                 for existing_column in self:
@@ -237,12 +238,16 @@ class InstanceModel:
 
         filter_count = self.filter_column_count
 
-        nIndex = index
-        if index >= filter_count:
-            nIndex = index - filter_count
-        name = self._gen_column_name(nIndex)
+        if name is None:
+            nIndex = index
+            if index >= filter_count:
+                nIndex = index - filter_count
+            name = self._gen_column_name(nIndex)
 
-        ins = self._dataset.insert_column(index, name)
+        if import_name is None:
+            import_name = name
+
+        ins = self._dataset.insert_column(index, name, import_name)
         ins.auto_measure = True
         ins.id = self._next_id
         self._next_id += 1
@@ -253,9 +258,11 @@ class InstanceModel:
         self._columns.insert(index, column)
 
         index = 0
-        for column in self:
-            column.index = index
+        for col in self:
+            col.index = index
             index += 1
+
+        return column
 
     def update_filter_names(self):
         filter_index = 0
@@ -310,6 +317,82 @@ class InstanceModel:
             self.delete_columns(start, end)
 
         self.update_filter_names()
+
+    def import_from(self, source):
+        self.set_row_count(0)
+        self._edit_tracking_suspended = True
+
+        source_columns = [ ]
+        dest_columns = [ ]
+
+        for source_column in source:
+            if source_column.column_type != ColumnType.DATA:
+                continue
+
+            for dest_column in self._columns:
+                if dest_column.import_name == source_column.import_name:
+                    break
+            else:
+                dest_column = self.insert_column(
+                    self.column_count,
+                    source_column.name,
+                    source_column.import_name)
+                dest_column.column_type = ColumnType.DATA
+
+            if dest_column.column_type != ColumnType.DATA:
+                continue
+
+            # at this point, source_column and dest_column are matched from
+            # the old and new data set
+            # we begin modifying the destination to be like the source
+
+            dest_column.change(
+                data_type=source_column.data_type,
+                measure_type=source_column.measure_type)
+
+            if source_column.has_levels:
+                dest_column.change(levels=source_column.levels)
+            elif source_column.data_type is DataType.DECIMAL:
+                dest_column.dps = source_column.dps
+
+            # assemble into parallel lists for later use
+            source_columns.append(source_column)
+            dest_columns.append(dest_column)
+
+        # clear the levels where the old column doesn't exist in the new
+        for dest_column in self._columns:
+            if dest_column.column_type != ColumnType.DATA:
+                continue
+            if dest_column not in dest_columns:
+                dest_column.clear_levels()
+
+        # now all the columns have been set up, we can reparse everything
+        for transform in self._transforms:
+            transform.parse_formula()
+
+        for column in self:
+            if column.column_type is not ColumnType.DATA:
+                column.parse_formula()
+
+        # now copy the cell data across
+        self.set_row_count(source.row_count)
+
+        for i in range(0, len(source_columns)):
+            source_column = source_columns[i]
+            dest_column = dest_columns[i]
+            for row_no in range(source.row_count):
+                dest_column.set_value(row_no, source_column[row_no])
+
+        # now recalculate everything
+        self._recalc_all()
+
+        # clear all the cell change tracking stuff, and renable it
+        for column in self:
+            column.cell_tracker.clear()
+        self._edit_tracking_suspended = False
+
+        # requires save
+        self.is_edited = True
 
     def is_row_filtered(self, index):
         if index < self._dataset.row_count:

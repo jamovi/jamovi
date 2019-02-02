@@ -268,6 +268,10 @@ class Analyses:
         del self[id]
         return self.create(id, o.name, o.ns, o.options.as_pb())
 
+    def rerun(self):
+        for analysis in self:
+            analysis.rerun()
+
     @property
     def needs_init(self):
         return AnalysisIterator(self, True)
