@@ -1,5 +1,6 @@
 
 from .transform import Transform
+from .rowtracker import RowTracker
 from .column import Column
 from .analyses import Analyses
 from .utils import NullLog
@@ -29,6 +30,11 @@ class InstanceModel:
         self._transform_next_id = 1  # an id of zero is unasigned... zero is reserved for 'no transform'
 
         self._log = NullLog()
+        self._row_tracker = RowTracker()
+
+    @property
+    def row_tracker(self):
+        return self._row_tracker
 
     @property
     def instance(self):

@@ -89,6 +89,7 @@ def write(data, path, prog_cb, html=None):
         metadataset = { }
         metadataset['rowCount'] = data.row_count
         metadataset['columnCount'] = data.column_count
+        metadataset['removedRows'] = data.row_tracker.removed_row_ranges
         metadataset['fields'] = fields
         metadataset['transforms'] = transforms
 
@@ -343,6 +344,7 @@ def read(data, path, prog_cb):
             column.transform = meta_column.get('transform', 0)
             column.parent_id = meta_column.get('parentId', 0)
             column.cell_tracker.edited_cell_ranges = meta_column.get('edits', [])
+            column.cell_tracker.removed_row_ranges = meta_column.get('removedRows', [])
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)
@@ -352,6 +354,7 @@ def read(data, path, prog_cb):
                 column.trim_levels = meta_column.get('trimLevels', True)
 
         row_count = meta_dataset['rowCount']
+        data.row_tracker.removed_row_ranges = meta_dataset.get('removedRows', [])
 
         data.set_row_count(row_count)
 

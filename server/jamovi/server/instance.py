@@ -649,6 +649,12 @@ class Instance:
                 transform_schema = response.schema.transforms.add()
                 self._populate_transform_schema(transform, transform_schema)
 
+            if self._data.row_tracker.is_edited:
+                for range in self._data.row_tracker.removed_row_ranges:
+                    row_range_pb = response.schema.removedRowRanges.add()
+                    row_range_pb.index = range['index']
+                    row_range_pb.count = range['count']
+
         for analysis in self._data.analyses:
             if analysis.has_results:
                 analysis_pb = response.analyses.add()
@@ -1904,6 +1910,12 @@ class Instance:
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.visible_column_count
         response.schema.tColumnCount = self._data.total_column_count
+
+        if self._data.row_tracker.is_edited:
+            for range in self._data.row_tracker.removed_row_ranges:
+                row_range_pb = response.schema.removedRowRanges.add()
+                row_range_pb.index = range['index']
+                row_range_pb.count = range['count']
 
     def _populate_transform_schema(self, transform, transform_schema):
         transform_schema.name = transform.name

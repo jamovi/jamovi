@@ -372,6 +372,11 @@ message ColumnCellRange {
     int32 end = 2;
 }
 
+message RowRange {
+    int32 index = 1;
+    int32 count = 2;
+}
+
 enum ColumnType {
     NONE = 0;
     DATA = 1;
@@ -459,6 +464,7 @@ message DataSetSchema {
     uint32 tColumnCount = 9;
 
     repeated TransformSchema transforms = 10;
+    repeated RowRange removedRowRanges = 11;
 }
 
 enum GetSet {

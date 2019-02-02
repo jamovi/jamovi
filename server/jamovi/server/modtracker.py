@@ -116,6 +116,14 @@ class ModTracker:
 
         if self._pos > 0:
             state_data = self._history[self._pos]
+
+            row_changes = state_data['row_changes']
+            self._data.row_tracker.state_id = row_changes['state_id']
+            row_ranges = []
+            for row_range in row_changes['ranges']:
+                row_ranges.append({'index': row_range['index'], 'count': row_range['count']})
+            self._data.row_tracker.removed_row_ranges = row_ranges
+
             changes = state_data['changes']
             for id in changes:
                 column = self._data.get_column_by_id(id)
@@ -184,6 +192,19 @@ class ModTracker:
             changes[column.id] = {'state_id': state_id, 'ranges': ranges, 'changed': changed }
 
         data['changes'] = changes
+
+        row_changed = True
+        row_ranges = []
+        if prev_state is not None and 'row_changes' in prev_state:
+            if prev_state['row_changes']['state_id'] == self._data.row_tracker.state_id:
+                row_changed = False
+                row_ranges = prev_state['row_changes']['ranges']
+
+        if row_changed:
+            for row_range in self._data.row_tracker.removed_row_ranges:
+                row_ranges.append({'index': row_range['index'], 'count': row_range['count']})
+
+        data['row_changes'] = { 'state_id': self._data.row_tracker.state_id, 'ranges': row_ranges, 'changed': row_changed }
 
         self._history.append(data)
         self._pos = self._pos + 1
@@ -313,6 +334,8 @@ class ModTracker:
                 if column.column_type == ColumnType.DATA:
                     column.cell_tracker.insert_rows(start, end)
 
+            self._data.row_tracker.log_rows_added(start, end - start + 1)
+
     def log_row_insertion(self, block):
         if self._active and block.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
             new_event = self._history[self._pos]['undo']
@@ -326,6 +349,8 @@ class ModTracker:
             for column in self._data:
                 if column.column_type == ColumnType.DATA:
                     column.cell_tracker.insert_rows(block.rowStart, block.rowStart + block.rowCount - 1)
+
+            self._data.row_tracker.log_rows_added(block.rowStart, block.rowCount)
 
     def log_row_deletion(self, block):
         if self._active and block.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
@@ -366,6 +391,9 @@ class ModTracker:
             if block.rowStart < self._data.row_count:
                 if row_end >= self._data.row_count:
                     row_end = self._data.row_count - 1
+
+                self._data.row_tracker.log_rows_removed(block.rowStart, row_end)
+
                 for column in self._data:
                     column.cell_tracker.remove_rows(block.rowStart, row_end)
 

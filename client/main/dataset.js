@@ -65,6 +65,7 @@ const DataSetModel = Backbone.Model.extend({
         columnCount : 0,
         vColumnCount : 0,
         tColumnCount : 0,
+        removedRowRanges: [ ],
         coms : null,
         instanceId : null,
         editingVar : null,
@@ -108,6 +109,13 @@ const DataSetModel = Backbone.Model.extend({
             this.attributes.columnCount = infoPB.schema.columnCount;
             this.attributes.vColumnCount = infoPB.schema.vColumnCount;
             this.attributes.tColumnCount = infoPB.schema.tColumnCount;
+
+            let removedRowRanges = new Array(infoPB.schema.removedRowRanges.length);
+            for (let i = 0; i < removedRowRanges.length; i++) {
+                let rangePB = infoPB.schema.removedRowRanges[i];
+                removedRowRanges[i] = { index: rangePB.index, count: rangePB.count };
+            }
+            this.attributes.removedRowRanges = removedRowRanges;
 
             if (columns.length > 0) {
                 let firstColumn = columns[0];
@@ -748,6 +756,12 @@ const DataSetModel = Backbone.Model.extend({
             if (datasetPB.schema) {
                 this.set('rowCount', datasetPB.schema.rowCount);
                 this.set('vRowCount', datasetPB.schema.vRowCount);
+                let removedRowRanges = new Array(datasetPB.schema.removedRowRanges.length);
+                for (let i = 0; i < removedRowRanges.length; i++) {
+                    let rangePB = datasetPB.schema.removedRowRanges[i];
+                    removedRowRanges[i] = { index: rangePB.index, count: rangePB.count };
+                }
+                this.set('removedRowRanges', removedRowRanges);
             }
 
             if (nCreated > 0 || nVisible > 0 || nHidden > 0 || nDeleted > 0)
