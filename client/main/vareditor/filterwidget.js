@@ -180,6 +180,7 @@ const FilterWidget = Backbone.View.extend({
         return details;
     },
     _dataSetLoaded() {
+        this.$filterList.empty();
         let columns = this.dataset.attributes.columns;
         let index = 0;
         for (let i = 0; i < columns.length; i++) {
