@@ -322,10 +322,20 @@ class Column:
         else:
             return -2147483648
 
+    def update_level_counts(self):
+        if self._child is None:
+            self._create_child()
+        self._child.update_level_counts()
+
     def clear_levels(self):
         if self._child is None:
             self._create_child()
         self._child.clear_levels()
+
+    def trim_unused_levels(self):
+        if self._child is None:
+            self._create_child()
+        self._child.trim_unused_levels()
 
     @property
     def has_levels(self):

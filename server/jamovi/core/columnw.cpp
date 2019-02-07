@@ -89,29 +89,34 @@ void ColumnW::setActive(bool active)
     s->changes++;
 }
 
- void ColumnW::setTrimLevels(bool trim)
- {
-     ColumnStruct *s = struc();
-     if (s->trimLevels == trim)
+void ColumnW::setTrimLevels(bool trim)
+{
+    ColumnStruct *s = struc();
+    if (s->trimLevels == trim)
         return;
 
-     if (trim)
-     {
-         Level *levels = _mm->resolve(s->levels);
-         for (int i = 0; i < s->levelsUsed; i++)
-         {
-             Level &level = levels[i];
-             if (level.count == 0)
-             {
-                 removeLevel(level.value);
-                 i--;
-             }
-         }
-     }
+    if (trim)
+        trimUnusedLevels();
 
-     s->trimLevels = trim;
-     s->changes++;
- }
+    s->trimLevels = trim;
+    s->changes++;
+}
+
+void ColumnW::trimUnusedLevels()
+{
+    ColumnStruct *s = struc();
+
+    Level *levels = _mm->resolve(s->levels);
+    for (int i = 0; i < s->levelsUsed; i++)
+    {
+        Level &level = levels[i];
+        if (level.count == 0)
+        {
+            removeLevel(level.value);
+            i--;
+        }
+    }
+}
 
 void ColumnW::setFormula(const char *value)
 {

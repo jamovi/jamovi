@@ -344,16 +344,35 @@ class InstanceModel:
 
             # at this point, source_column and dest_column are matched from
             # the old and new data set
-            # we begin modifying the destination to be like the source
+            # we adjust the source to be like the destination
 
-            dest_column.change(
-                data_type=source_column.data_type,
-                measure_type=source_column.measure_type)
+            source_dps = source_column.dps
 
-            if source_column.has_levels:
-                dest_column.change(levels=source_column.levels)
+            source_column.change(
+                data_type=dest_column.data_type,
+                measure_type=dest_column.measure_type)
+
+            # and adjust the destination to be like the source
+
+            if dest_column.has_levels:
+                if dest_column.trim_levels:
+                    dest_column.change(levels=source_column.levels)
+                else:
+                    # if the column doesn't have it's levels trimmed, we need
+                    # to retain the old old levels, and just add the new ones
+                    if dest_column.data_type is DataType.TEXT:
+                        for level in source_column.levels:
+                            value = level[1]
+                            if not dest_column.has_level(value):
+                                dest_column.append_level(dest_column.level_count, level[1], level[2])
+                    else:
+                        for level in source_column.levels:
+                            value = level[0]
+                            if not dest_column.has_level(value):
+                                dest_column.append_level(value, level[1], str(value))
+
             elif source_column.data_type is DataType.DECIMAL:
-                dest_column.dps = source_column.dps
+                dest_column.dps = source_dps
 
             # assemble into parallel lists for later use
             source_columns.append(source_column)
@@ -363,7 +382,7 @@ class InstanceModel:
         for dest_column in self._columns:
             if dest_column.column_type != ColumnType.DATA:
                 continue
-            if dest_column not in dest_columns:
+            if dest_column not in dest_columns and dest_column.trim_levels:
                 dest_column.clear_levels()
 
         # now all the columns have been set up, we can reparse everything
@@ -382,6 +401,11 @@ class InstanceModel:
             dest_column = dest_columns[i]
             for row_no in range(source.row_count):
                 dest_column.set_value(row_no, source_column[row_no])
+
+        for dest_column in dest_columns:
+            dest_column.update_level_counts()
+            if dest_column.trim_levels:
+                dest_column.trim_unused_levels()
 
         # now recalculate everything
         self._recalc_all()
@@ -617,6 +641,11 @@ class InstanceModel:
             column.set_needs_recalc()
         for column in self:
             column.recalc()
+        for column in self:
+            if column.is_filter:
+                self.update_filter_status()
+            # only check the first one, break straight away
+            break
 
     def _print_column_info(self):
         for column in self:

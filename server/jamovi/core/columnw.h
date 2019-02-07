@@ -41,6 +41,7 @@ public:
     void setFormulaMessage(const char *value);
     void setActive(bool active);
     void setTrimLevels(bool trim);
+    void trimUnusedLevels();
     void setDValue(int rowIndex, double value, bool initing = false);
     void setIValue(int rowIndex, int value, bool initing = false);
     void setSValue(int rowIndex, const char *value, bool initing = false);

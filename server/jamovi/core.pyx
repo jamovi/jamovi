@@ -155,8 +155,8 @@ cdef class DataSet:
     def update_filter_status(self):
         for column in self:
             if column.column_type is not ColumnType.FILTER:
-                if column.measure_type is not MeasureType.CONTINUOUS:
-                    column._update_level_counts()
+                if column.has_levels:
+                    column.update_level_counts()
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
@@ -193,6 +193,7 @@ cdef extern from "columnw.h":
         bool hasLevels() const
         void clearLevels()
         void updateLevelCounts()
+        void trimUnusedLevels()
         const vector[CLevelData] levels()
         void setLevels(vector[CLevelData] levels)
         void setDPs(int dps)
@@ -383,7 +384,10 @@ cdef class Column:
     def clear_levels(self):
         self._this.clearLevels()
 
-    def _update_level_counts(self):
+    def trim_unused_levels(self):
+        self._this.trimUnusedLevels()
+
+    def update_level_counts(self):
         self._this.updateLevelCounts()
 
     @property
