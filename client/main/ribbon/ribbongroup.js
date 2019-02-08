@@ -16,6 +16,7 @@ const RibbonGroup = Backbone.View.extend({
         margin:         //defines the size of the left right magins [default: normal]
         $el:            //jquery element. Will create if missing.
         items:          //Array of menu items. Not needed, can use 'addItem'.
+        align-contents: // [default: stretch]
     }
     */
 
@@ -27,6 +28,7 @@ const RibbonGroup = Backbone.View.extend({
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
+        let align = params.alignContents === undefined ? 'stretch' : params.alignContents;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
@@ -44,7 +46,7 @@ const RibbonGroup = Backbone.View.extend({
         this.items = [];
 
         let html = '';
-        html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '">';
+        html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '" style="align-items: ' + align + '">';
         html += '</div>';
         if (title !== null)
             html += '<div class="jmv-ribbon-group-label">' + title + '</div>';

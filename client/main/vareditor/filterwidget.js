@@ -459,7 +459,7 @@ const FilterWidget = Backbone.View.extend({
 
         $formula.addClass('selected');
 
-        this.addEvents($filter, $formula, 'formula', relatedColumn.id);
+        this.addEvents($filter, $formula, 'formula', relatedColumn);
 
         setTimeout(() => {
             if (this.attached)
@@ -564,7 +564,7 @@ const FilterWidget = Backbone.View.extend({
 
         $description[0].textContent = column.description;
 
-        this.addEvents($filter, $description, 'description', column.id);
+        this.addEvents($filter, $description, 'description', column);
 
         $description.attr('contenteditable', 'true');
 
@@ -675,8 +675,8 @@ const FilterWidget = Backbone.View.extend({
             event.preventDefault();
         });
     },
-    addEvents($filter, $element, name, columnId) {
-        $element.data('id', columnId);
+    addEvents($filter, $element, name, column) {
+        $element.data('id', column.id);
 
         $element.on('click', (event) => {
             event.stopPropagation();
@@ -690,7 +690,7 @@ const FilterWidget = Backbone.View.extend({
             }
 
             keyboardJS.pause();
-            this.dataset.set('editingVar', [columnId]);
+            this.dataset.set('editingVar', [column.id]);
 
             $element.select();
         });
@@ -701,17 +701,15 @@ const FilterWidget = Backbone.View.extend({
             }
 
             keyboardJS.resume();
-            let data = { };
-            data[name] = $element[0].textContent;
-            this.setColumnProperties($filter, [{ id: columnId, values: data }]);
+            if ($element[0].textContent !== column[name]) {
+                let data = { };
+                data[name] = $element[0].textContent;
+                this.setColumnProperties($filter, [{ id: column.id, values: data }]);
+            }
         });
         $element.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
-                let data = { };
-                data[name] = $element[0].textContent;
-                this.setColumnProperties($filter, [{ id: columnId, values: data }]).then(() => {
-                    $element.blur();
-                });
+                $element.blur();
                 event.preventDefault();
             }
 

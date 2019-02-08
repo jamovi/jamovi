@@ -139,7 +139,7 @@ const RecodedVarWidget = Backbone.View.extend({
             }
         });
 
-        this.model.dataset.on('transformsChanged', this._updateTransformList, this);
+        this.model.dataset.on('transformsChanged transformRemoved', this._updateTransformList, this);
         this.model.dataset.on('dataSetLoaded', this._onDatasetLoaded, this);
         this.model.dataset.on('columnsChanged', this._updateChannelList, this);
 
