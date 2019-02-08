@@ -322,10 +322,10 @@ class Column:
         else:
             return -2147483648
 
-    def update_level_counts(self):
+    def refresh_filter_state(self):
         if self._child is None:
             self._create_child()
-        self._child.update_level_counts()
+        self._child.refresh_filter_state()
 
     def clear_levels(self):
         if self._child is None:

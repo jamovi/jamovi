@@ -329,6 +329,8 @@ class InstanceModel:
             if source_column.column_type != ColumnType.DATA:
                 continue
 
+            is_new_column = False
+
             for dest_column in self._columns:
                 if dest_column.import_name == source_column.import_name:
                     break
@@ -337,6 +339,7 @@ class InstanceModel:
                     self.column_count,
                     source_column.name,
                     source_column.import_name)
+                is_new_column = True
                 dest_column.column_type = ColumnType.DATA
 
             if dest_column.column_type != ColumnType.DATA:
@@ -344,41 +347,44 @@ class InstanceModel:
 
             # at this point, source_column and dest_column are matched from
             # the old and new data set
-            # we adjust the source to be like the destination
 
-            source_dps = source_column.dps
+            def make_a_like_b(a, b):
 
-            source_column.change(
-                data_type=dest_column.data_type,
-                measure_type=dest_column.measure_type)
+                a.change(
+                    data_type=b.data_type,
+                    measure_type=b.measure_type)
 
-            # and adjust the destination to be like the source
-
-            if dest_column.has_levels:
-                if dest_column.trim_levels:
-                    dest_column.change(levels=source_column.levels)
-                else:
-                    # if the column doesn't have it's levels trimmed, we need
-                    # to retain the old old levels, and just add the new ones
-                    if dest_column.data_type is DataType.TEXT:
-                        for level in source_column.levels:
-                            value = level[1]
-                            if not dest_column.has_level(value):
-                                dest_column.append_level(dest_column.level_count, level[1], level[2])
+                if a.has_levels:
+                    if a.trim_levels:
+                        a.change(levels=b.levels)
                     else:
-                        for level in source_column.levels:
-                            value = level[0]
-                            if not dest_column.has_level(value):
-                                dest_column.append_level(value, level[1], str(value))
+                        # if the column doesn't have it's levels trimmed, we need
+                        # to retain the old levels, and add the new ones
+                        if a.data_type is DataType.TEXT:
+                            for level in b.levels:
+                                value = level[1]
+                                if not a.has_level(value):
+                                    a.append_level(a.level_count, level[1], level[2])
+                        else:
+                            for level in b.levels:
+                                value = level[0]
+                                if not a.has_level(value):
+                                    a.append_level(value, level[1], str(value))
+                elif a.data_type is DataType.DECIMAL:
+                    a.dps = b.dps
 
-            elif source_column.data_type is DataType.DECIMAL:
-                dest_column.dps = source_dps
+            # the two columns are made the same to make copying from
+            # source to dest easy
+            if is_new_column:
+                make_a_like_b(a=dest_column, b=source_column)
+            else:
+                make_a_like_b(a=source_column, b=dest_column)
 
             # assemble into parallel lists for later use
             source_columns.append(source_column)
             dest_columns.append(dest_column)
 
-        # clear the levels where the old column doesn't exist in the new
+        # clear the levels where the dest column doesn't exist in source
         for dest_column in self._columns:
             if dest_column.column_type != ColumnType.DATA:
                 continue
@@ -402,13 +408,12 @@ class InstanceModel:
             for row_no in range(source.row_count):
                 dest_column.set_value(row_no, source_column[row_no])
 
-        for dest_column in dest_columns:
-            dest_column.update_level_counts()
-            if dest_column.trim_levels:
-                dest_column.trim_unused_levels()
-
         # now recalculate everything
         self._recalc_all()
+
+        for dest_column in dest_columns:
+            if dest_column.trim_levels:
+                dest_column.trim_unused_levels()
 
         # clear all the cell change tracking stuff, and renable it
         for column in self:
