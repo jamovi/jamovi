@@ -284,7 +284,8 @@ void DataSetW::deleteRows(int delStart, int delEnd)
     int startCount = dss->rowCount;
     int finalCount = dss->rowCount - delCount;
 
-    for (int i = 0; i < dss->columnCount; i++)
+    // delete from right to left, so filter rows are deleted last
+    for (int i = dss->columnCount - 1; i >= 0; i--)
     {
         ColumnStruct *c = columns[i];
         ColumnW column(this, _mm, c);
