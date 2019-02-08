@@ -80,6 +80,11 @@ int DataSet::rowCount() const
     return _mm->resolve(_rel)->rowCount;
 }
 
+int DataSet::rowCountExFiltered() const
+{
+    return _mm->resolve(_rel)->rowCountExFiltered;
+}
+
 int DataSet::columnCount() const
 {
     return _mm->resolve(_rel)->columnCount;
@@ -109,17 +114,4 @@ bool DataSet::isRowFiltered(int index) const
     }
 
     return false;
-}
-
-int DataSet::rowCountExFiltered() const
-{
-    int nRows = 0;
-
-    for (int rowNo = 0; rowNo < rowCount(); rowNo++)
-    {
-        if ( ! isRowFiltered(rowNo))
-            nRows++;
-    }
-
-    return nRows;
 }

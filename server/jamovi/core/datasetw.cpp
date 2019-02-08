@@ -23,8 +23,10 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->columns = columns;
     dss->capacity = 65536;  // "ought to be enough for anybody"
     dss->columnCount = 0;
+    dss->rowCount = 0;
     dss->nextColumnId = 1;  // an id of zero is reserved for 'no column'
     dss->scratch = NULL;
+    dss->rowCountExFiltered = 0;
 
     return ds;
 }
@@ -349,6 +351,30 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     memmove(&columns[delStart], &columns[delEnd+1], nToMove * sizeof(ColumnStruct*));
 
     dss->columnCount -= delCount;
+}
+
+void DataSetW::refreshFilterState()
+{
+    int nRows = 0;
+
+    for (int rowNo = 0; rowNo < rowCount(); rowNo++)
+    {
+        if ( ! isRowFiltered(rowNo))
+            nRows++;
+    }
+
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    ColumnStruct **columns = _mm->resolve(struc()->columns);
+
+    dss->rowCountExFiltered = nRows;
+
+    for (int i = 0; i < dss->columnCount; i++)
+    {
+        ColumnStruct *c = columns[i];
+        ColumnW column(this, _mm, c);
+        if (column.columnType() != ColumnType::FILTER)
+            column.updateLevelCounts();
+    }
 }
 
 ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)

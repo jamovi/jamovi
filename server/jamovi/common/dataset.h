@@ -18,6 +18,7 @@ typedef struct
     int capacity;  // size of columns array
     int nextColumnId;
     ColumnStruct *scratch;
+    int rowCountExFiltered;
 
 } DataSetStruct;
 

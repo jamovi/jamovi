@@ -284,8 +284,8 @@ class InstanceModel:
                 filter_index += 1
                 subfilter_index = 1
 
-    def update_filter_status(self):
-        self._dataset.update_filter_status()
+    def refresh_filter_state(self):
+        self._dataset.refresh_filter_state()
 
     def delete_columns(self, start, end):
         self._dataset.delete_columns(start, end)
@@ -484,6 +484,7 @@ class InstanceModel:
             if column.column_type is not ColumnType.DATA:
                 column.parse_formula()
 
+        self.refresh_filter_state()
         self._add_virtual_columns()
 
     def _add_virtual_columns(self):
@@ -574,6 +575,10 @@ class InstanceModel:
         return self._dataset.row_count
 
     @property
+    def row_count_ex_filtered(self):
+        return self._dataset.row_count_ex_filtered
+
+    @property
     def column_count(self):
         return self._dataset.column_count
 
@@ -641,11 +646,7 @@ class InstanceModel:
             column.set_needs_recalc()
         for column in self:
             column.recalc()
-        for column in self:
-            if column.is_filter:
-                self.update_filter_status()
-            # only check the first one, break straight away
-            break
+        self.refresh_filter_state()
 
     def _print_column_info(self):
         for column in self:

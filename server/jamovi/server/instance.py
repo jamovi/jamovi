@@ -881,7 +881,7 @@ class Instance:
 
         if filter_inserted:
             # we could do this, but a newly inserted filter is all 'true'
-            # self._data.update_filter_status()
+            # self._data.refresh_filter_state()
             # so i don't think we need to
             pass
 
@@ -986,7 +986,7 @@ class Instance:
             column.recalc()
 
         if filter_deleted:
-            self._data.update_filter_status()
+            self._data.refresh_filter_state()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)
@@ -1339,7 +1339,7 @@ class Instance:
         if filter_changed:
             # easiest way to refresh the whole viewport is just to send back
             # the whole data set schema (i.e. all the columns)
-            self._data.update_filter_status()
+            self._data.refresh_filter_state()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)
@@ -1684,7 +1684,7 @@ class Instance:
             column.recalc()
 
         if filter_changed:
-            self._data.update_filter_status()
+            self._data.refresh_filter_state()
             self._populate_schema(request, response)
         else:
             self._populate_schema_info(request, response)

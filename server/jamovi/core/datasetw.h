@@ -27,6 +27,7 @@ public:
     void deleteRows(int rowStart, int rowEnd);
     void deleteColumns(int rowStart, int rowEnd);
     void setRowCount(size_t count);
+    void refreshFilterState();
 
     ColumnW operator[](int index);
     ColumnW operator[](const char *name);

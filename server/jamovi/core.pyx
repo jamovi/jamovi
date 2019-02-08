@@ -52,6 +52,7 @@ cdef extern from "datasetw.h":
         void insertRows(int start, int end) except +
         void deleteRows(int start, int end) except +
         void deleteColumns(int start, int end) except +
+        void refreshFilterState() except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
@@ -135,6 +136,10 @@ cdef class DataSet:
         return self._this.rowCount()
 
     @property
+    def row_count_ex_filtered(self):
+        return self._this.rowCountExFiltered()
+
+    @property
     def column_count(self):
         return self._this.columnCount()
 
@@ -152,11 +157,8 @@ cdef class DataSet:
         def __set__(self, blank):
             self._this.setBlank(blank)
 
-    def update_filter_status(self):
-        for column in self:
-            if column.column_type is not ColumnType.FILTER:
-                if column.has_levels:
-                    column.update_level_counts()
+    def refresh_filter_state(self):
+        self._this.refreshFilterState()
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
@@ -386,9 +388,6 @@ cdef class Column:
 
     def trim_unused_levels(self):
         self._this.trimUnusedLevels()
-
-    def update_level_counts(self):
-        self._this.updateLevelCounts()
 
     @property
     def has_levels(self):
