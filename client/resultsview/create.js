@@ -16,7 +16,7 @@ const SyntaxView  = require('./syntax').View;
 const HtmlModel = require('./html').Model;
 const HtmlView  = require('./html').View;
 
-const createItem = function(element, options, $el, level, parent, mode, devMode, fmt) {
+const createItem = function(element, options, $el, level, parent, mode, devMode, fmt, refTable ) {
 
     if (level === undefined)
         level = 1;
@@ -33,7 +33,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
             element: element.table,
             status: element.status,
             error: element.error,
-            options: options });
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
         view = new TableView({
             el: $el,
             model: model,
@@ -66,7 +68,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
                 element: element.group,
                 status: element.status,
                 error: element.error,
-                options: options });
+                refs: element.refs,
+                options: options,
+                refTable: refTable });
             view = new GroupView({
                 el: $el,
                 model: model,
@@ -88,7 +92,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
             element: element.image,
             status: element.status,
             error: element.error,
-            options: options });
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
         view = new ImageView({
             el: $el,
             model: model,
@@ -112,7 +118,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
                 element: element.array,
                 status: element.status,
                 error: element.error,
-                options: options });
+                refs: element.refs,
+                options: options,
+                refTable: refTable });
             view = new ArrayView({
                 el: $el,
                 model: model,
@@ -134,7 +142,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
             status: element.status,
             error: element.error,
             stale: element.stale,
-            options: options });
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
         view = new SyntaxView({
             el: $el,
             model: model,
@@ -150,7 +160,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
             status: element.status,
             error: element.error,
             stale: element.stale,
-            options: options });
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
         view = new HtmlView({
             el: $el,
             model: model,
