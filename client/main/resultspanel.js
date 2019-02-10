@@ -1,6 +1,7 @@
 'use strict';
 
 const $ = require('jquery');
+const _ = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -13,6 +14,7 @@ const Notify = require('./notification');
 const host = require('./host');
 
 const b64 = require('../common/utils/b64');
+require('./references');
 
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
@@ -20,6 +22,7 @@ const ResultsPanel = Backbone.View.extend({
 
         this.$el.empty();
         this.$el.addClass('jmv-results-panel');
+        this.el.dataset.mode = args.mode;
 
         this._menuId = null;
         ContextMenu.$el.on('menuClicked', (event, button) => {
@@ -29,7 +32,11 @@ const ResultsPanel = Backbone.View.extend({
 
         ContextMenu.on('menu-closed', (event) => {
             if (this._menuId !== null) {
-                this._menuEvent({ type: 'activated', address: null });
+                if (this._menuId === 0)
+                    this._refsTable.deactivate();
+                else
+                    this._menuEvent({ type: 'activated', address: null });
+
                 this._menuId = null;
 
                 if (event !== undefined) {
@@ -60,37 +67,81 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.set('selectedAnalysis', null);
         });
 
+        this._ready = false;
+
+        this._refsTable = document.createElement('jmv-references');
+        this._refsTable.style.display = 'none';
+        this._refsTable.setAnalyses(this.model.analyses());
+        this._refsTable.addEventListener('contextmenu', (event) => this._refsRightClicked(event));
+        this.el.appendChild(this._refsTable);
+
         this.model.settings().on('change:format',  () => this._updateAll());
         this.model.settings().on('change:devMode', () => this._updateAll());
+        this.model.settings().on('change:refsMode', () => this._updateRefsMode());
+    },
+    _updateRefsMode() {
+        if ( ! this._ready)
+            return;
+        this._updateAllRefNumbers();
+        let refsMode = this.model.settings().getSetting('refsMode', 'bottom');
+        if (refsMode === 'bottom')
+            this._refsTable.style.display = '';
+        else
+            this._refsTable.style.display = 'none';
+    },
+    _checkIfEverythingReady() {
+        if (this._ready)
+            return;
+
+        for (let id in this.resources) {
+            if ( ! this.resources[id].sized)
+                return;
+        }
+
+        this._ready = true;
+        this._refsTable.update();
+        this._updateRefsMode();
     },
     _resultsEvent(analysis) {
+
+        if (this._ready)
+            this._refsTable.update();
+
+        let refNums = this._refsTable.getNumbers();
+        let modulesAffected = [ ];
+
+        for (let name in this._oldNums) {
+            if ( ! _.isEqual(refNums[name], this._oldNums[name])) {
+                modulesAffected.push(name);
+            }
+        }
+        this._oldNums = refNums;
 
         let resources = this.resources[analysis.id];
 
         if (resources === undefined) {
 
-            let element = '<iframe \
-                scrolling="no" \
-                class="id' + analysis.id + ' analysis" \
-                src="' + this.iframeUrl + this.model.instanceId() + '/' + analysis.id + '/" \
-                sandbox="allow-scripts allow-same-origin" \
-                style="border: 0 ; height : 0 ;" \
-                data-id="' + analysis.id + '" \
-                ></iframe>';
+            let element = `
+                <iframe
+                    data-id="${ analysis.id }"
+                    src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/"
+                    class="analysis"
+                    sandbox="allow-scripts allow-same-origin"
+                    scrolling="no"
+                    style="border: 0 ; height : 0 ;"
+                ></iframe>`;
 
             let $container = $('<div class="jmv-results-container"></div>');
 
+            let $after = $(this._refsTable);
             if (analysis.results.index > 0) {
                 let $siblings = this.$el.children('.jmv-results-container');
                 let index = analysis.results.index - 1;
                 if (index < $siblings.length)
-                    $container.insertBefore($siblings[index]);
-                else
-                    this.$el.append($container);
+                    $after = $siblings[index];
             }
-            else {
-                this.$el.append($container);
-            }
+
+            $container.insertBefore($after);
 
             let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
             let $iframe = $(element).appendTo($container);
@@ -106,7 +157,8 @@ const ResultsPanel = Backbone.View.extend({
                 iframe : iframe,
                 $iframe : $iframe,
                 $container : $container,
-                loaded : false };
+                loaded : false,
+            };
 
             this.resources[analysis.id] = resources;
 
@@ -132,6 +184,32 @@ const ResultsPanel = Backbone.View.extend({
             if (resources.loaded)
                 this._sendResults(resources);
         }
+
+        for (let ana of this.model.analyses()) {
+            if (ana !== analysis && modulesAffected.includes(ana.ns)) {
+                let res = this.resources[ana.id];
+                if (res.loaded)
+                    this._sendRefNumbers(res);
+            }
+        }
+    },
+    _updateAllRefNumbers() {
+        for (let id in this.resources) {
+            let res = this.resources[id];
+            if (res.loaded)
+                this._sendRefNumbers(res);
+        }
+    },
+    _sendRefNumbers(resources) {
+        let analysis = resources.analysis;
+        let event = {
+            type: 'reftablechanged',
+            data: {
+                refs: this._refsTable.getNumbers(analysis.ns),
+                refsMode: this.model.settings().getSetting('refsMode'),
+            }
+        };
+        resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
     },
     _sendResults(resources) {
 
@@ -145,14 +223,18 @@ const ResultsPanel = Backbone.View.extend({
                 format = {t:'sf',n:3,p:3};
             }
 
+            let analysis = resources.analysis;
+
             let event = {
                 type: 'results',
                 data: {
-                    results: resources.analysis.results,
-                    options: resources.analysis.options.getValues(),
+                    results: analysis.results,
+                    options: analysis.options.getValues(),
                     mode: this.mode,
                     devMode: this.model.settings().get('devMode'),
                     format: format,
+                    refs: this._refsTable.getNumbers(analysis.ns),
+                    refsMode: this.model.settings().getSetting('refsMode'),
                 }
             };
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
@@ -201,6 +283,43 @@ const ResultsPanel = Backbone.View.extend({
             this.model.set('selectedAnalysis', null);
         }
     },
+    _refsRightClicked(event) {
+
+        let rect = this._refsTable.getBoundingClientRect();
+        let left = rect.left + event.offsetX;
+        let top = rect.top + event.offsetY;
+
+        let nRefsSelected = this._refsTable.nSelected();
+        if (nRefsSelected === 0)
+            this._refsTable.activate();
+
+        let entries = [
+            {
+                label: 'References',
+                type: 'copyRef',
+                title: 'References',
+                options: [
+                    {
+                        label: 'Copy',
+                        op: 'refsCopy',
+                        enabled: nRefsSelected > 0,
+                    },
+                    {
+                        label: 'Select all',
+                        op: 'refsSelectAll',
+                    },
+                    {
+                        label: 'Clear selection',
+                        enabled: nRefsSelected > 0,
+                        op: 'refsClearSelection',
+                    },
+                ]
+            },
+        ];
+
+        this._menuId = 0;
+        ContextMenu.showResultsMenu(entries, left, top);
+    },
     _messageEvent(event) {
 
         for (let id in this.resources) {
@@ -240,6 +359,10 @@ const ResultsPanel = Backbone.View.extend({
                     $iframe.height(height);
                     $container.width(width);
                     $container.height(height);
+
+                    resources.sized = true;
+                    this._checkIfEverythingReady();
+
                     break;
                 case 'menu':
                     let offset = $iframe.offset();
@@ -310,6 +433,10 @@ const ResultsPanel = Backbone.View.extend({
         let id = address.shift();
         let $element = this._getElement(address, id);
 
+        if ( ! options.exclude)
+            options.exclude = [ ];
+        options.exclude('.jmvrefs');
+
         return formatIO.exportElem($element, 'text/html', options);
     },
     _menuEvent(event) {
@@ -330,12 +457,19 @@ const ResultsPanel = Backbone.View.extend({
                 incImage = true;
             }
 
+            let options = {
+                images:'absolute',
+                margin: '24',
+                docType: true,
+                exclude: [ '.jmvrefs' ],
+            };
+
             let data = { };
 
             Promise.resolve().then(() => {
 
                 if (incText)
-                    return formatIO.exportElem($results, 'text/plain');
+                    return formatIO.exportElem($results, 'text/plain', options);
 
             }).then((text) => {
 
@@ -343,7 +477,7 @@ const ResultsPanel = Backbone.View.extend({
                     data.text = text;
 
                 if (incImage)
-                    return formatIO.exportElem($results, 'image/png');
+                    return formatIO.exportElem($results, 'image/png', options);
 
             }).then((image) => {
 
@@ -351,7 +485,7 @@ const ResultsPanel = Backbone.View.extend({
                     data.image = image;
 
                 if (incHtml)
-                    return formatIO.exportElem($results, 'text/html');
+                    return formatIO.exportElem($results, 'text/html', options);
 
             }).then((html) => {
 
@@ -419,6 +553,26 @@ const ResultsPanel = Backbone.View.extend({
             this.model.set('selectedAnalysis', null);
             let analysisId = this.resources[this._menuId].id;
             this.model.analyses().deleteAnalysis(analysisId);
+        }
+        else if (event.op === 'refsCopy') {
+            host.copyToClipboard({
+                html: this._refsTable.asHTML(),
+                text: this._refsTable.asText(),
+            });
+
+            let note = new Notify({
+                title: 'Copied',
+                message: 'The content has been copied to the clipboard',
+                duration: 2000,
+                type: 'success'
+            });
+            this.model.trigger('notification', note);
+        }
+        else if (event.op === 'refsSelectAll') {
+            this._refsTable.selectAll();
+        }
+        else if (event.op === 'refsClearSelection') {
+            this._refsTable.clearSelection();
         }
         else {
             let message = { type: 'menuEvent', data: event };
