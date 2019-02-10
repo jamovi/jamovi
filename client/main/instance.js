@@ -502,7 +502,8 @@ const Instance = Backbone.Model.extend({
                     options,
                     analysisPB.results,
                     analysisPB.incAsText,
-                    analysisPB.syntax);
+                    analysisPB.syntax,
+                    analysisPB.references);
                 allReady.push(analysis.ready);
             }
 
@@ -544,7 +545,13 @@ const Instance = Backbone.Model.extend({
         results.index = index + 1;
 
         analysis.setup(options);
-        analysis.setResults(results, options, duplicee.incAsText, duplicee.syntax);
+        analysis.setResults({
+            results: results,
+            options: options,
+            incAsText: duplicee.incAsText,
+            syntax: duplicee.syntax,
+            references: duplicee.references
+        });
 
         let request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
         request.perform = 7; // DUPLICATE
@@ -624,7 +631,13 @@ const Instance = Backbone.Model.extend({
                 analysis.setup(options);
 
             if (response.results)
-                analysis.setResults(response.results, options, response.incAsText, response.syntax);
+                analysis.setResults({
+                    results: response.results,
+                    options: options,
+                    incAsText: response.incAsText,
+                    syntax: response.syntax,
+                    references: response.references,
+                });
         }
         else if (message.payloadType === 'ModuleRR') {
             let response = coms.Messages.ModuleRR.decode(message.payload);

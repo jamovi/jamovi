@@ -7,6 +7,15 @@ Backbone.$ = $;
 
 const b64 = require('../common/utils/b64');
 
+require('./refs');
+
+const ElementModel = Backbone.Model.extend({
+    defaults: {
+        refs: [ ],
+        refTable: null,
+    },
+});
+
 const ElementView = Backbone.View.extend({
     initialize(data) {
 
@@ -25,6 +34,16 @@ const ElementView = Backbone.View.extend({
 
         this.$errorPlacement = $('<div class="jmv-results-error-placement"></div>');
         this.$errorPlacement.appendTo(this.$el);
+        this.addIndex = 1;
+
+        let refTable = this.model.attributes.refTable;
+        let refs = this.model.attributes.refs;
+        refs = refs.map((name) => refTable.table[name]);
+
+        this.refs = document.createElement('jmv-reference-numbers');
+        this.refs.setTable(this.model.attributes.refTable);
+        this.refs.setRefs(this.model.attributes.refs);
+        this.el.appendChild(this.refs);
 
         this.ready = Promise.resolve();
     },
@@ -36,6 +55,11 @@ const ElementView = Backbone.View.extend({
             $error.text(error.message);
             $error.appendTo(this.$errorPlacement);
         }
+    },
+    addContent($el) {
+        let before = this.$el.children()[this.addIndex - 1];
+        $el.insertAfter(before);
+        this.addIndex += 1;
     },
     _sendEvent(event) {
         if (this.parent === null)
@@ -72,4 +96,4 @@ const ElementView = Backbone.View.extend({
     }
 });
 
-module.exports = { View: ElementView };
+module.exports = { View: ElementView, Model: ElementModel };
