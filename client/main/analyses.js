@@ -21,6 +21,8 @@ const Analysis = function(id, name, ns) {
     this.options = null;
     this.isReady = false;
     this.incAsText = false;
+    this.references = [ ];
+
     this.revision = 0;
     this.deleted = false;
     this.missingModule = false;
@@ -75,12 +77,13 @@ Analysis.prototype.setup = function(values) {
     this._notifySetup(this);
 };
 
-Analysis.prototype.setResults = function(results, options, incAsText, syntax) {
-    this.results = results;
-    this.incAsText = incAsText;
-    this.syntax = syntax;
+Analysis.prototype.setResults = function(res) {
+    this.results = res.results;
+    this.incAsText = res.incAsText;
+    this.syntax = res.syntax;
+    this.references = res.references;
     if (this.options)
-        this.options.setValues(options);
+        this.options.setValues(res.options);
     if (this.deleted === false && this._parent !== null)
         this._parent._notifyResultsChanged(this);
 };
@@ -166,12 +169,18 @@ const Analyses = Backbone.Model.extend({
             this._analyses.push(analysis);
         return analysis;
     },
-    addAnalysis(name, ns, id, values, results, incAsText, syntax) {
+    addAnalysis(name, ns, id, values, results, incAsText, syntax, references) {
         let analysis = new Analysis(id, name, ns);
         analysis._parent = this;
         this._analyses.push(analysis);
         analysis.setup(values);
-        analysis.setResults(results, values, incAsText, syntax);
+        analysis.setResults({
+            results: results,
+            options: values,
+            incAsText: incAsText,
+            syntax: syntax,
+            references: references,
+        });
 
         if (this._nextId <= id)
             this._nextId = id + 1;
