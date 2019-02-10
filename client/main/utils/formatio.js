@@ -66,6 +66,12 @@ function exportElem($el, format, options={ images:'absolute', margin: '24', docT
         return _imagify($el[0]);
     }
     else {
+
+        if (options.exclude) {
+            options.excludeTags = options.exclude.filter(x => ! x.startsWith('.'));
+            options.excludeClasses = options.exclude.filter(x => x.startsWith('.')).map(x => x.substring(1));
+        }
+
         return _htmlify($el[0], options).then((content) => {
 
             let generator = '';
@@ -198,10 +204,10 @@ function _htmlify(el, options) {
         return Promise.resolve(data);
     }
 
-    if (el.nodeType !== Node.ELEMENT_NODE)
+    if (el.nodeType !== Node.ELEMENT_NODE && el.nodeType !== Node.DOCUMENT_FRAGMENT_NODE)
         return Promise.resolve('');
 
-    let tag = el.tagName.toLowerCase();
+    let tag;
     let include = false;
     let includeChildren = true;
     let styles = [ ];
@@ -210,16 +216,36 @@ function _htmlify(el, options) {
 
     return Promise.resolve().then(() => {
 
+        if (el.nodeType === Node.DOCUMENT_FRAGMENT_NODE)
+            return '';
+
+        if (el.style.display === 'none') {
+            include = false;
+            includeChildren = false;
+            return '';
+        }
+
+        tag = el.tagName.toLowerCase();
+
+        if (options.excludeTags) {
+            if (tag in options.excludeTags) {
+                includeChildren = false;
+                return '';
+            }
+        }
+        if (options.excludeClasses) {
+            let nodeClasses = (el.className || '').split(' ');
+            for (let ex of options.excludeClasses) {
+                if (nodeClasses.includes(ex)) {
+                    includeChildren = false;
+                    return '';
+                }
+            }
+        }
+
         switch (tag) {
         case 'div':
-            if ($(el).css('display') === 'none') { // is display: none ;
-                include = false;
-                includeChildren = false;
-            }
-            else {
-                return _htmlifyDiv(el, options);
-            }
-            break;
+            return _htmlifyDiv(el, options);
         case 'iframe':
             return _htmlifyIFrame(el, options);
         case 'table':
@@ -237,7 +263,16 @@ function _htmlify(el, options) {
         case 'tfoot':
         case 'tr':
         case 'pre':
+        case 'p':
+        case 'em':
+        case 'a':
+        case 'sub':
+        case 'sup':
             include = true;
+            break;
+        case 'span':
+            include = true;
+            styles = [ 'font-weight' ];
             break;
         case 'td':
         case 'th':
@@ -250,6 +285,13 @@ function _htmlify(el, options) {
                 'border-top',
                 'border-bottom' ];
             break;
+        case 'style':
+            include = false;
+            includeChildren = false;
+            break;
+        default:
+            if (el.shadowRoot)
+                return _htmlify(el.shadowRoot, options);
         }
 
         return Promise.resolve('');

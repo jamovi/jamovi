@@ -125,7 +125,7 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
         else {
             let entryData = {
                 label  : title,
-                op     : entry.label.toLowerCase(), //this needs improving
+                op     : entry.op || entry.label.toLowerCase(),
                 address: parent.address,
                 type   : parent.type,
                 title  : parent.title,

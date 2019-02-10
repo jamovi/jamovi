@@ -72,3 +72,21 @@
     background-color: white ;
     z-index: 1 ;
 }
+
+jmv-references {
+    margin-top: 50px ;
+    margin-left: 6px ;
+    margin-bottom: 20px ;
+    border: 2px solid transparent ;
+    max-width: 1000px ;
+}
+
+.jmv-results-panel[data-mode='text'] jmv-references {
+    /* prevents it from concertina-ing when sliding in and out */
+    width: 700px ;
+}
+
+jmv-references.activated {
+    background-color: #B5CAEF ;
+    border: 2px solid #8BA4D6;
+}
