@@ -258,7 +258,6 @@ const TableView = SilkyView.extend({
         let html = this._createHeaderHTML(column.dIndex, left);
 
         let $header = $(html);
-        this.$header.append($header);
         this.$headers.push($header);
 
         this._addResizeListeners($header);
@@ -279,7 +278,6 @@ const TableView = SilkyView.extend({
             >
             </div>`);
 
-        this.$body.append($column);
         this.$columns.push($column);
 
         this._lefts[column.dIndex] = left;
@@ -2310,6 +2308,7 @@ const TableView = SilkyView.extend({
                     for (let i of needsPopulation) {
                         let index = this.model.indexFromDisplayIndex(i);
                         let column = this.model.attributes.columns[index];
+                        let $header = this.$headers[i];
                         let $column = this.$columns[i];
                         for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
                             let top   = rowNo * this._rowHeight;
@@ -2317,10 +2316,15 @@ const TableView = SilkyView.extend({
                             this.refreshCellColour($cell, column, rowNo);
                             $column.append($cell);
                         }
+                        this.$header.append($header);
+                        this.$body.append($column);
                     }
 
-                    for (let i of needsClear)
-                        this.$columns[i].empty();
+                    for (let i of needsClear) {
+                        let $column = this.$columns[i];
+                        $column.remove();
+                        $column.empty();
+                    }
 
                     this.viewport.left = nowVisible[0];
                     this.viewport.right = nowVisible[nowVisible.length - 1];
@@ -2963,6 +2967,9 @@ const TableView = SilkyView.extend({
 
                 for (let i = o.left; i <= o.right; i++) {
                     let $column = $(this.$columns[i]);
+                    let $header = $(this.$headers[i]);
+                    $header.remove();
+                    $column.remove();
                     $column.empty();
                 }
             }
@@ -2973,6 +2980,7 @@ const TableView = SilkyView.extend({
 
                 let column  = this.model.getColumn(i, true);
                 let $column = $(this.$columns[i]);
+                let $header = $(this.$headers[i]);
 
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = n.top + j;
@@ -2981,6 +2989,9 @@ const TableView = SilkyView.extend({
                     this.refreshCellColour($cell, column, rowNo);
                     $column.append($cell);
                 }
+
+                this.$header.append($header);
+                this.$body.append($column);
             }
 
             this.model.setViewport(n);
@@ -2998,6 +3009,7 @@ const TableView = SilkyView.extend({
                     let left  = this._lefts[colNo];
                     let column = this.model.getColumn(colNo, true);
                     let $column = $(this.$columns[colNo]);
+                    let $header = $(this.$headers[colNo]);
 
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
@@ -3006,6 +3018,9 @@ const TableView = SilkyView.extend({
                         this.refreshCellColour($cell, column, rowNo);
                         $column.append($cell);
                     }
+
+                    this.$header.append($header);
+                    this.$body.append($column);
                 }
             }
             else if (n.right < o.right) {  // delete columns from the right
@@ -3013,6 +3028,9 @@ const TableView = SilkyView.extend({
                 let count = this.$columns.length;
                 for (let i = 0; i < nCols; i++) {
                     let $column = $(this.$columns[o.right - i]);
+                    let $header = $(this.$headers[o.right - i]);
+                    $header.remove();
+                    $column.remove();
                     $column.empty();
                 }
             }
@@ -3028,6 +3046,7 @@ const TableView = SilkyView.extend({
                     let left  = this._lefts[colNo];
                     let column = this.model.getColumn(colNo, true);
                     let $column = $(this.$columns[colNo]);
+                    let $header = $(this.$headers[colNo]);
 
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
@@ -3036,6 +3055,9 @@ const TableView = SilkyView.extend({
                         this.refreshCellColour($cell, column, rowNo);
                         $column.append($cell);
                     }
+
+                    this.$header.append($header);
+                    this.$body.append($column);
                 }
             }
             else if (n.left > o.left) {  // delete columns from the left
@@ -3043,6 +3065,9 @@ const TableView = SilkyView.extend({
                 let count = this.$columns.length;
                 for (let i = 0; i < nCols; i++) {
                     let $column = $(this.$columns[o.left + i]);
+                    let $header = $(this.$headers[o.left + i]);
+                    $header.remove();
+                    $column.remove();
                     $column.empty();
                 }
             }
