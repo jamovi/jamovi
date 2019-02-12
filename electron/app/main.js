@@ -509,7 +509,7 @@ const createWindow = function(open) {
 
         if (url.startsWith(serverUrl)) {
             let relative = url.slice(serverUrl.length);
-            let newUrl = 'http://127.0.0.1:' + global.mainPort + '/analyses/' + relative;
+            let newUrl = 'http://localhost:' + global.mainPort + '/analyses/' + relative;
             callback({ redirectURL : newUrl });  // redirect
         }
         else {
