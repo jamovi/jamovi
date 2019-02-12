@@ -245,7 +245,7 @@ class InstanceModel:
             name = self._gen_column_name(nIndex)
 
         if import_name is None:
-            import_name = name
+            import_name = ''
 
         ins = self._dataset.insert_column(index, name, import_name)
         ins.auto_measure = True
