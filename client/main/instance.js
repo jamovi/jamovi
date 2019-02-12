@@ -106,7 +106,7 @@ const Instance = Backbone.Model.extend({
 
         let progress = new Notify({
             title: 'Importing',
-            duration: 2000,
+            duration: 0,
         });
 
         let open = new coms.Messages.OpenRequest(filePath);
