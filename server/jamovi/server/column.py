@@ -210,6 +210,12 @@ class Column:
             return self._child.import_name
         return ''
 
+    @import_name.setter
+    def import_name(self, name):
+        if self._child is None:
+            self._create_child()
+        self._child.import_name = name
+
     @property
     def column_type(self):
         if self._child is not None:

@@ -39,6 +39,19 @@ void ColumnW::setName(const char *name)
     s->changes++;
 }
 
+void ColumnW::setImportName(const char *name)
+{
+    int length = strlen(name)+1;
+
+    char *chars = _mm->allocate<char>(length);
+
+    memcpy(chars, name, length);
+
+    ColumnStruct *s = struc();
+    s->importName = _mm->base(chars);
+    s->changes++;
+}
+
 void ColumnW::setColumnType(ColumnType::Type columnType)
 {
     ColumnStruct *s = struc();

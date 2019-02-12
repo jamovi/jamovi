@@ -159,7 +159,9 @@ def fix_column_names(dataset):
             c += 1
         if name != column_names[i]:
             column_names[i] = name
-            dataset[i].name = name
+            column = dataset[i]
+            column.name = name
+            column.import_name = name
 
 
 def gen_column_name(index):
