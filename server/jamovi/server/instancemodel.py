@@ -326,7 +326,7 @@ class InstanceModel:
         dest_columns = [ ]
 
         for source_column in source:
-            if source_column.column_type != ColumnType.DATA:
+            if source_column.column_type != ColumnType.DATA or source_column.import_name == '':
                 continue
 
             is_new_column = False
@@ -355,21 +355,16 @@ class InstanceModel:
                     measure_type=b.measure_type)
 
                 if a.has_levels:
-                    if a.trim_levels:
-                        a.change(levels=b.levels)
+                    if a.data_type is DataType.TEXT:
+                        for level in b.levels:
+                            value = level[1]
+                            if not a.has_level(value):
+                                a.append_level(a.level_count, level[1], level[2])
                     else:
-                        # if the column doesn't have it's levels trimmed, we need
-                        # to retain the old levels, and add the new ones
-                        if a.data_type is DataType.TEXT:
-                            for level in b.levels:
-                                value = level[1]
-                                if not a.has_level(value):
-                                    a.append_level(a.level_count, level[1], level[2])
-                        else:
-                            for level in b.levels:
-                                value = level[0]
-                                if not a.has_level(value):
-                                    a.append_level(value, level[1], str(value))
+                        for level in b.levels:
+                            value = level[0]
+                            if not a.has_level(value):
+                                a.append_level(value, level[1], str(value))
                 elif a.data_type is DataType.DECIMAL:
                     a.dps = b.dps
 
