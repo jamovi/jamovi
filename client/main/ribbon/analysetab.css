@@ -63,6 +63,10 @@
     background-image: url('assets/analysis-linearmodels.svg');
 }
 
+.jmv-ribbon-button[data-name="survival"] .jmv-ribbon-button-icon {
+    background-image: url('assets/analysis-survival.svg');
+}
+
 .jmv-ribbon-button[data-name=modules] .jmv-ribbon-button-icon {
     background-image: url('assets/analysis-more.svg');
 }
