@@ -867,20 +867,33 @@ const LayoutGrid = function() {
         }
     };
 
-    this.endCellManipulation = function(animate) {
-
-        this._manipulating -= 1;
-        if (this._manipulating > 0)
-            return;
-
-        for (let i = 0; i < this._cells.length; i++) {
+    this._endCellManipulation = function(startIndex) {
+        let i = -1;
+        let count = 0;
+        for (i = startIndex; i < this._cells.length && count < 50; i++) {
             let cell = this._cells[i];
             if (cell.isVirtual)
                 continue;
 
-            if (cell.manipulating())
+            if (cell.manipulating()) {
                 cell.endManipulation();
+                count += 1;
+            }
         }
+
+        if (i < this._cells.length) {
+            setTimeout(() => {
+                this._endCellManipulation(i);
+            }, 0);
+        }
+    };
+
+    this.endCellManipulation = function(animate) {
+        this._manipulating -= 1;
+        if (this._manipulating > 0)
+            return;
+
+        this._endCellManipulation(0);
     };
 
     this._layoutGrid = function(type) {
