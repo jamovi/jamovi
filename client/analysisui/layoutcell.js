@@ -9,9 +9,7 @@ const SuperClass = require('../common/superclass');
 const LayoutCell = function(parent) {
 
 
-    this.$el = $('<div style="opacity: 0" class="not-rendered"></div>');
-    this.$el.css("position", "absolute");
-    this.$el.css("box-sizing", "border-box");
+    this.$el = $('<div style="opacity: 0; position: absolute; box-sizing: border-box;" class="not-rendered"></div>');
 
     //if (parent.editable)
     //    this.$el.css("border", "1px dotted red");
@@ -146,8 +144,9 @@ const LayoutCell = function(parent) {
         if (this.$content) {
             if (this.$content.css === undefined)
                 this.$content = null;
-            this.$content.css( "position", "absolute");
-            this.$el.append(this.$content);
+            else
+                this.$content.css( "position", "absolute");
+                this.$el.append(this.$content);
         }
     };
 
