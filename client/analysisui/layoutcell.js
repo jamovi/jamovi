@@ -144,9 +144,10 @@ const LayoutCell = function(parent) {
         if (this.$content) {
             if (this.$content.css === undefined)
                 this.$content = null;
-            else
+            else {
                 this.$content.css( "position", "absolute");
                 this.$el.append(this.$content);
+            }
         }
     };
 
