@@ -11,6 +11,10 @@ from .enginemanager import EngineManager
 from .settings import Settings
 
 
+class NoSuchInstanceException(Exception):
+    pass
+
+
 class SessionAnalyses:
 
     def __init__(self, session):
@@ -62,6 +66,12 @@ class Session(dict):
         self._em.add_engine_listener(self._on_engine_event)
 
         self._start_gc()
+
+    def __getitem__(self, id):
+        try:
+            return dict.__getitem__(self, id)
+        except KeyError:
+            raise NoSuchInstanceException()
 
     @property
     def id(self):

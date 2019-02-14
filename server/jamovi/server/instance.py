@@ -400,7 +400,7 @@ class Instance:
             self._coms.send_error(message, cause, self._instance_id, request)
 
     async def _on_save(self, request):
-        path = request.filename
+        path = request.filePath
         path = Instance._normalise_path(path)
 
         try:
@@ -435,7 +435,7 @@ class Instance:
             self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save_content(self, request):
-        path = request.filename
+        path = request.filePath
         path = Instance._normalise_path(path)
 
         with open(path, 'wb') as file:
@@ -446,7 +446,7 @@ class Instance:
         self._coms.send(response, self._instance_id, request)
 
     async def _on_save_everything(self, request):
-        path = request.filename
+        path = request.filePath
         path = Instance._normalise_path(path)
         is_export = request.export
         content = request.content
@@ -476,7 +476,7 @@ class Instance:
             self._add_to_recents(path)
 
     def _on_save_part(self, request):
-        path = request.filename
+        path = request.filePath
         path = Instance._normalise_path(path)
         part = request.part
 
@@ -502,32 +502,21 @@ class Instance:
             self._coms.send_error('Unable to save', str(e), self._instance_id, request)
 
     async def _on_open(self, request):
-        path = request.filename
-
-        temp_buffer_file = None
-        temp_buffer_path = None
-        mm = None
+        if request.op == jcoms.OpenRequest.Op.Value('IMPORT_REPLACE'):
+            await self._on_import(request)
+            return
 
         try:
+            path = request.filePath
+
             norm_path = Instance._normalise_path(path)
             virt_path = Instance._virtualise_path(path)
 
-            importing = (request.op == jcoms.OpenRequest.Op.Value('IMPORT_REPLACE'))
+            old_mm = self._mm
+            self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
+            dataset = DataSet.create(self._mm)
 
-            if importing:
-                model = InstanceModel(self)
-                if os.name == 'nt':
-                    buffer_path = mktemp()
-                else:
-                    temp_buffer_file = NamedTemporaryFile(delete=False)
-                    buffer_path = temp_buffer_file.name
-                temp_buffer_path = buffer_path
-            else:
-                model = self._data
-                buffer_path = self._buffer_path
-
-            mm = MemoryMap.create(buffer_path, 4 * 1024 * 1024)
-            model.dataset = DataSet.create(mm)
+            self._data.dataset = dataset
 
             is_example = path.startswith('{{Examples}}')
 
@@ -540,15 +529,7 @@ class Instance:
                         coms.send, None, self._instance_id, request,
                         complete=False, progress=(1000 * p, 1000)))
 
-            await ioloop.run_in_executor(None, formatio.read, model, norm_path, prog_cb, is_example)
-
-            if importing:
-                self._data.import_from(model)
-                self._data.analyses.rerun()
-            else:
-                temp_mm = self._mm
-                self._mm = mm
-                mm = temp_mm
+            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example)
 
             response = jcoms.OpenProgress()
             response.path = virt_path
@@ -573,17 +554,114 @@ class Instance:
             self._coms.send_error(message, cause, self._instance_id, request)
 
         finally:
-            if mm is not None:
-                mm.close()
-            if temp_buffer_file is not None:
-                temp_buffer_file.close()
-            if temp_buffer_path is not None:
-                try:
-                    os.remove(temp_buffer_path)
-                except Exception:
-                    pass
+            if old_mm is not None:
+                old_mm.close()
 
         self._data.begin_edit_tracking()
+
+    async def _on_import(self, request):
+
+        if request.filePath != '':
+            paths = [ request.filePath ]
+        else:
+            paths = list(request.filePaths)
+
+        n_files = len(paths)
+        coms = self._coms
+        instance_id = self._instance_id
+        instance = self
+
+        # class which provides an iterator which iterates over the data sets
+        class MultipleDataSets:
+
+            # python 3.6 allows you use to use 'yield' inside async iterators.
+            # unfortunately, we're maintaining compatibility with 3.5, so we
+            # have to do all this bollocks instead:
+
+            def __init__(self, paths):
+                self._paths = paths
+                self._i = 0
+                self._mm = None
+
+                if os.name == 'nt':
+                    self._buffer_path = None
+                else:
+                    self._buffer_path = NamedTemporaryFile(delete=False).name
+
+            def __del__(self):
+                if self._mm is not None:
+                    self._mm.close()
+                self._del_buffer()
+
+            def _del_buffer(self):
+                if self._buffer_path is not None:
+                    try:
+                        os.remove(self._buffer_path)
+                    except Exception:
+                        pass
+                    self._buffer_path = None
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+
+                if os.name == 'nt':
+                    self._del_buffer()
+                    self._buffer_path = mktemp()
+
+                if self._i >= len(self._paths):
+                    raise StopAsyncIteration()
+
+                path = self._paths[self._i]
+
+                norm_path = Instance._normalise_path(path)
+                name = os.path.splitext(os.path.basename(path))[0]
+
+                model = InstanceModel(instance)
+
+                if self._mm is not None:
+                    self._mm.close()
+
+                self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
+                model.dataset = DataSet.create(self._mm)
+
+                ioloop = asyncio.get_event_loop()
+
+                def prog_cb(p):
+                    ioloop.call_soon_threadsafe(
+                        functools.partial(
+                            coms.send, None, instance_id, request,
+                            complete=False, progress=(1000 * (self._i + p) / n_files, 1000)))
+
+                await ioloop.run_in_executor(None, formatio.read, model, norm_path, prog_cb, False)
+
+                self._i += 1
+                return (name, model)
+
+        try:
+            datasets = MultipleDataSets(paths)
+            await self._data.import_from(datasets, n_files > 1)
+
+            response = jcoms.OpenProgress()
+            self._coms.send(response, self._instance_id, request)
+
+        except OSError as e:
+            log.exception(e)
+            base = os.path.basename(e.filename)
+            message = 'Unable to import {}'.format(base)
+            cause = e.strerror
+            self._coms.send_error(message, cause, self._instance_id, request)
+
+        except Exception as e:
+            log.exception(e)
+            message = 'Unable to perform import'
+            cause = str(e)
+            self._coms.send_error(message, cause, self._instance_id, request)
+
+        finally:
+            self._data.analyses.rerun()
+            self._data.begin_edit_tracking()
 
     def _open_callback(self, task, progress):
         response = jcoms.ComsMessage()

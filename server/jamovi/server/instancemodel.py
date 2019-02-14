@@ -5,6 +5,7 @@ from .analyses import Analyses
 from .utils import NullLog
 from ..core import ColumnType
 from ..core import DataType
+from ..core import MeasureType
 
 
 class InstanceModel:
@@ -318,105 +319,130 @@ class InstanceModel:
 
         self.update_filter_names()
 
-    def import_from(self, source):
+    async def import_from(self, sources, add_name_column=True):
+
         self.set_row_count(0)
         self._edit_tracking_suspended = True
 
-        source_columns = [ ]
-        dest_columns = [ ]
+        name_column = None
+        n_filters = self.filter_column_count
+        if n_filters < self.column_count:
+            first_column = self[n_filters]
+            if first_column.column_type is ColumnType.DATA:
+                if first_column.import_name == 'source' or first_column.import_name.startswith('source ('):
+                    name_column = first_column
 
-        for source_column in source:
-            if source_column.column_type != ColumnType.DATA or source_column.import_name == '':
-                continue
+        if name_column is None and add_name_column:
+            name_column = self.insert_column(n_filters, 'source', 'source')
+            name_column.column_type = ColumnType.DATA
+            name_column.change(
+                data_type=DataType.TEXT,
+                measure_type=MeasureType.NOMINAL)
 
-            is_new_column = False
+        try:
+            async for (name, source) in sources:
 
-            for dest_column in self._columns:
-                if dest_column.import_name == source_column.import_name:
-                    break
-            else:
-                dest_column = self.insert_column(
-                    self.column_count,
-                    source_column.name,
-                    source_column.import_name)
-                is_new_column = True
-                dest_column.column_type = ColumnType.DATA
+                source_columns = [ ]
+                dest_columns = [ ]
 
-            if dest_column.column_type != ColumnType.DATA:
-                continue
+                for source_column in source:
+                    source_name = source_column.import_name
+                    if source_name == '':
+                        source_name = source_column.name
 
-            # at this point, source_column and dest_column are matched from
-            # the old and new data set
+                    if source_column.column_type != ColumnType.DATA:
+                        continue
 
-            def make_a_like_b(a, b):
+                    is_new_column = False
 
-                a.change(
-                    data_type=b.data_type,
-                    measure_type=b.measure_type)
-
-                if a.has_levels:
-                    if a.data_type is DataType.TEXT:
-                        for level in b.levels:
-                            value = level[1]
-                            if not a.has_level(value):
-                                a.append_level(a.level_count, level[1], level[2])
+                    for dest_column in self._columns:
+                        dest_name = dest_column.import_name
+                        if dest_name == '':
+                            dest_name = dest_column.name
+                        if dest_name == source_name:
+                            break
                     else:
-                        for level in b.levels:
-                            value = level[0]
-                            if not a.has_level(value):
-                                a.append_level(value, level[1], str(value))
-                elif a.data_type is DataType.DECIMAL:
-                    a.dps = b.dps
+                        dest_column = self.insert_column(
+                            self.column_count,
+                            source_column.name,
+                            source_name)
+                        is_new_column = True
+                        dest_column.column_type = ColumnType.DATA
 
-            # the two columns are made the same to make copying from
-            # source to dest easy
-            if is_new_column:
-                make_a_like_b(a=dest_column, b=source_column)
-            else:
-                make_a_like_b(a=source_column, b=dest_column)
+                    if dest_column.column_type != ColumnType.DATA:
+                        continue
 
-            # assemble into parallel lists for later use
-            source_columns.append(source_column)
-            dest_columns.append(dest_column)
+                    # at this point, source_column and dest_column are matched from
+                    # the old and new data set
 
-        # clear the levels where the dest column doesn't exist in source
-        for dest_column in self._columns:
-            if dest_column.column_type != ColumnType.DATA:
-                continue
-            if dest_column not in dest_columns and dest_column.trim_levels:
-                dest_column.clear_levels()
+                    def make_a_like_b(a, b):
 
-        # now all the columns have been set up, we can reparse everything
-        for transform in self._transforms:
-            transform.parse_formula()
+                        a.change(
+                            data_type=b.data_type,
+                            measure_type=b.measure_type)
 
-        for column in self:
-            if column.column_type is not ColumnType.DATA:
-                column.parse_formula()
+                        if a.has_levels:
+                            if a.data_type is DataType.TEXT:
+                                for level in b.levels:
+                                    value = level[1]
+                                    if not a.has_level(value):
+                                        a.append_level(a.level_count, level[1], level[2])
+                            else:
+                                for level in b.levels:
+                                    value = level[0]
+                                    if not a.has_level(value):
+                                        a.append_level(value, level[1], str(value))
+                        elif a.data_type is DataType.DECIMAL:
+                            a.dps = b.dps
 
-        # now copy the cell data across
-        self.set_row_count(source.row_count)
+                    # the two columns are made the same to make copying from
+                    # source to dest easy
+                    if is_new_column:
+                        make_a_like_b(a=dest_column, b=source_column)
+                    else:
+                        make_a_like_b(a=source_column, b=dest_column)
 
-        for i in range(0, len(source_columns)):
-            source_column = source_columns[i]
-            dest_column = dest_columns[i]
-            for row_no in range(source.row_count):
-                dest_column.set_value(row_no, source_column[row_no])
+                    # assemble into parallel lists for later use
+                    source_columns.append(source_column)
+                    dest_columns.append(dest_column)
 
-        # now recalculate everything
-        self._recalc_all()
+                offset = self.row_count
 
-        for dest_column in dest_columns:
-            if dest_column.trim_levels:
-                dest_column.trim_unused_levels()
+                # now copy the cell data across
+                self.set_row_count(offset + source.row_count)
 
-        # clear all the cell change tracking stuff, and renable it
-        for column in self:
-            column.cell_tracker.clear()
-        self._edit_tracking_suspended = False
+                for i in range(0, len(source_columns)):
+                    source_column = source_columns[i]
+                    dest_column = dest_columns[i]
+                    for row_no in range(source.row_count):
+                        dest_column.set_value(offset + row_no, source_column[row_no])
 
-        # requires save
-        self.is_edited = True
+                if name_column is not None:
+                    for row_no in range(source.row_count):
+                        name_column.set_value(offset + row_no, name)
+
+        finally:
+            # now we can reparse everything
+            for transform in self._transforms:
+                transform.parse_formula()
+
+            for column in self:
+                if column.column_type is not ColumnType.DATA:
+                    column.parse_formula()
+
+            # now recalculate everything
+            self._recalc_all()
+
+            for column in self:
+                if column.column_type == ColumnType.DATA:
+                    column.cell_tracker.clear()
+                    if column.trim_levels:
+                        column.trim_unused_levels()
+
+            self._edit_tracking_suspended = False
+
+            # requires save
+            self.is_edited = True
 
     def is_row_filtered(self, index):
         if index < self._dataset.row_count:
