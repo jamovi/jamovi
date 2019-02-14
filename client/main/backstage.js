@@ -837,19 +837,23 @@ var BackstageModel = Backbone.Model.extend({
 
                 dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(osPath, '') }, (fileNames) => {
                     if (fileNames) {
-                        var path = fileNames[0].replace(/\\/g, '/');
+                        let path = fileNames[0].replace(/\\/g, '/');
                         this.requestOpen(path);
                     }
                 });
             }
             else if (type === 'import') {
 
-                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(osPath, '') }, (fileNames) => {
-                    if (fileNames) {
-                        var path = fileNames[0].replace(/\\/g, '/');
-                        this.requestImport(path);
-                    }
-                });
+                dialog.showOpenDialog(browserWindow, {
+                    filters: filters,
+                    properties: [ 'openFile', 'multiSelections' ],
+                    defaultPath: Path.join(osPath, '') },
+                    (fileNames) => {
+                        if (fileNames) {
+                            let paths = fileNames.map(x => x.replace(/\\/g, '/'));
+                            this.requestImport(paths);
+                        }
+                    });
             }
             else if (type === 'save') {
 
@@ -1025,6 +1029,8 @@ var BackstageModel = Backbone.Model.extend({
                 deactivated = true;
             }
         };
+        if ( ! Array.isArray(path))
+            path = [ path ];
         this.instance.import(path)
             .then(deactivate, undefined, deactivate);
     },

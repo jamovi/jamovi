@@ -2,6 +2,8 @@
 # Copyright (C) 2016 Jonathon Love
 #
 
+from .session import NoSuchInstanceException
+
 from tornado.websocket import WebSocketHandler
 
 from . import jamovi_pb2 as jcoms
@@ -50,7 +52,7 @@ class ClientConnection(WebSocketHandler):
                 if message.instanceId == '':
                     instance = self._session.create()  # create new
                 elif message.instanceId not in self._session:
-                    raise KeyError('No such instance')
+                    raise NoSuchInstanceException()
                 else:
                     instance = self._session[message.instanceId]
                 instance.set_coms(self)
@@ -59,7 +61,7 @@ class ClientConnection(WebSocketHandler):
             else:
                 instance = self._session[message.instanceId]
                 await instance.on_request(request)
-        except KeyError:
+        except NoSuchInstanceException:
             self.send_error(message='No such instance', response_to=message)
         except Exception as e:
             # would be nice to send_error()

@@ -99,7 +99,7 @@ const Instance = Backbone.Model.extend({
         });
 
     },
-    import(filePath) {
+    import(paths) {
 
         let promise;
         let coms = this.attributes.coms;
@@ -109,7 +109,8 @@ const Instance = Backbone.Model.extend({
             duration: 0,
         });
 
-        let open = new coms.Messages.OpenRequest(filePath);
+        let open = new coms.Messages.OpenRequest();
+        open.filePaths = paths;
         open.op = coms.Messages.OpenRequest.Op.IMPORT_REPLACE;
 
         let request = new coms.Messages.ComsMessage();
@@ -128,6 +129,10 @@ const Instance = Backbone.Model.extend({
 
         let onreject = (error) => {
             progress.dismiss();
+            // we still have to retrieveInfo() on failure, because the import
+            // may have failed on, say, the second data set, and the data set
+            // will still have changed
+            this._retrieveInfo();
             this._notify(error);
         };
 

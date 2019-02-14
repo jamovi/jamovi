@@ -241,14 +241,15 @@ message InstanceResponse {
 }
 
 message OpenRequest {
-    string filename = 1;
+    string filePath = 1;
+    repeated string filePaths = 2;
 
     enum Op {
         OPEN = 0;
         IMPORT_REPLACE = 1;
     }
 
-    Op op = 2;
+    Op op = 3;
 }
 
 message OpenProgress {
@@ -256,7 +257,7 @@ message OpenProgress {
 }
 
 message SaveRequest {
-    string filename = 1;
+    string filePath = 1;
     bool overwrite = 2;
     bool export = 3;
     string part = 4;
