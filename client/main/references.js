@@ -30,19 +30,29 @@ class References extends HTMLElement {
         this._analyses = analyses;
     }
 
-    getNumbers() {
-        if (this._numbers)
-            return this._numbers;
-        let numbers = { jmv: { } };
-        for (let module of this._modules)
-            numbers[module] = { };
-        for (let i = 0; i < this._refs.length; i++) {
-            let ref = this._refs[i];
-            for (let address of ref.addresses)
-                numbers[address.module][address.name] = (i + 1);
+    getNumbers(ns) {
+        if ( ! this._numbers) {
+            let numbers = { jmv: { } };
+            for (let module of this._modules)
+                numbers[module] = { };
+            for (let i = 0; i < this._refs.length; i++) {
+                let ref = this._refs[i];
+                for (let address of ref.addresses)
+                    numbers[address.module][address.name] = (i + 1);
+            }
+            this._numbers = numbers;
         }
-        this._numbers = numbers;
-        return this._numbers;
+
+        if (ns === undefined) {
+            return this._numbers;
+        }
+        else {
+            let nums = this._numbers[ns];
+            if (nums === undefined)
+                return [ ];
+            else
+                return nums;
+        }
     }
 
     n() {

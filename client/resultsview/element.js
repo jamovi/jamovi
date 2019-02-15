@@ -36,10 +36,6 @@ const ElementView = Backbone.View.extend({
         this.$errorPlacement.appendTo(this.$el);
         this.addIndex = 1;
 
-        let refTable = this.model.attributes.refTable;
-        let refs = this.model.attributes.refs;
-        refs = refs.map((name) => refTable.table[name]);
-
         this.refs = document.createElement('jmv-reference-numbers');
         this.refs.setTable(this.model.attributes.refTable);
         this.refs.setRefs(this.model.attributes.refs);

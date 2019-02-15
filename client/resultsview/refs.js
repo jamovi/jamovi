@@ -86,6 +86,8 @@ class ReferenceNumbers extends HTMLElement {
 
         if (this._refTable.mode === 'hidden')
             return;
+        if ( ! this._refs)
+            return;
 
         for (let ref of this._refs) {
             let number = 0;

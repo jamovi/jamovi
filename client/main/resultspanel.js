@@ -205,7 +205,7 @@ const ResultsPanel = Backbone.View.extend({
         let event = {
             type: 'reftablechanged',
             data: {
-                refs: this._refsTable.getNumbers()[analysis.ns],
+                refs: this._refsTable.getNumbers(analysis.ns),
                 refsMode: this.model.settings().getSetting('refsMode'),
             }
         };
@@ -233,7 +233,7 @@ const ResultsPanel = Backbone.View.extend({
                     mode: this.mode,
                     devMode: this.model.settings().get('devMode'),
                     format: format,
-                    refs: this._refsTable.getNumbers()[analysis.ns],
+                    refs: this._refsTable.getNumbers(analysis.ns),
                     refsMode: this.model.settings().getSetting('refsMode'),
                 }
             };
