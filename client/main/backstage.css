@@ -332,6 +332,7 @@
     box-sizing: border-box;
     align-items: center;
     padding-right: 4px ;
+    border: 1px solid transparent;
 }
 
 .silky-bs-fslist-item > * {
@@ -382,6 +383,15 @@
     background-size: 100% ;
 }
 
+.silky-bs-flist-import-icon {
+    background-image: url('assets/action-save.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+    width: 22px ;
+    height: 22px ;
+}
+
 .silky-bs-flist-save-icon {
     background-image: url('assets/action-save.svg');
     background-repeat: no-repeat;
@@ -391,7 +401,7 @@
     height: 22px ;
 }
 
-.silky-bs-flist-save-icon.saving-file {
+.silky-bs-flist-save-icon.saving-file, .silky-bs-flist-import-icon.saving-file {
     background-image: url('assets/indicator-running.svg');
 }
 
@@ -524,11 +534,52 @@
     margin-bottom: 20px;
 }
 
+.silky-bs-fslist-import-options {
+    margin-top: 5px;
+    height: 30px;
+    opacity: 1;
+    transition: 0.2s opacity, 0.2s height;
+}
+
+.silky-bs-fslist-import-options.hidden {
+    height: 0px;
+    opacity: 0;
+}
+
+.jmv-bs-fslist-checkbox {
+    margin-left: 5px !important;
+    margin-right: 0px !important;
+    opacity: 1;
+    transition: 0.2s opacity, 0.2s width, 0.2s margin;
+}
+
+.jmv-bs-fslist-checkbox.hidden {
+    width: 0px;
+    margin: 0px;
+    opacity: 0;
+}
+
+.silky-bs-fslist-browser-import-name {
+    flex-grow: 1;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #AAAAAA;
+    width: 100%;
+    font-size: 15px ;
+    margin-bottom: 2px;
+    padding: 4px 4px 4px 4px;
+    box-sizing: border-box;
+}
+
+.silky-bs-fslist-browser-import-name:hover {
+    border-color: #B1C5DE ;
+}
+
 .silky-bs-fslist-browser-save-name:hover, .silky-bs-fslist-browser-save-filetype:hover {
     border-color: #B1C5DE ;
 }
 
-.silky-bs-fslist-browser-save-button {
+.silky-bs-fslist-browser-save-button, .silky-bs-fslist-browser-import-button {
     flex-flow: row nowrap;
     align-items: center;
     height: 30px;
@@ -544,15 +595,16 @@
 
 .silky-bs-fslist-selected-item {
     background-color: #BACDE6 ;
-    border-style: dotted;
+    border-style: solid;
     border-width: 1px;
+    border-color: #a1b3cb;
 }
 
-.silky-bs-fslist-browser-save-button > * {
+.silky-bs-fslist-browser-save-button > *, .silky-bs-fslist-browser-import-button > * {
     margin: 0px 3px 0px 3px;
 }
 
-.silky-bs-fslist-browser-save-button:not(.disabled-div):hover {
+.silky-bs-fslist-browser-save-button:not(.disabled-div):hover, .silky-bs-fslist-browser-import-button:not(.disabled-div):hover {
     border-color: #B1C5DE ;
     background-color: #DBE4F3 ;
 }
@@ -624,11 +676,32 @@
     flex: 0 1 auto;
 }
 
+.silky-bs-fslist-browser-check-button {
+    width: 30px ;
+    height: 30px ;
+    box-sizing: border-box ;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 1px;
+    margin-left: 0px ;
+    color: #3E6DA9 ;
+    flex: 0 1 auto;
+    background-image: url('assets/bs-check-items.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 77% ;
+}
+
 .silky-bs-fslist-browser-back-button:hover {
-    /*border-style: solid;*/
-    /*border-width: 1px;*/
-    /*border-color: #B1C5DE ;*/
     background-color: #DBE4F3 ;
+}
+
+.silky-bs-fslist-browser-check-button:hover {
+    background-color: #DBE4F3 ;
+}
+
+.silky-bs-fslist-browser-check-button.on {
+    background-color: #bacde6 ;
 }
 
 .silky-bs-fslist {

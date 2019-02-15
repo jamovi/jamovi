@@ -239,6 +239,12 @@ let OptionsPanel = SilkyView.extend({
     setDataSetModel: function(dataSetModel) {
         this.dataSetModel = dataSetModel;
 
+        this.dataSetModel.on('dataSetLoaded', event => {
+            let data = { measureTypeChanged: true, dataTypeChanged: true, nameChanged: true, levelsChanged: true, countChanged: true };
+            for (let analysesKey in this._analysesResources)
+                this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', data);
+        });
+
         this.dataSetModel.on('columnsChanged', event => {
 
             let data = { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true };
