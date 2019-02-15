@@ -75,6 +75,12 @@ if (window.navigator.platform === 'MacIntel') {
             ]
         },
         {
+            label: 'File',
+            submenu: [
+                { role: 'close' },
+            ]
+        },
+        {
             label: 'Edit',
             submenu: [
                 { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
