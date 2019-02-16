@@ -622,7 +622,8 @@ var FSEntryBrowserView = SilkyView.extend({
         }
         this._selectedIndices = [];
         this._baseSelectionIndex = -1;
-        this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
+        if (this.$footer)
+            this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
         this._selected = false;
     },
     incrementSelection: function() {
