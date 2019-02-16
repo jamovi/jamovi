@@ -34,6 +34,9 @@ const VariableModel = Backbone.Model.extend({
         });
 
         this.dataset.on('columnsChanged', (event) => {
+            if (this.dataset.attributes.editingVar === null)
+                return;
+                
             let ids = this.get('ids');
             if (ids === null)
                 return;

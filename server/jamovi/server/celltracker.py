@@ -3,6 +3,17 @@ class CellTracker:
 
     def __init__(self):
         self._edited_cell_ranges = []
+        self.state_id = 0
+        self._total_edited = -1
+
+    @property
+    def total_edited_count(self):
+        if self._total_edited == -1:
+            self._total_edited = 0
+            for range in self._edited_cell_ranges:
+                self._total_edited += range['end'] - range['start'] + 1
+
+        return self._total_edited
 
     @property
     def edited_cell_ranges(self):
@@ -11,6 +22,7 @@ class CellTracker:
     @edited_cell_ranges.setter
     def edited_cell_ranges(self, ranges):
         self._edited_cell_ranges = ranges
+        self._total_edited = -1
 
     @property
     def is_edited(self):
@@ -18,16 +30,21 @@ class CellTracker:
 
     def clear(self):
         del self._edited_cell_ranges[:]
+        self._total_edited = -1
+        self.state_id += 1
 
     def set_cells_as_edited(self, start, end):
         if len(self._edited_cell_ranges) == 0:
             self._edited_cell_ranges.append({ 'start': start, 'end': end })
+            self._total_edited = -1
+            self.state_id += 1
             return
 
         insert_at = -1
         consume_start = -1
         consume_end = -1
         modified_range = None
+        changed = True
         for index, range in enumerate(self._edited_cell_ranges):
             if start < range['start'] and end > range['end']:
                 if consume_start == -1:
@@ -44,6 +61,7 @@ class CellTracker:
                     break
                 elif start >= range['start'] and end <= range['end']:
                     modified_range = range
+                    changed = False
                     break
                 elif start < range['start'] and end >= range['start'] - 1:
                     range['start'] = start
@@ -64,49 +82,56 @@ class CellTracker:
             else:
                 self._edited_cell_ranges.insert(insert_at, { 'start': start, 'end': end })
 
+        self._total_edited = -1
+        if changed:
+            self.state_id += 1
+
     def remove_rows(self, start, end):
-        current = start
-        row_end = end
+        self.state_id += 1
+        self._total_edited = -1
+
         consume_start = -1
         consume_end = -1
-        for index in range(0, len(self._edited_cell_ranges)):
-            edited_range = self._edited_cell_ranges[index]
-            if current > edited_range['end']:
-                continue
+        count = end - start + 1
+        last_range = None
+        for i, range in enumerate(self._edited_cell_ranges):
+            if start <= range['start'] and end >= range['end']:
+                if consume_start == -1:
+                    consume_start = i
+                consume_end = i
+            elif start <= range['start'] and end < range['end'] and end >= range['start']:
+                range['start'] = end + 1 - count
+                range['end'] -= count
+            elif start >= range['start'] and start <= range['end'] and end > range['end']:
+                range['end'] = start - 1
+            elif start < range['start'] and end < range['start']:
+                range['start'] -= count
+                range['end'] -= count
+            elif start > range['start'] and end <= range['end']:
+                range['end'] -= count
 
-            next = False
-            while next is False:
-                if current == edited_range['start'] and current == edited_range['end']:
+            if last_range is not None:
+                if last_range['end'] == range['start'] - 1:
+                    last_range['end'] = range['end']
                     if consume_start == -1:
-                        consume_start = index
-                    consume_end = index
-                    next = True
+                        consume_start = i
+                    consume_end = i
                 else:
-                    if current < edited_range['start']:
-                        edited_range['start'] -= 1
-                    edited_range['end'] -= 1
-
-                for i in range(index + 1, len(self._edited_cell_ranges)):
-                    self._edited_cell_ranges[i]['start'] -= 1
-                    self._edited_cell_ranges[i]['end'] -= 1
-
-                if current == row_end:
-                    break
-
-                row_end -= 1
-
-            if current == row_end:
-                break
+                    last_range = range
+            else:
+                last_range = range
 
         if consume_start != -1:
             del self._edited_cell_ranges[consume_start:(consume_end + 1)]
 
     def insert_rows(self, start, end):
+        self.state_id += 1
+        self._total_edited = -1
         count = end - start + 1
         for edited_range in self._edited_cell_ranges:
             if start <= edited_range['start']:
                 edited_range['start'] += count
                 edited_range['end'] += count
             elif start <= edited_range['end']:
-                edited_range['end'] = end
+                edited_range['end'] += count
         self.set_cells_as_edited(start, end)

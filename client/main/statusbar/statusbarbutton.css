@@ -1,0 +1,23 @@
+
+.jmv-status-bar .jmv-statusbar-button {
+    height: 100%;
+    width: 26px;
+    margin: 0 7px;
+
+    background-position: center center;
+    background-size: 70% 70%;
+    background-repeat: no-repeat;
+    filter: grayscale(100%);
+}
+
+.jmv-status-bar .jmv-statusbar-button:hover {
+    background-color: #c1c1c1;
+}
+
+.jmv-statusbar-button[data-name=editfilters] {
+    background-image: url('assets/menu-data-filter.svg');
+}
+
+.jmv-statusbar-button[disabled] {
+    filter: grayscale(100%);
+}
