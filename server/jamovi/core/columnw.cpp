@@ -273,6 +273,16 @@ void ColumnW::insertRows(int insStart, int insEnd)
         for (int j = insStart; j <= insEnd; j++)
             cellAt<double>(j) = NAN;
     }
+    else if (dataType() == DataType::TEXT && measureType() == MeasureType::ID)
+    {
+        setRowCount<char*>(finalCount);
+
+        for (int j = finalCount - 1; j > insEnd; j--)
+            cellAt<char*>(j) = cellAt<char*>(j - insCount);
+
+        for (int j = insStart; j <= insEnd; j++)
+            cellAt<char*>(j) = NULL;
+    }
     else
     {
         setRowCount<int>(finalCount);
