@@ -71,6 +71,7 @@
     width: 100% ;
     height: 100% ;
     border-right: 1px solid #ACACAC ;
+    border-bottom: 1px solid #ACACAC;
     box-sizing: border-box ;
     background-color: #F8F8F8 ;
 }

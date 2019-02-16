@@ -65,6 +65,7 @@ const DataSetModel = Backbone.Model.extend({
         columnCount : 0,
         vColumnCount : 0,
         tColumnCount : 0,
+        removedRowRanges: [ ],
         coms : null,
         instanceId : null,
         editingVar : null,
@@ -73,6 +74,12 @@ const DataSetModel = Backbone.Model.extend({
         edited : false,
         formula : '',
         formulaMessage : '',
+        changesCount: 0,
+        changesPosition: -1,
+        deletedRowCount: 0,
+        addedRowCount: 0,
+        editedCellCount: 0,
+        rowCountExFiltered: 0
     },
     setup(infoPB) {
 
@@ -106,6 +113,17 @@ const DataSetModel = Backbone.Model.extend({
             this.attributes.columnCount = infoPB.schema.columnCount;
             this.attributes.vColumnCount = infoPB.schema.vColumnCount;
             this.attributes.tColumnCount = infoPB.schema.tColumnCount;
+            this.attributes.deletedRowCount = infoPB.schema.deletedRowCount;
+            this.attributes.addedRowCount = infoPB.schema.addedRowCount;
+            this.attributes.editedCellCount = infoPB.schema.editedCellCount;
+            this.attributes.rowCountExFiltered = infoPB.schema.rowCountExFiltered;
+
+            let removedRowRanges = new Array(infoPB.schema.removedRowRanges.length);
+            for (let i = 0; i < removedRowRanges.length; i++) {
+                let rangePB = infoPB.schema.removedRowRanges[i];
+                removedRowRanges[i] = { index: rangePB.index, count: rangePB.count };
+            }
+            this.attributes.removedRowRanges = removedRowRanges;
 
             if (columns.length > 0) {
                 let firstColumn = columns[0];
@@ -122,6 +140,8 @@ const DataSetModel = Backbone.Model.extend({
             }
             this.attributes.transforms  = transforms;
 
+            this.set('changesCount', 0);
+            this.set('changesPosition', -1);
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
         }
@@ -149,14 +169,19 @@ const DataSetModel = Backbone.Model.extend({
         else
             return this.attributes.columns[index];
     },
-    insertRows(rowStart, rowEnd) {
+    insertRows(ranges) {
 
         let coms = this.attributes.coms;
 
         let datasetPB = new coms.Messages.DataSetRR();
-        datasetPB.op = coms.Messages.GetSet.INS_ROWS;
-        datasetPB.rowStart = rowStart;
-        datasetPB.rowEnd = rowEnd;
+        datasetPB.op = coms.Messages.GetSet.SET;
+        for (let range of ranges) {
+            let rowData = new coms.Messages.DataSetRR.RowData();
+            rowData.rowStart = range.rowStart;
+            rowData.rowCount = range.rowCount;
+            rowData.action = coms.Messages.DataSetRR.RowData.RowDataAction.INSERT;
+            datasetPB.rows.push(rowData);
+        }
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -164,43 +189,23 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            if (datasetPB.incSchema) {
-
-                this.set('rowCount', datasetPB.schema.rowCount);
-                this.set('vRowCount', datasetPB.schema.vRowCount);
-                this.set('columnCount', datasetPB.schema.columnCount);
-                this.set('vColumnCount', datasetPB.schema.vColumnCount);
-                this.set('tColumnCount', datasetPB.schema.tColumnCount);
-
-                let changed = Array(datasetPB.schema.columns.length);
-                let changes = Array(datasetPB.schema.columns.length);
-
-                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
-                    let columnPB = datasetPB.schema.columns[i];
-                    let id = columnPB.id;
-                    let column = this.getColumnById(id);
-
-                    // dps might have changed
-                    this._readColumnPB(column, columnPB);
-
-                    changed[i] = columnPB.name;
-                    changes[i] = { id: id, columnType: columnPB.columnType, dataChanged: true };
-                }
-
-                this.trigger('columnsChanged', { changed, changes });
-            }
-
+            this._processDatasetRR(datasetPB);
         });
     },
-    deleteRows(rowIndices) {
+    deleteRows(rowRanges) {
 
         let coms = this.attributes.coms;
 
         let datasetPB = new coms.Messages.DataSetRR();
-        datasetPB.op = coms.Messages.GetSet.DEL_ROWS;
-        datasetPB.rowIndices = rowIndices;
+        datasetPB.op = coms.Messages.GetSet.SET;
+        for (let range of rowRanges) {
+            let rowData = new coms.Messages.DataSetRR.RowData();
+            rowData.rowStart = range.rowStart;
+            rowData.rowCount = range.rowCount;
+            rowData.action = coms.Messages.DataSetRR.RowData.RowDataAction.REMOVE;
+            datasetPB.rows.push(rowData);
+        }
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -208,42 +213,8 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            if (datasetPB.incSchema) {
-
-                this.set('rowCount', datasetPB.schema.rowCount);
-                this.set('vRowCount', datasetPB.schema.vRowCount);
-                this.set('columnCount', datasetPB.schema.columnCount);
-                this.set('vColumnCount', datasetPB.schema.vColumnCount);
-                this.set('tColumnCount', datasetPB.schema.tColumnCount);
-
-                let changed = Array(datasetPB.schema.columns.length);
-                let changes = Array(datasetPB.schema.columns.length);
-
-                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
-                    let columnPB = datasetPB.schema.columns[i];
-                    let id = columnPB.id;
-                    let column = this.getColumnById(id);
-                    this._readColumnPB(column, columnPB);
-
-                    changed[i] = columnPB.name;
-                    changes[i] = {
-                        id: id,
-                        columnType: columnPB.columnType,
-                        columnTypeChanged: false,
-                        measureTypeChanged: true,
-                        dataTypeChanged: true,
-                        levelsChanged: true,
-                        levelNameChanges: [],
-                        nameChanged: false,
-                        dataChanged: true,
-                        created: false,
-                    };
-                }
-
-                this.trigger('columnsChanged', { changed, changes });
-            }
+            this._processDatasetRR(datasetPB);
         });
     },
     indexToDisplayIndex(index) {
@@ -266,7 +237,7 @@ const DataSetModel = Backbone.Model.extend({
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
-        datasetPB.op = coms.Messages.GetSet.INS_COLS;
+        datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.schema = new coms.Messages.DataSetSchema();
         datasetPB.incSchema = true;
 
@@ -323,6 +294,8 @@ const DataSetModel = Backbone.Model.extend({
             let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
             for (let prop in params)
                 columnPB[prop] = params[prop];
+
+            columnPB.action = coms.Messages.DataSetSchema.ColumnSchema.Action.INSERT;
             datasetPB.schema.columns.push(columnPB);
         }
 
@@ -332,94 +305,13 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-
-            let insertedIds = [];
-            let insertedIndices = { };
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            if (datasetPB.incSchema) {
-
-                this.set('rowCount', datasetPB.schema.rowCount);
-                this.set('vRowCount', datasetPB.schema.vRowCount);
-                this.set('columnCount', datasetPB.schema.columnCount);
-                this.set('vColumnCount', datasetPB.schema.vColumnCount);
-                this.set('tColumnCount', datasetPB.schema.tColumnCount);
-
-                let changed = Array(datasetPB.schema.columns.length);
-                let changes = Array(datasetPB.schema.columns.length);
-
-
-                let columns = this.attributes.columns;
-                datasetPB.schema.columns.sort((a,b) => a.index - b.index );
-
-                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
-                    let columnPB = datasetPB.schema.columns[i];
-                    let id = columnPB.id;
-                    let column = this.getColumnById(id);
-                    let created = column === undefined;
-
-                    if (created) {
-                        column = { };
-                        this._readColumnPB(column, columnPB);
-                        this.columnsById.set(column.id, column);
-                        columns.splice(column.index, 0, column);
-                        for (let i = column.index + 1; i < columns.length; i++)
-                            columns[i].index = i;
-                    }
-                    else
-                        this._readColumnPB(column, columnPB);
-
-                    this._updateDisplayIndices();
-
-                    // add the cells, this should be in DataSetViewModel
-                    if (column.hidden === false) {
-                        let viewport = this.attributes.viewport;
-
-                        if (column.dIndex > viewport.right) {  // to the right of the view
-                            // do nothing
-                        }
-                        else if (column.dIndex < viewport.left) {
-                            viewport.left  += 1;
-                            viewport.right += 1;
-                        }
-                        else {
-                            viewport.right += 1;
-                            let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
-                            this.attributes.cells.splice(column.dIndex - viewport.left, 0, cells);
-                        }
-                    }
-
-                    changed[i] = columnPB.name;
-                    changes[i] = {
-                        id: id,
-                        name: columnPB.name,
-                        columnType: columnPB.columnType,
-                        index: columnPB.index,
-                        created: created,
-                        dataChanged: created };
-
-                    insertedIds.push(id);
-                    insertedIndices[id] = { index: columnPB.index, dIndex: column.dIndex };
-                }
-
-                let transformEvent = this._processTransformData(datasetPB);
-
-                this.trigger('columnsInserted', { ids: insertedIds, indices: insertedIndices });
-
-                this.trigger('columnsChanged', { changed, changes });
-
-                if (transformEvent !== null) {
-                    for (let change of transformEvent.changes) {
-                        if (change.created)
-                            this.trigger('transformAdded', { id: change.id });
-                    }
-
-                    this.trigger('transformsChanged', transformEvent);
-                }
-
+            let events = this._processDatasetRR(datasetPB);
+            if (events !== null) {
                 if (this.attributes.editingVar !== null)
-                    this.set('editingVar', insertedIds);
+                    this.set('editingVar', events.insertData.ids);
 
-                return { ids: insertedIds, indices: insertedIndices };
+                return events.insertData;
             }
         });
     },
@@ -457,8 +349,16 @@ const DataSetModel = Backbone.Model.extend({
         let coms = this.attributes.coms;
 
         let datasetPB = new coms.Messages.DataSetRR();
-        datasetPB.op = coms.Messages.GetSet.DEL_COLS;
-        datasetPB.columnIds = ids;
+        datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.incSchema = true;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+
+        for (let id of ids) {
+            let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
+            columnPB.id = id;
+            columnPB.action = coms.Messages.DataSetSchema.ColumnSchema.Action.REMOVE;
+            datasetPB.schema.columns.push(columnPB);
+        }
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -466,90 +366,15 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-
-            let deletedIds = [ ];
-            let deletedIndices = { };
-            let changed = [];
-            let changes = [];
-
-            let oldViewport = this.attributes.viewport;
-            let viewport = Object.assign({}, this.attributes.viewport);
-            for (let id of ids) {
-                let column = this.columnsById.get(id);
-                changed.push(column.name);
-                changes.push( { id: column.id, name: column.name, columnType: column.columnType, index: column.index, dIndex: column.dIndex, deleted: true });
-                deletedIds.push(id);
-                deletedIndices[id] = { dIndex: column.dIndex, index: column.index };
-                this.columnsById.delete(id);
-                this.attributes.columns.splice(column.index, 1);
-                for (let j = column.index; j < this.attributes.columns.length; j++)
-                    this.attributes.columns[j].index = j;
-
-                if (column.dIndex !== -1) {
-                    if (column.dIndex <= oldViewport.left) {  // to the left of the view
-                        viewport.left  -= 1;
-                        viewport.right -= 1;
-                    }
-                    else if (column.dIndex >= oldViewport.left && column.dIndex <= oldViewport.right)     // contained in the view
-                        viewport.right -= 1;
-                }
-            }
-
-            this.attributes.viewport = viewport;
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            let events = this._processDatasetRR(datasetPB);
 
             this.set('edited', true);
-
-            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            if (datasetPB.incSchema) {
-
-                this.set('rowCount', datasetPB.schema.rowCount);
-                this.set('vRowCount', datasetPB.schema.vRowCount);
-                this.set('columnCount', datasetPB.schema.columnCount);
-                this.set('vColumnCount', datasetPB.schema.vColumnCount);
-                this.set('tColumnCount', datasetPB.schema.tColumnCount);
-
-                for (let columnPB of datasetPB.schema.columns) {
-                    let id = columnPB.id;
-                    let column = this.getColumnById(id);
-                    let oldName = column.name;
-                    let oldMessage = column.formulaMessage;
-                    this._readColumnPB(column, columnPB);
-
-                    changed.push(columnPB.name);
-                    changes.push({
-                        id: id,
-                        name: columnPB.name,
-                        index: columnPB.index,
-                        oldName: oldName,
-                        columnType: columnPB.columnType,
-                        dataChanged: true,
-                        nameChanged: oldName !== columnPB.name,
-                        formulaMessageChanged: oldMessage != columnPB.formulaMessage,
-                    });
-                }
-            }
-
-            this._updateDisplayIndices();
-
-            let transformEvent = this._processTransformData(datasetPB);
-
-            this.trigger('columnsDeleted', { ids: deletedIds, indices: deletedIndices });
-            this.trigger('columnsChanged', { changed, changes });
-
-            if (transformEvent !== null) {
-                for (let change of transformEvent.changes) {
-                    if (change.created)
-                        this.trigger('transformAdded', { id: change.id });
-                }
-
-                this.trigger('transformsChanged', transformEvent);
-            }
-
             if (this.attributes.editingVar !== null) {
                 let editingIds = this.attributes.editingVar.slice();
                 let firstDIndex = -1;
                 let firstColumnType = null;
-                for (let change of changes) {
+                for (let change of events.data.changes) {
                     if (change.deleted) {
                         if (firstDIndex === -1) {
                             firstDIndex = change.dIndex;
@@ -596,6 +421,7 @@ const DataSetModel = Backbone.Model.extend({
             let column = this.getColumnById(id);
 
             let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
+            columnPB.action = coms.Messages.DataSetSchema.ColumnSchema.Action.MODIFY;
             columnPB.id = id;
 
             if ('name' in values)
@@ -697,18 +523,7 @@ const DataSetModel = Backbone.Model.extend({
 
         return coms.send(request).then(response => {
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-
-            let transformEvent = this._processTransformData(datasetPB);
-            this._processColumnData(datasetPB);
-
-            if (transformEvent !== null) {
-                for (let change of transformEvent.changes) {
-                    if (change.created)
-                        this.trigger('transformAdded', { id: change.id });
-                }
-
-                this.trigger('transformsChanged', transformEvent);
-            }
+            this._processDatasetRR(datasetPB);
         }).catch((error) => {
             console.log(error);
             throw error;
@@ -720,164 +535,270 @@ const DataSetModel = Backbone.Model.extend({
             let changed = Array(datasetPB.schema.transforms.length);
             let changes = Array(datasetPB.schema.transforms.length);
             let nCreated = 0;
+            let nDeleted = 0;
 
             for (let i = 0; i < datasetPB.schema.transforms.length; i++) {
                 let transformPB = datasetPB.schema.transforms[i];
                 let id = transformPB.id;
                 let transform = this.getTransformById(id);
+                let deleted = transformPB.action === 2 && transform !== undefined;
 
-                let newName = transformPB.name;
-
-                let created;
-                let oldName;
-                let oldMessage;
-                let oldMeasureType;
-
-                if (transform !== undefined) {
-                    created = false;
-                    oldName = transform.name;
-                    oldMessage = transform.formulaMessage;
-                    oldMeasureType = transform.measureType;
-                    this._readTransformPB(transform, transformPB);
+                if (deleted) {
+                    for (let i = 0; i < this.attributes.transforms.length; i++) {
+                        if (transform.id === this.attributes.transforms[i].id) {
+                            changed[i] = transform.name;
+                            changes[i] = {
+                                id: id,
+                                name: transform.name,
+                                deleted: true,
+                            };
+                            this.attributes.transforms.splice(i, 1);
+                            break;
+                        }
+                    }
+                    nDeleted += 1;
                 }
                 else {
-                    created = true;
-                    oldName = transformPB.name;
-                    oldMessage = '';
-                    oldMeasureType = '';
-                    transform = { };
-                    nCreated++;
-                    this._readTransformPB(transform, transformPB);
-                    this.attributes.transforms.push(transform);
-                }
-                let nameChanged = (oldName !== transformPB.name);
+                    let newName = transformPB.name;
+                    let created;
+                    let oldName;
+                    let oldMessage;
+                    let oldMeasureType;
+                    if (transform !== undefined) {
+                        created = false;
+                        oldName = transform.name;
+                        oldMessage = transform.formulaMessage;
+                        oldMeasureType = transform.measureType;
+                        this._readTransformPB(transform, transformPB);
+                    }
+                    else {
+                        created = true;
+                        oldName = transformPB.name;
+                        oldMessage = '';
+                        oldMeasureType = '';
+                        transform = { };
+                        nCreated++;
+                        this._readTransformPB(transform, transformPB);
+                        this.attributes.transforms.push(transform);
+                    }
+                    let nameChanged = (oldName !== transformPB.name);
 
-                changed[i] = transformPB.name;
-                changes[i] = {
-                    id: id,
-                    name: transform.name,
-                    oldName: oldName,
-                    nameChanged: nameChanged,
-                    created: created,
-                    formulaMessageChanged: transform.formulaMessage !== oldMessage,
-                    measureTypeChanged: transform.measureType !== oldMeasureType,
-                };
+                    changed[i] = transformPB.name;
+                    changes[i] = {
+                        id: id,
+                        name: transform.name,
+                        oldName: oldName,
+                        nameChanged: nameChanged,
+                        created: created,
+                        formulaMessageChanged: transform.formulaMessage !== oldMessage,
+                        measureTypeChanged: transform.measureType !== oldMeasureType,
+                    };
+                }
             }
 
             return { changed, changes };
         }
         return null;
     },
-    _processColumnData(datasetPB) {
-        if (datasetPB.incSchema) {
+    _processRowData(datasetPB) {
+        let coms = this.attributes.coms;
+        let data = { rowsDeleted: [], rowsInserted: [] };
+        for (let i = 0; i < datasetPB.rows.length; i++) {
+            let blockPB = datasetPB.rows[i];
+            if (blockPB.action === coms.Messages.DataSetRR.RowData.RowDataAction.REMOVE) {
+                data.rowsDeleted.push({ rowStart: blockPB.rowStart, count: blockPB.rowCount });
+            }
+            else if (blockPB.action === coms.Messages.DataSetRR.RowData.RowDataAction.INSERT) {
+                data.rowsInserted.push({ rowStart: blockPB.rowStart, count: blockPB.rowCount });
+            }
+        }
+        return data;
+    },
+    _processDatasetRR(datasetPB) {
+        let coms = this.attributes.coms;
+        this.set( { changesCount: datasetPB.changesCount, changesPosition: datasetPB.changesPosition });
 
-            let changed = Array(datasetPB.schema.columns.length);
-            let changes = Array(datasetPB.schema.columns.length);
-            let nCreated = 0;
-            let nHidden = 0;
-            let nVisible = 0;
-            let columns = this.attributes.columns;
+        let outputData = { };
+        outputData.rowData = this._processRowData(datasetPB, outputData);
+
+        let changed = [];
+        let changes = [];
+        let nCreated = 0;
+        let nHidden = 0;
+        let nVisible = 0;
+        let nDeleted = 0;
+        let nvDeleted = 0;
+        let nvCreated = 0;
+        let columns = this.attributes.columns;
+
+        if (datasetPB.incSchema) {
+            changed = Array(datasetPB.schema.columns.length);
+            changes = Array(datasetPB.schema.columns.length);
+            // sort so that column removals happen first and the events after
+            // are sorted to support inserts... as in highest index inserts are done first
+            datasetPB.schema.columns.sort((a,b) => {
+                let aRemoved = a.action === this.attributes.coms.Messages.DataSetSchema.ColumnSchema.Action.REMOVE;
+                let bRemoved = b.action === this.attributes.coms.Messages.DataSetSchema.ColumnSchema.Action.REMOVE;
+                if (aRemoved !== bRemoved) {
+                    if (aRemoved === true)
+                        return -1;
+                    else
+                        return 1;
+                }
+                return a.index - b.index;
+            });
 
             for (let i = 0; i < datasetPB.schema.columns.length; i++) {
                 let columnPB = datasetPB.schema.columns[i];
                 let id = columnPB.id;
                 let column = this.getColumnById(id);
+                let deleted = columnPB.action === this.attributes.coms.Messages.DataSetSchema.ColumnSchema.Action.REMOVE;
 
-                let newName = columnPB.name;
-
-                let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
-
-                let created = column === undefined;
-                let oldName;
-                let oldColumnType;
-                let oldMessage;
-                let oldTransform;
-                let oldParentId;
-                let hiddenChanged = false;
-                let activeChanged = false;
-                let oldDIndex = -1;
-
-                if ( ! created) {
-                    oldName = column.name;
-                    oldColumnType = column.columnType;
-                    oldMessage = column.formulaMessage;
-                    oldDIndex = column.dIndex;
-                    let oldHidden = column.hidden;
-                    let oldActive = column.active;
-                    oldTransform = column.transform;
-                    oldParentId = column.parentId;
-                    this._readColumnPB(column, columnPB);
-                    hiddenChanged = oldHidden !== column.hidden;
-                    activeChanged = oldActive !== column.active;
+                if (deleted) {
+                    if (column === undefined)
+                        continue;
+                    changed[i] = column.name;
+                    changes[i] = { id: column.id, name: column.name, columnType: column.columnType, index: column.index, dIndex: column.dIndex, deleted: true };
+                    this.columnsById.delete(id);
+                    this.attributes.columns.splice(column.index, 1);
+                    for (let j = column.index; j < this.attributes.columns.length; j++)
+                        this.attributes.columns[j].index = j;
+                    nDeleted += 1;
+                    nvDeleted += column.hidden ? 0 : 1;
                 }
                 else {
-                    oldName = columnPB.name;
-                    oldTransform = 0;
-                    oldParentId = 0;
-                    oldColumnType = 0;
-                    oldMessage = '';
-                    column = { };
-                    nCreated++;
-                    this._readColumnPB(column, columnPB);
-                    this.columnsById.set(column.id, column);
-                    columns.splice(column.index, 0, column);
-                    for (let i = column.index + 1; i < columns.length; i++)
-                        columns[i].index = i;
-                }
-                let nameChanged = (oldName !== columnPB.name);
+                    let newName = columnPB.name;
+                    let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
+                    let created = column === undefined;
+                    let dpsChanged = false;
+                    let oldName;
+                    let oldColumnType;
+                    let oldMeasureType;
+                    let oldDataType;
+                    let oldMessage;
+                    let oldTransform;
+                    let oldParentId;
+                    let oldFormula;
+                    let hiddenChanged = false;
+                    let activeChanged = false;
+                    let oldDIndex = -1;
 
-                changed[i] = columnPB.name;
-                changes[i] = {
-                    id: id,
-                    name: column.name,
-                    columnType: oldColumnType,
-                    index: column.index,
-                    dIndex: oldDIndex,
-                    oldName: oldName,
-                    transformChanged: oldTransform !== column.transform,
-                    parentIdChanged: oldParentId !== column.parentId,
-                    hiddenChanged: hiddenChanged,
-                    activeChanged: activeChanged,
-                    columnTypeChanged: column.columnType !== oldColumnType,
-                    measureTypeChanged: true,
-                    dataTypeChanged: true,
-                    levelsChanged: true,
-                    levelNameChanges: levelNameChanges,
-                    nameChanged: nameChanged,
-                    dataChanged: true,
-                    created: created,
-                    formulaMessageChanged: column.formulaMessage !== oldMessage,
-                };
-
-                if (hiddenChanged) {
-                    if (column.hidden) {
-                        nHidden += 1;
+                    if ( ! created) {
+                        oldName = column.name;
+                        oldColumnType = column.columnType;
+                        oldMessage = column.formulaMessage;
+                        oldDIndex = column.dIndex;
+                        oldMeasureType = column.measureType;
+                        oldDataType = column.dataType;
+                        oldFormula = column.formula;
+                        let oldHidden = column.hidden;
+                        let oldActive = column.active;
+                        let oldDPS = column.dps;
+                        oldTransform = column.transform;
+                        oldParentId = column.parentId;
+                        this._readColumnPB(column, columnPB);
+                        hiddenChanged = oldHidden !== column.hidden;
+                        activeChanged = oldActive !== column.active;
+                        dpsChanged = oldDPS !== column.dps;
                     }
                     else {
-                        nVisible += 1;
+                        oldName = columnPB.name;
+                        oldTransform = 0;
+                        oldParentId = 0;
+                        oldColumnType = 0;
+                        oldMeasureType = 0;
+                        oldMessage = '';
+                        oldFormula = '';
+                        column = { };
+                        nCreated++;
+                        this._readColumnPB(column, columnPB);
+                        nvCreated += column.hidden ? 0 : 1;
+                        this.columnsById.set(column.id, column);
+                        columns.splice(column.index, 0, column);
+                        for (let i = column.index + 1; i < columns.length; i++)
+                            columns[i].index = i;
+                    }
+                    let nameChanged = (oldName !== columnPB.name);
+
+                    changed[i] = columnPB.name;
+                    changes[i] = {
+                        id: id,
+                        name: column.name,
+                        columnType: oldColumnType,
+                        index: column.index,
+                        dIndex: oldDIndex,
+                        oldName: oldName,
+                        transformChanged: oldTransform !== column.transform,
+                        parentIdChanged: oldParentId !== column.parentId,
+                        hiddenChanged: hiddenChanged,
+                        activeChanged: activeChanged,
+                        columnTypeChanged: column.columnType !== oldColumnType,
+                        measureTypeChanged: column.measureType !== oldMeasureType,
+                        dataTypeChanged: column.dataType !== oldDataType,
+                        levelsChanged: true,
+                        formulaChanged: column.formula !== oldFormula,
+                        levelNameChanges: levelNameChanges,
+                        nameChanged: nameChanged,
+                        dpsChanged: dpsChanged,
+                        dataChanged: true,
+                        created: created,
+                        formulaMessageChanged: column.formulaMessage !== oldMessage,
+                    };
+
+                    if (hiddenChanged) {
+                        if (column.hidden)
+                            nHidden += 1;
+                        else
+                            nVisible += 1;
                     }
                 }
             }
 
-            if (nCreated > 0 || nVisible > 0 || nHidden > 0) {
-                if (nCreated > 0) {
-                    this.set('columnCount', this.attributes.columnCount + nCreated);
-                    this.set('tColumnCount', this.attributes.tColumnCount + nCreated);
+            if (nCreated > 0 || nVisible > 0 || nHidden > 0 || nDeleted > 0) {
+                if (nCreated > 0 || nDeleted > 0) {
+                    this.set('columnCount', this.attributes.columnCount + nCreated - nDeleted);
+                    this.set('tColumnCount', this.attributes.tColumnCount + nCreated - nDeleted);
                 }
 
-                this.set('vColumnCount', this.attributes.vColumnCount + nCreated + nVisible - nHidden);
+                this.set('vColumnCount', this.attributes.vColumnCount + nvCreated + nVisible - nvDeleted - nHidden);
             }
 
+            if (datasetPB.schema) {
+                this.set('rowCount', datasetPB.schema.rowCount);
+                this.set('vRowCount', datasetPB.schema.vRowCount);
+                this.set('deletedRowCount', datasetPB.schema.deletedRowCount);
+                this.set('addedRowCount', datasetPB.schema.addedRowCount);
+                this.set('editedCellCount', datasetPB.schema.editedCellCount);
+                this.set('rowCountExFiltered', datasetPB.schema.rowCountExFiltered);
 
-            if (nCreated > 0 || nVisible > 0 || nHidden > 0)
+                let removedRowRanges = new Array(datasetPB.schema.removedRowRanges.length);
+                for (let i = 0; i < removedRowRanges.length; i++) {
+                    let rangePB = datasetPB.schema.removedRowRanges[i];
+                    removedRowRanges[i] = { index: rangePB.index, count: rangePB.count };
+                }
+                this.set('removedRowRanges', removedRowRanges);
+            }
+
+            if (nCreated > 0 || nVisible > 0 || nHidden > 0 || nDeleted > 0)
                 this._updateDisplayIndices();
 
             let old = this.attributes.viewport;
             let viewport = Object.assign({}, this.attributes.viewport);
 
             for (let change of changes) {
-                if (change.hiddenChanged) {
-                    let column = this.getColumn(change.index);
+                if (change.deleted) {
+                    if (change.dIndex !== -1) {
+                        if (change.dIndex <= old.left) {  // to the left of the view
+                            viewport.left  -= 1;
+                            viewport.right -= 1;
+                        }
+                        else if (change.dIndex >= old.left && change.dIndex <= old.right) {     // contained in the view
+                            viewport.right -= 1;
+                        }
+                    }
+                }
+                else if (change.hiddenChanged || change.created) {
+                    let column = this.getColumnById(change.id);
                     if (column.hidden) {
                         if (change.dIndex > old.right) {  // to the right of the view
                             // do nothing
@@ -908,8 +829,29 @@ const DataSetModel = Backbone.Model.extend({
             }
 
             this.attributes.viewport = viewport;
+        }
 
+        if (datasetPB.incData) {
+            this.set('edited', true);
+            let dataInfo = this._parseCells(datasetPB);
+            outputData.cellsChanged = this.setCells(dataInfo, true);
 
+            outputData.dataWrite = dataInfo;
+        }
+
+        if (nDeleted > 0) {
+            let deletedIds = [];
+            let deletedIndices = { };
+            for (let change of changes) {
+                if (change.deleted) {
+                    deletedIds.push(change.id);
+                    deletedIndices[change.id] = { dIndex: change.dIndex, index: change.index };
+                }
+            }
+            this.trigger('columnsDeleted', { ids: deletedIds, indices: deletedIndices });
+        }
+
+        if (nHidden > 0) {
             let hiddenIds = [];
             let hiddenIndices = { };
             for (let change of changes) {
@@ -918,10 +860,12 @@ const DataSetModel = Backbone.Model.extend({
                     hiddenIndices[change.id] = { dIndex: change.dIndex, index: change.index };
                 }
             }
-            if (hiddenIds.length > 0)
-                this.trigger('columnsHidden', { ids: hiddenIds, indices: hiddenIndices } );
+            this.trigger('columnsHidden', { ids: hiddenIds, indices: hiddenIndices } );
+        }
 
+        let transformEvent = this._processTransformData(datasetPB);
 
+        if (nVisible > 0) {
             let visibleIds = [];
             let visibleIndices = { };
             for (let change of changes) {
@@ -930,10 +874,10 @@ const DataSetModel = Backbone.Model.extend({
                     visibleIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
                 }
             }
-            if (visibleIds.length > 0)
-                this.trigger('columnsVisible', { ids: visibleIds, indices: visibleIndices });
+            this.trigger('columnsVisible', { ids: visibleIds, indices: visibleIndices });
+        }
 
-
+        if (nCreated > 0) {
             let createdIds = [];
             let createdIndices = { };
             for (let change of changes) {
@@ -942,19 +886,60 @@ const DataSetModel = Backbone.Model.extend({
                     createdIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
                 }
             }
-            if (createdIds.length > 0)
-                this.trigger('columnsInserted', { ids: createdIds, indices: createdIndices });
+            this.trigger('columnsInserted', { ids: createdIds, indices: createdIndices });
+            outputData.insertData = { ids: createdIds, indices: createdIndices };
+        }
 
-            let activeChangeRanges = this._clumpPropertyChanges(changes, 'active', true);
-            activeChangeRanges = activeChangeRanges.concat(this._clumpPropertyChanges(changes, 'active', false));
+        let activeChangeRanges = this._clumpPropertyChanges(changes, 'active', true);
+        activeChangeRanges = activeChangeRanges.concat(this._clumpPropertyChanges(changes, 'active', false));
 
-            if (activeChangeRanges.length > 0) {
-                for (let range of activeChangeRanges)
-                    this.trigger('columnsActiveChanged', { start: range.start, end: range.end, dStart: range.dStart, dEnd: range.dEnd, value: range.value });
+        if (activeChangeRanges.length > 0) {
+            for (let range of activeChangeRanges)
+                this.trigger('columnsActiveChanged', { start: range.start, end: range.end, dStart: range.dStart, dEnd: range.dEnd, value: range.value });
+        }
+
+        if (datasetPB.incData) {
+            for (let block of datasetPB.data) {
+                for (let c = 0; c < block.columnCount; c++) {
+                    let column = this.getColumn(block.columnStart + c, true);
+                    let name = column.name;
+                    if ( ! changed.includes(name)) {
+                        changed.push(name);
+                        changes.push({ id: column.id, columnType: column.columnType, index: column.index, oldName: name, dataChanged: true });
+                    }
+                }
+            }
+        }
+
+        if (changed.length > 0) {
+            this.trigger('columnsChanged', { changed, changes });
+            outputData.data = { changed, changes };
+        }
+
+        if (transformEvent !== null) {
+            for (let change of transformEvent.changes) {
+                if (change.deleted)
+                    this.trigger('transformRemoved', { id: change.id });
+                else if (change.created)
+                    this.trigger('transformAdded', { id: change.id });
             }
 
-            this.trigger('columnsChanged', { changed, changes });
+            this.trigger('transformsChanged', transformEvent);
         }
+
+        for (let rowsDeleted of outputData.rowData.rowsDeleted)
+            this.trigger('rowsDeleted', rowsDeleted);
+        for (let rowsInserted of outputData.rowData.rowsInserted)
+            this.trigger('rowsInserted', rowsInserted);
+
+        if (outputData.cellsChanged)
+            this.trigger('cellsChanged', outputData.cellsChanged);
+
+        outputData.refresh = datasetPB.refresh;
+        if (datasetPB.refresh)
+            this.trigger('refreshView');
+
+        return outputData;
     },
     _clumpPropertyChanges(changes, property, value) {
         let valueRanges = [];
@@ -1074,6 +1059,7 @@ const DataSetModel = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
         datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.noUndo = true;
         datasetPB.incSchema = true;
         datasetPB.schema = new coms.Messages.DataSetSchema();
 
@@ -1148,18 +1134,7 @@ const DataSetModel = Backbone.Model.extend({
 
         return coms.send(request).then(response => {
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            let transformEvent = this._processTransformData(datasetPB);
-            this._processColumnData(datasetPB);
-
-            if (transformEvent !== null) {
-                for (let change of transformEvent.changes) {
-                    if (change.created)
-                        this.trigger('transformAdded', { id: change.id });
-                }
-
-                this.trigger('transformsChanged', transformEvent);
-            }
-
+            this._processDatasetRR(datasetPB);
         }).catch((error) => {
             console.log(error);
             throw error;
@@ -1191,43 +1166,50 @@ const DataSetModel = Backbone.Model.extend({
         request.instanceId = this.attributes.instanceId;
 
         return coms.send(request).then(response => {
-            let changed = [];
-            let changes = [];
-
-            let transform = null;
-            for (let id of ids) {
-
-                for (let i = 0; i < this.attributes.transforms.length; i++) {
-                    transform = this.attributes.transforms[i];
-                    if (transform.id === id) {
-                        this.attributes.transforms.splice(i, 1);
-                        break;
-                    }
-
-                    changed[i] = transform.name;
-                    changes[i] = {
-                        id: id,
-                        name: transform.name,
-                        deleted: true,
-                    };
-                }
-            }
-
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            this._processColumnData(datasetPB);
+            this._processDatasetRR(datasetPB);
+        }).catch((error) => {
+            console.log(error);
+            throw error;
+        });
+    },
 
-            for (let change of changes)
-                this.trigger('transformRemoved', { id: change.id });
+    undo() {
+        let coms = this.attributes.coms;
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.UNDO;
 
-            this.trigger('transformsChanged', { changed, changes });
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
 
+        return coms.send(request).then(response => {
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            return this._processDatasetRR(datasetPB);
+        }).catch((error) => {
+            console.log(error);
+            throw error;
+        });
+    },
+    redo() {
+        let coms = this.attributes.coms;
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.REDO;
 
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            return this._processDatasetRR(datasetPB);
         }).catch((error) => {
             console.log(error);
             throw error;
         });
     }
-
 });
 
 DataSetModel.stringifyMeasureType = function(type) {
@@ -1453,63 +1435,61 @@ const DataSetViewModel = DataSetModel.extend({
         this.trigger("viewportChanged");
     },
     readCells(viewport) {
-        this.requestCells(viewport).then(cells => {
-            this.setCells(viewport, cells);
+        this.requestCells(viewport).then(dataInfo => {
+            this.setCells(dataInfo);
         }).done();
     },
     _parseCells(response) {
+        let data = new Array(response.data.length);
+        for (let i = 0; i < data.length; i++) {
+            let blockPB = response.data[i];
+            let values = Array(blockPB.columnCount);
 
-        let columns = response.data;
+            for (let c = 0; c < blockPB.columnCount; c++) {
+                values[c] = Array(blockPB.rowCount);
+                for (let r = 0; r < blockPB.rowCount; r++) {
+                    let inValue = null;
+                    if (blockPB.clear === false)
+                        inValue = blockPB.values[(c*blockPB.rowCount) + r];
 
-        let rowStart    = response.rowStart;
-        let columnStart = response.columnStart;
-        let rowEnd      = response.rowEnd;
-        let columnEnd   = response.columnEnd;
-
-        let viewport = { left : columnStart, top : rowStart, right : columnEnd, bottom : rowEnd };
-
-        let columnCount = columnEnd - columnStart + 1;
-        let rowCount    = rowEnd    - rowStart + 1;
-
-        let cells = new Array(columnCount);
-
-        for (let colNo = 0; colNo < columnCount; colNo++) {
-
-            let column = columns[colNo];
-            let values = Array(column.values.length);
-
-            for (let i = 0; i < column.values.length; i++) {
-                let inValue = column.values[i];
-                let outValue;
-                if (inValue.type === 'o')
-                    outValue = null;
-                else
-                    outValue = inValue[inValue.type];
-                values[i] = outValue;
+                    let outValue;
+                    if (inValue === null || inValue.type === 'o')
+                        outValue = null;
+                    else
+                        outValue = inValue[inValue.type];
+                    values[c][r] = outValue;
+                }
             }
 
-            cells[colNo] = values;
+            let block = { rowStart: blockPB.rowStart, columnStart: blockPB.columnStart, rowCount: blockPB.rowCount, columnCount: blockPB.columnCount, values: values };
+            data[i] = block;
         }
 
+        let filterData = [];
+        for (let rowBlockPB of response.rows) {
+            if (rowBlockPB.action === this.attributes.coms.Messages.DataSetRR.RowData.RowDataAction.MODIFY) {
+                let values = rowBlockPB.filterData.toBuffer();
+                values = new Int8Array(values);
+                values = Array.from(values);
+                values = values.map(v => v ? true : false);
 
-        let filtered = response.filtered.toBuffer();
-        filtered = new Int8Array(filtered);
-        filtered = Array.from(filtered);
-        filtered = filtered.map(v => v ? true : false);
+                filterData.push({ rowStart: rowBlockPB.rowStart, rowCount: rowBlockPB.rowCount, values: values });
+            }
+        }
 
-        return { cells, filtered };
+        return { data, filterData };
     },
     requestCells(viewport) {
-
         let coms = this.attributes.coms;
-
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.incData = true;
-        cellsRequest.rowStart    = viewport.top;
-        cellsRequest.columnStart = viewport.left;
-        cellsRequest.rowEnd      = viewport.bottom;
-        cellsRequest.columnEnd   = viewport.right;
-        cellsRequest.excHiddenCols = true;
+
+        let blockPB = new coms.Messages.DataSetRR.DataBlock();
+        blockPB.rowStart = viewport.top;
+        blockPB.rowCount = viewport.bottom - viewport.top + 1;
+        blockPB.columnStart = viewport.left;
+        blockPB.columnCount = viewport.right - viewport.left + 1;
+        cellsRequest.data.push(blockPB);
 
         let request = new coms.Messages.ComsMessage();
         request.payload = cellsRequest.toArrayBuffer();
@@ -1518,94 +1498,67 @@ const DataSetViewModel = DataSetModel.extend({
 
         return coms.send(request).then(response => {
             let dsrrPB = coms.Messages.DataSetRR.decode(response.payload);
-            let cells = this._parseCells(dsrrPB);
-            return cells;
+            let data = this._parseCells(dsrrPB);
+            return data;
         });
     },
-    changeCells(viewport, cells, cbHtml) {
-
-        let nRows = viewport.bottom - viewport.top + 1;
-        let nCols = viewport.right - viewport.left + 1;
-
+    changeCells(data, cbHtml, columnStart, rowStart) {
         let coms = this.attributes.coms;
-
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.op = coms.Messages.GetSet.SET;
-        cellsRequest.rowStart    = viewport.top;
-        cellsRequest.columnStart = viewport.left;
-        cellsRequest.rowEnd      = viewport.bottom;
-        cellsRequest.columnEnd   = viewport.right;
-        cellsRequest.excHiddenCols = true;
+        cellsRequest.incData = true;
 
-        if (typeof(cells) === 'string') {
+        if (typeof(data) === 'string') {
+            let blockPB = new coms.Messages.DataSetRR.DataBlock();
+            blockPB.columnStart = columnStart;
+            blockPB.rowStart = rowStart;
             // send serialized data
-            cellsRequest.incCBData = true;
-            cellsRequest.cbText = cells;
+            blockPB.incCBData = true;
+            blockPB.cbText = data;
             if (cbHtml)
-                cellsRequest.cbHtml = cbHtml;
-        }
-        else if (cells === null) {
-
-            cellsRequest.incData = true;
-
-            if (viewport.top < this.attributes.rowCount &&
-                viewport.bottom >= this.attributes.rowCount) {
-                    nRows = this.attributes.rowCount - viewport.top + 1;
-                    cellsRequest.rowEnd = this.attributes.rowCount - 1;
-            }
-
-            if (viewport.left < this.attributes.columnCount &&
-                viewport.right >= this.attributes.columnCount) {
-                    nCols = this.attributes.columnCount - viewport.left + 1;
-                    cellsRequest.columnEnd = this.attributes.columnCount - 1;
-            }
-
-            for (let i = 0; i < nCols; i++) {
-                let columnPB = new coms.Messages.DataSetRR.ColumnData();
-
-                for (let j = 0; j < nRows; j++) {
-                    let cellPB = new coms.Messages.DataSetRR.ColumnData.CellValue();
-                    cellPB.o = coms.Messages.SpecialValues.MISSING;
-                    cellPB.type = 'o';
-                    columnPB.values.push(cellPB);
-                }
-
-                cellsRequest.data.push(columnPB);
-            }
+                blockPB.cbHtml = cbHtml;
+            cellsRequest.data.push(blockPB);
         }
         else {
-
-            cellsRequest.incData = true;
-
-            for (let i = 0; i < nCols; i++) {
-
-                let inCells = cells[i];
-                let columnType = this.getColumn(viewport.left + i, true).measureType;
-                let columnPB = new coms.Messages.DataSetRR.ColumnData();
-
-                for (let j = 0; j < nRows; j++) {
-                    let outValue = new coms.Messages.DataSetRR.ColumnData.CellValue();
-                    let inValue = inCells[j];
-                    if (inValue === null) {
-                        outValue.o = coms.Messages.SpecialValues.MISSING;
-                        outValue.type = 'o';
+            for (let block of data) {
+                let blockPB = new coms.Messages.DataSetRR.DataBlock();
+                blockPB.rowStart = block.rowStart;
+                blockPB.rowCount = block.rowCount;
+                blockPB.columnStart = block.columnStart;
+                blockPB.columnCount = block.columnCount;
+                let is_clear = true;
+                if (block.clear === false) {
+                    for (let inCells of block.values) {
+                        for (let j = 0; j < block.rowCount; j++) {
+                            let outValue = new coms.Messages.DataSetRR.DataBlock.CellValue();
+                            let inValue = inCells[j];
+                            if (inValue === null) {
+                                outValue.o = coms.Messages.SpecialValues.MISSING;
+                                outValue.type = 'o';
+                            }
+                            else if (typeof(inValue) === 'string') {
+                                outValue.s = inValue;
+                                outValue.type = 's';
+                                is_clear = false;
+                            }
+                            else if (Math.floor(inValue) === inValue) {
+                                outValue.i = inValue;
+                                outValue.type = 'i';
+                                is_clear = false;
+                            }
+                            else {
+                                outValue.d = inValue;
+                                outValue.type = 'd';
+                                is_clear = false;
+                            }
+                            blockPB.values.push(outValue);
+                        }
                     }
-                    else if (typeof(inValue) === 'string') {
-                        outValue.s = inValue;
-                        outValue.type = 's';
-                    }
-                    else if (Math.floor(inValue) === inValue) {
-                        outValue.i = inValue;
-                        outValue.type = 'i';
-                    }
-                    else {
-                        outValue.d = inValue;
-                        outValue.type = 'd';
-                    }
-                    columnPB.values.push(outValue);
                 }
-
-                cellsRequest.data.push(columnPB);
+                blockPB.clear = is_clear;
+                if (blockPB.clear)
+                    blockPB.values = [];
+                cellsRequest.data.push(blockPB);
             }
         }
 
@@ -1617,147 +1570,102 @@ const DataSetViewModel = DataSetModel.extend({
         return coms.send(request).then(response => {
 
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            let events = this._processDatasetRR(datasetPB);
+            return events.dataWrite;
 
-            this._processColumnData(datasetPB);
-
-            let viewport = {
-                top:    datasetPB.rowStart,
-                bottom: datasetPB.rowEnd,
-                left:   datasetPB.columnStart,
-                right:  datasetPB.columnEnd };
-
-            nCols = viewport.right - viewport.left + 1;
-
-            let changes = [ ];
-            let changed = [ ];
-            let nCreated = 0;
-
-            if (datasetPB.incSchema) {
-                changes = Array(datasetPB.schema.columns.length);
-                changed = Array(datasetPB.schema.columns.length);
-
-                for (let i = 0; i < datasetPB.schema.columns.length; i++) {
-                    let columnPB = datasetPB.schema.columns[i];
-                    let id = columnPB.id;
-                    let column = this.getColumnById(id);
-                    let newName = columnPB.name;
-                    let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
-
-                    let created = false;
-                    let oldName;
-                    let oldColumnType;
-                    if (column !== undefined) {
-                        oldName = column.name;
-                        oldColumnType = column.columnType;
-                        this._readColumnPB(column, columnPB);
-                    }
-                    else {
-                        oldName = columnPB.name;
-                        oldColumnType = 0;
-                        column = { };
-                        created = true;
-                        nCreated++;
-                        this._readColumnPB(column, columnPB);
-                        this.attributes.columns[column.index] = column;
-                        this.columnsById.set(column.id, column);
-                    }
-
-                    changed[i] = columnPB.name;
-                    changes[i] = {
-                        id: id,
-                        oldName: oldName,
-                        name: newName,
-                        index: column.index,
-                        columnType: oldColumnType,
-                        columnTypeChanged: oldColumnType !== column.columnType,
-                        measureTypeChanged: true,
-                        dataTypeChanged: true,
-                        levelsChanged: true,
-                        levelNameChanges: levelNameChanges,
-                        nameChanged: oldName !== newName,
-                        dataChanged: true,
-                        created: created,
-                    };
-                }
-            }
-
-            for (let i = 0; i < nCols; i++) {
-                let column = this.getColumn(viewport.left + i, true);
-                let name = column.name;
-                if ( ! changed.includes(name)) {
-                    changed.push(name);
-                    changes.push({ id: column.id, columnType: column.columnType, index: column.index, oldName: name, dataChanged: true });
-                }
-            }
-
-            if (nCreated > 0) {
-                this.set('columnCount', this.attributes.columnCount + nCreated);
-                this.set('vColumnCount', this.attributes.vColumnCount + nCreated);
-                this.set('tColumnCount', this.attributes.tColumnCount + nCreated);
-
-                this._updateDisplayIndices();
-            }
-
-            if (datasetPB.schema) {
-                this.set('rowCount', datasetPB.schema.rowCount);
-                this.set('vRowCount', datasetPB.schema.vRowCount);
-            }
-
-            let createdIds = [];
-            let createdIndices = { };
-            for (let change of changes) {
-                if (change.created) {
-                    createdIds.push(change.id);
-                    createdIndices[change.id] = { dIndex: this.indexToDisplayIndex(change.index), index: change.index };
-                }
-            }
-            if (createdIds.length > 0)
-                this.trigger('columnsInserted', { ids: createdIds, indices: createdIndices });
-
-            this.set('edited', true);
-            this.trigger('columnsChanged', { changed, changes });
-
-            let cells = this._parseCells(datasetPB);
-            this.setCells(viewport, cells);
-
-            return viewport;
         });
 
     },
-    setCells(viewport, cells) {
+    _getViewPortUnion(block) {
+        let viewTop = this.attributes.viewport.top;
+        let viewBottom = this.attributes.viewport.bottom;
+        let viewLeft = this.attributes.viewport.left;
+        let viewRight = this.attributes.viewport.right;
 
-        let filtered = cells.filtered;
-        cells = cells.cells;
+        let rowCheck = () => {
+            if (block.rowStart > viewBottom)
+                return null;
 
-        let left   = Math.max(viewport.left,   this.attributes.viewport.left);
-        let right  = Math.min(viewport.right,  this.attributes.viewport.right);
-        let top    = Math.max(viewport.top,    this.attributes.viewport.top);
-        let bottom = Math.min(viewport.bottom, this.attributes.viewport.bottom);
+            let rowEnd = block.rowStart + block.rowCount - 1;
+            if (rowEnd < viewTop)
+                return null;
 
-        let inColOffset = left - viewport.left;
-        let inRowOffset = top - viewport.top;
+            let count = rowEnd - block.rowStart + 1;
+            if (block.rowStart >= viewTop && rowEnd <= viewBottom)
+                return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: count };
 
-        let outColOffset = left - this.attributes.viewport.left;
-        let outRowOffset = top - this.attributes.viewport.top;
+            if (block.rowStart < viewTop && rowEnd > viewBottom)
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewTop - viewBottom + 1 };
 
-        let nRows = bottom - top + 1;
-        let nCols = right - left + 1;
+            if (block.rowStart < viewTop)
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: block.rowBottom - viewTop + 1 };
 
-        for (let i = 0; i < nCols; i++) {
+            if (rowEnd > viewBottom)
+                return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: viewBottom - block.rowStart + 1 };
 
-            let inCol  = cells[inColOffset + i];
-            let outCol = this.attributes.cells[outColOffset + i];
-            let columnInfo = this.getColumn(outColOffset + i, true);
-            for (let j = 0; j < nRows; j++) {
-                outCol[outRowOffset + j] = inCol[inRowOffset + j];
+            return null;
+        };
+
+        let check = rowCheck();
+        if (check !== null && block.columnStart !== undefined) {
+            if (block.columnStart > viewRight)
+                return null;
+
+            let columnEnd = block.columnStart + block.columnCount - 1;
+            if (columnEnd < viewLeft)
+                return null;
+
+            let count = block.columnCount;
+            if (block.columnStart >= viewLeft && columnEnd <= viewRight)
+                return _.extend({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: count }, check);
+
+            if (block.columnStart < viewLeft && columnEnd > viewRight)
+                return _.extend({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: viewLeft - viewRight + 1 }, check);
+
+            if (block.columnStart < viewLeft)
+                return _.extend({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: block.columnBottom - viewLeft + 1 }, check);
+
+            if (columnEnd > viewRight)
+                return _.extend({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: viewRight - block.columnStart + 1 }, check);
+
+            return null;
+        }
+
+        return check;
+    },
+    setCells(dataInfo, silent) {
+        let filterData = dataInfo.filterData;
+        let data = dataInfo.data;
+        let viewPort = this.attributes.viewport;
+        let changedCells = [];
+        for (let block of data) {
+            let union = this._getViewPortUnion(block);
+            if (union !== null) {
+                for (let c = 0; c < union.columnCount; c++) {
+                    let colIndex = union.viewColumnStart + c;
+                    let columnCells = this.attributes.cells[colIndex];
+                    let blockCells =  block.values[union.blockColumnStart + c];
+                    for (let r = 0; r < union.rowCount; r++) {
+                        let rowIndex = union.viewRowStart + r;
+                        columnCells[rowIndex] = blockCells[union.blockRowStart + r];
+                        changedCells.push({ colIndex: colIndex, rowIndex: rowIndex });
+                    }
+                }
             }
         }
 
-        for (let j = 0; j < nRows; j++) {
-            this.attributes.filtered[outRowOffset + j] = filtered[inRowOffset + j];
+        for (let filterRange of filterData) {
+            let union = this._getViewPortUnion(filterRange);
+            if (union !== null) {
+                for (let r = 0; r < union.rowCount; r++)
+                    this.attributes.filtered[union.viewRowStart + r] = filterRange.values[union.blockRowStart + r];
+            }
         }
 
-        this.trigger("cellsChanged", { left: left, top: top, right: right, bottom: bottom });
+        if ( ! silent)
+            this.trigger("cellsChanged", changedCells);
+
+        return changedCells;
     },
     _columnsChanged(event) {
 

@@ -8,6 +8,14 @@
     background-image: url('assets/menu-data-paste.svg');
 }
 
+.jmv-ribbon-button[data-name=undo] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-undo.svg');
+}
+
+.jmv-ribbon-button[data-name=redo] > .jmv-ribbon-button-icon {
+    background-image: url('assets/menu-redo.svg');
+}
+
 .jmv-ribbon-button[data-name=appendvar] > .jmv-ribbon-button-icon {
     background-image: url('assets/menu-variable-append.svg');
 }

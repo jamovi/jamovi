@@ -25,6 +25,7 @@ from .utils import HTMLParser
 from .modules import Modules
 from .instancemodel import InstanceModel
 from . import formatio
+from .modtracker import ModTracker
 
 import posixpath
 import math
@@ -63,6 +64,8 @@ class Instance:
         self._mm = None
         self._data = InstanceModel(self)
         self._coms = None
+
+        self._mod_tracker = ModTracker(self._data)
 
         self._inactive_since = None
 
@@ -557,8 +560,6 @@ class Instance:
             if old_mm is not None:
                 old_mm.close()
 
-        self._data.begin_edit_tracking()
-
     async def _on_import(self, request):
 
         if request.filePath != '':
@@ -642,6 +643,7 @@ class Instance:
         try:
             datasets = MultipleDataSets(paths)
             await self._data.import_from(datasets, n_files > 1)
+            self._mod_tracker.clear()
 
             response = jcoms.OpenProgress()
             self._coms.send(response, self._instance_id, request)
@@ -661,7 +663,6 @@ class Instance:
 
         finally:
             self._data.analyses.rerun()
-            self._data.begin_edit_tracking()
 
     def _open_callback(self, task, progress):
         response = jcoms.ComsMessage()
@@ -755,6 +756,10 @@ class Instance:
             response.schema.columnCount = self._data.column_count
             response.schema.vColumnCount = self._data.visible_column_count
             response.schema.tColumnCount = self._data.total_column_count
+            response.schema.deletedRowCount = self._data.row_tracker.total_removed_row_count
+            response.schema.addedRowCount = self._data.row_tracker.total_added_row_count
+            response.schema.editedCellCount = self._data.total_edited_cell_count
+            response.schema.rowCountExFiltered = self._data.row_count_ex_filtered
 
             for column in self._data:
                 column_schema = response.schema.columns.add()
@@ -764,12 +769,30 @@ class Instance:
                 transform_schema = response.schema.transforms.add()
                 self._populate_transform_schema(transform, transform_schema)
 
+            if self._data.row_tracker.is_edited:
+                for range in self._data.row_tracker.removed_row_ranges:
+                    row_range_pb = response.schema.removedRowRanges.add()
+                    row_range_pb.index = range['index']
+                    row_range_pb.count = range['count']
+
         for analysis in self._data.analyses:
             if analysis.has_results:
                 analysis_pb = response.analyses.add()
                 analysis_pb.CopyFrom(analysis.results)
 
         self._coms.send(response, self._instance_id, request)
+
+    def _clone_cell_selections(self, from_msg, to_msg):
+        del to_msg.data[:]
+
+        to_msg.incData = from_msg.incData
+        if from_msg.incData:
+            for block in from_msg.data:
+                n_block = to_msg.data.add()
+                n_block.rowStart = block.rowStart
+                n_block.columnStart = block.columnStart
+                n_block.rowCount = block.rowCount
+                n_block.columnCount = block.columnCount
 
     def _on_dataset(self, request):
 
@@ -780,26 +803,34 @@ class Instance:
 
             response = jcoms.DataSetRR()
 
-            response.op = request.op
-            response.rowStart    = request.rowStart
-            response.columnStart = request.columnStart
-            response.rowEnd      = request.rowEnd
-            response.columnEnd   = request.columnEnd
-
             if request.op == jcoms.GetSet.Value('SET'):
+                response.op = request.op
+                self._clone_cell_selections(request, response)
+                if request.noUndo is False:
+                    self._mod_tracker.begin_event(request)
                 self._on_dataset_set(request, response)
+                if request.noUndo is False:
+                    self._mod_tracker.end_event()
             elif request.op == jcoms.GetSet.Value('GET'):
+                response.op = request.op
+                self._clone_cell_selections(request, response)
                 self._on_dataset_get(request, response)
-            elif request.op == jcoms.GetSet.Value('INS_ROWS'):
-                self._on_dataset_ins_rows(request, response)
-            elif request.op == jcoms.GetSet.Value('INS_COLS'):
-                self._on_dataset_ins_cols(request, response)
-            elif request.op == jcoms.GetSet.Value('DEL_ROWS'):
-                self._on_dataset_del_rows(request, response)
-            elif request.op == jcoms.GetSet.Value('DEL_COLS'):
-                self._on_dataset_del_cols(request, response)
+            elif request.op == jcoms.GetSet.Value('UNDO'):
+                undo_request = self._mod_tracker.begin_undo()
+                response.op = undo_request.op
+                self._clone_cell_selections(undo_request, response)
+                self._on_dataset_set(undo_request, response)
+                self._mod_tracker.end_undo(response)
+            elif request.op == jcoms.GetSet.Value('REDO'):
+                redo_request = self._mod_tracker.get_redo()
+                response.op = redo_request.op
+                self._clone_cell_selections(redo_request, response)
+                self._on_dataset_set(redo_request, response)
             else:
                 raise ValueError()
+
+            response.changesCount = self._mod_tracker.count
+            response.changesPosition = self._mod_tracker.position
 
             self._coms.send(response, self._instance_id, request)
 
@@ -863,10 +894,37 @@ class Instance:
             log.error('_on_store_callback(): shouldnt get here')
 
     def _on_dataset_set(self, request, response):
-        if request.incData or request.incCBData:
-            self._apply_cells(request, response)
-        if request.incSchema:
-            self._apply_schema(request, response)
+        changes = { 'columns': set(), 'transforms': set(), 'deleted_columns': set(), 'deleted_transforms': set(), 'refresh': False }
+
+        self._on_dataset_del_cols(request, response, changes)
+        self._on_dataset_del_rows(request, response, changes)
+        self._on_dataset_ins_cols(request, response, changes)
+        self._on_dataset_ins_rows(request, response, changes)
+        self._on_dataset_mod_cols(request, response, changes)
+        if request.incData:
+            self._apply_cells(request, response, changes)
+
+        response.refresh = changes['refresh']
+        self._populate_schema_info(request, response)
+        # constuct response column schemas
+        if len(changes['columns']) > 0 or len(changes['transforms']) > 0 or len(changes['deleted_columns']) > 0 or len(changes['deleted_transforms']) > 0:
+            changes['columns'] = changes['columns'].difference(changes['deleted_columns'])
+            changes['transforms'] = changes['transforms'].difference(changes['deleted_transforms'])
+            changes['columns'] = sorted(changes['columns'], key=lambda x: x.index)
+            for column in changes['deleted_columns']:
+                column_pb = response.schema.columns.add()
+                column_pb.id = column.id
+                column_pb.action = jcoms.DataSetSchema.ColumnSchema.Action.Value('REMOVE')
+            for transform in changes['deleted_transforms']:
+                transform_pb = response.schema.transforms.add()
+                transform_pb.id = transform.id
+                transform_pb.action = jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE')
+            for column in changes['columns']:
+                column_schema = response.schema.columns.add()
+                self._populate_column_schema(column, column_schema)
+            for transform in changes['transforms']:
+                transform_schema = response.schema.transforms.add()
+                self._populate_transform_schema(transform, transform_schema)
 
     def _on_dataset_get(self, request, response):
         if request.incSchema:
@@ -874,22 +932,55 @@ class Instance:
         if request.incData:
             self._populate_cells(request, response)
 
-    def _on_dataset_ins_rows(self, request, response):
-        self._data.insert_rows(request.rowStart, request.rowEnd)
-        self._populate_schema(request, response)
+    def _on_dataset_ins_rows(self, request, response, changes):
+        request_rows = []
+        for row_data in request.rows:
+            if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
+                request_rows.append(row_data)
 
-    def _on_dataset_ins_cols(self, request, response):
+        insert_offsets = [0] * len(request_rows)
+        for i in range(0, len(request_rows)):
+            row_data = request_rows[i]
+            self._data.insert_rows(row_data.rowStart + insert_offsets[i], row_data.rowCount)
+            for j in range(0, len(request_rows)):
+                if j != i and (request_rows[j].rowStart + insert_offsets[j]) >= (row_data.rowStart + insert_offsets[i]):
+                    insert_offsets[j] += row_data.rowCount
+
+        for i in range(0, len(request_rows)):
+            row_data = request_rows[i]
+            row_data_pb = response.rows.add()
+            row_data_pb.rowStart = row_data.rowStart + insert_offsets[i]
+            row_data_pb.rowCount = row_data.rowCount
+            row_data_pb.action = row_data.action
+            self._mod_tracker.log_row_insertion(row_data_pb)
+
+        if len(request_rows) > 0:
+            # this is done so that the cell changes are sent back
+            for column in self._data:
+                changes['columns'].add(column)
+
+    def _on_dataset_ins_cols(self, request, response, changes):
         filter_inserted = False
         to_calc = set()
-        for i in range(0, len(request.schema.columns)):
-            column_pb = request.schema.columns[i]
-            has_name = column_pb.name != ''
-            self._data.insert_column(column_pb.index)
-            column = self._data[column_pb.index]
 
-            for j in range(0, len(request.schema.columns)):
-                if j != i and request.schema.columns[j].index >= column_pb.index:
-                    request.schema.columns[j].index += 1
+        request_schema_columns = []
+        for column_pb in request.schema.columns:
+            if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('INSERT'):
+                request_schema_columns.append(column_pb)
+
+        insert_offsets = [0] * len(request_schema_columns)
+        for i in range(0, len(request_schema_columns)):
+            column_pb = request_schema_columns[i]
+
+            has_name = column_pb.name != ''
+            self._data.insert_column(column_pb.index + insert_offsets[i], None, None, column_pb.id)
+
+            column = self._data[column_pb.index + insert_offsets[i]]
+            self._mod_tracker.log_column_insertion(column, column_pb)
+
+            for j in range(0, len(request_schema_columns)):
+                if j != i and (request_schema_columns[j].index + insert_offsets[j]) >= (column_pb.index + insert_offsets[i]):
+                    insert_offsets[j] += 1
 
             column.column_type = ColumnType(column_pb.columnType)
 
@@ -905,9 +996,6 @@ class Instance:
             column.trim_levels = column_pb.trimLevels
             column.transform = column_pb.transform
             column.parent_id = column_pb.parentId
-
-            if column.column_type == ColumnType.DATA:
-                self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
             name = column_pb.name
             if has_name is False and column.column_type == ColumnType.RECODED:
@@ -928,7 +1016,6 @@ class Instance:
         if filter_inserted:
             self._data.update_filter_names()
 
-        trans_changed = [ ]
         # see if we can clear errors in other transforms
         # as a result of the new column(s)
         for trans in self._data.transforms:
@@ -936,9 +1023,8 @@ class Instance:
                 trans.parse_formula()
                 if not trans.in_error:  # fixed
                     to_calc.update(trans.dependents)
-                    trans_changed.append(trans)
+                    changes['transforms'].add(trans)
 
-        cols_changed = [ ]
         # see if we can clear errors in other columns
         for column in self._data:
             message = column.formula_message
@@ -946,7 +1032,7 @@ class Instance:
                 column.set_needs_parse()
                 column.parse_formula()
                 if column.formula_message != message:
-                    cols_changed.append(column)
+                    changes['columns'].add(column)
 
         for column in to_calc:
             column.set_needs_parse()
@@ -963,57 +1049,66 @@ class Instance:
             # so i don't think we need to
             pass
 
-        self._populate_schema_info(request, response)
-
         # has to be after the filter names are renamed
-        for col_pb in request.schema.columns:
-            column = self._data[col_pb.index]
-            column_pb = response.schema.columns.add()
-            self._populate_column_schema(column, column_pb)
+        for i in range(0, len(request_schema_columns)):
+            col_pb = request_schema_columns[i]
+            column = self._data[col_pb.index + insert_offsets[i]]
+            changes['columns'].add(column)
 
-        for column in cols_changed:
-            column_pb = response.schema.columns.add()
-            self._populate_column_schema(column, column_pb)
+    def _on_dataset_del_rows(self, request, response, changes):
+        rows_removed = False
+        sorted_data = sorted(request.rows, key=lambda row_data: row_data.rowStart + row_data.rowCount - 1, reverse=True)
 
-        for transform in trans_changed:
-            trans_pb = response.schema.transforms.add()
-            self._populate_transform_schema(transform, trans_pb)
+        for row_data in sorted_data:
+            if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
+                self._mod_tracker.log_row_deletion(row_data)
+                row_start = row_data.rowStart
+                row_end = row_data.rowStart + row_data.rowCount - 1
+                if row_start >= self._data.row_count:
+                    continue
+                elif row_end >= self._data.row_count:
+                    row_end = self._data.row_count - 1
 
-    def _on_dataset_del_rows(self, request, response):
-        sortedIndices = sorted(request.rowIndices)
+                row_data_pb = response.rows.add()
+                row_data_pb.rowStart = row_start
+                row_data_pb.rowCount = row_end - row_start + 1
+                row_data_pb.action = jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE')
 
-        start = -1
-        end = -1
-        for i in range(0, len(sortedIndices)):
-            if start == -1:
-                start = sortedIndices[i]
-                end = start
-            elif sortedIndices[i] == end + 1:
-                end += 1
-            else:
-                self._data.delete_rows(start, end)
-                for j in range(i, len(sortedIndices)):
-                    sortedIndices[j] -= end - start + 1
-                start = sortedIndices[i]
-                end = start
+                self._data.delete_rows(row_start, row_end)
+                rows_removed = True
 
-        if start is not -1:
-            self._data.delete_rows(start, end)
+        if rows_removed:
+            changes['refresh'] = True
+            for column in self._data:  # the column info needs sending back because the cell edit ranges have changed
+                changes['columns'].add(column)
 
-        self._populate_schema(request, response)
+    def _on_dataset_del_cols(self, request, response, changes):
 
-    def _on_dataset_del_cols(self, request, response):
+        request_schema_columns = []
+        for column in request.schema.columns:
+            if column.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('REMOVE'):
+                request_schema_columns.append(column)
+        request_schema_columns = sorted(request_schema_columns, key=lambda x: x.index, reverse=True)
 
-        to_delete = [None] * (len(request.columnIds))
+        to_delete = [None] * (len(request_schema_columns))
+        deleted_column_ids = [None] * (len(request_schema_columns))
         to_reparse = set()
         tf_reparse = set()
 
         filter_deleted = False
 
         for i in range(len(to_delete)):
-            column = self._data.get_column_by_id(request.columnIds[i])
+            column = None
+            if request_schema_columns[i].id == 0:
+                column = self._data[request_schema_columns[i].index]
+            else:
+                column = self._data.get_column_by_id(request_schema_columns[i].id)
+
+            self._mod_tracker.log_column_deletion(column)
+
             column.prep_for_deletion()
             to_delete[i] = column
+            deleted_column_ids[i] = column.id
             if column.column_type is ColumnType.FILTER:
                 filter_deleted = True
 
@@ -1043,7 +1138,7 @@ class Instance:
 
         to_reparse -= set(to_delete)
 
-        self._data.delete_columns_by_id(request.columnIds)
+        self._data.delete_columns_by_id(deleted_column_ids)
 
         for transform in tf_reparse:
             transform.parse_formula()
@@ -1063,17 +1158,18 @@ class Instance:
         for column in to_recalc:
             column.recalc()
 
+        for column in to_delete:
+            changes['deleted_columns'].add(column)
+
         if filter_deleted:
             self._data.refresh_filter_state()
-            self._populate_schema(request, response)
+            changes['refresh'] = True
         else:
-            self._populate_schema_info(request, response)
             for column in sorted(to_reparse, key=lambda x: x.index):
-                column_pb = response.schema.columns.add()
-                self._populate_column_schema(column, column_pb)
-            for transform in tf_reparse:
-                trans_pb = response.schema.transforms.add()
-                self._populate_transform_schema(transform, trans_pb)
+                changes['columns'].add(column)
+
+        for transform in tf_reparse:
+            changes['transforms'].add(transform)
 
     def _calc_column_name(self, column, old_parent_name, old_transform_name):
 
@@ -1163,7 +1259,7 @@ class Instance:
                         next_column_name = self._calc_column_name(check_column, old_name, transform_name)
                         self._apply_column_name(check_column, next_column_name, cols_changed, reparse)
 
-    def _apply_schema(self, request, response):
+    def _on_dataset_mod_cols(self, request, response, changes):
 
         # columns that need to be reparsed, and/or recalced
         reparse = set()
@@ -1223,11 +1319,39 @@ class Instance:
             else:
                 pass  # deletion handled further down
 
-        if len(request.schema.columns) > 0:
+        virtualise_column = None
+        request_schema_columns = []
+
+        for column_pb in request.schema.columns:
+            if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
+                column = None
+                if column_pb.id != 0:
+                    column = self._data.get_column_by_id(column_pb.id)
+                else:
+                    column = self[column_pb.index]
+
+                self._mod_tracker.log_column_modification(column, column_pb)
+                if ColumnType(column_pb.columnType) == ColumnType.NONE:
+                    if virtualise_column is None or column.index < virtualise_column.index:
+                        virtualise_column = column
+                    cols_changed.add(column)
+                else:
+                    request_schema_columns.append(column_pb)
+
+        if virtualise_column is not None:
+            deleted_columns = self._data._virtualise_column(virtualise_column)  # this will virtualise everything to the right of this column
+            changes['deleted_columns'].update(deleted_columns)
+
+        if len(request_schema_columns) > 0:
 
             min_index = self._data.total_column_count
-            for column_schema in request.schema.columns:
-                column = self._data.get_column_by_id(column_schema.id)
+            for column_schema in request_schema_columns:
+                column = None
+                if column_schema.id == 0:
+                    column = self._data[column_schema.index]
+                else:
+                    column = self._data.get_column_by_id(column_schema.id)
+
                 if column.index < min_index:
                     min_index = column.index
 
@@ -1237,11 +1361,15 @@ class Instance:
             for i in range(self._data.column_count, min_index):
                 column = self._data[i]
                 column.realise()
+                self._mod_tracker.log_column_realisation(column)
                 cols_changed.add(column)
-                self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
-            for column_pb in request.schema.columns:
-                column = self._data.get_column_by_id(column_pb.id)
+            for column_pb in request_schema_columns:
+                column = None
+                if column_pb.id == 0:
+                    column = self._data[column_pb.index]
+                else:
+                    column = self._data.get_column_by_id(column_pb.id)
                 old_name = column.name
                 old_type = column.column_type
                 old_d_type = column.data_type
@@ -1266,8 +1394,6 @@ class Instance:
 
                 if column.column_type is ColumnType.NONE:
                     column.column_type = ColumnType(column_pb.columnType)
-                    if column.column_type == ColumnType.DATA:
-                        self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
 
                 if column.column_type is ColumnType.DATA:
                     column.change(
@@ -1353,7 +1479,9 @@ class Instance:
         # handle transform deletions
         for trans_pb in request.schema.transforms:
             if trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE'):
+                self._mod_tracker.log_transform_deletion(self._data.get_transform_by_id(trans_pb.id))
                 removed_transform = self._data.remove_transform(trans_pb.id)
+                changes['deleted_transforms'].add(removed_transform)
                 for column in self._data:
                     if column.transform == trans_pb.id:
                         column.transform = 0
@@ -1412,94 +1540,103 @@ class Instance:
 
         cols_changed.update(recalc)
 
-        self._data.is_edited = True
+        if len(cols_changed) > 0 or len(trans_changed) > 0:
+            self._data.is_edited = True
 
         if filter_changed:
-            # easiest way to refresh the whole viewport is just to send back
-            # the whole data set schema (i.e. all the columns)
             self._data.refresh_filter_state()
-            self._populate_schema(request, response)
-        else:
-            self._populate_schema_info(request, response)
+            changes['refresh'] = True
 
-            # sort ascending (the client doesn't like them out of order)
-            cols_changed = sorted(cols_changed, key=lambda x: x.index)
-
-            for column in cols_changed:
-                column_pb = response.schema.columns.add()
-                self._populate_column_schema(column, column_pb)
-
-            for transform in trans_changed:
-                trans_pb = response.schema.transforms.add()
-                self._populate_transform_schema(transform, trans_pb)
+        for column in cols_changed:
+            changes['columns'].add(column)
+        for transform in trans_changed:
+            changes['transforms'].add(transform)
 
     def _parse_cells(self, request):
 
         if request.incData:
+            block_count = len(request.data)
+            blocks = [None] * block_count
+            bottom_most_row_index = -1
+            right_most_column_index = -1
+            size = 0
 
-            selection = {
-                'row_start': request.rowStart,
-                'col_start': request.columnStart,
-                'row_end': request.rowEnd,
-                'col_end': request.columnEnd,
-            }
+            for i in range(block_count):
+                block_pb = request.data[i]
+                block = { 'row_start': block_pb.rowStart, 'column_start': block_pb.columnStart }
+                blocks[i] = block
+                row_count = 0
+                col_count = 0
+                if block_pb.incCBData:
+                    cells = None
+                    if block_pb.cbHtml != '':
+                        parser = HTMLParser()
+                        parser.feed(block_pb.cbHtml)
+                        parser.close()
+                        cells = parser.result()
+                        size += self._mod_tracker.get_size_of(block_pb.cbHtml)
+                    else:
+                        parser = CSVParser()
+                        parser.feed(block_pb.cbText)
+                        parser.close()
+                        cells = parser.result()
+                        size += self._mod_tracker.get_size_of(block_pb.cbText)
 
-            row_count = request.rowEnd - request.rowStart + 1
-            col_count = request.columnEnd - request.columnStart + 1
+                    block['row_count'] = 0
+                    if (len(cells) > 0):
+                        row_count = len(cells[0])
+                        block['row_count'] += row_count
+                    col_count = len(cells)
+                    block['column_count'] = col_count
+                    block['values'] = cells
+                    block['clear'] = False
+                else:
+                    row_count = block_pb.rowCount
+                    col_count = block_pb.columnCount
+                    cells = [None] * col_count
+                    block['row_count'] = row_count
+                    block['column_count'] = col_count
+                    block['clear'] = block_pb.clear
+                    block['values'] = cells
+                    is_actually_clear = True
+                    for c in range(col_count):
+                        cells[c] = [None] * row_count
+                        if block_pb.clear is False:
+                            for r in range(row_count):
+                                cell_pb = block_pb.values[(c * row_count) + r]
+                                if cell_pb.HasField('o'):
+                                    cells[c][r] = None
+                                elif cell_pb.HasField('d'):
+                                    cells[c][r] = cell_pb.d
+                                    is_actually_clear = False
+                                elif cell_pb.HasField('i'):
+                                    cells[c][r] = cell_pb.i
+                                    is_actually_clear = False
+                                elif cell_pb.HasField('s'):
+                                    cells[c][r] = cell_pb.s
+                                    is_actually_clear = False
+                            size += self._mod_tracker.get_size_of(cells[c][r])
+                    if is_actually_clear != block['clear']:
+                        block['clear'] = is_actually_clear
 
-            cells = [None] * col_count
+                if block_pb.clear is False:
+                    if right_most_column_index < block_pb.columnStart + col_count - 1:
+                        right_most_column_index = block_pb.columnStart + col_count - 1
+                    if bottom_most_row_index < block_pb.rowStart + row_count - 1:
+                        bottom_most_row_index = block_pb.rowStart + row_count - 1
+                else:
+                    size = 0
+                    bottom_most_row_index = -1
+                    right_most_column_index = -1
 
-            for i in range(col_count):
+            self._mod_tracker.log_space_used(size)
 
-                cells[i] = [None] * row_count
-
-                values = request.data[i].values
-
-                for j in range(row_count):
-                    cell_pb = values[j]
-                    if cell_pb.HasField('o'):
-                        cells[i][j] = None
-                    elif cell_pb.HasField('d'):
-                        cells[i][j] = cell_pb.d
-                    elif cell_pb.HasField('i'):
-                        cells[i][j] = cell_pb.i
-                    elif cell_pb.HasField('s'):
-                        cells[i][j] = cell_pb.s
-
-            return cells, selection
-
-        elif request.incCBData:
-
-            if request.cbHtml != '':
-                parser = HTMLParser()
-                parser.feed(request.cbHtml)
-                parser.close()
-                cells = parser.result()
-            else:
-                parser = CSVParser()
-                parser.feed(request.cbText)
-                parser.close()
-                cells = parser.result()
-
-            col_end = request.columnStart + len(cells) - 1
-            row_end = request.rowStart - 1
-            if (len(cells) > 0):
-                row_end += len(cells[0])
-
-            selection = {
-                'row_start': request.rowStart,
-                'col_start': request.columnStart,
-                'row_end': row_end,
-                'col_end': col_end,
-            }
-
-            return cells, selection
-
+            return blocks, bottom_most_row_index, right_most_column_index
         else:
-            return [ ], { }
+            return [ ], -1, -1
 
     def _get_column(self, index, base=0, is_display_index=False):
-        column = None
+        data = { 'column': None, index: -1 }
         if is_display_index is True:
             count = 0
             i = 0
@@ -1509,6 +1646,8 @@ class Instance:
                     break
                 column = self._data[next_index]
                 if column.hidden is False:
+                    data['column'] = column
+                    data['index'] = count
                     if count == index:
                         break
                     count += 1
@@ -1517,116 +1656,126 @@ class Instance:
         else:
             next_index = base + index
             if next_index < self._data.total_column_count:
-                column = self._data[next_index]
+                data['column'] = self._data[next_index]
+                data['index'] = next_index
 
-        return column
+        return data
 
-    def _apply_cells(self, request, response):
+    def _apply_cells(self, request, response, changes):
 
-        cells, selection = self._parse_cells(request)
+        data, bottom_most_row_index, right_most_column_index = self._parse_cells(request)
 
-        exclude_hidden_cols = request.excHiddenCols
-
-        row_start = selection['row_start']
-        col_start = selection['col_start']
-        col_start_index = col_start
-        if exclude_hidden_cols:
-            col_start_index = self._data.index_from_visible_index(col_start)
-
-        row_end   = selection['row_end']
-        col_end   = selection['col_end']
-        row_count = row_end - row_start + 1
-        col_count = col_end - col_start + 1
-
-        response.rowStart    = row_start
-        response.columnStart = col_start
-        response.rowEnd      = row_end
-        response.columnEnd   = col_end
-
-        if row_count == 0 or col_count == 0:
+        if len(data) == 0:
             return
 
-        # check that the assignments are possible
-        base_index = 0
-        search_index = col_start
-        data_col_count = 0
-        for i in range(col_count):
+        data_list = []
 
-            column = self._get_column(search_index, base_index, exclude_hidden_cols)
-
-            if column is None:
-                break
-
-            base_index = column.index + 1
-            search_index = 0
-
-            if column.column_type == ColumnType.DATA or column.column_type == ColumnType.NONE:
-                data_col_count += 1
-
-            if col_count == 1:
-                if column.column_type == ColumnType.COMPUTED:
-                    raise TypeError("Cannot assign to computed column '{}'".format(column.name))
-                elif column.column_type == ColumnType.RECODED:
-                    raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
-                elif column.column_type == ColumnType.FILTER:
-                    raise TypeError("Cannot assign to filter column '{}'".format(column.name))
-
-            if column.auto_measure:
-                continue  # skip checks
-
-            values = cells[i]
-
-            if column.data_type == DataType.DECIMAL:
-                for value in values:
-                    if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
-                        raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
-
-            elif column.data_type == DataType.INTEGER:
-                for value in values:
-                    if value is not None and value != '' and not isinstance(value, int):
-                        raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
-
-        if col_count > 0 and data_col_count == 0:
-            raise TypeError("Cannot assign to these columns.")
-        # assign
-
-        n_cols_before = self._data.total_column_count
-        n_rows_before = self._data.row_count
-
-        if row_end >= self._data.row_count:
-            self._data.set_row_count(row_end + 1)
+        del response.data[:]
+        response.incData = True
+        for block in data:
+            n_block = response.data.add()
+            n_block.rowStart = block['row_start']
+            n_block.columnStart = block['column_start']
+            n_block.rowCount = block['row_count']
+            n_block.columnCount = block['column_count']
+            n_block.clear = block['clear']
+            self._mod_tracker.log_data_write(n_block)
 
         cols_changed = set()  # schema changes to send
         reparse = set()
         recalc = set()  # computed columns that need to update from these changes
 
-        for i in range(self._data.column_count, col_start_index + col_count):
-            column = self._data[i]
-            column.realise()
-            cols_changed.add(column)
-            self._data.set_cells_as_edited(column, 0, self._data.row_count - 1)
+        n_cols_before = self._data.total_column_count
+        n_rows_before = self._data.row_count
 
-        base_index = 0
-        search_index = col_start
+        if bottom_most_row_index >= self._data.row_count:
+            self._mod_tracker.log_rows_appended(self._data.row_count, bottom_most_row_index)
+            self._data.set_row_count(bottom_most_row_index + 1)
+
+        if right_most_column_index != -1:
+            right_most_column_data = self._get_column(right_most_column_index, 0, True)
+            right_most_index = right_most_column_data['column'].index + (right_most_column_index - right_most_column_data['index'])  # right_most_column_index is a display index and _get_column will return the last column that
+            for i in range(self._data.column_count, right_most_index + 1):
+                column = self._data[i]
+                if column.is_virtual:
+                    column.realise()
+                    cols_changed.add(column)
+                    self._mod_tracker.log_column_realisation(column)
+
+        for block in data:
+            col_start = block['column_start']
+            row_start = block['row_start']
+            row_count = block['row_count']
+            col_count = block['column_count']
+
+            if row_count == 0 or col_count == 0:
+                continue
+
+            if row_start >= self._data.row_count:
+                continue
+
+            if row_start + row_count - 1 >= self._data.row_count:
+                row_count = self._data.row_count - row_start
+
+            base_index = 0
+            search_index = col_start
+            data_col_count = 0
+            for i in range(col_count):
+
+                column_data = self._get_column(search_index, base_index, True)
+                column = column_data['column']
+
+                if column is None:
+                    break
+
+                base_index = column.index + 1
+                search_index = 0
+
+                if column.is_virtual is False and column.column_type not in { ColumnType.COMPUTED, ColumnType.RECODED, ColumnType.FILTER }:
+                    data_list.append({ 'column': column, 'row_start': row_start, 'row_count': row_count, 'values': block['values'][i] })
+
+                if column.column_type == ColumnType.DATA or column.column_type == ColumnType.NONE:
+                    data_col_count += 1
+
+                if col_count == 1:
+                    if column.column_type == ColumnType.COMPUTED:
+                        raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+                    elif column.column_type == ColumnType.RECODED:
+                        raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
+                    elif column.column_type == ColumnType.FILTER:
+                        raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+
+                if column.auto_measure:
+                    continue  # skip checks
+
+                values = block['values'][i]
+
+                if column.data_type == DataType.DECIMAL:
+                    for value in values:
+                        if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
+                            raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
+
+                elif column.data_type == DataType.INTEGER:
+                    for value in values:
+                        if value is not None and value != '' and not isinstance(value, int):
+                            raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
+
+            if col_count > 0 and data_col_count == 0:
+                raise TypeError("Cannot assign to these columns.")
+
         filter_changed = False
 
-        for i in range(col_count):
-            column = self._get_column(search_index, base_index, exclude_hidden_cols)
-            if column is None:
-                break
-            base_index = column.index + 1
-            search_index = 0
-
-            if column.column_type in { ColumnType.COMPUTED, ColumnType.RECODED, ColumnType.FILTER }:
-                continue
+        for data_item in data_list:
+            column = data_item['column']
+            row_start = data_item['row_start']
+            row_count = data_item['row_count']
+            values = data_item['values']
 
             column.column_type = ColumnType.DATA
             column.set_needs_recalc()  # invalidate dependent nodes
 
-            values = cells[i]
-
             was_virtual = column.is_virtual
-            changes = column.changes
+            column_changes = column.changes
 
             if column.auto_measure:  # change data type if necessary
 
@@ -1717,7 +1866,7 @@ class Instance:
                     else:
                         raise RuntimeError('Should not get here')
 
-            self._data.set_cells_as_edited(column, row_start, row_start + row_count - 1)
+            self._mod_tracker.set_cells_as_edited(column, row_start, row_start + row_count - 1)
             cols_changed.add(column)
 
             if column.auto_measure:
@@ -1725,7 +1874,7 @@ class Instance:
             elif column.data_type == DataType.DECIMAL:
                 column.determine_dps()
 
-            if changes != column.changes or was_virtual:
+            if column_changes != column.changes or was_virtual:
                 # if a schema change
                 cols_changed.add(column)
                 # reparse dependents, as it may impact their data/measure type
@@ -1763,13 +1912,10 @@ class Instance:
 
         if filter_changed:
             self._data.refresh_filter_state()
-            self._populate_schema(request, response)
-        else:
-            self._populate_schema_info(request, response)
+            changes['refresh'] = True
 
-            for column in cols_changed:
-                column_pb = response.schema.columns.add()
-                self._populate_column_schema(column, column_pb)
+        for column in cols_changed:
+            changes['columns'].add(column)
 
         self._populate_cells(request, response)
 
@@ -1810,66 +1956,65 @@ class Instance:
             column.determine_dps()
 
     def _populate_cells(self, request, response):
+        for block_pb in response.data:
+            col_start = block_pb.columnStart
+            row_start = block_pb.rowStart
+            row_count = block_pb.rowCount
+            col_count = block_pb.columnCount
 
-        row_start = response.rowStart
-        col_start = response.columnStart
-        row_end   = response.rowEnd
-        col_end   = response.columnEnd
-        row_count = row_end - row_start + 1
-        col_count = col_end - col_start + 1
+            filtered = map(lambda row_no: self._data.is_row_filtered(row_no), range(row_start, row_start + row_count))
+            filtered = map(lambda filtered: 1 if filtered else 0, filtered)
+            row_data = response.rows.add()
+            row_data.rowStart = row_start
+            row_data.rowCount = row_count
+            row_data.action = jcoms.DataSetRR.RowData.RowDataAction.Value('MODIFY')
+            row_data.filterData = bytes(filtered)
 
-        filtered = map(lambda row_no: self._data.is_row_filtered(row_no), range(row_start, row_end + 1))
-        filtered = map(lambda filtered: 1 if filtered else 0, filtered)
-        response.filtered = bytes(filtered)
+            base_index = 0
+            search_index = col_start
+            for cc in range(col_count):
+                column_data = self._get_column(search_index, base_index, True)
+                column = column_data['column']
 
-        exclude_hidden_cols = request.excHiddenCols
-        base_index = 0
-        search_index = col_start
-        for cc in range(col_count):
+                if column is None:
+                    break
 
-            column = self._get_column(search_index, base_index, exclude_hidden_cols)
+                base_index = column.index + 1
+                search_index = 0
 
-            if column is None:
-                break
-
-            base_index = column.index + 1
-            search_index = 0
-
-            col_res = response.data.add()
-
-            if column.data_type == DataType.DECIMAL:
-                for r in range(row_start, row_start + row_count):
-                    cell = col_res.values.add()
-                    if r >= column.row_count:
-                        cell.o = jcoms.SpecialValues.Value('MISSING')
-                    else:
-                        value = column[r]
-                        if math.isnan(value):
+                if column.data_type == DataType.DECIMAL:
+                    for r in range(row_start, row_start + row_count):
+                        cell = block_pb.values.add()
+                        if r >= column.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            cell.d = value
-            elif column.data_type == DataType.TEXT:
-                for r in range(row_start, row_start + row_count):
-                    cell = col_res.values.add()
-                    if r >= column.row_count:
-                        cell.o = jcoms.SpecialValues.Value('MISSING')
-                    else:
-                        value = column[r]
-                        if value == '':
+                            value = column[r]
+                            if math.isnan(value):
+                                cell.o = jcoms.SpecialValues.Value('MISSING')
+                            else:
+                                cell.d = value
+                elif column.data_type == DataType.TEXT:
+                    for r in range(row_start, row_start + row_count):
+                        cell = block_pb.values.add()
+                        if r >= column.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            cell.s = value
-            else:
-                for r in range(row_start, row_start + row_count):
-                    cell = col_res.values.add()
-                    if r >= column.row_count:
-                        cell.o = jcoms.SpecialValues.Value('MISSING')
-                    else:
-                        value = column[r]
-                        if value == -2147483648:
+                            value = column[r]
+                            if value == '':
+                                cell.o = jcoms.SpecialValues.Value('MISSING')
+                            else:
+                                cell.s = value
+                else:
+                    for r in range(row_start, row_start + row_count):
+                        cell = block_pb.values.add()
+                        if r >= column.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            cell.i = value
+                            value = column[r]
+                            if value == -2147483648:
+                                cell.o = jcoms.SpecialValues.Value('MISSING')
+                            else:
+                                cell.i = value
 
     def _populate_schema(self, request, response):
         self._populate_schema_info(request, response)
@@ -1887,6 +2032,16 @@ class Instance:
         response.schema.columnCount = self._data.column_count
         response.schema.vColumnCount = self._data.visible_column_count
         response.schema.tColumnCount = self._data.total_column_count
+        response.schema.deletedRowCount = self._data.row_tracker.total_removed_row_count
+        response.schema.addedRowCount = self._data.row_tracker.total_added_row_count
+        response.schema.editedCellCount = self._data.total_edited_cell_count
+        response.schema.rowCountExFiltered = self._data.row_count_ex_filtered
+
+        if self._data.row_tracker.is_edited:
+            for range in self._data.row_tracker.removed_row_ranges:
+                row_range_pb = response.schema.removedRowRanges.add()
+                row_range_pb.index = range['index']
+                row_range_pb.count = range['count']
 
     def _populate_transform_schema(self, transform, transform_schema):
         transform_schema.name = transform.name
