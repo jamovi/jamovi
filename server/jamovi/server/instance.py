@@ -750,6 +750,8 @@ class Instance:
             response.edited = self._data.is_edited
             response.blank = self._data.is_blank
             response.importPath = Instance._virtualise_path(self._data.import_path)
+            response.changesCount = self._mod_tracker.count
+            response.changesPosition = self._mod_tracker.position
 
             response.schema.rowCount = self._data.row_count
             response.schema.vRowCount = self._data.virtual_row_count

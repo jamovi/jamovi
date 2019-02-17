@@ -140,8 +140,8 @@ const DataSetModel = Backbone.Model.extend({
             }
             this.attributes.transforms  = transforms;
 
-            this.set('changesCount', 0);
-            this.set('changesPosition', -1);
+            this.set('changesCount', infoPB.changesCount);
+            this.set('changesPosition', infoPB.changesPosition);
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
         }
