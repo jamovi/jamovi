@@ -1896,7 +1896,9 @@ class Instance:
             column = self._data[i]
             cols_changed.add(column)
 
-        if n_rows_before != self._data.row_count:
+        n_rows_changed = (n_rows_before != self._data.row_count)
+
+        if n_rows_changed:
             recalc = self._data  # if more rows recalc all
             cols_changed = self._data  # send *all* column schemas
         else:
@@ -1912,7 +1914,7 @@ class Instance:
         for column in recalc:
             column.recalc()
 
-        if filter_changed:
+        if filter_changed or n_rows_changed:
             self._data.refresh_filter_state()
             changes['refresh'] = True
 
