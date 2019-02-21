@@ -25,6 +25,7 @@ class InstanceModel:
         self._embedded_path = ''
         self._embedded_name = ''
         self._reuseable_virtual_ids = collections.deque([])
+        self._filters_visible = True
 
         self._columns = [ ]
         self._transforms = [ ]
@@ -33,6 +34,14 @@ class InstanceModel:
 
         self._log = NullLog()
         self._row_tracker = RowTracker()
+
+    @property
+    def filters_visible(self):
+        return self._filters_visible
+
+    @filters_visible.setter
+    def filters_visible(self, visible):
+        self._filters_visible = visible
 
     @property
     def row_tracker(self):

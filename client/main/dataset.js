@@ -15,11 +15,7 @@ const DataSetModel = Backbone.Model.extend({
     initialize() {
     },
     filtersHidden() {
-        let firstColumn = this.getColumn(0, true);
-        if (firstColumn)
-            return firstColumn.columnType === 'filter' && firstColumn.hidden;
-
-        return false;
+        return this.get('filtersVisible') === false;
     },
     filterCount() {
         let c = 0;
@@ -117,6 +113,7 @@ const DataSetModel = Backbone.Model.extend({
             this.attributes.addedRowCount = infoPB.schema.addedRowCount;
             this.attributes.editedCellCount = infoPB.schema.editedCellCount;
             this.attributes.rowCountExFiltered = infoPB.schema.rowCountExFiltered;
+            this.attributes.filtersVisible = infoPB.schema.filtersVisible;
 
             let removedRowRanges = new Array(infoPB.schema.removedRowRanges.length);
             for (let i = 0; i < removedRowRanges.length; i++) {
@@ -124,12 +121,6 @@ const DataSetModel = Backbone.Model.extend({
                 removedRowRanges[i] = { index: rangePB.index, count: rangePB.count };
             }
             this.attributes.removedRowRanges = removedRowRanges;
-
-            if (columns.length > 0) {
-                let firstColumn = columns[0];
-                if (firstColumn.columnType === 'filter')
-                    this.attributes.filtersVisible = firstColumn.hidden === false;
-            }
 
             let transforms = Array(schemaPB.transforms.length);
             for (let i = 0; i < schemaPB.transforms.length; i++) {
@@ -240,6 +231,7 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.schema = new coms.Messages.DataSetSchema();
         datasetPB.incSchema = true;
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         for (let properties of columns) {
 
@@ -329,17 +321,24 @@ const DataSetModel = Backbone.Model.extend({
     },
     toggleFilterVisibility() {
 
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.incSchema = true;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
         let setTo = ! this.get('filtersVisible');
-        this.set('filtersVisible', setTo);
-        let i = 0;
-        let column = this.getColumn(i);
-        let pairs = [];
-        while (column.columnType === 'filter' && i < this.attributes.columns.length) {
-            pairs.push( { id: column.id, values: { hidden: ! setTo } } );
-            i += 1;
-            column = this.getColumn(i);
-        }
-        return this.changeColumns(pairs);
+        datasetPB.schema.filtersVisible = setTo;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            this._processDatasetRR(datasetPB);
+        });
     },
     deleteColumn(id) {
         return this.deleteColumns([id]);
@@ -352,6 +351,7 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.incSchema = true;
         datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         for (let id of ids) {
             let columnPB = new coms.Messages.DataSetSchema.ColumnSchema();
@@ -413,6 +413,7 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.incSchema = true;
         datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         for (let pair of pairs) {
             let id = pair.id;
@@ -632,6 +633,8 @@ const DataSetModel = Backbone.Model.extend({
         let columns = this.attributes.columns;
 
         if (datasetPB.incSchema) {
+            this.set('filtersVisible', datasetPB.schema.filtersVisible);
+
             changed = Array(datasetPB.schema.columns.length);
             changes = Array(datasetPB.schema.columns.length);
             // sort so that column removals happen first and the events after
@@ -916,7 +919,7 @@ const DataSetModel = Backbone.Model.extend({
             outputData.data = { changed, changes };
         }
 
-        if (transformEvent !== null) {
+        if (transformEvent !== null && transformEvent.changes.length > 0) {
             for (let change of transformEvent.changes) {
                 if (change.deleted)
                     this.trigger('transformRemoved', { id: change.id });
@@ -1062,6 +1065,7 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.noUndo = true;
         datasetPB.incSchema = true;
         datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         let countAdded = 0;
 
@@ -1148,6 +1152,7 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.op = coms.Messages.GetSet.SET;
         datasetPB.incSchema = true;
         datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         for (let id of ids) {
 
