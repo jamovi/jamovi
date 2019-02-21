@@ -489,6 +489,7 @@ message DataSetSchema {
     uint32 addedRowCount = 13;
     uint32 editedCellCount = 14;
     uint32 rowCountExFiltered = 15;
+    bool filtersVisible = 16;
 
     repeated TransformSchema transforms = 10;
     repeated RowRange removedRowRanges = 11;

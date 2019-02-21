@@ -762,6 +762,7 @@ class Instance:
             response.schema.addedRowCount = self._data.row_tracker.total_added_row_count
             response.schema.editedCellCount = self._data.total_edited_cell_count
             response.schema.rowCountExFiltered = self._data.row_count_ex_filtered
+            response.schema.filtersVisible = self._data.filters_visible
 
             for column in self._data:
                 column_schema = response.schema.columns.add()
@@ -1323,6 +1324,14 @@ class Instance:
 
         virtualise_column = None
         request_schema_columns = []
+
+        if request.schema.filtersVisible != self._data.filters_visible:
+            self._data.filters_visible = request.schema.filtersVisible
+            for column in self._data:
+                if column.is_filter is False:
+                    break
+                column.hidden = self._data.filters_visible is False
+                cols_changed.add(column)
 
         for column_pb in request.schema.columns:
             if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -2040,6 +2049,7 @@ class Instance:
         response.schema.addedRowCount = self._data.row_tracker.total_added_row_count
         response.schema.editedCellCount = self._data.total_edited_cell_count
         response.schema.rowCountExFiltered = self._data.row_count_ex_filtered
+        response.schema.filtersVisible = self._data.filters_visible
 
         if self._data.row_tracker.is_edited:
             for range in self._data.row_tracker.removed_row_ranges:
