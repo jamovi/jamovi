@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" version="1.1" viewBox="0 0 31.999999 31.999998" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <filter id="filter1191" color-interpolation-filters="sRGB">
+   <feColorMatrix values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "/>
+  </filter>
+  <filter id="filter1195" color-interpolation-filters="sRGB">
+   <feColorMatrix values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "/>
+  </filter>
+  <filter id="filter1199" color-interpolation-filters="sRGB">
+   <feColorMatrix values="0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0.21 0.72 0.072 0 0 0 0 0 1 0 "/>
+  </filter>
+ </defs>
+ <g transform="translate(0 -1020.4)" filter="url(#filter1191)">
+  <g transform="matrix(.077244 0 0 .077244 -8.718 998.54)" fill="#fff" stroke="#325787" stroke-width="12.946">
+   <path d="m174.26 306.62v368.62h291.48v-264.54l-104.08-104.08h-187.4z" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="m357.14 306.65v102.86h105.71" fill-rule="evenodd"/>
+  </g>
+  <g fill="#6e96ca" stroke="#6e96ca" stroke-linecap="round" stroke-width=".91246">
+   <g transform="translate(.17857 -1.7857)">
+    <rect x="8.8692" y="1035.8" width="3.2297" height="1.5381"/>
+    <rect x="14.385" y="1035.8" width="3.2297" height="1.5381"/>
+    <rect x="19.901" y="1035.8" width="3.2297" height="1.5381"/>
+   </g>
+   <g transform="translate(.17857 -1.8875)">
+    <rect x="8.8692" y="1039.6" width="3.2297" height="1.5381"/>
+    <rect x="14.385" y="1039.6" width="3.2297" height="1.5381"/>
+    <rect x="19.901" y="1039.6" width="3.2297" height="1.5381"/>
+   </g>
+   <g transform="translate(.17857 -1.6323)">
+    <rect x="8.8692" y="1043.2" width="3.2297" height="1.5381"/>
+    <rect x="14.385" y="1043.2" width="3.2297" height="1.5381"/>
+    <rect x="19.901" y="1043.2" width="3.2297" height="1.5381"/>
+   </g>
+   <g transform="translate(.17857 2.1429)">
+    <rect x="8.8692" y="1043.2" width="3.2297" height="1.5381"/>
+    <rect x="14.385" y="1043.2" width="3.2297" height="1.5381"/>
+    <rect x="19.901" y="1043.2" width="3.2297" height="1.5381"/>
+   </g>
+  </g>
+ </g>
+ <rect x="7.1864" y="10.847" width="17.763" height="16.814" fill="#fff" filter="url(#filter1195)" stroke-width="0"/>
+ <path d="m9.114 19.616v-7.1336h1.8807 1.8807v4.9374 4.9374l0.29184-0.0905c1.1508-0.35692 2.9063-1.5641 4.0135-2.76 1.6715-1.8054 2.5374-3.724 2.8924-6.4082l0.08147-0.61609h1.8604 1.8604l-0.057 0.55123c-0.33072 3.1978-1.0905 5.2878-2.7879 7.6686-1.6541 2.3201-4.0665 4.1339-6.9336 5.2131-1.0937 0.41169-3.2177 0.83437-4.1926 0.83437h-0.79027z" fill="#3e6da9" filter="url(#filter1199)" stroke="#f0f4fa" stroke-width=".19195"/>
+</svg>

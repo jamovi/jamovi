@@ -16,7 +16,7 @@ from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
 
 
-def write(data, path, prog_cb, html=None):
+def write(data, path, prog_cb, html=None, is_template=False):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
 
@@ -84,10 +84,15 @@ def write(data, path, prog_cb, html=None):
 
             fields.append(field)
 
+        if is_template:
+            row_count = 0
+        else:
+            row_count = data.row_count
+
         metadata = { }
 
         metadataset = { }
-        metadataset['rowCount'] = data.row_count
+        metadataset['rowCount'] = row_count
         metadataset['columnCount'] = data.column_count
         metadataset['removedRows'] = data.row_tracker.removed_row_ranges
         metadataset['addedRows'] = data.row_tracker.added_row_ranges
@@ -112,11 +117,14 @@ def write(data, path, prog_cb, html=None):
             if column.is_virtual is True:
                 continue
             if column.has_levels:
-                xdata[column.name] = { 'labels': column.levels }
+                if is_template and column.trim_levels:
+                    levels = [ ]
+                else:
+                    levels = column.levels
+                xdata[column.name] = { 'labels': levels }
         zip.writestr('xdata.json', json.dumps(xdata), zipfile.ZIP_DEFLATED)
         xdata = None
 
-        row_count = data.row_count
         required_bytes = 0
         for column in data:
             if column.is_virtual is True:
@@ -182,7 +190,7 @@ def write(data, path, prog_cb, html=None):
             if analysis.has_results is False:
                 continue
             analysis_dir = '{:02} {}/analysis'.format(analysis.id, analysis.name)
-            zip.writestr(analysis_dir, analysis.serialize(), zipfile.ZIP_DEFLATED)
+            zip.writestr(analysis_dir, analysis.serialize(strip_content=is_template), zipfile.ZIP_DEFLATED)
             resources += analysis.resources
 
         for rel_path in resources:

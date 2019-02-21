@@ -356,7 +356,14 @@
 }
 
 .silky-bs-flist-item-omv-icon {
-    background-image: url('assets/jamovi-document.svg');
+    background-image: url('assets/document-native.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% ;
+}
+
+.silky-bs-flist-item-omt-icon {
+    background-image: url('assets/document-template.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
