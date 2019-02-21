@@ -106,10 +106,34 @@ class Analysis:
         self.clear_state = True
         self.parent._notify_options_changed(self)
 
-    def serialize(self):
+    def serialize(self, strip_content=False):
         self.options.compress()
         self.results.options.CopyFrom(self.options.as_pb())
-        return self.results.SerializeToString()
+        clone = deepcopy(self.results)
+        self._change_status_to_complete(clone.results, strip_content)
+        return clone.SerializeToString()
+
+    def _change_status_to_complete(self, pb, strip_content):
+        if (pb.status != Analysis.Status.COMPLETE.value
+                and pb.status != Analysis.Status.ERROR.value):
+            pb.status = Analysis.Status.COMPLETE.value
+        if pb.HasField('group'):
+            for elem_pb in pb.group.elements:
+                self._change_status_to_complete(elem_pb, strip_content)
+        elif pb.HasField('array'):
+            for elem_pb in pb.array.elements:
+                self._change_status_to_complete(elem_pb, strip_content)
+        elif strip_content:
+            pb.stale = True
+            if pb.HasField('table'):
+                for column_pb in pb.table.columns:
+                    for cell_pb in column_pb.cells:
+                        cell_pb.o = 0
+                        del cell_pb.footnotes[:]
+                        del cell_pb.symbols[:]
+                del pb.table.notes[:]
+            elif pb.HasField('image'):
+                pb.image.path = ''
 
     def save(self, path, part):
         op = Analysis.Op(Analysis.Op.SAVE, self)

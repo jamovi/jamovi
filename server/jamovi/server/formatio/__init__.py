@@ -77,6 +77,8 @@ def read(data, path, prog_cb, is_example=False):
         omv.read(data, path, prog_cb)
         if not is_example:
             data.path = path
+    elif ext == '.omt':
+        omv.read(data, path, prog_cb)
     else:
         _import(data, path, prog_cb, is_example)
 
@@ -116,8 +118,8 @@ def write(data, path, prog_cb, content=None):
     try:
         temp_path = path + '.tmp'
         ext = os.path.splitext(path)[1].lower()[1:]
-        if ext == 'omv':
-            omv.write(data, temp_path, prog_cb, content)
+        if ext == 'omv' or ext == 'omt':
+            omv.write(data, temp_path, prog_cb, content, is_template=(ext == 'omt'))
         elif ext in writers:
             writers[ext][1](data, temp_path, prog_cb)
         else:
@@ -134,7 +136,9 @@ def write(data, path, prog_cb, content=None):
 def is_supported(path):
     readers = get_readers()
     ext = os.path.splitext(path)[1].lower()[1:]
-    return ext == 'omv' or ext in readers or ext in ('pdf', 'html', 'htm')
+    return (ext in ('omv', 'omt')
+            or ext in readers
+            or ext in ('pdf', 'html', 'htm'))
 
 
 def fix_column_names(dataset):

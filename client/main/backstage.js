@@ -101,6 +101,8 @@ const FSEntryListView = SilkyView.extend({
             html += '<div class="silky-bs-fslist-entry" data-path="' + path + '">';
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
+            else if (name.endsWith('.omt'))
+                html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omt-icon"></div>';
             else
                 html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
@@ -367,27 +369,28 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     _render : function() {
 
-        var items = this.model.get('items');
-        var dirInfo = this.model.get('dirInfo');
+        let items = this.model.get('items');
+        let dirInfo = this.model.get('dirInfo');
 
-        var path = null;
+        let path = null;
         if (dirInfo !== undefined)
             path = pathtools.normalise(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
         this.$header.find('.silky-bs-fslist-browser-location').text(path);
 
-        var html = '';
+        let html = '';
         this._orderItems('type', 1, items);
         this.$items = [];
         this.$itemsList.empty();
 
-        for (var i = 0; i < items.length; i++) {
+        for (let i = 0; i < items.length; i++) {
             html = '';
-            var item = items[i];
+            let item = items[i];
 
-            var name = item.name;
-            var itemPath = item.path;
-            var itemType = item.type;
+            let name = item.name;
+            let lname = name.toLowerCase();
+            let itemPath = item.path;
+            let itemType = item.type;
 
             if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
                 continue;
@@ -399,14 +402,16 @@ var FSEntryBrowserView = SilkyView.extend({
             if (itemType === FSItemType.File) { //file
                 if (item.isExample) // examples don't have extensions
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
-                else if (name.endsWith('.csv'))
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
-                else if (name.endsWith('.omv'))
+                else if (lname.endsWith('.omv'))
                     html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
-                else if (name.endsWith('.pdf'))
+                else if (lname.endsWith('.omt'))
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omt-icon"></div>';
+                else if (lname.endsWith('.pdf'))
                     html += '       <span class="mif-file-pdf"></span>';
-                else
+                else if (lname.endsWith('.htm') || name.endsWith('.html'))
                     html += '       <span class="mif-file-empty"></span>';
+                else
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
             }
             else if (itemType === FSItemType.Folder) //folder
                 html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
@@ -821,10 +826,11 @@ var BackstageModel = Backbone.Model.extend({
 
         let openExts = [
             { description: 'Data files', extensions: [
-                'omv', 'csv', 'txt', 'sav', 'zsav', 'por',
+                'omv', 'omt', 'csv', 'txt', 'sav', 'zsav', 'por',
                 'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
             ]},
             { description: 'jamovi files (.omv)', extensions: ['omv'] },
+            { description: 'jamovi templates (.omt)', extensions: ['omt'] },
             { description: 'CSV (Comma delimited) (.csv, .txt)', extensions: ['csv', 'txt'] },
             { description: 'SPSS files (.sav, .zsav, .por)', extensions: ['sav', 'zsav', 'por'] },
             { description: 'R data files (.RData, .RDS)', extensions: ['rdata', 'rds'] },
@@ -957,7 +963,7 @@ var BackstageModel = Backbone.Model.extend({
                             { extensions: ['sav'], description: 'SPSS sav (.sav)' },
                             // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
                             { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
-                            // { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },  // crashes on open
+                            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },  // crashes on open
                             { extensions: ['dta'], description: 'Stata (.dta)' }, ];
                         },
                         model: this._pcExportListModel,
@@ -968,7 +974,11 @@ var BackstageModel = Backbone.Model.extend({
                         name: 'resultsExport',
                         title: 'Results',
                         action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extensions: ['pdf'], description: "Portable Document Format (.pdf)" }, { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" } ];
+                            this._pcExportListModel.fileExtensions = [
+                                { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
+                                { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
+                                { extensions: ['omt'], description: 'jamovi template (.omt)' },
+                            ];
                         },
                         model: this._pcExportListModel,
                         view: FSEntryBrowserView
