@@ -230,7 +230,7 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
 
                 if (level->count == 0 && trimLevels())
                     removeLevel(oldValue);
-                else if ( ! this->_parent->isRowFiltered(rowIndex))
+                else if (columnType() != ColumnType::FILTER && ! this->_parent->isRowFiltered(rowIndex))
                     level->countExFiltered--;
             }
         }
@@ -249,7 +249,7 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
             }
             assert(level != NULL);
             level->count++;
-            if ( ! this->_parent->isRowFiltered(rowIndex))
+            if (columnType() != ColumnType::FILTER && ! this->_parent->isRowFiltered(rowIndex))
                 level->countExFiltered++;
         }
     }
