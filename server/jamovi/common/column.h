@@ -102,6 +102,7 @@ public:
     const char *name() const;
     const char *importName() const;
     int rowCount() const;
+    int rowCountExFiltered() const;
     int dps() const;
     bool active() const;
 
@@ -124,11 +125,13 @@ public:
     bool trimLevels() const;
     bool hasUnusedLevels() const;
 
-    const char *raws(int rowIndex);
+    const char *raws(int rowIndex, bool exFiltered = false);
 
-    template<typename T> T raw(int rowIndex)
+    template<typename T> T raw(int index, bool exFiltered = false)
     {
-        return cellAt<T>(rowIndex);
+        if (exFiltered)
+            index = getIndexExFiltered(index);
+        return cellAt<T>(index);
     }
 
 protected:
@@ -139,6 +142,7 @@ protected:
     ColumnStruct *_rel;
 
     Level *rawLevel(int value) const;
+    int getIndexExFiltered(int index);
 
     template<typename T> T& cellAt(int rowIndex)
     {

@@ -67,6 +67,12 @@ class Column:
         else:
             return (-2147483648, '')
 
+    def get_value(self, index, ex_filtered=False):
+        if self._child is not None:
+            return self._child.get_value(index, ex_filtered)
+        else:
+            return -2147483648
+
     @property
     def cell_tracker(self):
         return self._cell_tracker

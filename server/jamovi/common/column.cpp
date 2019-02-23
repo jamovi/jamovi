@@ -57,6 +57,10 @@ int Column::rowCount() const {
     return struc()->rowCount;
 }
 
+int Column::rowCountExFiltered() const {
+    return _parent->rowCountExFiltered();
+}
+
 int Column::dps() const
 {
     return struc()->dps;
@@ -106,8 +110,11 @@ int Column::levelCountExFiltered() const
     return count;
 }
 
-const char* Column::raws(int index)
+const char* Column::raws(int index, bool exFiltered)
 {
+    if (exFiltered)
+        index = getIndexExFiltered(index);
+
     const char *value = cellAt<char*>(index);
     if (value == NULL)
         return "";
@@ -294,4 +301,9 @@ Level *Column::rawLevel(int value) const
     }
 
     return NULL;
+}
+
+int Column::getIndexExFiltered(int index)
+{
+    return _parent->getIndexExFiltered(index);
 }

@@ -482,7 +482,7 @@ input.jmv-table-cell-selected.copying {
 .jmv-row-header-cell {
     background-color: #E6E6E6 ;
     text-align: center ;
-    border-width: 0 1px 1px 0 ;
+    border-width: 1px 1px 0 0 ;
     border-style: solid ;
     border-color: #ACACAC ;
     border-image: linear-gradient(to left, #ACACAC, rgba(0,0,0,0)) 1 100% ;
@@ -491,7 +491,28 @@ input.jmv-table-cell-selected.copying {
     cursor: url(assets/row-select.svg), auto;
 }
 
+.jmv-row-header-cell:first-child {
+    border-width: 0 1px 0 0 ;
+}
+
+.jmv-row-header-cell:last-child {
+    border-width: 1px 1px 1px 0 ;
+}
+
+.jmv-row-header-cell.split-above {
+    border-image: none ;
+    border-top: 3px solid #5E8BC4 ;
+}
+
 .jmv-column-cell {
-    border-right: 1px solid #DEDEDE ;
-    border-bottom: 1px solid #DEDEDE ;
+    border: 1px solid #DEDEDE ;
+    border-width: 1px 1px 0 0 ;
+}
+
+.jmv-column-cell:first-child {
+    border-width: 0 1px 0 0 ;
+}
+
+.jmv-column-cell:last-child {
+    border-width: 1px 1px 1px 0 ;
 }

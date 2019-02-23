@@ -1337,6 +1337,7 @@ class Instance:
                     break
                 column.hidden = self._data.filters_visible is False
                 cols_changed.add(column)
+            changes['refresh'] = True
 
         for column_pb in request.schema.columns:
             if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -1980,13 +1981,27 @@ class Instance:
             row_count = block_pb.rowCount
             col_count = block_pb.columnCount
 
-            filtered = map(lambda row_no: self._data.is_row_filtered(row_no), range(row_start, row_start + row_count))
-            filtered = map(lambda filtered: 1 if filtered else 0, filtered)
             row_data = response.rows.add()
             row_data.rowStart = row_start
             row_data.rowCount = row_count
             row_data.action = jcoms.DataSetRR.RowData.RowDataAction.Value('MODIFY')
-            row_data.filterData = bytes(filtered)
+
+            row_nums = range(row_start, row_start + row_count)
+
+            ex_filtered = self._data.ex_filtered
+
+            if not ex_filtered:
+                filtered = map(lambda row_no: self._data.is_row_filtered(row_no), row_nums)
+                filtered = map(lambda filtered: 1 if filtered else 0, filtered)
+                row_data.filterData = bytes(filtered)
+            else:
+                row_nums = map(lambda row_no: self._data.get_index_ex_filtered(row_no), row_nums)
+                row_data.rowNums[:] = row_nums
+
+            if ex_filtered:
+                dataset_row_count = self._data.row_count_ex_filtered
+            else:
+                dataset_row_count = self._data.row_count
 
             base_index = 0
             search_index = col_start
@@ -2003,10 +2018,10 @@ class Instance:
                 if column.data_type == DataType.DECIMAL:
                     for r in range(row_start, row_start + row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        if r >= dataset_row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(r, ex_filtered)
                             if math.isnan(value):
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
@@ -2014,10 +2029,10 @@ class Instance:
                 elif column.data_type == DataType.TEXT:
                     for r in range(row_start, row_start + row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        if r >= dataset_row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(r, ex_filtered)
                             if value == '':
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
@@ -2025,10 +2040,10 @@ class Instance:
                 else:
                     for r in range(row_start, row_start + row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        if r >= dataset_row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(r, ex_filtered)
                             if value == -2147483648:
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
