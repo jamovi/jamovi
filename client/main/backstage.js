@@ -153,7 +153,7 @@ var FSEntryBrowserView = SilkyView.extend({
         'click .silky-bs-fslist-browser-check-button' : '_toggleMultiMode',
         'click .silky-bs-fslist-browser-back-button' : '_backClicked',
         'click .silky-bs-fslist-browser-save-button' : '_saveClicked',
-        'keydown .silky-bs-fslist-browser-save-name' : '_keyPressHandle',
+        'keydown .silky-bs-fslist-browser-save-name' : '_nameKeypressHandle',
         'change .silky-bs-fslist-browser-save-filetype' : '_saveTypeChanged',
         'change .silky-bs-fslist-browser-save-name' : '_nameChanged',
         'keyup .silky-bs-fslist-browser-save-name' : '_nameChanged',
