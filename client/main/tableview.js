@@ -80,6 +80,7 @@ const TableView = SilkyView.extend({
         this.statusbar.addInfoLabel('rowCount', { label: 'Row count', value: 0 });
         this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
+        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
 
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
@@ -205,6 +206,14 @@ const TableView = SilkyView.extend({
             if (this._editing)
                 this._modifyingCellContents = true;
         });
+    },
+    _updateFilterInfo() {
+        let count = this.model.filterCount(true);
+        this.statusbar.updateInfoLabel('activeFilters', count);
+        if (count === 0)
+            this.statusbar.$el.find('.jmv-statusbar-button[data-name=editfilters]').addClass('gray');
+        else
+            this.statusbar.$el.find('.jmv-statusbar-button[data-name=editfilters]').removeClass('gray');
     },
     _undo() {
         this.model.undo().then((events) => {
@@ -497,6 +506,7 @@ const TableView = SilkyView.extend({
         this.statusbar.updateInfoLabel('deletedRows', this.model.attributes.deletedRowCount);
         this.statusbar.updateInfoLabel('addedRows', this.model.attributes.addedRowCount);
         this.statusbar.updateInfoLabel('filteredRows', this.model.attributes.rowCount - this.model.attributes.rowCountExFiltered);
+        this._updateFilterInfo();
     },
     _refreshSelection() {
         if (this.model.attributes.editingVar !== null) {
@@ -521,6 +531,8 @@ const TableView = SilkyView.extend({
         this._refreshRHCells(this.viewport);
     },
     _columnsActiveChanged(event) {
+        this._updateFilterInfo();
+
         let exclude = (elem, index) => {
             return index >= event.dStart && index <= event.dEnd;
         };
@@ -538,6 +550,8 @@ const TableView = SilkyView.extend({
 
         if (event.ids.length === 0)
             return;
+
+        this._updateFilterInfo();
 
         let ids = event.ids.slice();
         ids.sort((a,b) => indices[b].dIndex - indices[a].dIndex);
@@ -2387,6 +2401,8 @@ const TableView = SilkyView.extend({
         return this.model.insertColumn(properties, true);
     },
     _columnsInserted(event, ignoreSelection) {
+        this._updateFilterInfo();
+
         let aNewFilterInserted = false;
         let indices = event.indices;
 

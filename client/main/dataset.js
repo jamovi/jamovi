@@ -17,13 +17,15 @@ const DataSetModel = Backbone.Model.extend({
     filtersHidden() {
         return this.get('filtersVisible') === false;
     },
-    filterCount() {
+    filterCount(onlyActive) {
         let c = 0;
         let columns = this.attributes.columns;
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
-            if (column.columnType === 'filter')
-                c += 1;
+            if (column.columnType === 'filter') {
+                if ( ! onlyActive || column.active)
+                    c += 1;
+            }
             else
                 break;
         }
