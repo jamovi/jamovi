@@ -53,6 +53,7 @@ cdef extern from "datasetw.h":
         void deleteRows(int start, int end) except +
         void deleteColumns(int start, int end) except +
         void refreshFilterState() except +
+        int getIndexExFiltered(int index) except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
@@ -143,6 +144,9 @@ cdef class DataSet:
     def column_count(self):
         return self._this.columnCount()
 
+    def get_index_ex_filtered(self, index):
+        return self._this.getIndexExFiltered(index)
+
     property is_edited:
         def __get__(self):
             return self._this.isEdited()
@@ -177,8 +181,8 @@ cdef extern from "columnw.h":
         void setAutoMeasure(bool auto)
         bool autoMeasure() const
         void append[T](const T &value)
-        T raw[T](int index)
-        const char *raws(int index);
+        T raw[T](int index, bool exFiltered)
+        const char *raws(int index, bool exFiltered);
         void setIValue(int index, int value, bool init)
         void setDValue(int index, double value, bool init)
         void setSValue(int index, const char *value, bool init)
@@ -202,6 +206,7 @@ cdef extern from "columnw.h":
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
+        int rowCountExFiltered() const;
         int changes() const;
         const char *formula() const;
         void setFormula(const char *value);
@@ -440,6 +445,10 @@ cdef class Column:
         return self._this.rowCount();
 
     @property
+    def row_count_ex_filtered(self):
+        return self._this.rowCountExFiltered();
+
+    @property
     def changes(self):
         return self._this.changes();
 
@@ -489,22 +498,26 @@ cdef class Column:
         else:
             self._this.setIValue(index, value, initing)
 
-    def __getitem__(self, index):
+    def get_value(self, index, ex_filtered=False):
         cdef int raw
 
-        if index >= self.row_count:
+        row_count = self.row_count_ex_filtered if ex_filtered else self.row_count
+        if index >= row_count:
             raise IndexError()
 
         if self.data_type == DataType.DECIMAL:
-            return self._this.raw[double](index)
+            return self._this.raw[double](index, ex_filtered)
         elif self.data_type == DataType.TEXT:
             if self.measure_type == MeasureType.ID:
-                return self._this.raws(index).decode()
+                return self._this.raws(index, ex_filtered).decode()
             else:
-                raw = self._this.raw[int](index)
+                raw = self._this.raw[int](index, ex_filtered)
                 return self._this.getLabel(raw).decode()
         else:
-            return self._this.raw[int](index)
+            return self._this.raw[int](index, ex_filtered)
+
+    def __getitem__(self, index):
+        return self.get_value(index)
 
     def __iter__(self):
         return CellIterator(self)

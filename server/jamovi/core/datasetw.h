@@ -32,6 +32,7 @@ public:
     ColumnW operator[](int index);
     ColumnW operator[](const char *name);
     ColumnW getColumnById(int id);
+    ColumnW indices();
 
     ColumnW swapWithScratchColumn(ColumnW &column);
     void discardScratchColumn(int id);
@@ -45,7 +46,7 @@ public:
 protected:
 
     DataSetW(MemoryMapW *memoryMap);
-    void initColumn(ColumnStruct *&column);
+    static void initColumn(MemoryMapW *mm, ColumnStruct *&column);
 
 private:
 

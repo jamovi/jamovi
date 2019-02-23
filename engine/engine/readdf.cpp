@@ -149,7 +149,7 @@ DataFrame readDF(
             for (int j = 0; j < rowCount; j++)
             {
                 if ( ! dataset.isRowFiltered(j))
-                    v[rowNo++] = String(column.raws(j));
+                    v[rowNo++] = String(column.raws(j, false));
             }
 
             v.attr("jmv-id") = true;

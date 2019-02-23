@@ -64,6 +64,16 @@ class InstanceModel:
     def instance_path(self):
         return self._instance.instance_path
 
+    @property
+    def ex_filtered(self):
+        return not self._filters_visible
+
+    def get_index_ex_filtered(self, index):
+        if index >= self._dataset.row_count_ex_filtered:
+            return self._dataset.row_count - self._dataset.row_count_ex_filtered + index
+        else:
+            return self._dataset.get_index_ex_filtered(index)
+
     def __getitem__(self, index_or_name):
         if type(index_or_name) is int:
             index = index_or_name
@@ -616,7 +626,10 @@ class InstanceModel:
 
     @property
     def virtual_row_count(self):
-        return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
+        if self.ex_filtered:
+            return self._dataset.row_count_ex_filtered
+        else:
+            return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
 
     @property
     def virtual_column_count(self):
