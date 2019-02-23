@@ -1325,7 +1325,8 @@ class Instance:
         virtualise_column = None
         request_schema_columns = []
 
-        if request.schema.filtersVisible != self._data.filters_visible:
+        if request.incSchema and request.schema.filtersVisible != self._data.filters_visible:
+            self._mod_tracker.log_filters_visible_change(self._data.filters_visible)
             self._data.filters_visible = request.schema.filtersVisible
             for column in self._data:
                 if column.is_filter is False:

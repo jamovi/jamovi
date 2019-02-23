@@ -122,12 +122,6 @@ const DataSetModel = Backbone.Model.extend({
             }
             this.attributes.removedRowRanges = removedRowRanges;
 
-            if (columns.length > 0) {
-                let firstColumn = columns[0];
-                if (firstColumn.columnType === 'filter')
-                    this.attributes.filtersVisible = firstColumn.hidden === false;
-            }
-
             let transforms = Array(schemaPB.transforms.length);
             for (let i = 0; i < schemaPB.transforms.length; i++) {
                 let transformPB = schemaPB.transforms[i];
@@ -639,6 +633,8 @@ const DataSetModel = Backbone.Model.extend({
         let columns = this.attributes.columns;
 
         if (datasetPB.incSchema) {
+            this.set('filtersVisible', datasetPB.schema.filtersVisible);
+
             changed = Array(datasetPB.schema.columns.length);
             changes = Array(datasetPB.schema.columns.length);
             // sort so that column removals happen first and the events after
@@ -777,7 +773,6 @@ const DataSetModel = Backbone.Model.extend({
                 this.set('addedRowCount', datasetPB.schema.addedRowCount);
                 this.set('editedCellCount', datasetPB.schema.editedCellCount);
                 this.set('rowCountExFiltered', datasetPB.schema.rowCountExFiltered);
-                this.set('filtersVisible', datasetPB.schema.filtersVisible);
 
                 let removedRowRanges = new Array(datasetPB.schema.removedRowRanges.length);
                 for (let i = 0; i < removedRowRanges.length; i++) {

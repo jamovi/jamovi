@@ -234,9 +234,18 @@ class ModTracker:
             event_data = self._history[self._pos - 1]
             event_data['space_used'] += size
 
+    def log_filters_visible_change(self, oldValue):
+        if self._active:
+            new_event = self._history[self._pos]['undo']
+            new_event.incSchema = True
+            new_event.schema.filtersVisible = oldValue
+
     def log_column_modification(self, column, modify_pb):
         if self._active:
             new_event = self._history[self._pos]['undo']
+
+            if new_event.incSchema is not True:
+                new_event.schema.filtersVisible = self._data._filters_visible
 
             new_event.incSchema = True
             inv_column_pb = new_event.schema.columns.add()
@@ -292,6 +301,9 @@ class ModTracker:
 
             insert_pb.id = column.id
 
+            if new_event.incSchema is not True:
+                new_event.schema.filtersVisible = self._data._filters_visible
+
             new_event.incSchema = True
             inv_column_pb = new_event.schema.columns.add()
             inv_column_pb.id = column.id
@@ -303,6 +315,9 @@ class ModTracker:
     def log_column_realisation(self, column):
         if self._active:
             new_event = self._history[self._pos]['undo']
+
+            if new_event.incSchema is not True:
+                new_event.schema.filtersVisible = self._data._filters_visible
 
             new_event.incSchema = True
             inv_column_pb = new_event.schema.columns.add()

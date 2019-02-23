@@ -71,13 +71,13 @@ const FilterWidget = Backbone.View.extend({
             this.$showFilter[0]._tippy.hide();
             this.$showFilter[0]._tippy.disable();
 
-            this.dataset.toggleFilterVisibility().then(() => {
-                this._updateEyeButton();
-            });
+            this.dataset.toggleFilterVisibility();
         });
         this.$showFilter.on('mouseout', event => {
             this.$showFilter[0]._tippy.enable();
         });
+
+        this.dataset.on('change:filtersVisible', event => this._updateEyeButton());
 
         tippy(this.$showFilter[0], {
             placement: 'right',
