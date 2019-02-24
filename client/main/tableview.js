@@ -2634,7 +2634,7 @@ const TableView = SilkyView.extend({
         }).then(n => {
 
             let rowStart = this.model.attributes.rowCount;
-            return this.model.insertRows(rowStart, n);
+            return this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
 
         }).then(undefined, (error) => {
             if (error)
