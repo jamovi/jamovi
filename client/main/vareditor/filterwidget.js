@@ -711,10 +711,12 @@ const FilterWidget = Backbone.View.extend({
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 $element.blur();
                 event.preventDefault();
+                event.stopPropagation();
             }
 
             if (event.keyCode === 9) {    //tab
                 event.preventDefault();
+                event.stopPropagation();
             }
         });
     },
