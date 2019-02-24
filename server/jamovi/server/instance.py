@@ -1109,6 +1109,9 @@ class Instance:
 
             self._mod_tracker.log_column_deletion(column)
 
+            dependents = column.dependents
+            to_reparse.update(dependents)
+
             column.prep_for_deletion()
             to_delete[i] = column
             deleted_column_ids[i] = column.id
@@ -1134,10 +1137,6 @@ class Instance:
                 if column in transform.dependencies:
                     tf_reparse.add(transform)
                     to_reparse.update(transform.dependents)
-
-        for column in to_delete:
-            dependents = column.dependents
-            to_reparse.update(dependents)
 
         to_reparse -= set(to_delete)
 
