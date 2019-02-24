@@ -1166,6 +1166,11 @@ class Instance:
 
         if filter_deleted:
             self._data.refresh_filter_state()
+            # filter names could have changed
+            for column in self._data:
+                if column.is_filter:
+                    changes['columns'].add(column)
+            # view needs refreshing
             changes['refresh'] = True
         else:
             for column in sorted(to_reparse, key=lambda x: x.index):
