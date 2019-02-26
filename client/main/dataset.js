@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -1317,7 +1316,7 @@ const DataSetViewModel = DataSetModel.extend({
         this.on('columnsChanged', event => this._columnsChanged(event));
     },
     defaults() {
-        return _.extend({
+        return Object.assign({
             cells    : [ ],
             filtered : [ ],
             viewport : { left : 0, top : 0, right : -1, bottom : -1 },
@@ -1627,24 +1626,23 @@ const DataSetViewModel = DataSetModel.extend({
             if (block.rowStart > viewBottom)
                 return null;
 
-            let rowEnd = block.rowStart + block.rowCount - 1;
-            if (rowEnd < viewTop)
+            let blockRowEnd = block.rowStart + block.rowCount - 1;
+            if (blockRowEnd < viewTop)
                 return null;
 
-            let count = rowEnd - block.rowStart + 1;
-            if (block.rowStart >= viewTop && rowEnd <= viewBottom)
-                return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: count };
+            if (block.rowStart >= viewTop && blockRowEnd <= viewBottom)
+                return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: block.rowCount };
 
-            if (block.rowStart < viewTop && rowEnd > viewBottom)
+            if (block.rowStart <= viewTop && blockRowEnd >= viewBottom)
                 return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewTop - viewBottom + 1 };
 
             if (block.rowStart < viewTop)
-                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: block.rowBottom - viewTop + 1 };
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: blockRowEnd - viewTop + 1 };
 
-            if (rowEnd > viewBottom)
+            if (blockRowEnd > viewBottom)
                 return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: viewBottom - block.rowStart + 1 };
 
-            return null;
+            throw "shouldn't get here";
         };
 
         let check = rowCheck();
@@ -1658,16 +1656,16 @@ const DataSetViewModel = DataSetModel.extend({
 
             let count = block.columnCount;
             if (block.columnStart >= viewLeft && columnEnd <= viewRight)
-                return _.extend({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: count }, check);
+                return Object.assign({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: count }, check);
 
             if (block.columnStart < viewLeft && columnEnd > viewRight)
-                return _.extend({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: viewLeft - viewRight + 1 }, check);
+                return Object.assign({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: viewLeft - viewRight + 1 }, check);
 
             if (block.columnStart < viewLeft)
-                return _.extend({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: block.columnBottom - viewLeft + 1 }, check);
+                return Object.assign({ blockColumnStart: viewLeft - block.columnStart, viewColumnStart: 0, columnCount: block.columnBottom - viewLeft + 1 }, check);
 
             if (columnEnd > viewRight)
-                return _.extend({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: viewRight - block.columnStart + 1 }, check);
+                return Object.assign({ blockColumnStart: 0, viewColumnStart: block.columnStart - viewLeft, columnCount: viewRight - block.columnStart + 1 }, check);
 
             return null;
         }
