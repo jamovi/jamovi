@@ -64,6 +64,23 @@ class InstanceModel:
     def instance_path(self):
         return self._instance.instance_path
 
+    @property
+    def ex_filtered(self):
+        return not self._filters_visible
+
+    @property
+    def has_filters(self):
+        return self.column_count > 0 and self[0].is_filter
+
+    def get_index_ex_filtered(self, index):
+        if index >= self._dataset.row_count_ex_filtered:
+            return self._dataset.row_count - self._dataset.row_count_ex_filtered + index
+        else:
+            return self._dataset.get_index_ex_filtered(index)
+
+    def get_indices_ex_filtered(self, row_start, row_count):
+        return self._dataset.get_indices_ex_filtered(row_start, row_count)
+
     def __getitem__(self, index_or_name):
         if type(index_or_name) is int:
             index = index_or_name
@@ -78,6 +95,12 @@ class InstanceModel:
 
     def __iter__(self):
         return self._columns.__iter__()
+
+    @property
+    def columns_ex_hidden(self):
+        for column in self:
+            if not column.hidden:
+                yield column
 
     def set_log(self, log):
         self._log = log
@@ -616,7 +639,10 @@ class InstanceModel:
 
     @property
     def virtual_row_count(self):
-        return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
+        if self.ex_filtered:
+            return self._dataset.row_count_ex_filtered
+        else:
+            return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
 
     @property
     def virtual_column_count(self):

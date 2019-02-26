@@ -57,6 +57,10 @@ int Column::rowCount() const {
     return struc()->rowCount;
 }
 
+int Column::rowCountExFiltered() const {
+    return _parent->rowCountExFiltered();
+}
+
 int Column::dps() const
 {
     return struc()->dps;
@@ -294,4 +298,9 @@ Level *Column::rawLevel(int value) const
     }
 
     return NULL;
+}
+
+int Column::getIndexExFiltered(int index)
+{
+    return _parent->getIndexExFiltered(index);
 }

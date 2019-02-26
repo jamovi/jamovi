@@ -57,6 +57,7 @@ const DataSetModel = Backbone.Model.extend({
     defaults : {
         hasDataSet : false,
         columns    : [ ],
+        rowNums    : [ ],
         transforms : [ ],
         rowCount : 0,
         vRowCount : 0,
@@ -1346,6 +1347,7 @@ const DataSetViewModel = DataSetModel.extend({
 
         this.attributes.cells = cells;
         this.attributes.filtered = new Array(nRows).fill(null);
+        this.attributes.rowNums = new Array(nRows).fill('');
         this.attributes.viewport = Object.assign({}, viewport);
 
         this.trigger("viewportChanged");
@@ -1361,6 +1363,7 @@ const DataSetViewModel = DataSetModel.extend({
         let viewport = this.attributes.viewport;
         let cells = this.attributes.cells;
         let filtered = this.attributes.filtered;
+        let rowNums = this.attributes.rowNums;
         let delta = { left: left, top: top, right: right, bottom: bottom };
 
         let nv = Object.assign({}, viewport);
@@ -1390,8 +1393,10 @@ const DataSetViewModel = DataSetModel.extend({
                 for (let j = 0; j > top; j--)
                     column.shift();
             }
-            for (let j = 0; j > top; j--)
+            for (let j = 0; j > top; j--) {
                 filtered.shift();
+                rowNums.shift();
+            }
         }
         if (bottom < 0) {
             for (let i = 0; i < cells.length; i++) {
@@ -1399,8 +1404,10 @@ const DataSetViewModel = DataSetModel.extend({
                 for (let j = 0; j > bottom; j--)
                     column.pop();
             }
-            for (let j = 0; j > bottom; j--)
+            for (let j = 0; j > bottom; j--) {
                 filtered.pop();
+                rowNums.pop();
+            }
         }
 
         if (left > 0) {
@@ -1420,8 +1427,10 @@ const DataSetViewModel = DataSetModel.extend({
                 for (let j = 0; j < top; j++)
                     cells[i].unshift(".");
             }
-            for (let j = 0; j < top; j++)
+            for (let j = 0; j < top; j++) {
                 filtered.unshift(null);
+                rowNums.unshift(null);
+            }
 
             this.readCells({ left : innerLeft, right : innerRight, top : nv.top, bottom : viewport.top });
         }
@@ -1430,8 +1439,10 @@ const DataSetViewModel = DataSetModel.extend({
                 for (let j = 0; j < bottom; j++)
                     cells[i].push(".");
             }
-            for (let j = 0; j < bottom; j++)
+            for (let j = 0; j < bottom; j++) {
                 filtered.push(null);
+                rowNums.push(null);
+            }
 
             this.readCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });
         }
@@ -1468,23 +1479,46 @@ const DataSetViewModel = DataSetModel.extend({
                 }
             }
 
-            let block = { rowStart: blockPB.rowStart, columnStart: blockPB.columnStart, rowCount: blockPB.rowCount, columnCount: blockPB.columnCount, values: values };
+            let block = {
+                rowStart: blockPB.rowStart,
+                columnStart: blockPB.columnStart,
+                rowCount: blockPB.rowCount,
+                columnCount: blockPB.columnCount,
+                values: values,
+            };
             data[i] = block;
         }
 
-        let filterData = [];
+        let filterData = [ ];
+        let rowNums = [ ];
+
         for (let rowBlockPB of response.rows) {
             if (rowBlockPB.action === this.attributes.coms.Messages.DataSetRR.RowData.RowDataAction.MODIFY) {
+
+                let rowStart = rowBlockPB.rowStart;
+                let rowCount = rowBlockPB.rowCount;
+
                 let values = rowBlockPB.filterData.toBuffer();
                 values = new Int8Array(values);
                 values = Array.from(values);
                 values = values.map(v => v ? true : false);
 
-                filterData.push({ rowStart: rowBlockPB.rowStart, rowCount: rowBlockPB.rowCount, values: values });
+                filterData.push({ rowStart, rowCount, values });
+
+                if (rowBlockPB.rowNums.length > 0) {
+                    values = rowBlockPB.rowNums;
+                }
+                else {
+                    values = new Array(rowCount);
+                    for (let i = 0; i < values.length; i++)
+                        values[i] = rowStart + i;
+                }
+
+                rowNums.push({ rowStart, rowCount, values });
             }
         }
 
-        return { data, filterData };
+        return { data, filterData, rowNums };
     },
     requestCells(viewport) {
         let coms = this.attributes.coms;
@@ -1643,6 +1677,8 @@ const DataSetViewModel = DataSetModel.extend({
     setCells(dataInfo, silent) {
         let filterData = dataInfo.filterData;
         let data = dataInfo.data;
+        let rowNumss = dataInfo.rowNums;
+
         let viewPort = this.attributes.viewport;
         let changedCells = [];
         for (let block of data) {
@@ -1669,8 +1705,28 @@ const DataSetViewModel = DataSetModel.extend({
             }
         }
 
-        if ( ! silent)
-            this.trigger("cellsChanged", changedCells);
+        let rhChanged = [ ];
+
+        for (let rowNums of rowNumss) {
+            let union = this._getViewPortUnion(rowNums);
+            if (union !== null) {
+                for (let r = 0; r < union.rowCount; r++) {
+                    let index = union.viewRowStart + r;
+                    let old = this.attributes.rowNums[index];
+                    let nu = rowNums.values[union.blockRowStart + r];
+                    if (nu !== old) {
+                        this.attributes.rowNums[index] = nu;
+                        rhChanged.push(index);
+                    }
+                }
+            }
+        }
+
+        if ( ! silent) {
+            if (rhChanged)
+                this.trigger('rhChanged', rhChanged);
+            this.trigger('cellsChanged', changedCells);
+        }
 
         return changedCells;
     },

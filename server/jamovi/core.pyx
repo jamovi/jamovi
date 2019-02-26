@@ -53,6 +53,7 @@ cdef extern from "datasetw.h":
         void deleteRows(int start, int end) except +
         void deleteColumns(int start, int end) except +
         void refreshFilterState() except +
+        int getIndexExFiltered(int index) except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
@@ -143,6 +144,17 @@ cdef class DataSet:
     def column_count(self):
         return self._this.columnCount()
 
+    def get_index_ex_filtered(self, index):
+        if index < self.row_count_ex_filtered:
+            return self._this.getIndexExFiltered(index)
+        else:
+            return index - self.row_count_ex_filtered + self.row_count
+
+    def get_indices_ex_filtered(self, row_start, row_count):
+        offsets = map(self.get_index_ex_filtered, range(row_start, row_start + row_count))
+        offsets = list(offsets)
+        return offsets
+
     property is_edited:
         def __get__(self):
             return self._this.isEdited()
@@ -202,6 +214,7 @@ cdef extern from "columnw.h":
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
+        int rowCountExFiltered() const;
         int changes() const;
         const char *formula() const;
         void setFormula(const char *value);
@@ -440,6 +453,10 @@ cdef class Column:
         return self._this.rowCount();
 
     @property
+    def row_count_ex_filtered(self):
+        return self._this.rowCountExFiltered();
+
+    @property
     def changes(self):
         return self._this.changes();
 
@@ -489,7 +506,7 @@ cdef class Column:
         else:
             self._this.setIValue(index, value, initing)
 
-    def __getitem__(self, index):
+    def get_value(self, index):
         cdef int raw
 
         if index >= self.row_count:
@@ -505,6 +522,9 @@ cdef class Column:
                 return self._this.getLabel(raw).decode()
         else:
             return self._this.raw[int](index)
+            
+    def __getitem__(self, index):
+        return self.get_value(index)
 
     def __iter__(self):
         return CellIterator(self)

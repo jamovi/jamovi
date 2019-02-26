@@ -27,6 +27,18 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->nextColumnId = 1;  // an id of zero is reserved for 'no column'
     dss->scratch = NULL;
     dss->rowCountExFiltered = 0;
+    dss->indices = NULL;
+
+    // add the filter indices column
+    ColumnStruct *col = mm->allocateBase<ColumnStruct>();
+    dss = mm->resolve<DataSetStruct>(ds->_rel);
+    dss->indices = col;
+
+    ColumnStruct *ind = mm->resolve(col);
+    initColumn(mm, ind);
+    ColumnW indices = ColumnW(ds, mm, col);
+    indices.setDataType(DataType::INTEGER);
+    indices.setMeasureType(MeasureType::ID);
 
     return ds;
 }
@@ -155,7 +167,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
 
     column = strucC(columnCount);
 
-    initColumn(column);
+    initColumn(_mm, column);
 
     column->name = chars;
     column->importName = chars2;
@@ -169,7 +181,7 @@ ColumnW DataSetW::appendColumn(const char *name, const char *importName)
     return wrapper;
 }
 
-void DataSetW::initColumn(ColumnStruct *&columnp)
+void DataSetW::initColumn(MemoryMapW *mm, ColumnStruct *&columnp)
 {
     ColumnStruct *column = columnp;
 
@@ -197,10 +209,10 @@ void DataSetW::initColumn(ColumnStruct *&columnp)
     column->levelsUsed = 0;
     column->levelsCapacity = 0;
 
-    ColumnStruct *rel = _mm->base(column);
-    Block** blocks = _mm->allocateBase<Block*>(column->blockCapacity);
+    ColumnStruct *rel = mm->base(column);
+    Block** blocks = mm->allocateBase<Block*>(column->blockCapacity);
 
-    column = _mm->resolve(rel);
+    column = mm->resolve(rel);
     column->blocks = blocks;
 
     columnp = column;
@@ -227,6 +239,9 @@ void DataSetW::setRowCount(size_t count)
         columns = _mm->resolve(dss->columns);
     }
 
+    indices()._setRowCount<int>(count);
+
+    dss = _mm->resolve(_rel);
     dss->rowCount = count;
 }
 
@@ -354,15 +369,29 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     dss->columnCount -= delCount;
 }
 
+ColumnW DataSetW::indices()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    return ColumnW(this, _mm, dss->indices);
+}
+
 void DataSetW::refreshFilterState()
 {
     int nRows = 0;
 
+    ColumnW indices = this->indices();
+
     for (int rowNo = 0; rowNo < rowCount(); rowNo++)
     {
         if ( ! isRowFiltered(rowNo))
+        {
+            indices.setIValue(nRows, rowNo);
             nRows++;
+        }
     }
+
+    for (int rowNo = nRows; rowNo < rowCount(); rowNo++)
+        indices.setIValue(rowNo, INT_MIN);
 
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
     ColumnStruct **columns = _mm->resolve(struc()->columns);
@@ -385,7 +414,7 @@ ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)
     if (scratch == NULL)
     {
         scratch = _mm->allocate<ColumnStruct>();
-        initColumn(scratch);
+        initColumn(_mm, scratch);
         scratch = _mm->base(scratch);
     }
 

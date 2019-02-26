@@ -545,6 +545,7 @@ message DataSetRR {
         uint32 rowCount = 2;
         bytes filterData = 3;
         RowDataAction action = 4;
+        repeated int32 rowNums = 5 [packed=true];
     }
 
     GetSet op = 1;

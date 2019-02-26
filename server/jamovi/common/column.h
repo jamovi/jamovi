@@ -102,6 +102,7 @@ public:
     const char *name() const;
     const char *importName() const;
     int rowCount() const;
+    int rowCountExFiltered() const;
     int dps() const;
     bool active() const;
 
@@ -139,6 +140,7 @@ protected:
     ColumnStruct *_rel;
 
     Level *rawLevel(int value) const;
+    int getIndexExFiltered(int index);
 
     template<typename T> T& cellAt(int rowIndex)
     {
