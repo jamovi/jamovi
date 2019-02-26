@@ -20,6 +20,9 @@ class ModTracker:
         self._blank_event.op = jcoms.GetSet.Value('SET')
         self._active = False
         self._suspend_cell_tracking = False
+        self._event_data = None
+        self._event = None
+        self._logged_space_used = 0
 
     def clear(self):
         self._history = []
@@ -28,6 +31,9 @@ class ModTracker:
         self._blank_event.op = jcoms.GetSet.Value('SET')
         self._active = False
         self._suspend_cell_tracking = False
+        self._event_data = None
+        self._event = None
+        self._logged_space_used = 0
 
     @property
     def count(self):
@@ -55,29 +61,34 @@ class ModTracker:
 
     def begin_event(self, event):
         self._active = True
-        if event.op == jcoms.GetSet.Value('SET'):
-            if self._pos < len(self._history) - 1:
-                self._history = self._history[0:(self._pos + 1)]
+        self._event = event
+        self._logged_space_used = 0
 
-            if len(self._history) == 0:
-                event_data = { 'redo': event }
-                self._history.append(event_data)
-                event_data['space_used'] = sys.getsizeof(event)
-                self._pos = 0
-            else:
-                event_data = self._history[len(self._history) - 1]
-                event_data['redo'] = event
-                # event_data['space_used'] = sys.getsizeof(event)
-
-            self._create_undo_event_data(event)
+        self._create_undo_event_data(event)
 
     def get_size_of(self, obj):
         return sys.getsizeof(obj)
 
     def end_event(self):
+        if self._pos < len(self._history) - 1:
+            self._history = self._history[0:(self._pos + 1)]
+
+        if len(self._history) == 0:
+            event_data = { 'redo': self._event }
+            self._history.append(event_data)
+            event_data['space_used'] = sys.getsizeof(self._event)
+            self._pos = 0
+        else:
+            event_data = self._history[len(self._history) - 1]
+            event_data['redo'] = self._event
+
+        self._history.append(self._event_data)
+        self._pos = self._pos + 1
+
         last_size = 0
         if self._pos > 0:
             prev_event_data = self._history[self._pos - 1]
+            prev_event_data['space_used'] += self._logged_space_used
             last_size = prev_event_data['space_used']
 
         event_data = self._history[self._pos]
@@ -107,6 +118,8 @@ class ModTracker:
             self._pos = len(self._history) - 1
 
         self._active = False
+        self._event_data = None
+        self._event = None
 
     def begin_undo(self):
         if self._pos <= 0:
@@ -226,23 +239,21 @@ class ModTracker:
 
         data['row_changes'] = { 'state_id': self._data.row_tracker.state_id, 'removed_ranges': removed_ranges, 'added_ranges': added_ranges, 'changed': row_changed }
 
-        self._history.append(data)
-        self._pos = self._pos + 1
+        self._event_data = data
 
     def log_space_used(self, size):
         if self._active:
-            event_data = self._history[self._pos - 1]
-            event_data['space_used'] += size
+            self._logged_space_used += size
 
     def log_filters_visible_change(self, oldValue):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
             new_event.incSchema = True
             new_event.schema.filtersVisible = oldValue
 
     def log_column_modification(self, column, modify_pb):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             if new_event.incSchema is not True:
                 new_event.schema.filtersVisible = self._data._filters_visible
@@ -258,7 +269,7 @@ class ModTracker:
 
     def log_transform_deletion(self, transform):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             transform_schema = new_event.schema.transforms.add()
             self._populate_transform_schema(transform, transform_schema)
@@ -270,7 +281,7 @@ class ModTracker:
 
     def log_column_deletion(self, column):
         if self._active:
-            event_data = self._history[self._pos]
+            event_data = self._event_data
             new_event = event_data['undo']
 
             prev_inserts = 0
@@ -297,7 +308,7 @@ class ModTracker:
 
     def log_column_insertion(self, column, insert_pb):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             insert_pb.id = column.id
 
@@ -314,7 +325,7 @@ class ModTracker:
 
     def log_column_realisation(self, column):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             if new_event.incSchema is not True:
                 new_event.schema.filtersVisible = self._data._filters_visible
@@ -331,7 +342,7 @@ class ModTracker:
 
     def log_data_write(self, block):
         if self._active:
-            event_data = self._history[self._pos]
+            event_data = self._event_data
             new_event = event_data['undo']
 
             new_event.incData = True
@@ -357,7 +368,7 @@ class ModTracker:
 
     def log_rows_appended(self, start, end):
         if self._active:
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             new_block = new_event.rows.add()
             new_block.rowStart = start
@@ -373,7 +384,7 @@ class ModTracker:
 
     def log_row_insertion(self, block):
         if self._active and block.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
-            new_event = self._history[self._pos]['undo']
+            new_event = self._event_data['undo']
 
             new_block = new_event.rows.add()
             new_block.rowStart = block.rowStart
@@ -389,7 +400,7 @@ class ModTracker:
 
     def log_row_deletion(self, block):
         if self._active and block.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
-            event_data = self._history[self._pos]
+            event_data = self._event_data
             new_event = event_data['undo']
 
             prev_inserts = 0
