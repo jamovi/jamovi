@@ -31,6 +31,7 @@ const TableView = SilkyView.extend({
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
         this.model.on('cellsChanged', this._cellsChanged, this);
+        this.model.on('rhChanged', this._rhChanged, this);
         this.model.on('rowsDeleted', event => this._rowsDeleted(event));
         this.model.on('rowsInserted', event => this._rowsInserted(event));
         this.model.on('refreshView', event => this._refreshView(event));
@@ -101,10 +102,10 @@ const TableView = SilkyView.extend({
 
         this.$container.on('scroll', event => this._scrollHandler(event));
 
-        let $measureOne = $(this._createRHCellHTML(0, 0, '', 0))
+        let $measureOne = this._createRHCell(0, 0, '', 0)
             .css('width', 'auto')
             .appendTo(this.$rhColumn);
-        let $measureTwo = $(this._createRHCellHTML(0, 0, '0', 1))
+        let $measureTwo = this._createRHCell(0, 0, '0', 1)
             .css('width', 'auto')
             .appendTo(this.$rhColumn);
 
@@ -113,7 +114,12 @@ const TableView = SilkyView.extend({
         this._rowHeaderWidthM = $measureTwo[0].offsetWidth - this._rowHeaderWidthB;
         this._rowHeaderWidth = this._rowHeaderDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
 
-        this._rowHeight = this.$header[0].offsetHeight;  // read and store the row height
+        // read and store the row height
+        // the -1 is so each cell underlaps the one above it by 1 pixel
+        // this is so the cell at the bottom of each column has a border along
+        // the bottom
+        this._rowHeight = this.$header[0].offsetHeight - 1;
+
         this.$header.css('height', this._rowHeight);
         this.$container.css('top', this._rowHeight);
         this.$container.css('height', this.$el[0].offsetHeight - this._rowHeight - this.statusbar.$el.outerHeight());
@@ -473,9 +479,10 @@ const TableView = SilkyView.extend({
     _dataSetLoaded() {
 
         for (let header of this.$headers)
-            $(header).remove();
+            header.remove();
         for (let column of this.$columns)
-            $(column).remove();
+            column.remove();
+        this.$rhColumn[0].innerHTML = '';
 
         this.$columns = [ ];
         this.$headers = [ ];
@@ -528,7 +535,6 @@ const TableView = SilkyView.extend({
         let vRowCount = this.model.get('vRowCount');
         let totalHeight = vRowCount * this._rowHeight;
         this.$body.css('height', totalHeight);
-        this._refreshRHCells(this.viewport);
     },
     _columnsActiveChanged(event) {
         this._updateFilterInfo();
@@ -692,7 +698,6 @@ const TableView = SilkyView.extend({
 
         this._enableDisableActions();
         this._updateViewRange();
-        this._refreshRHCells(this.viewport);
         this.model.readCells(this.model.attributes.viewport);
     },
     _columnsChanged(event) {
@@ -2997,11 +3002,11 @@ const TableView = SilkyView.extend({
             let isFC = columnInfo.columnType === 'filter';
 
             for (let rowNo = 0; rowNo < column.length; rowNo++) {
-                let $cell = $($cells[rowNo]);
+                let cell = $cells[rowNo];
                 let content = this._rawValueToDisplay(column[rowNo], columnInfo);
                 let filt = filtered[rowNo];
 
-                this._updateCell($cell, content, dps, filt, isFC);
+                this._updateCell(cell, content, dps, filt, isFC);
             }
         }
 
@@ -3012,6 +3017,98 @@ const TableView = SilkyView.extend({
                 return true;
         }
         return false;
+    },
+    _rhChanged(changed) {
+
+        if (changed.length === 0)
+            return;
+
+        let rowNums = this.model.attributes.rowNums;
+        let rowHeaders = this.$rhColumn[0].children;
+
+        for (let index of changed) {
+            let currentNum = rowNums[index];
+            let aboveNum = rowNums[index - 1];
+            let current = rowHeaders[index];
+
+            current.textContent = (currentNum + 1);
+
+            if (Number.isFinite(aboveNum)) {
+                if (currentNum !== aboveNum + 1)
+                    current.classList.add('split-above');
+                else
+                    current.classList.remove('split-above');
+            }
+        }
+
+        // update what was previously top row header
+        // when the row numbers are received, we don't know if the top row
+        // needs a 'split-above' because the row number above isn't known yet
+        // the following checks if we *should* have added it previously, and
+        // adds it if necessary
+        let index = changed[changed.length - 1];
+        let currentNum = rowNums[index];
+        let belowNum = rowNums[index + 1];
+
+        if (Number.isFinite(belowNum)) {
+            let below = rowHeaders[index + 1];
+            if (currentNum !== belowNum - 1)
+                below.classList.add('split-above');
+            else
+                below.classList.remove('split-above');
+        }
+
+        // adds a split to the very first visible row in the data set
+        // (if necessary)
+        if (changed[0] === 0 && this.viewport.top === 0) {
+            if (rowNums[0] !== 0)
+                rowHeaders[0].classList.add('split-above');
+            else
+                rowHeaders[0].classList.remove('split-above');
+        }
+
+        // widen row headers if necessary
+        let lastNum = rowNums[rowNums.length - 1];
+        if (lastNum !== null) {
+
+            let nDigits = Math.floor(Math.log10(lastNum + 1)) + 1;
+            if (nDigits < 2)
+                nDigits = 2;
+
+            if (this._rowHeaderDigits !== nDigits) {
+
+                let newWidth = nDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
+                let deltaWidth = newWidth - this._rowHeaderWidth;
+                this._rowHeaderWidth = newWidth;
+                this._rowHeaderDigits = nDigits;
+
+                let leftCol = this.$selectionColumnHighlight.position().left;
+                let leftSel = this.$selection.position().left;
+
+                this.$rhColumn.css('width', this._rowHeaderWidth);
+                this.$topLeftCell.css('width', this._rowHeaderWidth);
+
+                this.$selectionColumnHighlight.css('left', leftCol + deltaWidth);
+                this.$selectionRowHighlight.css('width', this._rowHeaderWidth);
+                this.$selection.css('left', leftSel + deltaWidth);
+
+                let $selections = this.$body.find('.jmv-table-cell-secondary-selected');
+                for (let i = 0; i < $selections.length; i++) {
+                    let $selection = $($selections[i]);
+                    leftSel = $selection.position().left;
+                    $selection.css('left', leftSel + deltaWidth);
+                }
+
+                this._lefts = this._lefts.map(x => x += deltaWidth);
+                for (let i = 0; i < this._lefts.length; i++) {
+                    let $column = this.$columns[i];
+                    let $header = this.$headers[i];
+                    let left = this._lefts[i];
+                    $column.css('left', left);
+                    $header.css('left', left);
+                }
+            }
+        }
     },
     _cellsChanged(changedCells) {
 
@@ -3029,13 +3126,12 @@ const TableView = SilkyView.extend({
                 dps = 0;
 
             let $column = $(this.$columns[dIndex]);
-            let $cells  = $column.children();
+            let cell  = $column[0].children[cellInfo.rowIndex];
 
-            let $cell = $($cells[cellInfo.rowIndex]);
             let content = this._rawValueToDisplay(cellList[cellInfo.rowIndex], columnInfo);
             let filt = filtered[cellInfo.rowIndex];
 
-            this._updateCell($cell, content, dps, filt, isFC);
+            this._updateCell(cell, content, dps, filt, isFC);
         }
 
         /*let viewport = this.viewport;
@@ -3081,7 +3177,7 @@ const TableView = SilkyView.extend({
 
         return raw;
     },
-    _updateCell($cell, content, dps, filtered, isFC = false) {
+    _updateCell(cell, content, dps, filtered, isFC = false) {
 
         let type;
         let asNumber = Number(content);
@@ -3109,12 +3205,12 @@ const TableView = SilkyView.extend({
         }
 
         if (type === 'bool')
-            $cell.html(content);
+            cell.innerHTML = content;
         else
-            $cell.text(content);
+            cell.textContent = content;
 
-        $cell.attr('data-type', type);
-        $cell.attr('data-filtered', (filtered ? '1' : '0'));
+        cell.dataset.type = type;
+        cell.dataset.filtered = (filtered ? '1' : '0');
     },
     _scrollHandler(event) {
 
@@ -3235,7 +3331,7 @@ const TableView = SilkyView.extend({
                 data-row="${ rowNo }"
                 style="
                     top: ${ top }px ;
-                    height: ${ height }px ;
+                    height: ${ height + 1 }px ;
                     line-height: ${ height-3 }px ;
                 "
             >
@@ -3243,7 +3339,7 @@ const TableView = SilkyView.extend({
 
         return $cell;
     },
-    _createRHCellHTML(top, height, content, rowNo) {
+    _createRHCell(top, height, content, rowNo) {
 
         let highlighted = '';
         if (this.selection && this.selection.rowNo === rowNo)
@@ -3262,63 +3358,13 @@ const TableView = SilkyView.extend({
                 "
                 style="
                     top: ${ top }px ;
-                    height: ${ height }px ;
+                    height: ${ height + 1 }px ;
                     line-height: ${ height-3 }px ;
                 "
             >
                 ${ content }
                 <div class="sub-selection-bar"></div>
             </div>`);
-    },
-    _refreshRHCells(v) {
-        this.$rhColumn.empty();
-        let nRows = v.bottom - v.top + 1;
-
-        for (let j = 0; j < nRows; j++) {
-            let rowNo = v.top + j;
-            let top   = rowNo * this._rowHeight;
-            let content = '' + (v.top+j+1);
-            let $cell = $(this._createRHCellHTML(top, this._rowHeight, content, rowNo));
-            this.$rhColumn.append($cell);
-        }
-
-        let nDigits = Math.floor(Math.log(v.bottom) / Math.log(10)) + 1;
-        if (this._rowHeaderDigits !== nDigits) {
-            let newWidth = nDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
-            let deltaWidth = newWidth - this._rowHeaderWidth;
-            this._rowHeaderWidth = newWidth;
-            this._rowHeaderDigits = nDigits;
-
-            // group all dom queries together before dom changes
-            // reduce reflow triggers
-            let leftCol = this.$selectionColumnHighlight.position().left;
-            let leftSel = this.$selection.position().left;
-
-            // now dom changes
-            this.$rhColumn.css('width', this._rowHeaderWidth);
-            this.$topLeftCell.css('width', this._rowHeaderWidth);
-
-            this.$selectionColumnHighlight.css('left', leftCol + deltaWidth);
-            this.$selectionRowHighlight.css('width', this._rowHeaderWidth);
-            this.$selection.css('left', leftSel + deltaWidth);
-
-            let $selections = this.$body.find('.jmv-table-cell-secondary-selected');
-            for (let i = 0; i < $selections.length; i++) {
-                let $selection = $($selections[i]);
-                leftSel = $selection.position().left;
-                $selection.css('left', leftSel + deltaWidth);
-            }
-
-            this._lefts = this._lefts.map(x => x += deltaWidth);
-            for (let i = 0; i < this._lefts.length; i++) {
-                let $column = this.$columns[i];
-                let $header = this.$headers[i];
-                let left = this._lefts[i];
-                $column.css('left', left);
-                $header.css('left', left);
-            }
-        }
-
     },
     refreshCellColour($cell, columnInfo, rowNo) {
         if (this._isCellEdited(columnInfo, rowNo))
@@ -3331,11 +3377,6 @@ const TableView = SilkyView.extend({
         let o = oldViewport;
         let n = newViewport;
 
-
-        if (o === null || n.top !== o.top || n.bottom !== o.bottom) {
-            this._refreshRHCells(n);
-        }
-
         if (o === null || this._overlaps(o, n) === false) { // entirely new cells
 
             if (o !== null) {  // clear old cells
@@ -3347,9 +3388,17 @@ const TableView = SilkyView.extend({
                     $column.remove();
                     $column.empty();
                 }
+                this.$rhColumn.empty();
             }
 
             let nRows = n.bottom - n.top + 1;
+
+            for (let j = 0; j < nRows; j++) {
+                let rowNo = n.top + j;
+                let top   = rowNo * this._rowHeight;
+                let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                this.$rhColumn.append($cell);
+            }
 
             for (let i = n.left; i <= n.right; i++) {
 
@@ -3454,6 +3503,13 @@ const TableView = SilkyView.extend({
                 let left  = Math.max(o.left,  n.left);
                 let right = Math.min(o.right, n.right);
 
+                for (let j = 0; j < nRows; j++) {
+                    let rowNo = o.bottom + j + 1;
+                    let top   = rowNo * this._rowHeight;
+                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.append($cell);
+                }
+
                 for (let i = left; i <= right; i++) {
 
                     let column  = this.model.getColumn(i, true);
@@ -3476,14 +3532,19 @@ const TableView = SilkyView.extend({
                 let left  = Math.max(o.left,  n.left);
                 let right = Math.min(o.right, n.right);
 
+                let rhCells = [...this.$rhColumn[0].children];
+                let count = rhCells.length;
+                for (let j = 0; j < nRows; j++)
+                    rhCells[count - j - 1].remove();
+
                 for (let i = left; i <= right; i++) {
 
-                    let $column = $(this.$columns[i]);
-                    let $cells = $column.children();
-                    let count = $cells.length;
+                    let column = this.$columns[i][0];
+                    let cells = [...column.children];
+                    let count = cells.length;
 
                     for (let j = 0; j < nRows; j++)
-                        $($cells[count - j - 1]).remove();
+                        cells[count - j - 1].remove();
                 }
             }
 
@@ -3493,6 +3554,13 @@ const TableView = SilkyView.extend({
 
                 let left  = Math.max(o.left,  n.left);
                 let right = Math.min(o.right, n.right);
+
+                for (let j = 0; j < nRows; j++) {
+                    let rowNo = o.top - j - 1;
+                    let top   = rowNo * this._rowHeight;
+                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.prepend($cell);
+                }
 
                 for (let i = left; i <= right; i++) {
 
@@ -3516,11 +3584,15 @@ const TableView = SilkyView.extend({
                 let left  = Math.max(o.left,  n.left);
                 let right = Math.min(o.right, n.right);
 
+                let rhCells = [...this.$rhColumn[0].children];
+                for (let j = 0; j < nRows; j++)
+                    rhCells[j].remove();
+
                 for (let c = left; c <= right; c++) {
-                    let $column = $(this.$columns[c]);
-                    let $cells = $column.children();
+                    let column = this.$columns[c][0];
+                    let cells = [...column.children];
                     for (let r = 0; r < nRows; r++)
-                        $($cells[r]).remove();
+                        cells[r].remove();
                 }
             }
 

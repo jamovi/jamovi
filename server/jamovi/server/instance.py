@@ -34,6 +34,7 @@ import logging
 import time
 import asyncio
 import functools
+from itertools import islice
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -48,6 +49,12 @@ log = logging.getLogger('jamovi')
 is_windows = platform.uname().system == 'Windows'
 def4ult = False if is_windows else True
 Settings.retrieve('main').specify_default('autoUpdate', def4ult)
+
+
+class ForbiddenOp(Exception):
+    def __init__(self, operation, message):
+        super().__init__(message)
+        self.operation = operation
 
 
 class Instance:
@@ -837,11 +844,14 @@ class Instance:
 
             self._coms.send(response, self._instance_id, request)
 
+        except ForbiddenOp as e:
+            message = 'Could not {}'.format(e.operation)
+            self._coms.send_error(message, str(e), self._instance_id, request)
         except TypeError as e:
             self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
         except Exception as e:
             log.exception(e)
-            self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
+            self._coms.send_error('Could not perform operation', str(e), self._instance_id, request)
 
     def _on_module(self, request):
 
@@ -940,6 +950,12 @@ class Instance:
         for row_data in request.rows:
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
                 request_rows.append(row_data)
+
+        if request_rows:
+            if self._data.ex_filtered and self._data.has_filters:
+                raise ForbiddenOp(
+                    'insert rows',
+                    'You can not insert rows while filtered rows are hidden')
 
         insert_offsets = [0] * len(request_rows)
         for i in range(0, len(request_rows)):
@@ -1063,6 +1079,12 @@ class Instance:
         sorted_data = sorted(request.rows, key=lambda row_data: row_data.rowStart + row_data.rowCount - 1, reverse=True)
 
         for row_data in sorted_data:
+
+            if self._data.ex_filtered and self._data.has_filters:
+                raise ForbiddenOp(
+                    'delete rows',
+                    'You can not delete rows while filtered rows are hidden')
+
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
                 self._mod_tracker.log_row_deletion(row_data)
                 row_start = row_data.rowStart
@@ -1268,6 +1290,26 @@ class Instance:
 
     def _on_dataset_mod_cols(self, request, response, changes):
 
+        if self._data.ex_filtered and self._data.has_filters:
+            # some operations are forbidden when filtered rows are hidden/excluded
+            for trans_pb in request.schema.transforms:
+                if (trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('UPDATE')
+                        or trans_pb.action == jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE')):
+                    transform = self._data.get_transform_by_id(trans_pb.id)
+                    if any(dep.is_filter for dep in transform.dependents):
+                        raise ForbiddenOp(
+                            'modify transform',
+                            'You cannot modify transforms that affect filters when filtered rows are not visible')
+
+            for column_pb in request.schema.columns:
+                if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
+                    if column_pb.id != 0:
+                        column = self._data.get_column_by_id(column_pb.id)
+                        if any(dep.is_filter for dep in column.dependents):
+                            raise ForbiddenOp(
+                                'modify columns',
+                                'You cannot modify columns that affect filters when filtered rows are not visible')
+
         # columns that need to be reparsed, and/or recalced
         reparse = set()
         recalc = set()
@@ -1337,6 +1379,7 @@ class Instance:
                     break
                 column.hidden = self._data.filters_visible is False
                 cols_changed.add(column)
+            changes['refresh'] = True
 
         for column_pb in request.schema.columns:
             if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -1684,6 +1727,19 @@ class Instance:
         if len(data) == 0:
             return
 
+        if self._data.ex_filtered and self._data.has_filters:
+            # Some operations are forbidden when filtered rows are hidden/excluded
+            for block in data:
+                column_start = block['column_start']
+                column_count = block['column_count']
+                column_end = column_start + column_count
+
+                for column in islice(self._data.columns_ex_hidden, column_start, column_end):
+                    if any(dep.is_filter for dep in column.dependents):
+                        raise ForbiddenOp(
+                            'modify columns',
+                            'You cannot modify columns that affect filters when filtered rows are not visible')
+
         data_list = []
 
         del response.data[:]
@@ -1787,6 +1843,11 @@ class Instance:
             row_count = data_item['row_count']
             values = data_item['values']
 
+            if self._data.ex_filtered and self._data.has_filters:
+                indices_map = self._data.get_indices_ex_filtered(row_start, row_count)
+            else:
+                indices_map = list(range(row_start, row_start + row_count))
+
             column.column_type = ColumnType.DATA
             column.set_needs_recalc()  # invalidate dependent nodes
 
@@ -1818,21 +1879,24 @@ class Instance:
                 nan = float('nan')
                 for j in range(row_count):
                     value = values[j]
+                    row_no = indices_map[j]
+
                     if value is None or value == '':
-                        column[row_start + j] = nan
+                        column.set_value(row_no, nan)
                     elif isinstance(value, float):
-                        column[row_start + j] = value
+                        column.set_value(row_no, value)
                     elif isinstance(value, int):
-                        column[row_start + j] = value
+                        column.set_value(row_no, value)
                     else:
                         raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
 
             elif column.data_type == DataType.TEXT:
                 for j in range(row_count):
                     value = values[j]
+                    row_no = indices_map[j]
 
                     if value is None or value == '':
-                        column.clear_at(row_start + j)
+                        column.clear_at(row_no)
                         continue
 
                     if isinstance(value, float):
@@ -1844,9 +1908,9 @@ class Instance:
                         value = str(value)
 
                     if column.measure_type == MeasureType.ID:
-                        column.set_value(row_start + j, value)
+                        column.set_value(row_no, value)
                     else:
-                        column.clear_at(row_start + j)  # necessary to clear first with TEXT
+                        column.clear_at(row_no)  # necessary to clear first with TEXT
                         if value == '':
                             index = -2147483648
                         elif not column.has_level(value):
@@ -1854,35 +1918,42 @@ class Instance:
                             column.insert_level(index, value)
                         else:
                             index = column.get_value_for_label(value)
-                        column.set_value(row_start + j, index)
+                        column.set_value(row_no, index)
 
             else:  # elif column.data_type == DataType.INTEGER:
                 for j in range(row_count):
                     value = values[j]
+                    row_no = indices_map[j]
+
                     if value is None or value == '':
-                        column.clear_at(row_start + j)
+                        column.clear_at(row_no)
                     elif isinstance(value, int):
                         if column.measure_type != MeasureType.ID:
                             if not column.has_level(value) and value != -2147483648:
                                 column.insert_level(value, str(value))
-                        column.set_value(row_start + j, value)
+                        column.set_value(row_no, value)
                     elif isinstance(value, str):
                         if column.measure_type == MeasureType.ID:
                             raise RuntimeError('Should not get here')
                         elif column.has_level(value):
                             index = column.get_value_for_label(value)
                         else:
-                            column.clear_at(row_start + j)
+                            column.clear_at(row_no)
                             index = 0
                             for level in column.levels:
                                 index = max(index, level[0])
                             index += 1
                             column.insert_level(index, value, str(index))
-                        column.set_value(row_start + j, index)
+                        column.set_value(row_no, index)
                     else:
                         raise RuntimeError('Should not get here')
 
-            self._mod_tracker.set_cells_as_edited(column, row_start, row_start + row_count - 1)
+            if self._data.ex_filtered and self._data.has_filters:
+                for row_no in indices_map:
+                    self._mod_tracker.set_cells_as_edited(column, row_no, row_no)
+            else:
+                self._mod_tracker.set_cells_as_edited(column, row_start, row_start + row_count - 1)
+
             cols_changed.add(column)
 
             if column.auto_measure:
@@ -1974,19 +2045,29 @@ class Instance:
             column.determine_dps()
 
     def _populate_cells(self, request, response):
+
         for block_pb in response.data:
             col_start = block_pb.columnStart
             row_start = block_pb.rowStart
             row_count = block_pb.rowCount
             col_count = block_pb.columnCount
 
-            filtered = map(lambda row_no: self._data.is_row_filtered(row_no), range(row_start, row_start + row_count))
-            filtered = map(lambda filtered: 1 if filtered else 0, filtered)
             row_data = response.rows.add()
             row_data.rowStart = row_start
             row_data.rowCount = row_count
             row_data.action = jcoms.DataSetRR.RowData.RowDataAction.Value('MODIFY')
-            row_data.filterData = bytes(filtered)
+
+            row_nums = range(row_start, row_start + row_count)
+
+            if not self._data.ex_filtered:
+                filtered = map(lambda row_no: self._data.is_row_filtered(row_no), row_nums)
+                filtered = map(lambda filtered: 1 if filtered else 0, filtered)
+                row_data.filterData = bytes(filtered)
+                indices_map = list(range(row_start, row_start + row_count))
+            else:
+                row_nums = map(lambda row_no: self._data.get_index_ex_filtered(row_no), row_nums)
+                row_data.rowNums[:] = row_nums
+                indices_map = self._data.get_indices_ex_filtered(row_start, row_count)
 
             base_index = 0
             search_index = col_start
@@ -2001,34 +2082,37 @@ class Instance:
                 search_index = 0
 
                 if column.data_type == DataType.DECIMAL:
-                    for r in range(row_start, row_start + row_count):
+                    for j in range(row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        row_no = indices_map[j]
+                        if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(row_no)
                             if math.isnan(value):
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
                                 cell.d = value
                 elif column.data_type == DataType.TEXT:
-                    for r in range(row_start, row_start + row_count):
+                    for j in range(row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        row_no = indices_map[j]
+                        if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(row_no)
                             if value == '':
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
                                 cell.s = value
                 else:
-                    for r in range(row_start, row_start + row_count):
+                    for j in range(row_count):
                         cell = block_pb.values.add()
-                        if r >= column.row_count:
+                        row_no = indices_map[j]
+                        if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column[r]
+                            value = column.get_value(row_no)
                             if value == -2147483648:
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:

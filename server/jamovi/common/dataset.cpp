@@ -115,3 +115,14 @@ bool DataSet::isRowFiltered(int index) const
 
     return false;
 }
+
+Column DataSet::indices()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    return Column(this, _mm, dss->indices);
+}
+
+int DataSet::getIndexExFiltered(int index)
+{
+    return indices().raw<int>(index);
+}
