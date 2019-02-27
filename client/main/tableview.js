@@ -2384,9 +2384,12 @@ const TableView = SilkyView.extend({
 
             return this._setSelections(oldSelection, oldSubSelections);
 
-        }).then(undefined, (error) => {
-            if (error)
-                console.log(error);
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
             return this._setSelections(oldSelection, oldSubSelections);
         });
     },
@@ -2618,6 +2621,13 @@ const TableView = SilkyView.extend({
             }
 
             return this.model.insertRows(ranges);
+
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     _appendRows() {
@@ -2641,9 +2651,12 @@ const TableView = SilkyView.extend({
             let rowStart = this.model.attributes.rowCount;
             return this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
 
-        }).then(undefined, (error) => {
-            if (error)
-                console.log(error);
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     _appendColumn(columnType) {
