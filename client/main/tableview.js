@@ -3046,6 +3046,11 @@ const TableView = SilkyView.extend({
 
             current.textContent = (currentNum + 1);
 
+            if (currentNum >= this.model.attributes.rowCount)
+                current.classList.add('virtual');
+            else
+                current.classList.remove('virtual');
+
             if (Number.isFinite(aboveNum)) {
                 if (currentNum !== aboveNum + 1)
                     current.classList.add('split-above');
@@ -3358,16 +3363,11 @@ const TableView = SilkyView.extend({
         if (this.selection && this.selection.rowNo === rowNo)
             highlighted = ' highlighted';
 
-        let virtual = '';
-        if (rowNo >= this.model.attributes.rowCount)
-            virtual = ' virtual';
-
         return $(`
             <div
                 class="
                     jmv-row-header-cell
                     ${ highlighted }
-                    ${ virtual }
                 "
                 style="
                     top: ${ top }px ;
