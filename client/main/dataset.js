@@ -1710,12 +1710,9 @@ const DataSetViewModel = DataSetModel.extend({
             if (union !== null) {
                 for (let r = 0; r < union.rowCount; r++) {
                     let index = union.viewRowStart + r;
-                    let old = this.attributes.rowNums[index];
-                    let nu = rowNums.values[union.blockRowStart + r];
-                    if (nu !== old) {
-                        this.attributes.rowNums[index] = nu;
-                        rhChanged.push(index);
-                    }
+                    let value = rowNums.values[union.blockRowStart + r];
+                    this.attributes.rowNums[index] = value;
+                    rhChanged.push(index);
                 }
             }
         }
