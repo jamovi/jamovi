@@ -1305,10 +1305,10 @@ class Instance:
                 if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
                     if column_pb.id != 0:
                         column = self._data.get_column_by_id(column_pb.id)
-                        if any(dep.is_filter for dep in column.dependents):
+                        if column.is_filter or any(dep.is_filter for dep in column.dependents):
                             raise ForbiddenOp(
                                 'modify columns',
-                                'You cannot modify columns that affect filters when filtered rows are not visible')
+                                'You cannot modify filters or columns that affect filters when filtered rows are not visible')
 
         # columns that need to be reparsed, and/or recalced
         reparse = set()
