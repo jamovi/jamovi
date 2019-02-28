@@ -22,6 +22,7 @@ class ModTracker:
         self._suspend_cell_tracking = False
         self._event_data = None
         self._event = None
+        self._logged_space_used = 0
 
     def clear(self):
         self._history = []
@@ -32,6 +33,7 @@ class ModTracker:
         self._suspend_cell_tracking = False
         self._event_data = None
         self._event = None
+        self._logged_space_used = 0
 
     @property
     def count(self):
@@ -60,6 +62,7 @@ class ModTracker:
     def begin_event(self, event):
         self._active = True
         self._event = event
+        self._logged_space_used = 0
 
         self._create_undo_event_data(event)
 
@@ -85,6 +88,7 @@ class ModTracker:
         last_size = 0
         if self._pos > 0:
             prev_event_data = self._history[self._pos - 1]
+            prev_event_data['space_used'] += self._logged_space_used
             last_size = prev_event_data['space_used']
 
         event_data = self._history[self._pos]
@@ -237,13 +241,10 @@ class ModTracker:
 
         self._event_data = data
 
-        # self._history.append(data)
-        # self._pos = self._pos + 1
 
     def log_space_used(self, size):
         if self._active:
-            event_data = self._history[self._pos - 1]
-            event_data['space_used'] += size
+            self._logged_space_used += size
 
     def log_filters_visible_change(self, oldValue):
         if self._active:
