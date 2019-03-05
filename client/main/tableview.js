@@ -423,8 +423,6 @@ const TableView = SilkyView.extend({
             $colour.css('background-color', '#515151');
             $colour.attr('title', 'Computed variable');
         }
-
-        return true;
     },
     _addColumnToView(column) {
         let width  = column.width;
@@ -647,7 +645,8 @@ const TableView = SilkyView.extend({
                 let $header = $(this.$headers[column.dIndex]);
                 let $column = $(this.$columns[column.dIndex]);
 
-                let ok = this._updateColumnColour(column, $header, $column);
+                this._updateColumnColour(column, $header, $column);
+                let ok = this._isColumnOk(column);
 
                 $column.attr('data-fmlaok', ok ? '1' : '0');
                 $header.attr('data-fmlaok', ok ? '1' : '0');
@@ -682,7 +681,8 @@ const TableView = SilkyView.extend({
             $header.attr('data-datatype', column.dataType);
             $column.attr('data-measuretype', column.measureType);
 
-            let ok = this._updateColumnColour(column, $header, $column);
+            this._updateColumnColour(column, $header, $column);
+            let ok = this._isColumnOk(column);
 
             $column.attr('data-fmlaok', ok ? '1' : '0');
             $header.attr('data-fmlaok', ok ? '1' : '0');
@@ -736,7 +736,8 @@ const TableView = SilkyView.extend({
                 $column.attr('data-measuretype', column.measureType);
             }
 
-            let ok = this._updateColumnColour(column, $header, $column);
+            this._updateColumnColour(column, $header, $column);
+            let ok = this._isColumnOk(column);
 
             $column.attr('data-fmlaok', ok ? '1' : '0');
             $header.attr('data-fmlaok', ok ? '1' : '0');
