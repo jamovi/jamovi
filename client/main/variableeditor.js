@@ -41,6 +41,7 @@ const VariableEditor = Backbone.View.extend({
         });
 
         this.editorPanel = new EditorPanel({ el : this.$stageEditor[0], model : this.model });
+        this.editorPanel.on('notification', note => this.trigger('notification', note));
         this.transformEditor = new TransformEditor(this.model);
 
         this.$ok = $('<div class="jmv-variable-editor-ok jmv-tooltip" data-tippy-dynamictitle="true" title="Hide"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
@@ -192,6 +193,8 @@ const VariableEditor = Backbone.View.extend({
                 this.$revert[0]._tippy.disable();
             }
         });
+
+        this.editorModel.on('notification', note => this.trigger('notification', note));
 
         this.$$editors = [
             $('<div style="left: 0;    opacity: 1;"></div>').prependTo(this.$main),

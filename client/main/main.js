@@ -266,6 +266,7 @@ $(document).ready(() => {
     instance.on( 'notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
     ribbon.on('notification', note => notifications.notify(note));
+    editor.on('notification', note => notifications.notify(note));
 
     dataSetModel.on('change:edited', event => {
         host.setEdited(dataSetModel.attributes.edited);

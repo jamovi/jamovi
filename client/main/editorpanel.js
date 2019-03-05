@@ -46,6 +46,7 @@ const EditorPanel = Backbone.View.extend({
                 this.$icon.detach();
             this.$icon = null;
             this.$title.html('');
+            this.attachedItem.off('notification', this._notifyEditProblem, this);
             this.attachedItem = null;
         }
 
@@ -55,6 +56,7 @@ const EditorPanel = Backbone.View.extend({
              item.$icon.prependTo(this.$titleBox);
              this.$icon = item.$icon;
              this.attachedItem = item;
+             this.attachedItem.on('notification', this._notifyEditProblem, this);
              hide = false;
         }
 
@@ -68,7 +70,9 @@ const EditorPanel = Backbone.View.extend({
         }
 
     },
-
+    _notifyEditProblem(note) {
+        this.trigger('notification', note);
+    },
     isVisible() {
         return this.$el.hasClass('hidden');
     }
