@@ -9,10 +9,15 @@ const dropdown = require('../vareditor/dropdown');
 const VariableList = require('../vareditor/variablelist');
 const MeasureList = require('../vareditor/measurelist');
 const ColourPalette = require('./colourpalette');
+const Notify = require('../notification');
+const Backbone = require('backbone');
 
 const TransformEditor = function(dataset) {
 
+    Object.assign(this, Backbone.Events);
+
     this.dataset = dataset;
+    this._editNote = new Notify({ duration: 3000 });
 
     this.$el = $('<div class="jmv-transform-editor"></div>');
 
@@ -72,7 +77,14 @@ const TransformEditor = function(dataset) {
                         values[propertyName] = $element[0].textContent.trim();
                     else
                         values[propertyName] = $element.val().trim();
-                    this.dataset.setTransforms([{ id: id, values: values }]);
+                    this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
+                        this._populate();
+                        this._notifyEditProblem({
+                            title: error.message,
+                            message: error.cause,
+                            type: 'error',
+                        });
+                    });
                 }
                 _applyOnBlur = true;
             } );
@@ -228,7 +240,14 @@ const TransformEditor = function(dataset) {
         this.measureList.$el.on('selected-measure-type', (event, measureType) => {
             let id = this._id;
             let values = { measureType: measureType };
-            this.dataset.setTransforms([{ id: id, values: values }]);
+            this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
+                this._populate();
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            });
             dropdown.hide();
         });
 
@@ -403,7 +422,15 @@ const TransformEditor = function(dataset) {
             let id = this._id;
             let values = { formula: this.formula };
             this._applyId = null;
-            this.dataset.setTransforms([{ id: id, values: values }]);
+            this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
+                this.formula = [];
+                this._populate();
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            });
         }, 0);
     };
 
@@ -438,7 +465,7 @@ const TransformEditor = function(dataset) {
                         }
                     }
                 }
-                this.formula = transform.formula;
+                this.formula = transform.formula.slice();
                 if (updateFormula)
                     this._createFormulaUI(true);
 
@@ -795,6 +822,11 @@ const TransformEditor = function(dataset) {
 
     this._isRealBlur = function(elements) {
         return dropdown.clicked() === false && elements._subFocusClicked === false;
+    };
+
+    this._notifyEditProblem = function(details) {
+        this._editNote.set(details);
+        this.trigger('notification', this._editNote);
     };
 
     this._init();

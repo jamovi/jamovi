@@ -5,6 +5,7 @@ const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const Notify = require('../notification');
 
 const VariableModel = Backbone.Model.extend({
 
@@ -12,6 +13,7 @@ const VariableModel = Backbone.Model.extend({
         this.dataset = dataset;
         this.original = { };
         this._hasChanged = { };
+        this._editNote = new Notify({ duration: 3000 });
         this.on('change', event => {
             let changes = false;
             for (let name in this.original) {
@@ -36,7 +38,7 @@ const VariableModel = Backbone.Model.extend({
         this.dataset.on('columnsChanged', (event) => {
             if (this.dataset.attributes.editingVar === null)
                 return;
-                
+
             let ids = this.get('ids');
             if (ids === null)
                 return;
@@ -293,10 +295,21 @@ const VariableModel = Backbone.Model.extend({
                     let column = this.dataset.getColumnById(this.attributes.ids[0]);
                     this.set('formulaMessage', column.formulaMessage);
                 }
+            }, (error) => {
+                this.set(this.original);
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
             });
     },
     revert() {
         this.set(this.original);
+    },
+    _notifyEditProblem(details) {
+        this._editNote.set(details);
+        this.trigger('notification', this._editNote);
     }
 });
 
