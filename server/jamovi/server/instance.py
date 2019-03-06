@@ -907,7 +907,7 @@ class Instance:
             log.error('_on_store_callback(): shouldnt get here')
 
     def _on_dataset_set(self, request, response):
-        changes = { 'columns': set(), 'transforms': set(), 'deleted_columns': set(), 'deleted_transforms': set(), 'refresh': False }
+        changes = { 'columns': set(), 'transforms': set(), 'deleted_columns': set(), 'deleted_transforms': set(), 'refresh': False, 'filters_changed': False }
 
         self._on_dataset_del_cols(request, response, changes)
         self._on_dataset_del_rows(request, response, changes)
@@ -918,6 +918,9 @@ class Instance:
             self._apply_cells(request, response, changes)
 
         response.refresh = changes['refresh']
+        if changes['filters_changed']:
+            self._data.refresh_filter_state()
+
         self._populate_schema_info(request, response)
         # constuct response column schemas
         if len(changes['columns']) > 0 or len(changes['transforms']) > 0 or len(changes['deleted_columns']) > 0 or len(changes['deleted_transforms']) > 0:
@@ -1186,13 +1189,13 @@ class Instance:
             changes['deleted_columns'].add(column)
 
         if filter_deleted:
-            self._data.refresh_filter_state()
             # filter names could have changed
             for column in self._data:
                 if column.is_filter:
                     changes['columns'].add(column)
             # view needs refreshing
             changes['refresh'] = True
+            changes['filters_changed'] = True
         else:
             for column in sorted(to_reparse, key=lambda x: x.index):
                 changes['columns'].add(column)
@@ -1603,7 +1606,7 @@ class Instance:
             self._data.is_edited = True
 
         if filter_changed:
-            self._data.refresh_filter_state()
+            changes['filters_changed'] = True
             changes['refresh'] = True
 
         for column in cols_changed:
@@ -2000,7 +2003,7 @@ class Instance:
             column.recalc()
 
         if filter_changed or n_rows_changed:
-            self._data.refresh_filter_state()
+            changes['filters_changed'] = True
             changes['refresh'] = True
 
         for column in cols_changed:

@@ -37,6 +37,12 @@ const DataSetModel = Backbone.Model.extend({
 
         return vCount - (tCount - rCount);
     },
+    visibleRowCount() {
+        if (this.get('filtersVisible'))
+            return this.get('rowCount');
+        else
+            return this.get('rowCountExFiltered');
+    },
     clearEditingVar() {
         this.set('editingVar', null);
     },

@@ -273,7 +273,7 @@ const TableView = SilkyView.extend({
                 if (merged === false) {
                     selections.push({
                         top: 0,
-                        bottom: this.model.attributes.rowCount - 1,
+                        bottom: this.model.visibleRowCount() - 1,
                         left: index,
                         right: index,
                         colFocus: index,
@@ -338,7 +338,7 @@ const TableView = SilkyView.extend({
                 if (merged === false) {
                     selections.push({
                         top: 0,
-                        bottom: this.model.attributes.rowCount - 1,
+                        bottom: this.model.visibleRowCount() - 1,
                         left: index,
                         right: index,
                         colFocus: index,
@@ -470,7 +470,7 @@ const TableView = SilkyView.extend({
             left: 0,
             right: this.model.visibleRealColumnCount() - 1,
             top: 0,
-            bottom: this.model.attributes.rowCount - 1 };
+            bottom: this.model.visibleRowCount() - 1 };
 
         this._setSelections(range);
     },
@@ -813,12 +813,12 @@ const TableView = SilkyView.extend({
     _isFullColumnSelectionClick(colNo) {
         let check = false;
         if (colNo >= this.selection.left && colNo <= this.selection.right)
-            check = this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1;
+            check = this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1;
 
         if (check === false) {
             for (let selection of this._selectionList) {
                 if (colNo >= selection.left && colNo <= selection.right) {
-                    check = selection.top === 0 && selection.bottom === this.model.attributes.rowCount - 1;
+                    check = selection.top === 0 && selection.bottom === this.model.visibleRowCount() - 1;
                 }
                 if (check)
                     break;
@@ -927,7 +927,7 @@ const TableView = SilkyView.extend({
                     left: left,
                     right: right,
                     top: 0,
-                    bottom: this.model.attributes.rowCount - 1,
+                    bottom: this.model.visibleRowCount() - 1,
                     colFocus: pos.colNo,
                     rowFocus: pos.rowNo };
             }
@@ -1017,7 +1017,7 @@ const TableView = SilkyView.extend({
                                 if (column.columnType === 'filter')
                                     ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
                                 else {
-                                    if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                                    if (this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1)
                                         ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
                                     else
                                         ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
@@ -1031,7 +1031,7 @@ const TableView = SilkyView.extend({
                     if (column.columnType === 'filter')
                         ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
                     else {
-                        if (this.selection.top === 0 && this.selection.bottom === this.model.attributes.rowCount - 1)
+                        if (this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1)
                             ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
                         else
                             ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
@@ -1681,7 +1681,10 @@ const TableView = SilkyView.extend({
     },
     _updateHeaderHighlight() {
 
-        this.$el.find('.jmv-column-header.highlighted, .jmv-row-header-cell.highlighted').removeClass('highlighted is-sub-selection');
+        for (let $header of this.$headers)
+            $($header).removeClass('highlighted');
+
+        this.$el.find('.jmv-row-header-cell.highlighted').removeClass('highlighted is-sub-selection');
 
         this._applyHeaderHighlight(this.selection, false);
         for (let range of this._selectionList) {
@@ -2059,7 +2062,7 @@ const TableView = SilkyView.extend({
             if (event.key === ' ') {
                 let newSelection = Object.assign({}, this.selection);
                 newSelection.top = 0;
-                newSelection.bottom = this.model.attributes.rowCount - 1;
+                newSelection.bottom = this.model.visibleRowCount() - 1;
                 this._setSelections(newSelection);
             }
         }
@@ -2079,8 +2082,8 @@ const TableView = SilkyView.extend({
                     let topCells = Math.min(count1, newSelection.rowNo - newSelection.top);
                     newSelection.top += topCells;
                     newSelection.bottom += (count1 - topCells);
-                    if (newSelection.bottom > this.model.attributes.rowCount - 1)
-                        newSelection.bottom = this.model.attributes.rowCount - 1;
+                    if (newSelection.bottom > this.model.visibleRowCount() - 1)
+                        newSelection.bottom = this.model.visibleRowCount() - 1;
 
                     if (count1 - topCells > 0)
                         newSelection.rowFocus = newSelection.bottom;
@@ -2091,8 +2094,8 @@ const TableView = SilkyView.extend({
                 }
                 else {
                     let rowNo = this.selection.rowNo + count1;
-                    if (rowNo > this.model.attributes.rowCount - 1)
-                        rowNo = this.model.attributes.rowCount - 1;
+                    if (rowNo > this.model.visibleRowCount() - 1)
+                        rowNo = this.model.visibleRowCount() - 1;
                     this._setSelection(rowNo, this.selection.colNo);
                 }
                 event.preventDefault();
@@ -2166,7 +2169,7 @@ const TableView = SilkyView.extend({
                 if (event.shiftKey) {
                     let newSelection = Object.assign({}, this.selection);
                     newSelection.top = 0;
-                    if (newSelection.bottom !== this.model.attributes.rowCount-1)
+                    if (newSelection.bottom !== this.model.visibleRowCount()-1)
                         newSelection.rowFocus = 0;
                     this._setSelections(newSelection);
                 }
@@ -2181,13 +2184,13 @@ const TableView = SilkyView.extend({
             if (event.metaKey || event.ctrlKey) {
                 if (event.shiftKey) {
                     let newSelection = Object.assign({}, this.selection);
-                    newSelection.bottom = this.model.attributes.rowCount-1;
+                    newSelection.bottom = this.model.visibleRowCount()-1;
                     if (newSelection.top !== 0)
-                        newSelection.rowFocus = this.model.attributes.rowCount-1;
+                        newSelection.rowFocus = this.model.visibleRowCount()-1;
                     this._setSelections(newSelection);
                 }
                 else
-                    this._setSelection(this.model.attributes.rowCount-1, this.selection.colNo);
+                    this._setSelection(this.model.visibleRowCount()-1, this.selection.colNo);
             }
             else
                 this._moveCursor('down', event.shiftKey);
@@ -2649,7 +2652,7 @@ const TableView = SilkyView.extend({
 
         }).then(n => {
 
-            let rowStart = this.model.attributes.rowCount;
+            let rowStart = this.model.visibleRowCount();
             return this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
 
         }).catch((error) => {
@@ -2708,7 +2711,7 @@ const TableView = SilkyView.extend({
             left: 0,
             right: this.model.visibleRealColumnCount() - 1,
             top: 0,
-            bottom: this.model.attributes.rowCount - 1 };
+            bottom: this.model.visibleRowCount() - 1 };
 
         let column = this.model.getColumn(selection.colNo, true);
 
