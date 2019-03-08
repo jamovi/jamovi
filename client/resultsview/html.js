@@ -6,7 +6,7 @@ Backbone.$ = $;
 
 const Elem = require('./element');
 
-var HtmlModel = Backbone.Model.extend({
+var HtmlModel = Elem.Model.extend({
     defaults : {
         name: 'name',
         title: '(no title)',
