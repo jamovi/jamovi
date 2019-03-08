@@ -6,7 +6,7 @@ Backbone.$ = $;
 
 const Elem = require('./element');
 
-var SyntaxModel = Backbone.Model.extend({
+var SyntaxModel = Elem.Model.extend({
     defaults : {
         name:    'name',
         title:   '(no title)',

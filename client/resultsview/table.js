@@ -49,7 +49,7 @@ const createSortTransform = function(column, dir) {
     return trans;
 };
 
-const TableModel = Backbone.Model.extend({
+const TableModel = Elem.Model.extend({
     defaults : {
         name:  'name',
         title: '(no title)',
@@ -147,7 +147,9 @@ const TableView = Elem.View.extend({
 
             let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
-            this.$table = $('<table class="jmv-results-table-table' + rowSelectable + '"></table>').appendTo(this.$el);
+            this.$table = $('<table class="jmv-results-table-table' + rowSelectable + '"></table>');
+            this.addContent(this.$table);
+
             this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
             this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
             this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
@@ -170,7 +172,8 @@ const TableView = Elem.View.extend({
             if (navigator.platform === "Win32")
                 text = text.replace(/\u273B/g, '*');
 
-            let $pre = $('<pre class="jmv-results-text jmv-results-item"></pre>').appendTo(this.$el);
+            let $pre = $('<pre class="jmv-results-text jmv-results-item"></pre>');
+            this.addContent($pre);
             $pre.text(text);
         }
     },
@@ -603,6 +606,11 @@ const TableView = Elem.View.extend({
 
         html += '<tr><td colspan="' + nPhysCols + '"></td></tr>';
         this.$tableFooter.html(html);
+
+        let $refsRow = $('<tr class="jmvrefs"><td colspan="' + nPhysCols + '"></td></tr>');
+        // class="jmvrefs" excludes this from some exports/copy
+        $refsRow[0].childNodes[0].appendChild(this.refs);
+        this.$tableFooter.append($refsRow);
 
         this._ascButtons = this.$tableHeader.find('button.sort-asc');
         this._descButtons = this.$tableHeader.find('button.sort-desc');

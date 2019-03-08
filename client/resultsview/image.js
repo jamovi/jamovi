@@ -5,9 +5,9 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const ResultsElement = require('./element');
+const Elem = require('./element');
 
-const ImageModel = Backbone.Model.extend({
+const ImageModel = Elem.Model.extend({
     defaults : {
         name: 'name',
         title: '(no title)',
@@ -24,10 +24,10 @@ const ImageModel = Backbone.Model.extend({
     }
 });
 
-const ImageView = ResultsElement.View.extend({
+const ImageView = Elem.View.extend({
     initialize: function(data) {
 
-        ResultsElement.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('jmv-results-image');
 

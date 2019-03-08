@@ -175,7 +175,7 @@ $(document).ready(() => {
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
-            if (analysis !== null) {
+            if (analysis !== null && typeof(analysis) !== 'string') {
                 analysis.ready.then(function() {
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);

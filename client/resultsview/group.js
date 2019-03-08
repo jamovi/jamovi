@@ -6,7 +6,7 @@ Backbone.$ = $;
 
 const Elem = require('./element');
 
-const GroupModel = Backbone.Model.extend({
+const GroupModel = Elem.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -44,8 +44,10 @@ const GroupView = Elem.View.extend({
             this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
         else
             this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+        this.addIndex++;
 
-        this.$container = $('<div class="jmv-results-group-container"></div>').appendTo(this.$el);
+        this.$container = $('<div class="jmv-results-group-container"></div>');
+        this.addContent(this.$container);
 
         this.render();
     },
@@ -89,7 +91,7 @@ const GroupView = Elem.View.extend({
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt);
+            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
             if (child !== null) {
                 this.children.push(child);
                 $el.appendTo(this.$container);
