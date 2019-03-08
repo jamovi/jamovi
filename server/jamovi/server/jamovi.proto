@@ -91,11 +91,14 @@ message AnalysisResponse {
 
 message Reference {
     string name = 1;
-    Authors authors = 2;
-    uint32 year = 3;
-    string title = 4;
-    string publisher = 5;
+    string type = 2;
+    Authors authors = 3;
+    uint32 year = 4;
+    string title = 5;
+    string publisher = 6;
     string url = 7;
+    string volume = 8;
+    string pages = 9;
 }
 
 message Authors {

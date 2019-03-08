@@ -6,6 +6,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 
 const ERDM = require("element-resize-detector");
+const RefTable = require('./refs');
 
 const createItem = require('./create').createItem;
 
@@ -82,6 +83,10 @@ class Main {  // this is constructed at the bottom
             this.resultsDefn = eventData;
             this._render();
         }
+        else if (hostEvent.type === 'reftablechanged') {
+            if (this._refTable)
+                this._refTable.setup(eventData.refs, eventData.refsMode);
+        }
         else if (hostEvent.type === 'click') {
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
             if (el !== null) {
@@ -100,6 +105,9 @@ class Main {  // this is constructed at the bottom
         this.$body.attr('data-mode', this.resultsDefn.mode);
         this.$body.empty();
 
+        this._refTable = new RefTable();
+        this._refTable.setup(this.resultsDefn.refs, this.resultsDefn.refsMode);
+
         this.$results = $('<div id="results"></div>');
         this.results = createItem(
             this.resultsDefn.results,
@@ -109,7 +117,8 @@ class Main {  // this is constructed at the bottom
             { _sendEvent: event => this._sendMenuRequest(event) },
             this.resultsDefn.mode,
             this.resultsDefn.devMode,
-            this.resultsDefn.format);
+            this.resultsDefn.format,
+            this._refTable);
         this.$results.appendTo(this.$body);
 
         this.$selector = $('<div id="selector"></div>').appendTo(this.$body);

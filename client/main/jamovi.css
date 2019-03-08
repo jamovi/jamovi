@@ -166,10 +166,6 @@ body.windows.electron #header-buttons {
     border: 1px solid #ACACAC ;
 }
 
-#results h1 {
-    margin-left: .4em ;
-}
-
 #splitter {
     width: 8px ;
 }
