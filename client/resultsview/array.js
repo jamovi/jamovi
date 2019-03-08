@@ -7,7 +7,7 @@ Backbone.$ = $;
 const Elem = require('./element');
 const b64 = require('../common/utils/b64');
 
-const ArrayModel = Backbone.Model.extend({
+const ArrayModel = Elem.Model.extend({
     defaults : {
         name:  'name',
         title: '(no title)',
@@ -66,7 +66,8 @@ const ArrayView = Elem.View.extend({
             this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
         }
 
-        this.$container = $('<div class="jmv-results-array-container"></div>').appendTo(this.$el);
+        this.$container = $('<div class="jmv-results-array-container"></div>');
+        this.addContent(this.$container);
 
         this.render();
     },
@@ -135,7 +136,7 @@ const ArrayView = Elem.View.extend({
                 continue;
 
             let $el = $('<div></div>');
-            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt);
+            let child = this.create(element, options, $el, this.level+1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
             if (child === null)
                 continue;
 

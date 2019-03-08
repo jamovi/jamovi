@@ -83,6 +83,13 @@ const AppMenuButton = Backbone.View.extend({
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
+        this.$refsMode = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$refsMode.append($('<div>References</div>'));
+        this.$refsModeList = $('<select><option value="bottom">Visible</option><option value="hidden">Hidden</option></select>')
+            .appendTo(this.$refsMode)
+            .click(event => event.stopPropagation())
+            .change(event => this._changeRefsMode());
+
         this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
         this.$syntax.append($('<div>Syntax mode</div>'));
         this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
@@ -190,6 +197,7 @@ const AppMenuButton = Backbone.View.extend({
         this.model.settings().on('change:autoUpdate',   () => this._updateUI());
         this.model.settings().on('change:format',       () => this._updateUI());
         this.model.settings().on('change:missings',     () => this._updateUI());
+        this.model.settings().on('change:refsMode',     () => this._updateUI());
         // this.model.settings().on('change:embedCond',    () => this._updateUI());
 
         this._updateUI();
@@ -230,6 +238,9 @@ const AppMenuButton = Backbone.View.extend({
         let value = JSON.stringify(fmt);
         this.model.settings().setSetting('format', value);
     },
+    _changeRefsMode() {
+        this.model.settings().setSetting('refsMode', this.$refsModeList.val());
+    },
     _updateUI() {
         let settings = this.model.settings();
 
@@ -247,6 +258,9 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$nFormatList.val(nf);
         this.$pFormatList.val(pf);
+
+        let refsMode = settings.getSetting('refsMode', 'bottom');
+        this.$refsModeList.val(refsMode);
 
         let theme = settings.getSetting('theme', 'default');
         this.$themeList.val(theme);
