@@ -868,6 +868,9 @@ var BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.clickProcess = 'export';
         this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
+            { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
+            { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
+            { extensions: ['omt'], description: 'jamovi template (.omt)' },
             { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
             { extensions: ['rds'], description: 'R object (.rds)' },
             { extensions: ['RData'], description: 'R object (.RData)' },
@@ -952,38 +955,7 @@ var BackstageModel = Backbone.Model.extend({
                 name: 'export',
                 title: 'Export',
                 places: [
-                    {
-                        name: 'dataExport',
-                        title: 'Data',
-                        separator: true,
-                        action: () => {
-                            this._pcExportListModel.fileExtensions = [ { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
-                            { extensions: ['rds'], description: 'R object (.rds)' },
-                            { extensions: ['RData'], description: 'R object (.RData)' },
-                            { extensions: ['sav'], description: 'SPSS sav (.sav)' },
-                            // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
-                            { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
-                            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },  // crashes on open
-                            { extensions: ['dta'], description: 'Stata (.dta)' }, ];
-                        },
-                        model: this._pcExportListModel,
-                        view: FSEntryBrowserView
-                    },
-                    //{ name: 'excelDoc',    title: 'As Excel document', separator: true, model: { title: "Exporting to an Excel document is under development", msg: "Support for exporting your data to other formats is coming soon!" }, view: InDevelopmentView },
-                    {
-                        name: 'resultsExport',
-                        title: 'Results',
-                        action: () => {
-                            this._pcExportListModel.fileExtensions = [
-                                { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
-                                { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
-                                { extensions: ['omt'], description: 'jamovi template (.omt)' },
-                            ];
-                        },
-                        model: this._pcExportListModel,
-                        view: FSEntryBrowserView
-                    },
-                    //{ name: 'browse', title: 'Browse', action: () => { this._browse('export'); } }
+                    { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView },
                 ]
             }
         ];
