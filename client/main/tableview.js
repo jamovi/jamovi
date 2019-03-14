@@ -49,6 +49,7 @@ const TableView = SilkyView.extend({
         this.model.on('change:deletedRowCount', event => this.statusbar.updateInfoLabel('deletedRows', this.model.attributes.deletedRowCount));
         this.model.on('change:addedRowCount', event => this.statusbar.updateInfoLabel('addedRows', this.model.attributes.addedRowCount));
         this.model.on('change:rowCountExFiltered', event => this.statusbar.updateInfoLabel('filteredRows',  this.model.attributes.rowCount - this.model.attributes.rowCountExFiltered));
+        this.model.on('change:filtersVisible', event => this._updateEyeButton());
 
         this._tabStart = { row: 0, col: 0 };
         this.viewport = null;
@@ -81,6 +82,7 @@ const TableView = SilkyView.extend({
         this.statusbar.addInfoLabel('rowCount', { label: 'Row count', value: 0 });
         this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
+        this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
         this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
 
         this.$container = this.$el.find('.jmv-table-container');
@@ -186,6 +188,10 @@ const TableView = SilkyView.extend({
         ActionHub.get('appendRow').on('request', this._appendRows, this);
         ActionHub.get('delRow').on('request', this._deleteRows, this);
 
+        ActionHub.get('toggleFilterVisible').on('request', () => {
+            this.model.toggleFilterVisibility();
+        });
+
         this._clearSelectionList();
 
         this.model.on('change:editingVar', event => {
@@ -212,6 +218,12 @@ const TableView = SilkyView.extend({
             if (this._editing)
                 this._modifyingCellContents = true;
         });
+    },
+    _updateEyeButton() {
+        if (this.model.get('filtersVisible'))
+            this.statusbar.$el.find('.jmv-statusbar-button[data-name=togglefiltervisible]').addClass('hide-filter-columns');
+        else
+            this.statusbar.$el.find('.jmv-statusbar-button[data-name=togglefiltervisible]').removeClass('hide-filter-columns');
     },
     _updateFilterInfo() {
         let count = this.model.filterCount(true);
@@ -512,6 +524,7 @@ const TableView = SilkyView.extend({
         this.statusbar.updateInfoLabel('addedRows', this.model.attributes.addedRowCount);
         this.statusbar.updateInfoLabel('filteredRows', this.model.attributes.rowCount - this.model.attributes.rowCountExFiltered);
         this._updateFilterInfo();
+        this._updateEyeButton();
     },
     _refreshSelection() {
         if (this.model.attributes.editingVar !== null) {
@@ -2731,6 +2744,7 @@ const TableView = SilkyView.extend({
 
         ActionHub.get('undo').set('enabled', this.model.attributes.changesPosition > 0);
         ActionHub.get('redo').set('enabled', this.model.attributes.changesPosition < (this.model.attributes.changesCount - 1));
+        ActionHub.get('toggleFilterVisible').set('enabled', this.model.filterCount() > 0);
     },
     _toggleFilterEditor() {
         let editingId = this.model.get('editingVar');
