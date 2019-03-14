@@ -38,6 +38,7 @@ const StatusbarButton = function(name) {
         }
 
         event.stopPropagation();
+        event.preventDefault();
     };
 
     let action = ActionHub.get(name);
