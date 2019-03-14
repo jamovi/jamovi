@@ -76,7 +76,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
-                field['hidden'] = column.hidden
+                # field['hidden'] = column.hidden
                 field['active'] = column.active
             else:
                 if column.has_levels:
@@ -357,7 +357,7 @@ def read(data, path, prog_cb):
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', 0)
                 column.active = meta_column.get('active', True)
-                column.hidden = meta_column.get('hidden', False)
+                # column.hidden = meta_column.get('hidden', False)
             else:
                 column.trim_levels = meta_column.get('trimLevels', True)
 
