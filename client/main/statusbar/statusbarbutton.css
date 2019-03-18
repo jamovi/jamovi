@@ -2,7 +2,7 @@
 .jmv-status-bar .jmv-statusbar-button {
     height: 100%;
     width: 26px;
-    margin: 0 7px;
+    margin: 0 0;
 
     background-position: center center;
     background-size: 70% 70%;
@@ -13,12 +13,19 @@
     filter: grayscale(100%);
 }
 
-.jmv-status-bar .jmv-statusbar-button:hover {
+.jmv-status-bar .jmv-statusbar-button:not([disabled]):hover {
     background-color: #c1c1c1;
 }
 
 .jmv-statusbar-button[data-name=editfilters] {
     background-image: url('assets/menu-data-filter.svg');
+}
+
+.jmv-statusbar-button[data-name=togglefiltervisible] {
+    background-image: url('assets/filters-hidden.svg');
+}
+.jmv-statusbar-button[data-name=togglefiltervisible].hide-filter-columns {
+    background-image: url('assets/filters-visible.svg');
 }
 
 .jmv-statusbar-button[disabled] {

@@ -14,7 +14,14 @@ const Statusbar = function() {
                 </div>`;
     this.$el = $(html);
 
+    this.$el.on('dblclick', event => this._dblclicked(event));
+
     this._infoLabels = {};
+
+    this._dblclicked = function(event) {
+        event.stopPropagation();
+        event.preventDefault();
+    };
 
     this.addElement = function(id, $element, properties) {
         if (properties === undefined)
