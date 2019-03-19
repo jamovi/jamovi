@@ -81,7 +81,12 @@ class Analysis:
 
     def set_results(self, results):
         self.results = results
-        self.options.set(results.options)
+        if len(results.options.names) > 0:  # if not empty
+            # use options from results
+            self.options.set(results.options)
+        else:
+            # otherwise use options from analysis
+            results.options.CopyFrom(self.options.as_pb())
         self.changes.clear()
         self.status = Analysis.Status(results.status)
         self.clear_state = False
