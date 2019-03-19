@@ -46,6 +46,10 @@ class Checker(NodeVisitor):
         else:
             raise NameError('Function {}() does not exist'.format(name))
 
+        if func.meta.is_column_wise:
+            # allow the group_by positional argument
+            max_args += 1
+
         sig = signature(func)
         fun_kwargs = [ ]
 
@@ -69,6 +73,8 @@ class Checker(NodeVisitor):
 
         kwargs_provided = map(lambda x: x.arg, node.keywords)
         for kwarg in kwargs_provided:
+            if func.meta.is_column_wise and kwarg == 'group_by':
+                continue
             if kwarg not in fun_kwargs:
                 raise TypeError("'{}' is not an argument for {}()\n(If you're wanting to test equality, use two equal signs '==')".format(kwarg, name))
 

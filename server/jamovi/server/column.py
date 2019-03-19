@@ -8,6 +8,7 @@ from jamovi.core import MeasureType
 from jamovi.core import DataType
 
 from .celltracker import CellTracker
+
 from .compute import Parser
 from .compute import FormulaStatus
 from .compute import Transmogrifier
@@ -16,9 +17,9 @@ from .compute import Transfudgifier
 from .compute import Checker
 from .compute import Messages
 
-from .utils import FValues
-from .utils import convert
-from .utils import is_missing
+from .compute import FValues
+from .compute import convert
+from .compute import is_missing
 
 
 NaN = float('nan')
@@ -491,18 +492,16 @@ class Column:
             return self._needs_recalc
 
     def set_needs_parse(self):
-        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
-            return
         for parent in self._node_parents:
             parent.set_needs_parse()
-        self._needs_parse = True
+        if self.column_type != ColumnType.DATA and self.column_type != ColumnType.NONE:
+            self._needs_parse = True
 
     def set_needs_recalc(self):
-        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
-            return
         for parent in self._node_parents:
             parent.set_needs_recalc()
-        self._needs_recalc = True
+        if self.column_type != ColumnType.DATA and self.column_type != ColumnType.NONE:
+            self._needs_recalc = True
 
     def recalc(self, start=None, end=None):
 

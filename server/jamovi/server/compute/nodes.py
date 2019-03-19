@@ -7,16 +7,88 @@ from types import FunctionType as function
 import math
 from collections import OrderedDict
 from numbers import Number
+from itertools import compress
 
 from jamovi.core import DataType
 from jamovi.core import MeasureType
-from ..utils import FValues
-from ..utils import convert
-from ..utils import is_missing
-from ..utils import get_missing
+from . import FValues
+from . import convert
+from . import is_missing
+from . import get_missing
+from . import is_equal
 from . import functions
 
 NaN = float('nan')
+
+
+class FValueConverter:
+
+    def __init__(self, fvalues, arg_type):
+        self._fvalues = fvalues
+        self._arg_type = arg_type
+
+    def __iter__(self):
+        return FValueConverter.Iter(self._fvalues.__iter__(), self._arg_type)
+
+    class Iter:
+        def __init__(self, fiter, arg_type):
+            self._fiter = fiter
+            self._arg_type = arg_type
+
+        def __next__(self):
+            value = self._fiter.__next__()
+            value = convert(value, self._arg_type)
+            return value
+
+
+class SplitValues:
+    def __init__(self, split_by, func, args, kwargs):
+        self._split_by = split_by
+        self._func = func
+        self._cache = None
+        self._args = args
+        self._kwargs = kwargs
+
+    def _calculate(self, row_count, filt):
+
+        if self._split_by is None:
+            args = self._args
+            kwargs = self._kwargs
+            self._cache = self._func(*args, **kwargs)
+        else:
+            self._cache = { }
+
+            if self._split_by.has_levels:
+                levels = self._split_by.get_levels(row_count)
+            else:
+                levels = set(self._split_by.fvalues(row_count, filt))
+
+            for level in levels:
+
+                def keep_only_this_level(values):
+                    return compress(values, map(lambda x: is_equal(x, level), self._split_by.fvalues(row_count, filt)))
+
+                args = map(keep_only_this_level, self._args)
+                kwargs = { k: keep_only_this_level(v) for k, v in self._kwargs }
+                key = convert(level, str)
+                try:
+                    value = self._func(*args, **kwargs)
+                except Exception:
+                    value = (-2147483648, '')
+                self._cache[key] = value
+
+    def fvalue(self, index, row_count, filt):
+        if self._cache is None:
+            self._calculate(row_count, filt)
+
+        if self._split_by is None:
+            return self._cache
+        else:
+            value = self._split_by.fvalue(index, row_count, filt)
+            if is_missing(value):
+                return (-2147483648, '')
+            else:
+                return self._cache[convert(value, str)]
 
 
 class Node:
@@ -335,13 +407,33 @@ class Call(ast.Call, Node):
                 value = self.args[0].fvalue(index - offset, row_count, False)
         elif self._function.meta.is_column_wise:
             if self._cached_value is None:
-                args = list(map(lambda arg: arg.fvalues(row_count, filt), self.args))
+                group_by = None
+                args = list(self.args)
                 for i in range(len(args)):
-                    arg_type_i = min(i, len(self._arg_types) - 1)
-                    arg_type = self._arg_types[arg_type_i]
-                    args[i] = (convert(v, arg_type) for v in args[i])
-                self._cached_value = self._function(*args)
-            value = self._cached_value
+                    arg = args[i]
+                    if i != 1:
+                        arg_type_i = min(i, len(self._arg_types) - 1)
+                        arg_type = self._arg_types[arg_type_i]
+                        args[i] = FValueConverter(arg, arg_type)
+                    else:
+                        # at this stage, all V functions take a single argument
+                        # so the second is always the group_by ... this could
+                        # change in the future, and this will need updating
+                        group_by = arg
+                if group_by is not None:
+                    args.pop(1)
+                kwargs = {}
+                for i, kwarg in enumerate(self.keywords):
+                    kw_name = kwarg.arg
+                    if kw_name == 'group_by':
+                        group_by = kwarg.value
+                    else:
+                        kw_values = kwarg.value.fvalues(row_count, False)
+                        kw_type = self._kw_types[i]
+                        kw_values = FValueConverter(kw_values, kw_type)
+                        kwargs[kw_name] = kw_values
+                self._cached_value = SplitValues(group_by, self._function, args, kwargs)
+            value = self._cached_value.fvalue(index, row_count, filt)
         else:
             args = list(map(lambda arg: arg.fvalue(index, row_count, False), self.args))
             for i in range(len(args)):
@@ -738,6 +830,9 @@ class keyword(ast.keyword, Node):
 
     def is_atomic_node(self):
         return self.value.is_atomic_node()
+
+    def get_levels(self, row_count):
+        return self.value.get_levels(row_count)
 
     @property
     def data_type(self):

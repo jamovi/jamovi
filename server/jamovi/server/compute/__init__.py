@@ -3,6 +3,12 @@
 
 from enum import Enum
 
+from .typevalues import FValues
+from .typevalues import convert
+from .typevalues import is_missing
+from .typevalues import is_equal
+from .typevalues import get_missing
+
 from .parser import Parser
 from .transmogrifier import Transmogrifier
 from .transfilterifier import Transfilterifier

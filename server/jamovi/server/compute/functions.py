@@ -9,8 +9,8 @@ from scipy.stats import boxcox
 
 from jamovi.core import DataType
 from jamovi.core import MeasureType
-from jamovi.server.utils import is_missing
-from jamovi.server.utils import is_equal
+from jamovi.server.compute import is_missing
+from jamovi.server.compute import is_equal
 
 from .funcmeta import row_wise
 from .funcmeta import column_wise

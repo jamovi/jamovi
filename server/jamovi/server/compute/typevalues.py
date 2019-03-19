@@ -1,6 +1,7 @@
 
 import math
 from numbers import Number as num
+from itertools import repeat
 
 
 class FValues:
@@ -11,7 +12,7 @@ class FValues:
 
     def __iter__(self):
         if self._parent.is_atomic_node():
-            return [ self._parent.fvalue(0, 1, False) ].__iter__()
+            return repeat(self._parent.fvalue(0, 1, False), self._row_count).__iter__()
         else:
             return FValues.FIter(self)
 
