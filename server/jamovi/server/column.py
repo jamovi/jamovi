@@ -1,7 +1,6 @@
 
 import ast
 import re
-from copy import deepcopy
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
@@ -102,7 +101,7 @@ class Column:
     def prep_for_deletion(self):
         # removes itself as a dependent
         if self._node is not None:
-            self._node._release()
+            self._node.delete()
             self._node._remove_node_parent(self)
             self._node = None
 
@@ -568,7 +567,7 @@ class Column:
             dataset = self._parent
 
             if self._formula_status is FormulaStatus.OK:
-                self._node._release()
+                self._node.delete()
                 self._node._remove_node_parent(self)
                 self._node = None
 
@@ -616,7 +615,7 @@ class Column:
                             ast.Call(
                                 # convert value to int
                                 func=ast.Name(id='INT', ctx=ast.Load()),
-                                args=[ deepcopy(node) ],
+                                args=[ node ],
                                 keywords=[ ]) ],
                         keywords=[ ])
 
@@ -702,9 +701,10 @@ class Column:
         self._node_parents.append(parent)
 
     def _remove_node_parent(self, parent):
-        self._node_parents.remove(parent)
+        if parent in self._node_parents:
+            self._node_parents.remove(parent)
 
-    def _release(self):
+    def _delete(self):
         pass
 
     @property

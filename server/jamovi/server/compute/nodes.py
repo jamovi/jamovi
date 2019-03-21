@@ -94,6 +94,7 @@ class SplitValues:
 class Node:
     def __init__(self):
         self._node_parents = [ ]
+        self._deleted = False
 
     def set_needs_recalc(self):
         for parent in self._node_parents:
@@ -125,9 +126,17 @@ class Node:
         self._node_parents.append(node)
 
     def _remove_node_parent(self, node):
-        self._node_parents.remove(node)
+        if node in self._node_parents:
+            self._node_parents.remove(node)
+        if len(self._node_parents) == 0:
+            self.delete()
 
-    def _release(self):
+    def delete(self):
+        if not self._deleted:
+            self._delete()
+            self._deleted = True
+
+    def _delete(self):
         pass
 
 
@@ -270,8 +279,7 @@ class UnaryOp(ast.UnaryOp, Node):
     def uses_column_formula(self):
         return self.operand.uses_column_formula
 
-    def _release(self):
-        self.operand._release()
+    def _delete(self):
         self.operand._remove_node_parent(self)
 
 
@@ -334,9 +342,8 @@ class BoolOp(ast.BoolOp, Node):
                 return True
         return False
 
-    def _release(self):
+    def _delete(self):
         for v in self.values:
-            v._release()
             v._remove_node_parent(self)
 
 
@@ -414,12 +421,12 @@ class Call(ast.Call, Node):
                     if i != 1:
                         arg_type_i = min(i, len(self._arg_types) - 1)
                         arg_type = self._arg_types[arg_type_i]
-                        args[i] = FValueConverter(arg, arg_type)
+                        args[i] = FValueConverter(arg.fvalues(row_count, filt), arg_type)
                     else:
                         # at this stage, all V functions take a single argument
                         # so the second is always the group_by ... this could
                         # change in the future, and this will need updating
-                        group_by = arg
+                        group_by = arg.fvalues(row_count, filt)
                 if group_by is not None:
                     args.pop(1)
                 kwargs = {}
@@ -428,14 +435,14 @@ class Call(ast.Call, Node):
                     if kw_name == 'group_by':
                         group_by = kwarg.value
                     else:
-                        kw_values = kwarg.value.fvalues(row_count, False)
+                        kw_values = kwarg.value.fvalues(row_count, filt)
                         kw_type = self._kw_types[i]
                         kw_values = FValueConverter(kw_values, kw_type)
                         kwargs[kw_name] = kw_values
                 self._cached_value = SplitValues(group_by, self._function, args, kwargs)
             value = self._cached_value.fvalue(index, row_count, filt)
         else:
-            args = list(map(lambda arg: arg.fvalue(index, row_count, False), self.args))
+            args = list(map(lambda arg: arg.fvalue(index, row_count, filt), self.args))
             for i in range(len(args)):
                 arg_type_i = min(i, len(self._arg_types) - 1)
                 arg_type = self._arg_types[arg_type_i]
@@ -443,7 +450,7 @@ class Call(ast.Call, Node):
             kwargs = {}
             for i, kwarg in enumerate(self.keywords):
                 kw_name = kwarg.arg
-                kw_value = kwarg.fvalue(index, row_count, False)
+                kw_value = kwarg.fvalue(index, row_count, filt)
                 kw_type = self._kw_types[i]
                 kw_value = convert(kw_value, kw_type)
                 kwargs[kw_name] = kw_value
@@ -598,9 +605,8 @@ class Call(ast.Call, Node):
 
         return False
 
-    def _release(self):
+    def _delete(self):
         for arg in self.args:
-            arg._release()
             arg._remove_node_parent(self)
 
 
@@ -713,9 +719,7 @@ class BinOp(ast.BinOp, Node):
     def uses_column_formula(self):
         return self.left.uses_column_formula or self.right.uses_column_formula
 
-    def _release(self):
-        self.left._release()
-        self.right._release()
+    def _delete(self):
         self.left._remove_node_parent(self)
         self.right._remove_node_parent(self)
 
@@ -810,12 +814,9 @@ class Compare(ast.Compare, Node):
 
         return False
 
-    def _release(self):
-        self.left._release()
+    def _delete(self):
         self.left._remove_node_parent(self)
-
         for comp in self.comparators:
-            comp._release()
             comp._remove_node_parent(self)
 
 
@@ -850,8 +851,7 @@ class keyword(ast.keyword, Node):
     def uses_column_formula(self):
         return self.value.uses_column_formula
 
-    def _release(self):
-        self.value._release()
+    def _delete(self):
         self.value._remove_node_parent(self)
 
 
