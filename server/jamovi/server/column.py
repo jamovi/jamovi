@@ -618,42 +618,31 @@ class Column:
                         keywords=[ ])
 
                 # here we determine the parent filters
-                parent_filter_no = self.filter_no - 1
                 parent_filter_start = None
-
-                while parent_filter_no >= 0:
-                    for i in range(self.index):
-                        parent = self._parent[i]
-                        if parent.filter_no == parent_filter_no:
-                            if parent.active:
-                                if parent_filter_start is None:
-                                    parent_filter_start = i
-                                    break
-                            else:
-                                parent_filter_no -= 1
-                    if parent_filter_start is not None:
-                        break
-
-                if parent_filter_no >= 0:
-                    # if it has parent filters
-                    parent_filter_end = self.index
-                    for i in range(parent_filter_start, self.index):
-                        filter_no = self._parent[i].filter_no
-                        if filter_no < parent_filter_no:
-                            pass
-                        elif filter_no == parent_filter_no:
-                            if parent_filter_start is None:
-                                parent_filter_start = i
-                            parent_filter_end = i + 1
+                parent_filter_end = None
+                parent_filter_no = None
+                for i in range(self.index - 1, -1, -1):
+                    column = self._parent[i]
+                    if column.active:
+                        if parent_filter_no is None:
+                            if column.filter_no != self.filter_no:
+                                parent_filter_no = column.filter_no
+                                parent_filter_end = i
                         else:
-                            break
+                            if column.filter_no != parent_filter_no:
+                                parent_filter_start = i
+                                break
+
+                if parent_filter_no is not None:
+                    if parent_filter_start is None:
+                        parent_filter_start = 0
 
                     parents = list(map(
                         lambda i: ast.Name(id=self._parent[i].name, ctx=ast.Load()),
-                        range(parent_filter_start, parent_filter_end)))
+                        range(parent_filter_start, parent_filter_end + 1)))
                     ops = list(map(
                         lambda i: ast.Eq(),
-                        range(parent_filter_start, parent_filter_end)))
+                        range(parent_filter_start, parent_filter_end + 1)))
 
                     Transfilterifier(parents).visit(node)
 
