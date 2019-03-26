@@ -958,7 +958,7 @@ class Instance:
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
                     'insert rows',
-                    'You can not insert rows while filtered rows are hidden')
+                    'You cannot insert rows while filtered rows are hidden')
 
         insert_offsets = [0] * len(request_rows)
         for i in range(0, len(request_rows)):
@@ -1091,7 +1091,7 @@ class Instance:
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
                     'delete rows',
-                    'You can not delete rows while filtered rows are hidden')
+                    'You cannot delete rows while filtered rows are hidden')
 
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
                 self._mod_tracker.log_row_deletion(row_data)
@@ -1307,16 +1307,16 @@ class Instance:
                     if any(dep.is_filter for dep in transform.dependents):
                         raise ForbiddenOp(
                             'modify transform',
-                            'You cannot modify transforms that affect filters when filtered rows are not visible')
+                            'You cannot modify transforms that affect filters when filtered rows are hidden')
 
             for column_pb in request.schema.columns:
                 if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
                     if column_pb.id != 0:
                         column = self._data.get_column_by_id(column_pb.id)
-                        if column.is_filter or any(dep.is_filter for dep in column.dependents):
+                        if not column.is_filter and any(dep.is_filter for dep in column.dependents):
                             raise ForbiddenOp(
                                 'modify columns',
-                                'You cannot modify filters or columns that affect filters when filtered rows are not visible')
+                                'You cannot modify columns that affect filters when filtered rows are hidden')
 
         # columns that need to be reparsed, and/or recalced
         reparse = set()
@@ -1746,7 +1746,7 @@ class Instance:
                     if any(dep.is_filter for dep in column.dependents):
                         raise ForbiddenOp(
                             'modify columns',
-                            'You cannot modify columns that affect filters when filtered rows are not visible')
+                            'You cannot modify columns that affect filters when filtered rows are hidden')
 
         data_list = []
 
