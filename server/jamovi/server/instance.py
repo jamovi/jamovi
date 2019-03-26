@@ -1077,6 +1077,11 @@ class Instance:
             column = self._data[col_pb.index + insert_offsets[i]]
             changes['columns'].add(column)
 
+        if filter_inserted:
+            for column in self._data:  # the filters info needs sending back because the names may have changed.
+                if column.column_type is ColumnType.FILTER:
+                    changes['columns'].add(column)
+
     def _on_dataset_del_rows(self, request, response, changes):
         rows_removed = False
         sorted_data = sorted(request.rows, key=lambda row_data: row_data.rowStart + row_data.rowCount - 1, reverse=True)

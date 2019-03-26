@@ -355,7 +355,7 @@ def read(data, path, prog_cb):
             column.cell_tracker.edited_cell_ranges = meta_column.get('edits', [])
 
             if column.is_filter:
-                column.filter_no = meta_column.get('filterNo', 0)
+                column.filter_no = meta_column.get('filterNo', -1)
                 column.active = meta_column.get('active', True)
                 # column.hidden = meta_column.get('hidden', False)
             else:

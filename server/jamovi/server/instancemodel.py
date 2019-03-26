@@ -299,23 +299,31 @@ class InstanceModel:
 
         return column
 
+    def find_next_filter_id(self):
+        id = -1
+        for column in self._columns:
+            if column.column_type is not ColumnType.FILTER:
+                break
+            if id < column.filter_no:
+                id = column.filter_no
+
+        return id + 1
+
     def update_filter_names(self):
         filter_index = 0
         subfilter_index = 1
         filters = []
-
         for column in self._columns:
             if column.column_type is not ColumnType.FILTER:
                 break
             if column.filter_no in filters:
                 column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
-                column.filter_no = filter_index - 1
                 subfilter_index += 1
             else:
                 column.name = 'Filter {}'.format(filter_index + 1)
-                if column.filter_no > -1:
-                    filters.append(column.filter_no)
-                column.filter_no = filter_index
+                if column.filter_no == -1:
+                    column.filter_no = self.find_next_filter_id()
+                filters.append(column.filter_no)
                 filter_index += 1
                 subfilter_index = 1
 
@@ -332,26 +340,27 @@ class InstanceModel:
         self.update_filter_names()
 
     def delete_columns_by_id(self, ids):
-        sortedIds = sorted(ids, key=lambda id: self.get_column_by_id(id).index)
+        if len(ids) > 0:
+            sortedIds = sorted(ids, key=lambda id: self.get_column_by_id(id).index)
 
-        start = -1
-        end = -1
-        for i in range(0, len(sortedIds)):
-            column = self.get_column_by_id(sortedIds[i])
-            if start == -1:
-                start = column.index
-                end = start
-            elif column.index == end + 1:
-                end += 1
-            else:
+            start = -1
+            end = -1
+            for i in range(0, len(sortedIds)):
+                column = self.get_column_by_id(sortedIds[i])
+                if start == -1:
+                    start = column.index
+                    end = start
+                elif column.index == end + 1:
+                    end += 1
+                else:
+                    self.delete_columns(start, end)
+                    start = column.index
+                    end = start
+
+            if start is not -1:
                 self.delete_columns(start, end)
-                start = column.index
-                end = start
 
-        if start is not -1:
-            self.delete_columns(start, end)
-
-        self.update_filter_names()
+            self.update_filter_names()
 
     async def import_from(self, sources, add_name_column=True):
 
