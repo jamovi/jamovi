@@ -810,30 +810,32 @@ const DataSetModel = Backbone.Model.extend({
                 }
                 else if (change.hiddenChanged || change.created) {
                     let column = this.getColumnById(change.id);
-                    if (column.hidden) {
-                        if (change.dIndex > old.right) {  // to the right of the view
-                            // do nothing
-                        }
-                        else if (change.dIndex < old.left) {  // to the left of the view
-                            viewport.left  -= 1;
-                            viewport.right -= 1;
-                        }
-                        else {
-                            viewport.right -= 1;
-                        }
-                    }
-                    else {
-                        if (column.dIndex > viewport.right) {  // to the right of the view
-                            // do nothing
-                        }
-                        else if (column.dIndex < viewport.left) {
-                            viewport.left  += 1;
-                            viewport.right += 1;
+                    if ( ! (change.created && column.hidden)) {
+                        if (column.hidden) {
+                            if (change.dIndex > old.right) {  // to the right of the view
+                                // do nothing
+                            }
+                            else if (change.dIndex < old.left) {  // to the left of the view
+                                viewport.left  -= 1;
+                                viewport.right -= 1;
+                            }
+                            else {
+                                viewport.right -= 1;
+                            }
                         }
                         else {
-                            viewport.right += 1;
-                            let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
-                            this.attributes.cells.splice(column.dIndex - viewport.left, 0, cells);
+                            if (column.dIndex > viewport.right) {  // to the right of the view
+                                // do nothing
+                            }
+                            else if (column.dIndex < viewport.left) {
+                                viewport.left  += 1;
+                                viewport.right += 1;
+                            }
+                            else {
+                                viewport.right += 1;
+                                let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
+                                this.attributes.cells.splice(column.dIndex - viewport.left, 0, cells);
+                            }
                         }
                     }
                 }
