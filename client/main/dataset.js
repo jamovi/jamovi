@@ -811,7 +811,10 @@ const DataSetModel = Backbone.Model.extend({
                 else if (change.hiddenChanged || change.created) {
                     let column = this.getColumnById(change.id);
                     if (column.hidden) {
-                        if (change.dIndex > old.right) {  // to the right of the view
+                        if (change.created) {
+                            // do nothing
+                        }
+                        else if (change.dIndex > old.right) {  // to the right of the view
                             // do nothing
                         }
                         else if (change.dIndex < old.left) {  // to the left of the view
