@@ -20,8 +20,6 @@ const DataVarLevelWidget = function(level, model, i) {
         let keypressed = event.keyCode || event.which;
         if (keypressed === 13) { // enter key
             this.$label.blur();
-            if (this.model.get('changes'))
-                this.model.apply();
             event.preventDefault();
             event.stopPropagation();
         }

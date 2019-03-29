@@ -59,7 +59,7 @@ const VariableModel = Backbone.Model.extend({
         });
     },
     suspendAutoApply() {
-        this.set('autoApply', false);
+        this.set('autoApply', false, { silent: true });
     },
     defaults : {
         name : null,
@@ -230,7 +230,7 @@ const VariableModel = Backbone.Model.extend({
     },
     apply() {
 
-        this.set('autoApply', true);
+        this.set('autoApply', true, { silent: true });
 
         if (this.attributes.changes === false)
             return Promise.resolve();

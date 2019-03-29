@@ -80,8 +80,6 @@ const VariableEditor = Backbone.View.extend({
                 case 'ArrowUp':
                 case 'ArrowDown':
                 case 'Enter':
-                    if (this.editorModel.get('changes'))
-                        this.editorModel.apply();
                     event.preventDefault();
                     break;
                 case 'Escape':

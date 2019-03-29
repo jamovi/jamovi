@@ -164,6 +164,9 @@ const DataVarWidget = Backbone.View.extend({
             this.$typesHighlight.css('visibility', 'hidden');
     },
     _focusLevelControls() {
+        if (this.$levelsCrtl.hasClass('super-focus'))
+            return;
+            
         this.model.suspendAutoApply();
         this.$levelsCrtl.addClass('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
