@@ -267,6 +267,8 @@ class Reference extends HTMLElement {
                 .body {
                     padding: 2px ;
                     border: 2px solid transparent ;
+                    display: grid ;
+                    grid-template-columns: auto 1fr auto ;
                 }
 
                 .body[data-checked='1'] {
@@ -283,6 +285,7 @@ class Reference extends HTMLElement {
                 span.num {
                     font-weight: bold ;
                     margin-right: 6px ;
+                    line-height: 150% ;
                 }
 
                 span.ref {
