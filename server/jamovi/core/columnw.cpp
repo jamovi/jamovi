@@ -777,14 +777,14 @@ const char *ColumnW::svalue(int index)
     else if (dataType() == DataType::DECIMAL)
     {
         double value = cellAt<double>(index);
-        if (isnan(value) || value < INT_MIN || value > INT_MAX)
+        if (isnan(value) || value < INT64_MIN || value > INT64_MAX)
         {
             return "";
         }
         else
         {
             // we round and divide so it matches _transferLevels()
-            int thous = (int)round(value * 1000);
+            int64_t thous = (int64_t)round(value * 1000);
 
             stringstream ss;
             ss.setf(ios::fixed);
@@ -892,20 +892,20 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
         {
             if (src.dataType() == DataType::DECIMAL)
             {
-                set<int> values;
+                set<int64_t> values;
 
                 for (int i = 0; i < src.rowCount(); i++)
                 {
                     double value = src.dvalue(i);
                     if ( ! isnan(value))
-                        values.insert((int)round(value * 1000));
+                        values.insert((int64_t)round(value * 1000));
                 }
 
                 int count = 0;
-                set<int>::iterator itr;
+                set<int64_t>::iterator itr;
                 for (itr = values.begin(); itr != values.end(); itr++)
                 {
-                    int value = *itr;
+                    int64_t value = *itr;
                     stringstream ss;
                     ss.setf(ios::fixed);
                     ss << setprecision(src.dps());

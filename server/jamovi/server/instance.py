@@ -40,6 +40,7 @@ from tempfile import NamedTemporaryFile
 from tempfile import mktemp
 
 from .utils import fs
+from .utils import is_int32
 
 log = logging.getLogger('jamovi')
 
@@ -1871,6 +1872,10 @@ class Instance:
                     value = values[j]
                     if value is None or value == '':
                         pass
+                    elif isinstance(value, int):
+                        if dt is not DataType.TEXT and not is_int32(value):
+                            dt = DataType.DECIMAL
+                            mt = MeasureType.CONTINUOUS
                     elif isinstance(value, float):
                         if dt is not DataType.TEXT:
                             dt = DataType.DECIMAL
@@ -2030,6 +2035,9 @@ class Instance:
                         if not math.isclose(value % 1, 0.0):
                             d_type = DataType.DECIMAL
                             m_type = MeasureType.CONTINUOUS
+                        if not is_int32(value):
+                            d_type = DataType.DECIMAL
+                            m_type = MeasureType.CONTINUOUS
 
                 column.change(data_type=d_type, measure_type=m_type)
 
@@ -2042,6 +2050,9 @@ class Instance:
                 if math.isnan(value):
                     continue
                 if not math.isclose(value % 1, 0.0):
+                    # don't change
+                    break
+                if not is_int32(value):
                     # don't change
                     break
             else:
