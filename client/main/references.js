@@ -276,7 +276,7 @@ class Reference extends HTMLElement {
                     padding: 2px ;
                     border: 2px solid transparent ;
                     display: grid ;
-                    grid-template-columns: auto 1fr auto ;
+                    grid-template-columns: auto auto 1fr ;
                 }
 
                 .body[data-checked='1'] {
