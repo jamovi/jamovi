@@ -184,6 +184,14 @@ class References extends HTMLElement {
 
     resolve(moduleName, ref) {
 
+        // the proto addresses changed
+        if (ref.authors === null || typeof(ref.authors) !== 'object')
+            return {
+                addresses: [ { module: moduleName, name: ref.name } ],
+                text: '',
+                url: ref.url,
+            };
+
         let pub = ref.publisher;
         if (pub.endsWith(ref.url)) {
             let noUrl = pub.substring(0, pub.length - ref.url.length);

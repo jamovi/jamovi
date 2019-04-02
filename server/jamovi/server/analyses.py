@@ -270,6 +270,12 @@ class Analyses:
         analysis_pb = jcoms.AnalysisResponse()
         analysis_pb.ParseFromString(serial)
 
+        for ref_pb in analysis_pb.references:
+            # Handle corrupt references
+            if not ref_pb.HasField('authors'):
+                del analysis_pb.references[:]
+                break
+
         analysis = self._construct(
             analysis_pb.analysisId,
             analysis_pb.name,
