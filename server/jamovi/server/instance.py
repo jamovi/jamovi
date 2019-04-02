@@ -1838,8 +1838,11 @@ class Instance:
 
                 elif column.data_type == DataType.INTEGER:
                     for value in values:
-                        if value is not None and value != '' and not isinstance(value, int):
-                            raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
+                        if value is not None and value != '':
+                            if not isinstance(value, int):
+                                raise TypeError("Cannot assign non-integer value to column '{}'".format(column.name))
+                            elif not is_int32(value):
+                                raise TypeError("Value is too large for column '{}' of type integer".format(column.name))
 
             if col_count > 0 and data_col_count == 0:
                 raise TypeError("Cannot assign to these columns.")
@@ -1899,7 +1902,7 @@ class Instance:
                     elif isinstance(value, float):
                         column.set_value(row_no, value)
                     elif isinstance(value, int):
-                        column.set_value(row_no, value)
+                        column.set_value(row_no, float(value))
                     else:
                         raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
 

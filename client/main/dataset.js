@@ -1575,7 +1575,7 @@ const DataSetViewModel = DataSetModel.extend({
                 blockPB.rowCount = block.rowCount;
                 blockPB.columnStart = block.columnStart;
                 blockPB.columnCount = block.columnCount;
-                let is_clear = true;
+                let isClear = true;
                 if (block.clear === false) {
                     for (let inCells of block.values) {
                         for (let j = 0; j < block.rowCount; j++) {
@@ -1588,23 +1588,26 @@ const DataSetViewModel = DataSetModel.extend({
                             else if (typeof(inValue) === 'string') {
                                 outValue.s = inValue;
                                 outValue.type = 's';
-                                is_clear = false;
+                                isClear = false;
                             }
-                            else if (Math.floor(inValue) === inValue) {
+                            else if (Math.floor(inValue) === inValue
+                                && inValue <= 2147483647
+                                && inValue >= -2147483648) {
+
                                 outValue.i = inValue;
                                 outValue.type = 'i';
-                                is_clear = false;
+                                isClear = false;
                             }
                             else {
                                 outValue.d = inValue;
                                 outValue.type = 'd';
-                                is_clear = false;
+                                isClear = false;
                             }
                             blockPB.values.push(outValue);
                         }
                     }
                 }
-                blockPB.clear = is_clear;
+                blockPB.clear = isClear;
                 if (blockPB.clear)
                     blockPB.values = [];
                 cellsRequest.data.push(blockPB);
