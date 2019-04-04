@@ -219,7 +219,7 @@ function _htmlify(el, options) {
         if (el.nodeType === Node.DOCUMENT_FRAGMENT_NODE)
             return '';
 
-        if (el.style.display === 'none') {
+        if (getComputedStyle(el).display === 'none') {
             include = false;
             includeChildren = false;
             return '';
