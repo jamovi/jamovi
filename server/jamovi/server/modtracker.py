@@ -122,6 +122,8 @@ class ModTracker:
         self._event = None
 
     def begin_undo(self):
+        self._active = False
+
         if self._pos <= 0:
             return self._blank_event
 

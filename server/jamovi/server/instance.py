@@ -1768,10 +1768,10 @@ class Instance:
 
         n_cols_before = self._data.total_column_count
         n_rows_before = self._data.row_count
+        expected_n_rows = self._data.row_count
 
         if bottom_most_row_index >= self._data.row_count:
-            self._mod_tracker.log_rows_appended(self._data.row_count, bottom_most_row_index)
-            self._data.set_row_count(bottom_most_row_index + 1)
+            expected_n_rows = bottom_most_row_index + 1
 
         if right_most_column_index != -1:
             right_most_column_data = self._get_column(right_most_column_index, 0, True)
@@ -1792,11 +1792,11 @@ class Instance:
             if row_count == 0 or col_count == 0:
                 continue
 
-            if row_start >= self._data.row_count:
+            if row_start >= expected_n_rows:
                 continue
 
-            if row_start + row_count - 1 >= self._data.row_count:
-                row_count = self._data.row_count - row_start
+            if row_start + row_count - 1 >= expected_n_rows:
+                row_count = expected_n_rows - row_start
 
             base_index = 0
             search_index = col_start
@@ -1846,6 +1846,10 @@ class Instance:
 
             if col_count > 0 and data_col_count == 0:
                 raise TypeError("Cannot assign to these columns.")
+
+        if bottom_most_row_index >= self._data.row_count:
+            self._mod_tracker.log_rows_appended(self._data.row_count, bottom_most_row_index)
+            self._data.set_row_count(bottom_most_row_index + 1)
 
         filter_changed = False
 
