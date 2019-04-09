@@ -312,6 +312,18 @@ def INT(index, x):
 
 
 @row_wise
+@returns(DataType.TEXT, MeasureType.NOMINAL)
+def SPLIT(index, x: str, sep: str = ',', piece: int = -2147483648):
+    pieces = x.split(sep)
+    if piece == -2147483648:
+        return ' '.join(pieces)
+    elif piece <= 0:
+        return ''
+    else:
+        return pieces[piece - 1]
+
+
+@row_wise
 @returns(DataType.INTEGER, MeasureType.NOMINAL, range(2, 10000, 2))
 @levels(range(0, 10000, 2))
 def RECODE(index, x, *args):

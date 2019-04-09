@@ -120,6 +120,8 @@ function allFunctions($functionsContent) {
     descriptions.OFFSET = { label: 'OFFSET( <i>variable, integer</i> )', content: 'Offsets the values up or down.' };
     $functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
     descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: 'Returns the row numbers.' };
+    $functionsContent.append($('<div class="item" data-name="SPLIT">SPLIT</div>'));
+    descriptions.SPLIT = { label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: 'Splits text into pieces based on a separator. <i>piece</i> specifies the desired piece by index.' };
     $functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
     descriptions.TEXT = { label: 'TEXT( <i>number</i> )', content: 'Converts the value to text.' };
     $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
