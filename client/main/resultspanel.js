@@ -438,7 +438,7 @@ const ResultsPanel = Backbone.View.extend({
 
         if ( ! options.exclude)
             options.exclude = [ ];
-        options.exclude('.jmvrefs');
+        options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
         return formatIO.exportElem($element, 'text/html', options);
     },
@@ -464,7 +464,7 @@ const ResultsPanel = Backbone.View.extend({
                 images:'absolute',
                 margin: '24',
                 docType: true,
-                exclude: [ '.jmvrefs' ],
+                exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
             };
 
             let data = { };

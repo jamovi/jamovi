@@ -228,13 +228,13 @@ function _htmlify(el, options) {
         tag = el.tagName.toLowerCase();
 
         if (options.excludeTags) {
-            if (tag in options.excludeTags) {
+            if (options.excludeTags.includes(tag)) {
                 includeChildren = false;
                 return '';
             }
         }
         if (options.excludeClasses) {
-            let nodeClasses = (el.className || '').split(' ');
+            let nodeClasses = [...el.classList];
             for (let ex of options.excludeClasses) {
                 if (nodeClasses.includes(ex)) {
                     includeChildren = false;
