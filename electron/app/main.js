@@ -24,7 +24,16 @@ function readConfig() {
 
     let execDir = path.dirname(process.execPath);
     let confPath = path.join(execDir, 'env.conf');
-    let content = fs.readFileSync(confPath, 'utf8');
+    let content;
+
+    try {
+        content = fs.readFileSync(confPath, 'utf8');
+    }
+    catch (e) {
+        confPath = path.join(execDir, '..', 'Resources', 'env.conf');
+        content = fs.readFileSync(confPath, 'utf8');
+    }
+
     let conf = ini.parse(content);
     let env = conf.ENV;
 

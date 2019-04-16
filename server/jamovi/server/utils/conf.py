@@ -33,6 +33,8 @@ def _init():
             root = path.realpath(path.join(path.dirname(sys.executable), '..'))
 
         ini_path = path.join(root, 'bin', 'env.conf')
+        if not path.isfile(ini_path):
+            ini_path = path.join(root, 'Resources', 'env.conf')
 
         config = ConfigParser()
         config.read(ini_path)
