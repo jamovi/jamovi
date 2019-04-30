@@ -203,6 +203,10 @@ class References extends HTMLElement {
 
         let text;
 
+        let year = ref.year2;
+        if ( ! year)
+            year = ref.year;
+
         if (ref.type === 'article') {
             let volume = '';
             let pages = '';
@@ -214,10 +218,10 @@ class References extends HTMLElement {
             if (ref.pages)
                 pages = `, ${ ref.pages }`;
 
-            text = `${ ref.authors.complete } (${ ref.year }). ${ ref.title }. <em>${ pub }${ volume }</em>${ issue }${ pages }.`;
+            text = `${ ref.authors.complete } (${ year }). ${ ref.title }. <em>${ pub }${ volume }</em>${ issue }${ pages }.`;
         }
         else {
-            text = `${ ref.authors.complete } (${ ref.year }). <em>${ ref.title }</em>. ${ pub }.`;
+            text = `${ ref.authors.complete } (${ year }). <em>${ ref.title }</em>. ${ pub }.`;
         }
 
         return {
