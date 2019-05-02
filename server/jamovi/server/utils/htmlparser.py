@@ -43,7 +43,6 @@ class HTMLParser(Parser):
                 row = self._rows[row_no]
                 for col_no in range(len(row)):
                     value = row[col_no]
-                    value = value.strip()
                     value = self._parse(value)
                     self._result[col_no][row_no] = value
 
@@ -133,6 +132,11 @@ class HTMLParser(Parser):
             self._current_cell = None
 
     def _parse(self, value):
+        if value is None:
+            return None
+        value = value.strip()
+        if value == '':
+            return None
         try:
             return int(value)
         except ValueError:
