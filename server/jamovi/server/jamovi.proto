@@ -351,6 +351,7 @@ message ModuleMeta {
     bool isSystem = 11;
     bool new = 12;
     uint32 minAppVersion = 13;
+    bool visible = 14;
 }
 
 enum ValueType {
@@ -585,6 +586,8 @@ message ModuleRR {
     enum ModuleCommand {
         INSTALL = 0;
         UNINSTALL = 1;
+        HIDE = 2;
+        SHOW = 3;
     }
 
     ModuleCommand command = 1;

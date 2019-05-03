@@ -31,9 +31,12 @@ const PageModules = Backbone.View.extend({
         this.$progressbar = this.$installing.find('.jmv-store-progress-bar');
 
         this.model.on('change:modules', this._refresh, this);
+        this.model.on('moduleVisibilityChanged', this._refresh, this);
 
         this.$modules = $();
         this.$uninstall = $();
+        this.$install = $();
+        this.$visibility = $();
 
         this.model.on('change:status', () => {
             this.$el.attr('data-status', this.model.attributes.status);
@@ -56,6 +59,8 @@ const PageModules = Backbone.View.extend({
 
         this.$modules.off();
         this.$uninstall.off();
+        this.$visibility.off();
+        this.$install.off();
         this.$content.empty();
 
         for (let module of this.model) {
@@ -85,15 +90,22 @@ const PageModules = Backbone.View.extend({
         }
         this.$uninstall = this.$content.find('.jmv-store-module-button[data-op="remove"]');
         this.$install = this.$content.find('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
+        this.$visibility = this.$content.find('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');
         this.$modules   = this.$content.children();
 
         this.$uninstall.on('click', event => this._uninstallClicked(event));
         this.$install.on('click', event => this._installClicked(event));
+        this.$visibility.on('click', event => this._visibilityClicked(event));
     },
     _installClicked(event) {
         let $target = $(event.target);
         let path = $target.attr('data-path');
         this._install(path);
+    },
+    _visibilityClicked(event) {
+        let $target = $(event.target);
+        let name = $target.attr('data-name');
+        this.model.toggleModuleVisibility(name);
     },
     _install(path) {
         return this.model.install(path)

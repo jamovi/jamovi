@@ -115,9 +115,11 @@ const Store = Backbone.View.extend({
     visible: function() {
         return this.$el.hasClass('visible');
     },
-    show: function() {
+    show: function(tab) {
         this.$el.addClass('visible');
-        if (this._selectedIndex === null)
+        if (tab !== undefined)
+            setTimeout(() => this._setSelected(tab), 100);
+        else if (this._selectedIndex === null)
             setTimeout(() => this._setSelected(1), 100);
         tarp.show('store', false, 0.3);
         this.model.available().retrieve();

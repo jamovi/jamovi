@@ -430,6 +430,24 @@ const Instance = Backbone.Model.extend({
 
         return coms.send(request);
     },
+    setModuleVisibility(name, value) {
+        let coms = this.attributes.coms;
+
+        let moduleRequest = new coms.Messages.ModuleRR();
+        if (value === false)
+            moduleRequest.command = coms.Messages.ModuleRR.ModuleCommand.HIDE;
+        else
+            moduleRequest.command = coms.Messages.ModuleRR.ModuleCommand.SHOW;
+
+        moduleRequest.name = name;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = moduleRequest.toArrayBuffer();
+        request.payloadType = 'ModuleRR';
+        request.instanceId = this._instanceId;
+
+        return coms.send(request);
+    },
     trustArbitraryCode() {
         for (let analysis of this.analyses()) {
             if ( ! analysis.enabled) {

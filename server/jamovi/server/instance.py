@@ -870,6 +870,26 @@ class Instance:
             except Exception as e:
                 log.exception(e)
                 self._coms.send_error(str(e), None, self._instance_id, request)
+        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('SHOW'):
+            self._set_module_visibility(request.name, True)
+            self._coms.send(None, self._instance_id, request)
+            self._session.notify_global_changes()
+        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('HIDE'):
+            self._set_module_visibility(request.name, False)
+            self._coms.send(None, self._instance_id, request)
+            self._session.notify_global_changes()
+
+    def _set_module_visibility(self, name, value):
+        modules = Modules.instance()
+        if modules.set_visibility(name, value):
+            settings = Settings.retrieve('modules')
+            hidden_mods = settings.get('hidden', [ ])
+            if value:
+                hidden_mods = [ mod for mod in hidden_mods if mod != name ]
+            else:
+                hidden_mods.append(name)
+            settings.set('hidden', hidden_mods)
+            settings.sync()
 
     def _on_module_callback(self, t, result, request):
         if t == 'progress':
@@ -2322,7 +2342,22 @@ class Instance:
         except Exception as e:
             log.exception(e)
 
-        for module in Modules.instance():
+        settings = Settings.retrieve('modules')
+        hidden_mods = settings.get('hidden', [ ])
+        modules = Modules.instance()
+        missing_mods = [ ]
+        for hidden_mod in hidden_mods:
+            if modules.set_visibility(hidden_mod, False) is False:
+                missing_mods.append(hidden_mod)
+
+        if len(missing_mods) > 0:
+            for missing_mod in missing_mods:
+                while missing_mod in hidden_mods:
+                    hidden_mods.remove(missing_mod)
+            settings.set('hidden', hidden_mods)
+            settings.sync()
+
+        for module in modules:
             module_pb = response.modules.add()
             self._module_to_pb(module, module_pb)
 
@@ -2356,6 +2391,7 @@ class Instance:
         module_pb.isSystem = module.is_sys
         module_pb.new = module.new
         module_pb.minAppVersion = min_version
+        module_pb.visible = module.visible
 
         for analysis in module.analyses:
             analysis_pb = module_pb.analyses.add()

@@ -45,6 +45,7 @@ class ModuleMeta:
         self.min_app_version = 0
         self.license = None
         self.datasets_license = None
+        self.visible = True
 
 
 class AnalysisMeta:
@@ -173,6 +174,13 @@ class Modules:
             self._read = True
         except Exception as e:
             log.exception(e)
+
+    def set_visibility(self, name, value):
+        for module in self._modules:
+            if module.name == name:
+                module.visible = value
+                return True
+        return False
 
     def uninstall(self, name):
         module_dir = os.path.join(Dirs.app_data_dir(), 'modules', name)
