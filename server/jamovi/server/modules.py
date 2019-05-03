@@ -45,7 +45,7 @@ class ModuleMeta:
         self.min_app_version = 0
         self.license = None
         self.datasets_license = None
-        self.pinned = True
+        self.visible = True
 
 
 class AnalysisMeta:
@@ -178,7 +178,7 @@ class Modules:
     def set_visibility(self, name, value):
         for module in self._modules:
             if module.name == name:
-                module.pinned = value
+                module.visible = value
                 return True
         return False
 

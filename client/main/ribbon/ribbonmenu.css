@@ -92,6 +92,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    transition: 0.2s background-color;
 }
 
 .jmv-ribbon-menu-item.new {
@@ -180,11 +181,11 @@
     padding: 8px 18px 8px 0px;
 }
 
-.jmv-ribbon-menu-item.module:hover .to-analyses-arrow, .jmv-ribbon-menu-item.module.open .to-analyses-arrow {
+.jmv-ribbon-menu-item.module.open .to-analyses-arrow {
     opacity: 1;
 }
 
-.menu-item-hidding {
+.menu-item-hiding {
     opacity: 0;
     width: 0px;
 }
@@ -210,6 +211,10 @@
     margin-left: 8px;
 }
 
-.jmv-ribbon-menu-item:hover, .jmv-ribbon-menu-item.open {
+.jmv-ribbon-menu-item:hover {
     background-color: #F2F2F2 ;
+}
+
+.jmv-ribbon-menu-item.open {
+    background-color: #CCCCCC ;
 }

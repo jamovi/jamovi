@@ -885,8 +885,7 @@ class Instance:
             settings = Settings.retrieve('modules')
             hidden_mods = settings.get('hidden', [ ])
             if value:
-                while name in hidden_mods:
-                    hidden_mods.remove(name)
+                hidden_mods = [ mod for mod in hidden_mods if mod != name ]
             else:
                 hidden_mods.append(name)
             settings.set('hidden', hidden_mods)
@@ -2392,7 +2391,7 @@ class Instance:
         module_pb.isSystem = module.is_sys
         module_pb.new = module.new
         module_pb.minAppVersion = min_version
-        module_pb.pinned = module.pinned
+        module_pb.visible = module.visible
 
         for analysis in module.analyses:
             analysis_pb = module_pb.analyses.add()

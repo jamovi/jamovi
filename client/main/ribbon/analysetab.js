@@ -49,9 +49,11 @@ const AnalyseTab = function(modules) {
                     this._moduleCount += 1;
                 }
                 let subtitle = module.title;
+                // This regex is used to trim off any leading shortname (as well as seperators) from the title
+                // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
                 let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
                 subtitle = subtitle.replace(re, '');
-                let moduleItem = { name : module.name, title : module.name, subtitle: subtitle, ns : 'installed', type: 'module', checked: module.pinned  };
+                let moduleItem = { name : module.name, title : module.name, subtitle: subtitle, ns : 'installed', type: 'module', checked: module.visible  };
                 let analyses = { name: 'analyses', title: 'Analyses', type: 'group', items: [ ] };
                 for (let analysis of module.analyses) {
                     this._analysesList[module.name].analyses.push(analysis.name);
@@ -99,7 +101,7 @@ const AnalyseTab = function(modules) {
                     subtitle: analysis.menuSubtitle,
                     moduleName: module.name,
                     new: isNew,
-                    hidden: module.pinned === false
+                    hidden: module.visible === false
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;

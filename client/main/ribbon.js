@@ -149,7 +149,7 @@ const RibbonView = Backbone.View.extend({
         return this.notifs.notify(options);
     },
     _onModuleVisibilityChanged(module) {
-        if (module.pinned)
+        if (module.visible)
             this._showModule(module.name);
         else
             this._hideModule(module.name);

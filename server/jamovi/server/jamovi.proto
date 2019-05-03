@@ -351,7 +351,7 @@ message ModuleMeta {
     bool isSystem = 11;
     bool new = 12;
     uint32 minAppVersion = 13;
-    bool pinned = 14;
+    bool visible = 14;
 }
 
 enum ValueType {

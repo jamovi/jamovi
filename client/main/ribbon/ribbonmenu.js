@@ -48,6 +48,7 @@ const RibbonMenu = Backbone.View.extend({
         this.$menu.hide();
         this.menuVisible = false;
         this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
+        this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
         keyboardJS.resume();
     },
     showMenu() {
@@ -57,22 +58,22 @@ const RibbonMenu = Backbone.View.extend({
         this.menuVisible = true;
         keyboardJS.pause();
     },
-    hideModule(name, _item) {
-        if (_item === undefined)
-            _item = this;
+    hideModule(name, item) {
+        if (item === undefined)
+            item = this;
 
         let changed = false;
-        if (_item.moduleName === name)
+        if (item.moduleName === name)
             changed = true;
 
-        if (_item.type === 'module' && _item.name === name)
-            _item.$el.find('input')[0].checked = false;
+        if (item.type === 'module' && item.name === name)
+            item.$el.find('input')[0].checked = false;
 
-        if (_item.items && _item.items.length > 0) {
+        if (item.items && item.items.length > 0) {
             let allHidden = true;
-            for (let item of _item.items) {
-                this.hideModule(name, item);
-                if ( ! item.hidden)
+            for (let child of item.items) {
+                this.hideModule(name, child);
+                if ( ! child.hidden)
                     allHidden = false;
             }
             if (allHidden)
@@ -80,30 +81,30 @@ const RibbonMenu = Backbone.View.extend({
         }
 
         if (changed) {
-            _item.hidden = true;
+            item.hidden = true;
             setTimeout(() => {
-                if (_item.hidden)
-                    _item.$el.addClass('menu-item-hidden');
+                if (item.hidden)
+                    item.$el.addClass('menu-item-hidden');
             }, 200);
-            _item.$el.addClass('menu-item-hidding');
+            item.$el.addClass('menu-item-hiding');
         }
     },
-    showModule(name, _item) {
-        if (_item === undefined)
-            _item = this;
+    showModule(name, item) {
+        if (item === undefined)
+            item = this;
 
         let changed = false;
-        if (_item.moduleName === name)
+        if (item.moduleName === name)
             changed = true;
 
-        if (_item.type === 'module' && _item.name === name)
-            _item.$el.find('input')[0].checked = true;
+        if (item.type === 'module' && item.name === name)
+            item.$el.find('input')[0].checked = true;
 
-        if (_item.items) {
+        if (item.items) {
             let allHidden = true;
-            for (let item of _item.items) {
-                this.showModule(name, item);
-                if ( ! item.hidden)
+            for (let child of item.items) {
+                this.showModule(name, child);
+                if ( ! child.hidden)
                     allHidden = false;
             }
             if (allHidden === false)
@@ -111,11 +112,11 @@ const RibbonMenu = Backbone.View.extend({
         }
 
         if (changed) {
-            _item.hidden = false;
-            _item.$el.removeClass('menu-item-hidden');
+            item.hidden = false;
+            item.$el.removeClass('menu-item-hidden');
             setTimeout(() => {
-                if (_item.hidden === false)
-                    _item.$el.removeClass('menu-item-hidding');
+                if (item.hidden === false)
+                    item.$el.removeClass('menu-item-hiding');
             }, 0);
         }
     },
@@ -171,6 +172,7 @@ const RibbonMenu = Backbone.View.extend({
     },
     _moduleListScroll(event) {
         this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
+        this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
     },
     _createMenuItem(item) {
         if (item.type === 'module')
@@ -180,7 +182,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.new)
             classes += ' new';
         if (item.hidden)
-            classes += ' menu-item-hidding menu-item-hidden';
+            classes += ' menu-item-hiding menu-item-hidden';
 
         let html = '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="' + classes + '">';
         html += '<div class="description">';
@@ -195,19 +197,19 @@ const RibbonMenu = Backbone.View.extend({
     },
     _createModuleItem(item) {
         let classes = 'jmv-ribbon-menu-item module';
-        let html = '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="' + classes + '">';
+        let html = `<div data-name="${ item.name }" data-ns="${  item.ns }" class="${  classes }">`;
         html += '<div class="to-analyses-arrow"></div>';
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
         if (item.subtitle)
-            html += '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div>';
+            html += `<div class="jmv-ribbon-menu-item-sub">${ item.subtitle }</div>`;
         html += '</div>';
         html += '</div>';
         item.$el = $(html);
         if (item.analyses !== undefined) {
             let panelHtml = `<div class="side-panel">
-                                <div class="side-panel-heading">Module - ` + item.name +  `</div>
-                                <label><input type="checkbox"  data-name="` + item.name + `" data-ns="` + item.ns + `" ` + (item.checked ? 'checked' : '') + `>Analyses displayed in toolbar</label>
+                                <div class="side-panel-heading">Module - ${ item.name }</div>
+                                <label><input type="checkbox"  data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>Show in main menu</label>
                             </div>`;
             let $sidePanel = $(panelHtml);
             let $analysesGroup = this._createMenuGroup(item.analyses);
@@ -230,7 +232,7 @@ const RibbonMenu = Backbone.View.extend({
         }
         if (allHidden) {
             group.hidden = true;
-            $group.addClass('menu-item-hidding menu-item-hidden');
+            $group.addClass('menu-item-hiding menu-item-hidden');
         }
         $group.append($items);
 
@@ -260,7 +262,7 @@ const RibbonMenu = Backbone.View.extend({
         this.$el.append($label);
         this.$el.append($menu);
         if (allHidden) {
-            this.$el.addClass('menu-item-hidding menu-item-hidden');
+            this.$el.addClass('menu-item-hiding menu-item-hidden');
             this.hidden = true;
         }
 
