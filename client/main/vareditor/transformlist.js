@@ -43,6 +43,9 @@ const TransformList = function() {
         item.$el.on('editing', (x) => {
             this.$el.trigger('edit-transform', item.transform);
         });
+        item.$el.on('duplicate', (x) => {
+            this.$el.trigger('duplicate-transform', item.transform);
+        });
         item.$el.on('remove', (x) => {
             this.$el.trigger('remove-transform', item.transform);
         });

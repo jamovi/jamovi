@@ -149,6 +149,10 @@ const TransformEditor = function(dataset) {
 
         this._createRecodeConditionUI = function() {
             this._focusFormulaControls();
+            if (this.formula.length === 1 && this.formula[0] === '$source') {
+                this.formula[0] = '';
+                this.$el.find('.formula-box.recode-else .formula').text('');
+            }
             this.formula.splice(this.formula.length - 1, 0, '', '');
             this._addTransformUIItem('', '', true);
             this._updateLastFormulaTag();

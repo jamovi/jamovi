@@ -21,6 +21,7 @@
 
 .jmv-transform-list-item > .label {
     flex-grow: 1;
+    margin-right: 15px;
 }
 
 .jmv-transform-list-item .hidden {
@@ -33,16 +34,32 @@
 
 .jmv-transform-list-item > .edit {
     margin: 5px;
-    border: 1px solid #cccccc;
     border-radius: 2px;
-    height: 1.5em;
-    line-height: 1.5em;
-    padding: 0 5px;
-    background-color: #ffffff;
+    width: 15px;
+    height: 15px;
+    background-size: 100%;
+    filter: opacity(30%);
+    background-image: url('assets/transform-edit.svg');
+    background-repeat: no-repeat;
 }
 
 .jmv-transform-list-item > .edit:hover {
-    background-color: #f6f6f6;
+    filter: opacity(60%);
+}
+
+.jmv-transform-list-item > .duplicate {
+    margin: 5px;
+    border-radius: 2px;
+    width: 15px;
+    height: 15px;
+    background-size: 100%;
+    filter: opacity(30%);
+    background-image: url('assets/transform-duplicate.svg');
+    background-repeat: no-repeat;
+}
+
+.jmv-transform-list-item > .duplicate:hover {
+    filter: opacity(60%);
 }
 
 .jmv-transform-list-item > .remove {

@@ -76,6 +76,18 @@ const RecodedVarWidget = Backbone.View.extend({
             dropdown.hide();
         });
 
+        this.transformList.$el.on('duplicate-transform', (event, transform) => {
+            let dataset = this.model.dataset;
+            let copy = {
+                name: transform.name,
+                description: transform.description,
+                suffix: transform.suffix,
+                formula: transform.formula,
+                measureType: transform.measureType
+            };
+            this._createTransform(copy);
+        });
+
         this.transformList.$el.on('remove-transform', (event, transform) => {
             let dataset = this.model.dataset;
             dataset.removeTransforms([transform.id]);
@@ -153,9 +165,11 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$transformIcon.css({ 'background-color': ColourPalette.get(transform.colourIndex), 'opacity': 1 });
         }
     },
-    _createTransform() {
+    _createTransform(values) {
+        if (values === undefined)
+            values = { description: '', formula: '$source' };
         let dataset = this.model.dataset;
-        dataset.setTransforms([ { id: 0, values: { description: '', formula: '$source' } } ]).then(() => {
+        dataset.setTransforms([ { id: 0, values: values } ]).then(() => {
             this.$el.trigger('transform-selected');
             let transforms = dataset.get('transforms');
             let transformId = transforms[transforms.length - 1].id;

@@ -99,11 +99,11 @@
     background-color: #C7D8F2 ;
 }
 
-.jmv-ribbon-menu-item:first-child {
+.jmv-ribbon-menu-item:not(.menu-item-hidden):first-child {
     margin-top: 6px ;
 }
 
-.jmv-ribbon-menu-item:last-child {
+.jmv-ribbon-menu-item:not(.menu-item-hidden):last-child {
     margin-bottom: 6px ;
 }
 
