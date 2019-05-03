@@ -55,6 +55,10 @@
     text-transform: uppercase;
 }
 
+.jmv-store-module-button:not(:first-of-type) {
+    margin-left: 10px;
+}
+
 .jmv-store-module-button[data-op='remove']:before {
     content: 'Remove' ;
 }
@@ -77,6 +81,14 @@
 
 .jmv-store-module-button[data-op='old']:before {
     content: 'Requires a newer version of jamovi' ;
+}
+
+.jmv-store-module-button[data-op='show']:before {
+    content: 'Show' ;
+}
+
+.jmv-store-module-button[data-op='hide']:before {
+    content: 'Hide' ;
 }
 
 .jmv-store-module-button[data-op='update'] {

@@ -63,6 +63,31 @@ const ModulesBase = Backbone.Model.extend({
     retrieve() {
 
     },
+    setModuleVisibility(name, value) {
+        let modules = this.get('modules');
+        for (let module of modules) {
+            if (module.name === name && module.pinned !== value) {
+                this._setModVisibility(module, value);
+                break;
+            }
+        }
+    },
+    toggleModuleVisibility(name) {
+        let modules = this.get('modules');
+        for (let module of modules) {
+            if (module.name === name) {
+                this._setModVisibility(module, ! module.pinned);
+                break;
+            }
+        }
+    },
+    _setModVisibility(module, value) {
+        return this._instance.setModuleVisibility(module.name, value).then(() => {
+            module.pinned = value;
+            module.ops = this._determineOps(module);
+            this.trigger('moduleVisibilityChanged', module);
+        });
+    },
     _setup(modulesPB) {
 
         let modules = [ ];
@@ -80,6 +105,7 @@ const ModulesBase = Backbone.Model.extend({
                 isSystem: modulePB.isSystem,
                 new: modulePB.new,
                 minAppVersion: modulePB.minAppVersion,
+                pinned: modulePB.pinned
             };
 
             module.ops = this._determineOps(module);
@@ -160,7 +186,7 @@ const Modules = ModulesBase.extend({
         if (module.isSystem)
             return [ ];
         else
-            return [ 'remove' ];
+            return [ 'remove', (module.pinned ? 'hide' : 'show') ];
     }
 });
 

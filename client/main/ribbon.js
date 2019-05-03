@@ -71,7 +71,16 @@ const RibbonView = Backbone.View.extend({
         if (this.model === undefined)
             this.model = new RibbonModel();
 
-        this.model.modules().on('change:modules', this._refresh, this);
+        this.model.modules().on('change:modules', () => {
+            let modules = this.model.modules();
+            let tab = this.model.getSelectedTab();
+            if (tab.needsRefresh === undefined)
+                return;
+
+            if (tab.needsRefresh(modules))
+                this._refresh();
+        } , this);
+        this.model.modules().on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
         this.model.on('change:selectedTab', () => {
             this._refresh();
             if (this.selectedTab)
@@ -138,6 +147,26 @@ const RibbonView = Backbone.View.extend({
     },
     notify(options) {
         return this.notifs.notify(options);
+    },
+    _onModuleVisibilityChanged(module) {
+        if (module.pinned)
+            this._showModule(module.name);
+        else
+            this._hideModule(module.name);
+    },
+    _hideModule(name) {
+        for (let i = 0; i < this.buttons.length; i++) {
+            let button = this.buttons[i];
+            if (button.hideModule)
+                button.hideModule(name);
+        }
+    },
+    _showModule(name) {
+        for (let i = 0; i < this.buttons.length; i++) {
+            let button = this.buttons[i];
+            if (button.showModule)
+                button.showModule(name);
+        }
     },
     _refresh() {
 
@@ -211,9 +240,14 @@ const RibbonView = Backbone.View.extend({
         this.model._actionRequest(action);
     },
     _analysisSelected : function(analysis) {
-        this._closeMenus();
+        if (analysis.checked === undefined)
+            this._closeMenus();
         if (analysis.name === 'modules' && analysis.ns === 'app')
-            this.store.show();
+            this.store.show(1);
+        else if (analysis.name === 'manageMods' && analysis.ns === 'app')
+            this.store.show(0);
+        else if (analysis.ns === 'installed')
+            this.model.modules().setModuleVisibility(analysis.name, analysis.checked);
         else
             this.trigger('analysisSelected', { name : analysis.name, ns : analysis.ns } );
     },

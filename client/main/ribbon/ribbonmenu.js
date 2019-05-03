@@ -5,6 +5,7 @@ const $ = require('jquery');
 const _ = require('underscore');
 const tarp = require('../utils/tarp');
 const Backbone = require('backbone');
+const keyboardJS = require('keyboardjs');
 
 const RibbonMenu = Backbone.View.extend({
 
@@ -37,20 +38,86 @@ const RibbonMenu = Backbone.View.extend({
     setEnabled(enabled) {
         this.$el.prop('disabled', ! enabled);
     },
-    _notifySelected(name, ns) {
-        let analysis = { name: name, ns: ns };
+    _notifySelected(name, ns, checked) {
+        let analysis = { name: name, ns: ns, checked: checked };
         this.parent._analysisSelected(analysis);
-        this.hideMenu();
+        if (checked === undefined)
+            this.hideMenu();
     },
     hideMenu() {
         this.$menu.hide();
         this.menuVisible = false;
+        this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
+        keyboardJS.resume();
     },
     showMenu() {
         this.trigger('shown', this);
         this.$el.removeClass('contains-new');
         this.$menu.show();
         this.menuVisible = true;
+        keyboardJS.pause();
+    },
+    hideModule(name, _item) {
+        if (_item === undefined)
+            _item = this;
+
+        let changed = false;
+        if (_item.moduleName === name)
+            changed = true;
+
+        if (_item.type === 'module' && _item.name === name)
+            _item.$el.find('input')[0].checked = false;
+
+        if (_item.items && _item.items.length > 0) {
+            let allHidden = true;
+            for (let item of _item.items) {
+                this.hideModule(name, item);
+                if ( ! item.hidden)
+                    allHidden = false;
+            }
+            if (allHidden)
+                changed = true;
+        }
+
+        if (changed) {
+            _item.hidden = true;
+            setTimeout(() => {
+                if (_item.hidden)
+                    _item.$el.addClass('menu-item-hidden');
+            }, 200);
+            _item.$el.addClass('menu-item-hidding');
+        }
+    },
+    showModule(name, _item) {
+        if (_item === undefined)
+            _item = this;
+
+        let changed = false;
+        if (_item.moduleName === name)
+            changed = true;
+
+        if (_item.type === 'module' && _item.name === name)
+            _item.$el.find('input')[0].checked = true;
+
+        if (_item.items) {
+            let allHidden = true;
+            for (let item of _item.items) {
+                this.showModule(name, item);
+                if ( ! item.hidden)
+                    allHidden = false;
+            }
+            if (allHidden === false)
+                changed = true;
+        }
+
+        if (changed) {
+            _item.hidden = false;
+            _item.$el.removeClass('menu-item-hidden');
+            setTimeout(() => {
+                if (_item.hidden === false)
+                    _item.$el.removeClass('menu-item-hidding');
+            }, 0);
+        }
     },
     _toggleMenu() {
         if (this.menuVisible)
@@ -66,54 +133,147 @@ const RibbonMenu = Backbone.View.extend({
         event.stopPropagation();
     },
     _itemClicked(event) {
-        let source = event.target;
-        this._notifySelected(source.dataset.name, source.dataset.ns);
+        let source = event.delegateTarget;
+        let input = source.querySelector('input');
+        if (input && event.target !== input)
+            input.checked = !input.checked;
+
+        let checked = input ? input.checked : undefined;
+        this._notifySelected(source.dataset.name, source.dataset.ns, checked);
         $(source).removeClass('new');
         event.stopPropagation();
     },
-    _createMenuItem(item) {
-        if (item.subtitle)
-            return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item ' + (item.new ? 'new':'') + '">' + item.title + '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div></div>';
-        return '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="jmv-ribbon-menu-item ' + (item.new ? 'new':'') + '">' + item.title + '</div>';
+    _moduleClicked(event) {
+        let $source = $(event.delegateTarget);
+        let $panel = $source.find('.side-panel');
+        this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
+        $source.addClass('open');
+        this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
+        let top = $source.position().top - 35;
+        let pheight = $panel.outerHeight();
+        let mHeight = this.$el.find('.jmv-ribbon-button-menu').outerHeight(true);
+        if (top + pheight > mHeight)
+            top -= top + pheight - mHeight + 1;
+        if (top < -1)
+            top = -1;
+
+        $panel.css('top', top);
+        $panel.addClass('side-panel-visible');
+
+        event.stopPropagation();
     },
-    _createMenuGroup(group) {
+    _moduleDisplayClicked(event) {
+        let source = event.delegateTarget;
 
-        let html = '';
+        let checked = source ? source.checked : undefined;
+        this._notifySelected(source.dataset.name, source.dataset.ns, checked);
+        event.stopPropagation();
+    },
+    _moduleListScroll(event) {
+        this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
+    },
+    _createMenuItem(item) {
+        if (item.type === 'module')
+            return this._createModuleItem(item);
 
-        html += '<div class="jmv-ribbon-menu-group">';
-        html += '<div class="jmv-ribbon-menu-heading">' + group.title + '</div>';
+        let classes = 'jmv-ribbon-menu-item';
+        if (item.new)
+            classes += ' new';
+        if (item.hidden)
+            classes += ' menu-item-hidding menu-item-hidden';
 
-        for (let i = 0; i < group.items.length; i++)
-            html += this._createMenuItem(group.items[i]);
-
+        let html = '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="' + classes + '">';
+        html += '<div class="description">';
+        html += '<div>' + item.title + '</div>';
+        if (item.subtitle)
+            html += '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div>';
+        html += '</div>';
         html += '</div>';
 
-        return html;
+        item.$el = $(html);
+        return item.$el;
+    },
+    _createModuleItem(item) {
+        let classes = 'jmv-ribbon-menu-item module';
+        let html = '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="' + classes + '">';
+        html += '<div class="to-analyses-arrow"></div>';
+        html += '<div class="description">';
+        html += '<div>' + item.title + '</div>';
+        if (item.subtitle)
+            html += '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div>';
+        html += '</div>';
+        html += '</div>';
+        item.$el = $(html);
+        if (item.analyses !== undefined) {
+            let panelHtml = `<div class="side-panel">
+                                <div class="side-panel-heading">Module - ` + item.name +  `</div>
+                                <label><input type="checkbox"  data-name="` + item.name + `" data-ns="` + item.ns + `" ` + (item.checked ? 'checked' : '') + `>Analyses displayed in toolbar</label>
+                            </div>`;
+            let $sidePanel = $(panelHtml);
+            let $analysesGroup = this._createMenuGroup(item.analyses);
+            $analysesGroup.addClass('module-analysis-list');
+            $sidePanel.append($analysesGroup);
+            item.$el.append($sidePanel);
+        }
+        return item.$el;
+    },
+    _createMenuGroup(group) {
+        let $group = $('<div class="jmv-ribbon-menu-group"></div>');
+        let $heading = $('<div class="jmv-ribbon-menu-heading">' + group.title + '</div>');
+        $group.append($heading);
+        let $items = $('<div class="jmv-group-items"></div>');
+        let allHidden = true;
+        for (let i = 0; i < group.items.length; i++) {
+            $items.append(this._createMenuItem(group.items[i]));
+            if ( ! group.items[i].hidden)
+                allHidden = false;
+        }
+        if (allHidden) {
+            group.hidden = true;
+            $group.addClass('menu-item-hidding menu-item-hidden');
+        }
+        $group.append($items);
+
+        group.$el = $group;
+        return $group;
     },
     _refresh() {
 
         let html = '';
-        html += '   <div class="jmv-ribbon-button-icon"></div>';
-        html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
+        let $icon = $('<div class="jmv-ribbon-button-icon"></div>');
+        let $label = $('<div class="jmv-ribbon-button-label">' + this.title + '</div>');
+        let $menu = $('<div class="jmv-ribbon-button-menu" style="display: none ;"></div>');
 
-        html += '   <div class="jmv-ribbon-button-menu" style="display: none ;">';
-
+        let allHidden = true;
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.type === 'group')
-                html += this._createMenuGroup(item);
+                $menu.append(this._createMenuGroup(item));
             else
-                html += this._createMenuItem(item);
+                $menu.append(this._createMenuItem(item));
+            if ( ! item.hidden)
+                allHidden = false;
         }
 
-        html += '   </div>';
+        this.$el.empty();
+        this.$el.append($icon);
+        this.$el.append($label);
+        this.$el.append($menu);
+        if (allHidden) {
+            this.$el.addClass('menu-item-hidding menu-item-hidden');
+            this.hidden = true;
+        }
 
-        this.$el.html(html);
-
-        this.$menu   = this.$el.find('.jmv-ribbon-button-menu');
-        this.$menuItems = this.$el.find('.jmv-ribbon-menu-item');
+        this.$menu   = $menu;
+        this.$menuItems = this.$el.find('.jmv-ribbon-menu-item:not(.module)');
+        this.$moduleItems = this.$el.find('.jmv-ribbon-menu-item.module');
+        this.$moduleItemCheck = this.$el.find('.jmv-ribbon-menu-item.module input');
+        this.$groupItemLists = this.$el.find('.jmv-group-items:not(.side-panel .jmv-group-items)');
 
         this.$menuItems.click(event => this._itemClicked(event));
+        this.$moduleItems.click(event => this._moduleClicked(event));
+        this.$moduleItemCheck.change(event => this._moduleDisplayClicked(event));
+        this.$groupItemLists.scroll(event => this._moduleListScroll(event));
     }
 });
 
