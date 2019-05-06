@@ -117,11 +117,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
             if column.is_virtual is True:
                 continue
             if column.has_levels:
-                if is_template and column.trim_levels:
-                    levels = [ ]
-                else:
-                    levels = column.levels
-                xdata[column.name] = { 'labels': levels }
+                xdata[column.name] = { 'labels': column.levels }
         zip.writestr('xdata.json', json.dumps(xdata), zipfile.ZIP_DEFLATED)
         xdata = None
 
