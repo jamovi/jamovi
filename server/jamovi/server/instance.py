@@ -245,21 +245,22 @@ class Instance:
     def _on_fs_request(self, request):
         try:
             path = request.path
+            abs_path = path  # used by exception reporting
 
-            if path != '':
-                abs_path = Instance._normalise_path(path)
-                path = Instance._virtualise_path(path)
-            else:
-                try:
+            try:
+                if path != '':
+                    path = Instance._virtualise_path(path)
+                    abs_path = Instance._normalise_path(path)
+                else:
                     path = '{{Documents}}'
                     abs_path = Dirs.documents_dir()
                     if os.path.exists(abs_path):
                         path = '{{Documents}}'
                     else:
                         path = '{{Root}}'
-                except BaseException:
-                    path = '{{Root}}'
-                    abs_path = '/'
+            except BaseException:
+                path = '{{Root}}'
+                abs_path = '/'
 
             response = jcoms.FSResponse()
             response.path = path
