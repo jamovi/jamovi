@@ -246,6 +246,12 @@ DataFrame readDF(
         colNo++;
     }
 
+    if (colNo < columnsRequired.size())
+    {
+        columns.erase(colNo, columnsRequired.size());
+        columnNames.erase(colNo, columnsRequired.size());
+    }
+
     columns.attr("names") = columnNames;
     columns.attr("row.names") = rowNames;
     columns.attr("class") = "data.frame";
