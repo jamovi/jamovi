@@ -43,7 +43,8 @@ const FSEntryListModel = Backbone.Model.extend({
         browseable: true,
         extensions: true,
         multiselect: false,
-        wdType: 'main'
+        wdType: 'main',
+        status: 'loading'
     },
     requestOpen : function(path, type) {
         this.trigger('dataSetOpenRequested', path, type, this.get('wdType'));
@@ -139,8 +140,7 @@ var FSEntryBrowserView = SilkyView.extend({
         if ( ! this.model)
             this.model = new FSEntryListModel();
 
-        this.model.on('change:items', this._render, this);
-        this.model.on('change:dirInfo', this._render, this);
+        this.model.on('change:items change:dirInfo change:status', this._render, this);
 
         this.$el.addClass('silky-bs-fslist');
         this.$el.attr('tabindex', 0);
@@ -371,6 +371,7 @@ var FSEntryBrowserView = SilkyView.extend({
 
         let items = this.model.get('items');
         let dirInfo = this.model.get('dirInfo');
+        let status = this.model.get('status');
 
         let path = null;
         if (dirInfo !== undefined)
@@ -383,85 +384,97 @@ var FSEntryBrowserView = SilkyView.extend({
         this.$items = [];
         this.$itemsList.empty();
 
-        for (let i = 0; i < items.length; i++) {
-            html = '';
-            let item = items[i];
 
-            let name = item.name;
-            let lname = name.toLowerCase();
-            let itemPath = item.path;
-            let itemType = item.type;
-
-            if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
-                continue;
-
-            html += '<div class="silky-bs-fslist-item">';
-            if (itemType === FSItemType.File)
-                html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox">';
-            html += '   <div class="silky-bs-flist-item-icon">';
-            if (itemType === FSItemType.File) { //file
-                if (item.isExample) // examples don't have extensions
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
-                else if (lname.endsWith('.omv'))
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
-                else if (lname.endsWith('.omt'))
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omt-icon"></div>';
-                else if (lname.endsWith('.pdf'))
-                    html += '       <span class="mif-file-pdf"></span>';
-                else if (lname.endsWith('.htm') || name.endsWith('.html'))
-                    html += '       <span class="mif-file-empty"></span>';
-                else
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
-            }
-            else if (itemType === FSItemType.Folder) //folder
-                html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
-            else if (itemType === FSItemType.SpecialFolder) //special folder
-                html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
-            else if (itemType === FSItemType.Drive) //drive
-                html += '       <span class="mif-drive"></span>';
-            html += '   </div>';
-
-            if (item.description || item.tags || item.license) {
-                html += '   <div class="silky-bs-fslist-entry-group">';
-                html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-                html += '       <div class="silky-bs-fslist-entry-meta">';
-                if (item.description) {
-                    html += '<span class="description">' + item.description + '</span>';
-                }
-                if (item.tags) {
-                    html += '<div class="tags">';
-                    for (let tag of item.tags) {
-                        let hue = crc16(tag) % 360;
-                        html += '<div class="tag" style="background-color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
-                    }
-                    html += '</div>';
-                }
-                if (item.license) {
-                    html += '<div class="license">Licensed ' + item.license + '</div>';
-                }
-                html += '       </div>';
-                html += '   </div>';
-            }
-            else {
-                html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-            }
-
-            html += '</div>';
-
-            var $item = $(html);
-            $item.data('name', name);
-            $item.data('path', itemPath);
-            $item.data('type', itemType);
-            $item.data('index', this.$items.length);
-            this.$itemsList.append($item);
-            this.$items.push($item);
-        }
-
-        let errorMessage = this.model.get('error');
-        if (errorMessage !== '')
+        if (status === 'error') {
+            let errorMessage = this.model.get('error');
             this.$itemsList.append("<span>" + errorMessage + "</span>");
-        else if (this.$items.length === 0)
-            this.$itemsList.append("<span>No recognised data files were found.</span>");
+        }
+        else if (status === 'loading') {
+            this.$itemsList.append(`
+                <div class="indicator-box">
+                    <div class="loading-indicator"></div>
+                    <span>Loading directory information...</span>
+                </div>
+            `);
+        }
+        else if (status === 'ok') {
+            for (let i = 0; i < items.length; i++) {
+                html = '';
+                let item = items[i];
+
+                let name = item.name;
+                let lname = name.toLowerCase();
+                let itemPath = item.path;
+                let itemType = item.type;
+
+                if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
+                    continue;
+
+                html += '<div class="silky-bs-fslist-item">';
+                if (itemType === FSItemType.File)
+                    html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox">';
+                html += '   <div class="silky-bs-flist-item-icon">';
+                if (itemType === FSItemType.File) { //file
+                    if (item.isExample) // examples don't have extensions
+                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                    else if (lname.endsWith('.omv'))
+                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
+                    else if (lname.endsWith('.omt'))
+                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omt-icon"></div>';
+                    else if (lname.endsWith('.pdf'))
+                        html += '       <span class="mif-file-pdf"></span>';
+                    else if (lname.endsWith('.htm') || name.endsWith('.html'))
+                        html += '       <span class="mif-file-empty"></span>';
+                    else
+                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                }
+                else if (itemType === FSItemType.Folder) //folder
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
+                else if (itemType === FSItemType.SpecialFolder) //special folder
+                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
+                else if (itemType === FSItemType.Drive) //drive
+                    html += '       <span class="mif-drive"></span>';
+                html += '   </div>';
+
+                if (item.description || item.tags || item.license) {
+                    html += '   <div class="silky-bs-fslist-entry-group">';
+                    html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+                    html += '       <div class="silky-bs-fslist-entry-meta">';
+                    if (item.description) {
+                        html += '<span class="description">' + item.description + '</span>';
+                    }
+                    if (item.tags) {
+                        html += '<div class="tags">';
+                        for (let tag of item.tags) {
+                            let hue = crc16(tag) % 360;
+                            html += '<div class="tag" style="background-color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    if (item.license) {
+                        html += '<div class="license">Licensed ' + item.license + '</div>';
+                    }
+                    html += '       </div>';
+                    html += '   </div>';
+                }
+                else {
+                    html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+                }
+
+                html += '</div>';
+
+                var $item = $(html);
+                $item.data('name', name);
+                $item.data('path', itemPath);
+                $item.data('type', itemType);
+                $item.data('index', this.$items.length);
+                this.$itemsList.append($item);
+                this.$items.push($item);
+            }
+
+            if (this.$items.length === 0)
+                this.$itemsList.append("<span>No recognised data files were found.</span>");
+        }
     },
     _getSelectedPaths : function() {
         let paths = [];
@@ -978,6 +991,9 @@ var BackstageModel = Backbone.Model.extend({
     tryBrowse: function(list, type, filename) {
         if (host.isElectron) {
 
+            if (this._wdData.main.initialised === false)
+                return;
+
             var remote = window.require('electron').remote;
             let browserWindow = remote.getCurrentWindow();
             var dialog = remote.dialog;
@@ -1068,17 +1084,38 @@ var BackstageModel = Backbone.Model.extend({
         if (path === '')
             path = this._wdData[wdType].defaultPath;
 
+        if (wdType === 'examples' && path.startsWith('{{Examples}}') === false)
+            path = this._wdData[wdType].defaultPath;
+
+        // A little delay to the 'loading' status change means that it only enters
+        // the loading state if it takes longer then 100ms. This removes the ui flicker from
+        // quick responses.
+        let statusTimeout = null;
+        statusTimeout = setTimeout(() => {
+            let wdData = this._wdData[wdType];
+            for (let model of wdData.models)
+                model.set('status', 'loading' );
+            statusTimeout = null;
+        }, 100);
+
         let promise = this.instance.browse(path);
         promise = promise.then(response => {
+            if (statusTimeout) {
+                clearTimeout(statusTimeout);
+                statusTimeout = null;
+            }
             let path = response.path;
             let wdData = this._wdData[wdType];
             this.instance.settings().setSetting(wdType + 'WorkingDir', path);
             wdData.path = path;
             wdData.oswd = response.osPath;
             for (let model of wdData.models) {
-                model.set('error', '');
-                model.set('items', response.contents);
-                model.set('dirInfo', { path: path, type: type } );
+                model.set({
+                    error: '',
+                    items: response.contents,
+                    dirInfo: { path: path, type: type },
+                    status: 'ok'
+                } );
             }
             wdData.initialised = true;
         }, (error) => {
@@ -1090,9 +1127,12 @@ var BackstageModel = Backbone.Model.extend({
             wdData.path = path;
             wdData.oswd = path;
             for (let model of wdData.models) {
-                model.set('error', `${error.message} (${error.cause})`);
-                model.set('items', [ ]);
-                model.set('dirInfo', { path: path, type: FSItemType.Folder } );
+                model.set({
+                    error: `${error.message} (${error.cause})`,
+                    items: [ ],
+                    dirInfo: { path: path, type: FSItemType.Folder },
+                    status: 'error'
+                } );
             }
 
             wdData.initialised = true;
@@ -1569,13 +1609,17 @@ var BackstageChoices = SilkyView.extend({
             }, 0);
         }
 
-        if (place.view === FSEntryBrowserView && this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
-            if (place.model.attributes.wdType === 'thispc') {
-                let path = this.model._determineSavePath();
-                this.model.setCurrentDirectory('main', Path.dirname(path)).done();
+        if (place.view === FSEntryBrowserView) {
+            if (this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
+                if (place.model.attributes.wdType === 'thispc') {
+                    let path = this.model._determineSavePath();
+                    this.model.setCurrentDirectory('main', Path.dirname(path)).done();
+                }
+                else
+                    this.model.setCurrentDirectory(place.model.attributes.wdType, '').done();  // empty string requests default path
             }
-            else
-                this.model.setCurrentDirectory(place.model.attributes.wdType, '').done();  // empty string requests default path
+            else if (this.$current.attr('wdtype') === place.model.attributes.wdType)
+                this.$current.removeClass('wd-changing');
         }
 
         if (old) {

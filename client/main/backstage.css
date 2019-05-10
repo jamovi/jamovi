@@ -412,6 +412,23 @@
     background-image: url('assets/indicator-running.svg');
 }
 
+.indicator-box {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.indicator-box .loading-indicator {
+    background-image: url('assets/indicator-running.svg');
+    width: 25px;
+    height: 25px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    margin-right: 10px;
+}
+
 .silky-bs-fslist-items {
     position: relative;
 }
