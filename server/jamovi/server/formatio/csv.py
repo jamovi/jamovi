@@ -34,16 +34,18 @@ def write(data, path, prog_cb):
     with open(path, 'w', encoding='utf-8') as file:
         sep = ''
         for column in data:
-            if column.is_virtual is True or column.is_filter is True:
+            if column.is_virtual or (column.is_filter and column.active):
                 continue
             file.write(sep + '"' + column.name + '"')
             sep = ','
         file.write('\n')
 
         for row_no in range(data.row_count):
+            if data.is_row_filtered(row_no):
+                continue
             sep = ''
             for column in data:
-                if column.is_virtual is True or column.is_filter is True:
+                if column.is_virtual or (column.is_filter and column.active):
                     continue
                 col_no = column.index
                 cell = data[col_no][row_no]
