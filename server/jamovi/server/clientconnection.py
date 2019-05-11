@@ -62,7 +62,7 @@ class ClientConnection(WebSocketHandler):
                 instance = self._session[message.instanceId]
                 await instance.on_request(request)
         except NoSuchInstanceException:
-            self.send_error(message='No such instance', response_to=message)
+            self.send_error(message='No such instance', response_to=request)
         except Exception as e:
             # would be nice to send_error()
             log.exception(e)
