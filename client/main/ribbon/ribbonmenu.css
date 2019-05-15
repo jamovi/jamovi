@@ -192,6 +192,7 @@
 
 .menu-item-hidden {
     position: absolute;
+    pointer-events: none;
 }
 
 .jmv-ribbon-menu-heading {
