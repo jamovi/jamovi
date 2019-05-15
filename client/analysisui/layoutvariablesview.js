@@ -4,13 +4,11 @@
 const LayoutSupplierView = require('./layoutsupplierview');
 const FormatDef = require('./formatdef');
 const EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
-const RequestDataSupport = require('./requestdatasupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 
 const LayoutVariablesView = function(params) {
 
     LayoutSupplierView.extendTo(this, params);
-    RequestDataSupport.extendTo(this);
 
     this.$el.addClass("silky-options-variable-supplier-group");
 
@@ -19,33 +17,26 @@ const LayoutVariablesView = function(params) {
     this.registerSimpleProperty("populate", "auto", new EnumPropertyFilter(["auto", "manual"], "auto"));
     this.registerSimpleProperty("format", FormatDef.variable);
 
-    this._override("onContainerRendering", function(baseFunction, context) {
-
-        //this.resources = context.resources;
-
-        baseFunction.call(this, context);
-
-        let promise = this.requestData("columns", null);
-        promise.then(columnInfo => {
-            this.resources = columnInfo;
-            this.populateItemList();
-        });
-
-        //this.populateItemList();
+    this._override("onPopulate", (baseFunction) => {
+        this._populateList(baseFunction);
     });
 
-    this._override("onDataChanged", (baseFunction, data) => {
-        if (data.dataType !== "columns")
-            return;
+    this._override("update", (baseFunction) => {
+        this._populateList(baseFunction);
+    });
 
-        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.dataTypeChanged || data.dataInfo.countChanged) {
+    this._populateList = function(baseFunction) {
+        let populateMethod = this.getPropertyValue('populate');
+        if (populateMethod === "manual")
+            baseFunction.call(this);
+        else {
             let promise = this.requestData("columns", null);
             promise.then(columnInfo => {
                 this.resources = columnInfo;
                 this.populateItemList();
             });
         }
-    });
+    };
 
     this.requestMeasureType = function(columnId, item) {
         let promise = this.requestData("column", { columnId: columnId, properties: [ "measureType", "id", "hidden", "columnType", "dataType" ] });

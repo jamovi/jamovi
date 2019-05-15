@@ -10,11 +10,13 @@ const ControlContainer = require('./controlcontainer').container;
 const LayoutGrid = require('./layoutgrid').Grid;
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
+const RequestDataSupport = require('./requestdatasupport');
 
 const LayoutSupplierView = function(params) {
 
     DragNDrop.extendTo(this);
     ControlContainer.extendTo(this, params);
+    RequestDataSupport.extendTo(this);
 
     this.setList = function(value) {
 
@@ -60,6 +62,21 @@ const LayoutSupplierView = function(params) {
 
     this.setValue = function(value) {
         this.setList(value);
+    };
+
+    this._override("onDataChanged", (baseFunction, data) => {
+        if (data.dataType !== "columns")
+            return;
+
+        if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.dataTypeChanged || data.dataInfo.countChanged)
+            this.update();
+    });
+
+    this.update = function() {
+        this.trigger('update');
+    };
+
+    this.onPopulate = function() {
     };
 
     this.registerComplexProperty('value', this.getList, this.setList, 'value_changed');
@@ -115,6 +132,8 @@ const LayoutSupplierView = function(params) {
             this.filterSuppliersList();
             this.supplierGrid.resumeLayout();
         }
+
+        this.onPopulate();
     };
 
     this.rowTransform = function(row, column) {
@@ -254,8 +273,6 @@ const LayoutSupplierView = function(params) {
         delete this._targetFocusMethods[id];
         delete this._targets[id];
     };
-
-
 
     this.addTarget = function(target) {
 
@@ -464,7 +481,6 @@ const LayoutSupplierView = function(params) {
             this.supplierGrid.resumeLayout();
         }
     };
-
 };
 
 SuperClass.create(LayoutSupplierView);
