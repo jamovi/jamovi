@@ -64,8 +64,8 @@ const LayoutSupplierView = function(params) {
         this.setList(value);
     };
 
-    this._override("onDataChanged", (baseFunction, data) => {
-        if (data.dataType !== "columns")
+    this._override('onDataChanged', (baseFunction, data) => {
+        if (data.dataType !== 'columns')
             return;
 
         if (data.dataInfo.nameChanged || data.dataInfo.measureTypeChanged || data.dataInfo.dataTypeChanged || data.dataInfo.countChanged)
