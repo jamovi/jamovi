@@ -4,6 +4,7 @@ import re
 from os import path
 from os import environ
 from configparser import ConfigParser
+import platform
 
 config_values = None
 
@@ -32,9 +33,10 @@ def _init():
         else:
             root = path.realpath(path.join(path.dirname(sys.executable), '..'))
 
-        ini_path = path.join(root, 'bin', 'env.conf')
-        if not path.isfile(ini_path):
+        if platform.system() == 'Darwin':
             ini_path = path.join(root, 'Resources', 'env.conf')
+        else:
+            ini_path = path.join(root, 'bin', 'env.conf')
 
         config = ConfigParser()
         config.read(ini_path)
