@@ -43,6 +43,9 @@ class ClientConnection(WebSocketHandler):
         try:
             message = jcoms.ComsMessage()
             message.ParseFromString(m_bytes)
+            if not message.payloadType:
+                # should log bad request
+                return
             clas = getattr(jcoms, message.payloadType)
             request = clas()
             request.ParseFromString(message.payload)
@@ -57,12 +60,16 @@ class ClientConnection(WebSocketHandler):
                     instance = self._session[message.instanceId]
                 instance.set_coms(self)
                 response = jcoms.InstanceResponse()
+                response.instanceId = instance.id
                 self.send(response, instance.id, request)
             else:
                 instance = self._session[message.instanceId]
                 await instance.on_request(request)
         except NoSuchInstanceException:
-            self.send_error(message='No such instance', response_to=request)
+            self.send_error(
+                message='No such instance',
+                instance_id=message.instanceId,
+                response_to=request)
         except Exception as e:
             # would be nice to send_error()
             log.exception(e)
