@@ -77,6 +77,7 @@ void Engine::start()
 
     // start the message loop thread
     thread t(&Engine::messageLoop, this);
+    thread u(&Engine::monitorStdinLoop, this);
 
     // locks for sharing between threads
     unique_lock<mutex> lock(_mutex, std::defer_lock);
@@ -199,4 +200,16 @@ void Engine::messageLoop()
 
         }
     }
+}
+
+void Engine::monitorStdinLoop()
+{
+    string temp;
+    while (true)
+    {
+        getline(cin, temp);
+        if (cin.eof())
+            break;
+    }
+    terminate();
 }

@@ -22,14 +22,15 @@
 class Engine
 {
 public:
-	Engine();
-	void setSlave(bool slave);
+    Engine();
+    void setSlave(bool slave);
     void setConnection(const std::string &conn);
     void setPath(const std::string &path);
     void start();
 
 private:
     void messageLoop();
+    void monitorStdinLoop();
     void analysisRequested(int requestId, Analysis *analysis);
     void resultsReceived(const std::string &results, bool complete);
     void opEventReceived(const std::string &message);
