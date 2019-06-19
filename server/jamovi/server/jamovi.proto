@@ -258,6 +258,7 @@ message InstanceRequest {
 }
 
 message InstanceResponse {
+    string instanceId = 1;
 }
 
 message OpenRequest {
