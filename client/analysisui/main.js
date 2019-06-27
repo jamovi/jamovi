@@ -95,7 +95,7 @@ var requestLocalColumnData = function(data) {
 var dataResources = { columns: [] };
 
 
-const Analysis = function(def) {
+const Analysis = function(def, jamoviVersion) {
 
     eval(def);
 
@@ -103,6 +103,7 @@ const Analysis = function(def) {
 
     let layoutDef = new module.exports.view.layout();
     this.viewTemplate = new module.exports.view();
+
 
     LayoutUpdateCheck(layoutDef);
 
@@ -167,7 +168,9 @@ $(document).ready(function() {
 });
 
 
-function loadAnalysis(def) {
+function loadAnalysis(def, jamoviVersion) {
+
+    window.jamoviVersion = jamoviVersion;
 
     let $hide = $('.silky-sp-back-button');
     $hide.on("click", function(event) {
@@ -184,7 +187,7 @@ function loadAnalysis(def) {
 
             dataResources = { columns: data.columns };
 
-            analysis = new Analysis(def);
+            analysis = new Analysis(def, jamoviVersion);
 
             let title = analysis.model.ui.getTitle();
             console.log("loading - " + title + "...");
