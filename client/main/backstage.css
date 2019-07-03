@@ -578,9 +578,14 @@
 }
 
 .jmv-bs-fslist-checkbox.hidden {
-    width: 0px;
-    margin: 0px;
+    width: 0px !important;
+    margin: 0px !important;
     opacity: 0;
+    /* this is to handle checkboxes not shrinking to 0 width in firefox*/
+    visibility: hidden;
+    order: 100;
+    position: absolute;
+    /*/////////////////////////////////////*/
 }
 
 .silky-bs-fslist-browser-import-name {
