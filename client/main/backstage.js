@@ -775,7 +775,7 @@ var FSEntryBrowserView = SilkyView.extend({
                 index = path.lastIndexOf("/", path.length - 2);
         }
 
-        if (index === -1) {
+        if (index <= 0) {
             if (this.model.attributes.wdType === 'examples')
                 return '{{Examples}}';
 
