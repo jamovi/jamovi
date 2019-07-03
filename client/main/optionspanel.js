@@ -230,8 +230,10 @@ let OptionsPanel = SilkyView.extend({
             //if (createdNew)
             //    this.$el.append(resources.$frame);
         }
-        if (this._currentResources !== null)
+        if (this._currentResources !== null) {
+            this._currentResources.$frame.css("height", '');
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
+        }
     },
 
     notifyOfDataChange: function(resource, dataType, dataInfo) {
