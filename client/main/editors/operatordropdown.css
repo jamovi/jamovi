@@ -51,6 +51,7 @@
     flex: 1;
     display: flex;
     flex-direction: row;
+    max-height: 129px;
 }
 
 .jmv-operator-dropdown-options > .ops-box > .op {
