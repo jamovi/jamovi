@@ -58,6 +58,7 @@
 .jmv-formula-toolbar-options > .ops-box > .op > .content {
     flex-grow: 1;
     overflow-y: auto;
+    max-height: 120px;
 }
 
 .jmv-formula-toolbar-options > .ops-box > .op > .content > .item {
