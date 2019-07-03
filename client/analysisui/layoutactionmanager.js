@@ -436,6 +436,25 @@ const LayoutActionManager = function(view) {
         return obj;
     };
 
+    this.fireCreateEvents = function(panel) {
+        for (let action of this._actions) {
+            if (action.hasEventName('creating'))
+                action.execute();
+        }
+
+        for (let resourceId in this._directActions) {
+            let list = this._directActions[resourceId];
+            for (let i = 0; i < list.length; i++) {
+                let action = list[i];
+                if (action.hasEventName('creating'))
+                    action.execute();
+            }
+        }
+
+        if (this._view.creating)
+            this._view.creating.call(this._view.getContext(), this._resources, { sender: panel, eventName: 'creating' });
+    };
+
     this.initializeAll = function() {
         this.bindingsToActions();
 
