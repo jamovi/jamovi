@@ -5,6 +5,7 @@ const $ = require('jquery');
 const Framesg = require('framesg').default;
 const Backbone = require('backbone');
 Backbone.$ = $;
+const host = require('./host');
 
 const SilkyView = require('./view');
 
@@ -141,9 +142,12 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         new Promise((resolve, reject) => {
             this.notifyDocumentReady= resolve;
             notifyAborted = reject;
+        }),
+        host.version.then(version => {
+            this.jamoviVersion = version;
         })
     ]).then(() => {
-        return this.frameComms.send("setOptionsDefinition", this.def);
+        return this.frameComms.send("setOptionsDefinition", this.def, this.jamoviVersion);
     });
 
     this.abort = function() {

@@ -20,7 +20,7 @@ const LayoutAction = function(manager, params) {
             return;
 
         this._manager._executeStarted(this);
-        this._callback.call(this._manager._view, this._manager._resources, param1, param2, param3, param4, param5, param6, param7);
+        this._callback.call(this._manager._view.getContext(), this._manager._resources, param1, param2, param3, param4, param5, param6, param7);
         this._manager._executeEnded(this);
     };
 
@@ -72,6 +72,15 @@ const LayoutAction = function(manager, params) {
         }
     };
 
+    this.hasEventName = function(eventName) {
+        for (let obj of this._listeners) {
+            if (obj.eventName === eventName) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     this.initialize = function() {
         for (let eventObj of this._listeners) {
             if (eventObj.connected === false) {
@@ -80,9 +89,21 @@ const LayoutAction = function(manager, params) {
                     eventObj.eventName = supplier.getTrigger(eventObj.property);
                 eventObj.supplier = supplier;
                 eventObj.connected = true;
-                eventObj.supplier.on(eventObj.eventName, this.execute);
+                eventObj.execute = this._createExecute(supplier, eventObj.eventName);
+                eventObj.supplier.on(eventObj.eventName, eventObj.execute);
             }
         }
+    };
+
+    this._createExecute = function(sender, eventName) {
+        return (param1, param2, param3, param4, param5, param6, param7) => {
+            if (param1 !== undefined)
+                Object.assign(param1, { sender: sender, eventName: eventName });
+            else
+                param1 = { sender: sender, eventName: eventName };
+
+            this.execute(param1, param2, param3, param4, param5, param6, param7);
+        };
     };
 
     this.tryConnectTo = function(name, supplier) {
@@ -93,7 +114,8 @@ const LayoutAction = function(manager, params) {
                     eventObj.eventName = supplier.getTrigger(eventObj.property);
                 eventObj.supplier = supplier;
                 eventObj.connected = true;
-                eventObj.supplier.on(eventObj.eventName, this.execute);
+                eventObj.execute = this._createExecute(supplier, eventObj.eventName);
+                eventObj.supplier.on(eventObj.eventName, eventObj.execute);
                 found = true;
             }
         }
@@ -104,7 +126,7 @@ const LayoutAction = function(manager, params) {
         for (let eventObj of this._listeners) {
             if (eventObj.supplier === supplier) {
                 if (eventObj.connected) {
-                    eventObj.supplier.off(eventObj.eventName, this.execute);
+                    eventObj.supplier.off(eventObj.eventName, eventObj.execute);
                     eventObj.supplier = null;
                     if (eventObj.property !== null)
                         eventObj.eventName = null;
@@ -117,7 +139,7 @@ const LayoutAction = function(manager, params) {
     this.close = function() {
         for (let eventObj of this._listeners) {
             if (eventObj.connected) {
-                eventObj.supplier.off(eventObj.eventName, this.execute);
+                eventObj.supplier.off(eventObj.eventName, eventObj.execute);
                 eventObj.supplier = null;
                 if (eventObj.property !== null)
                     eventObj.eventName = null;

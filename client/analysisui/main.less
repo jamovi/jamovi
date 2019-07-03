@@ -381,6 +381,45 @@ input[type=text].silky-option-listitem:focus {
     border-color: transparent;
 }
 
+.jmv-options-error-list {
+    margin: 20px;
+    color: #333333;
+}
+
+.jmv-options-error-list .title {
+    font-size: 130%;
+    margin-bottom: 15px;
+}
+
+.jmv-options-error-list .list {
+    border-top: 1px solid #CCCCCC;
+}
+
+.jmv-options-error-list .error {
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    padding-top: 10px;
+    border-bottom: 1px solid #CCCCCC;
+}
+
+.jmv-options-error-list .error span {
+    line-height: 1.4;
+}
+
+.jmv-options-error-list .error .error-icon {
+    background-image: url(assets/action-error.svg);
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: 100%;
+    width: 19px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    margin-left: 5px;
+    filter: invert(100%) grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8);
+
+}
+
 
 @import (inline) "../lib/metro-icons.css";
 @import (inline) "../common/toolbar/toolbar.css";
