@@ -24,6 +24,7 @@ const GridOptionControl = require('./gridoptioncontrol');
 const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
 const GridOptionListControl = require('./gridoptionlistcontrol');
+const ApplyMagicEvents = require('./applymagicevents');
 
 window._ = _;
 
@@ -31,7 +32,7 @@ const frameCommsApi = {
     setOptionsDefinition: loadAnalysis,
 
     dataChanged: data => {
-        if (analysis !== null) {
+        if (analysis !== null && analysis.inError === false) {
             if (data.dataType === 'columns') {
                 requestData("columns", null, true).then(columnInfo => {
                     dataResources = { columns: columnInfo.columns };
@@ -95,7 +96,7 @@ var requestLocalColumnData = function(data) {
 var dataResources = { columns: [] };
 
 
-const Analysis = function(def) {
+const Analysis = function(def, jamoviVersion) {
 
     eval(def);
 
@@ -106,45 +107,57 @@ const Analysis = function(def) {
 
     LayoutUpdateCheck(layoutDef);
 
-    this.viewTemplate.setRequestedDataSource(this);
+    if (this.viewTemplate.handlers)
+        ApplyMagicEvents(layoutDef, this.viewTemplate);
 
-    this.viewTemplate.on("customVariablesChanged", (event) => {
-        setTimeout(() => {
-            this.dataChanged(event);
-        }, 0);
-    });
+    this.getTitle = layoutDef.getTitle.bind(layoutDef);
 
-    let actionManager = new LayoutActionManager(this.viewTemplate);
-    let optionsManager = new Options(options);
-    actionManager.onExecutingStateChanged = function(state) {
-        if (state)
-            optionsManager.beginEdit();
-        else
-            optionsManager.endEdit();
-    };
+    if (this.viewTemplate.errors.length > 0) {
+        this.errors = this.viewTemplate.errors;
+        this.inError = true;
+        console.log(this.viewTemplate.errors);
+    }
+    else {
+        this.inError = false;
+        this.viewTemplate.setRequestedDataSource(this);
 
-    this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
+        this.viewTemplate.on("customVariablesChanged", (event) => {
+            setTimeout(() => {
+                this.dataChanged(event);
+            }, 0);
+        });
 
-    this.View = new OptionsView(this.model);
+        let actionManager = new LayoutActionManager(this.viewTemplate);
+        let optionsManager = new Options(options);
+        actionManager.onExecutingStateChanged = function(state) {
+            if (state)
+                optionsManager.beginEdit();
+            else
+                optionsManager.endEdit();
+        };
 
-    this.View.setRequestedDataSource(this);
+        this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
 
-    this.requestData = function(requestId, data) {
-        return requestData(requestId, data);
-    };
+        this.View = new OptionsView(this.model);
 
-    this.dataChanged = function(data) {
-        this.View.dataChanged(data);
-        if (this.viewTemplate.onDataChanged)
-            this.viewTemplate.onDataChanged(data);
-    };
+        this.View.setRequestedDataSource(this);
+
+        this.requestData = function(requestId, data) {
+            return requestData(requestId, data);
+        };
+
+        this.dataChanged = function(data) {
+            this.View.dataChanged(data);
+            if (this.viewTemplate.onDataChanged)
+                this.viewTemplate.onDataChanged(data);
+        };
+    }
 };
 
-var analysis = null;
-var _analysisResources = null;
-var errored = false;
-var $header = null;
-var $hide = null;
+let analysis = null;
+let _analysisResources = null;
+let $header = null;
+let $hide = null;
 
 
 
@@ -167,7 +180,9 @@ $(document).ready(function() {
 });
 
 
-function loadAnalysis(def) {
+function loadAnalysis(def, jamoviVersion) {
+
+    window.jamoviVersion = jamoviVersion;
 
     let $hide = $('.silky-sp-back-button');
     $hide.on("click", function(event) {
@@ -184,23 +199,40 @@ function loadAnalysis(def) {
 
             dataResources = { columns: data.columns };
 
-            analysis = new Analysis(def);
+            analysis = new Analysis(def, jamoviVersion);
 
-            let title = analysis.model.ui.getTitle();
+            let title = analysis.getTitle();
             console.log("loading - " + title + "...");
             //var $title = $('.silky-options-title');
             $title.empty();
             $title.append(title);
 
-            $('.jmv-options-block').append(analysis.View.$el);
-            analysis.View.render();
+            if (analysis.errors) {
+                let errors = ``;
+                for (let error of analysis.errors) {
+                    errors += `<div class="error"><div class="error-icon"></div><span>${ error }<span></div>\n`;
+                }
+                let $errorList = $(`<div class="jmv-options-error-list"'>
+                    <div class="title">Option panel errors</div>
+                    <div class="list">
+                        ${ errors }
+                    </div>
+                    </div>`);
+                $('.jmv-options-block').append($errorList);
+            }
+            else {
+                $('.jmv-options-block').append(analysis.View.$el);
+                analysis.View.render();
 
-            analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
+                analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
+            }
         });
     }
 }
 
 function setOptionsValues(data) {
+    if (analysis.inError)
+        return;
 
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {

@@ -14,6 +14,7 @@ const OptionsView = function(uiModel) {
     Object.assign(this, Backbone.Events);
 
     this.$el = $('<div class="silky-options-content"></div>');
+    this.el = this.$el[0];
 
     this.model = uiModel;
     this._allCtrls = [];
@@ -36,10 +37,6 @@ const OptionsView = function(uiModel) {
 
             layoutGrid.renderContainer(this);
 
-            layoutGrid.render();
-
-            this.$el.append(layoutGrid.$el);
-
             for (let i = 0; i < options._list.length; i++) {
                 let option = options._list[i];
                 let name = option.params.name;
@@ -52,10 +49,21 @@ const OptionsView = function(uiModel) {
 
             this.layoutActionManager.addResource("view", this);
 
+            this.layoutActionManager.fireCreateEvents(this);
+
+            layoutGrid.render();
+
+            this.$el.append(layoutGrid.$el);
+
             window.setTimeout(() => {
                 this._loaded = true;
                 this.layoutActionManager.initializeAll();
                 this.trigger('loaded');
+                for (let ctrlInfo of this._allCtrls) {
+                    let ctrl = ctrlInfo.ctrl;
+                    if (ctrl.onLoaded)
+                        ctrl.onLoaded();
+                }
             }, 0);
         }
         else {
@@ -366,7 +374,7 @@ const OptionsView = function(uiModel) {
             let ctrl = ctrlInfo.ctrl;
             if (ctrl.isDisposed)
                 continue;
-                
+
             if (ctrl.update)
                 ctrl.update();
         }

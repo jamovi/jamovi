@@ -13,9 +13,9 @@ function View() {
     EventEmitter.call(this);
     Object.assign(this, EventEmitter.prototype);
 
-    this._loaded = true;
-    this._updating = false;
     this.workspace = {};
+    this.base = this;
+    this.flags = { loaded: true, updating: false };
 
     this.customVariables = [];
 
@@ -23,7 +23,6 @@ function View() {
         this.customVariables = variables;
         let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
         this.emit('customVariablesChanged', event);
-        //this._fireEvent('customVariablesChanged', event);
     };
 
     this.setCustomVariable = function(name, measureType, dataType, levels) {
@@ -106,29 +105,37 @@ function View() {
     this._baseEvents = [
         {
             onEvent: 'view.remote-data-changed', execute: function(ui, data) {
-                if (this.remoteDataChanged)
-                    this.remoteDataChanged(ui, data);
+                if (this.base.remoteDataChanged) {
+                    data.sender = ui.view;
+                    data.eventName = 'remoteDataChanged';
+                    this.base.remoteDataChanged.call(this, ui, data);
+                }
             }
         },
         {
             onEvent: 'view.loaded', execute: function(ui) {
-                this._loaded = true;
-                if (this.loaded)
-                    this.loaded(ui);
+                this.flags.loaded = true;
+                if (this.base.loaded)
+                    this.base.loaded.call(this, ui, { sender: ui.view, eventName: 'loaded' });
             }
         },
         {
             onEvent: 'view.data-initializing', execute: function(ui, event) {
-                if (event.id !== this._id)
-                    this.workspace = {};
-                this._updating = true;
+                if (event.id !== this._id) {
+                    this.base.workspace = {};
+                    if (this.base.context)
+                        this.base.context.workspace = this.base.workspace;
+                }
+                this.flags.updating = true;
             }
         },
         {
             onEvent: 'view.ready', execute: function(ui, event) {
-                this._updating = false;
-                if (this.update && event.id !== this._id) {
-                    this.update(ui, event);
+                this.flags.updating = false;
+                if (this.base.update && event.id !== this._id) {
+                    event.sender = ui.view;
+                    event.eventName = 'updated';
+                    this.base.update.call(this, ui, event);
                     this._id = event.id;
                 }
             }
@@ -279,7 +286,7 @@ function View() {
     };
 
     this.isReady = function() {
-        return this._updating === false && this._loaded;
+        return this.flags.updating === false && this.flags.loaded;
     };
 
     this.initializeValue = function(option, defaultValue) {
@@ -292,16 +299,17 @@ function View() {
         return false;
     };
 
-    this.clone = function(obj) {
-        return JSON.parse(JSON.stringify(obj));
-    };
-
-    this.cloneArray = function(array, ifNull) {
-        let clone = this.clone(array);
+    this.clone = function(obj, ifNull) {
+        let clone = JSON.parse(JSON.stringify(obj));
         if (ifNull !== undefined && clone === null)
             clone = ifNull;
 
         return clone;
+    };
+
+    // DEPRECATED! should use the 'clone' method instead.
+    this.cloneArray = function(array, ifNull) {
+        return this.clone(array, ifNull);
     };
 
     this.sortArraysByLength = function(arrays, itemPropertyName) {
@@ -438,6 +446,84 @@ function View() {
         }
         return list;
     };
+
+    this.getContext = function() {
+        return this.context ? this.context : this;
+    };
+
+    window.utils = {
+        checkPairsValue: this.checkPairsValue.bind(this),
+
+        checkValue: this.checkValue.bind(this),
+
+        clone: this.cloneArray.bind(this),
+
+        cloneArray: function() {
+            throw 'The cloneArray method has been deprecated. You should use the clone method instead';
+        },
+
+        sortArraysByLength: this.sortArraysByLength.bind(this),
+
+        listContains: this.listContains.bind(this),
+
+        findDifferences: this.findDifferences.bind(this),
+
+        getCombinations: this.getCombinations.bind(this),
+
+        flattenList: this.flattenList.bind(this),
+
+        getItemCombinations: this.getItemCombinations.bind(this),
+
+        valuesToItems: this.valuesToItems.bind(this),
+
+        itemsToValues: this.itemsToValues.bind(this)
+    };
+
+    this.createContext = function() {
+        let errors = [];
+        if (this.handlers === undefined)
+            return errors;
+
+        let context = {
+            base: this.base,
+
+            workspace: this.workspace,
+
+            flags: this.flags,
+
+            requestData: this.requestData.bind(this),
+
+            setCustomVariables: this.setCustomVariables.bind(this),
+
+            setCustomVariable: this.setCustomVariable.bind(this),
+
+            removeCustomVariable: this.removeCustomVariable.bind(this),
+
+            clearCustomVariables: this.clearCustomVariables.bind(this),
+
+            findChanges: this.findChanges.bind(this),
+
+            isReady: this.isReady.bind(this),
+
+            initializeValue: this.initializeValue.bind(this),
+
+            getContext: this.getContext.bind(this)
+        };
+
+        // this.handlers is created in the compiler.
+        for (let handle in this.handlers) {
+            if (context[handle] !== undefined)
+                errors.push('The method name "' + handle + '" cannot be used as it conflicts with a method that already exists in the events base class of this analyses.');
+            else
+                context[handle] = this.handlers[handle];
+        }
+
+        this.context = context;
+
+        return errors;
+    };
+
+    this.errors = this.createContext();
 }
 
 SuperClass.create(View);
