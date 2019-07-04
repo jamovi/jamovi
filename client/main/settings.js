@@ -14,7 +14,8 @@ const Settings = Backbone.Model.extend({
         this._onBC = (broadcast) => this._onSettingsReceived(broadcast);
         coms.on('broadcast', this._onBC);
 
-        this._localSettings = [ 'syntaxMode' ]; // not stored
+        this._localSettings = [ 'syntaxMode' ];  // not stored
+        this._configSettings = [ 'mode' ];
     },
 
     destroy() {
@@ -63,7 +64,15 @@ const Settings = Backbone.Model.extend({
 
         for (let settingPB of settingsPB.settings) {
             let name = settingPB.name;
+            if (this._configSettings.includes(name))
+              continue;
             let value = settingPB[settingPB.value];
+            this.set(name, value);
+        }
+
+        for (let confPB of settingsPB.config) {
+            let name = confPB.name;
+            let value = confPB[confPB.value];
             this.set(name, value);
         }
 
@@ -88,6 +97,9 @@ const Settings = Backbone.Model.extend({
         this.set(name, value);
 
         if (this._localSettings.includes(name)) {
+            return Promise.resolve();
+        }
+        else if (this._configSettings.includes(name)) {
             return Promise.resolve();
         }
         else {

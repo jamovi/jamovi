@@ -382,6 +382,7 @@ message SettingsResponse {
     repeated DataSetEntry examples = 2;
     repeated ModuleMeta modules = 3;
     repeated SettingValue settings = 4;
+    repeated SettingValue config = 5;
 }
 
 message StoreRequest {
