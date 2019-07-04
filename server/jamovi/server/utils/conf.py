@@ -47,14 +47,26 @@ def _init():
 
         config_values['home'] = root
 
-        app_config = config['ENV']
-        for k in app_config:
-            value = app_config[k]
-            if k.startswith('jamovi_'):
-                k = k[7:]
-            if k.endswith('path') or k.endswith('home') or k.endswith('libs'):
-                if value != '':
-                    parts = re.split('[:;]', value)
-                    parts = map(lambda x: path.normpath(path.join(root, 'bin', x)), parts)
-                    value = path.pathsep.join(parts)
-            config_values[k] = value
+        try:
+            app_config = config['ENV']
+            for k in app_config:
+                value = app_config[k]
+                if k.startswith('jamovi_'):
+                    k = k[7:]
+                if k.endswith('path') or k.endswith('home') or k.endswith('libs'):
+                    if value != '':
+                        parts = re.split('[:;]', value)
+                        parts = map(lambda x: path.normpath(path.join(root, 'bin', x)), parts)
+                        value = path.pathsep.join(parts)
+                config_values[k] = value
+        except KeyError:
+            pass
+
+        try:
+            app_config = config['APP']
+            if app_config is not None:
+                for k in app_config:
+                    value = app_config[k]
+                    config_values[k] = value
+        except KeyError:
+            pass
