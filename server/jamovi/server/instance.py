@@ -26,6 +26,7 @@ from .modules import Modules
 from .instancemodel import InstanceModel
 from . import formatio
 from .modtracker import ModTracker
+from .permissions import Permissions
 
 import posixpath
 import math
@@ -72,6 +73,7 @@ class Instance:
         self._mm = None
         self._data = InstanceModel(self)
         self._coms = None
+        self._perms = Permissions.retrieve()
 
         self._mod_tracker = ModTracker(self._data)
 
@@ -268,6 +270,9 @@ class Instance:
 
             if path.startswith('{{Root}}'):
 
+                if self._perms.browse.local is False:
+                    raise PermissionError()
+
                 try:
                     if os.path.exists(Dirs.documents_dir()):
                         entry = response.contents.add()
@@ -322,6 +327,9 @@ class Instance:
 
             elif path.startswith('{{Examples}}'):
 
+                if self._perms.browse.examples is False:
+                    raise PermissionError()
+
                 if path == '{{Examples}}' or path == '{{Examples}}/':
 
                     index_path = os.path.join(conf.get('examples_path'), 'index.yaml')
@@ -362,6 +370,9 @@ class Instance:
                 self._coms.send(response, self._instance_id, request)
 
             else:
+                if self._perms.browse.local is False:
+                    raise PermissionError()
+
                 entries = [ ]
 
                 for direntry in os.scandir(abs_path + '/'):  # add a / in case we get C:
@@ -402,20 +413,24 @@ class Instance:
 
         except OSError as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to open {}'.format(base)
+            message = 'Unable to browse {}'.format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
         except BaseException as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to open {}'.format(base)
+            message = 'Unable to browse {}'.format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
     async def _on_save(self, request):
+
         path = request.filePath
         path = Instance._normalise_path(path)
 
         try:
+            if self._perms.save.local is False:
+                raise PermissionError()
+
             file_exists = os.path.isfile(path)
             if file_exists is False or request.overwrite is True:
                 if path.endswith('.omv'):
@@ -514,23 +529,28 @@ class Instance:
             self._coms.send_error('Unable to save', str(e), self._instance_id, request)
 
     async def _on_open(self, request):
+
         if request.op == jcoms.OpenRequest.Op.Value('IMPORT_REPLACE'):
             await self._on_import(request)
             return
 
-        try:
-            path = request.filePath
+        path = request.filePath
+        norm_path = Instance._normalise_path(path)
+        virt_path = Instance._virtualise_path(path)
+        is_example = path.startswith('{{Examples}}')
+        old_mm = None
 
-            norm_path = Instance._normalise_path(path)
-            virt_path = Instance._virtualise_path(path)
+        try:
+            if is_example and self._perms.open.examples is False:
+                raise PermissionError()
+            if path != '' and not is_example and self._perms.open.local is False:
+                raise PermissionError()
 
             old_mm = self._mm
             self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
             dataset = DataSet.create(self._mm)
 
             self._data.dataset = dataset
-
-            is_example = path.startswith('{{Examples}}')
 
             ioloop = asyncio.get_event_loop()
 
@@ -650,6 +670,9 @@ class Instance:
                 return (name, model)
 
         try:
+            if self._perms.open.local is False:
+                raise PermissionError()
+
             datasets = MultipleDataSets(paths)
             await self._data.import_from(datasets, n_files > 1)
             self._mod_tracker.clear()
@@ -659,7 +682,9 @@ class Instance:
 
         except OSError as e:
             log.exception(e)
-            base = os.path.basename(e.filename)
+            base = ''
+            if e.filename is not None:
+                base = os.path.basename(e.filename)
             message = 'Unable to import {}'.format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
@@ -859,26 +884,38 @@ class Instance:
 
         modules = Modules.instance()
 
-        if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
-            modules.install(
-                request.path,
-                lambda t, result: self._on_module_callback(t, result, request))
-        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
-            try:
-                modules.uninstall(request.name)
+        try:
+            if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
+                if self._perms.library.add_remove is False:
+                    raise PermissionError()
+                modules.install(
+                    request.path,
+                    lambda t, result: self._on_module_callback(t, result, request))
+            elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
+                if self._perms.library.add_remove is False:
+                    raise PermissionError()
+                try:
+                    modules.uninstall(request.name)
+                    self._coms.send(None, self._instance_id, request)
+                    self._session.notify_global_changes()
+                except Exception as e:
+                    log.exception(e)
+                    self._coms.send_error(str(e), None, self._instance_id, request)
+            elif request.command == jcoms.ModuleRR.ModuleCommand.Value('SHOW'):
+                if self._perms.library.show_hide is False:
+                    raise PermissionError()
+                self._set_module_visibility(request.name, True)
                 self._coms.send(None, self._instance_id, request)
                 self._session.notify_global_changes()
-            except Exception as e:
-                log.exception(e)
-                self._coms.send_error(str(e), None, self._instance_id, request)
-        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('SHOW'):
-            self._set_module_visibility(request.name, True)
-            self._coms.send(None, self._instance_id, request)
-            self._session.notify_global_changes()
-        elif request.command == jcoms.ModuleRR.ModuleCommand.Value('HIDE'):
-            self._set_module_visibility(request.name, False)
-            self._coms.send(None, self._instance_id, request)
-            self._session.notify_global_changes()
+            elif request.command == jcoms.ModuleRR.ModuleCommand.Value('HIDE'):
+                if self._perms.library.show_hide is False:
+                    raise PermissionError()
+                self._set_module_visibility(request.name, False)
+                self._coms.send(None, self._instance_id, request)
+                self._session.notify_global_changes()
+
+        except PermissionError as e:
+            self._coms.send_error('Unable to perform request', str(e), self._instance_id, request)
 
     def _set_module_visibility(self, name, value):
         modules = Modules.instance()
@@ -911,8 +948,11 @@ class Instance:
         print(progress)
 
     def _on_store(self, request):
-        modules = Modules.instance()
-        modules.read_store(lambda t, res: self._on_store_callback(request, t, res))
+        if self._perms.library.browseable is False:
+            self._coms.send_error('Unable to access library', 'The library is disabled', self._instance_id, request)
+        else:
+            modules = Modules.instance()
+            modules.read_store(lambda t, res: self._on_store_callback(request, t, res))
 
     def _on_store_callback(self, request, t, result):
         if t == 'progress':
