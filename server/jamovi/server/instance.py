@@ -2402,6 +2402,11 @@ class Instance:
             module_pb = response.modules.add()
             self._module_to_pb(module, module_pb)
 
+        mode = conf.get('mode', 'normal')
+        conf_pb = response.config.add()
+        conf_pb.name = 'mode'
+        conf_pb.s = mode
+
         self._coms.send(response, self._instance_id, request)
 
     def _module_to_pb(self, module, module_pb):
