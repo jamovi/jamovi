@@ -411,6 +411,12 @@ class Instance:
 
                 self._coms.send(response, self._instance_id, request)
 
+        except PermissionError as e:
+            log.exception(e)
+            base    = os.path.basename(abs_path)
+            message = 'Unable to browse {}'.format(base)
+            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            self._coms.send_error(message, cause, self._instance_id, request)
         except OSError as e:
             base    = os.path.basename(abs_path)
             message = 'Unable to browse {}'.format(base)
@@ -446,6 +452,13 @@ class Instance:
                 response.fileExists = True
                 response.success = False
                 self._coms.send(response, self._instance_id, request)
+
+        except PermissionError as e:
+            log.exception(e)
+            base    = os.path.basename(path)
+            message = 'Unable to save {}'.format(base)
+            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
@@ -571,6 +584,13 @@ class Instance:
             if path != '' and not is_example:
                 self._add_to_recents(path)
 
+        except PermissionError as e:
+            log.exception(e)
+            base    = os.path.basename(path)
+            message = 'Unable to open {}'.format(base)
+            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            self._coms.send_error(message, cause, self._instance_id, request)
+
         except OSError as e:
             log.exception(e)
             base    = os.path.basename(path)
@@ -679,6 +699,15 @@ class Instance:
 
             response = jcoms.OpenProgress()
             self._coms.send(response, self._instance_id, request)
+
+        except PermissionError as e:
+            log.exception(e)
+            base = ''
+            if e.filename is not None:
+                base = os.path.basename(e.filename)
+            message = 'Unable to import {}'.format(base)
+            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
