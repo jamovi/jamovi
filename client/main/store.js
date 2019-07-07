@@ -60,16 +60,32 @@ const Store = Backbone.View.extend({
         this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store"></div>').appendTo($pageContainer);
         this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right"></div>').appendTo($pageContainer);
 
-        this.pageInst  = new PageModules({ el: this.$pageInst, model: this.model });
-        this.pageStore = new PageModules({ el: this.$pageStore, model: this.model.available() });
-        this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model });
+        let settings = this.model.settings();
+        let mode = settings.getSetting('mode', 'normal');
 
-        this.pageInst.on('notification', note => this.trigger('notification', note));
-        this.pageStore.on('notification', note => this.trigger('notification', note));
-        this.pageSideload.on('notification', note => this.trigger('notification', note));
-        this.pageSideload.on('close', () => this.hide());
+        settings.on('change:mode',
+            (event) => {
 
-        this.$pages = $pageContainer.children();
+                this.pageInst  = new PageModules({ el: this.$pageInst, model: { settings: settings, modules: this.model.modules() } });
+                this.pageInst.on('notification', note => this.trigger('notification', note));
+
+                let mode = settings.getSetting('mode', 'normal');
+                if (mode === 'demo') {
+                    this.$pageStore.append($('<div class="mode-msg">The jamovi library is not avaliable in this demo.</div>'));
+                    this.$pageSideload.append($('<div class="mode-msg">Side loading modules is not avaliable in this demo.</div>'));
+                }
+                else {
+                    this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );
+                    this.pageSideload.on('notification', note => this.trigger('notification', note));
+                    this.pageSideload.on('close', () => this.hide());
+
+                    this.pageStore = new PageModules({ el: this.$pageStore, model: { settings: settings, modules: this.model.modules().available() } });
+                    this.pageStore.on('notification', note => this.trigger('notification', note));
+                }
+
+
+                this.$pages = $pageContainer.children();
+            });
 
         this._selectedIndex = null;
     },
@@ -122,7 +138,8 @@ const Store = Backbone.View.extend({
         else if (this._selectedIndex === null)
             setTimeout(() => this._setSelected(1), 100);
         tarp.show('store', false, 0.3);
-        this.model.available().retrieve();
+        let modules = this.model.modules();
+        modules.available().retrieve();
     },
     hide: function() {
         this.$el.removeClass('visible');

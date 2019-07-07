@@ -16,6 +16,9 @@ const PageModules = Backbone.View.extend({
     className: 'PageModules',
     initialize: function() {
 
+        this.modules = this.model.modules;
+        this.settings = this.model.settings;
+
         this.$el.addClass('jmv-store-page-installed');
 
         this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
@@ -30,30 +33,32 @@ const PageModules = Backbone.View.extend({
 
         this.$progressbar = this.$installing.find('.jmv-store-progress-bar');
 
-        this.model.on('change:modules', this._refresh, this);
-        this.model.on('moduleVisibilityChanged', this._refresh, this);
+        this.modules.on('change:modules', this._refresh, this);
+        this.modules.on('moduleVisibilityChanged', this._refresh, this);
 
         this.$modules = $();
         this.$uninstall = $();
         this.$install = $();
         this.$visibility = $();
 
-        this.model.on('change:status', () => {
-            this.$el.attr('data-status', this.model.attributes.status);
+        this.modules.on('change:status', () => {
+            this.$el.attr('data-status', this.modules.attributes.status);
         });
 
-        this.model.on('change:error', () => {
-            this.$errorMessage.text(this.model.attributes.error.message);
-            this.$errorCause.text(this.model.attributes.error.cause);
+        this.modules.on('change:error', () => {
+            this.$errorMessage.text(this.modules.attributes.error.message);
+            this.$errorCause.text(this.modules.attributes.error.cause);
         });
 
-        this.model.on('change:progress', () => {
-            let progress = this.model.attributes.progress;
+        this.modules.on('change:progress', () => {
+            let progress = this.modules.attributes.progress;
             let pc = parseInt(100 * progress[0] / progress[1]);
             this.$progressbar.css('width', '' + pc + '%');
         });
 
-        this.$errorRetry.on('click', () => this.model.retrieve());
+        this.$errorRetry.on('click', () => this.modules.retrieve());
+
+        this._refresh();
     },
     _refresh() {
 
@@ -63,7 +68,7 @@ const PageModules = Backbone.View.extend({
         this.$install.off();
         this.$content.empty();
 
-        for (let module of this.model) {
+        for (let module of this.modules) {
 
             let version = Version.stringify(module.version, 3);
 
@@ -77,9 +82,11 @@ const PageModules = Backbone.View.extend({
             html += '    <div class="authors">' + module.authors.join(', ') + '</div>';
             html += '    <div class="description">' + module.description + '</div>';
 
-            for (let op of module.ops) {
-                let disabled = (op === 'installed' ? ' disabled' : '');
-                html += '<button' + disabled +' data-path="' + module.path + '", data-name="' + module.name + '" data-op="' + op + '" class="jmv-store-module-button"><span class="label"></span></button>';
+            if (this.settings.getSetting('mode', 'normal') !== 'demo') {
+                for (let op of module.ops) {
+                    let disabled = (op === 'installed' ? ' disabled' : '');
+                    html += '<button' + disabled +' data-path="' + module.path + '", data-name="' + module.name + '" data-op="' + op + '" class="jmv-store-module-button"><span class="label"></span></button>';
+                }
             }
 
             html += '</div>';
@@ -105,10 +112,10 @@ const PageModules = Backbone.View.extend({
     _visibilityClicked(event) {
         let $target = $(event.target);
         let name = $target.attr('data-name');
-        this.model.toggleModuleVisibility(name);
+        this.modules.toggleModuleVisibility(name);
     },
     _install(path) {
-        return this.model.install(path)
+        return this.modules.install(path)
             .then(() => {
                 this._notify({
                     title: 'Module installed',
@@ -133,7 +140,7 @@ const PageModules = Backbone.View.extend({
             this._uninstall(moduleName);
     },
     _uninstall(moduleName) {
-        this.model.uninstall(moduleName)
+        this.modules.uninstall(moduleName)
             .then(ok => {
                 this._notify({
                     title: 'Module uninstalled',
