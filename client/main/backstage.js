@@ -817,6 +817,10 @@ var BackstageModel = Backbone.Model.extend({
             (event) => this._settingsChanged(event));
         this.instance.settings().on('change:examples',
             (event) => this._settingsChanged(event));
+        this.instance.settings().on('change:mode',
+            (event) => {
+                this.set('ops', this.createOps());
+            });
 
         this._wdData = {
             main: { defaultPath: '{{Documents}}' },
@@ -903,6 +907,31 @@ var BackstageModel = Backbone.Model.extend({
         ActionHub.get('save').on('request', () => this.requestSave(this.instance.get('path'), true));
 
         this.attributes.ops = [
+
+        ];
+
+    },
+    createOps: function() {
+        let mode = this.instance.settings().getSetting('mode', 'normal');
+
+        let open_thispc = null;
+        let import_thispc = null;
+        let saveAs_thispc = null;
+        let export_thispc = null;
+        if (mode === 'demo') {
+            open_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Opening files from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Saving data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Exporting data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+        }
+        else {
+            open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
+            import_thispc = { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView };
+            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView };
+            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView };
+        }
+
+        return [
             {
                 name: 'new',
                 title: 'New',
@@ -923,7 +952,7 @@ var BackstageModel = Backbone.Model.extend({
                         this.attributes.place = place;
                 },
                 places: [
-                    { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
+                    open_thispc,
                     { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
                 ]
             },
@@ -942,7 +971,8 @@ var BackstageModel = Backbone.Model.extend({
                         this.attributes.place = place;
                 },
                 places: [
-                    { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView }]
+                    import_thispc
+                ]
             },
             {
                 name: 'save',
@@ -961,18 +991,19 @@ var BackstageModel = Backbone.Model.extend({
                     });
                 },
                 places: [
-                    { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
+                    saveAs_thispc
                 ]
             },
             {
                 name: 'export',
                 title: 'Export',
                 places: [
-                    { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView },
+                        export_thispc
                 ]
             }
         ];
     },
+
     addToWorkingDirData: function(model) {
         let wdType = model.attributes.wdType;
         if (this._wdData[wdType].models === undefined) {
@@ -1059,6 +1090,18 @@ var BackstageModel = Backbone.Model.extend({
 
         if (index === -1)
             index = 0;
+
+        if (this._opChanged) {
+            while (index < op.places.length && op.places[index].view === InDevelopmentView)
+                index += 1;
+
+            if (index >= op.places.length)
+                index = 0;
+            else
+                this.attributes.place = op.places[index].name;
+
+            this._opChanged = false;
+        }
 
         return op.places[index];
     },
@@ -1148,6 +1191,8 @@ var BackstageModel = Backbone.Model.extend({
         return this._wdData[wdType].initialised;
     },
     _opChanged: function() {
+
+        this._opChanged = true;
 
         var op = this.getCurrentOp();
         if (op === null)
@@ -1374,6 +1419,7 @@ var BackstageView = SilkyView.extend({
         this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
+        this.model.on('change:ops',       this.render, this);
     },
     events: {
         'click .silky-bs-back-button div' : 'deactivate',
@@ -1390,6 +1436,7 @@ var BackstageView = SilkyView.extend({
         }
     },
     render: function() {
+        this.$el.empty();
 
         this.$el.addClass('silky-bs');
 
