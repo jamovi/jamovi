@@ -412,6 +412,7 @@ class Instance:
                 self._coms.send(response, self._instance_id, request)
 
         except PermissionError as e:
+            log.exception(e)
             base    = os.path.basename(abs_path)
             message = 'Unable to browse {}'.format(base)
             cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
