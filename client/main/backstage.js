@@ -1120,6 +1120,11 @@ var BackstageModel = Backbone.Model.extend({
             wdData.initialised = true;
         }, (error) => {
 
+            if (statusTimeout) {
+                clearTimeout(statusTimeout);
+                statusTimeout = null;
+            }
+
             if (path === '')
                 path = '/';
 
