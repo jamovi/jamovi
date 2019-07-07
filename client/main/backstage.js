@@ -919,10 +919,10 @@ var BackstageModel = Backbone.Model.extend({
         let saveAs_thispc = null;
         let export_thispc = null;
         if (mode === 'demo') {
-            open_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Opening files from your PC', msg: `Not avaliable in demo mode`}, view: InDevelopmentView };
-            import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not avaliable in demo mode`}, view: InDevelopmentView };
-            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Saving data to your PC', msg: `Not avaliable in demo mode`}, view: InDevelopmentView };
-            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Exporting data to your PC', msg: `Not avaliable in demo mode`}, view: InDevelopmentView };
+            open_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Opening files from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Saving data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Exporting data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
         }
         else {
             open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
@@ -1097,9 +1097,8 @@ var BackstageModel = Backbone.Model.extend({
 
             if (index >= op.places.length)
                 index = 0;
-            else {
+            else
                 this.attributes.place = op.places[index].name;
-            }
 
             this._opChanged = false;
         }
