@@ -17,6 +17,10 @@
     opacity: 1;
 }
 
+.jmv-ribbon[mode=demo] .display-in-menu {
+    color: #CCCCCC;
+}
+
 .jmv-group-items {
     overflow: auto;
     max-height: 500px;

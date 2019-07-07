@@ -11,6 +11,13 @@
     background-color: transparent;
 }
 
+.mode-msg {
+    text-align: center;
+    margin-top: 100px;
+    font-size: 150%;
+    font-weight: 100;
+}
+
 .jmv-store {
     position: absolute ;
     display: flex ;

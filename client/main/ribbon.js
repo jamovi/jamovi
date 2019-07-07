@@ -71,6 +71,16 @@ const RibbonView = Backbone.View.extend({
         if (this.model === undefined)
             this.model = new RibbonModel();
 
+        this.model.settings().on('change:mode', (events) => {
+            let mode = this.model.settings().getSetting('mode', 'normal');
+            this.$el.attr('mode', mode);
+            let $checkboxes = this.$el.find('.display-in-menu > input');
+            if (mode === 'demo')
+                $checkboxes.attr("disabled", true);
+            else
+                $checkboxes.removeAttr("disabled");
+        });
+
         this.model.modules().on('change:modules', () => {
             let modules = this.model.modules();
             let tab = this.model.getSelectedTab();
@@ -142,7 +152,7 @@ const RibbonView = Backbone.View.extend({
 
         this._refresh();
 
-        this.store = new Store({ el : this.$store, model : this.model.modules() });
+        this.store = new Store({ el : this.$store, model : this.model });
         this.store.on('notification', note => this.trigger('notification', note));
     },
     notify(options) {
