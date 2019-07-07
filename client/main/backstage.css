@@ -738,13 +738,23 @@
     box-sizing: border-box;
 }
 
+.silky-development-msg {
+    font-size: 120%;
+    font-weight: 100;
+}
+
 .silky-development-title {
-    font-size: 140% ;
-    height: 40px ;
-    line-height: 40px ;
+    font-size: 160%;
+    padding-top: 10px;
+    height: 40px;
+    font-weight: 100;
+    line-height: 40px;
     margin-bottom: 10px;
+    color: #333333;
+    border-top: 2px solid #cccccc;
 }
 
 .silky-under-development {
     margin-left: 40px;
+    margin-top: 100px;
 }
