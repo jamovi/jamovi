@@ -32,6 +32,7 @@ class Permissions:
             self.open.examples = True
             self.save.local = True
         elif app_mode == 'demo':
+            print('! DEMO MODE !')
             self.library.browseable = False
             self.library.add_remove = False
             self.library.show_hide = False
