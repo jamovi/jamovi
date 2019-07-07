@@ -14,6 +14,7 @@
     border: 1px solid #dfdfdf;
     height: 140px;
     box-sizing: border-box;
+    overflow: auto;
 }
 
 .jmv-transform-editor > .contents > .content-list {
@@ -23,6 +24,7 @@
     background-color: #fdfdfd;
     margin-top: 3px;
     margin-left: 5px;
+    max-height: 103px;
 }
 
 .jmv-editor-panel-main .title-box .transform-colour {
@@ -37,7 +39,6 @@
     flex: 2;
     overflow-y: auto;
     padding-right: 5px;
-    margin-bottom: 3px;
 }
 
 .jmv-transform-editor-widget-title {
@@ -224,6 +225,7 @@
     color: #575757;
     flex-shrink: 0;
     margin-left: 5px;
+    height: 22px;
 }
 
 .jmv-transform-editor > .contents > .content-list > .right-box {
