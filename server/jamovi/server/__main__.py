@@ -10,8 +10,11 @@ import webbrowser
 
 log = logging.getLogger('jamovi')
 if not sys.executable.endswith('pythonw.exe'):
+    formatter = logging.Formatter('%(name)s - %(message)s')
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
     log.setLevel(logging.INFO)
-    log.addHandler(logging.StreamHandler(sys.stdout))
 
 # import os.path
 # logpath = os.path.expanduser('~/jamovi-log.txt')
