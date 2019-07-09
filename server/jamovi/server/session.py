@@ -8,46 +8,14 @@ from itertools import chain
 from .instance import Instance
 from .analyses import AnalysisIterator
 from .enginemanager import EngineManager
+from .scheduler import Scheduler
+from .remotequeue import RemoteQueue
 from .settings import Settings
+from .utils import conf
 
 
 class NoSuchInstanceException(Exception):
     pass
-
-
-class SessionAnalyses:
-
-    def __init__(self, session):
-        self._session = session
-
-    def __iter__(self):
-        all_analyses = map(lambda inst: inst.analyses, self._session.values())
-        all_analyses = chain.from_iterable(all_analyses)
-        return all_analyses.__iter__()
-
-    def get(self, analysis_id, instance_id=None):
-        for analysis in self:
-            if analysis_id == analysis.id:
-                if instance_id is None:
-                    return analysis
-                elif instance_id == analysis.instance.id:
-                    return analysis
-        return None
-
-    def add_options_changed_listener(self, listener):
-        self._session.add_options_changed_listener(listener)
-
-    @property
-    def needs_init(self):
-        return AnalysisIterator(self, True)
-
-    @property
-    def needs_run(self):
-        return AnalysisIterator(self, False)
-
-    @property
-    def needs_op(self):
-        return AnalysisIterator(self, needs_op=True)
 
 
 class Session(dict):
@@ -61,11 +29,19 @@ class Session(dict):
         self._analysis_listeners = [ ]
         self._running = True
 
-        self._em = EngineManager(data_path, self._analyses)
-        self._em.start()
-        self._em.add_engine_listener(self._on_engine_event)
+        task_queue_url = conf.get('task-queue-url')
+        if task_queue_url is not None:
+            self._scheduler = Scheduler(1, 3, self._analyses)
+            self._runner = RemoteQueue(task_queue_url, self._scheduler.queue)
+        else:
+            self._scheduler = Scheduler(1, 3, self._analyses)
+            self._runner = EngineManager(self._path, self._scheduler.queue)
+            self._runner.add_engine_listener(self._on_engine_event)
 
         self._start_gc()
+
+    async def start(self):
+        await self._runner.start()
 
     def __getitem__(self, id):
         try:
@@ -87,7 +63,8 @@ class Session(dict):
         return instance
 
     async def restart_engines(self):
-        await self._em.restart_engines()
+        if self._em is not None:
+            await self._em.restart_engines()
 
     def rerun_analyses(self):
         for analysis in self._analyses:
@@ -155,3 +132,38 @@ class Session(dict):
                         break
 
         asyncio.get_event_loop().create_task(gc(self))
+
+
+class SessionAnalyses:
+
+    def __init__(self, session):
+        self._session = session
+
+    def __iter__(self):
+        all_analyses = map(lambda inst: inst.analyses, self._session.values())
+        all_analyses = chain.from_iterable(all_analyses)
+        return all_analyses.__iter__()
+
+    def get(self, analysis_id, instance_id=None):
+        for analysis in self:
+            if analysis_id == analysis.id:
+                if instance_id is None:
+                    return analysis
+                elif instance_id == analysis.instance.id:
+                    return analysis
+        return None
+
+    def add_options_changed_listener(self, listener):
+        self._session.add_options_changed_listener(listener)
+
+    @property
+    def needs_init(self):
+        return AnalysisIterator(self, True)
+
+    @property
+    def needs_run(self):
+        return AnalysisIterator(self, False)
+
+    @property
+    def needs_op(self):
+        return AnalysisIterator(self, needs_op=True)

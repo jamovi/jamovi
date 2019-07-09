@@ -54,6 +54,7 @@ class Analysis:
         self.status = Analysis.Status.NONE
         self.clear_state = False
         self.enabled = enabled
+        self.complete = False
         self.load_error = load_error
 
         self._ops = [ ]
@@ -73,14 +74,16 @@ class Analysis:
         non_passive_changes = self.options.set(options)
         if not non_passive_changes and len(changes) == 0 and not wasnt_but_now_is_enabled:
             return
+        self.complete = False
         if len(changes) > 0:
             self.changes |= set(changes)
         self.revision += 1
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
-    def set_results(self, results):
+    def set_results(self, results, complete=True):
         self.results = results
+        self.complete = complete
         if len(results.options.names) > 0:  # if not empty
             # use options from results
             self.options.set(results.options)
@@ -88,7 +91,6 @@ class Analysis:
             # otherwise use options from analysis
             results.options.CopyFrom(self.options.as_pb())
         self.changes.clear()
-        self.status = Analysis.Status(results.status)
         self.clear_state = False
         self.parent._notify_results_changed(self)
 

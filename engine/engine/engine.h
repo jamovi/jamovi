@@ -33,7 +33,6 @@ private:
     void monitorStdinLoop();
     void analysisRequested(int requestId, Analysis *analysis);
     void resultsReceived(const std::string &results, bool complete);
-    void opEventReceived(const std::string &message);
     void periodicChecks();
     void terminate();
     Analysis *waiting();

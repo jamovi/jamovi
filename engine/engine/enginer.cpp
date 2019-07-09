@@ -19,6 +19,7 @@
 #include "readdf.h"
 #include "dirs.h"
 #include "utils.h"
+#include "jamovi.pb.h"
 
 #ifdef _WIN32
     const char *PATH_SEP = "\\";
@@ -30,6 +31,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace jamovi::coms;
 
 RInside *EngineR::_rInside = NULL;
 
@@ -161,6 +163,13 @@ void EngineR::run(Analysis *analysis)
 
     if (analysis->perform == 5)  // SAVE
     {
+        AnalysisResponse response;
+        response.set_instanceid(analysis->instanceId);
+        response.set_analysisid(analysis->analysisId);
+        response.set_name(analysis->name);
+        response.set_ns(analysis->ns);
+        response.set_revision(analysis->revision);
+
         ss.str("");
         ss << "result <- try(";
         ss << "  analysis$.savePart(";
@@ -177,7 +186,20 @@ void EngineR::run(Analysis *analysis)
 
         std::string result = rInside.parseEval(ss.str());
 
-        opEventReceived(result);
+        if (result == "")
+        {
+            response.set_status(AnalysisStatus::ANALYSIS_COMPLETE);
+        }
+        else
+        {
+            response.mutable_error()->set_message(result);
+            response.mutable_error()->set_cause(result);
+            response.set_status(AnalysisStatus::ANALYSIS_ERROR);
+        }
+
+        response.SerializeToString(&result);
+
+        resultsReceived(result, true);
     }
     else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
