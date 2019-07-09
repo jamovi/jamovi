@@ -23,7 +23,9 @@ import mimetypes
 import re
 import json
 
-import tempfile
+from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
+
 import logging
 import pkg_resources
 import threading
@@ -187,7 +189,7 @@ class PDFConverter(RequestHandler):
         self._file = None
 
     def prepare(self):
-        self._file = tempfile.NamedTemporaryFile(suffix='.html')
+        self._file = NamedTemporaryFile(suffix='.html')
 
     def data_received(self, data):
         self._file.write(data)
@@ -238,7 +240,12 @@ class Server:
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
     ETRON_NOTF_REGEX = re.compile(r'^notification: ([a-z-]+) ?(.*)\n?$')
 
-    def __init__(self, port, host='127.0.0.1', slave=False, stdin_slave=False, debug=False):
+    def __init__(self,
+                 port,
+                 host='127.0.0.1',
+                 slave=False,
+                 stdin_slave=False,
+                 debug=False):
 
         self._session = None
 
@@ -255,6 +262,11 @@ class Server:
         self._debug = debug
         self._ports_opened_listeners = [ ]
 
+        self._spool_dir = conf.get('spool-dir')
+        if self._spool_dir is None:
+            self._spool = TemporaryDirectory()
+            self._spool_dir = self._spool.name
+
         conf.set('debug', debug)
 
         if stdin_slave:
@@ -263,6 +275,7 @@ class Server:
 
         self._etron_reqs = [ ]
         self._etron_req_id = 0
+        self._port_file = None
 
     def _set_update_status(self, status):
         self._request({
@@ -332,8 +345,19 @@ class Server:
 
     def stop(self):
         self._ioloop.stop()
+        try:
+            os.remove(self._port_file)
+        except Exception:
+            pass
 
     def start(self):
+        asyncio.ensure_future(self._run())
+        try:
+            self._ioloop.run_forever()
+        except KeyboardInterrupt:
+            pass
+
+    async def _run(self):
 
         client_path = conf.get('client_path')
         version_path = conf.get('version_path', False)
@@ -341,14 +365,14 @@ class Server:
             version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
-        data_dir = tempfile.TemporaryDirectory()
-        data_path = data_dir.name
+        data_path = self._spool_dir
         session_id = str(uuid.uuid4())
         session_path = os.path.join(data_path, session_id)
         os.makedirs(session_path)
 
         self._session = Session(data_path, session_id)
         self._session.set_update_request_handler(self._set_update_status)
+        await self._session.start()
 
         self._main_app = tornado.web.Application([
             (r'/version', SingleFileHandler, { 'path': version_path }),
@@ -433,8 +457,8 @@ class Server:
         # find out what port jamovi is running on
         app_data = Dirs.app_data_dir()
         port_name = str(self._ports[0]) + '.port'
-        port_file = os.path.join(app_data, port_name)
-        with open(port_file, 'w'):
+        self._port_file = os.path.join(app_data, port_name)
+        with open(self._port_file, 'w'):
             pass
 
         for entry in os.scandir(app_data):
@@ -442,13 +466,3 @@ class Server:
                 continue
             if entry.name.endswith('.port') and entry.is_file():
                 os.remove(entry.path)
-
-        try:
-            self._ioloop.run_forever()
-        except KeyboardInterrupt:
-            pass
-
-        try:
-            os.remove(port_file)
-        except Exception:
-            pass

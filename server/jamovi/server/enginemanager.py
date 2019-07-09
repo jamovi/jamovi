@@ -13,14 +13,117 @@ from uuid import uuid4
 import nanomsg
 
 from .utils import conf
-from . import jamovi_pb2 as jcoms
-from .analyses import Analysis
+
+from .jamovi_pb2 import ComsMessage
+from .jamovi_pb2 import AnalysisStatus
+from .jamovi_pb2 import AnalysisRequest
+from .jamovi_pb2 import AnalysisResponse
+
+from .utils import req_str
 
 import logging
-import asyncio
-from asyncio import Queue
+from asyncio import get_event_loop
+from asyncio import Queue as AsyncQueue
+from asyncio import QueueFull
+from asyncio import ensure_future as create_task
+from asyncio import CancelledError
 
-log = logging.getLogger('jamovi')
+log = logging.getLogger(__name__)
+
+
+class EngineManager:
+
+    def __init__(self, data_path, queue):
+
+        self._data_path = data_path
+        self._queue = queue
+        self._requests = [ None ] * queue.qsize
+        self._engines = [ None ] * queue.qsize
+
+        self._message_id = 1
+        self._listeners = [ ]
+
+        if platform.uname().system == 'Windows':
+            self._conn_root = "ipc://{}".format(str(uuid4()))
+        else:
+            self._dir = tempfile.TemporaryDirectory()  # assigned to self so it doesn't get cleaned up
+            self._conn_root = "ipc://{}/conn".format(self._dir.name)
+
+        for index in range(queue.qsize):
+            conn_path = '{}-{}'.format(self._conn_root, index)
+            engine = Engine(
+                parent=self,
+                data_path=data_path,
+                conn_path=conn_path)
+            self._engines[index] = engine
+
+        self._run_loop_task = create_task(self._run_loop())
+
+        self._restart_task = AsyncQueue()
+
+    async def _run_loop(self):
+        try:
+            tasks = set()
+            async for analysis in self._queue.stream():
+                task = create_task(self._run_analysis(analysis))
+                tasks = set(filter(lambda t: not t.done(), tasks))
+                tasks.add(task)
+            for task in tasks:
+                task.cancel()
+        except Exception as e:
+            log.exception(e)
+
+    async def _run_analysis(self, analysis):
+        request, stream = analysis
+
+        for index, value in enumerate(self._requests):
+            if value is not None:
+                ex_request, ex_stream = value
+                if (request.instanceId == ex_request.instanceId
+                        and request.analysisId == ex_request.analysisId):
+                    break
+        else:
+            for index, value in enumerate(self._requests):
+                if value is None:
+                    break
+            else:
+                raise QueueFull()
+
+        try:
+            log.debug('%s %s on %s', 'running', req_str(request), index)
+            self._requests[index] = (request, stream)
+            await self._engines[index].run(request, stream)
+            self._requests[index] = None
+            log.debug('%s %s', 'completed', req_str(request))
+        except CancelledError:
+            log.debug('%s %s', 'cancelled', req_str(request))
+        except Exception as e:
+            log.exception(e)
+
+    async def start(self):
+        for engine in self._engines:
+            engine.start()
+
+    def stop(self):
+        for engine in self._engines:
+            engine.stop()
+
+    async def restart_engines(self):
+        for engine in self._engines:
+            engine.restart()
+            self._restart_task.put_nowait(engine)
+        await self._restart_task.join()
+
+    def _notify_engine_restarted(self, engine):
+        self._restart_task.task_done()
+
+    def add_engine_listener(self, listener):
+        self._listeners.append(('engine-event', listener))
+
+    def _notify_engine_event(self, *args):
+        for listener in self._listeners:
+            if listener[0] == 'engine-event':
+                listener[1](*args)
 
 
 class Engine:
@@ -36,9 +139,6 @@ class Engine:
         self._data_path = data_path
         self._conn_path = conn_path
 
-        self.analysis = None
-        self.status = Engine.Status.WAITING
-
         self._process = None
         self._socket = None
         self._thread = None
@@ -47,11 +147,9 @@ class Engine:
         self._stopping = False
         self._stopped = False
 
-        self._ioloop = asyncio.get_event_loop()
+        self._ioloop = get_event_loop()
 
-    @property
-    def is_waiting(self):
-        return self.status is Engine.Status.WAITING
+        self._current_request = None
 
     def start(self):
 
@@ -99,7 +197,8 @@ class Engine:
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
 
-        except BaseException as e:
+        except Exception as e:
+            log.exception(e)
             self._parent._notify_engine_event({
                 'type': 'error',
                 'message': 'Engine process could not be started',
@@ -113,10 +212,10 @@ class Engine:
         self._stopping = True
         self._message_id += 1
 
-        request = jcoms.AnalysisRequest()
+        request = AnalysisRequest()
         request.restartEngines = True
 
-        message = jcoms.ComsMessage()
+        message = ComsMessage()
         message.id = self._message_id
         message.payload = request.SerializeToString()
         message.payloadType = 'AnalysisRequest'
@@ -137,9 +236,14 @@ class Engine:
         while parent.is_alive():
             try:
                 bytes = self._socket.recv()
-                message = jcoms.ComsMessage()
+
+                message = ComsMessage()
                 message.ParseFromString(bytes)
-                self._ioloop.call_soon_threadsafe(self._receive, message)
+
+                results = AnalysisResponse()
+                results.ParseFromString(message.payload)
+
+                self._ioloop.call_soon_threadsafe(self._receive, results)
 
             except nanomsg.NanoMsgAPIError as e:
                 if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
@@ -170,150 +274,38 @@ class Engine:
         if self._process is not None:
             self._process.terminate()
 
-    def send(self, analysis, run=True):
+    async def run(self, request, results):
 
-        self._message_id += 1
-        self.analysis = analysis
+        self._current_request = request
+        self._current_results = results
 
-        request = jcoms.AnalysisRequest()
-
-        request.sessionId = analysis.instance.session.id
-        request.instanceId = analysis.instance.id
-        request.analysisId = analysis.id
-        request.name = analysis.name
-        request.ns = analysis.ns
-
-        if analysis.status is Analysis.Status.COMPLETE and analysis.needs_op:
-
-            analysis.op.waiting = False
-            request.options.CopyFrom(analysis.options.as_pb())
-            request.perform = jcoms.AnalysisRequest.Perform.Value('SAVE')
-            request.path = analysis.op.path
-            request.part = analysis.op.part
-            self.status = Engine.Status.OPPING
-
-        else:
-
-            analysis.status = Analysis.Status.RUNNING
-
-            request.options.CopyFrom(analysis.options.as_pb())
-            request.changed.extend(analysis.changes)
-            request.revision = analysis.revision
-            request.clearState = analysis.clear_state
-
-            if run:
-                request.perform = jcoms.AnalysisRequest.Perform.Value('RUN')
-                self.status = Engine.Status.RUNNING
-            else:
-                request.perform = jcoms.AnalysisRequest.Perform.Value('INIT')
-                self.status = Engine.Status.INITING
-
-        message = jcoms.ComsMessage()
+        message = ComsMessage()
         message.id = self._message_id
         message.payload = request.SerializeToString()
         message.payloadType = 'AnalysisRequest'
 
         self._socket.send(message.SerializeToString())
+        self._message_id += 1
 
-    def _receive(self, message):
+        await results.completed()
 
-        if self.status is Engine.Status.WAITING:
-            log.info('id : {}, response received when not running'.format(message.id))
-        elif self.status is Engine.Status.OPPING:
-            self.status = Engine.Status.WAITING
-            if message.status == jcoms.Status.Value('ERROR'):
-                self.analysis.op.set_exception(RuntimeError(message.error.cause))
-            else:
-                self.analysis.op.set_result(message)
-            self.analysis = None
-            self._parent._send_next()
-        else:
-            results = jcoms.AnalysisResponse()
-            results.ParseFromString(message.payload)
+    def _receive(self, results):
 
-            if results.revision == self.analysis.revision:
-                complete = False
-                if results.incAsText and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE'):
-                    complete = True
-                elif results.incAsText and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_ERROR'):
-                    complete = True
-                elif self.status == Engine.Status.INITING and results.status == jcoms.AnalysisStatus.Value('ANALYSIS_INITED'):
-                    complete = True
+        request = self._current_request
+        if request is None:
+            return
 
-                self.analysis.set_results(results)
+        if (request.instanceId != results.instanceId
+                or request.analysisId != results.analysisId
+                or request.revision != results.revision):
+            return
 
-                if complete:
-                    self.status = Engine.Status.WAITING
-                    self.analysis = None
-                    self._parent._send_next()
+        complete = False
+        if results.incAsText and results.status == AnalysisStatus.Value('ANALYSIS_COMPLETE'):
+            complete = True
+        elif results.incAsText and results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
+            complete = True
+        elif request.perform == AnalysisRequest.Perform.Value('INIT') and results.status == AnalysisStatus.Value('ANALYSIS_INITED'):
+            complete = True
 
-
-class EngineManager:
-
-    def __init__(self, data_path, analyses):
-
-        self._data_path = data_path
-        self._analyses = analyses
-        self._analyses.add_options_changed_listener(self._send_next)
-
-        if platform.uname().system == 'Windows':
-            self._conn_root = "ipc://{}".format(str(uuid4()))
-        else:
-            self._dir = tempfile.TemporaryDirectory()  # assigned to self so it doesn't get cleaned up
-            self._conn_root = "ipc://{}/conn".format(self._dir.name)
-
-        self._engine_listeners  = [ ]
-
-        self._engines = [ ]
-        for index in range(3):
-            conn_path = '{}-{}'.format(self._conn_root, index)
-            engine = Engine(
-                parent=self,
-                data_path=data_path,
-                conn_path=conn_path)
-            self._engines.append(engine)
-
-        self._restart_task = Queue()
-
-    def start(self):
-        for index in range(len(self._engines)):
-            self._engines[index].start()
-
-    def stop(self):
-        for index in range(len(self._engines)):
-            self._engines[index].stop()
-
-    async def restart_engines(self):
-        for engine in self._engines:
-            engine.restart()
-            self._restart_task.put_nowait(engine)
-        await self._restart_task.join()
-
-    def _notify_engine_restarted(self, engine):
-        self._restart_task.task_done()
-
-    def add_engine_listener(self, listener):
-        self._engine_listeners.append(listener)
-
-    def _notify_engine_event(self, event):
-        for listener in self._engine_listeners:
-            listener(event)
-
-    def _send_next(self, analysis=None):
-        if analysis is not None:
-            for engine in self._engines:
-                if analysis is engine.analysis:
-                    engine.send(analysis)
-        for engine in self._engines:
-            if engine.is_waiting:
-                for analysis in self._analyses.needs_init:
-                    engine.send(analysis, False)
-                    break
-            if engine.is_waiting:
-                for analysis in self._analyses.needs_op:
-                    engine.send(analysis, True)
-                    break
-            if engine.is_waiting:
-                for analysis in self._analyses.needs_run:
-                    engine.send(analysis, True)
-                    break
+        self._current_results.write(results, complete)

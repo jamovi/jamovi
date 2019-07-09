@@ -242,7 +242,7 @@ class Instance:
 
     def _on_results(self, analysis):
         if self._coms is not None:
-            self._coms.send(analysis.results, self._instance_id)
+            self._coms.send(analysis.results, self._instance_id, complete=analysis.complete)
 
     def _on_fs_request(self, request):
         try:
@@ -757,6 +757,8 @@ class Instance:
             else:
                 analysis.set_options(request.options, request.changed, request.enabled)
 
+            self._coms.send(None, self._instance_id, request, True)
+
         else:  # create analysis
             try:
                 duplicating = request.perform == jcoms.AnalysisRequest.Perform.Value('DUPLICATE')
@@ -782,12 +784,14 @@ class Instance:
                 else:
                     analysis.run()
                     response = jcoms.AnalysisResponse()
+                    response.name = request.name
+                    response.ns = request.ns
                     response.analysisId = request.analysisId
                     response.options.ParseFromString(analysis.options.as_bytes())
                     response.index = request.index
                     response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
 
-                    self._coms.send(response, self._instance_id, request, False)
+                    self._coms.send(response, self._instance_id, request, True)
 
             except OSError as e:
 
@@ -2479,7 +2483,8 @@ class Instance:
             analysis_pb.menuSubtitle = analysis.menuSubtitle
 
     def terminate(self, message, cause=''):
-        self._coms.send_error(message=message, cause=cause)
+        if self._coms is not None:
+            self._coms.send_error(message=message, cause=cause)
 
     class LogHandler(logging.Handler):
         def __init__(self, instance):

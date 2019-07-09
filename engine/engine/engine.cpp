@@ -37,7 +37,6 @@ Engine::Engine()
 
     _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
     _coms.restartRequested.connect(bind(&Engine::terminate, this));
-    _R->opEventReceived.connect(bind(&Engine::opEventReceived, this, _1));
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1, _2));
 }
 
@@ -146,23 +145,6 @@ void Engine::analysisRequested(int requestId, Analysis *analysis)
 
     _currentRequestId = requestId;
     _waiting = analysis;
-}
-
-void Engine::opEventReceived(const string &msg)
-{
-    ComsMessage message;
-
-    message.set_id(_currentRequestId);
-
-    if (msg != "") {
-        message.mutable_error()->set_message(msg);
-        message.mutable_error()->set_cause(msg);
-        message.set_status(Status::ERROR);
-    }
-
-    string data;
-    message.SerializeToString(&data);
-    nn_send(_socket, data.data(), data.size(), 0);
 }
 
 void Engine::resultsReceived(const string &results, bool complete)
