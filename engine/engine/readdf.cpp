@@ -25,7 +25,9 @@ DataFrame readDF(
     }
     catch (std::exception e)
     {
-        std::cout << e.what() << "\n";
+        std::cout << "Unable to attach to MemoryMap\n";
+        std::cout << "    " << e.what() << "\n";
+        std::cout << "    " << as<string>(CharacterVector(path)) << "\n";
         std::cout.flush();
         throw e;
     }
