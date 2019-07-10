@@ -1,5 +1,4 @@
 
-import sys
 import os
 import os.path as path
 import platform
@@ -27,6 +26,9 @@ from asyncio import Queue as AsyncQueue
 from asyncio import QueueFull
 from asyncio import ensure_future as create_task
 from asyncio import CancelledError
+from asyncio import wait
+from asyncio import create_subprocess_exec
+
 
 log = logging.getLogger(__name__)
 
@@ -101,8 +103,7 @@ class EngineManager:
             log.exception(e)
 
     async def start(self):
-        for engine in self._engines:
-            engine.start()
+        await wait(map(lambda e: e.start(), self._engines))
 
     def stop(self):
         for engine in self._engines:
@@ -151,7 +152,7 @@ class Engine:
 
         self._current_request = None
 
-    def start(self):
+    async def start(self):
 
         exe_dir = path.join(conf.get('home'), 'bin')
         exe_path = path.join(exe_dir, 'jamovi-engine')
@@ -162,38 +163,37 @@ class Engine:
         env['FONTCONFIG_PATH'] = conf.get('fontconfig_path', env.get('FONTCONFIG_PATH', ''))
         env['JAMOVI_MODULES_PATH'] = conf.get('modules_path', env.get('JAMOVI_MODULES_PATH', ''))
 
-        si = None
-        stdout = sys.stdout
-        stderr = sys.stderr
-
-        # Additional customizations for windows
-        if platform.uname().system == 'Windows':
-            si = subprocess.STARTUPINFO()
-            stdout = None
-            stderr = None  # stdouts seem to break things on windows
-
-            # makes the engine windows visible in debug mode (on windows)
-            if not conf.get('debug', False):
-                si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-        # be a bit wary to make changes to the Popen call
-        # seemingly inconsequential changes can break things on windows
-
         con = '--con={}'.format(self._conn_path)
         pth = '--path={}'.format(self._data_path)
 
         try:
-            self._process = subprocess.Popen(
-                [exe_path, con, pth],
-                startupinfo=si,
-                stdout=stdout,
-                stderr=stderr,
-                env=env)
+            if platform.uname().system == 'Windows':
+                si = subprocess.STARTUPINFO()
+                # makes the engine windows visible in debug mode (on windows)
+                if not conf.get('debug', False):
+                    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+                self._process = subprocess.Popen(
+                    [ exe_path, con, pth ],
+                    startupinfo=si,
+                    stdout=None,  # stdouts seem to break things on windows
+                    stderr=None,
+                    env=env)
+            else:
+                # stdin=PIPE, because the engines use the closing of
+                # stdin to terminate themselves.
+                self._process = await create_subprocess_exec(
+                    exe_path, con, pth,
+                    stdout=None,
+                    stderr=None,
+                    stdin=subprocess.PIPE,
+                    env=env)
 
             self._socket = nanomsg.Socket(nanomsg.PAIR)
             self._socket._set_recv_timeout(500)
             self._socket.bind(self._conn_path)
 
+            # need a separate thread for nanomsg :/
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
 
@@ -249,7 +249,8 @@ class Engine:
                 if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
                     raise e
 
-            self._process.poll()
+            if isinstance(self._process, subprocess.Popen):
+                self._process.poll()
             if self._process.returncode is not None:
                 break
 
@@ -260,7 +261,7 @@ class Engine:
         if self._restarting:
             log.info('Restarting engine')
             self._stopping = False
-            self.start()
+            create_task(self.start())
         else:
             self._stopped = True
             log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
