@@ -29,15 +29,15 @@
 }
 
 .jmv-toolbar-button.jmv-variable-interaction-transfer > .jmv-toolbar-button-icon {
-    background-image: url('assets/variable-list-arrow-right.svg');
+    background-image: url('../assets/variable-list-arrow-right.svg');
 }
 
 .jmv-toolbar.arrow-left .jmv-toolbar-button.jmv-variable-transfer > .jmv-toolbar-button-icon {
-    background-image: url('assets/variable-list-arrow.svg');
+    background-image: url('../assets/variable-list-arrow.svg');
 }
 
 .jmv-toolbar.arrow-right .jmv-toolbar-button.jmv-variable-transfer > .jmv-toolbar-button-icon {
-    background-image: url('assets/variable-list-arrow-right.svg');
+    background-image: url('../assets/variable-list-arrow-right.svg');
 }
 
 .jmv-toolbar-group-body .jmv-toolbar-button.jmv-variable-transfer, .jmv-toolbar-group-body  .jmv-toolbar-button.jmv-variable-interaction-transfer {

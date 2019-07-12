@@ -40,11 +40,10 @@ if tornado_major < 5:
 
 class SingleFileHandler(RequestHandler):
 
-    def initialize(self, path, is_pkg_resource=False, mime_type=None, no_cache=False):
+    def initialize(self, path, is_pkg_resource=False, mime_type=None):
         self._path = path
         self._is_pkg_resource = is_pkg_resource
         self._mime_type = mime_type
-        self._no_cache = no_cache
 
     def get(self):
         if self._mime_type is not None:
@@ -57,10 +56,6 @@ class SingleFileHandler(RequestHandler):
             with open(self._path, 'rb') as file:
                 content = file.read()
                 self.write(content)
-
-    def set_extra_headers(self, path):
-        if self._no_cache:
-            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
 
 
 class ResourceHandler(RequestHandler):
@@ -85,6 +80,7 @@ class ResourceHandler(RequestHandler):
                 self.set_header('Content-Type', mt[0])
             if mt[1] is not None:
                 self.set_header('Content-Encoding', mt[1])
+            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             content = file.read()
             self.write(content)
 
@@ -118,6 +114,7 @@ class ModuleAssetHandler(RequestHandler):
                 self.set_header('Content-Type', mt[0])
             if mt[1] is not None:
                 self.set_header('Content-Encoding', mt[1])
+            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             self.write(content)
 
 
@@ -165,20 +162,6 @@ class LoginHandler(RequestHandler):
         # password = self.get_argument('password', None)
         self.set_cookie('authId', str(uuid.uuid4()))
         self.set_status(204)
-
-
-class SFHandler(StaticFileHandler):
-    def initialize(self, **kwargs):
-        if 'no_cache' in kwargs:
-            self._no_cache = kwargs['no_cache']
-            del kwargs['no_cache']
-        else:
-            self._no_cache = False
-        StaticFileHandler.initialize(self, **kwargs)
-
-    def set_extra_headers(self, path):
-        if self._no_cache:
-            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
 
 
 @stream_request_body
@@ -232,6 +215,7 @@ class DatasetsList(RequestHandler):
                 'columnCount': instance._data.column_count,
             })
         self.set_header('Content-Type', 'application/json')
+        self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
         self.write(json.dumps(datasets))
 
 
@@ -374,61 +358,57 @@ class Server:
         self._session.set_update_request_handler(self._set_update_status)
         await self._session.start()
 
+        assets_path = os.path.join(client_path, 'assets')
+
         self._main_app = tornado.web.Application([
-            (r'/version', SingleFileHandler, { 'path': version_path }),
+            (r'/version', SingleFileHandler, {
+                'path': version_path }),
             (r'/login', LoginHandler),
             (r'/coms', ClientConnection, { 'session': self._session }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,
-                'mime_type': 'text/plain',
-                'no_cache': self._debug }),
-            (r'/analyses/(.*)/(.*)/(.*)', AnalysisDescriptor),
-            (r'/analyses/(.*)/(.*)()', AnalysisDescriptor),
+                'mime_type': 'text/plain' }),
+            (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
+            (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
-            (r'/(.*)', SFHandler, {
+            (r'/assets/(.*)', StaticFileHandler, {
+                'path': assets_path }),
+            (r'/([-0-9a-z.]*)', StaticFileHandler, {
                 'path': client_path,
-                'default_filename': 'index.html',
-                'no_cache': self._debug })
+                'default_filename': 'index.html' })
         ])
 
-        analysisui_path = os.path.join(client_path,    'analysisui.html')
-        analysisuijs_path  = os.path.join(client_path, 'analysisui.js')
-        analysisuicss_path = os.path.join(client_path, 'analysisui.css')
-        assets_path = os.path.join(client_path, 'assets')
+        analysisui_path = os.path.join(client_path, 'analysisui.html')
 
         self._analysisui_app = tornado.web.Application([
-            (r'/.*/', SingleFileHandler, {
-                'path': analysisui_path,
-                'no_cache': True }),
-            (r'/.*/analysisui.js',  SingleFileHandler, {
-                'path': analysisuijs_path,
-                'mime_type': 'text/javascript',
-                'no_cache': self._debug }),
-            (r'/.*/analysisui.css', SingleFileHandler, {
-                'path': analysisuicss_path,
-                'mime_type': 'text/css',
-                'no_cache': self._debug }),
-            (r'/.*/assets/(.*)', SFHandler, {
-                'path': assets_path,
-                'no_cache': self._debug }),
+            (r'/[-0-9a-z]+/', SingleFileHandler, {
+                'path': analysisui_path }),
+            (r'/(analysisui\.js)', StaticFileHandler, {
+                'path': client_path }),
+            (r'/(analysisui\.css)', StaticFileHandler, {
+                'path': client_path }),
+            (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                'path': assets_path }),
         ])
 
         resultsview_path    = os.path.join(client_path, 'resultsview.html')
-        resultsviewjs_path  = os.path.join(client_path, 'resultsview.js')
-        resultsviewcss_path = os.path.join(client_path, 'resultsview.css')
 
         self._resultsview_app = tornado.web.Application([
-            (r'/.*/.*/', SingleFileHandler, { 'path': resultsview_path }),
-            (r'/.*/.*/resultsview.js',  SingleFileHandler, { 'path': resultsviewjs_path, 'mime_type': 'text/javascript' }),
-            (r'/.*/.*/resultsview.css', SingleFileHandler, { 'path': resultsviewcss_path, 'mime_type': 'text/css' }),
-            (r'/.*/.*/assets/(.*)', SFHandler, {
-                'path': assets_path,
-                'no_cache': self._debug }),
-            (r'/(.*)/.*/res/(.*)', ResourceHandler, { 'session': self._session }),
-            (r'/(.*)/(.*)/module/(.*)', ModuleAssetHandler),
+            (r'/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
+                'path': resultsview_path }),
+            (r'/(resultsview\.js)', StaticFileHandler, {
+                'path': client_path }),
+            (r'/(resultsview\.css)', StaticFileHandler, {
+                'path': client_path }),
+            (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                'path': assets_path }),
+            (r'/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
+                'session': self._session }),
+            (r'/([-0-9a-z]+)/([0-9]+)/module/(.+)',
+                ModuleAssetHandler),
         ])
 
         sockets = tornado.netutil.bind_sockets(self._ports[0], self._host)
