@@ -10,7 +10,7 @@
 }
 
 .silky-list-item .power-box .button-box .up {
-    background-image: url('assets/filters-up-arrow.svg');
+    background-image: url('../assets/filters-up-arrow.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -18,7 +18,7 @@
 }
 
 .silky-list-item .power-box .button-box .down {
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../assets/filters-down-arrow.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100% 100%;
