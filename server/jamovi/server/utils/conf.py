@@ -11,23 +11,25 @@ config_values = None
 
 def set(key, value):
     global config_values
-    _init()
+    init()
     config_values[key] = value
 
 
 def get(key, otherwise=None):
     global config_values
-    _init()
+    init()
     return config_values.get(key, otherwise)
 
 
-def _init():
+def init(app_home=None):
     global config_values
 
     if config_values is None:
 
         config_values = { 'debug': False }
 
+        if app_home is not None:
+            root = app_home
         if 'JAMOVI_HOME' in environ:
             root = path.abspath(environ['JAMOVI_HOME'])
         else:

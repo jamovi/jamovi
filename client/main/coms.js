@@ -67,7 +67,7 @@ Coms.prototype.connect = function(sessionId) {
 
                 this._ws.onerror = (err) => {
                     if ( ! this._opened)
-                        reject(err);
+                        reject('WebSocket failed to connect');
                 };
 
                 this._ws.onclose = (event) => {

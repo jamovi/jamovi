@@ -4,6 +4,7 @@ import signal
 from http.client import HTTPConnection
 
 from .server import Server
+from .utils import conf
 
 import logging
 import webbrowser
@@ -54,6 +55,14 @@ def start():  # run down below()
         host = ''
     else:
         host = '127.0.0.1'
+
+    for arg in sys.argv:
+        if arg.startswith('--task-queue-url='):
+            task_queue_url = arg.split('=')[1]
+            conf.set('task-queue-url', task_queue_url)
+        elif arg.startswith('--spool='):
+            spool_dir = arg.split('=')[1]
+            conf.set('spool-dir', spool_dir)
 
     sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0\n')
     sys.stdout.flush()
