@@ -245,11 +245,15 @@ if (window.require) {
 }
 else {
 
-    let mainPort = parseInt(window.location.port);
+    let mainPort = window.location.port;
+    if (mainPort)
+        mainPort = parseInt(mainPort);
+    else
+        mainPort = 80;
 
     baseUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort) + '/';
-    analysisUIUrl  = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 1) + '/';
-    resultsViewUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort + 2) + '/';
+    analysisUIUrl  = window.location.protocol + '//a.' + window.location.hostname + ':' + (mainPort) + '/';
+    resultsViewUrl = window.location.protocol + '//r.' + window.location.hostname + ':' + (mainPort) + '/';
 
     openWindow = (instanceId) => {
         window.open(window.location.origin + '/?id=' + instanceId, '_blank');
