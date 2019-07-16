@@ -156,7 +156,15 @@ class AnalysisDescriptor(RequestHandler):
             self.write(str(e))
 
 
-class LoginHandler(RequestHandler):
+class EntryHandler(RequestHandler):
+
+    def initialize(self, session):
+        self._session = session
+
+    def get(self):
+        instance = self._session.create()
+        self.redirect('/%s/' % (instance.id,))
+
     def post(self):
         # username = self.get_argument('username', None)
         # password = self.get_argument('password', None)
@@ -361,10 +369,10 @@ class Server:
         assets_path = os.path.join(client_path, 'assets')
 
         self._main_app = tornado.web.Application([
+            (r'/', EntryHandler, { 'session': self._session }),
             (r'/version', SingleFileHandler, {
                 'path': version_path }),
-            (r'/login', LoginHandler),
-            (r'/coms', ClientConnection, { 'session': self._session }),
+            (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
@@ -376,15 +384,17 @@ class Server:
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
             (r'/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
-            (r'/([-0-9a-z.]*)', StaticFileHandler, {
+            (r'/[a-f0-9-]+/()', StaticFileHandler, {
                 'path': client_path,
-                'default_filename': 'index.html' })
+                'default_filename': 'index.html' }),
+            (r'/([-0-9a-z.]*)', StaticFileHandler, {
+                'path': client_path })
         ])
 
         analysisui_path = os.path.join(client_path, 'analysisui.html')
 
         self._analysisui_app = tornado.web.Application([
-            (r'/[-0-9a-z]+/', SingleFileHandler, {
+            (r'/[-0-9a-f]+/', SingleFileHandler, {
                 'path': analysisui_path }),
             (r'/(analysisui\.js)', StaticFileHandler, {
                 'path': client_path }),

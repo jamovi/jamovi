@@ -14,14 +14,7 @@ const Coms = function() {
 
     this.connected = null;
 
-    this.ready = new Promise((resolve, reject) => {
-        this._notifyReady = resolve;
-    });
-};
-
-Coms.prototype.setBaseUrl = function(url) {
-    this._baseUrl = url;
-    this._notifyReady();
+    this.ready = Promise.resolve();
 };
 
 Coms.prototype.connect = function(sessionId) {
@@ -32,7 +25,7 @@ Coms.prototype.connect = function(sessionId) {
 
             new Q.promise((resolve, reject) => {
 
-                let protoUrl = this._baseUrl + 'proto/coms.proto';
+                let protoUrl = '../proto/coms.proto';
 
                 ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
                     if (err) {
@@ -46,7 +39,7 @@ Coms.prototype.connect = function(sessionId) {
             }),
             new Q.promise((resolve, reject) => {
 
-                let url = this._baseUrl + 'coms';
+                let url = `${ window.location }coms`;
                 url = url.replace('http', 'ws'); // http -> ws, https -> wss
 
                 if (sessionId)

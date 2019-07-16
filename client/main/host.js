@@ -132,7 +132,7 @@ if (window.require) {
 
     navigate = function(instanceId) {
         loading = true;
-        window.location = window.location.origin + window.location.pathname + '?id=' + instanceId;
+        window.location = `${ window.location.origin }/${ instanceId }/`;
     };
 
     openWindow = function(instanceId) {
@@ -251,18 +251,18 @@ else {
     else
         mainPort = 80;
 
-    baseUrl = window.location.protocol + '//' + window.location.hostname + ':' + (mainPort) + '/';
-    analysisUIUrl  = window.location.protocol + '//a.' + window.location.hostname + ':' + (mainPort) + '/';
-    resultsViewUrl = window.location.protocol + '//r.' + window.location.hostname + ':' + (mainPort) + '/';
+    baseUrl = `${ window.location.protocol }//${ window.location.hostname }:${ mainPort }/`;
+    analysisUIUrl  = `${ window.location.protocol }//a.${ window.location.hostname }:${ mainPort }/`;
+    resultsViewUrl = `${ window.location.protocol }//r.${ window.location.hostname }:${ mainPort }/`;
 
     openWindow = (instanceId) => {
-        window.open(window.location.origin + '/?id=' + instanceId, '_blank');
+        window.open(`${ window.location.origin }/${ instanceId }/`, '_blank');
     };
     closeWindow = () => {
         window.close();
     };
     navigate = (instanceId) => {
-        window.location = window.location.origin + window.location.pathname + '?id=' + instanceId;
+        window.location = `${ window.location.origin }/${ instanceId }/`;
     };
 
     version = new Promise((resolve, reject) => {
