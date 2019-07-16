@@ -71,27 +71,27 @@
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='id'] {
-    background-image: url('assets/variable-id.svg');
+    background-image: url('../assets/variable-id.svg');
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='continuous'] {
-    background-image: url('assets/variable-continuous.svg');
+    background-image: url('../assets/variable-continuous.svg');
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='nominal'] {
-    background-image: url('assets/variable-nominal.svg');
+    background-image: url('../assets/variable-nominal.svg');
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='nominal'][data-type='text'] {
-    background-image: url('assets/variable-nominal-text.svg');
+    background-image: url('../assets/variable-nominal-text.svg');
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='ordinal'] {
-    background-image: url('assets/variable-ordinal.svg');
+    background-image: url('../assets/variable-ordinal.svg');
 }
 
 .jmv-variable-recoded-top .variable-type-icon[variable-type='ordinal'][data-type='text'] {
-    background-image: url('assets/variable-ordinal-text.svg');
+    background-image: url('../assets/variable-ordinal-text.svg');
 }
 
 .jmv-variable-recoded-options > .formula-box {

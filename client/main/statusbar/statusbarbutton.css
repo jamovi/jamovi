@@ -18,14 +18,14 @@
 }
 
 .jmv-statusbar-button[data-name=editfilters] {
-    background-image: url('assets/menu-data-filter.svg');
+    background-image: url('../assets/menu-data-filter.svg');
 }
 
 .jmv-statusbar-button[data-name=togglefiltervisible] {
-    background-image: url('assets/filters-hidden.svg');
+    background-image: url('../assets/filters-hidden.svg');
 }
 .jmv-statusbar-button[data-name=togglefiltervisible].hide-filter-columns {
-    background-image: url('assets/filters-visible.svg');
+    background-image: url('../assets/filters-visible.svg');
 }
 
 .jmv-statusbar-button[disabled] {

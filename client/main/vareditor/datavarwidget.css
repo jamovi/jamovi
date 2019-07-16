@@ -88,19 +88,19 @@
 }
 
 .jmv-variable-editor-variable-type[data-type="nominal"] {
-    background-image: url('assets/variable-nominal.svg');
+    background-image: url('../assets/variable-nominal.svg');
 }
 
 .jmv-variable-editor-variable-type[data-type="ordinal"] {
-    background-image: url('assets/variable-ordinal.svg');
+    background-image: url('../assets/variable-ordinal.svg');
 }
 
 .jmv-variable-editor-variable-type[data-type="continuous"] {
-    background-image: url('assets/variable-continuous.svg');
+    background-image: url('../assets/variable-continuous.svg');
 }
 
 .jmv-variable-editor-variable-type[data-type="id"] {
-    background-image: url('assets/variable-id.svg');
+    background-image: url('../assets/variable-id.svg');
 }
 
 .jmv-variable-editor-levels-container {

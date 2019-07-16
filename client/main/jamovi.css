@@ -142,7 +142,7 @@ body.windows.electron #header-buttons {
 }
 
 #close-button .header-button-icon {
-    background-image: url('assets/action-close.svg');
+    background-image: url('../assets/action-close.svg');
 }
 
 #close-button:hover {

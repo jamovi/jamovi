@@ -39,7 +39,7 @@
     height: 15px;
     background-size: 100%;
     filter: opacity(30%);
-    background-image: url('assets/transform-edit.svg');
+    background-image: url('../assets/transform-edit.svg');
     background-repeat: no-repeat;
 }
 
@@ -54,7 +54,7 @@
     height: 15px;
     background-size: 100%;
     filter: opacity(30%);
-    background-image: url('assets/transform-duplicate.svg');
+    background-image: url('../assets/transform-duplicate.svg');
     background-repeat: no-repeat;
 }
 

@@ -139,10 +139,10 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$versionInfoStatus = { };
         this.$versionInfoStatus.uptodate    = $('<div class="jmv-version-info-uptodate jmv-ribbon-appmenu-item">jamovi is up-to-date<button>Check again</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.checking    = $('<div class="jmv-version-info-checking jmv-ribbon-appmenu-item"><label>Checking for updates</label><img width="16" height="16" src="assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
+        this.$versionInfoStatus.checking    = $('<div class="jmv-version-info-checking jmv-ribbon-appmenu-item"><label>Checking for updates</label><img width="16" height="16" src="../assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
         this.$versionInfoStatus.checkerror  = $('<div class="jmv-version-info-checkerror jmv-ribbon-appmenu-item">Update not found<button>Retry</button></div>').appendTo(this.$updateInfo);
         this.$versionInfoStatus.available   = $('<div class="jmv-version-info-available jmv-ribbon-appmenu-item"><label>An update is available</label><button>Update</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.downloading = $('<div class="jmv-version-info-downloading jmv-ribbon-appmenu-item">Update is being downloaded<img width="16" height="16" src="assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
+        this.$versionInfoStatus.downloading = $('<div class="jmv-version-info-downloading jmv-ribbon-appmenu-item">Update is being downloaded<img width="16" height="16" src="../assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
         this.$versionInfoStatus.error       = $('<div class="jmv-version-info-error jmv-ribbon-appmenu-item"><label>Update did not complete</label><button>Retry</button></div>').appendTo(this.$updateInfo);
         this.$versionInfoStatus.ready       = $('<div class="jmv-version-info-ready jmv-ribbon-appmenu-item"><label>Update is ready</label><button>Restart and Install</button></div>').appendTo(this.$updateInfo);
 

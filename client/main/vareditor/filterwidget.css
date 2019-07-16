@@ -28,7 +28,7 @@
 }
 
 .jmv-filter-options > .title-box.think {
-    background-image: url('assets/indicator-running.svg');
+    background-image: url('../assets/indicator-running.svg');
     background-repeat: no-repeat;
     background-size: contain;
     background-position: center;
@@ -335,15 +335,15 @@
 
 .filter-button.add-filter {
     background-size: 80%;
-    background-image: url('assets/filters-add.svg');
+    background-image: url('../assets/filters-add.svg');
 }
 
 .show-filter-columns {
-    background-image: url('assets/filters-hidden.svg');
+    background-image: url('../assets/filters-hidden.svg');
 }
 
 .hide-filter-columns {
-    background-image: url('assets/filters-visible.svg');
+    background-image: url('../assets/filters-visible.svg');
 }
 
 .jmv-filter-options.remove {

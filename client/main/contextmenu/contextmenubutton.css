@@ -3,7 +3,7 @@
 .jmv-context-menu-arrow {
     width: 5.5px;
     height: 5.5px;
-    background-image: url('assets/context-menu-arrow.svg');
+    background-image: url('../assets/context-menu-arrow.svg');
     background-position: center;
     background-repeat: no-repeat ;
     background-size: contain;
