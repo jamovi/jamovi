@@ -37,7 +37,7 @@ const Analysis = function(id, name, ns) {
 
 Analysis.prototype.reload = function() {
 
-    let url = host.baseUrl + 'analyses/' + this.ns + '/' + this.name + '/a.yaml';
+    let url = `../analyses/${ this.ns }/${ this.name }/a.yaml`;
 
     this.isReady = false;
     this.ready = Promise.all([

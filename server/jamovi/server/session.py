@@ -13,6 +13,11 @@ from .remotequeue import RemoteQueue
 from .settings import Settings
 from .utils import conf
 
+from logging import getLogger
+
+
+log = getLogger(__name__)
+
 
 class NoSuchInstanceException(Exception):
     pass
@@ -56,6 +61,7 @@ class Session(dict):
     def create(self, instance_id=None):
         if instance_id is None:
             instance_id = str(uuid.uuid4())
+        log.info('%s %s', 'creating instance:', instance_id)
         instance_path = os.path.join(self._session_path, instance_id)
         instance = Instance(self, instance_path, instance_id)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
@@ -126,7 +132,7 @@ class Session(dict):
                 await asyncio.sleep(.3)
                 for id, instance in self.items():
                     if instance.inactive_for > 2:
-                        print('cleaning up: ' + str(id))
+                        log.info('%s %s', 'ending instance:', id)
                         instance.close()
                         del self[id]
                         break

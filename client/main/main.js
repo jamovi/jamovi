@@ -6,7 +6,6 @@ const host = require('./host');
 
 let Coms = require('./coms');
 let coms = new Coms();
-coms.setBaseUrl(host.baseUrl);
 
 const TableView   = require('./tableview');
 const ResultsView = require('./results');
@@ -292,35 +291,29 @@ $(document).ready(() => {
     });
 
     Promise.resolve(() => {
-        return $.post(host.baseUrl + 'login');
-
-    }).then(() => {
 
         return coms.ready;
 
     }).then(() => {
-        let instanceId;
-        if (window.location.search.indexOf('?id=') !== -1)
-            instanceId = window.location.search.split('?id=')[1];
-        else
-            resultsView.showWelcome();
 
+        let instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
         return instance.connect(instanceId);
 
     }).catch((err) => {
 
+        if (err.message)
+            err = err.message;
+
         die('Unable to connect to the server', err);
         throw err;
 
-    }).then(instanceId => {
+    }).then(() => {
+
         let toOpen = '';  // '' denotes blank data set
         if (window.location.search.indexOf('?open=') !== -1) {
             toOpen = window.location.search.split('?open=')[1];
             toOpen = decodeURI(toOpen);
         }
-
-        let newUrl = window.location.origin + window.location.pathname + '?id=' + instanceId;
-        history.replaceState({}, '', newUrl);
 
         if ( ! instance.get('hasDataSet'))
             return instance.open(toOpen);
@@ -329,5 +322,10 @@ $(document).ready(() => {
 
         if ( ! instance.get('hasDataSet'))
             return instance.open('');
+
+    }).then(() => {
+
+        if (instance.get('blank'))
+            resultsView.showWelcome();
     });
 });

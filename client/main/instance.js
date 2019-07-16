@@ -750,7 +750,7 @@ const Instance = Backbone.Model.extend({
     _requestPDF(html) {
         return new Promise((resolve, reject) => {
 
-            let url = host.baseUrl + 'utils/to-pdf';
+            let url = '../utils/to-pdf';
             let xhr = new XMLHttpRequest();  // jQuery doesn't support binary!
             xhr.open('POST', url);
             xhr.send(html);

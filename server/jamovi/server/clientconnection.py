@@ -11,7 +11,7 @@ import asyncio
 
 import logging
 
-log = logging.getLogger('jamovi')
+log = logging.getLogger(__name__)
 
 
 class ClientConnection(WebSocketHandler):
@@ -23,11 +23,13 @@ class ClientConnection(WebSocketHandler):
         self._session = session
         self._transactions = { }
         self._close_listeners = [ ]
+        self._instance_id = None
 
     def check_origin(self, origin):
         return True
 
-    def open(self):
+    def open(self, instance_id):
+        self._instance_id = instance_id
         ClientConnection.number_of_connections += 1
         self.set_nodelay(True)
 

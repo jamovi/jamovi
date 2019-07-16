@@ -251,6 +251,8 @@ const convertToPDF = function(path) {
 
 let server;
 let ports = null;
+let windows = [ ];
+let rootUrl;
 let updateUrl;
 let recorderWindow = null;
 
@@ -326,6 +328,8 @@ const spawn = new Promise((resolve, reject) => {
     global.analysisUIPort = ports[1];
     global.resultsViewPort = ports[2];
 
+    rootUrl = `http://127.0.0.1:${ ports[0] }/`
+
     let platform;
     if (process.platform === 'darwin')
         platform = 'macos';
@@ -344,10 +348,6 @@ const spawn = new Promise((resolve, reject) => {
     dialog.showErrorBox('Server Error', 'Unfortunately, the jamovi server could not be started, and jamovi must now close. We regret the inconvenience.\n\nPlease report your experiences to the jamovi team.');
     app.quit();
 });
-
-let windows = [ ];
-let rootUrl = encodeURI('file://' + config.clientPath);
-let serverUrl = rootUrl + 'analyses/';
 
 app.on('window-all-closed', () => app.quit());
 
@@ -498,10 +498,10 @@ const createWindow = function(open) {
 
     windows.push(wind);
 
-    let url = rootUrl + 'index.html';
+    let url = rootUrl;
     if (open.id)
-        url += '?id=' + open.id;
-    else if (open.open)
+        url += open.id + '/';
+    if (open.open)
         url += '?open=' + encodeURI(path.resolve(open.open));
 
     wind.loadURL(url);
@@ -509,21 +509,6 @@ const createWindow = function(open) {
     wind.webContents.on('new-window', function(e, url) {
         e.preventDefault();
         electron.shell.openExternal(url);
-    });
-
-    let requests = wind.webContents.session.webRequest;
-    requests.onBeforeRequest((details, callback) => {
-        // redirect requests to the local tornado server when appropriate
-        let url = details.url;
-
-        if (url.startsWith(serverUrl)) {
-            let relative = url.slice(serverUrl.length);
-            let newUrl = 'http://localhost:' + global.mainPort + '/analyses/' + relative;
-            callback({ redirectURL : newUrl });  // redirect
-        }
-        else {
-            callback({});  // don't redirect
-        }
     });
 
     wind.on('closed', (event) => {

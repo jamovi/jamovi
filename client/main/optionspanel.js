@@ -132,7 +132,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 resolve(this.def);
             }
             else {
-                let url = 'analyses/' + analysis.ns + '/' + analysis.name;
+                let url = '../analyses/' + analysis.ns + '/' + analysis.name;
                 return $.get(url, (script) => {
                     this.def = script;
                     resolve(script);
