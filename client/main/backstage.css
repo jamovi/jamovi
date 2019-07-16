@@ -48,7 +48,7 @@
 
 .silky-bs-logo {
     flex: 4;
-    background-image: url('assets/logo-store.svg');
+    background-image: url('../assets/logo-store.svg');
     background-size: 120px;
     background-repeat: no-repeat;
     background-position: center;
@@ -73,9 +73,9 @@
 
 .silky-bs-back-button > div {
     flex: 1;
-    mask: url('assets/action-back.svg') 0 0/30px 30px no-repeat;
+    mask: url('../assets/action-back.svg') 0 0/30px 30px no-repeat;
     background-color: #FFFFFF;
-    -webkit-mask: url('assets/action-back.svg');
+    -webkit-mask: url('../assets/action-back.svg');
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: 30px;
@@ -252,23 +252,23 @@
 }
 
 .silky-bs-place[data-place="recent"] {
-    background-image: url('assets/place-recent.svg');
+    background-image: url('../assets/place-recent.svg');
 }
 
 .silky-bs-place[data-place="thispc"] {
-    background-image: url('assets/place-this-pc.svg');
+    background-image: url('../assets/place-this-pc.svg');
 }
 
 .silky-bs-place[data-place="browse"] {
-    background-image: url('assets/place-browse.svg');
+    background-image: url('../assets/place-browse.svg');
 }
 
 .silky-bs-place[data-place="osf"] {
-    background-image: url('assets/place-osf.svg');
+    background-image: url('../assets/place-osf.svg');
 }
 
 .silky-bs-place[data-place="examples"] {
-    background-image: url('assets/place-folder-favourite.svg');
+    background-image: url('../assets/place-folder-favourite.svg');
 }
 
 .silky-bs-choices {
@@ -316,7 +316,7 @@
 .silky-bs-fslist-entry-icon {
     width: 40px ;
     height: 40px ;
-    background-image: url('assets/document-spreadsheet.svg');
+    background-image: url('../assets/document-spreadsheet.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
@@ -349,49 +349,49 @@
 }
 
 .silky-bs-flist-item-csv-icon {
-    background-image: url('assets/document-spreadsheet.svg');
+    background-image: url('../assets/document-spreadsheet.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-item-omv-icon {
-    background-image: url('assets/document-native.svg');
+    background-image: url('../assets/document-native.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-item-omt-icon {
-    background-image: url('assets/document-template.svg');
+    background-image: url('../assets/document-template.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-item-folder-browse-icon {
-    background-image: url('assets/place-browse.svg');
+    background-image: url('../assets/place-browse.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-item-folder-icon {
-    background-image: url('assets/place-folder.svg');
+    background-image: url('../assets/place-folder.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-item-folder-special-icon {
-    background-image: url('assets/place-folder-favourite.svg');
+    background-image: url('../assets/place-folder-favourite.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
 }
 
 .silky-bs-flist-import-icon {
-    background-image: url('assets/action-save.svg');
+    background-image: url('../assets/action-save.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
@@ -400,7 +400,7 @@
 }
 
 .silky-bs-flist-save-icon {
-    background-image: url('assets/action-save.svg');
+    background-image: url('../assets/action-save.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
@@ -409,7 +409,7 @@
 }
 
 .silky-bs-flist-save-icon.saving-file, .silky-bs-flist-import-icon.saving-file {
-    background-image: url('assets/indicator-running.svg');
+    background-image: url('../assets/indicator-running.svg');
 }
 
 .indicator-box {
@@ -420,7 +420,7 @@
 }
 
 .indicator-box .loading-indicator {
-    background-image: url('assets/indicator-running.svg');
+    background-image: url('../assets/indicator-running.svg');
     width: 25px;
     height: 25px;
     background-position: center;
@@ -715,7 +715,7 @@
     margin-left: 0px ;
     color: #3E6DA9 ;
     flex: 0 1 auto;
-    background-image: url('assets/bs-check-items.svg');
+    background-image: url('../assets/bs-check-items.svg');
     background-repeat: no-repeat;
     background-position: center;
     background-size: 77% ;

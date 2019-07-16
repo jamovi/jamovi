@@ -263,7 +263,7 @@
     mask-size: auto 55% ;
     mask-repeat: no-repeat;
     mask-position: center ;
-    -webkit-mask-image: url('assets/correct.svg') ;
+    -webkit-mask-image: url('../assets/correct.svg') ;
     -webkit-mask-size: auto 55% ;
     -webkit-mask-repeat: no-repeat ;
     -webkit-mask-position: center ;
@@ -272,14 +272,14 @@
 }
 
 .jmv-column-cell[data-type="bool"] .true {
-    mask-image: url('assets/correct.svg') ;
-    -webkit-mask-image: url('assets/correct.svg') ;
+    mask-image: url('../assets/correct.svg') ;
+    -webkit-mask-image: url('../assets/correct.svg') ;
     background-color: #399B3F ;
 }
 
 .jmv-column-cell[data-type="bool"] .false {
-    mask-image: url('assets/incorrect.svg') ;
-    -webkit-mask-image: url('assets/incorrect.svg') ;
+    mask-image: url('../assets/incorrect.svg') ;
+    -webkit-mask-image: url('../assets/incorrect.svg') ;
     background-color: #BE564D ;
 }
 
@@ -426,37 +426,37 @@ input.jmv-table-cell-selected.copying {
 .jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-nominal.svg');
+    background-image: url('../assets/variable-nominal.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-nominal-text.svg');
+    background-image: url('../assets/variable-nominal-text.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-ordinal.svg');
+    background-image: url('../assets/variable-ordinal.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-ordinal-text.svg');
+    background-image: url('../assets/variable-ordinal-text.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-measuretype="continuous"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-measuretype="continuous"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-continuous.svg');
+    background-image: url('../assets/variable-continuous.svg');
 }
 
 .jmv-column-header[data-columntype="data"][data-measuretype="id"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="recoded"][data-measuretype="id"] > .jmv-column-header-icon,
 .jmv-column-header[data-columntype="computed"][data-measuretype="id"] > .jmv-column-header-icon {
-    background-image: url('assets/variable-id.svg');
+    background-image: url('../assets/variable-id.svg');
 }
 
 .jmv-column-header[data-columntype='filter'] .jmv-column-header-icon {
@@ -466,7 +466,7 @@ input.jmv-table-cell-selected.copying {
 .jmv-column-header[data-fmlaok="0"][data-active="1"] > .jmv-column-header-icon {
     display: block;
     cursor: default;
-    background-image: url('assets/column-error.svg') !important;
+    background-image: url('../assets/column-error.svg') !important;
 }
 
 .jmv-table-body {

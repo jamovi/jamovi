@@ -42,27 +42,27 @@
 }
 
 [data-type='info'] .jmv-notification-icon {
-    mask: url('assets/action-info.svg') 0 0/50px 50px no-repeat;
+    mask: url('../assets/action-info.svg') 0 0/50px 50px no-repeat;
     background-color: #81B2F5;
-    -webkit-mask-image: url('assets/action-info.svg');
+    -webkit-mask-image: url('../assets/action-info.svg');
 }
 
 [data-type='error'] .jmv-notification-icon {
-    mask: url('assets/action-error.svg') 0 0/50px 50px no-repeat;
+    mask: url('../assets/action-error.svg') 0 0/50px 50px no-repeat;
     background-color: #ce3d3d;
-    -webkit-mask-image: url('assets/action-error.svg');
+    -webkit-mask-image: url('../assets/action-error.svg');
 }
 
 [data-type='warning'] .jmv-notification-icon {
-    mask: url('assets/action-warning.svg') 0 0/50px 50px no-repeat;
+    mask: url('../assets/action-warning.svg') 0 0/50px 50px no-repeat;
     background-color: #FFA500;
-    -webkit-mask-image: url('assets/action-warning.svg');
+    -webkit-mask-image: url('../assets/action-warning.svg');
 }
 
 [data-type='success'] .jmv-notification-icon {
-    mask: url('assets/action-check.svg') 0 0/50px 50px no-repeat;
+    mask: url('../assets/action-check.svg') 0 0/50px 50px no-repeat;
     background-color: #399b3f;
-    -webkit-mask-image: url('assets/action-check.svg');
+    -webkit-mask-image: url('../assets/action-check.svg');
 }
 
 .jmv-notification-info {
