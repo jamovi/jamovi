@@ -18,7 +18,6 @@
 #include "host.h"
 
 #include "enginer.h"
-#include "analysis.h"
 
 #include "jamovi.pb.h"
 
@@ -30,8 +29,7 @@ Engine::Engine()
 {
     _slave = false;
     _exiting = false;
-    _waiting = NULL;
-    _running = NULL;
+    _reflection = _runningRequest.GetReflection();
 
     _R = new EngineR();
 
@@ -81,15 +79,15 @@ void Engine::start()
     // locks for sharing between threads
     unique_lock<mutex> lock(_mutex, std::defer_lock);
 
-    std::function<Analysis*()> checkForNew;
-    checkForNew = std::bind(&Engine::waiting, this);
-    _R->setCheckForNewCB(checkForNew);
+    std::function<bool()> checkForAbort;
+    checkForAbort = std::bind(&Engine::isNewAnalysisWaiting, this);
+    _R->setCheckForAbortCB(checkForAbort);
 
     while (true)
     {
-        lock.lock(); // lock to access _waiting
+        lock.lock(); // lock to access _waitingRequest
 
-        while (_waiting == NULL)
+        while (_waitingRequest.analysisid() == 0)
         {
             // wait for notification from message loop
             cv_status res;
@@ -99,14 +97,13 @@ void Engine::start()
                 continue;
         }
 
-        _running = _waiting;
-        _waiting = NULL;
+        _runningRequest.Clear();
+        _reflection->Swap(&_runningRequest, &_waitingRequest);
 
         lock.unlock();
 
-        _R->run(_running);
-        delete _running;
-        _running = NULL;
+        _R->run(_runningRequest);
+        _runningRequest.Clear();
     }
 
     t.join();
@@ -126,25 +123,22 @@ void Engine::terminate()
     std::exit(0);
 }
 
-Analysis *Engine::waiting()
+bool Engine::isNewAnalysisWaiting()
 {
     // called from the main loop
-
     lock_guard<mutex> lock(_mutex);
-    Analysis *analysis = _waiting;
-
-    return analysis;
+    return _waitingRequest.analysisid() != 0;
 }
 
-void Engine::analysisRequested(int requestId, Analysis *analysis)
+void Engine::analysisRequested(int messageId, AnalysisRequest& request)
 {
     // this is called from the message loop thread
 
     lock_guard<mutex> lock(_mutex);
     _condition.notify_all();
 
-    _currentRequestId = requestId;
-    _waiting = analysis;
+    _currentMessageId = messageId;
+    _waitingRequest.CopyFrom(request);
 }
 
 void Engine::resultsReceived(const string &results, bool complete)
@@ -153,7 +147,7 @@ void Engine::resultsReceived(const string &results, bool complete)
 
     ComsMessage message;
 
-    message.set_id(_currentRequestId);
+    message.set_id(_currentMessageId);
     message.set_payload(results);
     message.set_payloadtype("AnalysisResponse");
     message.set_status(complete ? Status::COMPLETE : Status::IN_PROGRESS);

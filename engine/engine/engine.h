@@ -17,7 +17,6 @@
 
 #include "enginecoms.h"
 #include "enginer.h"
-#include "analysis.h"
 
 class Engine
 {
@@ -31,11 +30,11 @@ public:
 private:
     void messageLoop();
     void monitorStdinLoop();
-    void analysisRequested(int requestId, Analysis *analysis);
+    void analysisRequested(int messageId, jamovi::coms::AnalysisRequest &request);
     void resultsReceived(const std::string &results, bool complete);
     void periodicChecks();
     void terminate();
-    Analysis *waiting();
+    bool isNewAnalysisWaiting();
 
     EngineComs _coms;
 
@@ -48,13 +47,13 @@ private:
     int _conId;
     bool _exiting;
 
-    int _currentRequestId;
+    int _currentMessageId;
+    jamovi::coms::AnalysisRequest _waitingRequest;
+    jamovi::coms::AnalysisRequest _runningRequest;
+    const google::protobuf::Reflection *_reflection;
 
     std::mutex _mutex;
     std::condition_variable _condition;
-
-    Analysis *_waiting;
-    Analysis *_running;
 };
 
 #endif // ENGINE_H
