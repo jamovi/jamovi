@@ -9,7 +9,6 @@
 #include <cstdlib>
 
 #include "jamovi.pb.h"
-#include "analysis.h"
 
 using namespace std;
 using namespace jamovi::coms;
@@ -29,61 +28,36 @@ EngineComs::EngineComs()
 
 void EngineComs::parse(char *data, int len)
 {
-    ComsMessage request;
+    ComsMessage message;
 
     MemoryBuffer buf1(data, len);
     istream is1(&buf1);
 
-    if ( ! request.ParseFromIstream(&is1))
+    if ( ! message.ParseFromIstream(&is1))
     {
-        std::cout << "EngineComs::parse(); failed to parse message";
-        std::cout << "\n";
-        std::cout.flush();
+        cerr << "EngineComs::parse(); failed to parse message\n";
+        cerr.flush();
         return;
     }
 
-    AnalysisRequest analysisRequest;
+    AnalysisRequest request;
 
-    string payload = request.payload();
+    string payload = message.payload();
     MemoryBuffer buf2((char*)payload.c_str(), payload.size());
     istream is2(&buf2);
 
-    if ( ! analysisRequest.ParseFromIstream(&is2))
+    if ( ! request.ParseFromIstream(&is2))
     {
-        std::cout << "EngineComs::parse(); failed to parse message";
-        std::cout << "\n";
-        std::cout.flush();
+        cerr << "EngineComs::parse(); failed to parse request\n";
+        cerr.flush();
         return;
     }
 
-    if (analysisRequest.restartengines())
+    if (request.restartengines())
     {
         restartRequested();
         return;
     }
 
-    std::string options;
-    analysisRequest.options().SerializeToString(&options);
-
-    Analysis *analysis = new Analysis(
-        analysisRequest.sessionid(),
-        analysisRequest.instanceid(),
-        analysisRequest.analysisid(),
-        analysisRequest.name(),
-        analysisRequest.ns(),
-        options,
-        analysisRequest.revision());
-
-    analysis->instanceId = analysisRequest.instanceid();
-    analysis->perform = analysisRequest.perform();
-    analysis->clearState = analysisRequest.clearstate();
-
-    analysis->path = analysisRequest.path();
-    analysis->format = analysisRequest.format();
-    analysis->part = analysisRequest.part();
-
-    if (analysisRequest.changed_size() > 0)
-        analysis->changed.assign(analysisRequest.changed().begin(), analysisRequest.changed().end());
-
-    analysisRequested(request.id(), analysis);
+    analysisRequested(message.id(), request);
 }

@@ -45,7 +45,7 @@ void EngineR::setPath(const std::string &path)
     _path = path;
 }
 
-void EngineR::run(Analysis *analysis)
+void EngineR::run(AnalysisRequest &analysis)
 {
     _current = analysis; // assigned so callbacks can access it
 
@@ -54,22 +54,24 @@ void EngineR::run(Analysis *analysis)
 
     RInside &rInside = *_rInside;
 
-    Rcpp::RawVector optionsVec(analysis->options.size());
-    std::copy(analysis->options.begin(), analysis->options.end(), optionsVec.begin());
+    string options;
+    analysis.options().SerializeToString(&options);
+    Rcpp::RawVector optionsVec(options.size());
+    copy(options.begin(), options.end(), optionsVec.begin());
 
     rInside["optionsPB"] = optionsVec;
 
-    setLibPaths(analysis->ns);
+    setLibPaths(analysis.ns());
 
     stringstream ss;
 
     ss << "analysis <- jmvcore::create(" <<
-        "'" << analysis->ns << "', " <<
-        "'" << analysis->name << "', " <<
+        "'" << analysis.ns() << "', " <<
+        "'" << analysis.name() << "', " <<
         "optionsPB, " <<
-        "'" << analysis->instanceId << "', " <<
-        analysis->analysisId << ", " <<
-        analysis->revision << ")\n";
+        "'" << analysis.instanceid() << "', " <<
+        analysis.analysisid() << ", " <<
+        analysis.revision() << ")\n";
 
     rInside.parseEvalQNT(ss.str());
 
@@ -83,14 +85,21 @@ void EngineR::run(Analysis *analysis)
         return;
     }
 
+    ss.str("");
+    ss << setfill('0') << setw(2);
+    ss << analysis.analysisid();
+    ss << " ";
+    ss << analysis.name();
+    string nameAndId = ss.str();
+
     std::function<Rcpp::DataFrame(Rcpp::List)> readDatasetHeader;
     std::function<Rcpp::DataFrame(Rcpp::List)> readDataset;
 
     readDatasetHeader = std::bind(
         &EngineR::readDataset,
         this,
-        analysis->sessionId,
-        analysis->instanceId,
+        analysis.sessionid(),
+        analysis.instanceid(),
         std::placeholders::_1,
         true);
     rInside["readDatasetHeader"] = Rcpp::InternalFunction(readDatasetHeader);
@@ -99,8 +108,8 @@ void EngineR::run(Analysis *analysis)
     readDataset = std::bind(
         &EngineR::readDataset,
         this,
-        analysis->sessionId,
-        analysis->instanceId,
+        analysis.sessionid(),
+        analysis.instanceid(),
         std::placeholders::_1,
         false);
     rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
@@ -109,18 +118,18 @@ void EngineR::run(Analysis *analysis)
     std::function<string()> statePath = std::bind(
         &EngineR::statePath,
         this,
-        analysis->sessionId,
-        analysis->instanceId,
-        analysis->nameAndId);
+        analysis.sessionid(),
+        analysis.instanceid(),
+        nameAndId);
     rInside["statePath"] = Rcpp::InternalFunction(statePath);
     rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
 
     std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(
         &EngineR::resourcesPath,
         this,
-        analysis->sessionId,
-        analysis->instanceId,
-        analysis->nameAndId,
+        analysis.sessionid(),
+        analysis.instanceid(),
+        nameAndId,
         std::placeholders::_1,
         std::placeholders::_2);
     rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
@@ -133,10 +142,10 @@ void EngineR::run(Analysis *analysis)
     rInside["checkpoint"] = Rcpp::InternalFunction(checkpoint);
     rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
 
-    if (analysis->ns == "Rj")
+    if (analysis.ns() == "Rj")
     {
         // Rj needs special access to this
-        string datasetPath = _path + PATH_SEP + analysis->sessionId + PATH_SEP + analysis->instanceId + PATH_SEP + "buffer";
+        string datasetPath = _path + PATH_SEP + analysis.sessionid() + PATH_SEP + analysis.instanceid() + PATH_SEP + "buffer";
         rInside[".datasetPath"] = datasetPath;
     }
 
@@ -152,30 +161,30 @@ void EngineR::run(Analysis *analysis)
         return;
     }
 
-    if ( ! analysis->clearState)
+    if ( ! analysis.clearstate())
     {
-        Rcpp::CharacterVector changed(analysis->changed.begin(), analysis->changed.end());
+        Rcpp::CharacterVector changed(analysis.changed().begin(), analysis.changed().end());
         rInside["changed"] = changed;
         rInside.parseEvalQ("try(analysis$.load(changed))");
     }
 
     rInside.parseEvalQ("analysis$postInit(noThrow=TRUE)");
 
-    if (analysis->perform == 5)  // SAVE
+    if (analysis.perform() == 5)  // SAVE
     {
         AnalysisResponse response;
-        response.set_instanceid(analysis->instanceId);
-        response.set_analysisid(analysis->analysisId);
-        response.set_name(analysis->name);
-        response.set_ns(analysis->ns);
-        response.set_revision(analysis->revision);
+        response.set_instanceid(analysis.instanceid());
+        response.set_analysisid(analysis.analysisid());
+        response.set_name(analysis.name());
+        response.set_ns(analysis.ns());
+        response.set_revision(analysis.revision());
 
         ss.str("");
         ss << "result <- try(";
         ss << "  analysis$.savePart(";
-        ss << "  path='" << analysis->path << "',";
-        ss << "  part='" << analysis->part << "',";
-        ss << "  format='" << analysis->format << "')";
+        ss << "  path='" << analysis.path() << "',";
+        ss << "  part='" << analysis.part() << "',";
+        ss << "  format='" << analysis.format() << "')";
         ss << ", silent=TRUE);";
         ss << "if (inherits(result, 'try-error')) {";
         ss << "  result <- jmvcore::extractErrorMessage(result)";
@@ -206,7 +215,7 @@ void EngineR::run(Analysis *analysis)
         sendResults(INC_SYNTAX, COMPLETE);
         rInside.parseEvalQ("try(analysis$.save())");
     }
-    else if (analysis->perform == 0)   // INIT
+    else if (analysis.perform() == 0)   // INIT
     {
         sendResults(NO_SYNTAX, COMPLETE);
         rInside.parseEvalQ("try(analysis$.save())");
@@ -287,9 +296,9 @@ void EngineR::setLibPaths(const std::string &moduleName)
 
 SEXP EngineR::checkpoint(SEXP results)
 {
-    Analysis *analysis = _checkForNew();
+    bool abort = _checkForAbort();
 
-    if (analysis != NULL)
+    if (abort)
         return Rcpp::CharacterVector("restart");
 
     if ( ! Rf_isNull(results)) {
@@ -320,9 +329,9 @@ Rcpp::DataFrame EngineR::readDataset(
     return readDF(path, req, headerOnly);
 }
 
-void EngineR::setCheckForNewCB(std::function<Analysis*()> check)
+void EngineR::setCheckForAbortCB(std::function<bool()> check)
 {
-    _checkForNew = check;
+    _checkForAbort = check;
 }
 
 string EngineR::analysisDirPath(

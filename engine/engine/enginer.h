@@ -16,26 +16,27 @@
 #include <vector>
 #include <string>
 
-#include "analysis.h"
+#include "jamovi.pb.h"
+
 
 class EngineR
 {
 public:
     EngineR();
-    void run(Analysis *analysis);
+    void run(jamovi::coms::AnalysisRequest &analysis);
     void setPath(const std::string &path);
-    void setCheckForNewCB(std::function<Analysis*()> check);
+    void setCheckForAbortCB(std::function<bool()> check);
 
     boost::signals2::signal<void (const std::string &, bool complete)> resultsReceived;
 
 private:
 
-    Analysis *_current;
+    jamovi::coms::AnalysisRequest _current;
 
     void initR();
     SEXP checkpoint(SEXP results = R_NilValue);
 
-    std::function<Analysis*()> _checkForNew;
+    std::function<bool()> _checkForAbort;
 
     Rcpp::DataFrame readDataset(
         const std::string &sessionId,
