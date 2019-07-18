@@ -69,8 +69,8 @@ class Session(dict):
         return instance
 
     async def restart_engines(self):
-        if self._em is not None:
-            await self._em.restart_engines()
+        if isinstance(self._runner, EngineManager):
+            await self._runner.restart_engines()
 
     def rerun_analyses(self):
         for analysis in self._analyses:
