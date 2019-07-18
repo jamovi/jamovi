@@ -165,11 +165,23 @@ class EntryHandler(RequestHandler):
         instance = self._session.create()
         self.redirect('/%s/' % (instance.id,))
 
-    def post(self):
-        # username = self.get_argument('username', None)
-        # password = self.get_argument('password', None)
-        self.set_cookie('authId', str(uuid.uuid4()))
-        self.set_status(204)
+
+class StatusHandler(RequestHandler):
+
+    def initialize(self, session):
+        self._session = session
+
+    def get(self, instance_id):
+        if instance_id in self._session:
+            self.set_status(204)
+        else:
+            self.write(json.dumps(
+                {
+                    'title': 'Sorry',
+                    'message': 'This data set is no longer available',
+                    'status': 'terminated',
+                    # 'message-src': 'https://www.jamovi.org/misc/demo.html',
+                }))
 
 
 @stream_request_body
@@ -372,6 +384,7 @@ class Server:
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/version', SingleFileHandler, {
                 'path': version_path }),
+            (r'/([a-f0-9-]+)/status', StatusHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (r'/upload', UploadHandler),
             (r'/proto/coms.proto', SingleFileHandler, {

@@ -23,6 +23,7 @@ const ActionHub = require('./actionhub');
 const Instance = require('./instance');
 const Modules = require('./modules');
 const Notify = require('./notification');
+require('./infobox');
 
 let instance = new Instance({ coms : coms });
 
@@ -293,6 +294,28 @@ $(document).ready(() => {
     Promise.resolve(() => {
 
         return coms.ready;
+
+    }).then(() => {
+
+        return fetch('status', {
+            credentials: 'include'
+        }).then((response) => {
+            if (response.status === 204)
+                return;
+            else if (response.status === 200)
+                return response.json();
+            else
+                throw 'Connection failed';
+        }).then((status) => {
+            if (status) {
+                let infoBox = document.createElement('jmv-infobox');
+                infoBox.setAttribute('title', status.title || '');
+                infoBox.setAttribute('message', status.message || '');
+                infoBox.setAttribute('message-src', status['message-src'] || '');
+                infoBox.setAttribute('status', status.status || '');
+                document.body.appendChild(infoBox);
+            }
+        });
 
     }).then(() => {
 
