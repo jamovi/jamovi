@@ -4,12 +4,16 @@ import os
 import uuid
 
 from itertools import chain
+import platform
 
 from .instance import Instance
 from .analyses import AnalysisIterator
 from .enginemanager import EngineManager
 from .scheduler import Scheduler
-from .remotequeue import RemoteQueue
+
+if platform.uname().system != 'Windows':
+    from .remotequeue import RemoteQueue
+
 from .settings import Settings
 from .utils import conf
 
