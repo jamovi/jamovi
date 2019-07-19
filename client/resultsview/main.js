@@ -9,6 +9,8 @@ const ERDM = require("element-resize-detector");
 const RefTable = require('./refs');
 
 const createItem = require('./create').createItem;
+const formatIO = require('../common/utils/formatio');
+const b64 = require('../common/utils/b64');
 
 
 class Main {  // this is constructed at the bottom
@@ -95,6 +97,59 @@ class Main {  // this is constructed at the bottom
                 clickEvent.pageY = hostEvent.pageY;
                 $(el).trigger(clickEvent);
             }
+        }
+        else if (hostEvent.type === 'getcontent') {
+
+            let address = eventData.address;
+            let options = eventData.options;
+            
+            let node = this.results.el;
+            for (let i = 0; i < address.length; i++)
+                node = node.querySelectorAll(`[data-name="${ b64.enc(address[i]) }"]`)[0];
+
+            let incHtml = this.resultsDefn.mode === 'rich';
+            let incText = true;
+            let incImage = false;
+
+            if (node.classList.contains('jmv-results-syntax'))
+                incHtml = false;
+
+            if (node.classList.contains('jmv-results-image')) {
+                incText = false;
+                incImage = true;
+            }
+
+            let content = { };
+
+            Promise.resolve().then(() => {
+
+                if (incText)
+                    return formatIO.exportElem(node, 'text/plain', options);
+
+            }).then((text) => {
+
+                if (text)
+                    content.text = text;
+
+                if (incImage)
+                    return formatIO.exportElem(node, 'image/png', options);
+
+            }).then((image) => {
+
+                if (image)
+                    content.image = image;
+
+                if (incHtml)
+                    return formatIO.exportElem(node, 'text/html', options);
+
+            }).then((html) => {
+
+                if (html)
+                    content.html = html;
+
+                let event = { type: 'getcontent', data: { content, address } };
+                this.mainWindow.postMessage(event, '*');
+            });
         }
         else if (hostEvent.type === 'menuEvent') {
             this._menuEvent(eventData);
