@@ -101,7 +101,6 @@ const Instance = Backbone.Model.extend({
     },
     import(paths) {
 
-        let promise;
         let coms = this.attributes.coms;
 
         let progress = new Notify({
@@ -118,37 +117,28 @@ const Instance = Backbone.Model.extend({
         request.payloadType = 'OpenRequest';
         request.instanceId = this._instanceId;
 
-        let onresolve = (response) => {
+        return coms.send(request).then((response) => {
             progress.dismiss();
             this._retrieveInfo();
             this._notify({
                 message: 'File imported',
                 cause: 'Import successful',
             });
-        };
-
-        let onreject = (error) => {
+        }, (error) => {
             progress.dismiss();
             // we still have to retrieveInfo() on failure, because the import
             // may have failed on, say, the second data set, and the data set
             // will still have changed
             this._retrieveInfo();
             this._notify(error);
-        };
-
-        let onprogress = (prog) => {
+        }, (prog) => {
             progress.set('progress', prog);
             this.trigger('notification', progress);
-        };
-
-        promise = coms.send(request);
-        promise.then(onresolve, onreject, onprogress);
-
-        return promise;
+            return prog;
+        });
     },
     open(filePath) {
 
-        let promise;
         let coms = this.attributes.coms;
 
         let progress = new Notify({
@@ -160,7 +150,7 @@ const Instance = Backbone.Model.extend({
 
             let instance = new Instance({ coms : coms });
 
-            promise = instance.connect().then(() => {
+            return instance.connect().then(() => {
                 return instance.open(filePath);
             }).then(() => {
                 progress.dismiss();
@@ -178,6 +168,7 @@ const Instance = Backbone.Model.extend({
             }, (prog) => {
                 progress.set('progress', prog);
                 this.trigger('notification', progress);
+                return prog;
             });
         }
         else {
@@ -188,34 +179,24 @@ const Instance = Backbone.Model.extend({
             request.payloadType = 'OpenRequest';
             request.instanceId = this._instanceId;
 
-            let onresolve = (response) => {
+            return coms.send(request).then((response) => {
+                    progress.dismiss();
+                    let info = coms.Messages.OpenProgress.decode(response.payload);
+                    let filePath = info.path;
+                    let ext = path.extname(filePath);
 
-                progress.dismiss();
-
-                let info = coms.Messages.OpenProgress.decode(response.payload);
-                let filePath = info.path;
-                let ext = path.extname(filePath);
-
-                this.set('path', filePath);
-                this.set('title', path.basename(filePath, ext));
-                this._retrieveInfo();
-            };
-
-            let onreject = (error) => {
-                progress.dismiss();
-                this._notify(error);
-            };
-
-            let onprogress = (prog) => {
-                progress.set('progress', prog);
-                this.trigger('notification', progress);
-            };
-
-            promise = coms.send(request);
-            promise.then(onresolve, onreject, onprogress);
+                    this.set('path', filePath);
+                    this.set('title', path.basename(filePath, ext));
+                    return this._retrieveInfo();
+                }, (error) => {
+                    progress.dismiss();
+                    this._notify(error);
+                }, (prog) => {
+                    progress.set('progress', prog);
+                    this.trigger('notification', progress);
+                    return prog;
+                });
         }
-
-        return promise;
     },
     save(filePath, options, overwrite, recursed) {  // recursed argument is a hack
 

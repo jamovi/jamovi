@@ -159,6 +159,9 @@ const Analyses = Backbone.Model.extend({
         }
         return false;
     },
+    count() {
+        return this._analyses.reduce((acc, cur) => acc + (cur.deleted ? 0 : 1), 0);
+    },
     create(name, ns, index) {
         let analysis = new Analysis(this._nextId++, name, ns);
         analysis.enabled = true;
