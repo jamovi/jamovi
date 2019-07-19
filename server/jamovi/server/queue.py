@@ -93,7 +93,7 @@ class Queue:
             def __init__(self, parent):
                 self._parent = parent
 
-            async def __aiter__(self):
+            def __aiter__(self):
                 return self
 
             async def __anext__(self):
