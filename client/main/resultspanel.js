@@ -5,7 +5,7 @@ const _ = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const formatIO = require('./utils/formatio');
+const formatIO = require('../common/utils/formatio');
 
 const Menu = require('./menu');
 const ContextMenus = require('./contextmenu/contextmenus');
@@ -13,7 +13,6 @@ const ContextMenu = require('./contextmenu');
 const Notify = require('./notification');
 const host = require('./host');
 
-const b64 = require('../common/utils/b64');
 require('./references');
 
 const ResultsPanel = Backbone.View.extend({
@@ -420,45 +419,53 @@ const ResultsPanel = Backbone.View.extend({
 
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     },
-    _getElement(address, id) {
-        if (id === undefined)
-            id = this._menuId;
-        let $results = $(this.resources[id].iframe.contentWindow.document).find('#results');
-        for (let i = 0; i < address.length; i++)
-            $results = $results.find('[data-name="' + b64.enc(address[i]) + '"]').first();
-        return $results;
-    },
     getAsHTML(options, part) {
-        if ( ! part)
-            return formatIO.exportElem(this.$el, 'text/html', options);
+        if ( ! part) {
+
+            options.fragment = true;
+
+            let promises = Object.entries(this.resources)
+                .map(entry => entry[1])
+                .filter((res) => ! res.analysis.deleted)
+                .map((res => res.id))
+                .map(id => this._getContent(id, [ ], options));
+
+            return Promise.all(promises).then((chunks) => {
+                chunks = chunks.map((chunk) => chunk.html);
+                let content = chunks.join('');
+                let html = formatIO.exportElem(content);
+                return html;
+            });
+        }
 
         let address = part.split('/');
         let id = address.shift();
-        let $element = this._getElement(address, id);
 
         if ( ! options.exclude)
             options.exclude = [ ];
         options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
-        return formatIO.exportElem($element, 'text/html', options);
+        return this._getContent(id, address, options);
+    },
+    _getContent(id, address, options) {
+        let iframeWindow = this.resources[id].iframe.contentWindow;
+        iframeWindow.postMessage({ type: 'getcontent', data: { address, options } }, '*');
+
+        return new Promise((resolve, reject) => {
+            let responseHandler = (event) => {
+                if (event.source === iframeWindow
+                        && event.data.type === 'getcontent'
+                        && event.data.data.address.join('/') === address.join('/')) {
+                    window.removeEventListener('message', responseHandler);
+                    resolve(event.data.data.content);
+                }
+            };
+            window.addEventListener('message', responseHandler);
+        });
     },
     _menuEvent(event) {
 
         if (event.op === 'copy') {
-
-            let incHtml = this.mode === 'rich';
-            let incText = true;
-            let incImage = false;
-
-            let $results = this._getElement(event.address);
-
-            if ($results.hasClass('jmv-results-syntax'))
-                incHtml = false;
-
-            if ($results.hasClass('jmv-results-image')) {
-                incText = false;
-                incImage = true;
-            }
 
             let options = {
                 images:'absolute',
@@ -467,37 +474,12 @@ const ResultsPanel = Backbone.View.extend({
                 exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
             };
 
-            let data = { };
+            this._getContent(this._menuId, event.address, options).then((content) => {
 
-            Promise.resolve().then(() => {
-
-                if (incText)
-                    return formatIO.exportElem($results, 'text/plain', options);
-
-            }).then((text) => {
-
-                if (text)
-                    data.text = text;
-
-                if (incImage)
-                    return formatIO.exportElem($results, 'image/png', options);
-
-            }).then((image) => {
-
-                if (image)
-                    data.image = image;
-
-                if (incHtml)
-                    return formatIO.exportElem($results, 'text/html', options);
-
-            }).then((html) => {
-
-                if (html)
-                    data.html = html;
-
-                return host.copyToClipboard(data);
+                return host.copyToClipboard(content);
 
             }).then(() => {
+
                 let note = new Notify({
                     title: 'Copied',
                     message: 'The content has been copied to the clipboard',

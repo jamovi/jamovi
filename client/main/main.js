@@ -348,7 +348,7 @@ $(document).ready(() => {
 
     }).then(() => {
 
-        if (instance.get('blank') && instance.analyses().count() == 0)
+        if (instance.get('blank') && instance.analyses().count() === 0)
             resultsView.showWelcome();
     });
 });

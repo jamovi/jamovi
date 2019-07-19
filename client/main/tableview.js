@@ -15,7 +15,7 @@ const dialogs = require('dialogs')({cancel:false});
 
 const SilkyView = require('./view');
 const Notify = require('./notification');
-const { csvifyCells, htmlifyCells } = require('./utils/formatio');
+const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
 const host = require('./host');
 const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');

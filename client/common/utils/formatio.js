@@ -58,21 +58,34 @@ function htmlifyCells(cells, options={}) {
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">' + generator + '</head><body><table>' + rows.join('\n') + '</table></body></html>';
 }
 
-function exportElem($el, format, options={ images:'absolute', margin: '24', docType: true }) {
+function exportElem(el, format, options={ images:'absolute', margin: '24', docType: true }) {
     if (format === 'text/plain') {
-        return Promise.resolve(_textify($el[0]).trim());
+        return Promise.resolve(_textify(el).trim());
     }
     else if (format === 'image/png') {
-        return _imagify($el[0]);
+        return _imagify(el);
     }
     else {
 
-        if (options.exclude) {
-            options.excludeTags = options.exclude.filter(x => ! x.startsWith('.'));
-            options.excludeClasses = options.exclude.filter(x => x.startsWith('.')).map(x => x.substring(1));
+        let html;
+
+        if (typeof el === 'string') {
+            html = Promise.resolve(el);
+        }
+        else {
+            if (options.exclude) {
+                options.excludeTags = options.exclude.filter(x => ! x.startsWith('.'));
+                options.excludeClasses = options.exclude.filter(x => x.startsWith('.')).map(x => x.substring(1));
+            }
+
+            html = _htmlify(el, options);
         }
 
-        return _htmlify($el[0], options).then((content) => {
+        if (options.fragment) {
+            return html;
+        }
+
+        return html.then((content) => {
 
             let generator = '';
             if (options.generator)
@@ -157,7 +170,7 @@ function _imagify(el) {
 
     return Promise.resolve().then(() => {
 
-        return exportElem($(el), 'text/html', { margin: margin, docType: false });
+        return exportElem(el, 'text/html', { margin: margin, docType: false });
 
     }).then((html) => {
 
