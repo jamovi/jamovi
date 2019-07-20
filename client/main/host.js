@@ -54,7 +54,7 @@ else if (navigator.platform.startsWith('Linux'))
 else
     os = 'other';
 
-if (window.require) {
+if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
 
     isElectron = true;
 
