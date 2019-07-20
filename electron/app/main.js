@@ -464,6 +464,9 @@ const createWindow = function(open) {
         defaultEncoding: 'UTF-8',
         frame: process.platform !== 'win32',
         icon: config.iconPath,
+        webPreferences: {
+            nodeIntegration: true,
+        },
     });
 
     // as of electron 1.7.9 on linux, drag and drop from the fs to electron
@@ -602,7 +605,11 @@ const openRecorder = function(id) {
             skipTaskbar: skipTaskbar,
             vibrancy: 'titlebar',
             acceptFirstMouse: true,
-            defaultEncoding: 'UTF-8' });
+            defaultEncoding: 'UTF-8',
+            webPreferences: {
+                nodeIntegration: true,
+            },
+        });
 
         recorderWindow.loadURL(rootUrl + 'recorder.html');
         recorderWindow.once('ready-to-show', () => {
