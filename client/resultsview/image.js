@@ -58,7 +58,7 @@ const ImageView = Elem.View.extend({
         let element = this.model.attributes.element;
 
         let backgroundImage = 'none';
-        if (element.path !== null) {
+        if (element.path) {
             let url = 'res/' + element.path;
             url = url.replace(/\"/g, '&quot;');
             backgroundImage = "url('" + url + "')";
