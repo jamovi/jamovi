@@ -314,6 +314,11 @@ $(document).ready(() => {
                 infoBox.setAttribute('message-src', status['message-src'] || '');
                 infoBox.setAttribute('status', status.status || '');
                 document.body.appendChild(infoBox);
+
+                if (status.status === 'OK')
+                    return;
+                else
+                    return new Promise((resolve, reject) => { /* never */ });
             }
         });
 
