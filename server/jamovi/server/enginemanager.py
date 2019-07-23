@@ -35,10 +35,12 @@ log = logging.getLogger(__name__)
 
 class EngineManager:
 
-    def __init__(self, data_path, queue):
+    def __init__(self, data_path, queue, monitor=None):
 
         self._data_path = data_path
         self._queue = queue
+        self._monitor = monitor
+
         self._requests = [ None ] * queue.qsize
         self._engines = [ None ] * queue.qsize
 
@@ -56,7 +58,8 @@ class EngineManager:
             engine = Engine(
                 parent=self,
                 data_path=data_path,
-                conn_path=conn_path)
+                conn_path=conn_path,
+                monitor=self._monitor)
             self._engines[index] = engine
 
         self._run_loop_task = create_task(self._run_loop())
@@ -135,10 +138,11 @@ class Engine:
         RUNNING = 2
         OPPING = 3  # performing operation
 
-    def __init__(self, parent, data_path, conn_path):
+    def __init__(self, parent, data_path, conn_path, monitor=None):
         self._parent = parent
         self._data_path = data_path
         self._conn_path = conn_path
+        self._monitor = monitor
 
         self._process = None
         self._socket = None
@@ -188,6 +192,9 @@ class Engine:
                     stderr=None,
                     stdin=subprocess.PIPE,
                     env=env)
+
+            if self._monitor is not None:
+                self._monitor.monitor(self._process)
 
             self._socket = nanomsg.Socket(nanomsg.PAIR)
             self._socket._set_recv_timeout(500)
