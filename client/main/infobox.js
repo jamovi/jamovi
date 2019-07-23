@@ -10,6 +10,11 @@ class InfoBox extends HTMLElement {
     constructor() {
         super();
 
+        this._complete = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
+
         this._root = this.attachShadow({ mode: 'open' });
         this._host = this._root.host;
 
@@ -40,17 +45,20 @@ class InfoBox extends HTMLElement {
         this._button.textContent = 'OK';
         this._button.addEventListener('click', () => this.clicked());
         this._local.appendChild(this._button);
+
+        window.addEventListener('message', (event) => this.onMessage(event));
+    }
+
+    complete() {
+        return this._complete;
     }
 
     clicked() {
         switch (this._host.getAttribute('status')) {
         case 'terminated':
-            try {
-                window.close();
-            }
-            catch (e) {
-                window.location = window.location + '/..';
-            }
+            window.close();
+            if ( ! window.closed)
+                window.location = window.location.href + '../';
             break;
         case 'disconnected':
             window.location.reload();
@@ -58,6 +66,16 @@ class InfoBox extends HTMLElement {
         default:
             this._host.parentNode.removeChild(this._host);
             break;
+        }
+    }
+
+    onMessage(event) {
+        if (this._iframe && event.source === this._iframe.contentWindow) {
+            let data = event.data;
+            if (data.status === 'complete') {
+                this._host.style.display = 'none';
+                this._resolve();
+            }
         }
     }
 
@@ -71,6 +89,7 @@ class InfoBox extends HTMLElement {
                 if (this._iframe)
                     this._remote.removeChild(this._iframe);
                 this._iframe = document.createElement('iframe');
+                this._iframe.sandbox = 'allow-scripts allow-popups';
                 this._remote.appendChild(this._iframe);
 
                 // i could simply assign src to the src attribute
@@ -86,8 +105,9 @@ class InfoBox extends HTMLElement {
                 });
 
                 this._iframe.addEventListener('load', (event) => {
-                    let height = this._iframe.contentDocument.body.scrollHeight;
-                    height = Math.min(600, height);
+                    // let height = this._iframe.contentDocument.body.scrollHeight;
+                    // height = Math.min(600, height);
+                    let height = 500 ;
                     let width = 450;
                     this._body.style.height = `${ height }px`;
                     this._body.style.width = `${ width }px`;
