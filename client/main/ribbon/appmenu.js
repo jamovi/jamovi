@@ -15,6 +15,9 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$el.addClass('jmv-ribbon-appmenu');
 
+        let mode = this.model.settings().getSetting('mode', 'normal');
+            this.el.dataset.mode = mode;
+
         let $decoration = $('<span class="mif-more-vert"></span>').appendTo(this.$el);
         let $positioner = $('<div class="jmv-ribbon-appmenu-positioner"></div>').appendTo(this.$el);
 
@@ -57,7 +60,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$content = $('<div class="jmv-ribbon-appmenu-content"></div>').appendTo(this.$menu);
 
-        this.$zoom = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$zoom = $('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>').appendTo(this.$content);
         this.$zoom.append($('<div>Zoom</div>'));
         this.$zoomButtons = $('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>').appendTo(this.$zoom);
         this.$zoomOut = $('<div class="jmv-ribbon-appmenu-zoomout">&minus;</div>').appendTo(this.$zoomButtons);
@@ -158,10 +161,10 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$recorder = $('<div class="jmv-ribbon-appmenu-item action">Screen Capture Tool</div>').appendTo(this.$content);
+        this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
         this.$recorder.on('click', (event) => host.openRecorder());
 
-        this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox" for="devMode"></label>').appendTo(this.$content);
+        this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox jmv-devmode" for="devMode"></label>').appendTo(this.$content);
         this.$dev.append($('<div>Developer mode</div>'));
         this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
 
