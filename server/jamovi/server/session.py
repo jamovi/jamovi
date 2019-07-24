@@ -5,6 +5,7 @@ import uuid
 
 from itertools import chain
 import platform
+from enum import Enum
 
 from .instance import Instance
 from .analyses import AnalysisIterator
@@ -27,6 +28,17 @@ class NoSuchInstanceException(Exception):
     pass
 
 
+class SessionEvent:
+
+    class Type(Enum):
+        INSTANCE_STARTED = 1
+        INSTANCE_ENDED = 2
+
+    def __init__(self, type, instance_id):
+        self.type = type
+        self.instance_id = instance_id
+
+
 class Session(dict):
 
     def __init__(self, data_path, id):
@@ -36,6 +48,7 @@ class Session(dict):
         self._update_status = 'na'
         self._analyses = SessionAnalyses(self)
         self._analysis_listeners = [ ]
+        self._session_listeners = [ ]
         self._running = True
 
         task_queue_url = conf.get('task-queue-url')
@@ -70,6 +83,7 @@ class Session(dict):
         instance = Instance(self, instance_path, instance_id)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
         self[instance_id] = instance
+        self._notify_session_event(SessionEvent.Type.INSTANCE_STARTED, instance_id)
         return instance
 
     async def restart_engines(self):
@@ -90,9 +104,17 @@ class Session(dict):
     def add_options_changed_listener(self, listener):
         self._analysis_listeners.append(listener)
 
+    def add_session_listener(self, listener):
+        self._session_listeners.append(listener)
+
     def _options_changed_handler(self, analysis):
         for listener in self._analysis_listeners:
             listener(analysis)
+
+    def _notify_session_event(self, event_type, instance_id):
+        event = SessionEvent(event_type, instance_id)
+        for listener in self._session_listeners:
+            listener(event)
 
     @property
     def analyses(self):
@@ -132,11 +154,18 @@ class Session(dict):
     def _start_gc(self):
 
         async def gc(self):
+            try:
+                timeout = conf.get('instance_timeout', '')
+                timeout = int(timeout)
+            except Exception:
+                timeout = 3
+
             while self._running:
                 await asyncio.sleep(.3)
                 for id, instance in self.items():
-                    if instance.inactive_for > 2:
-                        log.info('%s %s', 'ending instance:', id)
+                    if instance.inactive_for > timeout:
+                        log.info('%s %s', 'destroying instance:', id)
+                        self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                         instance.close()
                         del self[id]
                         break
