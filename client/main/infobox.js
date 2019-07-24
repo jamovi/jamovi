@@ -1,6 +1,9 @@
 
 'use strict';
 
+const host = require('./host');
+
+
 class InfoBox extends HTMLElement {
 
     static get observedAttributes() {
@@ -49,6 +52,13 @@ class InfoBox extends HTMLElement {
         window.addEventListener('message', (event) => this.onMessage(event));
     }
 
+    setup(info) {
+        this._host.setAttribute('title', info.title || '');
+        this._host.setAttribute('message', info.message || '');
+        this._host.setAttribute('message-src', info['message-src'] || '');
+        this._host.setAttribute('status', info.status || '');
+    }
+
     complete() {
         return this._complete;
     }
@@ -56,9 +66,7 @@ class InfoBox extends HTMLElement {
     clicked() {
         switch (this._host.getAttribute('status')) {
         case 'terminated':
-            window.close();
-            if ( ! window.closed)
-                window.location = window.location.href + '../';
+            host.closeWindow();
             break;
         case 'disconnected':
             window.location.reload();

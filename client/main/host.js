@@ -260,6 +260,8 @@ else {
     };
     closeWindow = () => {
         window.close();
+        if ( ! window.closed)
+            window.location = window.location.href + '../';
     };
     navigate = (instanceId) => {
         window.location = `${ window.location.origin }/${ instanceId }/`;
