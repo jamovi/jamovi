@@ -168,3 +168,11 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
     vertical-align: middle;
     line-height: 45px;
 }
+
+[mode=demo] .jmv-update-info,
+[mode=demo] .jmv-recorder,
+[mode=demo] .jmv-devmode,
+[mode=demo] .jmv-zoom,
+[mode=demo] .jmv-ribbon-appmenu-version {
+    display: none ;
+}
