@@ -2,7 +2,8 @@
 import json
 import os.path
 
-from ..core import Dirs
+from jamovi.core import Dirs
+from .utils import conf
 
 
 class Settings:
@@ -12,8 +13,11 @@ class Settings:
     @staticmethod
     def retrieve(group_name=None):
         if Settings.settings is None:
-            path = os.path.join(Dirs.app_data_dir(), 'settings.json')
-            Settings.settings = Settings(path)
+            if conf.get('settings', 'file') == 'file':
+                path = os.path.join(Dirs.app_data_dir(), 'settings.json')
+                Settings.settings = Settings(path)
+            else:
+                Settings.settings = Settings(None)
 
         if group_name is None:
             return Settings.settings
@@ -38,12 +42,10 @@ class Settings:
                         self._root = { }
             except Exception:
                 self._root = { }
-
         elif parent is not None and name is not None:
             self._root = parent._root.get(name, { })
-
         else:
-            raise ValueError
+            self._root = { }
 
     def specify_default(self, name, value):
         self._defaults[name] = value
@@ -62,7 +64,9 @@ class Settings:
         return keys.__iter__()
 
     def sync(self):
-        if self._parent is not None:
+        if conf.get('settings', 'file') != 'file':
+            pass
+        elif self._parent is not None:
             self._parent.sync()
         else:
             try:
