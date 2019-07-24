@@ -11,6 +11,7 @@ from tornado import gen
 
 from .clientconnection import ClientConnection
 from .session import Session
+from .session import SessionEvent
 from .modules import Modules
 from .utils import conf
 from jamovi.core import Dirs
@@ -31,7 +32,7 @@ import pkg_resources
 import threading
 import asyncio
 
-log = logging.getLogger('jamovi')
+log = logging.getLogger(__name__)
 
 tornado_major = int(tornado.version.split('.')[0])
 if tornado_major < 5:
@@ -167,7 +168,7 @@ class AnalysisDescriptor(RequestHandler):
                 self.set_header('Content-Type', 'text/plain')
                 self.write(content)
         except Exception as e:
-            log.info(e)
+            log.exception(e)
             self.set_status(404)
             self.write('<h1>404</h1>')
             self.write(str(e))
@@ -393,6 +394,7 @@ class Server:
 
         self._session = Session(data_path, session_id)
         self._session.set_update_request_handler(self._set_update_status)
+        self._session.add_session_listener(self._session_event)
         await self._session.start()
 
         assets_path = os.path.join(client_path, 'assets')
@@ -495,3 +497,11 @@ class Server:
                 continue
             if entry.name.endswith('.port') and entry.is_file():
                 os.remove(entry.path)
+
+    def _session_event(self, event):
+        if event.type == SessionEvent.Type.INSTANCE_STARTED:
+            sys.stdout.write('%s %s\n' % ('instance_started', event.instance_id))
+            sys.stdout.flush()
+        elif event.type == SessionEvent.Type.INSTANCE_ENDED:
+            sys.stdout.write('%s %s\n' % ('instance_ended', event.instance_id))
+            sys.stdout.flush()
