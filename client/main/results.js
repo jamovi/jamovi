@@ -51,7 +51,7 @@ const ResultsView = Backbone.View.extend({
         this.$welcome.appendTo(this.$el);
 
         host.version.then((version) => {
-            this.$welcome.attr('src', 'https://jamovi.org/welcome/?v=' + version + '&p=' + host.os);
+            this.$welcome.attr('src', 'https://www.jamovi.org/welcome/?v=' + version + '&p=' + host.os);
         });
 
         this.model.analyses().once('analysisResultsChanged', (event) => {
