@@ -34,8 +34,16 @@ let backstageModel = new BackstageModel({ instance: instance });
 let modules = new Modules({ instance: instance });
 let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
 
+let infoBox = document.createElement('jmv-infobox');
+infoBox.style.display = 'none';
+
 coms.on('failure', (event) => {
-    die('Connection to the server has been lost', '');
+    infoBox.setup({
+        title: 'Connection lost',
+        message: 'Connection has been lost or has timed out',
+        status: 'disconnected',
+    });
+    infoBox.style.display = null;
 });
 
 coms.on('broadcast', (message) => {
@@ -45,24 +53,14 @@ coms.on('broadcast', (message) => {
         message.status === coms.Messages.Status.ERROR) {
 
         let error = message.error;
-        die(error.message, error.cause);
+        infoBox.setup({
+            title: 'Server message',
+            message: `${ error.message }\n\n${ error.cause }`,
+            status: 'terminated',
+        });
+        infoBox.style.display = null;
     }
 });
-
-function die(message, cause) {
-    window.alert(
-`An unexpected error has occured, and jamovi must now close.
-
-        ${message}
-
-        ${cause}
-
-Sorry for the inconvenience.
-
-If you could report your experiences to the jamovi team, that would be appreciated.`);
-
-    host.closeWindow(true);
-}
 
 if (window.navigator.platform === 'MacIntel') {
     host.constructMenu([
@@ -291,6 +289,8 @@ $(document).ready(() => {
         }
     });
 
+    document.body.appendChild(infoBox);
+
     Promise.resolve(() => {
 
         return coms.ready;
@@ -308,13 +308,8 @@ $(document).ready(() => {
                 throw 'Connection failed';
         }).then((status) => {
             if (status) {
-                let infoBox = document.createElement('jmv-infobox');
-                infoBox.setAttribute('title', status.title || '');
-                infoBox.setAttribute('message', status.message || '');
-                infoBox.setAttribute('message-src', status['message-src'] || '');
-                infoBox.setAttribute('status', status.status || '');
-                document.body.appendChild(infoBox);
-
+                infoBox.setup(status);
+                infoBox.style.display = null;
                 if (status.status === 'OK')
                     return;
                 else
@@ -332,8 +327,14 @@ $(document).ready(() => {
         if (err.message)
             err = err.message;
 
-        die('Unable to connect to the server', err);
-        throw err;
+        infoBox.setup({
+            title: 'Connection failed',
+            message: 'Unable to connect to the server',
+            status: 'disconnected',
+        });
+        infoBox.style.display = null;
+
+        return new Promise((resolve, reject) => { /* never */ });
 
     }).then(() => {
 
