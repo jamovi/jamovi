@@ -165,6 +165,7 @@ const Instance = Backbone.Model.extend({
                 progress.dismiss();
                 this._notify(error);
                 instance.destroy();
+                throw error;
             }, (prog) => {
                 progress.set('progress', prog);
                 this.trigger('notification', progress);
@@ -191,6 +192,7 @@ const Instance = Backbone.Model.extend({
                 }, (error) => {
                     progress.dismiss();
                     this._notify(error);
+                    throw error;
                 }, (prog) => {
                     progress.set('progress', prog);
                     this.trigger('notification', progress);
