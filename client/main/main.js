@@ -307,7 +307,10 @@ $(document).ready(() => {
             else
                 throw 'Connection failed';
         }).then((status) => {
-            if (status) {
+            status = status || {};
+            if (status['new-url'])
+                history.replaceState({}, '', status['new-url']);
+            if (status.message || status.title || status['message-src']) {
                 infoBox.setup(status);
                 infoBox.style.display = null;
                 if (status.status === 'OK')
@@ -326,6 +329,8 @@ $(document).ready(() => {
 
         if (err.message)
             err = err.message;
+
+        console.log(err);
 
         infoBox.setup({
             title: 'Connection failed',
