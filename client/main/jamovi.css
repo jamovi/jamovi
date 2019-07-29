@@ -27,7 +27,7 @@ body {
     flex-flow: column ;
 }
 
-body.windows {
+body.windows.electron {
     padding: 1px ;
 }
 
@@ -52,7 +52,7 @@ hr {
     min-height: 6px ;
 }
 
-body.windows #header {
+body.windows.electron #header {
     height: 32px ;
     line-height: 32px ;
 }
@@ -83,7 +83,7 @@ div[placeholder]:empty::before {
     -webkit-app-region: drag;
 }
 
-body.windows #header-text {
+body.windows.electron #header-text {
     display: block ;
     margin-left: 80px ;
     margin-right: 150px ;
