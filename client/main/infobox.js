@@ -21,34 +21,31 @@ class InfoBox extends HTMLElement {
         this._root = this.attachShadow({ mode: 'open' });
         this._host = this._root.host;
 
-        let style = document.createElement('style');
-        style.textContent = this._css();
-        this._root.appendChild(style);
+        this._root.innerHTML = `
+            <style>
+                ${ this._css() }
+            </style>
+            <div class="body">
+                <div class="local">
+                    <slot>
+                        <h1>Hi,</h1>
+                        <div class="content">
+                        </div>
+                        <button>OK</button>
+                    </slot>
+                </div>
+                <div class="remote" style="display: none">
+                </div>
+            </div>`;
 
-        this._body = document.createElement('div');
-        this._body.classList.add('body');
-        this._root.appendChild(this._body);
+        this._body = this._root.querySelector('.body');
+        this._local = this._body.querySelector('.local');
+        this._remote = this._body.querySelector('.remote');
+        this._heading = this._body.querySelector('h1');
+        this._content = this._body.querySelector('.content');
+        this._button = this._body.querySelector('button');
 
-        this._local = document.createElement('div');
-        this._local.classList.add('local');
-        this._remote = document.createElement('div');
-        this._remote.classList.add('remote');
-        this._remote.style.display = 'none';
-        this._body.appendChild(this._local);
-        this._body.appendChild(this._remote);
-
-        this._heading = document.createElement('h1');
-        this._heading.textContent = 'Hi,';
-        this._local.appendChild(this._heading);
-
-        this._content = document.createElement('div');
-        this._local.appendChild(this._content);
-
-        this._button = document.createElement('button');
-        this._button.textContent = 'OK';
         this._button.addEventListener('click', () => this.clicked());
-        this._local.appendChild(this._button);
-
         window.addEventListener('message', (event) => this.onMessage(event));
     }
 

@@ -2807,9 +2807,10 @@ const TableView = SilkyView.extend({
                 host.copyToClipboard({
                     text: csvifyCells(cells.data[0].values),
                     html: htmlifyCells(cells.data[0].values),
+                }).then(() => {
+                    this.$selection.addClass('copying');
+                    setTimeout(() => this.$selection.removeClass('copying'), 200);
                 });
-                this.$selection.addClass('copying');
-                setTimeout(() => this.$selection.removeClass('copying'), 200);
             });
     },
     _updateColumnDataBlocks(blocks, selection, index) {

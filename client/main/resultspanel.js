@@ -543,15 +543,15 @@ const ResultsPanel = Backbone.View.extend({
             host.copyToClipboard({
                 html: this._refsTable.asHTML(),
                 text: this._refsTable.asText(),
+            }).then(() => {
+                let note = new Notify({
+                    title: 'Copied',
+                    message: 'The content has been copied to the clipboard',
+                    duration: 2000,
+                    type: 'success'
+                });
+                this.model.trigger('notification', note);
             });
-
-            let note = new Notify({
-                title: 'Copied',
-                message: 'The content has been copied to the clipboard',
-                duration: 2000,
-                type: 'success'
-            });
-            this.model.trigger('notification', note);
         }
         else if (event.op === 'refsSelectAll') {
             this._refsTable.selectAll();

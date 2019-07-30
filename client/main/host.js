@@ -227,6 +227,7 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
         if ('image' in data)
             data.image = nativeImage.createFromDataURL(data.image);
         clipboard.write(data);
+        return Promise.resolve();
     };
 
     pasteFromClipboard = function() {
@@ -279,8 +280,44 @@ else {
 
     currentZoom = () => 100;
 
-    copyToClipboard = () => {
-        // should do something
+    require('./misc/clipboardprompt');
+    let clipboardPromptBox;
+    let clipboardPrompt;
+
+    copyToClipboard = (data) => {
+
+        if (navigator.clipboard && navigator.clipboard.write) {
+
+            let transfer = new DataTransfer();
+
+            return Promise.resolve().then(() => {
+                if (data.html)
+                    transfer.items.add('text/html', data.html);
+                if (data.text)
+                    transfer.items.add('text/plain', data.text);
+                if (data.image)
+                    return fetch(data.image)
+                        .then(res => res.blob())
+                        .then(blob => transfer.items.add(blob));
+            }).then(() => {
+                return navigator.clipboard.write(transfer);
+            });
+        }
+        else {
+            if ( ! clipboardPrompt) {
+                clipboardPromptBox = document.createElement('jmv-infobox');
+                clipboardPrompt = document.createElement('jmv-clipboardprompt');
+                clipboardPromptBox.appendChild(clipboardPrompt);
+                document.body.appendChild(clipboardPromptBox);
+            }
+            clipboardPromptBox.style.display = '';
+            let content = (data.html ? data.html : data.text);
+            let promise = clipboardPrompt.copy(content);
+            promise.finally(() => {
+                clipboardPromptBox.style.display = 'none';
+            });
+            return promise;
+        }
     };
 
     pasteFromClipboard = () => {

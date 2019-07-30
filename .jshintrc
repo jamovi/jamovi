@@ -9,6 +9,7 @@
         "console" : true
     },
     "predef": [
-        "customElements"
+        "customElements",
+        "DataTransfer"
     ]
 }
