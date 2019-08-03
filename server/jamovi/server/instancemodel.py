@@ -4,9 +4,11 @@ from .rowtracker import RowTracker
 from .column import Column
 from .analyses import Analyses
 from .utils import NullLog
-from ..core import ColumnType
-from ..core import DataType
-from ..core import MeasureType
+from .permissions import Permissions
+
+from jamovi.core import ColumnType
+from jamovi.core import DataType
+from jamovi.core import MeasureType
 
 import collections
 
@@ -26,6 +28,10 @@ class InstanceModel:
         self._embedded_name = ''
         self._reuseable_virtual_ids = collections.deque([])
         self._filters_visible = True
+
+        self._perms = Permissions.retrieve()
+        # we check permissions in here so the file importers
+        # don't have to check them
 
         self._columns = [ ]
         self._transforms = [ ]
@@ -226,6 +232,7 @@ class InstanceModel:
         return False
 
     def append_column(self, name, import_name=None, id=0):
+        self._check_perms(column_count=self.column_count + 1)
         use_id = self._next_id
         if id != 0:
             if id < self._next_id:
@@ -248,7 +255,18 @@ class InstanceModel:
         self._columns.append(new_column)
         return new_column
 
+    def _check_perms(self, *args, row_count=None, column_count=None):
+        if len(args) > 0:
+            raise ValueError
+        if row_count is not None and row_count > self._perms.dataset.maxRows:
+            raise PermissionError('This session is limited to {} rows'.format(
+                self._perms.dataset.maxRows))
+        if column_count is not None and column_count > self._perms.dataset.maxColumns:
+            raise PermissionError('This session is limited to {} columns'.format(
+                self._perms.dataset.maxColumns))
+
     def set_row_count(self, count):
+        self._check_perms(row_count=count)
         self._dataset.set_row_count(count)
 
     def delete_rows(self, start, end):
@@ -256,10 +274,12 @@ class InstanceModel:
         self._recalc_all()
 
     def insert_rows(self, start, count):
+        self._check_perms(self.row_count + count)
         self._dataset.insert_rows(start, start + count - 1)
         self._recalc_all()
 
     def insert_column(self, index, name=None, import_name=None, id=0):
+        self._check_perms(column_count=self.column_count + 1)
         use_id = self._next_id
         if id != 0:
             if id < self._next_id:
@@ -766,6 +786,7 @@ class InstanceModel:
         return deleted_columns
 
     def _realise_column(self, column):
+        self._check_perms(column_count=self.column_count + 1)
         index = column.index
         filter_count = self.filter_column_count
         for i in range(self.column_count, index + 1):
