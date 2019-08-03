@@ -53,7 +53,7 @@ def4ult = False if is_windows else True
 Settings.retrieve('main').specify_default('autoUpdate', def4ult)
 
 
-class ForbiddenOp(Exception):
+class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
         super().__init__(message)
         self.operation = operation
@@ -415,7 +415,9 @@ class Instance:
             log.exception(e)
             base    = os.path.basename(abs_path)
             message = 'Unable to browse {}'.format(base)
-            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            cause = str(e)
+            if cause == '':
+                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
             self._coms.send_error(message, cause, self._instance_id, request)
         except OSError as e:
             base    = os.path.basename(abs_path)
@@ -457,7 +459,9 @@ class Instance:
             log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to save {}'.format(base)
-            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            cause = str(e)
+            if cause == '':
+                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
@@ -588,7 +592,9 @@ class Instance:
             log.exception(e)
             base    = os.path.basename(path)
             message = 'Unable to open {}'.format(base)
-            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            cause = str(e)
+            if cause == '':
+                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
@@ -706,7 +712,9 @@ class Instance:
             if e.filename is not None:
                 base = os.path.basename(e.filename)
             message = 'Unable to import {}'.format(base)
-            cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+            cause = str(e)
+            if cause == '':
+                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
@@ -919,13 +927,13 @@ class Instance:
 
         try:
             if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
-                if self._perms.library.add_remove is False:
+                if self._perms.library.addRemove is False:
                     raise PermissionError()
                 modules.install(
                     request.path,
                     lambda t, result: self._on_module_callback(t, result, request))
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
-                if self._perms.library.add_remove is False:
+                if self._perms.library.addRemove is False:
                     raise PermissionError()
                 try:
                     modules.uninstall(request.name)
@@ -935,13 +943,13 @@ class Instance:
                     log.exception(e)
                     self._coms.send_error(str(e), None, self._instance_id, request)
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('SHOW'):
-                if self._perms.library.show_hide is False:
+                if self._perms.library.showHide is False:
                     raise PermissionError()
                 self._set_module_visibility(request.name, True)
                 self._coms.send(None, self._instance_id, request)
                 self._session.notify_global_changes()
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('HIDE'):
-                if self._perms.library.show_hide is False:
+                if self._perms.library.showHide is False:
                     raise PermissionError()
                 self._set_module_visibility(request.name, False)
                 self._coms.send(None, self._instance_id, request)
@@ -1001,8 +1009,51 @@ class Instance:
         else:
             log.error('_on_store_callback(): shouldnt get here')
 
+    def _on_dataset_set_checks(self, request):
+
+        n_columns = self._data.column_count
+        n_rows = self._data.row_count
+
+        for column_pb in request.schema.columns:
+            if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('INSERT'):
+                n_columns += 1
+
+        for row_pb in request.rows:
+            if row_pb.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
+                n_rows += row_pb.rowCount
+
+        # also check when the user enters values outside the data set
+        for block_pb in request.data:
+            n_columns = max(n_columns, block_pb.columnStart + block_pb.columnCount)
+            n_rows = max(n_rows, block_pb.rowStart + block_pb.rowCount)
+
+        if n_columns > self._perms.dataset.maxColumns:
+            raise ForbiddenOp(
+                'insert columns',
+                'This session is limited to {} columns'.format(
+                    self._perms.dataset.maxColumns))
+
+        if n_rows > self._perms.dataset.maxRows:
+            raise ForbiddenOp(
+                'insert rows',
+                'This session is limited to {} rows'.format(
+                    self._perms.dataset.maxRows))
+
     def _on_dataset_set(self, request, response):
-        changes = { 'columns': set(), 'transforms': set(), 'deleted_columns': set(), 'deleted_transforms': set(), 'refresh': False, 'filters_changed': False }
+
+        # we have to perform checks before we start making changes, as
+        # we don't want to abort part way through, leaving things in an
+        # indeterminate state
+        self._on_dataset_set_checks(request)
+
+        changes = {
+            'columns': set(),
+            'transforms': set(),
+            'deleted_columns': set(),
+            'deleted_transforms': set(),
+            'refresh': False,
+            'filters_changed': False,
+        }
 
         self._on_dataset_del_cols(request, response, changes)
         self._on_dataset_del_rows(request, response, changes)
@@ -1044,39 +1095,41 @@ class Instance:
             self._populate_cells(request, response)
 
     def _on_dataset_ins_rows(self, request, response, changes):
-        request_rows = []
+
+        insertions = []
         for row_data in request.rows:
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
-                request_rows.append(row_data)
+                insertions.append(row_data)
 
-        if request_rows:
+        if insertions:
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
                     'insert rows',
                     'You cannot insert rows while filtered rows are hidden')
 
-        insert_offsets = [0] * len(request_rows)
-        for i in range(0, len(request_rows)):
-            row_data = request_rows[i]
+        insert_offsets = [0] * len(insertions)
+        for i in range(0, len(insertions)):
+            row_data = insertions[i]
             self._data.insert_rows(row_data.rowStart + insert_offsets[i], row_data.rowCount)
-            for j in range(0, len(request_rows)):
-                if j != i and (request_rows[j].rowStart + insert_offsets[j]) >= (row_data.rowStart + insert_offsets[i]):
+            for j in range(0, len(insertions)):
+                if j != i and (insertions[j].rowStart + insert_offsets[j]) >= (row_data.rowStart + insert_offsets[i]):
                     insert_offsets[j] += row_data.rowCount
 
-        for i in range(0, len(request_rows)):
-            row_data = request_rows[i]
+        for i in range(0, len(insertions)):
+            row_data = insertions[i]
             row_data_pb = response.rows.add()
             row_data_pb.rowStart = row_data.rowStart + insert_offsets[i]
             row_data_pb.rowCount = row_data.rowCount
             row_data_pb.action = row_data.action
             self._mod_tracker.log_row_insertion(row_data_pb)
 
-        if len(request_rows) > 0:
+        if len(insertions) > 0:
             # this is done so that the cell changes are sent back
             for column in self._data:
                 changes['columns'].add(column)
 
     def _on_dataset_ins_cols(self, request, response, changes):
+
         filter_inserted = False
         to_calc = set()
 
