@@ -24,8 +24,8 @@ class Permissions:
         app_mode = conf.get('mode', 'normal')
         if app_mode == 'normal':
             self.library.browseable = True
-            self.library.add_remove = True
-            self.library.show_hide = True
+            self.library.addRemove = True
+            self.library.showHide = True
             self.browse.local = True
             self.browse.examples = True
             self.open.local = True
@@ -33,19 +33,22 @@ class Permissions:
             self.save.local = True
         elif app_mode == 'demo':
             self.library.browseable = False
-            self.library.add_remove = False
-            self.library.show_hide = False
+            self.library.addRemove = False
+            self.library.showHide = False
             self.browse.local = True
             self.browse.examples = True
             self.open.local = True
             self.open.examples = True
             self.save.local = False
 
+            self.dataset.maxRows = 50000
+            self.dataset.maxColumns = 100
+
     def __init__(self):
         self.library = AttrDict({
             'browseable': False,
-            'add_remove': False,
-            'show_hide': False,
+            'addRemove': False,
+            'showHide': False,
         })
 
         self.browse = AttrDict({
@@ -60,4 +63,9 @@ class Permissions:
 
         self.save = AttrDict({
             'local': False,
+        })
+
+        self.dataset = AttrDict({
+            'maxRows': float('inf'),
+            'maxColumns': float('inf'),
         })
