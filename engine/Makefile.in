@@ -84,7 +84,8 @@ INCLUDES += \
 	-I$(SRCDIR)/../server/jamovi/common \
 	-I$(R_HOME)/include \
 	-I$(BASE_MODULE_PATH)/RInside/include \
-	-I$(BASE_MODULE_PATH)/Rcpp/include
+	-I$(BASE_MODULE_PATH)/Rcpp/include \
+	-I/usr/share/R/include
 
 LDFLAGS += -lR -lnanomsg -lprotobuf -lRInside
 
