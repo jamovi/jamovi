@@ -47,6 +47,20 @@ class ModuleMeta:
         self.datasets_license = None
         self.visible = True
 
+    def get(self, name):
+        for analysis in self.analyses:
+            if analysis.name == name:
+                return analysis
+        else:
+            return None
+
+    def __getitem__(self, name):
+        for analysis in self.analyses:
+            if analysis.name == name:
+                return analysis
+        else:
+            raise KeyError
+
 
 class AnalysisMeta:
     def __init__(self):
@@ -57,6 +71,8 @@ class AnalysisMeta:
         self.menuSubgroup = ''
         self.menuTitle = ''
         self.menuSubtitle = ''
+        self.addon_for = None
+        self.addons = [ ]
 
 
 class Modules:
@@ -168,9 +184,25 @@ class Modules:
                 try:
                     module = self._read_module(entry.path, False)
                     module.new = self._read and (module.name in self._original) is False
-                    self._modules.append(module)
+                    if module.name == 'jmv':
+                        self._modules.insert(0, module)
+                    else:
+                        self._modules.append(module)
                 except Exception as e:
                     log.exception(e)
+
+            # fill in addons
+            modules_by_name = dict(map(lambda m: (m.name, m), self._modules))
+            for module in self._modules:
+                for analysis in module.analyses:
+                    if analysis.addon_for is not None:
+                        try:
+                            target_module = modules_by_name.get(analysis.addon_for[0])
+                            target_analysis = next(iter(filter(lambda a: a.name == analysis.addon_for[1], target_module.analyses)))
+                            target_analysis.addons.append((analysis.ns, analysis.name))
+                        except Exception:
+                            pass
+
             self._read = True
         except Exception as e:
             log.exception(e)
@@ -286,6 +318,8 @@ class Modules:
                     analysis.menuSubgroup = analysis_defn['menuSubgroup']
                 if 'menuSubtitle' in analysis_defn and analysis_defn['menuSubtitle'] is not None:
                     analysis.menuSubtitle = analysis_defn['menuSubtitle']
+                if 'addonFor' in analysis_defn:
+                    analysis.addon_for = analysis_defn['addonFor'].split('::')
 
                 module.analyses.append(analysis)
 

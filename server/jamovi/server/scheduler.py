@@ -158,37 +158,42 @@ class Scheduler:
     def queue(self):
         return self._queue
 
-    def _to_message(self, analysis, perform):
+    def _to_message(self, analysis, perform, request_pb=None):
 
-        request = AnalysisRequest()
+        if request_pb is None:
+            request_pb = AnalysisRequest()
 
-        request.sessionId = analysis.instance.session.id
-        request.instanceId = analysis.instance.id
-        request.analysisId = analysis.id
-        request.name = analysis.name
-        request.ns = analysis.ns
+        request_pb.sessionId = analysis.instance.session.id
+        request_pb.instanceId = analysis.instance.id
+        request_pb.analysisId = analysis.id
+        request_pb.name = analysis.name
+        request_pb.ns = analysis.ns
+
+        for addon in analysis.addons:
+            addon_pb = request_pb.addons.add()
+            self._to_message(addon, perform, addon_pb)
 
         if analysis.complete and analysis.needs_op:
 
             analysis.op.waiting = False
 
-            request.options.CopyFrom(analysis.options.as_pb())
-            request.perform = AnalysisRequest.Perform.Value('SAVE')
-            request.path = analysis.op.path
-            request.part = analysis.op.part
+            request_pb.options.CopyFrom(analysis.options.as_pb())
+            request_pb.perform = AnalysisRequest.Perform.Value('SAVE')
+            request_pb.path = analysis.op.path
+            request_pb.part = analysis.op.part
 
         else:
 
             analysis.status = Analysis.Status.RUNNING
 
-            request.options.CopyFrom(analysis.options.as_pb())
-            request.changed.extend(analysis.changes)
-            request.revision = analysis.revision
-            request.clearState = analysis.clear_state
+            request_pb.options.CopyFrom(analysis.options.as_pb())
+            request_pb.changed.extend(analysis.changes)
+            request_pb.revision = analysis.revision
+            request_pb.clearState = analysis.clear_state
 
             if perform == 'init':
-                request.perform = AnalysisRequest.Perform.Value('INIT')
+                request_pb.perform = AnalysisRequest.Perform.Value('INIT')
             else:
-                request.perform = AnalysisRequest.Perform.Value('RUN')
+                request_pb.perform = AnalysisRequest.Perform.Value('RUN')
 
-        return request
+        return request_pb

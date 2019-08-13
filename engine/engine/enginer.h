@@ -61,7 +61,10 @@ private:
         const std::string &elementId,
         const std::string &suffix);
 
+    Rcpp::Environment create(const jamovi::coms::AnalysisRequest &analysis);
+
     void sendResults(bool incAsText, bool complete);
+    void sendResults2(Rcpp::Environment &ana, bool incAsText, bool complete);
 
     static void createDirectories(const std::string &path);
     static void setLibPaths(const std::string &moduleName);
