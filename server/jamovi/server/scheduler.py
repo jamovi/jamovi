@@ -44,6 +44,7 @@ class Scheduler:
                 analysis.status = Analysis.Status.RUNNING
                 request = self._to_message(analysis, 'init')
                 self._run_analysis(request)
+                self._n_initing += 1
 
         if self._n_initing + self._n_running == self._n_slots:
             return
