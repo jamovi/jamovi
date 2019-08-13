@@ -45,6 +45,34 @@ void EngineR::setPath(const std::string &path)
     _path = path;
 }
 
+Rcpp::Environment EngineR::create(const AnalysisRequest &analysis)
+{
+    RInside &rInside = *_rInside;
+    static Rcpp::Function createInR = rInside.parseEvalNT("jmvcore::create");
+
+    string options;
+    analysis.options().SerializeToString(&options);
+    Rcpp::RawVector optionsVec(options.size());
+    copy(options.begin(), options.end(), optionsVec.begin());
+
+    setLibPaths(analysis.ns());
+
+    Rcpp::Environment ana = createInR(
+        analysis.ns(),
+        analysis.name(),
+        optionsVec,
+        analysis.instanceid(),
+        analysis.analysisid(),
+        analysis.revision());
+
+    for (const AnalysisRequest &addon : analysis.addons()) {
+        Rcpp::Environment addonR = create(addon);
+        Rcpp::as<Rcpp::Function>(ana["addAddon"])(addonR);
+    }
+
+    return ana;
+}
+
 void EngineR::run(AnalysisRequest &analysis)
 {
     _current = analysis; // assigned so callbacks can access it
@@ -54,37 +82,22 @@ void EngineR::run(AnalysisRequest &analysis)
 
     RInside &rInside = *_rInside;
 
-    string options;
-    analysis.options().SerializeToString(&options);
-    Rcpp::RawVector optionsVec(options.size());
-    copy(options.begin(), options.end(), optionsVec.begin());
-
-    rInside["optionsPB"] = optionsVec;
+    Rcpp::Environment ana = create(analysis);
 
     setLibPaths(analysis.ns());
-
-    stringstream ss;
-
-    ss << "analysis <- jmvcore::create(" <<
-        "'" << analysis.ns() << "', " <<
-        "'" << analysis.name() << "', " <<
-        "optionsPB, " <<
-        "'" << analysis.instanceid() << "', " <<
-        analysis.analysisid() << ", " <<
-        analysis.revision() << ")\n";
-
-    rInside.parseEvalQNT(ss.str());
 
     bool INC_SYNTAX = true;
     bool NO_SYNTAX = false;
     bool COMPLETE = true;
     bool IN_PROGRESS = false;
 
-    if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(INC_SYNTAX, COMPLETE);
+    if (Rcpp::as<bool>(ana["errored"]))
+    {
+        sendResults2(ana, INC_SYNTAX, COMPLETE);
         return;
     }
 
+    stringstream ss;
     ss.str("");
     ss << setfill('0') << setw(2);
     ss << analysis.analysisid();
@@ -102,8 +115,7 @@ void EngineR::run(AnalysisRequest &analysis)
         analysis.instanceid(),
         std::placeholders::_1,
         true);
-    rInside["readDatasetHeader"] = Rcpp::InternalFunction(readDatasetHeader);
-    rInside.parseEvalQNT("analysis$.setReadDatasetHeaderSource(readDatasetHeader)\n");
+    Rcpp::as<Rcpp::Function>(ana[".setReadDatasetHeaderSource"])(Rcpp::InternalFunction(readDatasetHeader));
 
     readDataset = std::bind(
         &EngineR::readDataset,
@@ -112,8 +124,7 @@ void EngineR::run(AnalysisRequest &analysis)
         analysis.instanceid(),
         std::placeholders::_1,
         false);
-    rInside["readDataset"] = Rcpp::InternalFunction(readDataset);
-    rInside.parseEvalQNT("analysis$.setReadDatasetSource(readDataset)\n");
+    Rcpp::as<Rcpp::Function>(ana[".setReadDatasetSource"])(Rcpp::InternalFunction(readDataset));
 
     std::function<string()> statePath = std::bind(
         &EngineR::statePath,
@@ -121,8 +132,7 @@ void EngineR::run(AnalysisRequest &analysis)
         analysis.sessionid(),
         analysis.instanceid(),
         nameAndId);
-    rInside["statePath"] = Rcpp::InternalFunction(statePath);
-    rInside.parseEvalQNT("analysis$.setStatePathSource(statePath)");
+    Rcpp::as<Rcpp::Function>(ana[".setStatePathSource"])(Rcpp::InternalFunction(statePath));
 
     std::function<Rcpp::List(const string &, const string &)> resourcesPath = std::bind(
         &EngineR::resourcesPath,
@@ -132,15 +142,13 @@ void EngineR::run(AnalysisRequest &analysis)
         nameAndId,
         std::placeholders::_1,
         std::placeholders::_2);
-    rInside["resourcesPath"] = Rcpp::InternalFunction(resourcesPath);
-    rInside.parseEvalQNT("analysis$.setResourcesPathSource(resourcesPath)");
+    Rcpp::as<Rcpp::Function>(ana[".setResourcesPathSource"])(Rcpp::InternalFunction(resourcesPath));
 
     std::function<SEXP(SEXP)> checkpoint = std::bind(
         &EngineR::checkpoint,
         this,
         std::placeholders::_1);
-    rInside["checkpoint"] = Rcpp::InternalFunction(checkpoint);
-    rInside.parseEvalQNT("analysis$.setCheckpoint(checkpoint)");
+    Rcpp::as<Rcpp::Function>(ana[".setCheckpoint"])(Rcpp::InternalFunction(checkpoint));
 
     if (analysis.ns() == "Rj")
     {
@@ -149,26 +157,29 @@ void EngineR::run(AnalysisRequest &analysis)
         rInside[".datasetPath"] = datasetPath;
     }
 
-    rInside.parseEvalQNT("rm(list=c('optionsPB', 'readDatasetHeader', 'readDataset', 'statePath', 'resourcesPath', 'checkpoint'))\n");
+    Rcpp::Function setOptions = rInside.parseEvalNT("base::options");
+    Rcpp::List optionsValues = setOptions(); // no args is a getter
 
-    rInside.parseEvalQNT(".options <- options()"); // save options
+    Rcpp::as<Rcpp::Function>(ana["init"])(Rcpp::Named("noThrow", true));
 
-    rInside.parseEvalQNT("analysis$init(noThrow=TRUE)");
-
-    if (rInside.parseEvalNT("analysis$errored\n")) {
-        sendResults(INC_SYNTAX, COMPLETE);
-        rInside.parseEvalQNT("options(.options)"); // restore options
+    if (Rcpp::as<bool>(ana["errored"]))
+    {
+        sendResults2(ana, INC_SYNTAX, COMPLETE);
+        setOptions(optionsValues);
         return;
     }
 
     if ( ! analysis.clearstate())
     {
         Rcpp::CharacterVector changed(analysis.changed().begin(), analysis.changed().end());
-        rInside["changed"] = changed;
-        rInside.parseEvalQ("try(analysis$.load(changed))");
+        Rcpp::as<Rcpp::Function>(ana[".load"])(changed);
     }
 
-    rInside.parseEvalQ("analysis$postInit(noThrow=TRUE)");
+    Rcpp::as<Rcpp::Function>(ana["postInit"])(true);
+
+    // here i assign the analysis to a variable, and access it by
+    // name from here on. my intention is to replace all this stuff later.
+    rInside["analysis"] = ana;
 
     if (analysis.perform() == 5)  // SAVE
     {
@@ -213,22 +224,20 @@ void EngineR::run(AnalysisRequest &analysis)
     else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
     {
         sendResults(INC_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("try(analysis$.save())");
+        rInside.parseEvalQ("analysis$.save()");
     }
     else if (analysis.perform() == 0)   // INIT
     {
         sendResults(NO_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("try(analysis$.save())");
+        rInside.parseEvalQ("analysis$.save()");
     }
     else
     {
-        // sendResults(NO_SYNTAX, IN_PROGRESS);
-
         bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
         // shouldn't send if aborted by callback (for example)
         if ( ! shouldSend)
         {
-            rInside.parseEvalQNT("options(.options)"); // restore options
+            setOptions(optionsValues); // restore options
             return;
         }
 
@@ -236,10 +245,18 @@ void EngineR::run(AnalysisRequest &analysis)
         rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
         sendResults(NO_SYNTAX, IN_PROGRESS);
         sendResults(INC_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("try(analysis$.save())");
+        rInside.parseEvalQ("analysis$.save()");
     }
 
-    rInside.parseEvalQNT("options(.options)"); // restore options
+    setOptions(optionsValues); // restore options
+}
+
+void EngineR::sendResults2(Rcpp::Environment &ana, bool incAsText, bool complete)
+{
+    Rcpp::Function serialize = ana["serialize"];
+    Rcpp::RawVector results = serialize(incAsText);
+    string raw(results.begin(), results.end());
+    resultsReceived(raw, complete);
 }
 
 void EngineR::sendResults(bool incAsText, bool complete)

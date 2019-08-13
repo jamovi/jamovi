@@ -41,7 +41,7 @@ class Analysis:
             self.parent._ops.remove(self)
             self.future.set_exception(exception)
 
-    def __init__(self, dataset, id, name, ns, options, parent, enabled, load_error=False):
+    def __init__(self, dataset, id, name, ns, options, parent, enabled, addons=None, load_error=False):
         self.dataset = dataset
         self.id = id
         self.name = name
@@ -55,6 +55,9 @@ class Analysis:
         self.clear_state = False
         self.enabled = enabled
         self.complete = False
+        if addons is None:
+            addons = [ ]
+        self.addons = addons
         self.load_error = load_error
 
         self._ops = [ ]
@@ -234,11 +237,13 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
-    def _construct(self, id, name, ns, options_pb, enabled=None):
+    def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
         try:
-            module = Modules.instance().get(ns)
-            analysis_root = os.path.join(module.path, 'analyses', name.lower())
+            module_desc = Modules.instance().get(ns)
+            analysis_desc = module_desc.get(name)
+
+            analysis_root = os.path.join(module_desc.path, 'analyses', name.lower())
 
             a_defn = None
             r_defn = None
@@ -260,9 +265,12 @@ class Analyses:
                 enabled = not a_defn.get('arbitraryCode', False)
 
             options = Options.create(option_defs, results_defs)
-            options.set(options_pb)
+            if options_pb is not None:
+                options.set(options_pb)
 
-            return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled)
+            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_desc.addons))
+
+            return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
 
         except Exception:
             return Analysis(self._dataset, id, name, ns, Options(), self, enabled, load_error=True)
