@@ -136,13 +136,16 @@ class Scheduler:
                             analysis.op.set_exception(ValueError(results.error.message))
                         else:
                             analysis.op.set_result(results)
+                        analysis.status = Analysis.Status.COMPLETE
                     else:
                         analysis.set_results(results, stream.is_complete)
-
-            if request.perform == INIT:
-                analysis.status = Analysis.Status.INITED
-            else:
-                analysis.status = Analysis.Status.COMPLETE
+                        if stream.is_complete:
+                            if results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
+                                analysis.status = Analysis.Status.ERROR
+                            elif request.perform == INIT:
+                                analysis.status = Analysis.Status.INITED
+                            else:
+                                analysis.status = Analysis.Status.COMPLETE
         finally:
             if request.perform == INIT:
                 self._n_initing -= 1
