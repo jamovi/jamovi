@@ -539,8 +539,10 @@ const TableView = SilkyView.extend({
     },
     _addResizeListeners($element) {
         let $resizers = $element.find('.jmv-column-header-resizer');
-        $resizers.on('drag', event => this._columnResizeHandler(event));
-        $resizers.on('mousedown', event => event.stopPropagation());
+        $resizers.on('mousedown', event => {
+            this._resizingColumn = { $resizer: $(event.target), startPageX: event.pageX };
+            event.stopPropagation();
+        });
     },
     _updateHeight() {
         let vRowCount = this.model.get('vRowCount');
@@ -975,6 +977,11 @@ const TableView = SilkyView.extend({
     },
     _mouseUp(event) {
 
+        if (this._resizingColumn) {
+            this._resizingColumn = null;
+            return;
+        }
+
         if (this._isClicking && this._draggingType === 'both') {
             this._setSelection(this._clickCoords.rowNo, this._clickCoords.colNo, false);
         }
@@ -1057,6 +1064,12 @@ const TableView = SilkyView.extend({
         this._isDragging = false;
     },
     _mouseMove(event) {
+
+        if (this._resizingColumn) {
+            this._columnResizeHandler(event, this._resizingColumn);
+            return;
+        }
+
         if ( ! this._isDragging)
             return;
         this._isClicking = false; // mouse moved, no longer a click
@@ -2959,13 +2972,14 @@ const TableView = SilkyView.extend({
                 this.trigger('notification', notification);
             });
     },
-    _columnResizeHandler(event) {
+    _columnResizeHandler(event, data) {
         if (event.clientX === 0 && event.clientY === 0)
             return;
 
-        let $target = $(event.target);
+        let $target = data.$resizer;
         let $parent = $target.parent();
-        let x = event.offsetX - 6;
+        let x = event.pageX - data.startPageX; // event.offsetX - 6;
+        data.startPageX = event.pageX;
 
         if (x === 0)
             return;
@@ -3355,7 +3369,7 @@ const TableView = SilkyView.extend({
             >
                 <div class="jmv-column-header-icon"></div>
                 <div class="jmv-column-header-label">${ column.name }</div>
-                <div class="jmv-column-header-resizer" data-index="${ column.dIndex }" draggable="true"></div>
+                <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>
             </div>`;
