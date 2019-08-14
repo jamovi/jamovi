@@ -4,6 +4,7 @@
     display: flex;
     flex-direction:  row;
     align-items: stretch;
+    max-height: 255px;
 }
 
 .tippy-tooltip.jmv-filter-theme .tippy-backdrop {

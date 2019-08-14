@@ -3,6 +3,7 @@
 .jmv-variable-editor-datavarwidget {
     flex: 1;
     display: flex;
+    max-height: 167px;
 }
 
 .jmv-variable-editor-widget-left {
