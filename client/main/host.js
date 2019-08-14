@@ -304,18 +304,24 @@ else {
             });
         }
         else {
-            if ( ! clipboardPrompt) {
+            if ( ! clipboardPromptBox) {
                 clipboardPromptBox = document.createElement('jmv-infobox');
-                clipboardPrompt = document.createElement('jmv-clipboardprompt');
-                clipboardPromptBox.appendChild(clipboardPrompt);
                 document.body.appendChild(clipboardPromptBox);
             }
-            clipboardPromptBox.style.display = '';
+
+            if ( ! clipboardPrompt)
+                clipboardPrompt = document.createElement('jmv-clipboardprompt');
+
+            clipboardPromptBox.setup(clipboardPrompt);
+
             let content = (data.html ? data.html : data.text);
             let promise = clipboardPrompt.copy(content);
             promise.finally(() => {
-                clipboardPromptBox.style.display = 'none';
+                clipboardPromptBox.hide();
             });
+
+
+
             return promise;
         }
     };

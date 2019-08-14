@@ -40,7 +40,7 @@ infoBox.style.display = 'none';
 coms.on('failure', (event) => {
     infoBox.setup({
         title: 'Connection lost',
-        message: 'Connection has been lost or has timed out',
+        message: 'Your connection has been lost or has timed out. Please refresh the page to continue.',
         status: 'disconnected',
     });
     infoBox.style.display = null;
@@ -312,7 +312,6 @@ $(document).ready(() => {
                 history.replaceState({}, '', status['new-url']);
             if (status.message || status.title || status['message-src']) {
                 infoBox.setup(status);
-                infoBox.style.display = null;
                 if (status.status === 'OK')
                     return;
                 else
