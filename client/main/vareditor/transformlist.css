@@ -12,6 +12,7 @@
 
 .jmv-transform-list > .middle {
     overflow-y: auto;
+    max-height: 250px;
 }
 
 .jmv-transform-list .transform-none-item {

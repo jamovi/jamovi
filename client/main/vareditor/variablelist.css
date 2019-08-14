@@ -8,6 +8,7 @@
 
 .jmv-variable-list > .middle {
     overflow-y: auto;
+    max-height: 200px;
 }
 
 .jmv-variable-list-item.none-item {
