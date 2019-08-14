@@ -2562,7 +2562,7 @@ const TableView = SilkyView.extend({
 
                     for (let i of needsClear) {
                         let $column = this.$columns[i];
-                        $column.remove();
+                        $column.detach();
                         $column.empty();
                     }
 
@@ -3415,8 +3415,8 @@ const TableView = SilkyView.extend({
                 for (let i = o.left; i <= o.right; i++) {
                     let $column = $(this.$columns[i]);
                     let $header = $(this.$headers[i]);
-                    $header.remove();
-                    $column.remove();
+                    $header.detach();
+                    $column.detach();
                     $column.empty();
                 }
                 this.$rhColumn.empty();
@@ -3484,8 +3484,8 @@ const TableView = SilkyView.extend({
                 for (let i = 0; i < nCols; i++) {
                     let $column = $(this.$columns[o.right - i]);
                     let $header = $(this.$headers[o.right - i]);
-                    $header.remove();
-                    $column.remove();
+                    $header.detach();
+                    $column.detach();
                     $column.empty();
                 }
             }
@@ -3521,8 +3521,8 @@ const TableView = SilkyView.extend({
                 for (let i = 0; i < nCols; i++) {
                     let $column = $(this.$columns[o.left + i]);
                     let $header = $(this.$headers[o.left + i]);
-                    $header.remove();
-                    $column.remove();
+                    $header.detach();
+                    $column.detach();
                     $column.empty();
                 }
             }
