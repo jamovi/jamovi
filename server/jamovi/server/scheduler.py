@@ -46,7 +46,7 @@ class Scheduler:
                 self._run_analysis(request)
                 self._n_initing += 1
 
-        if self._n_initing + self._n_running == self._n_slots:
+        if self._n_initing + self._n_running >= self._n_slots:
             return
 
         for analysis in self._analyses.needs_init:
@@ -54,10 +54,10 @@ class Scheduler:
             request = self._to_message(analysis, 'init')
             self._run_analysis(request)
             self._n_initing += 1
-            if self._n_initing + self._n_running == self._n_slots:
+            if self._n_initing + self._n_running >= self._n_slots:
                 return
 
-        if self._n_running == self._n_run_slots:
+        if self._n_running >= self._n_run_slots:
             return
 
         for analysis in self._analyses.needs_op:
@@ -65,9 +65,9 @@ class Scheduler:
             request = self._to_message(analysis, 'op')
             self._run_analysis(request)
             self._n_running += 1
-            if self._n_running + self._n_initing == self._n_slots:
+            if self._n_running + self._n_initing >= self._n_slots:
                 return
-            if self._n_running == self._n_run_slots:
+            if self._n_running >= self._n_run_slots:
                 return
 
         for analysis in self._analyses.needs_run:
@@ -75,9 +75,9 @@ class Scheduler:
             request = self._to_message(analysis, 'run')
             self._run_analysis(request)
             self._n_running += 1
-            if self._n_running + self._n_initing == self._n_slots:
+            if self._n_running + self._n_initing >= self._n_slots:
                 return
-            if self._n_running == self._n_run_slots:
+            if self._n_running >= self._n_run_slots:
                 return
 
     def _run_analysis(self, request):
