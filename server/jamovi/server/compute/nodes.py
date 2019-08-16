@@ -695,6 +695,9 @@ class BinOp(ast.BinOp, Node):
         if isinstance(self.op, ast.Pow):
             return MeasureType.CONTINUOUS
 
+        if self.data_type is DataType.INTEGER:
+            return MeasureType.CONTINUOUS
+
         lmt = self.left.measure_type
         rmt = self.right.measure_type
 
