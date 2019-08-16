@@ -105,6 +105,16 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="NOT">NOT</div>'));
     descriptions.NOT = { label: 'NOT( <i>value</i> )', content: 'Inverts the value.' };
 
+    $functionsContent.append($('<div class="subtitle" data-name="">Text</div>'));
+    $functionsContent.append($('<div class="item" data-name="CONTAINS">CONTAINS</div>'));
+    descriptions.CONTAINS = { label: 'CONTAINS( <i>item1, item2, item3, ..., in1, in2, in3, ...</i> )', content: 'Determines if any of the items appear in in1, in2, in3, .... Note that most of these arguments are optional -- it is possible to simply use <strong>CONTAINS(needle, haystack)</strong>.' };
+    $functionsContent.append($('<div class="item" data-name="SPLIT">SPLIT</div>'));
+    descriptions.SPLIT = { label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: 'Splits text into pieces based on a separator. <i>piece</i> specifies the desired piece by index.' };
+    $functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
+    descriptions.TEXT = { label: 'TEXT( <i>number</i> )', content: 'Converts the value to text.' };
+    $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
+    descriptions.VALUE = { label: 'VALUE( <i>text</i> )', content: 'Converts text to a number (if possible).' };
+
     $functionsContent.append($('<div class="subtitle" data-name="">Reference</div>'));
     $functionsContent.append($('<div class="item" data-name="HLOOKUP">HLOOKUP</div>'));
     descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ...</i> )', content: 'The value in the provided values at index.' };
@@ -120,12 +130,6 @@ function allFunctions($functionsContent) {
     descriptions.OFFSET = { label: 'OFFSET( <i>variable, integer</i> )', content: 'Offsets the values up or down.' };
     $functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
     descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: 'Returns the row numbers.' };
-    $functionsContent.append($('<div class="item" data-name="SPLIT">SPLIT</div>'));
-    descriptions.SPLIT = { label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: 'Splits text into pieces based on a separator. <i>piece</i> specifies the desired piece by index.' };
-    $functionsContent.append($('<div class="item" data-name="TEXT">TEXT</div>'));
-    descriptions.TEXT = { label: 'TEXT( <i>number</i> )', content: 'Converts the value to text.' };
-    $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
-    descriptions.VALUE = { label: 'VALUE( <i>text</i> )', content: 'Converts text to a number (if possible).' };
     $functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
     descriptions.VROWS = { label: 'VROWS( <i>variable</i>, group_by=0 )', content: 'Returns the number of rows of a variable.' };
 

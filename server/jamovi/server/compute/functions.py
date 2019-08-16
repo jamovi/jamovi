@@ -337,6 +337,21 @@ def RECODE(index, x, *args):
         return x
 
 
+@row_wise
+@returns(DataType.INTEGER, MeasureType.NOMINAL)
+def CONTAINS(index, item1: str, in1: str, *args: str, in2: str = '', in3: str = '', in4: str = '', in5: str = '', in6: str = '', in7: str = '', in8: str = '', in9: str = ''):
+    needles = [ item1, in1 ] + list(args)
+    haystacks = [ in2, in3, in4, in5, in6, in7, in8, in9 ]
+    first_haystack = needles.pop()
+    haystacks.insert(0, first_haystack)
+    for needle in needles:
+        for haystack in haystacks:
+            if needle in haystack:
+                return 1
+    else:
+        return 0
+
+
 _RECODE_NOM = RECODE
 _RECODE_ORD = RECODE
 _RECODE_CONT = RECODE
