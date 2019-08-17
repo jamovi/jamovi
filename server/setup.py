@@ -77,6 +77,11 @@ rc = subprocess.call([
 if rc != 0:
     raise(RuntimeError('protoc failed!'))
 
+if path.exists(path.join(here, 'jamovi/hydra')):
+    hydra = [ 'jamovi.hydra' ]
+else:
+    hydra = [ ]
+
 setup(
     name='jamovi',
     version='0.1.0',
@@ -106,7 +111,7 @@ setup(
         'jamovi.server.formatio',
         'jamovi.server.utils',
         'jamovi.server.compute',
-    ],
+    ] + hydra,
 
     ext_modules=cythonize(
         extensions,
