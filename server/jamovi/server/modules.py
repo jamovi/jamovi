@@ -73,6 +73,7 @@ class AnalysisMeta:
         self.menuSubtitle = ''
         self.addon_for = None
         self.addons = [ ]
+        self.in_menu = True
 
 
 class Modules:
@@ -304,8 +305,7 @@ class Modules:
 
         if 'analyses' in defn:
             for analysis_defn in defn['analyses']:
-                if 'hidden' in analysis_defn and analysis_defn['hidden'] is True:
-                    continue
+
                 analysis = AnalysisMeta()
                 analysis.name = analysis_defn['name']
                 analysis.ns = analysis_defn['ns']
@@ -319,7 +319,10 @@ class Modules:
                 if 'menuSubtitle' in analysis_defn and analysis_defn['menuSubtitle'] is not None:
                     analysis.menuSubtitle = analysis_defn['menuSubtitle']
                 if 'addonFor' in analysis_defn:
+                    analysis.in_menu = False
                     analysis.addon_for = analysis_defn['addonFor'].split('::')
+                if 'hidden' in analysis_defn and analysis_defn['hidden'] is True:
+                    analysis.in_menu = False
 
                 module.analyses.append(analysis)
 

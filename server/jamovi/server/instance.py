@@ -2526,6 +2526,8 @@ class Instance:
         module_pb.visible = module.visible
 
         for analysis in module.analyses:
+            if not analysis.in_menu:
+                continue
             analysis_pb = module_pb.analyses.add()
             analysis_pb.name = analysis.name
             analysis_pb.ns = analysis.ns
