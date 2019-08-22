@@ -83,6 +83,8 @@ class Main {  // this is constructed at the bottom
 
         if (hostEvent.type === 'results') {
             this.resultsDefn = eventData;
+            // ensure empty root results still display
+            this.resultsDefn.results.visible = 2;
             this._render();
         }
         else if (hostEvent.type === 'reftablechanged') {
@@ -102,7 +104,7 @@ class Main {  // this is constructed at the bottom
 
             let address = eventData.address;
             let options = eventData.options;
-            
+
             let node = this.results.el;
             for (let i = 0; i < address.length; i++)
                 node = node.querySelectorAll(`[data-name="${ b64.enc(address[i]) }"]`)[0];
