@@ -97,6 +97,7 @@ class EngineManager:
         try:
             log.debug('%s %s on %s', 'running', req_str(request), index)
             self._requests[index] = (request, stream)
+            await self._restart_task.join()  # wait if engines are restarting
             await self._engines[index].run(request, stream)
             self._requests[index] = None
             log.debug('%s %s', 'completed', req_str(request))
