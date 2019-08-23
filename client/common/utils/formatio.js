@@ -223,6 +223,7 @@ function _htmlify(el, options) {
     let tag;
     let include = false;
     let includeChildren = true;
+    let includeVerbatim = false;
     let styles = [ ];
     let prepend = '';
     let append = '';
@@ -302,6 +303,9 @@ function _htmlify(el, options) {
             include = false;
             includeChildren = false;
             break;
+        case 'svg':
+            includeVerbatim = true;
+            break;
         default:
             if (el.shadowRoot)
                 return _htmlify(el.shadowRoot, options);
@@ -310,6 +314,11 @@ function _htmlify(el, options) {
         return Promise.resolve('');
 
     }).then(html => {
+
+        if (includeVerbatim) {
+            include = false;
+            includeChildren = false;
+        }
 
         html += prepend;
 
@@ -332,6 +341,10 @@ function _htmlify(el, options) {
         if (includeChildren) {
             for (let child of $(el).contents())
                 promises.push(_htmlify(child, options));
+        }
+
+        if (includeVerbatim) {
+            html += el.outerHTML;
         }
 
         return Promise.all(promises).then(all => {
