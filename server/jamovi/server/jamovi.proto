@@ -466,6 +466,7 @@ message DataSetSchema {
         int32 transform = 20;
         int32 parentId = 21;
         repeated ColumnCellRange editedCellRanges = 22;
+        bool dataChanged = 24;
 
     }
 

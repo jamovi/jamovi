@@ -684,7 +684,7 @@ const DataSetModel = Backbone.Model.extend({
                 }
                 else {
                     let newName = columnPB.name;
-                    let levelNameChanges = this._determineLevelLabelChanges(column, columnPB);
+                    let levelChanges = this._determineLevelLabelChanges(column, columnPB);
                     let created = column === undefined;
                     let dpsChanged = false;
                     let oldName;
@@ -751,12 +751,12 @@ const DataSetModel = Backbone.Model.extend({
                         columnTypeChanged: column.columnType !== oldColumnType,
                         measureTypeChanged: column.measureType !== oldMeasureType,
                         dataTypeChanged: column.dataType !== oldDataType,
-                        levelsChanged: true,
+                        levelsChanged: levelChanges.names.length > 0 || levelChanges.order,
                         formulaChanged: column.formula !== oldFormula,
-                        levelNameChanges: levelNameChanges,
+                        levelNameChanges: levelChanges.names,
                         nameChanged: nameChanged,
                         dpsChanged: dpsChanged,
-                        dataChanged: true,
+                        dataChanged: columnPB.dataChanged,
                         created: created,
                         formulaMessageChanged: column.formulaMessage !== oldMessage,
                     };
@@ -926,6 +926,14 @@ const DataSetModel = Backbone.Model.extend({
                         changed.push(name);
                         changes.push({ id: column.id, columnType: column.columnType, index: column.index, oldName: name, dataChanged: true });
                     }
+                    else {
+                        for (let data of changes) {
+                            if (data.id === column.id) {
+                                data.dataChanged = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -994,21 +1002,28 @@ const DataSetModel = Backbone.Model.extend({
         return valueRanges;
     },
     _determineLevelLabelChanges(column, columnPB) {
+        let orderChanged = false;
         let levelNameChanges = [];
         if (column && column.levels && Array.isArray(column.levels)) {
             let levelLabels = {};
-            for (let li = 0; li < column.levels.length; li++)
+            for (let li = 0; li < column.levels.length; li++) {
                 levelLabels[column.levels[li].importValue] = column.levels[li].label;
+            }
 
             if (columnPB && columnPB.levels && Array.isArray(columnPB.levels)) {
+                orderChanged = columnPB.levels.length !== column.levels.length;
                 for (let li = 0; li < columnPB.levels.length; li++) {
+                    if (orderChanged === false)
+                        orderChanged = column.levels[li].importValue !== columnPB.levels[li].importValue;
+
                     let oldLabel = levelLabels[columnPB.levels[li].importValue];
                     if (oldLabel !== undefined && oldLabel !== columnPB.levels[li].label)
                         levelNameChanges.push({oldLabel: oldLabel, newLabel: columnPB.levels[li].label});
                 }
             }
         }
-        return levelNameChanges;
+
+        return { names: levelNameChanges, order: orderChanged };
     },
     _readColumnPB(column, columnPB) {
         column.id = columnPB.id;

@@ -689,8 +689,18 @@ const Instance = Backbone.Model.extend({
                 }
                 else {
                     let column = this._dataSetModel.getColumnById(changes.id);
-                    if (using.includes(column.name))
+                    if (using.includes(column.name)) {
+                        if (changes.transformChanged ||
+                            changes.parentIdChanged ||
+                            changes.activeChanged ||
+                            changes.columnTypeChanged ||
+                            changes.measureTypeChanged ||
+                            changes.dataTypeChanged ||
+                            changes.levelsChanged ||
+                            changes.formulaChanged ||
+                            changes.dataChanged)
                         columnDataChanged = true;
+                    }
                     if (changes.nameChanged && using.includes(changes.oldName)) {
                         columnRenamed = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
@@ -708,7 +718,6 @@ const Instance = Backbone.Model.extend({
 
             if (levelsRenamed)
                 analysis.renameLevels(levelRenames);
-
 
             if (columnDataChanged || columnRenamed || columnDeleted) {
                 let selectedAnalysis = this.get('selectedAnalysis');
