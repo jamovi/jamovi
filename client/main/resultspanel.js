@@ -468,7 +468,7 @@ const ResultsPanel = Backbone.View.extend({
         if (event.op === 'copy') {
 
             let options = {
-                images:'absolute',
+                // images: 'absolute',  // might be necessary for desktop version of word on macos
                 margin: '24',
                 docType: true,
                 exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
