@@ -8,7 +8,7 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
     if (format === undefined)
         format = '';
     if (settings === undefined)
-        settings = { 't': 'sf', 'n': 3, 'p': 3 };
+        settings = { 't': 'sf', 'n': 3, 'pt': 'dp', 'p': 3 };
     if (minNS === undefined)
         minNS = 1e-3;
     if (maxNS === undefined)
@@ -46,36 +46,48 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
     }
 
     let dp, sf;
+    let lz = true; // leading zero
+
+    let t = settings.t;
+    let n = settings.n;
 
     if (formats.includes('pvalue')) {
-        dp = settings.p;
-        sf = settings.p;
+        t = settings.pt;
+        n = settings.p;
+        // lz = false;
+    } /*else if (formats.includes('zto')) {
+        lz = false;
+    }*/
+
+    if (t === 'dp' && formats.includes('pvalue')) {
+        dp = n;
+        sf = n;
         maxNS = Infinity;
         minNS = -Infinity;
     }
-    else if (formats.includes('zto') || formats.includes('pc')) {
-        dp = settings.n;
-        sf = settings.n;
+    else if ( ! formats.includes('pvalue') && (formats.includes('zto') || formats.includes('pc'))) {
+        dp = n;
+        sf = n;
         maxNS = Infinity;
         minNS = -Infinity;
     }
-    else if (settings.t === 'sf') {
+    else if (t === 'sf') {
 
         if (type === 'integer') {
             dp = 0;
-            sf = settings.n;
+            sf = n;
         }
         else if ( ! isFinite(minAbsNS)) {
-            dp = settings.n - 1;
-            sf = settings.n;
+            dp = n - 1;
+            sf = n;
         }
         else if (minAbsNS === 0) {
-            dp = settings.n - 1;
-            sf = settings.n;
+            dp = n - 1;
+            sf = n;
         }
         else {
-            sf = settings.n;
-            dp = settings.n - 1 - Math.floor(Math.log10(minAbsNS));
+            sf = n;
+            dp = n - 1 - Math.floor(Math.log10(minAbsNS));
             dp = Math.max(dp, 0);
         }
     }
@@ -83,17 +95,17 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
 
         if (type === 'integer') {
             dp = 0;
-            sf = settings.n + 1;
+            sf = n + 1;
         }
         else {
-            dp = settings.n;
-            sf = settings.n + 1;
+            dp = n;
+            sf = n + 1;
         }
     }
 
     let expw = parseInt(Math.log10(maxAbsExpnt)+1);
 
-    return { dp, expw, format, sf, maxNS, minNS };
+    return { dp, expw, format, sf, maxNS, minNS, t, lz };
 };
 
 let format = function(value, format) {
@@ -118,14 +130,17 @@ let format = function(value, format) {
         }
     }
 
-    if (format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
+    if (format.t === 'dp' && format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
         return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).substring(1);
     }
     else if (format.format.includes('pc')) {
         return '' + (100 * value).toFixed(format.dp - 2) + '\u2009%';
     }
     else if (Math.abs(value) >= format.minNS && Math.abs(value) <= format.maxNS) {
-        return value.toFixed(format.dp);
+        let str = value.toFixed(format.dp);
+        if (format.lz === false && str.startsWith('0.'))
+            str = str.substring(1);
+        return str;
     }
     else {
         let exponent = Math.floor(Math.log10(Math.abs(value)));
