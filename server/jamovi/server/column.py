@@ -717,6 +717,8 @@ class Column:
                 if isinstance(parent, Column):
                     self._columns.add(parent)
                     for grand_parent in parent._node_parents:
+                        if isinstance(grand_parent, Column):
+                            self._columns.add(grand_parent)
                         self.visit(grand_parent)
                 else:
                     self.visit(parent)
