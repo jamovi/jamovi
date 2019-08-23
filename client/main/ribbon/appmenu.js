@@ -81,7 +81,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$pFormat.append($('<div>p-value format</div>'));
-        this.$pFormatList = $('<select><optgroup label="decimal places"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
+        this.$pFormatList = $('<select><optgroup label="significant figures"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="decimal places"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
             .appendTo(this.$pFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
@@ -232,11 +232,12 @@ const AppMenuButton = Backbone.View.extend({
         let pfs = this.$pFormatList.val();
 
         let nfm = nfs.match(/(sf|dp):([0-9]+)/);
-        let pfm = pfs.match(/dp:([0-9]+)/);
+        let pfm = pfs.match(/(sf|dp):([0-9]+)/);
         let fmt = {
             t: nfm[1],
             n: parseInt(nfm[2]),
-            p: parseInt(pfm[1]) };
+            pt: pfm[1],
+            p: parseInt(pfm[2]) };
 
         let value = JSON.stringify(fmt);
         this.model.settings().setSetting('format', value);
@@ -251,8 +252,10 @@ const AppMenuButton = Backbone.View.extend({
         let nf, pf;
         try {
             fmt = JSON.parse(fmt);
+            if ( ! ('pt' in fmt))
+                fmt.pt = 'dp';
             nf = fmt.t + ':' + fmt.n;
-            pf = 'dp:' + fmt.p;
+            pf = fmt.pt + ':' + fmt.p;
         }
         catch (e) {
             nf = 'sf:3';

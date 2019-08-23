@@ -220,7 +220,7 @@ const ResultsPanel = Backbone.View.extend({
                 format = JSON.parse(this.model.settings().get('format'));
             }
             catch (e) {
-                format = {t:'sf',n:3,p:3};
+                format = {t:'sf',n:3,pt:'dp',p:3};
             }
 
             let analysis = resources.analysis;
