@@ -1154,6 +1154,9 @@ class Instance:
 
             column.column_type = ColumnType(column_pb.columnType)
 
+            if column.column_type is ColumnType.FILTER:
+                column.width = 78
+
             column.change(
                 data_type=DataType(column_pb.dataType),
                 measure_type=MeasureType(column_pb.measureType))
@@ -1627,6 +1630,7 @@ class Instance:
                 column.description = column_pb.description
                 column.transform = column_pb.transform
                 column.parent_id = column_pb.parentId
+                column.width = column_pb.width
 
                 if old_type == ColumnType.NONE and column.column_type == ColumnType.RECODED:
                     new_column_name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
@@ -2339,11 +2343,7 @@ class Instance:
         column_schema.dataType = column.data_type.value
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
-
-        if column.column_type is ColumnType.FILTER:
-            column_schema.width = 78
-        else:
-            column_schema.width = 100
+        column_schema.width = column.width
 
         column_schema.dps = column.dps
         column_schema.formula = column.formula

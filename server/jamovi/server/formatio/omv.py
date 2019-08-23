@@ -62,6 +62,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
             field['formula'] = column.formula
             field['formulaMessage'] = column.formula_message
             field['parentId'] = column.parent_id
+            field['width'] = column.width
             if column.data_type == DataType.DECIMAL:
                 field['type'] = 'number'
             elif column.data_type == DataType.TEXT and column.measure_type == MeasureType.ID:
@@ -353,9 +354,10 @@ def read(data, path, prog_cb):
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', -1)
                 column.active = meta_column.get('active', True)
-                # column.hidden = meta_column.get('hidden', False)
+                column.width = meta_column.get('width', 78)
             else:
                 column.trim_levels = meta_column.get('trimLevels', True)
+                column.width = meta_column.get('width', 100)
 
         row_count = meta_dataset['rowCount']
         data.row_tracker.removed_row_ranges = meta_dataset.get('removedRows', [])
