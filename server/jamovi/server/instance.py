@@ -1048,7 +1048,7 @@ class Instance:
 
         changes = {
             'columns': set(),
-            'data_changed' : set(),
+            'data_changed': set(),
             'transforms': set(),
             'deleted_columns': set(),
             'deleted_transforms': set(),
