@@ -274,7 +274,7 @@ class InstanceModel:
         self._recalc_all()
 
     def insert_rows(self, start, count):
-        self._check_perms(self.row_count + count)
+        self._check_perms(row_count=self.row_count + count)
         self._dataset.insert_rows(start, start + count - 1)
         self._recalc_all()
 
