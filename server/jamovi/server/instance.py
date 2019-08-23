@@ -841,7 +841,7 @@ class Instance:
 
             for column in self._data:
                 column_schema = response.schema.columns.add()
-                self._populate_column_schema(column, column_schema)
+                self._populate_column_schema(column, column_schema, False)
 
             for transform in self._data.transforms:
                 transform_schema = response.schema.transforms.add()
@@ -1048,6 +1048,7 @@ class Instance:
 
         changes = {
             'columns': set(),
+            'data_changed' : set(),
             'transforms': set(),
             'deleted_columns': set(),
             'deleted_transforms': set(),
@@ -1083,7 +1084,8 @@ class Instance:
                 transform_pb.action = jcoms.DataSetSchema.TransformSchema.Action.Value('REMOVE')
             for column in changes['columns']:
                 column_schema = response.schema.columns.add()
-                self._populate_column_schema(column, column_schema)
+                data_changed = column in changes['data_changed']
+                self._populate_column_schema(column, column_schema, data_changed)
             for transform in changes['transforms']:
                 transform_schema = response.schema.transforms.add()
                 self._populate_transform_schema(transform, transform_schema)
@@ -1754,7 +1756,7 @@ class Instance:
             column.set_needs_recalc()
         for column in recalc:
             column.recalc()
-            for dep in column.dependents:
+            for dep in column.dependents:    # not sure if these two lines are needed
                 dep.recalc()
 
         cols_changed.update(recalc)
@@ -1770,6 +1772,8 @@ class Instance:
             changes['columns'].add(column)
         for transform in trans_changed:
             changes['transforms'].add(transform)
+        for column in recalc:
+            changes['data_changed'].add(column)
 
     def _parse_cells(self, request):
 
@@ -2176,6 +2180,7 @@ class Instance:
 
         for column in cols_changed:
             changes['columns'].add(column)
+            changes['data_changed'].add(column)
 
         self._populate_cells(request, response)
 
@@ -2299,7 +2304,7 @@ class Instance:
         self._populate_schema_info(request, response)
         for column in self._data:
             column_schema = response.schema.columns.add()
-            self._populate_column_schema(column, column_schema)
+            self._populate_column_schema(column, column_schema, False)
         for transform in self._data.transforms:
             transform_schema = response.schema.transforms.add()
             self._populate_transform_schema(transform, transform_schema)
@@ -2333,11 +2338,12 @@ class Instance:
         transform_schema.measureType = transform.measure_type.value
         transform_schema.colourIndex = transform.colour_index
 
-    def _populate_column_schema(self, column, column_schema):
+    def _populate_column_schema(self, column, column_schema, data_changed):
         column_schema.name = column.name
         column_schema.importName = column.import_name
         column_schema.id = column.id
         column_schema.index = column.index
+        column_schema.dataChanged = data_changed
 
         column_schema.columnType = column.column_type.value
         column_schema.dataType = column.data_type.value
