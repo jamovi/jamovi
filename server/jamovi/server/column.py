@@ -34,6 +34,7 @@ class Column:
             self._id = child.id
         self._index = -1
         self._description = ''
+        self._width = 100
         self._hidden = False
         self._filter_no = -1
         self._transform = 0  # zero mean 'none'
@@ -155,6 +156,14 @@ class Column:
     @description.setter
     def description(self, description):
         self._description = description
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        self._width = width
 
     @property
     def hidden(self):

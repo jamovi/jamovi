@@ -540,7 +540,9 @@ const TableView = SilkyView.extend({
     _addResizeListeners($element) {
         let $resizers = $element.find('.jmv-column-header-resizer');
         $resizers.on('mousedown', event => {
-            this._resizingColumn = { $resizer: $(event.target), startPageX: event.pageX };
+            let columnId = parseInt(event.target.parentNode.dataset.id);
+            let column = this.model.getColumnById(columnId);
+            this._resizingColumn = { $resizer: $(event.target), startPageX: event.pageX, column: column };
             event.stopPropagation();
         });
     },
@@ -978,6 +980,9 @@ const TableView = SilkyView.extend({
     _mouseUp(event) {
 
         if (this._resizingColumn) {
+            let column = this._resizingColumn.column;
+            if (column.name !== '')  // not virtual
+                this.model.changeColumn(column.id, { width: column.width });
             this._resizingColumn = null;
             return;
         }
@@ -2976,6 +2981,7 @@ const TableView = SilkyView.extend({
         if (event.clientX === 0 && event.clientY === 0)
             return;
 
+        let column = data.column;
         let $target = data.$resizer;
         let $parent = $target.parent();
         let x = event.pageX - data.startPageX; // event.offsetX - 6;
@@ -2991,6 +2997,8 @@ const TableView = SilkyView.extend({
             newWidth = 32;
             x = newWidth - this._widths[colNo];
         }
+
+        column.width = newWidth;
 
         this.$el.addClass('resizing');
 

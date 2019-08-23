@@ -453,6 +453,11 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columnPB.description = column.description;
 
+            if ('width' in values)
+                columnPB.width = values.width;
+            else
+                columnPB.width = column.width;
+
             if ('hidden' in values)
                 columnPB.hidden = values.hidden;
             else
