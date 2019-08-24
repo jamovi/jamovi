@@ -123,9 +123,11 @@ const EditorWidget = Backbone.View.extend({
 
         this.$recodedVarWidget = $('<div></div>').appendTo(this.$body);
         this.recodedVarWidget = new RecodedVarWidget({ el: this.$recodedVarWidget, model: this.model });
+        this.recodedVarWidget.on('notification', this._notifyEditProblem, this);
 
         this.$filterWidget = $('<div></div>').appendTo(this.$body);
         this.filterWidget = new FilterWidget({ el: this.$filterWidget, model: this.model.dataset });
+        this.filterWidget.on('notification', this._notifyEditProblem, this);
 
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);
         this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
@@ -305,6 +307,9 @@ const EditorWidget = Backbone.View.extend({
         let type = this.model.get('columnType');
         if (type === 'filter')
             this.filterWidget.update();
+    },
+    _notifyEditProblem(note) {
+        this.trigger('notification', note);
     }
 });
 

@@ -8,6 +8,7 @@ const keyboardJS = require('keyboardjs');
 const tippy = require('tippy.js');
 const formulaToolbar = require('./formulatoolbar');
 const dropdown = require('./dropdown');
+const Notify = require('../notification');
 
 const FilterWidget = Backbone.View.extend({
     className: 'FilterWidget',
@@ -27,6 +28,8 @@ const FilterWidget = Backbone.View.extend({
             "ROW() != 33 and ROW() != 37",
             "score > 0.5"
         ];
+
+        this._editNote = new Notify({ duration: 3000 });
 
         dropdown.init();
         this.formulaSetup = new formulaToolbar(this.dataset);
@@ -111,7 +114,17 @@ const FilterWidget = Backbone.View.extend({
         this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false }).then(() => {
             column = this.dataset.getColumn(i);
             this.setColumnForEdit(column.id);
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
+    },
+    _notifyEditProblem(details) {
+        this._editNote.set(details);
+        this.trigger('notification', this._editNote);
     },
     setColumnForEdit(id) {
         this.dataset.set('editingVar', [id]);
@@ -358,7 +371,13 @@ const FilterWidget = Backbone.View.extend({
         for (let i = 0; i < relatedColumns.length; i++)
             ids.push(relatedColumns[i].column.id);
 
-        return this.dataset.deleteColumns(ids);
+        return this.dataset.deleteColumns(ids).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
+        });
     },
 
     _setFormula($formulaBox, formula, formulaMessage) {
@@ -642,6 +661,12 @@ const FilterWidget = Backbone.View.extend({
         return this.dataset.changeColumns(pairs).then(() => {
             clearTimeout(timeoutId);
             $title.removeClass("think");
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     addNestedEvents($element, id) {
@@ -654,6 +679,12 @@ const FilterWidget = Backbone.View.extend({
             this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
                 let column = this.dataset.getColumn(index);
                 this.setColumnForEdit(column.id);
+            }).catch((error) => {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
             });
             event.stopPropagation();
             event.preventDefault();
@@ -669,6 +700,12 @@ const FilterWidget = Backbone.View.extend({
 
             this.dataset.deleteColumn(id).then(() => {
                 this._removingFilter = false;
+            }).catch((error) => {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
             });
 
             event.stopPropagation();

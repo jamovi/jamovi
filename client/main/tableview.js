@@ -236,11 +236,23 @@ const TableView = SilkyView.extend({
     _undo() {
         this.model.undo().then((events) => {
             this._undoRedoDataToSelection(events);
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     _redo() {
         this.model.redo().then((events) => {
             this._undoRedoDataToSelection(events);
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     _undoRedoDataToSelection(events) {
@@ -317,7 +329,7 @@ const TableView = SilkyView.extend({
                 });
             }
         }
-        if (selections.length === 0) {
+        if (selections.length === 0 && events.data && events.data.changes) {
             for (let change of events.data.changes) {
                 if (change.dIndex === -1 || (change.created && change.columnType === 'none') || (change.deleted && change.columnType === 'none'))
                     continue;
@@ -406,6 +418,12 @@ const TableView = SilkyView.extend({
                     this.model.set('editingVar', ids);
                 });
             }
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     setActive(active) {
@@ -1941,9 +1959,7 @@ const TableView = SilkyView.extend({
         if (this._editing === false)
             return Promise.resolve();
 
-        return Promise.resolve().then(() => {
-            return this._applyEdit();
-        }).then(() => {
+        let finaliseEdit = () => {
             this._editing = false;
             this.statusbar.updateInfoLabel('editStatus', 'Ready');
             this._edited = false;
@@ -1952,6 +1968,12 @@ const TableView = SilkyView.extend({
             this.$selection.val('');
             this.$selection.blur();
             this.$selection.removeClass('editing');
+        };
+
+        return Promise.resolve().then(() => {
+            return this._applyEdit();
+        }).then(() => {
+            finaliseEdit();
         }).catch(err => {
             this._notifyEditProblem({
                 title: err.message,
@@ -1959,10 +1981,10 @@ const TableView = SilkyView.extend({
                 type: 'error',
             });
             this.$selection.select();
-            console.log(err);
             throw 'cancelled';
         });
     },
+
     _notifyEditProblem(details) {
         this._editNote.set(details);
         this.trigger('notification', this._editNote);
@@ -2436,13 +2458,6 @@ const TableView = SilkyView.extend({
     _rowsInserted(event) {
 
     },
-    _insertColumn(properties, right) {
-        let index = this.selection.colNo;
-        if (right)
-            index += 1;
-        properties.index = index;
-        return this.model.insertColumn(properties, true);
-    },
     _columnsInserted(event, ignoreSelection) {
         this._updateFilterInfo();
 
@@ -2727,8 +2742,11 @@ const TableView = SilkyView.extend({
                 this.$container.scrollLeft(scrollX + selRight - containerRight);
 
         }).catch((error) => {
-            console.log(error);
-            throw error;
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
     },
     _enableDisableActions() {
@@ -2785,7 +2803,13 @@ const TableView = SilkyView.extend({
                     index: 0,
                     columnType: 'filter',
                     hidden: this.model.get('filtersVisible') === false
-                }).then(() => this.model.set('editingVar', [this.model.getColumn(0).id]));
+                }).then(() => this.model.set('editingVar', [this.model.getColumn(0).id])).catch((error) => {
+                    this._notifyEditProblem({
+                        title: error.message,
+                        message: error.cause,
+                        type: 'error',
+                    });
+                });
         }
         else
             this.model.set('editingVar', null);
