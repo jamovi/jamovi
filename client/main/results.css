@@ -34,7 +34,10 @@
 
 .jmv-results-panel[data-analysis-selected] {
     background-color: #E8E8E8 ;
+}
 
+.jmv-results-panel.all-selected {
+    background-color: #B5CAEF;
 }
 
 .jmv-results-panel iframe {
@@ -48,8 +51,8 @@
     display: none;
 }
 
-.jmv-results-container[data-selected] iframe,
-jmv-references[data-selected] {
+.jmv-results-panel:not(.all-selected) .jmv-results-container[data-selected] iframe,
+.jmv-results-panel:not(.all-selected) jmv-references[data-selected] {
     background-color: white ;
 }
 

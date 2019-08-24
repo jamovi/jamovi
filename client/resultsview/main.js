@@ -51,6 +51,13 @@ class Main {  // this is constructed at the bottom
         $(document).mousedown(this, (event) => this._mouseDown(event));
         $(document).mouseup(this, (event) => this._mouseUp(event));
         $(document).mousemove(this, (event) => this._mouseMove(event));
+
+        document.body.addEventListener('contextmenu', (event) => {
+            let clickEvent = $.Event('contextmenu');
+            clickEvent.pageX = event.pageX;
+            clickEvent.pageY = event.pageY;
+            this.$results.trigger(clickEvent);
+        });
     }
 
     _reallyNotifyResize() {
@@ -93,12 +100,12 @@ class Main {  // this is constructed at the bottom
         }
         else if (hostEvent.type === 'click') {
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
-            if (el !== null) {
-                let clickEvent = $.Event('contextmenu');
-                clickEvent.pageX = hostEvent.pageX;
-                clickEvent.pageY = hostEvent.pageY;
-                $(el).trigger(clickEvent);
-            }
+            if (el === document.body)
+                el = this.$results[0];
+            let clickEvent = $.Event('contextmenu');
+            clickEvent.pageX = hostEvent.pageX;
+            clickEvent.pageY = hostEvent.pageY;
+            $(el).trigger(clickEvent);
         }
         else if (hostEvent.type === 'getcontent') {
 

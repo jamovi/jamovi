@@ -104,15 +104,9 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
         if (entry.splitter)
             items.push(new RibbonSeparator());
 
-        if (entry.address !== undefined && entry.address.length === 0) { // the analysis
-            if (entry.options === undefined)
-                entry.options = [];
-            entry.options.push({ label: 'Remove', splitter: true });
-        }
-
         let title = entry.label;
         let iconId = null;
-        if (title === 'Save')
+        if (title === 'Export')
             title = title + '...';
         else if (title === 'Copy')
             iconId = 'copy';

@@ -19,8 +19,8 @@ const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
     initialize(args) {
 
-        this.$el.empty();
-        this.$el.addClass('jmv-results-panel');
+        this.el.innerHTML = '';
+        this.el.classList.add('jmv-results-panel');
         this.el.dataset.mode = args.mode;
 
         this._menuId = null;
@@ -74,6 +74,21 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable.addEventListener('contextmenu', (event) => this._refsRightClicked(event));
         this._refsTable.addEventListener('click', (event) => this._resultsClicked(event, 'refsTable'));
         this.el.appendChild(this._refsTable);
+
+        this.el.addEventListener('contextmenu', (event) => {
+            let thereAreSomeAnalyses = false;
+            for (let id in this.resources) {
+                let analysis = this.resources[id].analysis;
+                if ( ! analysis.deleted) {
+                    thereAreSomeAnalyses = true;
+                    break;
+                }
+            }
+            if (thereAreSomeAnalyses) {
+                this._showMenu(-1, { entries: [ ], pos: { left: event.pageX, top: event.pageY }});
+                this.el.classList.add('all-selected');
+            }
+        });
 
         this.model.settings().on('change:format',  () => this._updateAll());
         this.model.settings().on('change:devMode', () => this._updateAll());
@@ -168,9 +183,9 @@ const ResultsPanel = Backbone.View.extend({
             });
 
             $cover.on('click', event => this._resultsClicked(event, analysis));
-            $cover.on('mousedown', event => {
-                if (event.button === 2)
-                    this._resultsRightClicked(event.offsetX, event.offsetY, analysis);
+            $cover.on('contextmenu', event => {
+                this._resultsRightClicked(event.offsetX, event.offsetY, analysis);
+                event.stopPropagation();
             });
         }
         else if (analysis.deleted) {
@@ -286,6 +301,8 @@ const ResultsPanel = Backbone.View.extend({
         }
     },
     _refsRightClicked(event) {
+
+        event.stopPropagation();
 
         let rect = this._refsTable.getBoundingClientRect();
         let left = rect.left + event.offsetX;
@@ -407,15 +424,33 @@ const ResultsPanel = Backbone.View.extend({
 
         let entries = [ ];
         for (let entry of data.entries) {
+            let address = entry.address.slice();
+            let options = entry.options.slice();
+            if (address.length === 0)
+                options.push({ label: 'Remove', splitter: true });
+            address.unshift(id);
             let e = {
                 label: entry.type,
                 type: entry.type,
-                address: entry.address,
-                options: entry.options,
+                address: address,
+                options: options,
                 title: entry.title,
             };
             entries.push(e);
         }
+
+        // Add root
+        entries.unshift({
+            label: 'All',
+            type: 'All',
+            address: [ ],
+            options: [
+                { label: 'Copy' },
+                { label: 'Export' },
+                { label: 'Remove', splitter: true },
+            ],
+            title: 'All',
+        });
 
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     },
@@ -428,7 +463,7 @@ const ResultsPanel = Backbone.View.extend({
                 .map(entry => entry[1])
                 .filter((res) => ! res.analysis.deleted)
                 .map((res => res.id))
-                .map(id => this._getContent(id, [ ], options));
+                .map(id => this._getContent([ id ], options));
 
             let refs = formatIO.exportElem(this._refsTable, options)
                 .then((html) => { return { html }; });
@@ -442,16 +477,23 @@ const ResultsPanel = Backbone.View.extend({
             });
         }
 
-        let address = part.split('/');
-        let id = address.shift();
-
         if ( ! options.exclude)
             options.exclude = [ ];
         options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
-        return this._getContent(id, address, options);
+        let address = part.split('/');
+        return this._getContent(address, options);
     },
-    _getContent(id, address, options) {
+    _getContent(address, options) {
+
+        if (address.length === 0) {
+            return this.getAsHTML(options).then((html) => {
+                return { html };
+            });
+        }
+
+        address = address.slice(); // clone
+        let id = address.shift();
         let iframeWindow = this.resources[id].iframe.contentWindow;
         iframeWindow.postMessage({ type: 'getcontent', data: { address, options } }, '*');
 
@@ -478,7 +520,7 @@ const ResultsPanel = Backbone.View.extend({
                 exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
             };
 
-            this._getContent(this._menuId, event.address, options).then((content) => {
+            this._getContent(event.address, options).then((content) => {
 
                 return host.copyToClipboard(content);
 
@@ -494,15 +536,13 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.trigger('notification', note);
             });
         }
-        else if (event.op === 'save') {
+        else if (event.op === 'export') {
 
-            let part = '' + this._menuId;
-            if (event.address.length > 0)
-                part += '/' + event.address.join('/');
+            let part = event.address.join('/');
 
             if (event.target.type === 'Image') {
                 let options = {
-                    title: 'Save image',
+                    title: 'Export image',
                     filters: [
                         { name: 'PDF', extensions: [ 'pdf' ] },
                         { name: 'PNG', extensions: [ 'png' ] },
@@ -519,7 +559,7 @@ const ResultsPanel = Backbone.View.extend({
             else {
 
                 let options = {
-                    title: 'Save results',
+                    title: 'Export results',
                     filters: [
                         { name: 'PDF', extensions:  [ 'pdf' ] },
                         { name: 'HTML', extensions: [ 'html', 'htm' ] },
@@ -540,8 +580,13 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (event.op === 'remove') {
             this.model.set('selectedAnalysis', null);
-            let analysisId = this.resources[this._menuId].id;
-            this.model.analyses().deleteAnalysis(analysisId);
+            if (event.address.length === 0) {
+                this.model.analyses().deleteAll();
+            }
+            else {
+                let analysisId = this.resources[this._menuId].id;
+                this.model.analyses().deleteAnalysis(analysisId);
+            }
         }
         else if (event.op === 'refsCopy') {
             host.copyToClipboard({
@@ -564,8 +609,26 @@ const ResultsPanel = Backbone.View.extend({
             this._refsTable.clearSelection();
         }
         else {
-            let message = { type: 'menuEvent', data: event };
-            this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
+
+            event = Object.assign({}, event); // clone
+            let address = event.address;
+
+            if (address === null) {
+                this.el.classList.remove('all-selected');
+            } else if (event.address.length === 0) {
+                this.el.classList.add('all-selected');
+                event.address = null;
+            } else {
+                this.el.classList.remove('all-selected');
+                address = address.slice(); // clone
+                let id = address.shift();
+                event.address = address;
+            }
+
+            if (this._menuId > 0) {
+                let message = { type: 'menuEvent', data: event };
+                this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
+            }
         }
     },
     _scrollIntoView($item, itemHeight) {

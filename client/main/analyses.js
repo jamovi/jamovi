@@ -197,6 +197,12 @@ const Analyses = Backbone.Model.extend({
         this._notifyOptionsChanged(analysis);
         this._notifyResultsChanged(analysis);
     },
+    deleteAll() {
+        for (let analysis of this) {
+            if ( ! analysis.deleted)
+                this.deleteAnalysis(analysis.id);
+        }
+    },
     get(id) {
         for (let i = 0; i < this._analyses.length; i++) {
             let analysis = this._analyses[i];
