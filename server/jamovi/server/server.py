@@ -98,7 +98,7 @@ class ResourceHandler(RequestHandler):
                 self.set_header('Content-Type', mt[0])
             if mt[1] is not None:
                 self.set_header('Content-Encoding', mt[1])
-            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
+            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             content = file.read()
             self.write(content)
 
@@ -132,7 +132,7 @@ class ModuleAssetHandler(RequestHandler):
                 self.set_header('Content-Type', mt[0])
             if mt[1] is not None:
                 self.set_header('Content-Encoding', mt[1])
-            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
+            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             self.write(content)
 
 
@@ -398,7 +398,7 @@ class Server:
         await self._session.start()
 
         assets_path = os.path.join(client_path, 'assets')
-        no_cache_headers = { 'Cache-Control': 'private, no-store, must-revalidate, max-age=0' }
+        no_cache_headers = { 'Cache-Control': 'private, no-cache, must-revalidate, max-age=0' }
 
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
