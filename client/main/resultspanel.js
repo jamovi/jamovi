@@ -430,6 +430,10 @@ const ResultsPanel = Backbone.View.extend({
                 .map((res => res.id))
                 .map(id => this._getContent(id, [ ], options));
 
+            let refs = formatIO.exportElem(this._refsTable, options)
+                .then((html) => { return { html }; });
+            promises.push(refs);
+
             return Promise.all(promises).then((chunks) => {
                 chunks = chunks.map((chunk) => chunk.html);
                 let content = chunks.join('');
