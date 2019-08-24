@@ -36,7 +36,7 @@
     vertical-align: top;
 }
 
-body.windows .jmv-ribbon-appmenu {
+body.windows.electron .jmv-ribbon-appmenu {
     top: 36px ;
 }
 
