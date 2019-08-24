@@ -1975,7 +1975,6 @@ const TableView = SilkyView.extend({
         }).then(() => {
             finaliseEdit();
         }).catch(err => {
-            finaliseEdit();
             this._notifyEditProblem({
                 title: err.message,
                 message: err.cause,
