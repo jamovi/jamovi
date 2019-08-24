@@ -204,6 +204,9 @@ const VariableEditor = Backbone.View.extend({
             new EditorWidget({ el : this.$$editors[1], model : this.editorModel })
         ];
 
+        this.editors[0].on('notification', note => this.trigger('notification', note));
+        this.editors[1].on('notification', note => this.trigger('notification', note));
+
         for (let widget of this.editors) {
             widget.$el.on('edit:transform', (event, transformId) => {
                 this._showTransformEditor(transformId);

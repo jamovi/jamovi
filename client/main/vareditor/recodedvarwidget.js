@@ -9,12 +9,15 @@ const dropdown = require('./dropdown');
 const TransformList = require('./transformlist');
 const VariableList = require('./variablelist');
 const ColourPalette = require('../editors/colourpalette');
+const Notify = require('../notification');
 
 const RecodedVarWidget = Backbone.View.extend({
     className: 'RecodedVarWidget',
     initialize(args) {
 
         this.attached = false;
+
+        this._editNote = new Notify({ duration: 3000 });
 
         dropdown.init();
         this.$el.empty();
@@ -90,7 +93,13 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this.transformList.$el.on('remove-transform', (event, transform) => {
             let dataset = this.model.dataset;
-            dataset.removeTransforms([transform.id]);
+            dataset.removeTransforms([transform.id]).catch((error) => {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            });
         });
 
         this.transformList.$el.on('create-transform', (event) => {
@@ -177,7 +186,17 @@ const RecodedVarWidget = Backbone.View.extend({
             this.$el.trigger('edit:transform', transformId);
         }).then(() => {
             dropdown.hide();
+        }).catch((error) => {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
         });
+    },
+    _notifyEditProblem(details) {
+        this._editNote.set(details);
+        this.trigger('notification', this._editNote);
     },
     _onDatasetLoaded() {
         this._updateChannelList();

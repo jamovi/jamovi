@@ -558,15 +558,15 @@ const DataSetModel = Backbone.Model.extend({
                 let deleted = transformPB.action === 2 && transform !== undefined;
 
                 if (deleted) {
-                    for (let i = 0; i < this.attributes.transforms.length; i++) {
-                        if (transform.id === this.attributes.transforms[i].id) {
+                    for (let j = 0; j < this.attributes.transforms.length; j++) {
+                        if (transform.id === this.attributes.transforms[j].id) {
                             changed[i] = transform.name;
                             changes[i] = {
                                 id: id,
                                 name: transform.name,
                                 deleted: true,
                             };
-                            this.attributes.transforms.splice(i, 1);
+                            this.attributes.transforms.splice(j, 1);
                             break;
                         }
                     }
