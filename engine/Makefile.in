@@ -49,6 +49,7 @@ ifeq ($(os),OSX)
 				-lboost_filesystem-mt \
 				-lboost_system-mt \
 				-framework Foundation
+	CXXFLAGS += -mmacosx-version-min=10.10
 else
 ifeq ($(os),Linux)
 	R_HOME ?= $(SRCDIR)/../../../lib/R
