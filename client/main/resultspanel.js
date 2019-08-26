@@ -482,7 +482,8 @@ const ResultsPanel = Backbone.View.extend({
         options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
         let address = part.split('/');
-        return this._getContent(address, options);
+        return this._getContent(address, options)
+            .then((content) => content.html);
     },
     _getContent(address, options) {
 

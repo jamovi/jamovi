@@ -239,7 +239,7 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
     };
 
     showSaveDialog = (options, callback) => {
-        return dialog.showSaveDialog(browserWindow, options, callback);
+        return (dialog.showSaveDialogSync || dialog.showSaveDialog)(browserWindow, options, callback);
     };
 
 
