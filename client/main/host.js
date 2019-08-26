@@ -188,7 +188,7 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
     };
 
     showMessageBox = function(options) {
-        return dialog.showMessageBox(browserWindow, options);
+        return (dialog.showMessageBoxSync || dialog.showMessageBox)(browserWindow, options);
     };
 
     window.onkeydown = function(event) {
