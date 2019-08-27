@@ -247,23 +247,28 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
 else {
 
     let mainPort = window.location.port;
-    if (mainPort)
+    if (mainPort) {
         mainPort = parseInt(mainPort);
-    else
-        mainPort = 80;
-
-    baseUrl = `${ window.location.protocol }//${ window.location.hostname }:${ mainPort }/`;
-    analysisUIUrl  = `${ window.location.protocol }//a.${ window.location.hostname }:${ mainPort }/`;
-    resultsViewUrl = `${ window.location.protocol }//r.${ window.location.hostname }:${ mainPort }/`;
+        baseUrl = `${ window.location.protocol }//${ window.location.hostname }:${ mainPort }/`;
+        analysisUIUrl  = `${ window.location.protocol }//${ window.location.hostname }:${ mainPort + 1 }/`;
+        resultsViewUrl = `${ window.location.protocol }//${ window.location.hostname }:${ mainPort + 2 }/`;
+    }
+    else {
+        baseUrl = `${ window.location.protocol }//${ window.location.hostname }/`;
+        analysisUIUrl  = `${ window.location.protocol }//a.${ window.location.hostname }/`;
+        resultsViewUrl = `${ window.location.protocol }//r.${ window.location.hostname }/`;
+    }
 
     openWindow = (instanceId) => {
         window.open(`${ window.location.origin }/${ instanceId }/`, '_blank');
     };
+
     closeWindow = () => {
         window.close();
         if ( ! window.closed)
             window.location = window.location.href + '../';
     };
+
     navigate = (instanceId) => {
         window.location = `${ window.location.origin }/${ instanceId }/`;
     };
