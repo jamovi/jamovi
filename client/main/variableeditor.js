@@ -16,6 +16,7 @@ const EditorWidget = require('./vareditor/editorwidget');
 const EditorPanel = require('./editorpanel');
 const TransformEditor = require('./editors/transformeditor');
 
+
 const VariableEditor = Backbone.View.extend({
     className: 'VariableEditor',
     initialize() {
@@ -211,6 +212,9 @@ const VariableEditor = Backbone.View.extend({
             widget.$el.on('edit:transform', (event, transformId) => {
                 this._showTransformEditor(transformId);
             });
+            widget.$el.on('edit:missing', (event, variableId) => {
+                this._showEditor(variableId);
+            });
         }
 
         this.model.on('change:editingVar', event => this._editingVarChanged(event));
@@ -221,6 +225,11 @@ const VariableEditor = Backbone.View.extend({
             let editingVar = this.model.get('editingVar');
             this.editorPanel.attach(this.transformEditor);
         }
+    },
+    _showEditor(editor) {
+        this.editorPanel.attach(editor);
+        if (editor.refresh)
+            editor.refresh();
     },
     _hideEditor() {
         this.editorPanel.attach(null);

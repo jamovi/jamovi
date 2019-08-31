@@ -2,7 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
-const keyboardJS = require('keyboardjs');
+
 
 const DataVarLevelWidget = function(level, model, i) {
 
@@ -33,7 +33,6 @@ const DataVarLevelWidget = function(level, model, i) {
     };
 
     this._focus = event => {
-        keyboardJS.pause('');
         this.$label.select();
     };
 
@@ -43,7 +42,6 @@ const DataVarLevelWidget = function(level, model, i) {
         let diff = level.importValue !== level.label;
         if (label !== level.label)
             this.$label.val(level.label);
-        keyboardJS.resume();
         this.$el.removeClass('selected');
     };
 

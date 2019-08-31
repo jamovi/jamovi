@@ -81,6 +81,7 @@ const VariableModel = Backbone.Model.extend({
         trimLevels: true,
         autoApply: true,
         transform: 0, // zero means 'none'
+        missingValues: ["== 'damo'", "<= 200"],
         parentId: 0
     },
     editLevelLabel(index, label) {
@@ -156,7 +157,8 @@ const VariableModel = Backbone.Model.extend({
             importName : null,
             trimLevels : null,
             transform : null,
-            parentId : null
+            parentId : null,
+            missingValues : null
         };
 
         let first = true;
@@ -283,7 +285,8 @@ const VariableModel = Backbone.Model.extend({
                         importName: this.attributes.importName,
                         trimLevels: this.attributes.trimLevels,
                         transform: this.attributes.transform,
-                        parentId: this.attributes.parentId
+                        parentId: this.attributes.parentId,
+                        missingValues: this.attributes.missingValues
                     };
 
                     this.original = latestValues;

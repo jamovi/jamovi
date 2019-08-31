@@ -1,0 +1,63 @@
+
+.jmv-missing-value-list {
+    display: flex;
+    flex-direction: column;
+    flex: 2;
+    background-color: white;
+    border: 1px solid #dfdfdf;
+    /* padding: 5px 0; */
+    /* padding-right: 0; */
+    margin: 10px 0 30px 0;
+    justify-content: space-between;
+}
+
+.jmv-missing-value-list > .list {
+    overflow-y: auto;
+    max-height: 250px;
+    width: 300px;
+    flex-grow: 1;
+    margin-left: 5px;
+    margin-top: 2px;
+}
+
+.jmv-missing-value-list > .bottom {
+    border-top: 1px solid #eaeaea;
+}
+
+.jmv-missing-value-list .add-missing-value {
+    display: flex;
+    flex-direction: row;
+    align-self: flex-start;
+    align-items: center;
+    border: 1px solid hsla(0, 0%, 88%, 0);
+    border-radius: 2px;
+    padding: 0 5px;
+    line-height: 1.5;
+    background-color: hsla(0, 0%, 99%, 1);
+    transition: .4s background-color;
+    color: #575757;
+    flex-shrink: 0;
+    margin: 5px;
+    /* margin-right: 5px; */
+    height: 22px;
+}
+
+
+
+.jmv-missing-value-list .add-missing-value:hover {
+    background-color: rgb(230, 241, 255);
+    border-color: rgb(62, 109, 169);
+}
+
+.jmv-missing-value-list .add-missing-value > .insert {
+    background-size: 100%;
+    background-image: url(assets/filters-add.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    width: 11px;
+    height: 11px;
+    margin-right: 6px;
+}

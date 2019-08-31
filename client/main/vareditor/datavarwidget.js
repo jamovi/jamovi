@@ -7,7 +7,8 @@ Backbone.$ = $;
 const DataVarLevelWidget = require('./datavarlevelwidget');
 const tarp = require('../utils/tarp');
 const dropdown = require('./dropdown');
-const TransformList = require('./transformlist');
+const MissingValueEditor = require('../editors/missingvalueeditor');
+const keyboardJS = require('keyboardjs');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -26,7 +27,15 @@ const DataVarWidget = Backbone.View.extend({
         this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
         this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
-        this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
+        this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
+        this.$missingValueButton = $(`
+            <div class="missing-values">
+                <div class="label">Missing</div>
+                <div class="list">empty, -99, &lt; -1</div>
+            </div>`).appendTo(this.$left);
+        this.$missingValueButton.find('.list').on('click', () => {
+            this.$el.trigger('edit:missing', this.missingValueEditor);
+        });
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
         this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$levelsCrtl);
@@ -44,6 +53,8 @@ const DataVarWidget = Backbone.View.extend({
                 tarp.hide('levels');
             }
         });
+
+        this.missingValueEditor = new MissingValueEditor(this.model);
 
 
         this.$moveUp.on('click', event => this._moveUp());
@@ -70,6 +81,8 @@ const DataVarWidget = Backbone.View.extend({
             this.model.set({ measureType: event.data, autoMeasure: false });
         };
 
+        this.$typesHighlight = $('<div class="jmv-variable-editor-widget-types-highlight"></div>').appendTo(this.$types);
+
         for (let option of options) {
             let measureType = option.measureType;
             let $option = $('<div   data-type="' + measureType + '" class="jmv-variable-editor-widget-option">').appendTo(this.$types);
@@ -82,20 +95,59 @@ const DataVarWidget = Backbone.View.extend({
             this.resources[option.measureType] = { $option : $option, $input : $input };
         }
 
-        this.$typesHighlight = $('<div class="jmv-variable-editor-widget-types-highlight"></div>').appendTo(this.$types);
+
 
         this.model.on('change:dataType',    event => this._setOptions(event.changed.dataType, this.model.get('measureType'), this.model.get('levels')));
         this.model.on('change:measureType', event => this._setOptions(this.model.get('dataType'), event.changed.measureType, this.model.get('levels')));
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
         this.model.on('change:ids', event => this._updateHighlightPosition());
+        this.model.on('change:missingValues', event => {
+            let label = '';
+            let missings = this.model.get('missingValues');
+            if (missings !== null) {
+                let c = 0;
+                for (let i = 0; i < missings.length; i++) {
+                    let part = missings[i].trim();
+                    if (part.startsWith('==')) {
+                        part = part.substring(2).trim();
+                        if (part.startsWith('"'))
+                            part = part.replace(/"/gi, '');
+                        else if (part.startsWith("'"))
+                            part = part.replace(/'/gi, '');
+                    }
+
+                    if (part !== '') {
+                        if (c % 2 === 0) {
+                            label = label + part;
+                        }
+                        else {
+                            label = label + '<span>' + part + '</span>';
+                        }
+                        c += 1;
+                    }
+
+
+                    /*if (part !== '')
+                        label = label + part;
+
+                    if (i < missings.length - 1 && part !== '')
+                        label = label + ', ';
+                    else if (i >= missings.length - 1 && part === '')
+                        label = label.substring(0, label.length-2);*/
+                }
+            }
+            this.$missingValueButton.find('.list').html(label);
+        });
 
         this.model.on('change:autoApply', event => {
             if (this.model.get('autoApply'))
                 tarp.hide('levels');
         });
     },
-
+    setParent(parent) {
+        this.editorWidget = parent;
+    },
     _moveUp() {
         if (this.attached === false)
             return;
@@ -166,13 +218,16 @@ const DataVarWidget = Backbone.View.extend({
     _focusLevelControls() {
         if (this.$levelsCrtl.hasClass('super-focus'))
             return;
-            
+
+        keyboardJS.pause();
         this.model.suspendAutoApply();
         this.$levelsCrtl.addClass('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
+            keyboardJS.resume();
             this.$levelsCrtl.removeClass('super-focus');
             this.model.apply();
         }, () => {
+            keyboardJS.resume();
             this.$levelsCrtl.removeClass('super-focus');
             this.model.apply();
         });

@@ -544,6 +544,7 @@ class ModTracker:
         column_schema.dataType = column.data_type.value
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
+        column_schema.missingValues[:] = column.missing_values
 
         if column.column_type is ColumnType.FILTER:
             column_schema.width = 78
