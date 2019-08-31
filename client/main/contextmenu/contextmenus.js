@@ -15,7 +15,11 @@ const createRowMenuItems = function(plural) {
             new ContextMenuButton({ title: 'Paste', name: 'paste', iconId: 'paste' })
         ]}),
         new RibbonSeparator(),
-        new RibbonGroup({ /*title: "Awesome", titlePosition: "top",*/ orientation: 'vertical', items: [
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Filters', name: 'editFilters', iconId: 'editFilters' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({  orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Insert Row...', name: 'insertRow', iconId: 'insertrow' }),
             new ContextMenuButton({ title: 'Append Row...', name: 'appendRow', iconId: 'appendrow' }),
         ]}),
@@ -32,7 +36,11 @@ const createFilterRowMenuItems = function() {
             new ContextMenuButton({ title: 'Copy', name: 'copy', iconId: 'copy' })
         ]}),
         new RibbonSeparator(),
-        new RibbonGroup({ /*title: "Awesome", titlePosition: "top",*/ orientation: 'vertical', items: [
+        new RibbonGroup({ orientation: 'vertical', items: [
+            new ContextMenuButton({ title: 'Filters', name: 'editFilters', iconId: 'editFilters' })
+        ]}),
+        new RibbonSeparator(),
+        new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: 'Insert Row...', name: 'insertRow', iconId: 'insertrow' }),
             new ContextMenuButton({ title: 'Append Row...', name: 'appendRow', iconId: 'appendrow' }),
         ]}),
