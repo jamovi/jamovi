@@ -76,7 +76,9 @@ class Parser(ReadStatParser):
 
         width = variable.display_width * 8
 
-        if width < 32:
+        if width == 0:
+            width = 100
+        elif width < 32:
             width = 32
         column.width = width
 
