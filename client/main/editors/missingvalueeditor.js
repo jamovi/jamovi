@@ -60,8 +60,8 @@ const MissingValueEditor = function(model) {
     this._init = function() {
         this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
 
-        this.$msg = $('<div class="msg">Treat a value as missing...</div>');
-        this.$contents.append(this.$msg);
+        //this.$msg = $('<div class="msg">Treat a value as missing...</div>');
+        //this.$contents.append(this.$msg);
 
         this.missingValueList = new MissingValueList();
         this.$contents.append(this.missingValueList.$el);

@@ -143,7 +143,7 @@
 }
 
 .jmv-variable-editor-level.selected,
-.jmv-variable-editor-level.selected > .jmv-variable-editor-level-label:not(:focus) {
+.jmv-variable-editor-level.selected > .jmv-variable-editor-level-label:not(:focus):not(:hover) {
     background-color: #B5CAEF ;
 }
 
@@ -212,44 +212,69 @@
     height: 100%;
     outline: none;
     margin-right: 5px;
+    border: 1px solid transparent;
+    /* line-height: 1.5; */
+    height: 1.4em;
+}
+
+.jmv-variable-editor-level-label:focus, .jmv-variable-editor-level-label:hover {
+    background-color: rgb(230, 241, 255);
+    border-color: rgb(62, 109, 169);
+    border-radius: 3px;
+    border: 1px solid rgb(62, 109, 169);
 }
 
 .missing-values {
     display: flex;
     align-items: center;
+    padding-right: 15px;
 }
 
 .missing-values .label {
     display: inline;
     margin-right: 10px;
+    white-space: nowrap;
 }
 
 .missing-values .list {
-    background-color: #ffffff;
-    padding-left: 5px;
+    /* background-color: #ffffff; */
+    padding-left: 0px;
     line-height: 1.6em;
-    width: 140px;
-    border: 1px solid #b5b5b5;
+    /*width: 140px;*/
+    border: 1px solid transparent;
     border-radius: 0px;
     transition: .2s background-color, .2s border-color, .2s border-radius;
     height: 1.6em;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+
+}
+
+.missing-values .list:empty {
+    background-color: #ffffff;
+    border: 1px solid rgb(219, 219, 219);
+    min-width: 100px;
 }
 
 .missing-values .list:hover {
     background-color: rgb(230, 241, 255);
     border-color: rgb(62, 109, 169);
     border-radius: 3px;
+    border: 1px solid rgb(62, 109, 169);
 }
 
 .missing-values .list span {
-    background-color: rgba(149, 151, 208, 0.13);
-    margin: 0 5px;
+    background-color: rgba(145, 145, 145, 0.13);
+    margin: 0 0 0 3px;
     padding: 0 5px;
     /* color: rgba(0, 0, 0, 0.8); */
     border-right: 1px solid #d7d7d7;
     border-left: 1px solid #d7d7d7;
+    border: 1px solid #d7d7d7;
     /* height: 110%; */
+}
+
+.missing-values .list span:first-child {
+    margin: 0 0 0 1px;
 }

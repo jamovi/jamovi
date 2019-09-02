@@ -28,14 +28,6 @@ const DataVarWidget = Backbone.View.extend({
         this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
-        this.$missingValueButton = $(`
-            <div class="missing-values">
-                <div class="label">Missing</div>
-                <div class="list">empty, -99, &lt; -1</div>
-            </div>`).appendTo(this.$left);
-        this.$missingValueButton.find('.list').on('click', () => {
-            this.$el.trigger('edit:missing', this.missingValueEditor);
-        });
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
         this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$levelsCrtl);
@@ -117,24 +109,8 @@ const DataVarWidget = Backbone.View.extend({
                             part = part.replace(/'/gi, '');
                     }
 
-                    if (part !== '') {
-                        if (c % 2 === 0) {
-                            label = label + part;
-                        }
-                        else {
-                            label = label + '<span>' + part + '</span>';
-                        }
-                        c += 1;
-                    }
-
-
-                    /*if (part !== '')
-                        label = label + part;
-
-                    if (i < missings.length - 1 && part !== '')
-                        label = label + ', ';
-                    else if (i >= missings.length - 1 && part === '')
-                        label = label.substring(0, label.length-2);*/
+                    if (part !== '')
+                        label = label + '<span>' + part + '</span>';
                 }
             }
             this.$missingValueButton.find('.list').html(label);
@@ -147,6 +123,14 @@ const DataVarWidget = Backbone.View.extend({
     },
     setParent(parent) {
         this.editorWidget = parent;
+        this.$missingValueButton = $(`
+            <div class="missing-values">
+                <div class="label">Missing Values</div>
+                <div class="list"></div>
+            </div>`).appendTo(this.editorWidget.$footer);
+        this.$missingValueButton.find('.list').on('click', () => {
+            this.$el.trigger('edit:missing', this.missingValueEditor);
+        });
     },
     _moveUp() {
         if (this.attached === false)
