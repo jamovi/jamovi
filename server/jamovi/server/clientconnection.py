@@ -6,9 +6,13 @@ from .session import NoSuchInstanceException
 
 from tornado.websocket import WebSocketHandler
 
-from . import jamovi_pb2 as jcoms
-import asyncio
+from . import jamovi_pb2 as coms
+from .jamovi_pb2 import ComsMessage
+from .jamovi_pb2 import Status as MessageStatus
+from .jamovi_pb2 import InstanceRequest
+from .jamovi_pb2 import InstanceResponse
 
+import asyncio
 import logging
 
 log = logging.getLogger(__name__)
@@ -29,31 +33,37 @@ class ClientConnection(WebSocketHandler):
         return True
 
     def open(self, instance_id):
+        log.debug('%s', 'Websocket opened')
         self._instance_id = instance_id
         ClientConnection.number_of_connections += 1
         self.set_nodelay(True)
 
     def on_close(self):
+        log.debug('%s %s %s', 'Websocket closed', self.close_code, self.close_reason)
         ClientConnection.number_of_connections -= 1
         for listener in self._close_listeners:
-            listener()
+            # close_code comes through as None when it's not a clean disconnection
+            # we treat it special because electron shuts down the websocket uncleanly
+            # when the computer goes to sleep, and we don't want to garbage collect
+            # the instance in that situation
+            listener(self.close_code is not None)
 
     def on_message(self, m_bytes):
         asyncio.ensure_future(self.on_message_async(m_bytes))
 
     async def on_message_async(self, m_bytes):
         try:
-            message = jcoms.ComsMessage()
+            message = ComsMessage()
             message.ParseFromString(m_bytes)
             if not message.payloadType:
                 # should log bad request
                 return
-            clas = getattr(jcoms, message.payloadType)
+            clas = getattr(coms, message.payloadType)
             request = clas()
             request.ParseFromString(message.payload)
             self._transactions[message.id] = request
 
-            if type(request) == jcoms.InstanceRequest:
+            if type(request) == InstanceRequest:
                 if message.instanceId == '':
                     instance = self._session.create()  # create new
                 elif message.instanceId not in self._session:
@@ -61,11 +71,12 @@ class ClientConnection(WebSocketHandler):
                 else:
                     instance = self._session[message.instanceId]
                 instance.set_coms(self)
-                response = jcoms.InstanceResponse()
+                response = InstanceResponse()
                 response.instanceId = instance.id
                 self.send(response, instance.id, request)
             else:
                 instance = self._session[message.instanceId]
+                instance.set_coms(self)
                 await instance.on_request(request)
         except NoSuchInstanceException:
             self.send_error(
@@ -81,7 +92,7 @@ class ClientConnection(WebSocketHandler):
         if message is None and response_to is None:
             return
 
-        m = jcoms.ComsMessage()
+        m = ComsMessage()
 
         if instance_id is not None:
             m.instanceId = instance_id
@@ -101,9 +112,9 @@ class ClientConnection(WebSocketHandler):
             m.payloadType = message.__class__.__name__
 
         if complete:
-            m.status = jcoms.Status.Value('COMPLETE')
+            m.status = MessageStatus.Value('COMPLETE')
         else:
-            m.status = jcoms.Status.Value('IN_PROGRESS')
+            m.status = MessageStatus.Value('IN_PROGRESS')
 
         m.progress = int(progress[0])
         m.progressTotal = int(progress[1])
@@ -112,7 +123,7 @@ class ClientConnection(WebSocketHandler):
 
     def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
 
-        m = jcoms.ComsMessage()
+        m = ComsMessage()
 
         if instance_id is not None:
             m.instanceId = instance_id
@@ -132,7 +143,7 @@ class ClientConnection(WebSocketHandler):
         if cause is not None:
             m.error.cause = cause
 
-        m.status = jcoms.Status.Value('ERROR')
+        m.status = MessageStatus.Value('ERROR')
 
         self.write_message(m.SerializeToString(), binary=True)
 

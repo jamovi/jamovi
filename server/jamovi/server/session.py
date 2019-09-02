@@ -156,14 +156,31 @@ class Session(dict):
         async def gc(self):
             try:
                 timeout = conf.get('instance_timeout', '')
-                timeout = int(timeout)
+                timeout = float(timeout)
             except Exception:
-                timeout = 3
+                timeout = 3.0
+
+            try:
+                timeout_unclean = conf.get('instance_timeout_unclean', '')
+                timeout_unclean = float(timeout_unclean)
+            except Exception:
+                # we use inf with electron, because it disconnects uncleanly
+                # when the computer goes to sleep. this lets it resume the
+                # connection when it awakes without it being gc'ed
+                timeout_unclean = float('inf')
+
+            if timeout_unclean < timeout:
+                timeout_unclean = timeout
 
             while self._running:
                 await asyncio.sleep(.3)
+
                 for id, instance in self.items():
-                    if instance.inactive_for > timeout:
+                    inactive_for = instance.inactive_for
+                    if inactive_for == 0:
+                        continue
+                    if ((instance.inactive_clean is False and inactive_for > timeout_unclean)
+                            or (instance.inactive_clean is True and inactive_for > timeout)):
                         log.info('%s %s', 'destroying instance:', id)
                         self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                         instance.close()

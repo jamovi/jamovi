@@ -32,9 +32,9 @@ import posixpath
 import math
 import yaml
 import logging
-import time
 import asyncio
 import functools
+from time import monotonic
 from itertools import islice
 
 from tempfile import NamedTemporaryFile
@@ -78,6 +78,7 @@ class Instance:
         self._mod_tracker = ModTracker(self._data)
 
         self._inactive_since = None
+        self._inactive_clean = True
 
         self._data.analyses.add_results_changed_listener(self._on_results)
 
@@ -194,10 +195,11 @@ class Instance:
         if self._mm is not None:
             self._mm.close()
 
-    def _close(self):
+    def _close(self, clean=True):
         self._coms.remove_close_listener(self._close)
         self._coms = None
-        self._inactive_since = time.time()
+        self._inactive_clean = clean
+        self._inactive_since = monotonic()
 
     @property
     def is_active(self):
@@ -208,7 +210,11 @@ class Instance:
         if self._inactive_since is None:
             return 0
         else:
-            return time.time() - self._inactive_since
+            return monotonic() - self._inactive_since
+
+    @property
+    def inactive_clean(self):
+        return self._inactive_clean
 
     @property
     def analyses(self):
