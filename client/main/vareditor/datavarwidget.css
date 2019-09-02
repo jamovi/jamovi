@@ -213,7 +213,7 @@
     outline: none;
     margin-right: 5px;
     border: 1px solid transparent;
-    /* line-height: 1.5; */
+    transition: .2s background-color, .2s border-color, .2s border-radius;
     height: 1.4em;
 }
 

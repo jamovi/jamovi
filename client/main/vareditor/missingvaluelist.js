@@ -52,7 +52,7 @@ const MissingValueList = function() {
 
     this.items = [];
     this.populate = function(values) {
-        if (values.length === this.items.length) {
+        if (values !== null && values.length === this.items.length) {
             for (let i = 0; i < this.items.length; i++) {
                 let item = this.items[i];
                 item.setValue(values[i]);
@@ -61,11 +61,13 @@ const MissingValueList = function() {
         else {
             this.$list.empty();
             this.items = [];
-            for (let value of values) {
-                let item = new MissingValueListItem(value);
-                this.items.push(item);
-                item.$el.appendTo(this.$list);
-                this._createItemEvents(item);
+            if (values !== null) {
+                for (let value of values) {
+                    let item = new MissingValueListItem(value);
+                    this.items.push(item);
+                    item.$el.appendTo(this.$list);
+                    this._createItemEvents(item);
+                }
             }
         }
     };

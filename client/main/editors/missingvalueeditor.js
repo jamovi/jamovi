@@ -70,8 +70,9 @@ const MissingValueEditor = function(model) {
             this._focusFormulaControls();
             let values = this.model.get('missingValues');
             let newValues = [];
-            for (let value of values) {
-                newValues.push(value);
+            if (values !== null) {
+                for (let value of values)
+                    newValues.push(value);
             }
             newValues.push('');
             this._internalChange = true;
@@ -82,9 +83,11 @@ const MissingValueEditor = function(model) {
             this._focusFormulaControls();
             let values = this.model.get('missingValues');
             let newValues = [];
-            for (let i = 0; i < values.length; i++) {
-                if (i !== index)
-                    newValues.push(values[i]);
+            if (values !== null) {
+                for (let i = 0; i < values.length; i++) {
+                    if (i !== index)
+                        newValues.push(values[i]);
+                }
             }
             this._internalChange = true;
             this.model.set('missingValues', newValues);

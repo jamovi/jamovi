@@ -180,6 +180,8 @@ const VariableModel = Backbone.Model.extend({
                     }
                     else if (prop === 'levels')
                         this._filterLevels(column);
+                    else if (prop === 'missingValues')
+                        this._filterMissingValues(column);
                     else if (column[prop] !== this.original[prop])
                         this.original[prop] = null;
                 }
@@ -212,6 +214,18 @@ const VariableModel = Backbone.Model.extend({
                     level.label = null;
             }
         }
+    },
+    _filterMissingValues(column) {
+        if (this.original.missingValues === null)
+            return;
+
+        this.original.missingValues = this.original.missingValues.filter(a => {
+            return column.missingValues.some(b => {
+                return b === a;
+            });
+        });
+        if (this.original.missingValues.length === 0)
+            this.original.missingValues = null;
     },
     _constructAppyValues(column, values) {
         let level = null;
