@@ -38,11 +38,20 @@ let infoBox = document.createElement('jmv-infobox');
 infoBox.style.display = 'none';
 
 coms.on('failure', (event) => {
-    infoBox.setup({
-        title: 'Connection lost',
-        message: 'Your connection has been lost or has timed out. Please refresh the page to continue.',
-        status: 'disconnected',
-    });
+    if (host.isElectron) {
+        infoBox.setup({
+            title: 'Connection lost',
+            message: 'An unexpected error has occured, and jamovi must now close.',
+            status: 'terminated',
+        });
+    }
+    else {
+        infoBox.setup({
+            title: 'Connection lost',
+            message: 'Your connection has been lost. Please refresh the page to continue.',
+            status: 'disconnected',
+        });
+    }
     infoBox.style.display = null;
 });
 
