@@ -74,7 +74,15 @@ void Engine::start()
 
     // start the message loop thread
     thread t(&Engine::messageLoop, this);
+
+#ifndef _WIN32
+    // this monitors the stdin, and ends the process when the stdin closes
+    // i.e. when the server ends. this is just one of several mechanisms we
+    // use to end the engine processes when the server finishes.
+    // semPlot won't run correctly with this thread running, on windows
+    // hence the #ifndef ... who knows why.
     thread u(&Engine::monitorStdinLoop, this);
+#endif
 
     // locks for sharing between threads
     unique_lock<mutex> lock(_mutex, std::defer_lock);
