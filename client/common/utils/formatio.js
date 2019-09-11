@@ -188,6 +188,8 @@ function _imagify(el) {
             let image = new Image();
             image.onload = function() {
                 let context = canvas.getContext('2d');
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, canvas.width, canvas.height);
                 context.drawImage(image, 0, 0, sourceWidth, sourceHeight,
                                          margin, margin, destWidth, destHeight);
                 resolve(canvas.toDataURL());

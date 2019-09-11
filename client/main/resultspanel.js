@@ -515,11 +515,17 @@ const ResultsPanel = Backbone.View.extend({
         if (event.op === 'copy') {
 
             let options = {
-                // images: 'absolute',  // might be necessary for desktop version of word on macos
                 margin: '24',
                 docType: true,
                 exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
             };
+
+            if (host.isElectron) {
+                // this is necessary for compatibility with Office 2010
+                // and possibly for other versions, but we haven't explored
+                // exhaustively.
+                options.images = 'absolute';
+            }
 
             this._getContent(event.address, options).then((content) => {
 
