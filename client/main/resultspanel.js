@@ -233,6 +233,9 @@ const ResultsPanel = Backbone.View.extend({
             let format;
             try {
                 format = JSON.parse(this.model.settings().get('format'));
+                // we added .pt later
+                if ( ! ('pt' in format))
+                    format.pt = 'dp';
             }
             catch (e) {
                 format = {t:'sf',n:3,pt:'dp',p:3};
