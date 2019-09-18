@@ -9,43 +9,13 @@
 .jmv-variable-editor-widget-left {
     display: flex ;
     flex-direction: column ;
-}
-
-.jmv-variable-editor-widget-types {
-    display: inline-block ;
-    width: 200px ;
-    margin-bottom: 10px;
-}
-
-.jmv-variable-editor-widget-types-highlight {
-    position: absolute ;
-    top: -4px ;
-    padding: 2px ;
-    width: 32px ;
-    height: 0 ;
-    background-color: #E8E8E8 ;
-    transition: all .2s ;
-    width: 150px ;
+    padding-top: 3px;
+    width: 200px;
 }
 
 .jmv-variable-editor-autotype {
     display: inline-block ;
     margin: 0px 0 0px 4px;
-}
-
-.jmv-variable-editor-widget-option {
-    padding: 2px ;
-    vertical-align: middle;
-    position: relative ;
-    /*z-index: 1 ;*/
-}
-
-.jmv-variable-editor-widget-option:hover {
-    background-color: #F0F0F0 ;
-}
-
-.jmv-variable-editor-widget-option.selected:hover {
-    background-color: #E8E8E8 ;
 }
 
 .jmv-variable-editor-widget span {
@@ -59,14 +29,12 @@
 .jmv-vareditor-datatype {
     display: flex ;
     align-items: baseline;
-    margin-bottom: 7px;
+    margin-bottom: 12px;
 }
 
 .jmv-vareditor-transform {
     display: flex ;
-    /*justify-content: space-between ;*/
     align-items: baseline;
-    /*margin-top: 7px ;*/
 }
 
 .jmv-vareditor-datatype label {
@@ -74,34 +42,7 @@
 }
 
 .jmv-vareditor-datatype select{
-    /*width: 65%;*/
     flex-grow: 1;
-}
-
-.jmv-variable-editor-variable-type {
-    display: inline-block ;
-    width: 20px ;
-    height: 20px ;
-    background-size: 100% ;
-    vertical-align: top ;
-    margin-right: 6px ;
-    vertical-align: top ;
-}
-
-.jmv-variable-editor-variable-type[data-type="nominal"] {
-    background-image: url('../assets/variable-nominal.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="ordinal"] {
-    background-image: url('../assets/variable-ordinal.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="continuous"] {
-    background-image: url('../assets/variable-continuous.svg');
-}
-
-.jmv-variable-editor-variable-type[data-type="id"] {
-    background-image: url('../assets/variable-id.svg');
 }
 
 .jmv-variable-editor-levels-container {
@@ -227,7 +168,7 @@
 .missing-values {
     display: flex;
     align-items: center;
-    padding-right: 15px;
+    max-width: 200px;
 }
 
 .missing-values .label {
@@ -237,10 +178,8 @@
 }
 
 .missing-values .list {
-    /* background-color: #ffffff; */
     padding-left: 0px;
     line-height: 1.6em;
-    /*width: 140px;*/
     border: 1px solid transparent;
     border-radius: 0px;
     transition: .2s background-color, .2s border-color, .2s border-radius;
@@ -255,6 +194,7 @@
     background-color: #ffffff;
     border: 1px solid rgb(219, 219, 219);
     min-width: 100px;
+    flex-grow: 1;
 }
 
 .missing-values .list:hover {
@@ -268,13 +208,50 @@
     background-color: rgba(145, 145, 145, 0.13);
     margin: 0 0 0 3px;
     padding: 0 5px;
-    /* color: rgba(0, 0, 0, 0.8); */
     border-right: 1px solid #d7d7d7;
     border-left: 1px solid #d7d7d7;
     border: 1px solid #d7d7d7;
-    /* height: 110%; */
 }
 
 .missing-values .list span:first-child {
     margin: 0 0 0 1px;
+}
+
+
+.jmv-variable-editor-datavarwidget .measure-box {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+
+.jmv-variable-editor-datavarwidget .measure-box #type {
+    margin-left: 5px;
+    flex-grow: 1;
+}
+
+.jmv-variable-editor-datavarwidget .measure-box .icon {
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    background-repeat: no-repeat;
+    background-size: 100%;
+    background-position: center;
+    align-self: center;
+}
+
+.jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='id'] {
+    background-image: url('../assets/variable-id.svg');
+}
+
+.jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='continuous'] {
+    background-image: url('../assets/variable-continuous.svg');
+}
+
+.jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='nominal'] {
+    background-image: url('../assets/variable-nominal.svg');
+}
+
+.jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='ordinal'] {
+    background-image: url('../assets/variable-ordinal.svg');
 }
