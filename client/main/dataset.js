@@ -272,6 +272,8 @@ const DataSetModel = Backbone.Model.extend({
             if (params.trimLevels === undefined)
                 params.trimLevels = true;
 
+            if (params.missingValues === undefined)
+                params.missingValues = [];
 
             let columnType = params.columnType;
             if (columnType === undefined)
@@ -507,6 +509,11 @@ const DataSetModel = Backbone.Model.extend({
                 columnPB.formula = values.formula;
             else
                 columnPB.formula = column.formula;
+
+            if ('missingValues' in values)
+                columnPB.missingValues = values.missingValues;
+            else
+                columnPB.missingValues = column.missingValues;
 
             if (values.measureType !== 'continuous' && values.levels) {
                 columnPB.hasLevels = true;
@@ -1045,6 +1052,7 @@ const DataSetModel = Backbone.Model.extend({
         column.trimLevels = columnPB.trimLevels;
         column.transform = columnPB.transform;
         column.parentId = columnPB.parentId;
+        column.missingValues = columnPB.missingValues;
 
         let editedCellRanges = new Array(columnPB.editedCellRanges.length);
         for (let i = 0; i < editedCellRanges.length; i++) {

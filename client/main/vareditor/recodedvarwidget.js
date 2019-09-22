@@ -45,10 +45,46 @@ const RecodedVarWidget = Backbone.View.extend({
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
                 dropdown.hide();
             else
-                dropdown.show(this.$variableList, this.variableList);
+            {
+                this.variableList.setParent(this.$variableList);
+                keyboardJS.pause('variable-list');
+                dropdown.show(this.$variableList, this.variableList).then(() => {
+                    keyboardJS.resume('variable-list');
+                });
+            }
             event.preventDefault();
             event.stopPropagation();
             this.$variableList.focus();
+        });
+
+        this.$variableList.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        this.$variableList.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        this.$variableList.on('change', event => {
+            this.model.set('parentId', parseInt(this.$variableList.val()));
+        });
+
+        this.$variableList.on('keydown', event => {
+            if (event.key === 'Enter') {
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
+                    dropdown.hide();
+                else
+                {
+                    this.variableList.setParent(this.$variableList);
+                    keyboardJS.pause('variable-list');
+                    dropdown.show(this.$variableList, this.variableList).then(() => {
+                        keyboardJS.resume('variable-list');
+                    });
+                }
+                event.stopPropagation();
+                event.preventDefault();
+                this.$variableList.focus();
+            }
         });
 
         this.variableList.$el.on('selected-variable', (event, variable) => {
@@ -149,7 +185,7 @@ const RecodedVarWidget = Backbone.View.extend({
             let parentId = this.model.get('parentId');
             let column = dataset.getColumnById(parentId);
             if (column) {
-                this.$variableList.val(column.name);
+                this.$variableList.val(column.id);
                 this.$variableIcon.attr('variable-type', column.measureType);
                 this.$variableIcon.attr('data-type', column.dataType);
             }
@@ -216,19 +252,19 @@ const RecodedVarWidget = Backbone.View.extend({
         this.variableList.populate(columns);
 
         this.$variableList.empty();
-        this.$variableList.append($('<option>None</option>'));
+        this.$variableList.append($('<option value="0">None</option>'));
         for (let i = 0; i < columns.length; i++)
-            this.$variableList.append($('<option>' + columns[i].name + '</option>'));
+            this.$variableList.append($('<option value=' + columns[i].id + '>' + columns[i].name + '</option>'));
 
         let parentId = this.model.get('parentId');
         let column = dataset.getColumnById(parentId);
         if (column) {
-            this.$variableList.val(column.name);
+            this.$variableList.val(column.id);
             this.$variableIcon.attr('variable-type', column.measureType);
             this.$variableIcon.attr('data-type', column.dataType);
         }
         else {
-            this.$variableList.val('None');
+            this.$variableList.val(0);
             this.$variableIcon.attr('variable-type', 'none');
             this.$variableIcon.attr('data-type', 'none');
         }

@@ -81,6 +81,7 @@ const VariableModel = Backbone.Model.extend({
         trimLevels: true,
         autoApply: true,
         transform: 0, // zero means 'none'
+        missingValues: ["== 'damo'", "<= 200"],
         parentId: 0
     },
     editLevelLabel(index, label) {
@@ -156,7 +157,8 @@ const VariableModel = Backbone.Model.extend({
             importName : null,
             trimLevels : null,
             transform : null,
-            parentId : null
+            parentId : null,
+            missingValues : null
         };
 
         let first = true;
@@ -178,6 +180,8 @@ const VariableModel = Backbone.Model.extend({
                     }
                     else if (prop === 'levels')
                         this._filterLevels(column);
+                    else if (prop === 'missingValues')
+                        this._filterMissingValues(column);
                     else if (column[prop] !== this.original[prop])
                         this.original[prop] = null;
                 }
@@ -210,6 +214,18 @@ const VariableModel = Backbone.Model.extend({
                     level.label = null;
             }
         }
+    },
+    _filterMissingValues(column) {
+        if (this.original.missingValues === null)
+            return;
+
+        this.original.missingValues = this.original.missingValues.filter(a => {
+            return column.missingValues.some(b => {
+                return b === a;
+            });
+        });
+        if (this.original.missingValues.length === 0)
+            this.original.missingValues = null;
     },
     _constructAppyValues(column, values) {
         let level = null;
@@ -283,7 +299,8 @@ const VariableModel = Backbone.Model.extend({
                         importName: this.attributes.importName,
                         trimLevels: this.attributes.trimLevels,
                         transform: this.attributes.transform,
-                        parentId: this.attributes.parentId
+                        parentId: this.attributes.parentId,
+                        missingValues: this.attributes.missingValues
                     };
 
                     this.original = latestValues;

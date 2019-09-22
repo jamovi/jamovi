@@ -41,6 +41,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
             transform_field['suffix'] = transform.suffix
 
             transform_field['formula'] = transform.formula
+            print(transform_field['formula'])
             transform_field['formulaMessage'] = transform.formula_message
             transform_field['measureType'] = MeasureType.stringify(transform.measure_type)
 
@@ -74,6 +75,9 @@ def write(data, path, prog_cb, html=None, is_template=False):
             field['description'] = column.description
             field['transform'] = column.transform
             field['edits'] = column.cell_tracker.edited_cell_ranges
+
+            field['missingValues'] = column.missing_values
+            print(field['missingValues'])
 
             if column.is_filter:
                 field['filterNo'] = column.filter_no
@@ -350,6 +354,7 @@ def read(data, path, prog_cb):
             column.transform = meta_column.get('transform', 0)
             column.parent_id = meta_column.get('parentId', 0)
             column.cell_tracker.edited_cell_ranges = meta_column.get('edits', [])
+            column.missing_values = meta_column.get('missingValues', [])
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', -1)
