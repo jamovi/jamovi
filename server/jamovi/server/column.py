@@ -40,6 +40,7 @@ class Column:
         self._transform = 0  # zero mean 'none'
         self._parent_id = 0  # zero means 'none'
         self._cell_tracker = CellTracker()
+        self._missing_values = []
 
         self._node = None
         self._fields = ('name',)  # for AST compatibility
@@ -148,6 +149,14 @@ class Column:
     @parent_id.setter
     def parent_id(self, parent_id):
         self._parent_id = parent_id
+
+    @property
+    def missing_values(self):
+        return self._missing_values
+
+    @missing_values.setter
+    def missing_values(self, missing_values):
+        self._missing_values = missing_values
 
     @property
     def description(self):

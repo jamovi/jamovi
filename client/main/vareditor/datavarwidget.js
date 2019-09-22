@@ -7,7 +7,9 @@ Backbone.$ = $;
 const DataVarLevelWidget = require('./datavarlevelwidget');
 const tarp = require('../utils/tarp');
 const dropdown = require('./dropdown');
-const TransformList = require('./transformlist');
+const MissingValueEditor = require('../editors/missingvalueeditor');
+const keyboardJS = require('keyboardjs');
+const MeasureList = require('./measurelist');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -23,10 +25,22 @@ const DataVarWidget = Backbone.View.extend({
         this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
         this.$left = $('<div class="jmv-variable-editor-widget-left"></div>').appendTo(this.$body);
 
-        this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
+        this._createMeasureTypeListBox();
+
+        //this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
         this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
-        this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto adjusting)</div>').appendTo(this.$left);
+        this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
+
+        this.$dataTypeList.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        this.$dataTypeList.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        this._createMissingValuesCtrl();
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
         this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$levelsCrtl);
@@ -45,7 +59,6 @@ const DataVarWidget = Backbone.View.extend({
             }
         });
 
-
         this.$moveUp.on('click', event => this._moveUp());
         this.$moveDown.on('click', event => this._moveDown());
         this.selectedLevelIndex = -1;
@@ -55,47 +68,133 @@ const DataVarWidget = Backbone.View.extend({
             this.model.set({ dataType: dt, autoMeasure: false });
         });
 
-        let options = [
-            { label: 'Continuous',   measureType: 'continuous' },
-            { label: 'Ordinal',      measureType: 'ordinal' },
-            { label: 'Nominal',      measureType: 'nominal' },
-            { label: 'ID',           measureType: 'id' },
-        ];
-
-        this.resources = { };
-
-        let unique = Math.random();
-
-        let optionClicked = (event) => {
-            this.model.set({ measureType: event.data, autoMeasure: false });
-        };
-
-        for (let option of options) {
-            let measureType = option.measureType;
-            let $option = $('<div   data-type="' + measureType + '" class="jmv-variable-editor-widget-option">').appendTo(this.$types);
-            let $input  = $('<input data-type="' + measureType + '" name="' + unique + '" type="radio">').appendTo($option);
-            let $icon   = $('<div   data-type="' + measureType + '" class="jmv-variable-editor-variable-type"></div>').appendTo($option);
-            let $label  = $('<span>' + option.label + '</span>').appendTo($option);
-
-            $option.on('click', null, measureType, optionClicked);
-
-            this.resources[option.measureType] = { $option : $option, $input : $input };
-        }
-
-        this.$typesHighlight = $('<div class="jmv-variable-editor-widget-types-highlight"></div>').appendTo(this.$types);
-
         this.model.on('change:dataType',    event => this._setOptions(event.changed.dataType, this.model.get('measureType'), this.model.get('levels')));
         this.model.on('change:measureType', event => this._setOptions(this.model.get('dataType'), event.changed.measureType, this.model.get('levels')));
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
-        this.model.on('change:ids', event => this._updateHighlightPosition());
+        this.model.on('change:missingValues', event => {
+            let label = '';
+            let missings = this.model.get('missingValues');
+            if (missings !== null) {
+                let c = 0;
+                for (let i = 0; i < missings.length; i++) {
+                    let part = missings[i].trim();
+                    if (part.startsWith('==')) {
+                        part = part.substring(2).trim();
+                        if (part.startsWith('"'))
+                            part = part.replace(/"/gi, '');
+                        else if (part.startsWith("'"))
+                            part = part.replace(/'/gi, '');
+                    }
+
+                    if (part !== '')
+                        label = label + '<span>' + part + '</span>';
+                }
+            }
+            this.$missingValueButton.find('.list').html(label);
+        });
 
         this.model.on('change:autoApply', event => {
             if (this.model.get('autoApply'))
                 tarp.hide('levels');
         });
     },
+    setParent(parent) {
+        this.editorWidget = parent;
+    },
+    _createMissingValuesCtrl() {
+        this.missingValueEditor = new MissingValueEditor(this.model);
+        this.$missingValueButton = $(`
+            <div class="missing-values">
+                <div class="label">Missing values</div>
+                <div class="list" tabindex="0"></div>
+            </div>`).appendTo(this.$left);
+        let $list = this.$missingValueButton.find('.list');
+        $list.on('click', () => {
+            this.$el.trigger('edit:missing', this.missingValueEditor);
+        });
 
+        $list.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        $list.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        $list.on('keypress', (event) => {
+            if (event.key === 'Enter') {
+                this.$el.trigger('edit:missing', this.missingValueEditor);
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    },
+    _createMeasureTypeListBox() {
+        this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$left);
+        $('<div class="label">Measure type</div>').appendTo(this.$measureBox);
+        this.$measureIcon = $('<div class="icon"></div>').appendTo(this.$measureBox);
+        this.$measureList = $(`<select id="type">
+                                    <option value="nominal">Nominal</option>
+                                    <option value="ordinal">Ordinal</option>
+                                    <option value="continuous">Continuous</option>
+                                    <option value="id">ID</option>
+                                </select>`).appendTo(this.$measureBox);
+        this.$measureList.val('nominal');
+
+
+        this.measureList = new MeasureList(false);
+        this.$measureList.on('mousedown', (event) => {
+            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+                dropdown.hide();
+            else {
+                this.measureList.setParent(this.$measureList);
+                //keyboardJS.pause('measure-list');
+                dropdown.show(this.$measureList, this.measureList).then(() => {
+                    //keyboardJS.resume('measure-list');
+                });
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            this.$measureList.focus();
+        });
+
+        this.measureList.$el.on('selected-measure-type', (event, measureType) => {
+            this.model.set('measureType', measureType);
+            dropdown.hide();
+        });
+        this.$measureIcon.attr('measure-type', this.model.get('measureType'));
+
+        this.$measureList.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        this.$measureList.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        this.$measureList.on('change', event => {
+            this.model.set('measureType', this.$measureList.val());
+        });
+
+        this.$measureList.on('keydown', event => {
+            if (event.key === 'Enter') {
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+                    dropdown.hide();
+                else
+                {
+                    this.measureList.setParent(this.$measureList);
+                    //keyboardJS.pause('measure-list');
+                    dropdown.show(this.$measureList, this.measureList).then(() => {
+                        //keyboardJS.resume('measure-list');
+                    });
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                this.$measureList.focus();
+            }
+        });
+    },
     _moveUp() {
         if (this.attached === false)
             return;
@@ -148,31 +247,19 @@ const DataVarWidget = Backbone.View.extend({
             this.$moveDown.addClass('disabled');
         }
     },
-    _updateHighlightPosition() {
-        let resource = this.resources[this.model.get('measureType')];
-        if (resource) {
-            let $option = resource.$option;
-            if ($option) {
-                let css = $option.position();
-                css.width = $option.width();
-                css.height = $option.height();
-                css.visibility = 'visible';
-                this.$typesHighlight.css(css);
-            }
-        }
-        else
-            this.$typesHighlight.css('visibility', 'hidden');
-    },
     _focusLevelControls() {
         if (this.$levelsCrtl.hasClass('super-focus'))
             return;
-            
+
+        keyboardJS.pause();
         this.model.suspendAutoApply();
         this.$levelsCrtl.addClass('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
+            keyboardJS.resume();
             this.$levelsCrtl.removeClass('super-focus');
             this.model.apply();
         }, () => {
+            keyboardJS.resume();
             this.$levelsCrtl.removeClass('super-focus');
             this.model.apply();
         });
@@ -182,28 +269,8 @@ const DataVarWidget = Backbone.View.extend({
             return;
 
         this.$dataTypeList.val(dataType);
-        this.$typesHighlight.css('visibility', 'hidden');
-        for (let t in this.resources) {
-            let $option = this.resources[t].$option;
-
-            if (t === measureType) {
-                let $input  = this.resources[measureType].$input;
-                $input.prop('checked', true);
-                $option.addClass('selected');
-
-                let css = $option.position();
-                css.width = $option.width();
-                css.height = $option.height();
-                css.visibility = 'visible';
-
-                this.$typesHighlight.css(css);
-            }
-            else {
-                let $input  = this.resources[t].$input;
-                $input.prop('checked', false);
-                $option.removeClass('selected');
-            }
-        }
+        this.$measureIcon.attr('measure-type', measureType);
+        this.$measureList.val(measureType);
 
         if (levels === null || levels.length === 0) {
             this.$levels.empty();

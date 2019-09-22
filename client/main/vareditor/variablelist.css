@@ -22,3 +22,7 @@
 .jmv-variable-list-item.hidden {
     display: none;
 }
+
+.jmv-variable-list-item.highlighted {
+    background-color: #DDDDDD;
+}

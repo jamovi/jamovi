@@ -9,6 +9,8 @@ const MeasureListItem = function(measureType, text) {
 
     this.$el = $('<div class="jmv-measure-list-item"></div>');
 
+    this.$el.attr('data-id', measureType);
+
     this.$icon = $('<div class="icon measure-type-' + this.measureType + '"></div>').appendTo(this.$el);
     this.$label = $('<div class="label">' + this.name + '</div>').appendTo(this.$el);
 

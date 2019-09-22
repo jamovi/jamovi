@@ -75,6 +75,8 @@ def write(data, path, prog_cb, html=None, is_template=False):
             field['transform'] = column.transform
             field['edits'] = column.cell_tracker.edited_cell_ranges
 
+            field['missingValues'] = column.missing_values
+
             if column.is_filter:
                 field['filterNo'] = column.filter_no
                 # field['hidden'] = column.hidden
@@ -350,6 +352,7 @@ def read(data, path, prog_cb):
             column.transform = meta_column.get('transform', 0)
             column.parent_id = meta_column.get('parentId', 0)
             column.cell_tracker.edited_cell_ranges = meta_column.get('edits', [])
+            column.missing_values = meta_column.get('missingValues', [])
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', -1)

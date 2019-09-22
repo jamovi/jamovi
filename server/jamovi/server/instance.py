@@ -1177,6 +1177,7 @@ class Instance:
             column.trim_levels = column_pb.trimLevels
             column.transform = column_pb.transform
             column.parent_id = column_pb.parentId
+            column.missing_values = list(column_pb.missingValues)
 
             name = column_pb.name
             if has_name is False and column.column_type == ColumnType.RECODED:
@@ -1639,6 +1640,7 @@ class Instance:
                 column.transform = column_pb.transform
                 column.parent_id = column_pb.parentId
                 column.width = column_pb.width
+                column.missing_values = list(column_pb.missingValues)
 
                 if old_type == ColumnType.NONE and column.column_type == ColumnType.RECODED:
                     new_column_name = 'T' + str(self._data.get_column_count_by_type(ColumnType.RECODED))
@@ -2355,6 +2357,7 @@ class Instance:
         column_schema.dataType = column.data_type.value
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
+        column_schema.missingValues[:] = column.missing_values
         column_schema.width = column.width
 
         column_schema.dps = column.dps

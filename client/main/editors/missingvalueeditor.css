@@ -1,0 +1,19 @@
+
+.jmv-missing-value-editor > .contents {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 240px;
+    box-sizing: border-box;
+    flex-direction: column;
+    overflow: auto;
+}
+
+.jmv-missing-value-editor .msg {
+    flex-grow: 0;
+    flex-shrink: 1;
+    margin: 20px 240px 2px 0px;
+    font-size: 15px;
+    color: #909090;
+    font-weight: 100;
+}
