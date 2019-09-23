@@ -16,6 +16,7 @@ const MissingValueEditor = function(model) {
 
     this.refresh = function() {
         this.missingValueList.populate(this.model.get('missingValues'));
+        this.missingValueList.$el.find('add-missing-value').focus();
     };
 
     this.isAttached = function() {
@@ -60,11 +61,10 @@ const MissingValueEditor = function(model) {
     this._init = function() {
         this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
 
-        //this.$msg = $('<div class="msg">Treat a value as missing...</div>');
-        //this.$contents.append(this.$msg);
-
         this.missingValueList = new MissingValueList();
         this.$contents.append(this.missingValueList.$el);
+
+        this.missingValueList.$el.find('add-missing-value').focus();
 
         this.missingValueList.$el.on('add-missing-value', () => {
             this._focusFormulaControls();

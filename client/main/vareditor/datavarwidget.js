@@ -32,6 +32,14 @@ const DataVarWidget = Backbone.View.extend({
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
 
+        this.$dataTypeList.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        this.$dataTypeList.blur(() => {
+            keyboardJS.resume();
+        } );
+
         this._createMissingValuesCtrl();
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
@@ -98,11 +106,28 @@ const DataVarWidget = Backbone.View.extend({
         this.missingValueEditor = new MissingValueEditor(this.model);
         this.$missingValueButton = $(`
             <div class="missing-values">
-                <div class="label">Missing Values</div>
-                <div class="list"></div>
+                <div class="label">Missing values</div>
+                <div class="list" tabindex="0"></div>
             </div>`).appendTo(this.$left);
-        this.$missingValueButton.find('.list').on('click', () => {
+        let $list = this.$missingValueButton.find('.list');
+        $list.on('click', () => {
             this.$el.trigger('edit:missing', this.missingValueEditor);
+        });
+
+        $list.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        $list.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        $list.on('keypress', (event) => {
+            if (event.key === 'Enter') {
+                this.$el.trigger('edit:missing', this.missingValueEditor);
+                event.preventDefault();
+                event.stopPropagation();
+            }
         });
     },
     _createMeasureTypeListBox() {
@@ -122,8 +147,13 @@ const DataVarWidget = Backbone.View.extend({
         this.$measureList.on('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
                 dropdown.hide();
-            else
-                dropdown.show(this.$measureList, this.measureList);
+            else {
+                this.measureList.setParent(this.$measureList);
+                //keyboardJS.pause('measure-list');
+                dropdown.show(this.$measureList, this.measureList).then(() => {
+                    //keyboardJS.resume('measure-list');
+                });
+            }
             event.preventDefault();
             event.stopPropagation();
             this.$measureList.focus();
@@ -134,6 +164,36 @@ const DataVarWidget = Backbone.View.extend({
             dropdown.hide();
         });
         this.$measureIcon.attr('measure-type', this.model.get('measureType'));
+
+        this.$measureList.focus(() => {
+            keyboardJS.pause('');
+        } );
+
+        this.$measureList.blur(() => {
+            keyboardJS.resume();
+        } );
+
+        this.$measureList.on('change', event => {
+            this.model.set('measureType', this.$measureList.val());
+        });
+
+        this.$measureList.on('keydown', event => {
+            if (event.key === 'Enter') {
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+                    dropdown.hide();
+                else
+                {
+                    this.measureList.setParent(this.$measureList);
+                    //keyboardJS.pause('measure-list');
+                    dropdown.show(this.$measureList, this.measureList).then(() => {
+                        //keyboardJS.resume('measure-list');
+                    });
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                this.$measureList.focus();
+            }
+        });
     },
     _moveUp() {
         if (this.attached === false)

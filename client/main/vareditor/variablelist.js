@@ -23,7 +23,6 @@ const VariableList = function() {
     this.setParent = function($element) {
         if (this.$parent) {
             this.$parent.off('change', null, this._valueChanged);
-            this.$parent.off('keydown', null, this._keypress);
         }
 
         this.$parent = $element;
@@ -31,7 +30,6 @@ const VariableList = function() {
         this._valueChanged();
 
         this.$parent.on('change', null, this, this._valueChanged);
-        this.$parent.on('keydown', null, this, this._keypress);
     };
 
     this._valueChanged = () => {
@@ -43,22 +41,6 @@ const VariableList = function() {
             $element[0].scrollIntoView(false);
     };
 
-    this._keypress = (event) => {
-        if (event.key === 'Enter') {
-            let $element = this.$el.find('.jmv-variable-list-item.highlighted');
-            let id = parseInt($element.attr('data-id'));
-            if (id === 0)
-                this.$el.trigger('selected-variable', { name: 'None', id: 0 });
-            else {
-                for (let item of this.items) {
-                    if (item.variable.id === id) {
-                        this.$el.trigger('selected-variable', item.variable);
-                        break;
-                    }
-                }
-            }
-        }
-    };
 
     this.populate = function(columns, excludeNone) {
         if (excludeNone)
