@@ -72,6 +72,10 @@
     background-image: url("../assets/analysis-behaviorchange.svg");
 }
 
+.jmv-ribbon-button[data-name="flexplot"] .jmv-ribbon-button-icon {
+    background-image: url("../assets/analysis-flexplot.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../assets/analysis-more.svg");
 }
