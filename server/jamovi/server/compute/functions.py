@@ -248,6 +248,18 @@ def Z(index, x: float):
 
 
 @row_wise
+def ABSZ(index, x: float):
+    # see the transfudgifier
+    return x
+
+
+@row_wise
+def MAXABSZ(index, x: float):
+    # see the transfudgifier
+    return x
+
+
+@row_wise
 def SCALE(index, x: float):
     # see the transfudgifier
     return x

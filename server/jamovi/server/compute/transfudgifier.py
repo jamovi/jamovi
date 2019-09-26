@@ -31,5 +31,30 @@ class Transfudgifier(ast.NodeTransformer):
                     func=ast.Name(id='VSTDEV', ctx=ast.Load()),
                     args=[ node.args[0] ],
                     keywords=kws))
+
+        elif node.func.id == 'MAXABSZ':
+
+            def zabsify(arg):
+                return ast.Call(
+                    func=ast.Name(id='ABSZ', ctx=ast.Load()),
+                    args=[ arg ],
+                    keywords=node.keywords)
+
+            return self.generic_visit(ast.Call(
+                func=ast.Name(id='MAX', ctx=ast.Load()),
+                args=list(map(zabsify, node.args)),
+                keywords=[]))
+
+        elif node.func.id == 'ABSZ':
+
+            return self.generic_visit(ast.Call(
+                func=ast.Name(id='ABS', ctx=ast.Load()),
+                args=[
+                    ast.Call(
+                        func=ast.Name(id='Z', ctx=ast.Load()),
+                        args=node.args,
+                        keywords=node.keywords)],
+                keywords=[]))
+
         else:
             return self.generic_visit(node)

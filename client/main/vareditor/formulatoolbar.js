@@ -58,10 +58,14 @@ function allFunctions($functionsContent) {
     descriptions.SQRT = { label: 'SQRT( <i>number</i> )', content: 'Returns the square root of a number.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
+    $functionsContent.append($('<div class="item" data-name="ABSZ">ABSZ</div>'));
+    descriptions.ABSZ = { label: 'ABSZ( <i>variable</i>, group_by=0 )', content: 'Convenience short-hand for ABS(Z( variable ))' };
     $functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
     descriptions.BOXCOX = { label: 'BOXCOX( <i>variable, lambda</i> )', content: 'Returns a Box Cox transformation of the variable.' };
     $functionsContent.append($('<div class="item" data-name="MAX">MAX</div>'));
     descriptions.MAX = { label: 'MAX( <i>variable</i> )', content: 'Returns the largest value of a set of numbers.' };
+    $functionsContent.append($('<div class="item" data-name="MAXABSZ">MAXABSZ</div>'));
+    descriptions.MAXABSZ = { label: 'MAXABSZ( variable 1, variable 2, \u2026, group_by=0 )', content: 'Convenience short-hand for MAX(ABSZ( variable 1, variable 2, \u2026 ))' };
     $functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
     descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="MIN">MIN</div>'));
