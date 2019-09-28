@@ -13,6 +13,7 @@ class Checker(NodeVisitor):
     LEGAL_NODES = [ 'Name', 'Num', 'Str', 'Call', 'Load',
                     'UnaryOp', 'UAdd', 'USub', 'Not', 'Invert',
                     'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod', 'Pow',
+                    'FloorDiv',
                     'Compare', 'Eq', 'NotEq', 'Gt', 'GtE', 'Lt', 'LtE',
                     'BoolOp', 'And', 'Or', 'keyword' ]
 
