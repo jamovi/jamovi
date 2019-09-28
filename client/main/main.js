@@ -300,11 +300,18 @@ $(document).ready(() => {
 
     document.body.appendChild(infoBox);
 
+    let toOpen = '';  // '' denotes blank data set
+
     Promise.resolve(() => {
 
         return coms.ready;
 
     }).then(() => {
+
+        if (window.location.search.indexOf('?open=') !== -1) {
+            toOpen = window.location.search.split('?open=')[1];
+            toOpen = decodeURI(toOpen);
+        }
 
         return fetch('status', {
             credentials: 'include'
@@ -350,12 +357,6 @@ $(document).ready(() => {
         return new Promise((resolve, reject) => { /* never */ });
 
     }).then(() => {
-
-        let toOpen = '';  // '' denotes blank data set
-        if (window.location.search.indexOf('?open=') !== -1) {
-            toOpen = window.location.search.split('?open=')[1];
-            toOpen = decodeURI(toOpen);
-        }
 
         if ( ! instance.get('hasDataSet'))
             return instance.open(toOpen);

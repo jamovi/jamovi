@@ -181,7 +181,10 @@ class EntryHandler(RequestHandler):
 
     def get(self):
         instance = self._session.create()
-        self.redirect('/%s/' % (instance.id,))
+        query = self.get_argument('open', '')
+        if query:
+            query = '?open=' + query
+        self.redirect('/%s/%s' % (instance.id, query))
 
 
 class StatusHandler(RequestHandler):

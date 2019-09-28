@@ -91,7 +91,7 @@ class Coms {
         if (this.connected)
             return this.connected;
 
-        let url = `${ window.location }coms`;
+        let url = `${ window.location.origin }${ window.location.pathname }coms`;
         url = url.replace('http', 'ws'); // http -> ws, https -> wss
 
         let defnsReady = this._loadProtoDefn();
