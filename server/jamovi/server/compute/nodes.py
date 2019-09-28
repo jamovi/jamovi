@@ -658,7 +658,12 @@ class BinOp(ast.BinOp, Node):
             return lv * rv
         elif isinstance(op, ast.Div):
             try:
-                return lv / rv
+                return float(lv) / float(rv)
+            except ZeroDivisionError:
+                return get_missing()
+        elif isinstance(op, ast.FloorDiv):
+            try:
+                return lv // rv
             except ZeroDivisionError:
                 return get_missing()
         elif isinstance(op, ast.Mod):
@@ -678,6 +683,10 @@ class BinOp(ast.BinOp, Node):
 
         if isinstance(self.op, ast.Pow):
             return DataType.DECIMAL
+        elif isinstance(self.op, ast.Div):
+            return DataType.DECIMAL
+        elif isinstance(self.op, ast.FloorDiv):
+            return DataType.INTEGER
 
         ldt = self.left.data_type
         rdt = self.right.data_type
@@ -693,6 +702,10 @@ class BinOp(ast.BinOp, Node):
     def measure_type(self):
 
         if isinstance(self.op, ast.Pow):
+            return MeasureType.CONTINUOUS
+        elif isinstance(self.op, ast.Div):
+            return MeasureType.CONTINUOUS
+        elif isinstance(self.op, ast.FloorDiv):
             return MeasureType.CONTINUOUS
 
         if self.data_type is DataType.INTEGER:
