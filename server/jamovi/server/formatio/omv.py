@@ -153,9 +153,10 @@ def write(data, path, prog_cb, html=None, is_template=False):
                 for i in range(0, row_count):
                     value = column[i]
                     if value != '':
-                        string_file.write(value.encode('utf-8'))
+                        byts = value.encode('utf-8')
+                        string_file.write(byts)
                         string_file.write(bytes(1))
-                        n = len(value) + 1
+                        n = len(byts) + 1
                         byts = struct.pack('<i', cursor)
                         temp_file.write(byts)
                         cursor += n
