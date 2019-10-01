@@ -66,6 +66,10 @@ class EngineManager:
 
         self._restart_task = AsyncQueue()
 
+        mem_limit = conf.get('memory_limit_engine', None)
+        if mem_limit and platform.uname().system == 'Linux':
+            log.info('Applying engine memory limit %s Mb', mem_limit)
+
     async def _run_loop(self):
         try:
             tasks = set()
@@ -193,6 +197,18 @@ class Engine:
                     stderr=None,
                     stdin=subprocess.PIPE,
                     env=env)
+
+            mem_limit = conf.get('memory_limit_engine', None)
+            if mem_limit:
+                if platform.uname().system == 'Linux':
+                    import resource
+                    try:
+                        limit = int(mem_limit) * 1024 * 1024  # Mb
+                        resource.prlimit(self._process.pid, resource.RLIMIT_AS, (limit, limit))
+                    except ValueError:
+                        raise ValueError('memory_limit_engine: bad value')
+                else:
+                    raise ValueError('memory_limit_engine is unavailable on systems other than linux')
 
             if self._monitor is not None:
                 self._monitor.monitor(self._process)
