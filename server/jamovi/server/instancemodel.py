@@ -500,6 +500,7 @@ class InstanceModel:
                     column.cell_tracker.clear()
                     if column.trim_levels:
                         column.trim_unused_levels()
+                column.determine_dps()
 
             self._row_tracker.clear()
 
