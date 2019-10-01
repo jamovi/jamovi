@@ -194,6 +194,17 @@ class Engine:
                     stdin=subprocess.PIPE,
                     env=env)
 
+            if conf.get('memory_limit_engine', None):
+                if platform.uname().system == 'Linux':
+                    import resource
+                    try:
+                        limit = int(conf.get('memory_limit_engine')) * 1024 * 1024  # Mb
+                        resource.prlimit(self._process.pid, resource.RLIMIT_AS, (limit, limit))
+                    except ValueError:
+                        raise ValueError('memory_limit_engine: bad value')
+                else:
+                    raise ValueError('memory_limit_engine is unavailable on systems other than linux')
+
             if self._monitor is not None:
                 self._monitor.monitor(self._process)
 

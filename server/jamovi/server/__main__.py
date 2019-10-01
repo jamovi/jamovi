@@ -8,6 +8,8 @@ from .utils import conf
 
 import logging
 import webbrowser
+import platform
+
 
 log = logging.getLogger('jamovi')
 if not sys.executable.endswith('pythonw.exe'):
@@ -16,6 +18,18 @@ if not sys.executable.endswith('pythonw.exe'):
     handler.setFormatter(formatter)
     log.addHandler(handler)
     log.setLevel(logging.INFO)
+
+
+if conf.get('memory_limit_session', None):
+    if platform.uname().system == 'Linux':
+        import resource
+        try:
+            limit = int(conf.get('memory_limit_session')) * 1024 * 1024  # Mb
+            resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+        except ValueError:
+            raise ValueError('memory_limit_session: bad value')
+    else:
+        raise ValueError('memory_limit_session is unavailable on systems other than linux')
 
 # import os.path
 # logpath = os.path.expanduser('~/jamovi-log.txt')
