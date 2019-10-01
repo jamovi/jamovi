@@ -160,6 +160,7 @@ class Engine:
         self._ioloop = get_event_loop()
 
         self._current_request = None
+        self._current_results = None
 
     async def start(self):
 
@@ -286,6 +287,37 @@ class Engine:
             log.info('Restarting engine')
             self._stopping = False
             create_task(self.start())
+        elif self._current_request is not None:
+
+            log.error('Engine crashed')
+
+            request = self._current_request
+
+            results = AnalysisResponse()
+            results.instanceId = request.instanceId
+            results.analysisId = request.analysisId
+            results.name = request.name
+            results.ns = request.ns
+            results.options.CopyFrom(request.options)
+            results.status = AnalysisStatus.Value('ANALYSIS_ERROR')
+            results.revision = request.revision
+            results.version = 0
+
+            results.results.name = request.name
+            results.results.title = request.name
+            results.results.status = AnalysisStatus.Value('ANALYSIS_ERROR')
+            results.results.error.message = '''
+                This analysis has terminated, likely due to hitting a resource limit.
+            '''
+
+            item = results.results.group.elements.add()
+            item.preformatted = ''
+
+            self._current_results.write(results, True)
+
+            log.info('Restarting engine')
+            self._stopping = False
+            create_task(self.start())
         else:
             self._stopped = True
             log.error('Engine process terminated with exit code {}\n'.format(self._process.returncode))
@@ -304,6 +336,8 @@ class Engine:
         self._current_request = request
         self._current_results = results
 
+        request.restartEngines = False  # unset in case of malicious actor
+
         message = ComsMessage()
         message.id = self._message_id
         message.payload = request.SerializeToString()
@@ -313,6 +347,9 @@ class Engine:
         self._message_id += 1
 
         await results.completed()
+
+        self._current_results = None
+        self._current_request = None
 
     def _receive(self, results):
 
