@@ -19,7 +19,7 @@ class ClipboardPrompt extends HTMLElement {
                 <div class="heading"><div class="icon"></div><div class="title">Copy</div></div>
                 <p class="message">The content has been prepared, and can be copied with the button below, or by pressing <em>${ modifier }+C</em> on your keyboard</p>
                 <div class="button-box"><button class="copy">Copy</button></div>
-                <p class="link"><a href="#" target="_blank">Why is this additional step necessary?</a></p>
+                <p class="link"><a href="https://www.jamovi.org/misc/extra_copy_step.html" target="_blank">Why is this additional step necessary?</a></p>
                 <div contenteditable="true" class="text"></div>
             </div>`;
 
