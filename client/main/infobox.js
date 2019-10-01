@@ -81,8 +81,6 @@ class InfoBox extends HTMLElement {
             this._body.classList.add('initial-size');
             this._host.setAttribute('message-src', info['message-src'] || '');
             this._indicator.style.display = null;
-            //this._host.style.display = null;
-            //keyboardJS.pause();
         }
         else {
             this._indicator.style.display = 'none';
@@ -96,6 +94,7 @@ class InfoBox extends HTMLElement {
                 this._host.setAttribute('title', info.title || '');
                 this._host.setAttribute('message', info.message || '');
                 this._host.setAttribute('status', info.status || '');
+                params.cancelable = info.cancelable === undefined ? false : info.cancelable;
                 this._processEnterKey = true;
             }
             else if (this._isElement(info)) {
@@ -142,6 +141,8 @@ class InfoBox extends HTMLElement {
             this._host.setAttribute('message-src', '');
         }
         this._displayInfo = null;
+
+        this.clearCSS();
 
         this._body.classList.remove('initial-size');
 
@@ -207,12 +208,22 @@ class InfoBox extends HTMLElement {
             }
             if (data.status === 'show') {
                 this._indicator.style.display = 'none';
+                this._css = data.css;
                 for (let style in data.css) {
                     this._body.style[style] = data.css[style];
                 }
                 this._iframe.contentWindow.focus();
             }
         }
+    }
+
+    clearCSS() {
+        if (this._css) {
+            for (let style in this._css) {
+                this._body.style[style] = '';
+            }
+        }
+        this._css = [];
     }
 
     attributeChangedCallback(name, old, value) {
