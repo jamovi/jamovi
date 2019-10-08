@@ -440,6 +440,8 @@ void EngineR::initR()
     _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'en_US.UTF-8')\n");
 #endif
 
+    _rInside->parseEvalQNT("base::options(max.print=1000)\n");
+
     char *pandoc = nowide::getenv("PANDOCHOME");
 
     if (pandoc != NULL)
