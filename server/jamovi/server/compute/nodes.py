@@ -570,6 +570,14 @@ class Call(ast.Call, Node):
         if self.measure_type is MeasureType.ID:
             return [ ]
 
+        source = self.args[0]
+        if ((self.func.id == '_RECODE_ORD' or self.func.id == '_RECODE_NOM')
+                and source.measure_type == MeasureType.CONTINUOUS):
+            levels = self.fvalues(row_count, False)
+            levels = sorted(levels)
+            levels = map(lambda x: convert(x, str), levels)
+            return enumerate(levels)
+
         level_use = OrderedDict()
 
         for i in range(len(arg_level_indices)):
@@ -588,11 +596,9 @@ class Call(ast.Call, Node):
             if value in level_use:
                 level_use[value] += 1
 
-        levels = list(filter(lambda k: level_use[k] > 0, level_use))
-        for i in range(len(levels)):
-            levels[i] = (i, levels[i])
+        levels = filter(lambda k: level_use[k] > 0, level_use)
 
-        return levels
+        return enumerate(levels)
 
     @property
     def uses_column_formula(self):
