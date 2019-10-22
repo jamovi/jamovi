@@ -215,8 +215,13 @@ const char *Column::getImportValue(int value) const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        if (l.value == value)
-            return _mm->resolve(l.importValue);
+        if (l.value == value) {
+            char *iv = _mm->resolve(l.importValue);
+            if (iv[0] != '\0')
+                return iv;
+            else
+                return _mm->resolve(l.label);
+        }
     }
 
     stringstream ss;
