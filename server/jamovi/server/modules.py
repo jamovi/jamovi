@@ -157,19 +157,28 @@ class Modules:
         sys_module_path = conf.get('modules_path')
         user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
 
-        os.makedirs(sys_module_path, exist_ok=True)
+        if ':' in sys_module_path:
+            sys_module_paths = sys_module_path.split(':')
+        else:
+            sys_module_paths = sys_module_path.split(';')
+
+        for pth in sys_module_paths:
+            os.makedirs(pth, exist_ok=True)
         os.makedirs(user_module_path, exist_ok=True)
 
         self._modules = [ ]
 
-        try:
-            for entry in os.scandir(sys_module_path):
+        def scan_for_modules(pth, is_system):
+            for entry in os.scandir(pth):
                 if entry.name == 'base':
                     continue
                 if entry.is_dir() is False:
                     continue
                 try:
-                    module = self._read_module(entry.path, True)
+                    module = self._read_module(entry.path, is_system)
+                    if not is_system:
+                        module.new = self._read and (module.name in self._original) is False
+
                     if module.name == 'jmv':
                         self._modules.insert(0, module)
                     else:
@@ -177,20 +186,11 @@ class Modules:
                 except Exception as e:
                     log.exception(e)
 
-            for entry in os.scandir(user_module_path):
-                if entry.name == 'base':
-                    continue
-                if entry.is_dir() is False:
-                    continue
-                try:
-                    module = self._read_module(entry.path, False)
-                    module.new = self._read and (module.name in self._original) is False
-                    if module.name == 'jmv':
-                        self._modules.insert(0, module)
-                    else:
-                        self._modules.append(module)
-                except Exception as e:
-                    log.exception(e)
+        try:
+            for pth in sys_module_paths:
+                scan_for_modules(pth, is_system=True)
+
+            scan_for_modules(user_module_path, is_system=False)
 
             # fill in addons
             modules_by_name = dict(map(lambda m: (m.name, m), self._modules))
