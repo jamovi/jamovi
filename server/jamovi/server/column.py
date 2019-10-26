@@ -646,12 +646,14 @@ class Column:
                     if parent_filter_start is None:
                         parent_filter_start = 0
 
-                    parents = list(map(
-                        lambda i: ast.Name(id=self._parent[i].name, ctx=ast.Load()),
-                        range(parent_filter_start, parent_filter_end + 1)))
+                    parents = map(lambda i: self._parent[i], range(parent_filter_start, parent_filter_end + 1))
+                    parents = filter(lambda p: p.active, parents)
+                    parents = map(lambda p: ast.Name(id=p.name, ctx=ast.Load()), parents)
+                    parents = list(parents)
+
                     ops = list(map(
                         lambda i: ast.Eq(),
-                        range(parent_filter_start, parent_filter_end + 1)))
+                        range(0, len(parents))))
 
                     Transfilterifier(parents).visit(node)
 
