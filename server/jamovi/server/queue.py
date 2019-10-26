@@ -34,13 +34,12 @@ class Queue:
         return self._n_slots
 
     def add(self, request):
-        if self.is_full:
-            raise QueueFull
 
         instance_id = request.instanceId
         analysis_id = request.analysisId
         key = (instance_id, analysis_id)
         existing = self._wait_tx.get(key)
+
         if existing is not None:
             ex_request, ex_stream = existing
             log.debug('%s %s', 'cancelling', req_str(ex_request))
@@ -51,6 +50,10 @@ class Queue:
                 ex_request, ex_stream = existing
                 log.debug('%s %s', 'cancelling', req_str(ex_request))
                 ex_stream.cancel()
+
+        if self.is_full:
+            raise QueueFull
+
         stream = Stream()
         log.debug('%s %s', 'queueing', req_str(request))
         self._wait_tx[key] = (request, stream)
