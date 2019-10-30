@@ -157,7 +157,7 @@ class Modules:
         sys_module_path = conf.get('modules_path')
         user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
 
-        if ':' in sys_module_path:
+        if os.name != 'nt':
             sys_module_paths = sys_module_path.split(':')
         else:
             sys_module_paths = sys_module_path.split(';')
