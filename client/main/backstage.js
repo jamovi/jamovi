@@ -1524,7 +1524,7 @@ var BackstageView = SilkyView.extend({
     },
     activate : function() {
 
-        keyboardJS.pause();
+        keyboardJS.pause('backstage');
         this.$el.addClass('activated');
 
         tarp.show('backstage', true, 0.3).then(
@@ -1541,7 +1541,7 @@ var BackstageView = SilkyView.extend({
     },
     deactivate : function() {
 
-        keyboardJS.resume();
+        keyboardJS.resume('backstage');
         tarp.hide('backstage');
         this.$el.removeClass('activated');
         this.$el.removeClass('activated-sub');

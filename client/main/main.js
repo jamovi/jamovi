@@ -25,6 +25,46 @@ const Modules = require('./modules');
 const Notify = require('./notification');
 require('./infobox');
 
+const keyboardJS = require('keyboardjs');
+
+keyboardJS.Keyboard.prototype.pause = function(key) {
+    if (this._pausedCounts === undefined)
+        this._pausedCounts = { };
+
+    this._pausedCounts[key] = true;
+
+    let count = false;
+    for (let name in this._pausedCounts) {
+        count = this._pausedCounts[name];
+        if (count)
+            break;
+    }
+
+    if (count === true && this._paused === false) {
+        if (this._paused) { return; }
+        if (this._locale) { this.releaseAllKeys(); }
+        this._paused = true;
+    }
+};
+
+keyboardJS.Keyboard.prototype.resume = function(key) {
+    if (this._pausedCounts === undefined)
+        this._pausedCounts = { };
+
+    this._pausedCounts[key] = false;
+
+    let count = false;
+    for (let name in this._pausedCounts) {
+        count = this._pausedCounts[name];
+        if (count)
+            break;
+    }
+
+    if (count === false && this._paused === true) {
+        this._paused = false;
+    }
+};
+
 let instance = new Instance({ coms : coms });
 
 let dataSetModel = instance.dataSetModel();

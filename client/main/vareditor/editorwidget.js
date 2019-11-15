@@ -73,9 +73,9 @@ const EditorWidget = Backbone.View.extend({
         this.$multiVarList = $('<div class="multi-var-info-list"></div>').appendTo(this.$scrollWrapper);
 
         this.model.on('columnChanging', () => {
-            if (this.$description.is(":focus"))
+            if (this.$description.is(":focus") && this.$description[0].textContent !== this.model.attributes.description)
                 this.$description.blur();
-            if (this.$title.is(":focus"))
+            if (this.$title.is(":focus") && this.$title.val() !== this.model.attributes.name)
                 this.$title.blur();
         });
 
@@ -169,12 +169,12 @@ const EditorWidget = Backbone.View.extend({
     },
     _addTextEvents($element, propertyName) {
         $element.focus(() => {
-            keyboardJS.pause('');
+            keyboardJS.pause('editor-' + propertyName);
             $element.select();
         } );
 
         $element.blur(() => {
-            keyboardJS.resume();
+            keyboardJS.resume('editor-' + propertyName);
         } );
 
         $element.keydown((event) => {
