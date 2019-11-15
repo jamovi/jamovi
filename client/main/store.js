@@ -10,6 +10,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const util = require('util');
 const tippy = require('tippy.js');
+const keyboardJS = require('keyboardjs');
 
 const PageModules = require('./store/pagemodules');
 const PageSideload  = require('./store/pagesideload');
@@ -132,6 +133,7 @@ const Store = Backbone.View.extend({
         return this.$el.hasClass('visible');
     },
     show: function(tab) {
+        keyboardJS.pause('store');
         this.$el.addClass('visible');
         if (tab !== undefined)
             setTimeout(() => this._setSelected(tab), 100);
@@ -142,6 +144,7 @@ const Store = Backbone.View.extend({
         modules.available().retrieve();
     },
     hide: function() {
+        keyboardJS.resume('store');
         this.$el.removeClass('visible');
         tarp.hide('store');
     }

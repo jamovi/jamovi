@@ -726,7 +726,7 @@ const FilterWidget = Backbone.View.extend({
                 return;
             }
 
-            keyboardJS.pause();
+            keyboardJS.pause('filter-' + column.id);
             this.dataset.set('editingVar', [column.id]);
 
             $element.select();
@@ -737,7 +737,7 @@ const FilterWidget = Backbone.View.extend({
                 return;
             }
 
-            keyboardJS.resume();
+            keyboardJS.resume('filter-' + column.id);
             if ($element[0].textContent !== column[name]) {
                 let data = { };
                 data[name] = $element[0].textContent;

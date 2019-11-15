@@ -49,14 +49,14 @@ const RibbonMenu = Backbone.View.extend({
         this.menuVisible = false;
         this.$el.find('.side-panel-visible').removeClass('side-panel-visible');
         this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
-        keyboardJS.resume();
+        keyboardJS.resume('ribbon');
     },
     showMenu() {
         this.trigger('shown', this);
         this.$el.removeClass('contains-new');
         this.$menu.show();
         this.menuVisible = true;
-        keyboardJS.pause();
+        keyboardJS.pause('ribbon');
     },
     hideModule(name, item) {
         if (item === undefined)

@@ -128,8 +128,8 @@ const AppMenuButton = Backbone.View.extend({
             if (event.keyCode === 13)
                 setTimeout(() => this.$missingsInput.blur());
         });
-        this.$missingsInput.on('focus', () => keyboardjs.pause());
-        this.$missingsInput.on('blur', () => { keyboardjs.resume(); this._changeMissings(); });
+        this.$missingsInput.on('focus', () => keyboardjs.pause('missings'));
+        this.$missingsInput.on('blur', () => { keyboardjs.resume('missings'); this._changeMissings(); });
 
         // this.$embed = $('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo(this.$import);
         // this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')

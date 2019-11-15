@@ -85,15 +85,15 @@ const ComputedVarWidget = Backbone.View.extend({
         this._createFormulaBox(this.$options);
 
         this.model.on('columnChanging', () => {
-            if (this.$formula.is(":focus"))
+            if (this.$formula.is(":focus") && this.model.attributes.formula !== this.$formula[0].textContent)
                 this.$formula.blur();
         });
 
         this.$formula.focus(() => {
-            keyboardJS.pause();
+            keyboardJS.pause('computed');
         });
         this.$formula.blur((event) => {
-            keyboardJS.resume();
+            keyboardJS.resume('computed');
             if ( ! dropdown.clicked() && ! this._editorClicked)
                 this.model.set('formula', this.$formula[0].textContent);
         });

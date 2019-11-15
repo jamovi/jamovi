@@ -64,13 +64,13 @@ const TransformEditor = function(dataset) {
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
             $element.focus(() => {
-                keyboardJS.pause('');
+                keyboardJS.pause('transform-' + propertyName);
                 $element.select();
             } );
 
             $element.blur(() => {
                 if (_applyOnBlur) {
-                    keyboardJS.resume();
+                    keyboardJS.resume('transform-' + propertyName);
                     let id = this._id;
                     let values = { };
                     if (isDiv)
@@ -171,12 +171,12 @@ const TransformEditor = function(dataset) {
         });
 
         this.$insertBox.focus(() => {
-            keyboardJS.pause('');
+            keyboardJS.pause('transform');
             this._focusFormulaControls();
         } );
 
         this.$insertBox.blur(() => {
-            keyboardJS.resume();
+            keyboardJS.resume('transform');
         } );
 
         this.$list = $('<div class="content-list"></div>').appendTo(this.$contents);
@@ -712,11 +712,11 @@ const TransformEditor = function(dataset) {
             if (hasOp && elements._opEditClicked === false)
                 $opEdit.hide();
             elements._opEditClicked = false;
-            keyboardJS.resume();
+            keyboardJS.resume('transform');
         });
 
         $formula.on('focus', (event) => {
-            keyboardJS.pause('');
+            keyboardJS.pause('transform');
             elements.$formulaBox.addClass('selected');
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();

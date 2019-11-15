@@ -33,7 +33,7 @@ const DataVarLevelWidget = function(level, model, i) {
     };
 
     this._focus = event => {
-        keyboardJS.pause('');
+        keyboardJS.pause('level');
         this.$label.select();
     };
 
@@ -43,7 +43,7 @@ const DataVarLevelWidget = function(level, model, i) {
         let diff = level.importValue !== level.label;
         if (label !== level.label)
             this.$label.val(level.label);
-        keyboardJS.resume();
+        keyboardJS.resume('level');
         this.$el.removeClass('selected');
     };
 
