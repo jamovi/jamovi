@@ -392,6 +392,7 @@ message StoreRequest {
 
 message StoreResponse {
     repeated ModuleMeta modules = 1;
+    string message = 2;
 }
 
 message VariableLevel {
