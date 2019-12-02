@@ -31,6 +31,14 @@ class Stream:
             self._future = Future()
         self._future.set_result(item)
 
+    def abort(self, exc):
+        if self._complete.is_set():
+            return
+        self._set_complete()
+        if self._future.done():
+            self._future = Future()
+        self._future.set_exception(exc)
+
     def cancel(self):
         self._set_complete()
         if self._future.done():

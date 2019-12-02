@@ -18,6 +18,7 @@ const ModulesBase = Backbone.Model.extend({
     defaults : {
         modules : [ ],
         progress : [ 0, 1 ],
+        message: '',
         status : 'none',
         error: null,
     },
@@ -88,7 +89,7 @@ const ModulesBase = Backbone.Model.extend({
             this.trigger('moduleVisibilityChanged', module);
         });
     },
-    _setup(modulesPB) {
+    _setup(message, modulesPB) {
 
         let modules = [ ];
 
@@ -112,6 +113,7 @@ const ModulesBase = Backbone.Model.extend({
             modules.push(module);
         }
 
+        this.set('message', message);
         this.set('modules', modules);
     },
     _determineOps(module) {
@@ -134,12 +136,12 @@ const Available = ModulesBase.extend({
         }).then(() => {
             return this._instance.retrieveAvailableModules();
         }).then(storeResponse => {
-            this._setup(storeResponse.modules);
+            this._setup(storeResponse.message, storeResponse.modules);
             this.set('status', 'done');
         }, error => {
             this.set('error', error);
             this.set('status', 'error');
-            this._setup([ ]);
+            this._setup('', [ ]);
         });
     },
     _updateOps() {
@@ -172,7 +174,7 @@ const Modules = ModulesBase.extend({
         this._available = new Available({ instance: args.instance, parent: this });
 
         this._instance.settings().on('change:modules', (modules) => {
-            this._setup(modules.changed.modules);
+            this._setup('', modules.changed.modules);
         });
 
         this._instance.on('moduleInstalled', (module) => {

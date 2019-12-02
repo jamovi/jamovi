@@ -241,7 +241,7 @@ class Instance:
         elif type(request) == jcoms.ModuleRR:
             self._on_module(request)
         elif type(request) == jcoms.StoreRequest:
-            self._on_store(request)
+            await self._on_store(request)
         else:
             log.info('unrecognised request')
             log.info(request.payloadType)
@@ -994,26 +994,27 @@ class Instance:
     def _on_module_install_progress(self, request, progress):
         print(progress)
 
-    def _on_store(self, request):
+    async def _on_store(self, request):
         if self._perms.library.browseable is False:
             self._coms.send_error('Unable to access library', 'The library is disabled', self._instance_id, request)
         else:
             modules = Modules.instance()
-            modules.read_store(lambda t, res: self._on_store_callback(request, t, res))
+            stream = modules.read_library()
 
-    def _on_store_callback(self, request, t, result):
-        if t == 'progress':
-            self._coms.send(None, self._instance_id, request, complete=False, progress=result)
-        elif t == 'error':
-            self._coms.send_error('Unable to access library', str(result), self._instance_id, request)
-        elif t == 'success':
-            response = jcoms.StoreResponse()
-            for module in result:
-                module_pb = response.modules.add()
-                self._module_to_pb(module, module_pb)
-            self._coms.send(response, self._instance_id, request)
-        else:
-            log.error('_on_store_callback(): shouldnt get here')
+            try:
+                async for result in stream:
+                    if not stream.is_complete:
+                        self._coms.send(None, self._instance_id, request, complete=False, progress=result)
+                    else:
+                        response = jcoms.StoreResponse()
+                        if result.message is not None:
+                            response.message = result.message
+                        for module in result.modules:
+                            module_pb = response.modules.add()
+                            self._module_to_pb(module, module_pb)
+                        self._coms.send(response, self._instance_id, request)
+            except Exception as e:
+                self._coms.send_error('Unable to access library', str(e), self._instance_id, request)
 
     def _on_dataset_set_checks(self, request):
 

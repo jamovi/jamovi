@@ -5,12 +5,16 @@ import logging
 import yaml
 import shutil
 from zipfile import ZipFile
+from asyncio import ensure_future as create_task
+from collections import namedtuple
 
 from ..core import Dirs
 from ..core import PlatformInfo
 
 from .utils import conf
 from .downloader import Downloader
+from .utils.stream import Stream
+
 
 log = logging.getLogger('jamovi')
 
@@ -94,6 +98,7 @@ class Modules:
         self._modules = [ ]
         self._listeners = [ ]
         self._original = None
+        self._read_task = None
 
     def get(self, name):
         for module in self._modules:
@@ -122,35 +127,51 @@ class Modules:
             self.reread()
             self._original = list(map(lambda x: x.name, self._modules))
 
-    def read_store(self, callback):
-        Downloader.download(
-            Modules.LIBRARY_ROOT + 'modules.yaml',
-            lambda t, res: self._read_store_callback(t, res, callback))
+    def read_library(self):
 
-    def _read_store_callback(self, t, result, callback):
-        if t == 'progress':
-            callback('progress', result)
-        elif t == 'error':
-            callback('error', result)
-        elif t == 'success':
+        if self._read_task is not None and not self._read_task.done():
+            self._read_task.cancel()
+
+        url = Modules.LIBRARY_ROOT + 'modules.yaml'
+        out_stream = Stream()
+        in_stream = Downloader.download(url)
+
+        async def transform():
             try:
-                modules = [ ]
-                module_data = yaml.load(result)
-                if 'jds' not in module_data:
-                    raise Exception('No jds')
-                jds = float(module_data['jds'])
-                if jds > 1.4:
-                    callback('error', 'The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
-                    return
-                for defn in module_data['modules']:
-                    module = Modules.parse(defn)
-                    modules.append(module)
-                callback('success', modules)
+                async for progress in in_stream:
+                    if in_stream.is_complete:
+                        modules = self.parse_modules(progress)
+                        out_stream.write(modules, last=True)
+                    else:
+                        out_stream.write(progress, last=False)
             except Exception as e:
-                log.exception(e)
-                callback('error', 'Unable to parse module list. Please try again later.')
-        else:
-            log.error("_read_store_callback(): shouldn't get here")
+                in_stream.cancel()
+                out_stream.abort(e)
+
+        self._read_task = create_task(transform())
+        return out_stream
+
+    def parse_modules(self, path):
+        try:
+            message = None
+            modules = [ ]
+            module_data = yaml.load(path)
+            if 'jds' not in module_data:
+                raise Exception('No jds')
+            jds = float(module_data['jds'])
+            if jds > 1.4:
+                raise ValueError('The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
+            message = module_data.get('message')
+            for defn in module_data['modules']:
+                module = Modules.parse(defn)
+                modules.append(module)
+
+            LibraryContent = namedtuple('Library', 'message modules')
+            content = LibraryContent(message, modules)
+            return content
+        except Exception as e:
+            log.exception(e)
+            raise ValueError('Unable to parse module list. Please try again later.')
 
     def reread(self):
 
