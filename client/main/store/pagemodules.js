@@ -20,6 +20,7 @@ const PageModules = Backbone.View.extend({
         this.settings = this.model.settings;
 
         this.$el.addClass('jmv-store-page-installed');
+        this.$message    = $('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>').appendTo(this.$el);
 
         this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$content = $('<div class="jmv-store-content"></div>').appendTo(this.$body);
@@ -56,9 +57,20 @@ const PageModules = Backbone.View.extend({
             this.$progressbar.css('width', '' + pc + '%');
         });
 
+        this.modules.on('change:message', () => {
+            this._updateMessage();
+        });
+
         this.$errorRetry.on('click', () => this.modules.retrieve());
 
         this._refresh();
+    },
+    _updateMessage() {
+        this.$message.find('.text').text(this.modules.attributes.message);
+        if (this.modules.attributes.message)
+            this.$message.addClass('show');
+        else
+            this.$message.removeClass('show');
     },
     _refresh() {
 
@@ -67,6 +79,8 @@ const PageModules = Backbone.View.extend({
         this.$visibility.off();
         this.$install.off();
         this.$content.empty();
+
+        this._updateMessage();
 
         for (let module of this.modules) {
 

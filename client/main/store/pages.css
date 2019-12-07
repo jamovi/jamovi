@@ -13,6 +13,31 @@
     display: flex ;
 }
 
+.jmv-store-message {
+    display: flex;
+    background-color: #9c9c9c;
+    padding: 0px 10px;
+    margin: 10px 0 10px 5px;
+}
+
+.jmv-store-message .text {
+    padding: 10px 0px 10px 10px;
+    color: white;
+}
+
+.jmv-store-message:not(.show){
+    display: none;
+}
+
+.jmv-store-message .icon {
+    background-image: url(../assets/action-info.svg);
+    width: 22px;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    -webkit-filter: invert(100%);
+    filter: invert(100%);
+}
+
 .jmv-store-module:not(:last-child) {
     border-bottom: 1px solid #ACACAC ;
 }
