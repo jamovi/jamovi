@@ -14,6 +14,8 @@ from ..core import PlatformInfo
 from .utils import conf
 from .downloader import Downloader
 from .utils.stream import Stream
+from .appinfo import determine_r_version
+from .appinfo import app_info
 
 
 log = logging.getLogger('jamovi')
@@ -50,6 +52,7 @@ class ModuleMeta:
         self.license = None
         self.datasets_license = None
         self.visible = True
+        self.incompatible = False
 
     def get(self, name):
         for analysis in self.analyses:
@@ -311,6 +314,18 @@ class Modules:
         version = list(map(int, version))
         module.version = version
 
+        mod_r_v = defn.get('rVersion', None)
+        mod_r_v = determine_r_version(mod_r_v)
+
+        incompatible = False
+        if mod_r_v != app_info.r_version:
+            incompatible = True
+
+        if 'analyses' in defn and len(defn['analyses']) > 0:
+            # we don't need to mark data-sets-only modules as
+            # incompatible
+            module.incompatible = incompatible
+
         if 'requires' in defn and 'jamovi' in defn['requires']:
             min_app_version = defn['requires']['jamovi']
             min_app_version = min_app_version[2:]
@@ -323,6 +338,9 @@ class Modules:
 
         module.authors = [ ]
         module.authors.extend(defn['authors'])
+
+        if incompatible:
+            return module
 
         if 'analyses' in defn:
             for analysis_defn in defn['analyses']:

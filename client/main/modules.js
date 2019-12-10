@@ -106,7 +106,8 @@ const ModulesBase = Backbone.Model.extend({
                 isSystem: modulePB.isSystem,
                 new: modulePB.new,
                 minAppVersion: modulePB.minAppVersion,
-                visible: modulePB.visible
+                visible: modulePB.visible,
+                incompatible: modulePB.incompatible,
             };
 
             module.ops = this._determineOps(module);
@@ -158,7 +159,13 @@ const Available = ModulesBase.extend({
             return [ 'old' ];
         for (let installed of this._parent) {
             if (module.name === installed.name) {
-                if (module.version > installed.version)
+                if (installed.incompatible) {
+                    if (module.version >= installed.version)
+                        return [ 'update', 'incompatible' ];
+                    else
+                        return [ 'install', 'incompatible' ];
+                }
+                else if (module.version > installed.version)
                     return [ 'update' ];
                 else
                     return [ 'installed' ];
@@ -185,10 +192,22 @@ const Modules = ModulesBase.extend({
         return this._available;
     },
     _determineOps(module) {
+
+        let showHide = [ 'show' ];
+        if (module.incompatible)
+            showHide = [ ];
+        else if (module.visible)
+            showHide = [ 'hide' ];
+
+        let remove = [ 'remove' ];
         if (module.isSystem)
-            return [ (module.visible ? 'hide' : 'show') ];
-        else
-            return [ 'remove', (module.visible ? 'hide' : 'show') ];
+            remove = [ ];
+
+        let incompatible = [ ];
+        if (module.incompatible)
+            incompatible = ['incompatible' ];
+
+        return [].concat(showHide, remove, incompatible);
     }
 });
 

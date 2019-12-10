@@ -1,7 +1,19 @@
 
 import os.path
+from sys import platform
 
 from .utils import conf
+
+
+def determine_r_version(v):
+    if v is None:
+        if platform == 'win32':
+            v = '3.4.1'
+        elif platform == 'darwin':
+            v = '3.3.0'
+        else:
+            v = '3.5.3'
+    return v
 
 
 class AppInfo:
@@ -9,6 +21,7 @@ class AppInfo:
     def __init__(self):
         self._app_name = 'jamovi'
         self._version = None
+        self._r_version = None
 
     def __str__(self):
         return self.app_name + ' ' + self.version
@@ -27,6 +40,14 @@ class AppInfo:
             except Exception:
                 self._version = '0.0.0.0'
         return self._version
+
+    @property
+    def r_version(self):
+        if self._r_version is None:
+            v = conf.get('r_version')
+            v = determine_r_version(v)
+            self._r_version = v
+        return self._r_version
 
 
 app_info = AppInfo()

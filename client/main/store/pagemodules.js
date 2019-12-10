@@ -86,25 +86,36 @@ const PageModules = Backbone.View.extend({
 
             let version = Version.stringify(module.version, 3);
 
-            let html = '';
-            html += '<div class="jmv-store-module" data-name="' + module.name + '">';
-            html += '<div class="jmv-store-module-lhs">';
-            html += '<div class="jmv-store-module-icon"></div>';
-            html += '</div>';
-            html += '<div class="jmv-store-module-rhs">';
-            html += '    <h2>' + module.title + '<span class="version">' + version + '</span></h2>';
-            html += '    <div class="authors">' + module.authors.join(', ') + '</div>';
-            html += '    <div class="description">' + module.description + '</div>';
+            let html = `
+                <div class="jmv-store-module" data-name="${ module.name }">
+                    <div class="jmv-store-module-lhs">
+                        <div class="jmv-store-module-icon"></div>
+                    </div>
+                    <div class="jmv-store-module-rhs">
+                        <h2>${ module.title }<span class="version">${ version }</span></h2>
+                        <div class="authors">${ module.authors.join(', ') }</div>
+                        <div class="description">${ module.description }</div>`;
 
             if (this.settings.getSetting('mode', 'normal') !== 'demo') {
                 for (let op of module.ops) {
-                    let disabled = (op === 'installed' ? ' disabled' : '');
-                    html += '<button' + disabled +' data-path="' + module.path + '", data-name="' + module.name + '" data-op="' + op + '" class="jmv-store-module-button"><span class="label"></span></button>';
+                    let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
+                    html += `
+                        <button
+                            ${ disabled ? 'disabled' : '' }
+                            data-path="${ module.path }",
+                            data-name="${ module.name }"
+                            data-op="${ op }"
+                            class="jmv-store-module-button"
+                        >
+                            <span class="label"></span>
+                        </button>`;
                 }
             }
 
-            html += '</div>';
-            html += '</div>';
+            html += `
+                    </div>
+                </div>`;
+
             let $module = $(html);
             $module.appendTo(this.$content);
             $module.on('click', event => this._moduleClicked(event));

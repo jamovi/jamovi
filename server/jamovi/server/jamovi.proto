@@ -355,6 +355,7 @@ message ModuleMeta {
     bool new = 12;
     uint32 minAppVersion = 13;
     bool visible = 14;
+    bool incompatible = 15;
 }
 
 enum ValueType {

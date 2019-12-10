@@ -2537,6 +2537,7 @@ class Instance:
         module_pb.new = module.new
         module_pb.minAppVersion = min_version
         module_pb.visible = module.visible
+        module_pb.incompatible = module.incompatible
 
         for analysis in module.analyses:
             if not analysis.in_menu:

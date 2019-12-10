@@ -108,6 +108,10 @@
     content: 'Requires a newer version of jamovi' ;
 }
 
+.jmv-store-module-button[data-op='incompatible']:before {
+    content: 'Installed version is incompatible' ;
+}
+
 .jmv-store-module-button[data-op='show']:before {
     content: 'Show' ;
 }
@@ -127,6 +131,7 @@
 }
 
 .jmv-store-module-button[data-op='unavailable'],
+.jmv-store-module-button[data-op='incompatible'],
 .jmv-store-module-button[data-op='old'] {
     padding-left: 0 ;
     border: 1.5px solid transparent ;
