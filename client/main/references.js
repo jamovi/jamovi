@@ -127,7 +127,7 @@ class References extends HTMLElement {
             authors: { complete: 'The jamovi project' },
             year: 2019,
             title: 'jamovi',
-            publisher: '(Version 1.0) [Computer Software]. Retrieved from https://www.jamovi.org',
+            publisher: '(Version 1.1) [Computer Software]. Retrieved from https://www.jamovi.org',
             url: 'https://www.jamovi.org',
         }));
 
