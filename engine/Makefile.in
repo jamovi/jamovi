@@ -63,7 +63,7 @@ ifeq ($(os),Linux)
 				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)')
 else
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R
-	BASE_MODULE_PATH ?= $(R_HOME)/library
+	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../lib \
 				-L$(SRCDIR)/../../lib/libgcc \
 				-L$(R_HOME)/bin/x64 \
