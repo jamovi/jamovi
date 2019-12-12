@@ -239,7 +239,7 @@ class Instance:
         elif type(request) == jcoms.FSRequest:
             self._on_fs_request(request)
         elif type(request) == jcoms.ModuleRR:
-            self._on_module(request)
+            await self._on_module(request)
         elif type(request) == jcoms.StoreRequest:
             await self._on_store(request)
         else:
@@ -927,7 +927,7 @@ class Instance:
             log.exception(e)
             self._coms.send_error('Could not perform operation', str(e), self._instance_id, request)
 
-    def _on_module(self, request):
+    async def _on_module(self, request):
 
         modules = Modules.instance()
 
@@ -935,9 +935,19 @@ class Instance:
             if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
                 if self._perms.library.addRemove is False:
                     raise PermissionError()
-                modules.install(
-                    request.path,
-                    lambda t, result: self._on_module_callback(t, result, request))
+
+                try:
+                    stream = modules.install(request.path)
+                    async for progress in stream:
+                        if not stream.is_complete:
+                            self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+                        else:
+                            self._coms.send(None, self._instance_id, request)
+                            self._session.notify_global_changes()
+                except Exception as e:
+                    log.exception(e)
+                    self._coms.send_error('Unable to install module', str(e), self._instance_id, request)
+
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
                 if self._perms.library.addRemove is False:
                     raise PermissionError()
@@ -975,24 +985,6 @@ class Instance:
                 hidden_mods.append(name)
             settings.set('hidden', hidden_mods)
             settings.sync()
-
-    def _on_module_callback(self, t, result, request):
-        if t == 'progress':
-            self._coms.send(None, self._instance_id, request, complete=False, progress=result)
-        elif t == 'error':
-            self._coms.send_error('Unable to install module', str(result), self._instance_id, request)
-        elif t == 'success':
-            self._coms.send(None, self._instance_id, request)
-            self._session.notify_global_changes()
-        else:
-            log.error("Instance._on_module_callback(): shouldn't get here")
-
-    def _on_module_install_error(self, request, e):
-        log.error(str(e))
-        self._coms.send_error(str(e), None, self._instance_id, request)
-
-    def _on_module_install_progress(self, request, progress):
-        print(progress)
 
     async def _on_store(self, request):
         if self._perms.library.browseable is False:

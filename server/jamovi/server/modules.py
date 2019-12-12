@@ -245,41 +245,49 @@ class Modules:
         self.reread()
         self._notify_listeners({ 'type': 'modulesChanged' })
 
-    def install(self, path, callback):
-        if path.startswith(Modules.LIBRARY_ROOT):
-            Downloader.download(
-                path,
-                lambda t, result: self._on_install(t, result, callback))
-        else:
-            self._on_install('success', path, callback)
+    def install_from_file(self, path):
 
-    def _on_install(self, t, result, callback):
-        if t == 'error':
-            callback('error', result)
-        elif t == 'progress':
-            callback('progress', result)
-        elif t == 'success':
+        with ZipFile(path) as zip:
+
+            module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
+            module_name = zip.namelist()[0].split('/')[0]
+            module_path = os.path.join(module_dir, module_name)
+
+            shutil.rmtree(module_path, ignore_errors=True)
+            zip.extractall(module_dir)
+
+        meta = self._read_module(module_path)
+
+        self.reread()
+        self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
+        self._notify_listeners({ 'type': 'modulesChanged' })
+
+    def install(self, path):
+
+        out_stream = Stream()
+
+        async def download_and_install(path):
+
+            in_stream = None
             try:
-                with ZipFile(result) as zip:
+                if path.startswith(Modules.LIBRARY_ROOT):
+                    in_stream = Downloader.download(path)
+                    async for progress in in_stream:
+                        if in_stream.is_complete:
+                            path = progress
+                        else:
+                            out_stream.write(progress, last=False)
 
-                    module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
-                    module_name = zip.namelist()[0].split('/')[0]
-                    module_path = os.path.join(module_dir, module_name)
+                self.install_from_file(path)
+                out_stream.write((1, 1), last=True)
 
-                    shutil.rmtree(module_path, ignore_errors=True)
-                    zip.extractall(module_dir)
-
-                meta = self._read_module(module_path)
-
-                self.reread()
-                self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
-                self._notify_listeners({ 'type': 'modulesChanged' })
-                callback('success', None)
             except Exception as e:
-                log.exception(e)
-                callback('error', e)
-        else:
-            log.error("Modules._on_install(): shouldn't get here.")
+                if in_stream:
+                    in_stream.cancel()
+                out_stream.abort(e)
+
+        self._install_task = create_task(download_and_install(path))
+        return out_stream
 
     def _read_module(self, path, is_sys=False):
         meta_path = os.path.join(path, 'jamovi.yaml')
