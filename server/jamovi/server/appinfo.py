@@ -12,7 +12,7 @@ def determine_r_version(v):
         elif platform == 'darwin':
             v = '3.3.0'
         else:
-            v = '3.5.3'
+            v = '3.5.1'
     return v
 
 
