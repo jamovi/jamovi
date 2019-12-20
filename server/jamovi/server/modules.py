@@ -87,7 +87,8 @@ class Modules:
 
     _instance = None
 
-    LIBRARY_ROOT = 'https://library.jamovi.org/'
+    LIBRARY_ROOT = 'https://library.jamovi.org/{}/R{}/'.format(app_info.os, app_info.r_version) if os.name == 'nt' else 'https://library.jamovi.org/'
+    LIBRARY_INDEX = 'index' if os.name == 'nt' else 'modules.yaml'
 
     @classmethod
     def instance(cls):
@@ -135,7 +136,7 @@ class Modules:
         if self._read_task is not None and not self._read_task.done():
             self._read_task.cancel()
 
-        url = Modules.LIBRARY_ROOT + 'modules.yaml'
+        url = '{}{}'.format(Modules.LIBRARY_ROOT, Modules.LIBRARY_INDEX)
         out_stream = Stream()
         in_stream = Downloader.download(url)
 

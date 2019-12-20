@@ -49,5 +49,14 @@ class AppInfo:
             self._r_version = v
         return self._r_version
 
+    @property
+    def os(self):
+        if platform == 'win32':
+            return 'win64'
+        elif platform == 'darwin':
+            return 'macos'
+        else:
+            return 'linux'
+
 
 app_info = AppInfo()
