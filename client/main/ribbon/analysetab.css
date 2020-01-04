@@ -76,6 +76,10 @@
     background-image: url("../assets/analysis-flexplot.svg");
 }
 
+.jmv-ribbon-button[data-name="rosetta"] .jmv-ribbon-button-icon {
+    background-image: url("../assets/analysis-rosetta.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../assets/analysis-more.svg");
 }
