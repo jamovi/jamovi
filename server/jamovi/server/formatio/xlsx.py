@@ -72,8 +72,8 @@ class XLSXReader(Reader):
             self._last_row = self._ws.max_row - 1
             self._last_col = self._ws.max_column - 1
 
-        self._row_count = self._first_row - self._last_row + 1
-        self._col_count = self._first_col - self._last_col + 1
+        self._row_count = self._last_row - self._first_row + 1
+        self._col_count = self._last_col - self._first_col + 1
 
     def close(self):
         self._ws = None

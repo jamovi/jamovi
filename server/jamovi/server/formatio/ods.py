@@ -77,8 +77,8 @@ class ODSReader(Reader):
 
         self._last_col = col_no
 
-        self._row_count = self._first_row - self._last_row + 1
-        self._col_count = self._first_col - self._last_col + 1
+        self._row_count = self._last_row - self._first_row + 1
+        self._col_count = self._last_col - self._first_col + 1
 
         self.set_total(self._row_count)
 
