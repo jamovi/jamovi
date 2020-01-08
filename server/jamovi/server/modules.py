@@ -1,6 +1,7 @@
 
 import os
 import os.path
+import platform
 import logging
 import yaml
 import shutil
@@ -87,8 +88,8 @@ class Modules:
 
     _instance = None
 
-    LIBRARY_ROOT = 'https://library.jamovi.org/{}/R{}/'.format(app_info.os, app_info.r_version) if os.name == 'nt' else 'https://library.jamovi.org/'
-    LIBRARY_INDEX = 'index' if os.name == 'nt' else 'modules.yaml'
+    LIBRARY_ROOT = 'https://library.jamovi.org/{}/R{}/'.format(app_info.os, app_info.r_version) if platform.system() != 'Linux' else 'https://library.jamovi.org/'
+    LIBRARY_INDEX = 'index' if platform.system() != 'Linux' else 'modules.yaml'
 
     @classmethod
     def instance(cls):
