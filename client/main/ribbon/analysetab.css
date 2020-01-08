@@ -80,6 +80,10 @@
     background-image: url("../assets/analysis-rosetta.svg");
 }
 
+.jmv-ribbon-button[data-name="ufs"] .jmv-ribbon-button-icon {
+    background-image: url("../assets/analysis-ufs.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../assets/analysis-more.svg");
 }
