@@ -1,6 +1,7 @@
 
 import os
 import os.path
+import errno
 import re
 import importlib
 
@@ -73,6 +74,8 @@ def read(data, path, prog_cb, is_example=False):
 
     if path == '':
         blank.read(data)
+    elif not os.path.exists(path):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
     elif ext == '.omv':
         omv.read(data, path, prog_cb)
         if not is_example:
