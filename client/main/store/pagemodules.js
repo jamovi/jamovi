@@ -86,13 +86,22 @@ const PageModules = Backbone.View.extend({
 
             let version = Version.stringify(module.version, 3);
 
+            let subtitle = module.title;
+            // This regex is used to trim off any leading shortname (as well as seperators) from the title
+            // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
+            let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
+            subtitle = subtitle.replace(re, '');
+            let label = module.name;
+            if (module.name !== subtitle)
+                label = `${ module.name } - ${ subtitle }`;
+
             let html = `
                 <div class="jmv-store-module" data-name="${ module.name }">
                     <div class="jmv-store-module-lhs">
                         <div class="jmv-store-module-icon"></div>
                     </div>
                     <div class="jmv-store-module-rhs">
-                        <h2>${ module.title }<span class="version">${ version }</span></h2>
+                        <h2>${ label }<span class="version">${ version }</span></h2>
                         <div class="authors">${ module.authors.join(', ') }</div>
                         <div class="description">${ module.description }</div>`;
 
