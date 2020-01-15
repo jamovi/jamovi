@@ -102,8 +102,8 @@ const PageModules = Backbone.View.extend({
                     </div>
                     <div class="jmv-store-module-rhs">
                         <h2>${ label }<span class="version">${ version }</span></h2>
-                        <div class="authors">${ module.authors.join(', ') }</div>
-                        <div class="description">${ module.description }</div>`;
+                        <div class="authors"></div>
+                        <div class="description"></div>`;
 
             if (this.settings.getSetting('mode', 'normal') !== 'demo') {
                 for (let op of module.ops) {
@@ -126,6 +126,10 @@ const PageModules = Backbone.View.extend({
                 </div>`;
 
             let $module = $(html);
+
+            $module.find('.description').html(module.description);
+            $module.find('.authors').html(module.authors.join(', '));
+
             $module.appendTo(this.$content);
             $module.on('click', event => this._moduleClicked(event));
         }
