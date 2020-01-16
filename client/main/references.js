@@ -125,9 +125,9 @@ class References extends HTMLElement {
             name: 'jamovi',
             type: 'software',
             authors: { complete: 'The jamovi project' },
-            year: 2019,
+            year: 2020,
             title: 'jamovi',
-            publisher: '(Version 1.1) [Computer Software]. Retrieved from https://www.jamovi.org',
+            publisher: '(Version 1.2) [Computer Software]. Retrieved from https://www.jamovi.org',
             url: 'https://www.jamovi.org',
         }));
 
@@ -135,9 +135,9 @@ class References extends HTMLElement {
             name: 'R',
             type: 'software',
             authors: { complete: 'R Core Team' },
-            year: 2018,
+            year: 2019,
             title: 'R: A Language and envionment for statistical computing',
-            publisher: '[Computer software]. Retrieved from https://cran.r-project.org/',
+            publisher: '(Version 3.6) [Computer software]. Retrieved from https://cran.r-project.org/',
             url: 'https://cran.r-project.org/',
         }));
 
