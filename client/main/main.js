@@ -349,7 +349,7 @@ $(document).ready(() => {
     }).then(() => {
 
         if (window.location.search.indexOf('?open=') !== -1) {
-            toOpen = window.location.search.split('?open=')[1];
+            toOpen = `${ window.location.search }${ window.location.hash }`.split('?open=')[1];
             toOpen = decodeURI(toOpen);
         }
 

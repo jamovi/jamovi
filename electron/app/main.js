@@ -354,7 +354,7 @@ app.on('window-all-closed', () => app.quit());
 app.on('will-finish-launching', () => {
     // macOS file open events
     app.on('open-file', (event, path) => {
-        let cmd = { open: decodeURI(path) };
+        let cmd = { open: decodeURIComponent(path) };
         if (app.isReady())
             createWindow(cmd);
         else
@@ -505,7 +505,7 @@ const createWindow = function(open) {
     if (open.id)
         url += open.id + '/';
     if (open.open)
-        url += '?open=' + encodeURI(path.resolve(open.open));
+        url += '?open=' + encodeURIComponent(path.resolve(open.open));
 
     wind.loadURL(url);
 
