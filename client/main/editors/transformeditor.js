@@ -85,6 +85,7 @@ const TransformEditor = function(dataset) {
                             type: 'error',
                         });
                     });
+                    window.clearTextSelection();
                 }
                 _applyOnBlur = true;
             } );
@@ -340,9 +341,11 @@ const TransformEditor = function(dataset) {
         tarp.show('recode-formula', true, 0.1, 299).then(() => {
             this.$contents.removeClass('super-focus');
             this._applyFormula();
+            window.clearTextSelection();
         }, () => {
             this.$contents.removeClass('super-focus');
             this._applyFormula();
+            window.clearTextSelection();
         });
     };
 
@@ -778,8 +781,10 @@ const TransformEditor = function(dataset) {
         }
 
         $formula.blur((event) => {
-            if (this._isRealBlur(elements))
+            if (this._isRealBlur(elements)) {
                 dropdown.hide();
+                window.clearTextSelection();
+            }
             elements._subFocusClicked = false;
         });
         $formula.on('keydown', (event) => {
