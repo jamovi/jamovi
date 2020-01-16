@@ -94,8 +94,11 @@ const ComputedVarWidget = Backbone.View.extend({
         });
         this.$formula.blur((event) => {
             keyboardJS.resume('computed');
-            if ( ! dropdown.clicked() && ! this._editorClicked)
+            if ( ! dropdown.clicked() && ! this._editorClicked) {
                 this.model.set('formula', this.$formula[0].textContent);
+                window.clearTextSelection();
+            }
+
         });
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter

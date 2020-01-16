@@ -15,6 +15,18 @@ const RecodedVarWidget = require('./recodedvarwidget');
 const FilterWidget = require('./filterwidget');
 const VariableListItem = require('./variablelistitem');
 
+window.clearTextSelection = function() {
+    if (window.getSelection) {
+        if (window.getSelection().empty) {  // Chrome
+            window.getSelection().empty();
+        } else if (window.getSelection().removeAllRanges) {  // Firefox
+            window.getSelection().removeAllRanges();
+        }
+    } else if (document.selection) {  // IE?
+        document.selection.empty();
+    }
+};
+
 const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
     initialize(args) {
@@ -175,6 +187,7 @@ const EditorWidget = Backbone.View.extend({
 
         $element.blur(() => {
             keyboardJS.resume('editor-' + propertyName);
+            window.clearTextSelection();
         } );
 
         $element.keydown((event) => {

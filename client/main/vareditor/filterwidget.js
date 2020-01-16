@@ -743,6 +743,8 @@ const FilterWidget = Backbone.View.extend({
                 data[name] = $element[0].textContent;
                 this.setColumnProperties($filter, [{ id: column.id, values: data }]);
             }
+
+            window.clearTextSelection();
         });
         $element.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
