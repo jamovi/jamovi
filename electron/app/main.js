@@ -150,6 +150,7 @@ if (app.requestSingleInstanceLock) {
     else {
         app.on('second-instance', (e, argv, wd) => {
             argv.shift(); // remove exe
+            console.log(argv)
             let cmd = marshallArgs(argv, wd);
             handleCommand(cmd);
         });
@@ -158,6 +159,7 @@ if (app.requestSingleInstanceLock) {
 else {
     let secondInstance = app.makeSingleInstance((argv, wd) => {
         argv.shift(); // remove exe
+        console.log(argv)
         let cmd = marshallArgs(argv, wd);
         handleCommand(cmd);
     });
@@ -445,7 +447,6 @@ const handleCommand = function(cmd) {
     }
     else if ('open' in cmd) {
         createWindow(cmd);
-        console.log('dfdffdf')
     }
     else if ('install' in cmd) {
         server.stdin.write('install: ' + cmd.install + '\n');
@@ -480,8 +481,6 @@ const createWindow = function(open) {
             event.preventDefault();
         }
     });
-
-    wind.toggleDevTools();
 
     if (recorderWindow !== null) {
         let script = `window.notifyCurrentWindowChanged(${wind.id})`;
