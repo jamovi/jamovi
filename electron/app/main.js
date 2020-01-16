@@ -150,7 +150,6 @@ if (app.requestSingleInstanceLock) {
     else {
         app.on('second-instance', (e, argv, wd) => {
             argv.shift(); // remove exe
-            console.log(argv)
             let cmd = marshallArgs(argv, wd);
             handleCommand(cmd);
         });
@@ -159,7 +158,6 @@ if (app.requestSingleInstanceLock) {
 else {
     let secondInstance = app.makeSingleInstance((argv, wd) => {
         argv.shift(); // remove exe
-        console.log(argv)
         let cmd = marshallArgs(argv, wd);
         handleCommand(cmd);
     });
