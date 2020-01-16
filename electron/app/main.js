@@ -354,7 +354,7 @@ app.on('window-all-closed', () => app.quit());
 app.on('will-finish-launching', () => {
     // macOS file open events
     app.on('open-file', (event, path) => {
-        let cmd = { open: decodeURI(path) };
+        let cmd = { open: decodeURIComponent(path) };
         if (app.isReady())
             createWindow(cmd);
         else
@@ -445,6 +445,7 @@ const handleCommand = function(cmd) {
     }
     else if ('open' in cmd) {
         createWindow(cmd);
+        console.log('dfdffdf')
     }
     else if ('install' in cmd) {
         server.stdin.write('install: ' + cmd.install + '\n');
@@ -480,6 +481,8 @@ const createWindow = function(open) {
         }
     });
 
+    wind.toggleDevTools();
+
     if (recorderWindow !== null) {
         let script = `window.notifyCurrentWindowChanged(${wind.id})`;
         recorderWindow.webContents.executeJavaScript(script);
@@ -505,7 +508,7 @@ const createWindow = function(open) {
     if (open.id)
         url += open.id + '/';
     if (open.open)
-        url += '?open=' + encodeURI(path.resolve(open.open));
+        url += '?open=' + encodeURIComponent(path.resolve(open.open));
 
     wind.loadURL(url);
 
