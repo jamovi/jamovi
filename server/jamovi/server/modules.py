@@ -349,7 +349,7 @@ class Modules:
         module.authors = [ ]
         module.authors.extend(defn['authors'])
 
-        if incompatible:
+        if module.incompatible:
             return module
 
         if 'analyses' in defn:
