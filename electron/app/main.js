@@ -91,6 +91,10 @@ const marshallArgs = function(args, wd, first) {
         console.log(readConfig().version);
         cmd.exit = true;
     }
+    else if (args[0] === '--r-version') {
+        console.log(readConfig().env.JAMOVI_R_VERSION);
+        cmd.exit = true;
+    }
     else if (args[0] === '--install') {
         if (args.length > 1) {
             let p = path.resolve(wd, args[1]);
