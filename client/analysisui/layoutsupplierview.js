@@ -100,8 +100,9 @@ const LayoutSupplierView = function(params) {
     this.onContainerRendering = function(context) {
         let baseLayout = new LayoutGrid();
         let label = this.getPropertyValue('label');
+        let nextRow = 0;
         if (label !== null)
-            baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
+            baseLayout.addCell(0, nextRow++, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
@@ -112,7 +113,7 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid.setAutoSizeHeight(false);
         this.supplierGrid.allocateSpaceForScrollbars = false;
         this.ignoreTransform = true;
-        let cell = baseLayout.addCell(0, label !== null ? 1 : 0, false, this.supplierGrid);
+        let cell = baseLayout.addCell(0, nextRow, false, this.supplierGrid);
         this.ignoreTransform = false;
         cell.setStretchFactor(1);
         cell.dockContentHeight = true;
@@ -125,6 +126,63 @@ const LayoutSupplierView = function(params) {
         cell.dockContentHeight = true;
         cell.spanAllRows = true;
         this.ignoreTransform = false;
+
+
+        //////////////////////////////////
+        this.$searchButton = $('<div class="search"></div>');
+        baseLayout.$el.append(this.$searchButton);
+
+        let $search = $('<div class="supplier-search"><div class="outer-text"><input class="text" placeholder="Search"></input></div></div>');
+        this.$searchInput = $search.find('input');
+
+        let searchCell = this.supplierGrid.addCell(0, 0, true, $search);
+        searchCell.setStretchFactor(1);
+        searchCell.setVisibility(false);
+
+        this.enableSearch = (value) => {
+            this.searchEnabled = value;
+            if (value === false) {
+                $search.removeClass('visible');
+                this.$searchInput.val('');
+                this.filterSuppliersList(true);
+            }
+            else {
+                $search.addClass('visible');
+                this.$searchInput.focus();
+                this.$searchInput.select();
+            }
+
+            $search.css('margin-top', '');
+            this.supplierGrid.setCellVisibility(searchCell, this.searchEnabled);
+            setTimeout(() => {
+                $search.css('margin-top', this.supplierGrid.$el.scrollTop());
+            }, 0);
+        };
+
+        this.$searchInput.on('input', (event) => {
+            this.filterSuppliersList(true);
+            this.supplierGrid.$el.scrollTop(0);
+        });
+
+        this.$searchInput.on('keydown', (event) => {
+            var keypressed = event.keyCode || event.which;
+            if (keypressed === 27) // escape key
+                this.enableSearch(false);
+        });
+
+        this.$searchButton.on('click', (event) => {
+            this.enableSearch( ! this.searchEnabled);
+        });
+
+        $search.on('mousedown focus', (event) => {
+            this.supplierGrid.clearSelection();
+        });
+
+        this.supplierGrid.$el.on('scroll', (event) => {
+            $search.css('margin-top', this.supplierGrid.$el.scrollTop());
+        });
+
+        ///////////////////////////////////
 
         if (this._items.length > 0) {
             this.supplierGrid.suspendLayout();
@@ -198,7 +256,7 @@ const LayoutSupplierView = function(params) {
         let items = [];
         let selectionCount = this.supplierGrid.selectedCellCount();
         for (let i = 0; i < selectionCount; i++)
-            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row));
+            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row - 1));
 
         return items;
     };
@@ -315,7 +373,7 @@ const LayoutSupplierView = function(params) {
 
     this.selectNextAvaliableItem = function(from) {
         let cell = null;
-        for (let r = from; r < this._items.length; r++) {
+        for (let r = from; r < this._items.length + 1; r++) {
             cell = this.supplierGrid.getCell(0, r);
             if (cell !== null && cell.visible()) {
                 this.supplierGrid.selectCell(cell);
@@ -335,13 +393,20 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid.suspendLayout();
         for (let i = 0; i < this._items.length; i++) {
             let item = this._items[i];
-            this['render_' + item.value.format.name](item, i);
+            this['render_' + item.value.format.name](item, i + 1);
         }
 
-        while (this._items.length < this.supplierGrid._rowCount) {
-            this.supplierGrid.removeRow(this._items.length);
+        while (this._items.length < this.supplierGrid._rowCount - 1) {
+            this.supplierGrid.removeRow(this._items.length + 1);
         }
         this.supplierGrid.resumeLayout();
+
+        setTimeout(() => {
+            if (this.supplierGrid._hasVScrollbars)
+                this.$searchButton.css('right', (this.supplierGrid.getScrollbarWidth() + 3) + 'px');
+            else
+                this.$searchButton.css('right', '');
+        }, 10);
     };
 
     this.render_term = function(item, row) {
@@ -464,18 +529,26 @@ const LayoutSupplierView = function(params) {
 
     this.blockFilterProcess = false;
 
-    this.filterSuppliersList = function() {
+    this.filterSuppliersList = function(force) {
         if (this.blockFilterProcess)
             return;
 
-        if (this._persistentItems === false) {
+        let searchVal = this.$searchInput.val().trim().toLowerCase();
+
+        if (this._persistentItems === false || force) {
             this.supplierGrid.suspendLayout();
             for (let i = 0; i < this._items.length; i++) {
                 let item = this._items[i];
-                let rowCells = this.supplierGrid.getRow(i);
+                let visibility = this._persistentItems || item.used === 0;
+                if (visibility && searchVal !== '') {
+                    let value = item.value.toString().toLowerCase();
+                    visibility = value.indexOf(searchVal) !== -1;
+                }
+
+                let rowCells = this.supplierGrid.getRow(i + 1);
                 for (let j = 0; j < rowCells.length; j++) {
                     let cell = rowCells[j];
-                    this.supplierGrid.setCellVisibility(cell, item.used === 0);
+                    this.supplierGrid.setCellVisibility(cell, visibility);
                 }
             }
             this.supplierGrid.resumeLayout();
