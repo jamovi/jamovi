@@ -1,6 +1,7 @@
 
 from ast import NodeVisitor
 from ast import walk
+import ast
 from inspect import signature
 from inspect import Parameter
 from math import isnan
@@ -10,17 +11,17 @@ from . import functions
 
 class Checker(NodeVisitor):
 
-    LEGAL_NODES = [ 'Name', 'Num', 'Str', 'Call', 'Load',
-                    'UnaryOp', 'UAdd', 'USub', 'Not', 'Invert',
-                    'BinOp', 'Add', 'Sub', 'Mult', 'Div', 'Mod', 'Pow',
-                    'FloorDiv',
-                    'Compare', 'Eq', 'NotEq', 'Gt', 'GtE', 'Lt', 'LtE',
-                    'BoolOp', 'And', 'Or', 'keyword' ]
+    LEGAL_NODES = [ ast.Name, ast.Num, ast.Str, ast.Call, ast.Load,
+                    ast.UnaryOp, ast.UAdd, ast.USub, ast.Not, ast.Invert,
+                    ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod,
+                    ast.Pow, ast.FloorDiv,
+                    ast.Compare, ast.Eq, ast.NotEq, ast.Gt, ast.GtE, ast.Lt,
+                    ast.LtE, ast.BoolOp, ast.And, ast.Or, ast.keyword ]
 
     @staticmethod
     def check(node, column=None, dataset=None):
         for child in walk(node):
-            if child.__class__.__name__ not in Checker.LEGAL_NODES:
+            if not any(map(lambda t: isinstance(child, t), Checker.LEGAL_NODES)):
                 raise SyntaxError('Formula contains illegal node')
 
         if dataset is None:
