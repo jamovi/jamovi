@@ -74,7 +74,9 @@ class Parser(ReadStatParser):
         if label is not None:
             column.description = label
 
-        width = variable.display_width * 8
+        # this should be multiplied by 8, but we use larger fonts,
+        # so i'm opting for 12
+        width = variable.display_width * 12
 
         if width == 0:
             width = 100
