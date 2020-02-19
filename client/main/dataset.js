@@ -954,16 +954,24 @@ const DataSetModel = Backbone.Model.extend({
             this.trigger('transformsChanged', transformEvent);
         }
 
-        for (let rowsDeleted of outputData.rowData.rowsDeleted)
+        let refresh = false;
+
+        for (let rowsDeleted of outputData.rowData.rowsDeleted) {
             this.trigger('rowsDeleted', rowsDeleted);
-        for (let rowsInserted of outputData.rowData.rowsInserted)
+            refresh = true;
+        }
+        for (let rowsInserted of outputData.rowData.rowsInserted) {
             this.trigger('rowsInserted', rowsInserted);
+            refresh = true;
+        }
+
+        if (datasetPB.filtersChanged)
+            refresh = true;
 
         if (outputData.cellsChanged)
             this.trigger('cellsChanged', outputData.cellsChanged);
 
-        outputData.refresh = datasetPB.refresh;
-        if (datasetPB.refresh)
+        if (refresh)
             this.trigger('refreshView');
 
         return outputData;

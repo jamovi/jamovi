@@ -1051,7 +1051,6 @@ class Instance:
             'transforms': set(),
             'deleted_columns': set(),
             'deleted_transforms': set(),
-            'refresh': False,
             'filters_changed': False,
         }
 
@@ -1063,8 +1062,8 @@ class Instance:
         if request.incData:
             self._apply_cells(request, response, changes)
 
-        response.refresh = changes['refresh']
         if changes['filters_changed']:
+            response.filtersChanged = True
             self._data.refresh_filter_state()
 
         self._populate_schema_info(request, response)
@@ -1263,7 +1262,6 @@ class Instance:
                 rows_removed = True
 
         if rows_removed:
-            changes['refresh'] = True
             for column in self._data:  # the column info needs sending back because the cell edit ranges have changed
                 changes['columns'].add(column)
 
@@ -1350,8 +1348,6 @@ class Instance:
             for column in self._data:
                 if column.is_filter:
                     changes['columns'].add(column)
-            # view needs refreshing
-            changes['refresh'] = True
             changes['filters_changed'] = True
         else:
             for column in sorted(to_reparse, key=lambda x: x.index):
@@ -1539,7 +1535,6 @@ class Instance:
                     break
                 column.hidden = self._data.filters_visible is False
                 cols_changed.add(column)
-            changes['refresh'] = True
 
         for column_pb in request.schema.columns:
             if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -1765,7 +1760,6 @@ class Instance:
 
         if filter_changed:
             changes['filters_changed'] = True
-            changes['refresh'] = True
 
         for column in cols_changed:
             changes['columns'].add(column)
@@ -2175,7 +2169,6 @@ class Instance:
 
         if filter_changed or n_rows_changed:
             changes['filters_changed'] = True
-            changes['refresh'] = True
 
         for column in cols_changed:
             changes['columns'].add(column)

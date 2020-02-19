@@ -585,7 +585,7 @@ message DataSetRR {
     uint32 changesCount = 7;
     int32 changesPosition = 8;
     bool noUndo = 9;
-    bool refresh = 10;
+    bool filtersChanged = 10;
 }
 
 message ModuleRR {
