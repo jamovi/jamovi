@@ -1,6 +1,7 @@
 
 .silky-option-combo-input {
     margin-left: 5px;
+    max-width: 350px;
 }
 
 .silky-option-combo-label.silky-control-margin-small {

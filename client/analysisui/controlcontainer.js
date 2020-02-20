@@ -2,7 +2,7 @@
 
 const SuperClass = require('../common/superclass');
 const LayoutGrid = require('./layoutgrid').Grid;
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 
@@ -40,7 +40,7 @@ const deepRenderToGrid = function(ctrl, context, toGrid, row, column) {
 const ControlContainer = function(params) {
 
     LayoutGrid.extendTo(this);
-    GridControl.extendTo(this, params);
+    TitledGridControl.extendTo(this, params);
     LayoutGridBorderSupport.extendTo(this);
 
     this.editable = true;
@@ -79,7 +79,7 @@ const ControlContainer = function(params) {
             if (cell !== undefined) {
                 _lastCell = { row:_nextCell.row, column: _nextCell.column };
                 _nextCell.row = cell.row;
-                _nextCell.column = cell.column;
+                _nextCell.column = cell.column * 2;
             }
             else
                 ctrlDef.cell = { column: _nextCell.column, row: _nextCell.row };

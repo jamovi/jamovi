@@ -49,10 +49,8 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
                 this.labelChange(this.$label);
                 this.$label.blur();
                 if (this.$items.length > 0) {
-                    this.ready().then(() => {
-                        this.$items[0].focus();
-                        this.enterPressed = -2;
-                    });
+                    this.$items[0].focus();
+                    this.enterPressed = -2;
                 }
             }
         });
@@ -61,7 +59,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             this.$label.addClass("rma-new-factor");
         else
             this.$label.removeClass("rma-new-factor");
-        let cell = this.addCell(0, 0, false, this.$label);
+        let cell = this.addCell(0, 0, this.$label);
         cell.setHorizontalAlign('center');
         cell.setStretchFactor(1);
         if (this.isFirst === false)
@@ -75,7 +73,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         else
             this.$closeButton.css("visibility", "visible");
 
-        cell = this.addCell(1, 0, false, this.$closeButton);
+        cell = this.addCell(1, 0, this.$closeButton);
         cell.vAlign = "center";
 
         if (isEmpty === false) {
@@ -166,7 +164,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             this.listenForChange($t);
             this.$items[index] = $t;
 
-            let cell = this.addCell(0, index + 1, false, $t);
+            let cell = this.addCell(0, index + 1, $t);
             cell.ignoreContentMargin_top = true;
             cell.ignoreContentMargin_bottom = true;
             cell.setStretchFactor(1);
@@ -176,7 +174,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             this.listenForRemove($levelButton);
             this.levelButtons[index] = $levelButton;
 
-            cell = this.addCell(1, index + 1, false, $levelButton);
+            cell = this.addCell(1, index + 1, $levelButton);
             cell.vAlign = "center";
 
             $t.keydown((event) => {
@@ -186,10 +184,8 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
                     this.onChange($t);
                     $t.blur();
                     if (index + 1 < this.$items.length) {
-                        this.ready().then(() => {
-                            this.$items[index + 1].focus();
-                            this.enterPressed = -2;
-                        });
+                        this.$items[index + 1].focus();
+                        this.enterPressed = -2;
                     }
                 }
             });
@@ -209,9 +205,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             $levelButton.css("visibility", "visible");
 
         if (this.enterPressed === index - 1) {
-            this.ready().then(() => {
-                $t.focus();
-            });
+            $t.focus();
             this.enterPressed = -2;
         }
     };
@@ -220,7 +214,6 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
 
         this._topIndex = index;
         this.data = data;
-        this.suspendLayout();
         if (data === undefined || data === null) {
             this.$label.val("RM Factor " + (index + 1));
             this.$label.addClass("rma-new-factor");
@@ -258,8 +251,6 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             }
 
         }
-        this.resumeLayout();
-
     };
 
     this.close = function() {
@@ -341,10 +332,9 @@ const RMAnovaFactorsControl = function(params) {
 
     this.$el.addClass('rmanova-factors-control');
 
-    if (navigator.platform === 'MacIntel') 
+    if (navigator.platform === 'MacIntel')
         HiddenScrollBarSupport.extendTo(this);
 
-    this.setAutoSizeHeight(false);
     this._animateCells = true;
 
     this.items = [];
@@ -356,7 +346,7 @@ const RMAnovaFactorsControl = function(params) {
             item = new rmafcItem(this, data, index === 0, isVirtual);
             item.render(index);
 
-            let cell = this.addCell(0, index, false, item);
+            let cell = this.addCell(0, index, item);
             cell.setStretchFactor(1);
 
             this.items[index] = item;
@@ -369,14 +359,14 @@ const RMAnovaFactorsControl = function(params) {
     this.onRenderToGrid = function(grid, row, column) {
 
         let width = 1;
-        if (grid.addCell('aux', row + 1, false, $('<div class="supplier-button-filler"></div>')) !== null)
+        if (grid.addCell('aux', row + 1, $('<div class="supplier-button-filler"></div>')) !== null)
             width += 1;
 
         let label = this.getPropertyValue("label");
         if (label !== null)
-            grid.addCell(column, row, true, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
+            grid.addCell(column, row, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
 
-        let cell = grid.addCell(column, row + 1, true, this);
+        let cell = grid.addCell(column, row + 1, this);
         cell.setStretchFactor(0.5);
 
         return { height: 2, width: width };
@@ -477,7 +467,6 @@ const RMAnovaFactorsControl = function(params) {
             if (this.data === null)
                 this.data = [];
 
-            this.suspendLayout();
             for (let i = 0; i <= this.data.length; i++)
                 this.createFactorsObject(this.data[i], i, i  === this.data.length);
 
@@ -488,7 +477,6 @@ const RMAnovaFactorsControl = function(params) {
                 this.items.splice(this.data.length + 1, countToRemove);
                 this.removeRow(this.data.length + 1, countToRemove);
             }
-            this.resumeLayout();
         }
     };
 

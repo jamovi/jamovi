@@ -9,7 +9,6 @@ const GridControl = function(params) {
 
     ControlBase.extendTo(this, params);
 
-    this.registerSimpleProperty("fitToGrid", false);
     this.registerSimpleProperty("stretchFactor", 0);
     this.registerSimpleProperty("horizontalAlignment", "left", new EnumPropertyFilter(["left", "center", "right"], "left"));
     this.registerSimpleProperty("verticalAlignment", "top", new EnumPropertyFilter(["top", "center", "bottom"], "top"));
@@ -34,20 +33,18 @@ const GridControl = function(params) {
         if (this.hasProperty('verticalAlignment'))
             cell.setVerticalAlign(this.getPropertyValue('verticalAlignment'));
 
-        if (this.hasProperty('fitToGrid'))
-            cell.fitToGrid = this.getPropertyValue('fitToGrid');
-
         if (this.hasProperty('stretchFactor'))
             cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
 
-        cell.minimumWidth = this.getPropertyValue('minWidth');
-        cell.maximumWidth = this.getPropertyValue('maxWidth');
-        cell.minimumHeight = this.getPropertyValue('maxHeight');
-        cell.maximumHeight = this.getPropertyValue('minHeight');
+        cell.setDimensionMinMax(this.getPropertyValue('minWidth'), this.getPropertyValue('maxWidth'), this.getPropertyValue('minHeight'), this.getPropertyValue('maxHeight'));
+    };
+
+    this.getSpans = function() {
+        return { rows: 1, columns: 1 };
     };
 
     this.renderToGrid = function(grid, row, column) {
-
+        let spans = this.getSpans();
         let useSingleCell = this.getPropertyValue("useSingleCell");
         if (this.usesSingleCell()) {
             if (this.createItem)
@@ -59,13 +56,13 @@ const GridControl = function(params) {
                     this.$el.addClass(templateName);
             }
 
-            let cell = grid.addCell(column, row, false, this);
+            let cell = grid.addCell(column, row, this);
             this._applyCellProperties(cell);
 
             if (this.addedContentToCell)
                 this.addedContentToCell(cell);
 
-            return { height: 1, width: 1, cell: cell };
+            return { height: spans.rows, width: spans.columns, cell: cell };
         }
         else if (this.onRenderToGrid && this.usesSingleCell() === false && useSingleCell === true){
             LayoutGrid.extendTo(this);
@@ -85,7 +82,7 @@ const GridControl = function(params) {
             }
             let returnData = this.onRenderToGrid(this, 0, 0);
             if (returnData.height > 0 || returnData.width > 0) {
-                let cell = grid.addCell(column, row, this.getPropertyValue('fitToGrid'), this);
+                let cell = grid.addCell(column, row, this);
                 this.render();
                 this._applyCellProperties(cell);
                 if (this.addedContentToCell)

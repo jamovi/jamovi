@@ -1,6 +1,5 @@
 
 .jmv-toolbar-group-body {
-    -webkit-app-region: no-drag;
     display: flex ;
     position: relative;
 }

@@ -43,10 +43,8 @@ const LayoutSupplierView = function(params) {
 
 
         if (_.isUndefined(this.supplierGrid) === false) {
-            this.supplierGrid.suspendLayout();
             this.renderItemList();
             this.filterSuppliersList();
-            this.supplierGrid.resumeLayout();
         }
 
         this.trigger('value_changed');
@@ -97,11 +95,20 @@ const LayoutSupplierView = function(params) {
     this._targetCount = 0;
     this._targetFocusMethods = {};
 
+    this.displaySearch = function(value) {
+        if (value)
+            this.$searchButton.show();
+        else
+            this.$searchButton.hide();
+    };
+
     this.onContainerRendering = function(context) {
         let baseLayout = new LayoutGrid();
+        baseLayout.$el.addClass('jmv-variable-supplier-base');
         let label = this.getPropertyValue('label');
+        let nextRow = 0;
         if (label !== null)
-            baseLayout.addCell(0, 0, true, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
+            baseLayout.addCell(0, nextRow++, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
@@ -109,32 +116,110 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid._animateCells = true;
         this.supplierGrid.setMinimumHeight(200);
         this.supplierGrid.setMaximumHeight(200);
-        this.supplierGrid.setAutoSizeHeight(false);
-        this.supplierGrid.allocateSpaceForScrollbars = false;
+
         this.ignoreTransform = true;
-        let cell = baseLayout.addCell(0, label !== null ? 1 : 0, false, this.supplierGrid);
+        let cell = baseLayout.addCell(0, nextRow, this.supplierGrid);
         this.ignoreTransform = false;
         cell.setStretchFactor(1);
-        cell.dockContentHeight = true;
+        cell.setVerticalAlign('stretch');
 
         this.setPickupSourceElement(this.supplierGrid.$el);
 
         this.ignoreTransform = true;
-        cell = this.addCell(0, 0, false, baseLayout);
-        cell.setStretchFactor(0.5);
-        cell.dockContentHeight = true;
-        cell.spanAllRows = true;
+        cell = this.addCell(0, 0, baseLayout);
+        cell.setStretchFactor(1);
+        cell.setVerticalAlign('stretch');
+        cell.setSpanAllRows(true);
         this.ignoreTransform = false;
 
+
+        //////////////////////////////////
+        this.$searchButton = $('<div class="search"><div class="image"></div></div>');
+        this.supplierGrid.$el.append(this.$searchButton);
+        this.$searchButton.hide();
+
+        let $search = $('<div class="supplier-search"><div class="outer-text"><input class="text" placeholder="Search"></input></div></div>');
+        this.$searchInput = $search.find('input');
+
+        let searchCell = this.supplierGrid.addCell(0, 0, $search, { visible: false });
+        searchCell.setStretchFactor(1);
+        searchCell.makeSticky();
+
+        this.enableSearch = (value) => {
+            this.searchEnabled = value;
+
+            $search.css('margin-top', '');
+            searchCell.setVisibility(this.searchEnabled);
+
+            if (value === false) {
+                this.$searchInput.val('');
+                this.filterSuppliersList(true);
+            }
+            else {
+                this.$searchInput.focus();
+                this.$searchInput.select();
+            }
+        };
+
+        this.$searchInput.on('input', (event) => {
+            this.filterSuppliersList(true);
+            setTimeout(() => {
+                this.supplierGrid.$el.scrollTop(0);
+            }, 0);
+        });
+
+        this.$searchInput.on('keydown', (event) => {
+            var keypressed = event.keyCode || event.which;
+            if (keypressed === 27) // escape key
+                this.enableSearch(false);
+        });
+
+        this.$searchButton.on('click', (event) => {
+            this.enableSearch( ! this.searchEnabled);
+        });
+
+        $search.on('mousedown focus', (event) => {
+            this.supplierGrid.clearSelection();
+        });
+
+        ///////////////////////////////////
+
         if (this._items.length > 0) {
-            this.supplierGrid.suspendLayout();
             this.renderItemList();
             this.filterSuppliersList();
-            this.supplierGrid.resumeLayout();
         }
 
         this.onPopulate();
     };
+
+
+
+    this.onContainerRendered = function() {
+        setTimeout(() => {
+            let cell = this.getCell(2, this._rowCount - 1);
+            if (! cell.$content)
+                return;
+
+            let current = this.supplierGrid.$el.outerHeight();
+            let bottom2 = this.supplierGrid.$el.offset().top + this.supplierGrid.$el.outerHeight();
+            let bottom = cell.$content.offset().top + cell.$content.outerHeight();
+
+            let newHeight = this.supplierGrid.$el.outerHeight() + (bottom - bottom2);
+            this.supplierGrid.$el.css('height', newHeight + 'px');
+
+            if (bottom2 > bottom) {
+                let $bottomList = $(cell.$el.find('.silky-option-list.multi-item')[0]);
+                if ($bottomList) {
+                    newHeight = $bottomList.outerHeight() + (bottom2 - bottom);
+                    $bottomList.css('height', newHeight + 'px');
+                }
+            }
+        }, 0);
+    };
+
+    this._override('updateGridProperties', (baseFunction) => {
+        this.$el.css('grid-template-rows', 'repeat(' + (this._rowCount)  + ', auto) 1fr');
+    });
 
     this.rowTransform = function(row, column) {
         return row;
@@ -198,7 +283,7 @@ const LayoutSupplierView = function(params) {
         let items = [];
         let selectionCount = this.supplierGrid.selectedCellCount();
         for (let i = 0; i < selectionCount; i++)
-            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row));
+            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row - 1));
 
         return items;
     };
@@ -315,7 +400,7 @@ const LayoutSupplierView = function(params) {
 
     this.selectNextAvaliableItem = function(from) {
         let cell = null;
-        for (let r = from; r < this._items.length; r++) {
+        for (let r = from + 1; r < this._items.length + 1; r++) {
             cell = this.supplierGrid.getCell(0, r);
             if (cell !== null && cell.visible()) {
                 this.supplierGrid.selectCell(cell);
@@ -332,16 +417,14 @@ const LayoutSupplierView = function(params) {
     };
 
     this.renderItemList = function() {
-        this.supplierGrid.suspendLayout();
         for (let i = 0; i < this._items.length; i++) {
             let item = this._items[i];
-            this['render_' + item.value.format.name](item, i);
+            this['render_' + item.value.format.name](item, i + 1);
         }
 
-        while (this._items.length < this.supplierGrid._rowCount) {
-            this.supplierGrid.removeRow(this._items.length);
+        while (this._items.length < this.supplierGrid._rowCount - 1) {
+            this.supplierGrid.removeRow(this._items.length + 1);
         }
-        this.supplierGrid.resumeLayout();
     };
 
     this.render_term = function(item, row) {
@@ -351,11 +434,12 @@ const LayoutSupplierView = function(params) {
         let c1 = this.supplierGrid.getCell(0, row);
 
         if (c1 === null) {
-            c1 = this.supplierGrid.addCell(0, row, false,  $item);
+            c1 = this.supplierGrid.addCell(0, row,  $item);
             c1.clickable(true);
         }
         else {
-            c1.$content.remove();
+            if (c1.$content)
+                c1.$content.remove();
             c1.setContent($item);
         }
 
@@ -438,11 +522,12 @@ const LayoutSupplierView = function(params) {
         let c1 = this.supplierGrid.getCell(0, row);
 
         if (c1 === null) {
-            c1 = this.supplierGrid.addCell(0, row, false,  $item);
+            c1 = this.supplierGrid.addCell(0, row,  $item);
             c1.clickable(true);
         }
         else {
-            c1.$content.remove();
+            if (c1.$content)
+                c1.$content.remove();
             c1.setContent($item);
         }
         c1.off('layoutcell.selectionChanged');
@@ -464,21 +549,27 @@ const LayoutSupplierView = function(params) {
 
     this.blockFilterProcess = false;
 
-    this.filterSuppliersList = function() {
+    this.filterSuppliersList = function(force) {
         if (this.blockFilterProcess)
             return;
 
-        if (this._persistentItems === false) {
-            this.supplierGrid.suspendLayout();
+        let searchVal = this.$searchInput.val().trim().toLowerCase();
+
+        if (this._persistentItems === false || force) {
             for (let i = 0; i < this._items.length; i++) {
                 let item = this._items[i];
-                let rowCells = this.supplierGrid.getRow(i);
+                let visibility = this._persistentItems || item.used === 0;
+                if (visibility && searchVal !== '') {
+                    let value = item.value.toString().toLowerCase();
+                    visibility = value.indexOf(searchVal) !== -1;
+                }
+
+                let rowCells = this.supplierGrid.getRow(i + 1);
                 for (let j = 0; j < rowCells.length; j++) {
                     let cell = rowCells[j];
-                    this.supplierGrid.setCellVisibility(cell, item.used === 0);
+                    cell.setVisibility(visibility);
                 }
             }
-            this.supplierGrid.resumeLayout();
         }
     };
 };

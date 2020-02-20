@@ -42,7 +42,7 @@ const DragNDrop = function() {
         }
         self.setOverTarget(self, event.pageX, event.pageY);
 
-        if(event.preventDefault)
+        if(event.preventDefault && items.length > 0)
             event.preventDefault();
     };
 
@@ -264,6 +264,7 @@ const DragNDrop = function() {
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             let $item = item.$el.clone();
+            $item.css('width', item.$el.outerWidth());
             let $itemOuter = $('<div style="position: static;"></div>');
             $itemOuter.css('position', 'relative');
             $itemOuter.append($item);

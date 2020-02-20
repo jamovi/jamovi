@@ -1,6 +1,7 @@
 
 .silky-options-supplier-group {
     overflow: visible;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
 .silky-options-supplier-group.silky-control-margin-small {
@@ -31,8 +32,14 @@
     margin-bottom: 0px;
 }
 
+.jmv-variable-supplier-base {
+    height: 100%;
+    grid-template-rows: minmax(0, 1fr);
+}
+
 .silky-variable-supplier {
-    height: 200px;
+    min-height: 200px;
+    height: 100%;
     border: 1px solid rgb(130, 130, 130);
     background-color: rgb(255, 255, 255);
 }
