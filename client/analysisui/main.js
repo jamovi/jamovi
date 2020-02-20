@@ -203,7 +203,6 @@ function loadAnalysis(def, jamoviVersion) {
 
             let title = analysis.getTitle();
             console.log("loading - " + title + "...");
-            //var $title = $('.silky-options-title');
             $title.empty();
             $title.append(title);
 

@@ -4,7 +4,7 @@ const $ = require('jquery');
 const _ = require('underscore');
 const SelectableLayoutGrid = require('./selectablelayoutgrid');
 const OptionControl = require('./optioncontrol');
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const FormatDef = require('./formatdef');
 let DefaultControls;
 const EnumPropertyFilter = require('./enumpropertyfilter');
@@ -41,7 +41,7 @@ const OptionListControl = function(params) {
     }
 
     OptionControl.extendTo(this, params);
-    GridControl.extendTo(this, params);
+    TitledGridControl.extendTo(this, params);
     SelectableLayoutGrid.extendTo(this);
 
     Object.assign(this, Backbone.Events);
@@ -69,7 +69,6 @@ const OptionListControl = function(params) {
     this.isSingleItem = this.maxItemCount === 1;
     this.stretchEndCells = true;
     this._animateCells = true;
-    this.allocateSpaceForScrollbars = false;
     this._localData = [];
     this.controls = [];
 
@@ -77,7 +76,6 @@ const OptionListControl = function(params) {
 
     let heightType = this.getPropertyValue('height');
     this.$el.addClass(heightType + "-size");
-    this.setAutoSizeHeight(heightType === 'auto');
     this.$el.addClass('silky-control-margin-' + this.getPropertyValue("margin"));
     this.$el.addClass("silky-option-list");
     if (this.isSingleItem)
@@ -160,23 +158,23 @@ const OptionListControl = function(params) {
 
                 let row = 0;
                 if (this.showHeaders) {
-                    let hCell = this.addCell(i, row, false,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
+                    let hCell = this.addCell(i, row,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
                     hCell.setStretchFactor(columnInfo.stretchFactor);
+                    hCell.makeSticky();
                     hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
                     hCell.setVerticalAlign('center');
                     hCell.$el.addClass('silky-option-list-header-cell');
-                    hCell.minimumWidth = columnInfo.minWidth;
-                    hCell.maximumWidth = columnInfo.maxWidth;
-                    hCell.minimumHeight = columnInfo.maxHeight;
-                    hCell.maximumHeight = columnInfo.minHeight;
+                    hCell.setDimensionMinMax(columnInfo.minWidth, columnInfo.maxWidth, columnInfo.minHeight, columnInfo.maxHeight);
                     row += 1;
                 }
-                let $filler = $('<div style="white-space: nowrap;" class="list-item-ctrl silky-option-list-filler"></div>');
+                let $filler = $('<div style="white-space: nowrap;" class="list-item-ctrl"></div>');
+                let fillerInUse = false;
                 if (i === 0) {
                     let ghostText = this.getPropertyValue("ghostText");
                     if (ghostText !== null) {
                         this.$ghostTextLabel = $('<div class="column-ghost-label">' + ghostText + '</div>');
                         $filler.append(this.$ghostTextLabel);
+                        fillerInUse = true;
                     }
 
 
@@ -184,12 +182,17 @@ const OptionListControl = function(params) {
                         this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
                         this.$addButton.click(addButtonClick);
                         $filler.append(this.$addButton);
+                        fillerInUse = true;
                     }
                 }
-                let fillerCell = this.addCell(i, row, false, $filler);
+                let fillerCell = this.addCell(i, row, $filler);
+                fillerCell.$el.addClass('silky-option-list-filler');
+                if (fillerInUse)
+                    fillerCell.$el.addClass('in-use');
                 fillerCell.setStretchFactor(columnInfo.stretchFactor);
-                fillerCell.minimumWidth = columnInfo.minWidth;
-                fillerCell.maximumWidth = columnInfo.maxWidth;
+                fillerCell.setDimensionMinMax(columnInfo.minWidth, columnInfo.maxWidth);
+                /*fillerCell.minimumWidth = columnInfo.minWidth;
+                fillerCell.maximumWidth = columnInfo.maxWidth;*/
             }
         }
 
@@ -278,7 +281,6 @@ const OptionListControl = function(params) {
             this.controls.push(ctrl);
 
             ctrl.setPropertyValue("useSingleCell", true);
-            ctrl.setPropertyValue("fitToGrid", true);
             ctrl.setPropertyValue("verticalAlignment", "center");
 
             cell = deepRenderToGrid(ctrl, this._context, this, dispRow, dispColumn).cell;
@@ -692,7 +694,6 @@ const OptionListControl = function(params) {
         if (keys.length !== 1)
             return;
 
-        this.suspendLayout();
         let dispRow = this.rowIndexToDisplayIndex(keys[0]);
 
         this.adjustItemBaseKeys(keys[0], 1);
@@ -704,8 +705,6 @@ const OptionListControl = function(params) {
         this._localData.splice(keys[0], 0, this.clone(rowData));
         this.updateDisplayRow(dispRow, rowData);
         this.updateGhostLabel();
-        this.resumeLayout();
-
     };
 
     this.adjustItemBaseKeys = function(index, by) {
@@ -800,8 +799,6 @@ const OptionListControl = function(params) {
         if (this.getOption() !== null)
             list = this.getSourceValue();
 
-        this.suspendLayout();
-
         if (list !== null) {
             let oldLocalCount = this._localData.length;
             let oldLocal = this._localData;
@@ -828,9 +825,6 @@ const OptionListControl = function(params) {
         }
 
         this.updateGhostLabel();
-
-        this.resumeLayout();
-
     };
 
     this.contentRowCount = function() {

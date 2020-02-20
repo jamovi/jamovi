@@ -1,4 +1,6 @@
-
+.jmv-collapse-view {
+    overflow: hidden;
+}
 
 .silky-options-collapse-button {
     white-space: nowrap;

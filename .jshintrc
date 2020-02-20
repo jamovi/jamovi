@@ -10,6 +10,7 @@
     },
     "predef": [
         "customElements",
-        "DataTransfer"
+        "DataTransfer",
+        "ResizeObserver"
     ]
 }

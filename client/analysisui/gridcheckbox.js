@@ -3,7 +3,7 @@
 const $ = require('jquery');
 const _ = require('underscore');
 const OptionControl = require('./optioncontrol');
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
 const FormatDef = require('./formatdef');
 const Icons = require('./iconsupport');
@@ -11,7 +11,7 @@ const Icons = require('./iconsupport');
 const GridCheckbox = function(params) {
 
     OptionControl.extendTo(this, params);
-    GridControl.extendTo(this, params);
+    TitledGridControl.extendTo(this, params);
 
     this.registerSimpleProperty("format", FormatDef.bool);
     Icons.addSupport(this);
@@ -19,8 +19,6 @@ const GridCheckbox = function(params) {
     this.$_subel = $('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
 
     this.$el = this.$_subel;
-
-
 
     let horizontalAlign = this.getPropertyValue("horizontalAlignment");
     this.$_subel.attr('data-horizontal-align', horizontalAlign);

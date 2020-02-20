@@ -31,7 +31,7 @@ const LevelSelector = function(params) {
         let cell = null;
         if (label !== '') {
             this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue('margin') + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
-            cell = grid.addCell(column, row, true, this.$label);
+            cell = grid.addCell(column, row, this.$label);
             cell.setAlignment('left', 'center');
             columnUsed += 1;
         }
@@ -46,7 +46,7 @@ const LevelSelector = function(params) {
             this.setValue(value);
         });
 
-        cell = grid.addCell(column + columnUsed, row, true, this.$input);
+        cell = grid.addCell(column + columnUsed, row, this.$input);
         cell.setAlignment('left', 'center');
 
         columnUsed += 1;

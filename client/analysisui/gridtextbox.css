@@ -17,6 +17,8 @@
 
 .silky-option-text-input {
     padding-left: 3px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .silky-option-text-input.frameless-textbox {

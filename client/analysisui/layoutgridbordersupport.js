@@ -14,11 +14,9 @@ var LayoutGridBorderSupport = function() {
     this._lastColumnIndex = -1;
     this._lastRowIndex = -1;
 
-    this._override('_add', function(baseFunction, column, row, cell) {
+    this.onCellAdded = function(column, row, cell) {
         this._checkForAddedCell(column, row, cell);
-
-        baseFunction.call(self, column, row, cell);
-    });
+    };
 
     this._override('removeCell', function(baseFunction, cell) {
 

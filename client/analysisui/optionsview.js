@@ -31,9 +31,8 @@ const OptionsView = function(uiModel) {
             layoutDef._parentControl = null;
             let layoutGrid = new ControlContainer(layoutDef);
             layoutGrid.$el.addClass('top-level');
-            layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
-            layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
-            layoutGrid._animateCells = true;
+            //layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
+            //layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
 
             layoutGrid.renderContainer(this);
 
@@ -52,7 +51,7 @@ const OptionsView = function(uiModel) {
             this.layoutActionManager.fireCreateEvents(this);
 
             layoutGrid.render();
-
+            
             this.$el.append(layoutGrid.$el);
 
             window.setTimeout(() => {

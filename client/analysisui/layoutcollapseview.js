@@ -24,7 +24,7 @@ const LayoutCollapseView = function(params) {
     this._body = null;
 
     this.createItem = function() {
-        this.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
+        this.$el.addClass("jmv-collapse-view silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
 
         let groupText = this.getPropertyValue('label');
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
@@ -33,7 +33,7 @@ const LayoutCollapseView = function(params) {
         if (this._collapsed)
             this.$header.addClass("silky-gridlayout-collapsed");
 
-        this._headerCell = this.addCell(0, 0, false, this.$header);
+        this._headerCell = this.addCell(0, 0, this.$header);
         this._headerCell.setStretchFactor(1);
 
         this.$header.on('click', null, this, function(event) {
@@ -47,7 +47,7 @@ const LayoutCollapseView = function(params) {
         body.$el.addClass("silky-control-body");
         let data = body.renderToGrid(this, 1, 0);
         this._bodyCell = data.cell;
-        this.setContentVisibility(this._collapsed === false);
+        this._bodyCell.setVisibility(this._collapsed === false, true);
         return data.cell;
     };
 
@@ -59,8 +59,6 @@ const LayoutCollapseView = function(params) {
         this.$header.addClass("silky-gridlayout-collapsed");
 
         this.setContentVisibility(false);
-        this._headerCell.invalidateContentSize();
-        this.invalidateLayout('both', Math.random());
         this._collapsed = true;
     };
 
@@ -76,8 +74,7 @@ const LayoutCollapseView = function(params) {
         this.$header.removeClass("silky-gridlayout-collapsed");
 
         this.setContentVisibility(true);
-        this._headerCell.invalidateContentSize();
-        this.invalidateLayout('both', Math.random(), true);
+
         this._collapsed = false;
 
     };
