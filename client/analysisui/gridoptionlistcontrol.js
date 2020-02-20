@@ -1,18 +1,18 @@
 'use strict';
 
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const OptionListControl = require('./optionlistcontrol');
 const SuperClass = require('../common/superclass');
 
 const GridOptionListControl = function(params) {
     OptionListControl.extendTo(this, params);
-    GridControl.extendTo(this, params);
+    TitledGridControl.extendTo(this, params);
 
-    this.registerSimpleProperty("stretchFactor", 0.5);
+    this.registerSimpleProperty("stretchFactor", 1);
 
     this.addedContentToCell = function(cell) {
         if (this.isSingleItem === false)
-            cell.dockContentHeight = true;
+            cell.setVerticalAlign('stretch');
     };
 };
 SuperClass.create(GridOptionListControl);

@@ -30,6 +30,7 @@ const LayoutVariablesView = function(params) {
         if (populateMethod === 'manual')
             baseFunction.call(this);
         else {
+            this.displaySearch(true);
             let promise = this.requestData('columns', null);
             promise.then(columnInfo => {
                 this.resources = columnInfo;

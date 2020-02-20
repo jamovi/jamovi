@@ -65,7 +65,7 @@
     border-top: 1px dotted rgba(0, 0, 0, 0.4);
 }
 
-.silky-option-list-filler {
+.silky-option-list-filler:not(.in-use) {
     min-height: 5px;
 }
 

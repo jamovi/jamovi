@@ -292,7 +292,7 @@ const GridTargetContainer = function(params) {
         _parentControl: this,
         controls: this.getPropertyValue('controls'),
         style: this.getPropertyValue('style'),
-        stretchFactor: 0.5
+        stretchFactor: 1
     };
 
     this.container = new ControlContainer(containerParams);
@@ -637,10 +637,7 @@ const GridTargetContainer = function(params) {
 
                 let newVar = JSON.parse(JSON.stringify(f));
 
-                //if (Array.isArray(rawVar))
-                //    newVar = newVar.concat(rawVar);
-                //else
-                    newVar.push(rawVar);
+                newVar.push(rawVar);
 
                 if (counts[newVar.length - 1] === undefined)
                     counts[newVar.length - 1] = 1;
@@ -648,10 +645,7 @@ const GridTargetContainer = function(params) {
                     counts[newVar.length - 1] += 1;
                 list.splice(findPosition(newVar.length), 0, newVar);
             }
-            //if (Array.isArray(rawVar))
-            //    list.splice(i, 0, JSON.parse(JSON.stringify(rawVar)));
-            //else
-                list.splice(i, 0, [rawVar]);
+            list.splice(i, 0, [rawVar]);
             counts[0] += 1;
         }
 
@@ -762,7 +756,6 @@ const GridTargetContainer = function(params) {
             return;
 
         this._supplier.blockFilterProcess = true;
-        this.targetGrid.suspendLayout();
 
         this.targetGrid.option.beginEdit();
         this.targetGrid.beginPropertyEdit();
@@ -816,7 +809,6 @@ const GridTargetContainer = function(params) {
         this.targetGrid.endPropertyEdit();
         this.targetGrid.option.endEdit();
 
-        this.targetGrid.resumeLayout();
         this._supplier.blockFilterProcess = false;
         this._supplier.filterSuppliersList();
 
@@ -1003,7 +995,7 @@ const GridTargetContainer = function(params) {
         let label = this.getPropertyValue('label');
         if (label !== null) {
             this.$label = $('<div style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-' + this.getPropertyValue('margin') + '">' + label + '</div>');
-            grid.addCell(column, row, true, this.$label);
+            grid.addCell(column, row, this.$label);
         }
 
         if (grid.addTarget) {
@@ -1042,7 +1034,6 @@ const GridTargetContainer = function(params) {
             ]);
 
 
-            this.toolbar.$el.addClass();
             this.$buttons = this.toolbar.$el;
             this.$buttons.addClass('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
@@ -1064,13 +1055,14 @@ const GridTargetContainer = function(params) {
                 }
             });
 
-            grid.addCell('aux', row + 1, true, this.$buttons);
+            let buttonsCell = grid.addCell('aux', row + 1, this.$buttons);
+            buttonsCell.setVerticalAlign('top');
 
             this.setSupplier(grid);
         }
 
         let info = this.container.renderToGrid(grid, row + 1, column);
-        info.cell.dockContentHeight = true;
+        info.cell.setVerticalAlign('stretch');
 
         return { height: 2, width: 2 };
     };

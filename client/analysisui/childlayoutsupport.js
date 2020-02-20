@@ -19,7 +19,7 @@ const ChildLayoutSupport = function(params) {
             LayoutGrid.extendTo(this);
             LayoutGridBorderSupport.extendTo(this);
             this.$el.addClass("silky-layout-container silky-options-group silky-options-group-style-" + this._parentStyle + " silky-control-margin-" + this.getPropertyValue("margin"));
-            let cell = this.addCell(0, 0, true, $el_sub);
+            let cell = this.addCell(0, 0, $el_sub);
             this._applyCellProperties(cell);
         }
 

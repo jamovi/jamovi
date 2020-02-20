@@ -4,7 +4,7 @@
 const $ = require('jquery');
 const _ = require('underscore');
 
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const FormatDef = require('./formatdef');
@@ -17,7 +17,7 @@ const LayoutGroupView = function(params) {
     if (isOptionControl)
         GridOptionControl.extendTo(this, params);
     else
-        GridControl.extendTo(this, params);
+        TitledGridControl.extendTo(this, params);
 
     if (isOptionControl === false)
         this.registerSimpleProperty("label", "");
@@ -52,7 +52,7 @@ const LayoutGroupView = function(params) {
     this._override('onPropertyChanged', (baseFunction, name) => {
         if (baseFunction !== null)
             baseFunction.call(this, name);
-            
+
         if (isOptionControl === false) {
             if (name === 'label')
                 this.setLabel(this.getPropertyValue(name));

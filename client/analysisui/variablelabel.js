@@ -75,8 +75,6 @@ const VariableLabel = function(params) {
                 imageClasses = imageClasses + ' jmv-data-type-none';
 
             this.$icon.addClass(imageClasses);
-
-            this._cell.onContentSizeChanged({type: "both"});
         });
     };
 

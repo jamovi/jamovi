@@ -2,15 +2,15 @@
 
 const $ = require('jquery');
 const OptionControl = require('./optioncontrol');
-const GridControl = require('./gridcontrol');
+const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
 
 const GridRadioButton = function(params) {
 
     OptionControl.extendTo(this, params);
-    GridControl.extendTo(this, params);
+    TitledGridControl.extendTo(this, params);
 
-    this.$_subel = $('<label class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></label>');
+    this.$_subel = $('<div class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
     this.$el = this.$_subel;
 
     this.createItem = function() {
@@ -37,11 +37,13 @@ const GridRadioButton = function(params) {
         let name = this.getPropertyValue('name');
         if (label === null)
             label = name;
+
+        let $radioButton = $('<label style="white-space: nowrap;"></label>');
         this.$input = $('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
-
-        this.$_subel.append(this.$input);
-        this.$_subel.append(this.$label);
+        $radioButton.append(this.$input);
+        $radioButton.append(this.$label);
+        this.$_subel.append($radioButton);
 
         this.$input.change((event) => {
             let checked = this.$input[0].checked;

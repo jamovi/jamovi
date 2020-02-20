@@ -14,7 +14,6 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     _.extend(this, Backbone.Events);
 
-    //this.context = context;
     this.analysis = analysis;
     this.name = analysis.name;
     this.options = null;
@@ -217,7 +216,6 @@ let OptionsPanel = SilkyView.extend({
             this._currentResources = null;
         }
 
-        //let context = { columns: this.dataSetModel.get('columns') };
         resources.ready.then(function() {
             resources.updateData(analysis.options.getValues());
         });
@@ -227,8 +225,6 @@ let OptionsPanel = SilkyView.extend({
             this._currentResources = resources;
             this.addMsgListeners(this._currentResources);
             this.updateContentHeight();
-            //if (createdNew)
-            //    this.$el.append(resources.$frame);
         }
         if (this._currentResources !== null) {
             this._currentResources.$frame.css("height", '');
@@ -325,7 +321,6 @@ let OptionsPanel = SilkyView.extend({
     },
 
     resizeHandler: function() {
-
         this.updateContentHeight();
     }
 });

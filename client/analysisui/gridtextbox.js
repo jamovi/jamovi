@@ -33,7 +33,7 @@ const GridTextbox = function(params) {
         let cell = null;
         let startClass = label === '' ? '' : 'silky-option-text-start';
         this.$label = $('<div class="silky-option-text-label silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
-        cell = grid.addCell(column, row, false, this.$label);
+        cell = grid.addCell(column, row, this.$label);
         cell.blockInsert('right');
         cell.setAlignment('left', 'center');
 
@@ -44,7 +44,7 @@ const GridTextbox = function(params) {
 
         let subgrid = new LayoutGrid();
         subgrid.$el.addClass('silky-layout-grid');
-        cell = grid.addCell(column + 1, row, true, subgrid);
+        cell = grid.addCell(column + 1, row, subgrid);
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
         cell.blockInsert('left');
         startClass = label === '' ? 'silky-option-text-start' : '';
@@ -132,7 +132,7 @@ const GridTextbox = function(params) {
             this.$fullCtrl = $ctrl;
         }
 
-        cell = subgrid.addCell(0, 0, true, $ctrl);
+        cell = subgrid.addCell(0, 0, $ctrl);
         cell.blockInsert('left');
         cell.setAlignment('left', 'center');
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
@@ -140,7 +140,7 @@ const GridTextbox = function(params) {
         startClass = suffix === '' ? '' : 'silky-option-text-end';
 
         this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + suffix + '</div>');
-        cell = subgrid.addCell(1, 0, false, this.$suffix);
+        cell = subgrid.addCell(1, 0, this.$suffix);
         cell.setAlignment('left', 'center');
 
         return { height: 1, width: 3 };
