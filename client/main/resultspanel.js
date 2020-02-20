@@ -560,11 +560,20 @@ const ResultsPanel = Backbone.View.extend({
                         { name: 'EPS', extensions: [ 'eps' ] }, ]
                 };
 
-                let path = host.showSaveDialog(options);
-                if (path) {
-                    path = path.replace(/\\/g, '/');  // convert to non-windows path
-                    this.model.save(path, { name: 'Image', export: true, part: part, partType: 'image' }, true);
-                }
+                host.showSaveDialog(options).then((result) => {
+                    if (result.canceled)
+                        return;
+                    let filePath = result.filePath.replace(/\\/g, '/');
+                    return this.model.save(
+                        filePath,
+                        {
+                            name: 'Image',
+                            export: true,
+                            part: part,
+                            partType: 'image',
+                        },
+                        true);
+                });
             }
             else {
 
@@ -576,11 +585,19 @@ const ResultsPanel = Backbone.View.extend({
                     ]
                 };
 
-                let path = host.showSaveDialog(options);
-                if (path) {
-                    path = path.replace(/\\/g, '/');  // convert to non-windows path
-                    this.model.save(path, { name: 'Image', export: true, part: part }, true);
-                }
+                host.showSaveDialog(options).then((result) => {
+                    if (result.canceled)
+                        return;
+                    let filePath = result.filePath.replace(/\\/g, '/');
+                    return this.model.save(
+                        filePath,
+                        {
+                            name: 'Image',
+                            export: true,
+                            part: part,
+                        },
+                        true);
+                });
             }
         }
         else if (event.op === 'duplicate') {

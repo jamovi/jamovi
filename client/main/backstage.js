@@ -1038,11 +1038,15 @@ var BackstageModel = Backbone.Model.extend({
 
             if (type === 'open') {
 
-                dialog.showOpenDialog(browserWindow, { filters: filters, properties: [ 'openFile' ], defaultPath: Path.join(osPath, '') }, (fileNames) => {
-                    if (fileNames) {
-                        let path = fileNames[0].replace(/\\/g, '/');
-                        this.requestOpen(path);
-                    }
+                dialog.showOpenDialog(browserWindow, {
+                    filters: filters,
+                    properties: [ 'openFile' ],
+                    defaultPath: Path.join(osPath, '')
+                }).then((result) => {
+                    if (result.canceled)
+                        return;
+                    let filePath = result.filePaths[0].replace(/\\/g, '/');
+                    this.requestOpen(filePath);
                 });
             }
             else if (type === 'import') {
@@ -1050,21 +1054,24 @@ var BackstageModel = Backbone.Model.extend({
                 dialog.showOpenDialog(browserWindow, {
                     filters: filters,
                     properties: [ 'openFile', 'multiSelections' ],
-                    defaultPath: Path.join(osPath, '') },
-                    (fileNames) => {
-                        if (fileNames) {
-                            let paths = fileNames.map(x => x.replace(/\\/g, '/'));
-                            this.requestImport(paths);
-                        }
-                    });
+                    defaultPath: Path.join(osPath, '')
+                }).then((result) => {
+                    if (result.canceled)
+                        return;
+                    let filePaths = result.filePaths.map(x => x.replace(/\\/g, '/'));
+                    this.requestImport(filePaths);
+                });
             }
             else if (type === 'save') {
 
-                dialog.showSaveDialog(browserWindow, { filters : filters, defaultPath: Path.join(osPath, filename) }, (fileName) => {
-                    if (fileName) {
-                        fileName = fileName.replace(/\\/g, '/');
-                        this.requestSave(fileName, true);
-                    }
+                dialog.showSaveDialog(browserWindow, {
+                    filters : filters,
+                    defaultPath: Path.join(osPath, filename),
+                }).then((result) => {
+                    if (result.canceled)
+                        return;
+                    let filePath = result.filePath.replace(/\\/g, '/');
+                    this.requestSave(filePath, true);
                 });
             }
         }

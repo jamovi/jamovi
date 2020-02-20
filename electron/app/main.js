@@ -11,6 +11,8 @@ const shell = electron.shell;
 const ini = require('./ini');
 const tmp = require('./tmp');
 
+app.allowRendererProcessReuse = true;
+
 process.on('uncaughtException', (e) => {
     console.log(e);
 });
@@ -225,21 +227,16 @@ const convertToPDF = function(path) {
 
     }).then(() => {
 
-        return new Promise((resolve, reject) => {
-            wind.webContents.printToPDF({}, (err, data) => {
-                setTimeout(() => wind.close());
-                if (err)
-                    reject(err)
-                resolve(data);
-            });
-        });
+        return wind.webContents.printToPDF({})
+            .finally(() => setTimeout(() => wind.close()));
+
     }).then((data) => {
 
         return new Promise((resolve, reject) => {
             tmp.file({ postfix: '.pdf' }, (err, path, fd) => {
                 if (err)
                     reject(err);
-                resolve({fd: fd, path: path, data: data});
+                resolve({ fd: fd, path: path, data: data });
             });
         });
     }).then((obj) => {
@@ -294,10 +291,10 @@ const spawn = new Promise((resolve, reject) => {
                 match = /^"(.*)"$/.exec(match[3]);
                 if (match) {
                     convertToPDF(match[1]).then((path) => {
-                        let response = 'response: convert-to-pdf (' + id + ') 1 "' + path + '"\n';
+                        let response = `response: convert-to-pdf (${ id }) 1 "${ path }"\n`;
                         server.stdin.write(response);
                     }).catch((err) => {
-                        let response = 'response: convert-to-pdf (' + id + ') 0 "' + err + '"\n';
+                        let response = `response: convert-to-pdf (${ id }) 0 "${ err }"\n`;
                         server.stdin.write(response);
                     });
                 }
@@ -306,11 +303,11 @@ const spawn = new Promise((resolve, reject) => {
                 if (match) {
                     try {
                         checkForUpdate(updateUrl, match[1]);
-                        let response = 'response: software-update (' + id + ') 1\n';
+                        let response = `response: software-update (${ id }) 1\n`;
                         server.stdin.write(response);
                     }
                     catch (e) {
-                        let response = 'response: software-update (' + id + ') 0 "' + e.message + '"\n';
+                        let response = `response: software-update (${ id }) 0 "' + e.message + '"\n`;
                         server.stdin.write(response);
                     }
                 }

@@ -32,14 +32,14 @@ const PageSideload = Backbone.View.extend({
 
             dialog.showOpenDialog({
                 filters: filters,
-                properties: [ 'openFile' ]},
-                fileNames => {
-                    if ( ! fileNames)
-                        return;
-                    let path = fileNames[0].replace(/\\/g, '/');
-                    this.model.install(path).then(
-                        () => this._installSuccess(),
-                        error => this._installFailure(error));
+                properties: [ 'openFile' ],
+            }).then((result) => {
+                if (result.canceled)
+                    return;
+                let filePath = result.filePaths[0].replace(/\\/g, '/');
+                this.model.install(filePath).then(
+                    () => this._installSuccess(),
+                    error => this._installFailure(error));
             });
         }
     },

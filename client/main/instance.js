@@ -740,25 +740,17 @@ const Instance = Backbone.Model.extend({
         }
     },
     _requestPDF(html) {
-        return new Promise((resolve, reject) => {
-
-            let url = '../utils/to-pdf';
-            let xhr = new XMLHttpRequest();  // jQuery doesn't support binary!
-            xhr.open('POST', url);
-            xhr.send(html);
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = function(e) {
-                if (this.status === 200)
-                    resolve(this.response);
-                if (this.status === 500)
-                    reject(this.responseText);
+        return fetch('../utils/to-pdf', {
+                method: 'POST',
+                body: html,
+            }).then((response) => {
+                if (response.status === 200)
+                    return response.arrayBuffer();
+                else if (response.status === 500)
+                    return new Promise((resolve, reject) => response.text().then((text) => reject(text)));
                 else
-                    reject(this.statusText);
-            };
-            xhr.onerror = function(e) {
-                reject(e);
-            };
-        });
+                    throw response.statusText;
+            });
     },
 });
 
