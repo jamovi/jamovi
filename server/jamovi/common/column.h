@@ -47,6 +47,20 @@ typedef struct
 
 } Level;
 
+typedef union {
+    int i;
+    double d;
+    char *s;
+} Value;
+
+typedef struct
+{
+    int type;
+    int optr;
+    Value value;
+
+} MissingValue;
+
 typedef struct
 {
     int id;
@@ -67,6 +81,10 @@ typedef struct
     int levelsUsed;
     int levelsCapacity;
     Level *levels;
+
+    MissingValue *missingValues;
+    int missingValuesCapacity;
+    int missingValuesUsed;
 
     char *formula;
     int formulaCapacity;
@@ -113,6 +131,7 @@ public:
     int levelCount() const;
     int levelCountExFiltered() const;
     const std::vector<LevelData> levels() const;
+    const std::vector<MissingValue> missingValues() const;
     const char *getLabel(int value) const;
     const char *getLabel(const char* value) const;
     const char *getImportValue(int value) const;

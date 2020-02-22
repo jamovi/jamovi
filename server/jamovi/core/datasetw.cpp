@@ -208,6 +208,9 @@ void DataSetW::initColumn(MemoryMapW *mm, ColumnStruct *&columnp)
     column->blockCapacity = 1024;
     column->levelsUsed = 0;
     column->levelsCapacity = 0;
+    column->missingValues = NULL;
+    column->missingValuesUsed = 0;
+    column->missingValuesCapacity = 0;
 
     ColumnStruct *rel = mm->base(column);
     Block** blocks = mm->allocateBase<Block*>(column->blockCapacity);

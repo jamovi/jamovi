@@ -129,6 +129,7 @@ const EditorWidget = Backbone.View.extend({
 
         this.$dataVarWidget = $('<div></div>').appendTo(this.$body);
         this.dataVarWidget = new DataVarWidget({ el: this.$dataVarWidget, model: this.model });
+        this.dataVarWidget.setParent(this);
 
         this.$computedVarWidget = $('<div></div>').appendTo(this.$body);
         this.computedVarWidget = new ComputedVarWidget({ el: this.$computedVarWidget, model: this.model });

@@ -4,7 +4,8 @@
 const $ = require('jquery');
 const MeasureListItem = require('./measurelistitem');
 
-const MeasureList = function() {
+const MeasureList = function(includeAuto) {
+    this.includeAuto = includeAuto === undefined ? true : false;
     this.isScrollTarget = function(target) {
         return target === this.$middle[0];
     };
@@ -13,12 +14,37 @@ const MeasureList = function() {
 
     this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
 
+    this.setParent = function($element) {
+        if (this.$parent) {
+            this.$parent.off('change', null, this._valueChanged);
+        }
+
+        this.$parent = $element;
+
+        this._valueChanged();
+
+        this.$parent.on('change', null, this, this._valueChanged);
+    };
+
+    this._valueChanged = () => {
+        this.$el.find('.jmv-measure-list-item.highlighted').removeClass('highlighted');
+        let val = this.$parent.val();
+        this.$el.find('.jmv-measure-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
+        let $element = this.$el.find('.jmv-measure-list-item.highlighted');
+        if ($element.length > 0)
+            $element[0].scrollIntoView(false);
+    };
+
     this.populate = function() {
         this.$middle.empty();
 
-        let item = new MeasureListItem('none', 'Auto');
-        item.$el.appendTo(this.$middle);
-        this._createItemEvents(item);
+        let item = null;
+
+        if (this.includeAuto) {
+            item = new MeasureListItem('none', 'Auto');
+            item.$el.appendTo(this.$middle);
+            this._createItemEvents(item);
+        }
 
         item = new MeasureListItem('nominal', 'Nominal');
         item.$el.appendTo(this.$middle);

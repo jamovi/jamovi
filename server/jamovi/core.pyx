@@ -24,6 +24,10 @@ cdef extern from "column.h":
         int ivalue() const;
         const char *svalue() const;
         const char *label() const;
+    ctypedef union Value:
+        char *s
+        float d
+        int i
     ctypedef enum CMeasureType  "MeasureType::Type":
         CMeasureTypeNone        "MeasureType::NONE"
         CMeasureTypeNominal     "MeasureType::NOMINAL"
@@ -35,6 +39,10 @@ cdef extern from "column.h":
         CDataTypeInteger  "DataType::INTEGER"
         CDataTypeDecimal  "DataType::DECIMAL"
         CDataTypeText     "DataType::TEXT"
+    ctypedef struct CMissingValue "MissingValue":
+        int type
+        int optr
+        Value value
 
 cdef extern from "datasetw.h":
     cdef cppclass CDataSet "DataSetW":
@@ -211,6 +219,8 @@ cdef extern from "columnw.h":
         void trimUnusedLevels()
         const vector[CLevelData] levels()
         void setLevels(vector[CLevelData] levels)
+        void setMissingValues(vector[CMissingValue] missingValues)
+        const vector[CMissingValue] missingValues()
         void setDPs(int dps)
         int dps() const
         int rowCount() const;
@@ -357,6 +367,7 @@ cdef class Column:
         def __set__(self, active):
             self._this.setActive(active)
 
+
     @staticmethod
     def how_many_dps(value, max_dp=3):
         if math.isfinite(value) is False:
@@ -449,6 +460,19 @@ cdef class Column:
         return arr
 
     @property
+    def missing_values(self):
+        arr = [ ]
+        missing_values = self._this.missingValues()
+        for missing_value in missing_values:
+            if missing_value.type is 0:
+                arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.s.decode('utf-8'), 'type': missing_value.type }))
+            elif missing_value.type is 1:
+                arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.d, 'type': missing_value.type }))
+            else:
+                arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.i, 'type': missing_value.type }))
+        return arr
+
+    @property
     def row_count(self):
         return self._this.rowCount();
 
@@ -522,7 +546,7 @@ cdef class Column:
                 return self._this.getLabel(raw).decode()
         else:
             return self._this.raw[int](index)
-            
+
     def __getitem__(self, index):
         return self.get_value(index)
 
@@ -564,6 +588,86 @@ cdef class Column:
 
         self._this.setLevels(new_levels)
 
+    def parse_missing_value(self, missing_value):
+        optr = 0
+        new_value = missing_value.strip()
+        if new_value.startswith('=='):
+            optr = 0
+            new_value = new_value[2:].strip()
+        elif new_value.startswith('!='):
+            optr = 1
+            new_value = new_value[2:].strip()
+        elif new_value.startswith('<='):
+            optr = 2
+            new_value = new_value[2:].strip()
+        elif new_value.startswith('>='):
+            optr = 3
+            new_value = new_value[2:].strip()
+        elif new_value.startswith('<'):
+            optr = 4
+            new_value = new_value[1:].strip()
+        elif new_value.startswith('>'):
+            optr = 5
+            new_value = new_value[1:].strip()
+
+        type = 0
+        if new_value.startswith('"') or new_value.startswith("'"):
+            type = 0
+            new_value = new_value[1:-1]
+        else:
+            type = 1
+            new_value = float(new_value)
+            if new_value.is_integer():
+                type = 2
+                new_value = int(new_value)
+
+        return {'optr': optr, 'value': new_value, 'type': type }
+
+    def string_missing_value(self, missing_value):
+        new_value = ''
+        if missing_value['optr'] is 0:
+            new_value = '== '
+        elif missing_value['optr'] is 1:
+            new_value = '!= '
+        elif missing_value['optr'] is 2:
+            new_value = '<= '
+        elif missing_value['optr'] is 3:
+            new_value = '>= '
+        elif missing_value['optr'] is 4:
+            new_value = '< '
+        elif missing_value['optr'] is 5:
+            new_value = '> '
+
+        if missing_value['type'] is 0:
+            new_value = new_value + "'" + missing_value['value'] + "'"
+        else:
+            new_value = new_value + str(missing_value['value'])
+
+        return new_value
+
+    def set_missing_values(self, missing_values):
+        cdef vector[CMissingValue] new_missing_values
+        cdef int optr
+        cdef const char* svalue
+        cdef int ivalue
+        cdef CMissingValue m_value
+
+        for missing_value in missing_values:
+            pmv = self.parse_missing_value(missing_value)
+            if pmv['type'] is 0:
+                utf8_bytes = pmv['value'].encode('utf-8')
+                m_value.value.s = utf8_bytes
+            elif pmv['type'] is 1:
+                m_value.value.d = pmv['value']
+            elif pmv['type'] is 2:
+                m_value.value.i = pmv['value']
+
+            m_value.type = pmv['type']
+            m_value.optr = pmv['optr']
+            new_missing_values.push_back(m_value)
+
+        self._this.setMissingValues(new_missing_values)
+
     def change(self,
         data_type=None,
         measure_type=None,
@@ -591,7 +695,6 @@ cdef class Column:
             self.determine_dps()
         elif levels is not None:
             self.set_levels(levels)
-
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":

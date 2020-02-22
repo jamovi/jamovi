@@ -48,6 +48,7 @@ public:
     void setSValue(int rowIndex, const char *value, bool initing = false);
     void changeDMType(DataType::Type dataType, MeasureType::Type measureType);
     void setLevels(const std::vector<LevelData> &levels);
+    void setMissingValues(const std::vector<MissingValue> &missingValues);
 
     int changes() const;
 
