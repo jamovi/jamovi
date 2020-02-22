@@ -525,6 +525,53 @@ int ColumnW::changes() const
     return struc()->changes;
 }
 
+void ColumnW::setMissingValues(const vector<MissingValue> &newMissingValues)
+{
+    char *sValue;
+    int length;
+    size_t allocated;
+    ColumnStruct *s = struc();
+    int capacity = s->missingValuesCapacity;
+    int needed = newMissingValues.size();
+
+    MissingValue *missingValues;
+    if (needed > capacity)
+    {
+        missingValues = _mm->allocateBase<MissingValue>(needed, &allocated);
+        s = struc();
+        s->missingValues = missingValues;
+        s->missingValuesCapacity = needed;
+    }
+
+    s->missingValuesUsed = newMissingValues.size();
+    missingValues = _mm->resolve<MissingValue>(s->missingValues);
+    for (int i = 0; i < newMissingValues.size(); i++)
+    {
+        const MissingValue &newMissingValue = newMissingValues[i];
+        switch (newMissingValue.type) {
+            case 0:
+                length = strlen(newMissingValue.value.s) + 1;
+                sValue = _mm->allocateSize<char>(length, &allocated);
+                memcpy(sValue, newMissingValue.value.s, length);
+                missingValues = _mm->resolve<MissingValue>(s->missingValues);
+                missingValues[i].value.s = _mm->base<char>(sValue);
+                break;
+            case 1:
+                missingValues[i].value.d = newMissingValue.value.d;
+                break;
+            case 2:
+                missingValues[i].value = newMissingValue.value;
+                break;
+        }
+
+        missingValues[i].type = newMissingValue.type;
+        missingValues[i].optr = newMissingValue.optr;
+    }
+
+
+    s->changes++;
+}
+
 void ColumnW::setLevels(const vector<LevelData> &newLevels)
 {
     if ( ! hasLevels())

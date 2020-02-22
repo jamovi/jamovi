@@ -469,6 +469,7 @@ message DataSetSchema {
         int32 parentId = 21;
         repeated ColumnCellRange editedCellRanges = 22;
         bool dataChanged = 24;
+        repeated string missingValues = 25;
 
     }
 

@@ -1169,6 +1169,7 @@ class Instance:
             column.trim_levels = column_pb.trimLevels
             column.transform = column_pb.transform
             column.parent_id = column_pb.parentId
+            column.set_missing_values(list(column_pb.missingValues))
 
             name = column_pb.name
             if has_name is False and column.column_type == ColumnType.RECODED:
@@ -1615,6 +1616,7 @@ class Instance:
                         measure_type=MeasureType(column_pb.measureType),
                         levels=levels)
 
+                column.set_missing_values(list(column_pb.missingValues))
                 column.column_type = ColumnType(column_pb.columnType)
 
                 column.formula = column_pb.formula
@@ -2341,6 +2343,7 @@ class Instance:
         column_schema.dataType = column.data_type.value
         column_schema.measureType = column.measure_type.value
         column_schema.autoMeasure = column.auto_measure
+        column_schema.missingValues[:] = column.missing_values
         column_schema.width = column.width
 
         column_schema.dps = column.dps

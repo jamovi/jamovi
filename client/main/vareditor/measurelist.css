@@ -13,3 +13,7 @@
 .jmv-measure-list-item.hidden {
     display: none;
 }
+
+.jmv-measure-list-item.highlighted {
+    background-color: #DDDDDD;
+}

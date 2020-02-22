@@ -119,6 +119,30 @@ const char* Column::raws(int index)
         return _mm->resolve(value);
 }
 
+const vector<MissingValue> Column::missingValues() const
+{
+    vector<MissingValue> m;
+
+    ColumnStruct *s = struc();
+    MissingValue *missingValues = _mm->resolve(s->missingValues);
+
+    for (int i = 0; i < s->missingValuesUsed; i++)
+    {
+        MissingValue &mv = missingValues[i];
+
+        MissingValue cmv;
+        cmv.type = mv.type;
+        cmv.optr = mv.optr;
+        cmv.value = mv.value;
+        if (mv.type == 0)
+            cmv.value.s = _mm->resolve(mv.value.s);
+
+        m.push_back(cmv);
+    }
+
+    return m;
+}
+
 const vector<LevelData> Column::levels() const
 {
     vector<LevelData> m;
