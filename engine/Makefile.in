@@ -35,13 +35,14 @@ ifeq ($(os),OSX)
 endif
 
 SRCDIR ?= $(dir $(firstword $(MAKEFILE_LIST)))
+BINDIR ?= bin
 TARGET = jamovi-engine
 CXXFLAGS += -std=c++11
 INCLUDES += -I.
 
 ifeq ($(os),OSX)
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.6/Resources
-	BASE_MODULE_PATH ?= $(R_HOME)/library
+	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../../Frameworks \
 				-L$(SRCDIR)/../../lib \
 				-L$(R_HOME)/lib \
@@ -135,7 +136,7 @@ clean:
 	rm -f $(TARGET) $(OBJS) jamovi.pb.cc jamovi.pc.h
 
 install:
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp $(TARGET) $(DESTDIR)$(PREFIX)/bin
+	mkdir -p $(DESTDIR)$(PREFIX)/$(BINDIR)
+	cp $(TARGET) $(DESTDIR)$(PREFIX)/$(BINDIR)
 
 .PHONY:	clean all install
