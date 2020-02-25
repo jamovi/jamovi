@@ -574,6 +574,7 @@ class Call(ast.Call, Node):
         if ((self.func.id == '_RECODE_ORD' or self.func.id == '_RECODE_NOM')
                 and source.measure_type == MeasureType.CONTINUOUS):
             levels = self.fvalues(row_count, False)
+            levels = filter(lambda x: not is_missing(x), levels)
             levels = sorted(levels)
             levels = map(lambda x: convert(x, str), levels)
             return enumerate(levels)
