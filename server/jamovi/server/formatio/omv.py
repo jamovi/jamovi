@@ -343,8 +343,6 @@ def read(data, path, prog_cb):
                 data_type = DataType.parse(data_type_str)
                 measure_type = MeasureType.parse(measure_type_str)
 
-            missing_values = meta_column.get('missingValues', []);
-
             column.change(data_type=data_type, measure_type=measure_type)
             formula = meta_column.get('formula', '')
             if jav[0] <= 6:
