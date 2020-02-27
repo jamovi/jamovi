@@ -2317,11 +2317,13 @@ class Instance:
                         if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column.get_value(row_no)
-                            if math.isnan(value):
+                            v = column.get_value(row_no, True)
+                            if math.isnan(v.value):
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
-                                cell.d = value
+                                cell.d = v.value
+                            if v.missing:
+                                cell.missing = True
                 elif column.data_type == DataType.TEXT:
                     for j in range(row_count):
                         cell = block_pb.values.add()
@@ -2329,11 +2331,13 @@ class Instance:
                         if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column.get_value(row_no)
-                            if value == '':
+                            v = column.get_value(row_no, True)
+                            if v.value == '':
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
-                                cell.s = value
+                                cell.s = v.value
+                            if v.missing:
+                                cell.missing = True
                 else:
                     for j in range(row_count):
                         cell = block_pb.values.add()
@@ -2341,11 +2345,13 @@ class Instance:
                         if row_no >= self._data.row_count:
                             cell.o = jcoms.SpecialValues.Value('MISSING')
                         else:
-                            value = column.get_value(row_no)
-                            if value == -2147483648:
+                            v = column.get_value(row_no, True)
+                            if v.value == -2147483648:
                                 cell.o = jcoms.SpecialValues.Value('MISSING')
                             else:
-                                cell.i = value
+                                cell.i = v.value
+                            if v.missing:
+                                cell.missing = True
 
     def _populate_schema(self, request, response):
         self._populate_schema_info(request, response)

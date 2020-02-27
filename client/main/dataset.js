@@ -1512,16 +1512,16 @@ const DataSetViewModel = DataSetModel.extend({
             for (let c = 0; c < blockPB.columnCount; c++) {
                 values[c] = Array(blockPB.rowCount);
                 for (let r = 0; r < blockPB.rowCount; r++) {
-                    let inValue = null;
+                    let cellPB = null;
                     if (blockPB.clear === false)
-                        inValue = blockPB.values[(c*blockPB.rowCount) + r];
+                        cellPB = blockPB.values[(c*blockPB.rowCount) + r];
 
-                    let outValue;
-                    if (inValue === null || inValue.type === 'o')
-                        outValue = null;
+                    let value;
+                    if (cellPB === null || cellPB.type === 'o')
+                        value = null;
                     else
-                        outValue = inValue[inValue.type];
-                    values[c][r] = outValue;
+                        value = cellPB[cellPB.type];
+                    values[c][r] = { value: value, missing: cellPB.missing };
                 }
             }
 
