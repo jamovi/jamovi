@@ -77,10 +77,6 @@ public:
 
 private:
 
-    int ivalue(int index);
-    const char *svalue(int index);
-    double dvalue(int index);
-
     MemoryMapW *_mm;
     static void _transferLevels(ColumnW &dest, ColumnW &src);
     void _discardScratchColumn();

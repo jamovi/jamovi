@@ -359,6 +359,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     l.importValue = importChars;
     l.count = 0;
     l.countExFiltered = 0;
+    l.treatAsMissing = false;
 
     s->levelsUsed++;
     s->changes++;
@@ -568,6 +569,25 @@ void ColumnW::setMissingValues(const vector<MissingValue> &newMissingValues)
         missingValues[i].optr = newMissingValue.optr;
     }
 
+    if (hasLevels())
+    {
+        s = struc();
+        Level* levels = _mm->resolve(s->levels);
+
+        for (int i = 0; i < s->levelsUsed; i++)
+        {
+            Level &level = levels[i];
+            const char *label = _mm->resolve(level.label);
+            const char *import = _mm->resolve(level.importValue);
+
+            if (dataType() == DataType::TEXT)
+                level.treatAsMissing = shouldTreatAsMissing(label, import);
+            else if (dataType() == DataType::INTEGER)
+                level.treatAsMissing = shouldTreatAsMissing(label, level.value);
+            else
+                level.treatAsMissing = false; // shouldn't get here
+        }
+    }
 
     s->changes++;
 }
@@ -763,137 +783,6 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
     {
         for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
             setDValue(rowNo, old.dvalue(rowNo), true);
-    }
-}
-
-int ColumnW::ivalue(int index)
-{
-    if (dataType() == DataType::INTEGER)
-    {
-        return cellAt<int>(index);
-    }
-    else if (dataType() == DataType::DECIMAL)
-    {
-        double value = cellAt<double>(index);
-        if (isnan(value) || value < INT_MIN || value > INT_MAX)
-            return INT_MIN;
-        else
-            return (int)value;
-    }
-    else // if (dataType() == DataType::TEXT)
-    {
-        const char *v = svalue(index);
-        if (v[0] == '\0')
-        {
-            return INT_MIN;
-        }
-        else
-        {
-            int value;
-            char junk;
-            double d;
-            if (sscanf(v, "%i%1c", &value, &junk) == 1)
-                return value;
-            else if (sscanf(v, "%lf%1c", &d, &junk) == 1)
-                return (int) d;
-            else
-                return INT_MIN;
-        }
-    }
-}
-
-const char *ColumnW::svalue(int index)
-{
-    static string tmp;
-
-    if (dataType() == DataType::INTEGER)
-    {
-        int value = cellAt<int>(index);
-        if (value == INT_MIN)
-        {
-            return "";
-        }
-        else
-        {
-            stringstream ss;
-            ss << value;
-            tmp = ss.str();
-            return tmp.c_str();
-        }
-    }
-    else if (dataType() == DataType::DECIMAL)
-    {
-        double value = cellAt<double>(index);
-        if (isnan(value) || value < INT64_MIN || value > INT64_MAX)
-        {
-            return "";
-        }
-        else
-        {
-            // we round and divide so it matches _transferLevels()
-            int64_t thous = (int64_t)round(value * 1000);
-
-            stringstream ss;
-            ss.setf(ios::fixed);
-            ss << setprecision(dps());
-            ss << ((double)thous) / 1000;
-            tmp = ss.str();
-            return tmp.c_str();
-        }
-    }
-    else if (dataType() == DataType::TEXT && measureType() == MeasureType::ID)
-    {
-        const char *value = cellAt<char*>(index);
-        if (value == NULL)
-            return "";
-        else
-            return _mm->resolve(value);
-    }
-    else // if (dataType() == DataType::TEXT)
-    {
-        int value = cellAt<int>(index);
-        if (value == INT_MIN)
-        {
-            return "";
-        }
-        else
-        {
-            return getImportValue(value);
-        }
-    }
-}
-
-double ColumnW::dvalue(int index)
-{
-    if (dataType() == DataType::INTEGER)
-    {
-        int value = cellAt<int>(index);
-        if (value == INT_MIN)
-            return NAN;
-        else
-            return (double)value;
-    }
-    else if (dataType() == DataType::DECIMAL)
-    {
-        return cellAt<double>(index);
-    }
-    else // if (dataType() == DataType::TEXT)
-    {
-        const char *value = svalue(index);
-
-        if (value[0] == '\0')
-        {
-            return NAN;
-        }
-        else
-        {
-            double d;
-            char junk;
-            if (sscanf(value, "%lf%1c", &d, &junk) == 1)
-                return d;
-            else
-                return NAN;
-        }
     }
 }
 

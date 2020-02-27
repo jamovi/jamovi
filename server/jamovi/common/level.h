@@ -14,13 +14,15 @@ public:
         _type = 0;
         _ivalue = INT_MIN;
         _filtered = false;
+        _treatAsMissing = false;
     }
 
-    LevelData(int value, const char *label, bool filtered = false)
+    LevelData(int value, const char *label, bool filtered = false, bool treatAsMissing = false)
     {
         _type = 0;
         _ivalue = value;
         _filtered = filtered;
+        _treatAsMissing = treatAsMissing;
         _label = std::string(label);
 
         std::stringstream ss;
@@ -28,10 +30,11 @@ public:
         _svalue = ss.str();
     }
 
-    LevelData(const char* value, const char *label, bool filtered = false)
+    LevelData(const char* value, const char *label, bool filtered = false, bool treatAsMissing = false)
     {
         _type = 1;
         _filtered = filtered;
+        _treatAsMissing = treatAsMissing;
         _svalue = std::string(value);
         _label = std::string(label);
     }
@@ -63,6 +66,11 @@ public:
         return _filtered;
     }
 
+    bool treatAsMissing() const
+    {
+        return _treatAsMissing;
+    }
+
     const char *label() const
     {
         return _label.c_str();
@@ -80,6 +88,7 @@ private:
     std::string _svalue;
     std::string _label;
     bool _filtered;
+    bool _treatAsMissing;
 };
 
 #endif // LEVEL_H

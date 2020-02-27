@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <cmath>
 
 #ifdef _WIN32
 #define ALIGN_8 alignas(8)
@@ -44,6 +45,7 @@ typedef struct
     int countExFiltered;
     char *label;
     char *importValue;
+    bool treatAsMissing;
 
 } Level;
 
@@ -129,7 +131,7 @@ public:
     DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
-    int levelCountExFiltered() const;
+    int levelCountExFilteredExMissing() const;
     const std::vector<LevelData> levels() const;
     const std::vector<MissingValue> missingValues() const;
     const char *getLabel(int value) const;
@@ -143,6 +145,9 @@ public:
     const char *formulaMessage() const;
     bool trimLevels() const;
     bool hasUnusedLevels() const;
+    bool shouldTreatAsMissing(int rowIndex);
+    bool shouldTreatAsMissing(const char *sv, const char *sv2);
+    bool shouldTreatAsMissing(const char *svalue, int ivalue = INT_MIN, double dvalue = NAN, const char *sv2 = NULL);
 
     const char *raws(int rowIndex);
 
@@ -176,6 +181,10 @@ protected:
 
         return *((T*) &currentBlock->values[index * sizeof(T)]);
     }
+
+    int ivalue(int index);
+    const char *svalue(int index);
+    double dvalue(int index);
 
 private:
     MemoryMap *_mm;
