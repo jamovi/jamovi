@@ -20,11 +20,15 @@ from .compute import FValues
 from .compute import convert
 from .compute import is_missing
 
+from collections import namedtuple
+
 
 NaN = float('nan')
 
 
 class Column:
+
+    Cell = namedtuple('Cell', ('value', 'missing'))
 
     def __init__(self, parent, child=None):
         self._parent = parent
@@ -69,11 +73,20 @@ class Column:
         else:
             return (-2147483648, '')
 
-    def get_value(self, index):
+    def get_value(self, index, cell=False):
         if self._child is not None:
-            return self._child.get_value(index)
+            value = self._child.get_value(index)
+            if cell:
+                stam = self._child.should_treat_as_missing(index)
+                return Column.Cell(value, stam)
+            else:
+                return value
         else:
-            return -2147483648
+            value = -2147483648
+            if cell:
+                return Column.Cell(value, False)
+            else:
+                return value
 
     @property
     def cell_tracker(self):

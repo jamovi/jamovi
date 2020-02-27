@@ -547,6 +547,7 @@ message DataSetRR {
                 string s = 3;
                 SpecialValues o = 4;
             }
+            bool missing = 7;
         }
 
         uint32 rowStart = 1;

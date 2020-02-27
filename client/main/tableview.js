@@ -3081,10 +3081,12 @@ const TableView = SilkyView.extend({
 
             for (let rowNo = 0; rowNo < column.length; rowNo++) {
                 let cell = $cells[rowNo];
-                let content = this._rawValueToDisplay(column[rowNo], columnInfo);
+                let cellInfo = column[rowNo];
+                let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
                 let filt = filtered[rowNo];
+                let missing = cellInfo.missing;
 
-                this._updateCell(cell, content, dps, filt, isFC);
+                this._updateCell(cell, content, dps, filt, missing, isFC);
             }
         }
 
@@ -3199,9 +3201,9 @@ const TableView = SilkyView.extend({
         let filtered = this.model.get('filtered');
         let viewportLeft = this.model.get('viewport').left;
 
-        for (let cellInfo of changedCells) {
-            let cellList = cells[cellInfo.colIndex];
-            let dIndex = viewportLeft + cellInfo.colIndex;
+        for (let changed of changedCells) {
+            let cellList = cells[changed.colIndex];
+            let dIndex = viewportLeft + changed.colIndex;
             let columnInfo = this.model.getColumn(dIndex, true);
             let dps = columnInfo.dps;
             let isFC = columnInfo.columnType === 'filter';
@@ -3209,12 +3211,14 @@ const TableView = SilkyView.extend({
                 dps = 0;
 
             let $column = $(this.$columns[dIndex]);
-            let cell  = $column[0].children[cellInfo.rowIndex];
+            let cell = $column[0].children[changed.rowIndex];
 
-            let content = this._rawValueToDisplay(cellList[cellInfo.rowIndex], columnInfo);
+            let cellInfo = cellList[changed.rowIndex];
+            let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
             let filt = filtered[cellInfo.rowIndex];
+            let missing = cellInfo.missing;
 
-            this._updateCell(cell, content, dps, filt, isFC);
+            this._updateCell(cell, content, dps, filt, missing, isFC);
         }
 
         /*let viewport = this.viewport;
@@ -3260,7 +3264,7 @@ const TableView = SilkyView.extend({
 
         return raw;
     },
-    _updateCell(cell, content, dps, filtered, isFC = false) {
+    _updateCell(cell, content, dps, filtered, missing, isFC = false) {
 
         let type;
         let asNumber = Number(content);
@@ -3294,6 +3298,7 @@ const TableView = SilkyView.extend({
 
         cell.dataset.type = type;
         cell.dataset.filtered = (filtered ? '1' : '0');
+        cell.dataset.missing = (missing ? '1' : '0');
     },
     _scrollHandler(event) {
 

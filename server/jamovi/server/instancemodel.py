@@ -88,16 +88,18 @@ class InstanceModel:
         return self._dataset.get_indices_ex_filtered(row_start, row_count)
 
     def __getitem__(self, index_or_name):
-        if type(index_or_name) is int:
+        if isinstance(index_or_name, int):
             index = index_or_name
             return self._columns[index]
-        else:
+        elif isinstance(index_or_name, str):
             name = index_or_name
             for column in self:
                 if column.name == name:
                     return column
             else:
                 raise KeyError(name)
+        else:
+            raise ValueError
 
     def __iter__(self):
         return self._columns.__iter__()

@@ -301,6 +301,10 @@
     background-color: #e2e6e9 ;
 }
 
+.jmv-column-cell[data-missing="1"] {
+    text-decoration: line-through ;
+}
+
 .jmv-column-cell {
     padding-left: 10px ;
     padding-right: 10px ;
