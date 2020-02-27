@@ -44,7 +44,7 @@ elif os.uname()[0] == "Linux":
     extra_link_args = [ "-Wl,-rpath,'$$ORIGIN/../lib'" ]
 
 elif os.uname()[0] == "Darwin":
-    libraries = [ "boost_filesystem-mt", "boost_system-mt" ]
+    libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ tld + '/../Frameworks' ]
     extra_compile_args = [ '-mmacosx-version-min=10.11' ]
     extra_link_args = [ "-framework", "Foundation", '-mmacosx-version-min=10.11' ]

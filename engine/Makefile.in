@@ -47,8 +47,8 @@ ifeq ($(os),OSX)
 				-L$(SRCDIR)/../../lib \
 				-L$(R_HOME)/lib \
 				-L$(BASE_MODULE_PATH)/RInside/lib \
-				-lboost_filesystem-mt \
-				-lboost_system-mt \
+				-lboost_filesystem \
+				-lboost_system \
 				-framework Foundation
 	CXXFLAGS += -mmacosx-version-min=10.11
 else
