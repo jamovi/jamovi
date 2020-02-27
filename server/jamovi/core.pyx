@@ -103,12 +103,14 @@ cdef class DataSet:
 
         c = Column()
 
-        if type(index_or_name) == int:
+        if isinstance(index_or_name, int):
             index = index_or_name
             c._this = deref(self._this)[index]
-        else:
+        elif isinstance(index_or_name, str):
             name = index_or_name.encode('utf-8')
             c._this = deref(self._this)[name.c_str()]
+        else:
+            raise ValueError
 
         return c
 
@@ -235,6 +237,7 @@ cdef extern from "columnw.h":
         void setTrimLevels(bool trim);
         bool trimLevels() const;
         void changeDMType(CDataType dataType, CMeasureType measureType);
+        bool shouldTreatAsMissing(int index);
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
@@ -695,6 +698,9 @@ cdef class Column:
             self.determine_dps()
         elif levels is not None:
             self.set_levels(levels)
+
+    def should_treat_as_missing(self, index):
+        return self._this.shouldTreatAsMissing(index);
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":

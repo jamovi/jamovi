@@ -9,7 +9,7 @@
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
-#define MM_VERSION_MAJOR 1
+#define MM_VERSION_MAJOR 2
 #define MM_VERSION_MINOR 0
 #define MM_START_OFFSET 8
 
