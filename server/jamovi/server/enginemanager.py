@@ -164,7 +164,8 @@ class Engine:
 
     async def start(self):
 
-        exe_dir = path.join(conf.get('home'), 'bin')
+        bin_dir = 'bin' if platform.system() != 'Darwin' else 'MacOS'
+        exe_dir = path.join(conf.get('home'), bin_dir)
         exe_path = path.join(exe_dir, 'jamovi-engine')
 
         env = os.environ.copy()
