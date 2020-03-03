@@ -10,11 +10,11 @@ from .utils.stream import Stream
 
 
 class Download:
-    def __init__(self, url):
+    def __init__(self, url, file=None):
         self._url = url
         self._progress = 0
         self._size = -1
-        self._file = None
+        self._file = file
         self._stream = Stream()
 
         server_path = conf.get('server_path')
@@ -62,4 +62,9 @@ class Downloader:
     @staticmethod
     def download(url):
         dl = Download(url)
+        return dl._stream
+
+    @staticmethod
+    def download_to(url, stream):
+        dl = Download(url, stream)
         return dl._stream
