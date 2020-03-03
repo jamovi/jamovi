@@ -400,7 +400,7 @@ const LayoutSupplierView = function(params) {
 
     this.selectNextAvaliableItem = function(from) {
         let cell = null;
-        for (let r = from; r < this._items.length + 1; r++) {
+        for (let r = from + 1; r < this._items.length + 1; r++) {
             cell = this.supplierGrid.getCell(0, r);
             if (cell !== null && cell.visible()) {
                 this.supplierGrid.selectCell(cell);
