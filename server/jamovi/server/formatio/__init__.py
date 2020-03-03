@@ -65,9 +65,12 @@ def get_writers():
     return _writers
 
 
-def read(data, path, prog_cb, is_example=False):
+def read(data, path, prog_cb, is_example=False, title=None):
 
-    data.title = os.path.splitext(os.path.basename(path))[0]
+    if title:
+        data.title = title
+    else:
+        data.title = os.path.splitext(os.path.basename(path))[0]
     ext = os.path.splitext(path)[1].lower()
 
     prog_cb(0)

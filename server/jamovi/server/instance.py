@@ -27,6 +27,7 @@ from .instancemodel import InstanceModel
 from . import formatio
 from .modtracker import ModTracker
 from .permissions import Permissions
+from .downloader import Downloader
 
 import posixpath
 import math
@@ -36,6 +37,7 @@ import asyncio
 import functools
 from time import monotonic
 from itertools import islice
+from urllib import parse
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -558,16 +560,48 @@ class Instance:
             return
 
         path = request.filePath
-        norm_path = Instance._normalise_path(path)
-        virt_path = Instance._virtualise_path(path)
-        is_example = path.startswith('{{Examples}}')
+
         old_mm = None
+        temp_file = None
 
         try:
-            if is_example and self._perms.open.examples is False:
-                raise PermissionError()
-            if path != '' and not is_example and self._perms.open.local is False:
-                raise PermissionError()
+            title = None
+            was_downloaded = False
+
+            if path.startswith('http://') or path.startswith('https://'):
+
+                if self._perms.open.remote is False:
+                    raise PermissionError()
+
+                url = parse.urlparse(path)
+                file_name = os.path.basename(parse.unquote(url.path))
+                if not formatio.is_supported(file_name):
+                    raise RuntimeError('Unrecognised file format')
+
+                title, ext = os.path.splitext(file_name)
+                temp_file = NamedTemporaryFile(suffix=ext)
+
+                download = Downloader.download_to(path, temp_file)
+                async for progress in download:
+                    if not download.is_complete:
+                        progress = (progress[0], progress[1] * 2)  # only goes up to 50%
+                        self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+
+                temp_file.flush()
+                norm_path = temp_file.name
+                virt_path = path
+                is_example = True  # forces the user to save to a new location
+                was_downloaded = True
+
+            else:
+                norm_path = Instance._normalise_path(path)
+                virt_path = Instance._virtualise_path(path)
+                is_example = path.startswith('{{Examples}}')
+
+                if is_example and self._perms.open.examples is False:
+                    raise PermissionError()
+                if path != '' and not is_example and self._perms.open.local is False:
+                    raise PermissionError()
 
             old_mm = self._mm
             self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
@@ -579,12 +613,15 @@ class Instance:
 
             def prog_cb(p):
                 coms = self._coms
+                progress = (1000 * p, 1000)
+                if was_downloaded:
+                    progress = (500 + 500 * p, 1000)
                 ioloop.call_soon_threadsafe(
                     functools.partial(
                         coms.send, None, self._instance_id, request,
-                        complete=False, progress=(1000 * p, 1000)))
+                        complete=False, progress=progress))
 
-            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example)
+            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example, title)
 
             response = jcoms.OpenProgress()
             response.path = virt_path
@@ -620,6 +657,8 @@ class Instance:
         finally:
             if old_mm is not None:
                 old_mm.close()
+            if temp_file and not temp_file.closed:
+                temp_file.close()
 
     async def _on_import(self, request):
 

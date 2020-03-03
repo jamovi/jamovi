@@ -118,7 +118,11 @@ const marshallArgs = function(args, wd, first) {
         cmd.debug = true;
     }
     else {
-        cmd.open = path.resolve(wd, args[0]);
+        let filePath = args[0];
+        if (filePath.startsWith('http://') || filePath.startsWith('https://'))
+            cmd.open = filePath
+        else
+            cmd.open = path.resolve(wd, filePath);
     }
 
     return cmd;
@@ -505,8 +509,16 @@ const createWindow = function(open) {
     let url = rootUrl;
     if (open.id)
         url += open.id + '/';
-    if (open.open)
-        url += '?open=' + encodeURIComponent(path.resolve(open.open));
+    if (open.open) {
+        let filePath = open.open;
+        if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+            url = `${ url }?open=${ filePath }`;
+        }
+        else {
+            filePath = path.resolve(filePath);
+            url = `${ url }?open=${ encodeURIComponent(filePath) }`;
+        }
+    }
 
     wind.loadURL(url);
 

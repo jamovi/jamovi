@@ -29,6 +29,7 @@ class Permissions:
             self.browse.local = True
             self.browse.examples = True
             self.open.local = True
+            self.open.remote = True
             self.open.examples = True
             self.save.local = True
         elif app_mode == 'demo':
@@ -38,6 +39,7 @@ class Permissions:
             self.browse.local = True
             self.browse.examples = True
             self.open.local = True
+            self.open.remote = False
             self.open.examples = True
             self.save.local = False
 
