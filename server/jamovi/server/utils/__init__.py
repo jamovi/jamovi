@@ -10,8 +10,9 @@ from .nulllog import NullLog
 
 def int32(value):
     value = int(value)
-    if (value.bit_length() + 1) > 32:
+    if value > 2147483647 or value < -2147483648:
         raise ValueError('Too wide for 32-bit int')
+    return value
 
 def is_int32(value):
     try:
