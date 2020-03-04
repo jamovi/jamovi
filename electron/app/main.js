@@ -383,6 +383,10 @@ if (os.platform() === 'win32') {
                 alwaysOnTop: true,
                 skipTaskbar: true,
             });
+
+            // https://github.com/jamovi/jamovi/issues/816
+            splash.setIgnoreMouseEvents(true);
+
             splash.loadURL('file://' + __dirname + '/splash.html');
             splash.show();
             splash.webContents.on('will-navigate', (e, url) => {
