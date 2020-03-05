@@ -692,6 +692,7 @@ const DataSetModel = Backbone.Model.extend({
                 else {
                     let newName = columnPB.name;
                     let levelChanges = this._determineLevelLabelChanges(column, columnPB);
+                    let missingValuesChanged = this._determineMissingValuesChange(column, columnPB);
                     let created = column === undefined;
                     let dpsChanged = false;
                     let oldName;
@@ -759,6 +760,7 @@ const DataSetModel = Backbone.Model.extend({
                         measureTypeChanged: column.measureType !== oldMeasureType,
                         dataTypeChanged: column.dataType !== oldDataType,
                         levelsChanged: levelChanges.names.length > 0 || levelChanges.order,
+                        missingValuesChanged: missingValuesChanged,
                         formulaChanged: column.formula !== oldFormula,
                         levelNameChanges: levelChanges.names,
                         nameChanged: nameChanged,
@@ -1041,6 +1043,25 @@ const DataSetModel = Backbone.Model.extend({
         }
 
         return { names: levelNameChanges, order: orderChanged };
+    },
+
+    _determineMissingValuesChange(column, columnPB) {
+        if ( ! (columnPB && columnPB.missingValues && Array.isArray(columnPB.missingValues) &&
+            column && column.missingValues && Array.isArray(column.missingValues)))
+            return true;
+
+        if (column.missingValues.length !== columnPB.missingValues.length)
+            return true;
+
+        for (let li = 0; li < column.missingValues.length; li++) {
+            let missingValue = column.missingValues[li];
+            for (let pi = 0; pi < columnPB.missingValues.length; pi++) {
+                if (missingValue != columnPB.missingValues[pi])
+                    return true;
+            }
+        }
+
+        return false;
     },
     _readColumnPB(column, columnPB) {
         column.id = columnPB.id;
@@ -1376,7 +1397,7 @@ const DataSetViewModel = DataSetModel.extend({
             colNo >= viewport.left &&
             colNo <= viewport.right) {
 
-            return this.attributes.cells[colNo - viewport.left][rowNo - viewport.top];
+            return this.attributes.cells[colNo - viewport.left][rowNo - viewport.top].value;
         }
 
         return null;
@@ -1778,7 +1799,7 @@ const DataSetViewModel = DataSetModel.extend({
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
-            if ( ! changes.dataChanged)
+            if ( ! changes.dataChanged && ! changes.missingValuesChanged)
                 continue;
 
             let column = this.getColumnById(changes.id);

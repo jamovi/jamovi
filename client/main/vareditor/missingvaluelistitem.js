@@ -59,7 +59,7 @@ const MissingValueListItem = function(value) {
         let $opEdit = null;
 
         $formula.on('blur', (event) => {
-            this._postCheckFormula($formula);
+            this._postCheckFormula($formula, false);
             let value = $formula[0].textContent.trim();
             if (value !== this.value) {
                 this.value = value;
@@ -83,7 +83,7 @@ const MissingValueListItem = function(value) {
             dropdown.updatePosition();
 
             if (this._backspacePressed === false)
-                this._postCheckFormula($formula);
+                this._postCheckFormula($formula, true);
 
             let count = this._startsWithValidOps($formula);
             if (count !== 0)
@@ -175,7 +175,7 @@ const MissingValueListItem = function(value) {
             if (text.startsWith(op)) {
                 let value = text.substring(op.length);
                 let ff = text[op.length];
-                if (text.length > op.length && ff !== ' ' && ff !== '\xa0') {
+                if (text.length > op.length && ff !== ' ' && ff !== '\xa0') { // \xa0 represents a non breaking space
                     text = op + ' ' + value;
                     if (start >= op.length)
                         offsets.start += 1;
@@ -199,21 +199,13 @@ const MissingValueListItem = function(value) {
         }
     };
 
-    this._postCheckFormula = function($formula) {
+    this._postCheckFormula = function($formula, isRealTime) {   // Non realtime check is more strict
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
         let text = $formula.text().trimLeft();
-        text = text.replace(/\u00A0/gi, ' ');
+        text = text.replace(/\u00A0/gi, ' '); //\u00A0 represents a non breaking space
         if (text === '')
             return true;
-
-        if (text.length === 1) {
-            for (let i = 0; i < validOps.length; i++) {
-                let op = validOps[i];
-                if (text[0] === op[0])
-                    return true;
-            }
-        }
 
         let sel = window.getSelection();
         let range = sel.getRangeAt(0);
@@ -224,6 +216,14 @@ const MissingValueListItem = function(value) {
             end: 0
         };
 
+        if (text.length === 1 || (isRealTime && start <= 1)) {
+            for (let i = 0; i < validOps.length; i++) {
+                let op = validOps[i];
+                if (text[0] === op[0])
+                    return true;
+            }
+        }
+
         if (text !== '') {
             let op = '==';
             let value = text;
@@ -233,7 +233,7 @@ const MissingValueListItem = function(value) {
             for (let i = 0; i < validOps.length; i++) {
                 if (text.startsWith(validOps[i])) {
                     op = validOps[i];
-                    value = text.substring(op.length).trim();
+                    value = text.substring(op.length);
                     let ff = text[op.length];
                     if (text.length > op.length && ff !== ' ') {
                         if (start >= op.length)
@@ -257,42 +257,50 @@ const MissingValueListItem = function(value) {
                 offsets.end += 1;
             }
 
-            if (isNaN(value) && value.trim() !== '.' && value.trim() !== '-') {
-                let index = text.indexOf(value);
-                let quoted = false;
-                if (value.startsWith("'") && value.endsWith("'") === false)
-                    value = value + "'";
-                else if (value.startsWith("'") === false && value.endsWith("'")) {
-                    value = "'" + value;
-                    quoted = true;
-                }
-                else if (value.startsWith('"') && value.endsWith('"') === false)
-                    value = value + '"';
-                else if (value.startsWith('"') === false && value.endsWith('"')) {
-                    value = '"' + value;
-                    quoted = true;
-                }
-                else if (((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) === false) {
-                    if (value.indexOf("'") === -1) {
-                        value = "'" + value + "'";
+            if (isRealTime === false) {
+                value = value.trim();
+                if (isNaN(value) && value !== '.' && value !== '-') {
+                    let index = text.indexOf(value);
+                    let quoted = false;
+                    if (value.startsWith("'") && value.endsWith("'") === false)
+                        value = value + "'";
+                    else if (value.startsWith("'") === false && value.endsWith("'")) {
+                        value = "'" + value;
                         quoted = true;
                     }
-                    else if (value.indexOf('"') === -1) {
-                        value = '"' + value + '"';
+                    else if (value.startsWith('"') && value.endsWith('"') === false)
+                        value = value + '"';
+                    else if (value.startsWith('"') === false && value.endsWith('"')) {
+                        value = '"' + value;
                         quoted = true;
                     }
-                }
-                if (quoted) {
-                    if (start >= index)
-                        offsets.start += 1;
-                    if (end >= index)
-                        offsets.end += 1;
+                    else if (((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) === false) {
+                        if (value.indexOf("'") === -1) {
+                            value = "'" + value + "'";
+                            quoted = true;
+                        }
+                        else if (value.indexOf('"') === -1) {
+                            value = '"' + value + '"';
+                            quoted = true;
+                        }
+                    }
+                    if (quoted) {
+                        if (start >= index)
+                            offsets.start += 1;
+                        if (end >= index)
+                            offsets.end += 1;
+                    }
                 }
             }
-            text = op + ' ' + value;
+            if (isRealTime === false && value === '')
+                text =  `${ op } ''`;
+            else if (value.startsWith(' '))
+                text = op + value;
+            else
+                text = `${ op } ${ value }`;
         }
 
-        if (text !== $formula.text().replace(/\u00A0/gi, ' ')) {
+        if (text !== $formula.text().replace(/\u00A0/gi, ' ')) { //\u00A0 represents a non breaking space
             $formula[0].textContent = text;
             sel.setBaseAndExtent($formula[0].firstChild, start+offsets.start, $formula[0].firstChild, end+offsets.end);
         }

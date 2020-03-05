@@ -538,7 +538,7 @@ void ColumnW::setMissingValues(const vector<MissingValue> &newMissingValues)
     MissingValue *missingValues;
     if (needed > capacity)
     {
-        missingValues = _mm->allocateBase<MissingValue>(needed, &allocated);
+        missingValues = _mm->allocateBase<MissingValue>(needed);
         s = struc();
         s->missingValues = missingValues;
         s->missingValuesCapacity = needed;

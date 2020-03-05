@@ -698,7 +698,8 @@ const Instance = Backbone.Model.extend({
                             changes.dataTypeChanged ||
                             changes.levelsChanged ||
                             changes.formulaChanged ||
-                            changes.dataChanged)
+                            changes.dataChanged ||
+                            changes.missingValuesChanged)
                         columnDataChanged = true;
                     }
                     if (changes.nameChanged && using.includes(changes.oldName)) {
