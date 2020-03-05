@@ -377,7 +377,7 @@ class InstanceModel:
                     start = column.index
                     end = start
 
-            if start is not -1:
+            if start != -1:
                 self.delete_columns(start, end)
 
             self.update_filter_names()
