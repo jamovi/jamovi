@@ -254,7 +254,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this.$variableList.empty();
         this.$variableList.append($('<option value="0">None</option>'));
         for (let i = 0; i < columns.length; i++)
-            this.$variableList.append($('<option value=' + columns[i].id + '>' + columns[i].name + '</option>'));
+            this.$variableList.append($(`<option value=${ columns[i].id }>${ columns[i].name }</option>`));
 
         let parentId = this.model.get('parentId');
         let column = dataset.getColumnById(parentId);

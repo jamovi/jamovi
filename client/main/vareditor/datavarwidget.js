@@ -27,7 +27,6 @@ const DataVarWidget = Backbone.View.extend({
 
         this._createMeasureTypeListBox();
 
-        //this.$types = $('<div class="jmv-variable-editor-widget-types"></div>').appendTo(this.$left);
         this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
         this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
         this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
@@ -37,7 +36,7 @@ const DataVarWidget = Backbone.View.extend({
         } );
 
         this.$dataTypeList.blur(() => {
-            keyboardJS.resume();
+            keyboardJS.resume('');
         } );
 
         this._createMissingValuesCtrl();
@@ -73,6 +72,9 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
         this.model.on('change:missingValues', event => {
+            if ( ! this.attached)
+                return;
+
             let label = '';
             let missings = this.model.get('missingValues');
             if (missings !== null) {
@@ -81,14 +83,14 @@ const DataVarWidget = Backbone.View.extend({
                     let part = missings[i].trim();
                     if (part.startsWith('==')) {
                         part = part.substring(2).trim();
-                        if (part.startsWith('"'))
-                            part = part.replace(/"/gi, '');
-                        else if (part.startsWith("'"))
-                            part = part.replace(/'/gi, '');
+                        if (part.startsWith('"') && part.endsWith('"'))
+                            part = part.substring(1, part.length - 1);
+                        else if (part.startsWith("'") && part.endsWith("'"))
+                            part = part.substring(1, part.length - 1);
                     }
 
                     if (part !== '')
-                        label = label + '<span>' + part + '</span>';
+                        label = `${ label }<span>${ part }</span>`;
                 }
             }
             this.$missingValueButton.find('.list').html(label);
@@ -112,6 +114,7 @@ const DataVarWidget = Backbone.View.extend({
         let $list = this.$missingValueButton.find('.list');
         $list.on('click', () => {
             this.$el.trigger('edit:missing', this.missingValueEditor);
+            keyboardJS.resume('');
         });
 
         $list.focus(() => {
@@ -119,7 +122,7 @@ const DataVarWidget = Backbone.View.extend({
         } );
 
         $list.blur(() => {
-            keyboardJS.resume();
+            keyboardJS.resume('');
         } );
 
         $list.on('keypress', (event) => {
@@ -149,10 +152,7 @@ const DataVarWidget = Backbone.View.extend({
                 dropdown.hide();
             else {
                 this.measureList.setParent(this.$measureList);
-                //keyboardJS.pause('measure-list');
-                dropdown.show(this.$measureList, this.measureList).then(() => {
-                    //keyboardJS.resume('measure-list');
-                });
+                dropdown.show(this.$measureList, this.measureList);
             }
             event.preventDefault();
             event.stopPropagation();
@@ -170,7 +170,7 @@ const DataVarWidget = Backbone.View.extend({
         } );
 
         this.$measureList.blur(() => {
-            keyboardJS.resume();
+            keyboardJS.resume('');
         } );
 
         this.$measureList.on('change', event => {
@@ -184,10 +184,7 @@ const DataVarWidget = Backbone.View.extend({
                 else
                 {
                     this.measureList.setParent(this.$measureList);
-                    //keyboardJS.pause('measure-list');
-                    dropdown.show(this.$measureList, this.measureList).then(() => {
-                        //keyboardJS.resume('measure-list');
-                    });
+                    dropdown.show(this.$measureList, this.measureList);
                 }
                 event.preventDefault();
                 event.stopPropagation();

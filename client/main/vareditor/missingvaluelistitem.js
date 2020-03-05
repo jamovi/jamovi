@@ -59,7 +59,7 @@ const MissingValueListItem = function(value) {
         let $opEdit = null;
 
         $formula.on('blur', (event) => {
-            this._postCheckFormula($formula);
+            this._postCheckFormula($formula, false);
             let value = $formula[0].textContent.trim();
             if (value !== this.value) {
                 this.value = value;
@@ -83,7 +83,7 @@ const MissingValueListItem = function(value) {
             dropdown.updatePosition();
 
             if (this._backspacePressed === false)
-                this._postCheckFormula($formula);
+                this._postCheckFormula($formula, true);
 
             let count = this._startsWithValidOps($formula);
             if (count !== 0)
@@ -199,21 +199,13 @@ const MissingValueListItem = function(value) {
         }
     };
 
-    this._postCheckFormula = function($formula) {
+    this._postCheckFormula = function($formula, isRealTime) {
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
         let text = $formula.text().trimLeft();
         text = text.replace(/\u00A0/gi, ' ');
         if (text === '')
             return true;
-
-        if (text.length === 1) {
-            for (let i = 0; i < validOps.length; i++) {
-                let op = validOps[i];
-                if (text[0] === op[0])
-                    return true;
-            }
-        }
 
         let sel = window.getSelection();
         let range = sel.getRangeAt(0);
@@ -223,6 +215,14 @@ const MissingValueListItem = function(value) {
             start: 0,
             end: 0
         };
+
+        if (text.length === 1 || (isRealTime && start <= 1)) {
+            for (let i = 0; i < validOps.length; i++) {
+                let op = validOps[i];
+                if (text[0] === op[0])
+                    return true;
+            }
+        }
 
         if (text !== '') {
             let op = '==';
@@ -257,7 +257,7 @@ const MissingValueListItem = function(value) {
                 offsets.end += 1;
             }
 
-            if (isNaN(value) && value.trim() !== '.' && value.trim() !== '-') {
+            if (isRealTime === false && isNaN(value) && value.trim() !== '.' && value.trim() !== '-') {
                 let index = text.indexOf(value);
                 let quoted = false;
                 if (value.startsWith("'") && value.endsWith("'") === false)
