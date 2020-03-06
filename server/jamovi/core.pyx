@@ -11,7 +11,6 @@ from libcpp.pair cimport pair
 from cython.operator cimport dereference as deref, postincrement as inc
 
 from jamovi.server.utils import is_int32
-from jamovi.server.utils import int32
 
 import math
 import os
@@ -623,9 +622,9 @@ cdef class Column:
         else:
             type = 1
             new_value = float(new_value)
-            if is_int32(new_value):
+            if new_value.is_integer() and is_int32(new_value):
                 type = 2
-                new_value = int32(new_value)
+                new_value = int(new_value)
 
         return {'optr': optr, 'value': new_value, 'type': type }
 
