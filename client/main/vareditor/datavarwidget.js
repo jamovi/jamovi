@@ -71,30 +71,7 @@ const DataVarWidget = Backbone.View.extend({
         this.model.on('change:measureType', event => this._setOptions(this.model.get('dataType'), event.changed.measureType, this.model.get('levels')));
         this.model.on('change:levels',      event => this._setOptions(this.model.get('dataType'), this.model.get('measureType'), event.changed.levels));
         this.model.on('change:autoMeasure', event => this._setAutoMeasure(event.changed.autoMeasure));
-        this.model.on('change:missingValues', event => {
-            if ( ! this.attached)
-                return;
-
-            let label = '';
-            let missings = this.model.get('missingValues');
-            if (missings !== null) {
-                let c = 0;
-                for (let i = 0; i < missings.length; i++) {
-                    let part = missings[i].trim();
-                    if (part.startsWith('==')) {
-                        part = part.substring(2).trim();
-                        if (part.startsWith('"') && part.endsWith('"'))
-                            part = part.substring(1, part.length - 1);
-                        else if (part.startsWith("'") && part.endsWith("'"))
-                            part = part.substring(1, part.length - 1);
-                    }
-
-                    if (part !== '')
-                        label = `${ label }<span>${ part }</span>`;
-                }
-            }
-            this.$missingValueButton.find('.list').html(label);
-        });
+        this.model.on('change:missingValues', event => this._setMissingValues(this.model.get('missingValues')));
 
         this.model.on('change:autoApply', event => {
             if (this.model.get('autoApply'))
@@ -103,6 +80,30 @@ const DataVarWidget = Backbone.View.extend({
     },
     setParent(parent) {
         this.editorWidget = parent;
+    },
+    _setMissingValues(missings) {
+        if ( ! this.attached)
+            return;
+
+        let label = '';
+        //let missings = this.model.get('missingValues');
+        if (missings !== null) {
+            let c = 0;
+            for (let i = 0; i < missings.length; i++) {
+                let part = missings[i].trim();
+                if (part.startsWith('==')) {
+                    part = part.substring(2).trim();
+                    if (part.startsWith('"') && part.endsWith('"'))
+                        part = part.substring(1, part.length - 1);
+                    else if (part.startsWith("'") && part.endsWith("'"))
+                        part = part.substring(1, part.length - 1);
+                }
+
+                if (part !== '')
+                    label = `${ label }<span>${ part }</span>`;
+            }
+        }
+        this.$missingValueButton.find('.list').html(label);
     },
     _createMissingValuesCtrl() {
         this.missingValueEditor = new MissingValueEditor(this.model);
@@ -350,6 +351,7 @@ const DataVarWidget = Backbone.View.extend({
             this.model.get('dataType'),
             this.model.get('measureType'),
             this.model.get('levels'));
+        this._setMissingValues(this.model.get('missingValues'));
     }
 });
 
