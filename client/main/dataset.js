@@ -870,6 +870,8 @@ const DataSetModel = Backbone.Model.extend({
             this.trigger('columnsDeleted', { ids: deletedIds, indices: deletedIndices });
         }
 
+        let refresh = false;
+
         if (nHidden > 0) {
             let hiddenIds = [];
             let hiddenIndices = { };
@@ -880,6 +882,7 @@ const DataSetModel = Backbone.Model.extend({
                 }
             }
             this.trigger('columnsHidden', { ids: hiddenIds, indices: hiddenIndices } );
+            refresh = true;
         }
 
         let transformEvent = this._processTransformData(datasetPB);
@@ -894,6 +897,7 @@ const DataSetModel = Backbone.Model.extend({
                 }
             }
             this.trigger('columnsVisible', { ids: visibleIds, indices: visibleIndices });
+            refresh = true;
         }
 
         if (nCreated > 0) {
@@ -953,8 +957,6 @@ const DataSetModel = Backbone.Model.extend({
 
             this.trigger('transformsChanged', transformEvent);
         }
-
-        let refresh = false;
 
         for (let rowsDeleted of outputData.rowData.rowsDeleted) {
             this.trigger('rowsDeleted', rowsDeleted);
