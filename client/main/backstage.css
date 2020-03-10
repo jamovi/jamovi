@@ -12,6 +12,31 @@
     transition: .2s width ease-out;
 }
 
+.searchbox {
+    position: relative;
+    margin: 5px 5px 9px 5px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.searchbox > .image {
+    width: 20px;
+    height: 20px;
+    filter: opacity(60%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 15px 15px;
+    background-image: url(../assets/variable-search.svg);
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.searchbox > input {
+    width: 100%;
+    padding-left: 5px;
+}
+
 .silky-bs.activated {
     width: 250px;
 }
@@ -626,7 +651,6 @@
     background-color: #BACDE6 ;
     border-style: solid;
     border-width: 1px;
-    border-color: #a1b3cb;
 }
 
 .silky-bs-fslist-browser-save-button > *, .silky-bs-fslist-browser-import-button > * {

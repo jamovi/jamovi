@@ -168,7 +168,20 @@ var FSEntryBrowserView = SilkyView.extend({
         'keyup .silky-bs-fslist-browser-import-name' : '_importNameChanged',
         'paste .silky-bs-fslist-browser-import-name' : '_importNameChanged',
         'focus .silky-bs-fslist-browser-import-name' : '_nameGotFocus',
-        'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged'
+        'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
+        'input .search' : '_searchChanged',
+        'keydown .search' : '_searchKeyDown'
+    },
+    _setSelection: function($target) {
+        if (this._selectedIndices.length > 0)
+            this.clearSelection();
+        this._selectedIndices.push($target.data('index'));
+        $target.addClass('silky-bs-fslist-selected-item');
+        $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+    },
+    _searchChanged: function(event) {
+        this._render();
+        this.$itemsList.scrollTop(0);
     },
     _saveTypeChanged : function() {
         var selected = this.$el.find('option:selected');
@@ -324,6 +337,14 @@ var FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
+        if ( ! isSaving) {
+            let searchHtml = `<div class="searchbox">
+                            <div class="image"></div>
+                            <input class="search" type="text"></input>
+                        </div>`;
+            this.$el.append(searchHtml);
+        }
+
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
@@ -379,11 +400,19 @@ var FSEntryBrowserView = SilkyView.extend({
 
         this.$header.find('.silky-bs-fslist-browser-location').text(path);
 
+        let searchValue = '';
+        let $search = this.$el.find('.searchbox > input');
+        if ($search.length > 0) {
+            searchValue = $search.val().trim();
+            setTimeout(() => {
+                $search.focus();
+            }, 100);
+        }
+
         let html = '';
         this._orderItems('type', 1, items);
         this.$items = [];
         this.$itemsList.empty();
-
 
         if (status === 'error') {
             let errorMessage = this.model.get('error');
@@ -398,6 +427,25 @@ var FSEntryBrowserView = SilkyView.extend({
             `);
         }
         else if (status === 'ok') {
+            let isUrl = false;
+            if (searchValue !== '') {
+                if (searchValue.startsWith('https://') || searchValue.startsWith('http://')) {
+                    try {
+                        let url = new URL(searchValue);
+                        items = [{
+                            name: Path.basename(decodeURIComponent(url.pathname)),
+                            path: searchValue,
+                            type: FSItemType.File,
+                            isExample: false,
+                            tags: ['Online file'],
+                            description: `An online file hosted by ${ decodeURIComponent(url.hostname) }`
+                        }];
+                        isUrl = true;
+                    } catch (e) {
+                        isUrl = false;
+                    }
+                }
+            }
             for (let i = 0; i < items.length; i++) {
                 html = '';
                 let item = items[i];
@@ -406,6 +454,23 @@ var FSEntryBrowserView = SilkyView.extend({
                 let lname = name.toLowerCase();
                 let itemPath = item.path;
                 let itemType = item.type;
+
+                if (isUrl === false && searchValue !== '') {
+                    let lsearchValue = searchValue.toLowerCase();
+                    if (lname.includes(searchValue) === false) {
+                        if ( ! item.description || item.description.toLowerCase().includes(searchValue) === false) {
+                            let found = false;
+                            for (let tag of item.tags) {
+                                if (tag.toLowerCase().startsWith(lsearchValue)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if ( ! found)
+                                continue;
+                        }
+                    }
+                }
 
                 if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
                     continue;
@@ -472,8 +537,12 @@ var FSEntryBrowserView = SilkyView.extend({
                 this.$items.push($item);
             }
 
-            if (this.$items.length === 0)
+            if (this.$items.length === 0) {
+                this.clearSelection();
                 this.$itemsList.append("<span>No recognised data files were found.</span>");
+            }
+            else
+                this._setSelection(this.$items[0]);
         }
     },
     _getSelectedPaths : function() {
@@ -505,7 +574,7 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     _itemClicked : function(event) {
         let $target = $(event.currentTarget);
-        let fromChecked = $target.hasClass('silky-bs-fslist-selected-item') !== $target.find('.jmv-bs-fslist-checkbox').prop("checked");
+        let fromChecked = $target.hasClass('silky-bs-fslist-selected-item') !== $target.find('.jmv-bs-fslist-checkbox').prop('checked');
         let multiSelect = this.model.get('multiselect');
         let modifier = event.ctrlKey || event.metaKey || event.shiftKey || fromChecked;
 
@@ -522,20 +591,20 @@ var FSEntryBrowserView = SilkyView.extend({
                     let ii = this._selectedIndices.indexOf(index);
                     if (ii != -1) {
                         this.$items[index].removeClass('silky-bs-fslist-selected-item');
-                        this.$items[index].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+                        this.$items[index].find('.jmv-bs-fslist-checkbox').prop( 'checked', false );
                         this._selectedIndices.splice(ii, 1);
                     }
                     else {
                         this._selectedIndices.push($target.data('index'));
                         $target.addClass('silky-bs-fslist-selected-item');
-                        $target.find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+                        $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
                     }
                     this._baseSelectionIndex = -1;
                 }
                 else if (event.shiftKey) {
                     for (let i of this._selectedIndices) {
                         this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop( 'checked', false );
                     }
 
                     let indices = [];
@@ -543,11 +612,11 @@ var FSEntryBrowserView = SilkyView.extend({
                     for (let i = start; i !== index; i = i + ((index > start) ? 1 : -1)) {
                         indices.push(i);
                         this.$items[i].addClass('silky-bs-fslist-selected-item');
-                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
                     }
                     indices.push($target.data('index'));
                     $target.addClass('silky-bs-fslist-selected-item');
-                    $target.find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+                    $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
                     this._selectedIndices = indices;
                     this._baseSelectionIndex = this._selectedIndices[0];
                 }
@@ -557,7 +626,7 @@ var FSEntryBrowserView = SilkyView.extend({
                     this.clearSelection();
                 this._selectedIndices.push($target.data('index'));
                 $target.addClass('silky-bs-fslist-selected-item');
-                $target.find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+                $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             }
 
             if ((multiSelect === false || modifier === false) && this.multiMode === false) {
@@ -587,7 +656,7 @@ var FSEntryBrowserView = SilkyView.extend({
             if (this._selectedIndices.length > 0) {
                 for (let i of this._selectedIndices) {
                     this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                    this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+                    this.$items[i].find('.jmv-bs-fslist-checkbox').prop( 'checked', false );
                 }
             }
 
@@ -595,7 +664,7 @@ var FSEntryBrowserView = SilkyView.extend({
             this._baseSelectionIndex = -1;
             var name = $target.data('name');
             $target.addClass('silky-bs-fslist-selected-item');
-            $target.find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+            $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
 
             this.$header.find('.silky-bs-fslist-browser-save-name').val(name);
             this._nameChanged();
@@ -635,8 +704,10 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     clearSelection: function() {
         for (let i of this._selectedIndices) {
-            this.$items[i].removeClass('silky-bs-fslist-selected-item');
-            this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+            if (this.$items[i]) {
+                this.$items[i].removeClass('silky-bs-fslist-selected-item');
+                this.$items[i].find('.jmv-bs-fslist-checkbox').prop( 'checked', false );
+            }
         }
         this._selectedIndices = [];
         this._baseSelectionIndex = -1;
@@ -652,7 +723,7 @@ var FSEntryBrowserView = SilkyView.extend({
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
             this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
-            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             this._selected = true;
 
             var offset = this.$items[selectedIndex].position();
@@ -671,7 +742,7 @@ var FSEntryBrowserView = SilkyView.extend({
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
             this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
-            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             this._selected = true;
 
             var offset = this.$items[selectedIndex].position();
@@ -1527,8 +1598,6 @@ var BackstageView = SilkyView.extend({
 
         this._opChanged();
 
-        //if ('places' in currentOp)
-        //    this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
         this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
     },
     activate : function() {
