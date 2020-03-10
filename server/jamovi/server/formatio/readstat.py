@@ -113,8 +113,6 @@ class Parser(ReadStatParser):
             if level_labels is not None:
                 level_i = 0
                 for value in level_labels:
-                    if variable.is_missing(value):
-                        continue
                     label = level_labels[value]
                     column.append_level(level_i, label, value)
                     level_i += 1
@@ -148,8 +146,6 @@ class Parser(ReadStatParser):
                         column.set_data_type(DataType.TEXT)
                         n = 0
                         for value in level_labels:
-                            if variable.is_missing(value):
-                                continue
                             label = level_labels[value]
                             column.append_level(n, label, str(value))
                             n += 1
@@ -157,8 +153,6 @@ class Parser(ReadStatParser):
                     elif var_type is float:
                         new_labels = OrderedDict()
                         for value in level_labels:
-                            if variable.is_missing(value):
-                                continue
                             label = level_labels[value]
                             new_labels[int(value)] = label
                         level_labels = new_labels
@@ -179,6 +173,47 @@ class Parser(ReadStatParser):
 
                 column.set_data_type(data_type)
                 column.set_measure_type(MeasureType.CONTINUOUS)
+
+        missings = [ ]
+
+        for low, high in variable.missing_ranges:
+            if isinstance(low, str):
+                low = "'{}'".format(low)
+            if isinstance(high, str):
+                high = "'{}'".format(high)
+
+            if low == high:
+                missings.append('== {}'.format(low))
+            elif isinstance(low, Number):  # if it's a range
+                # ranges are weird, and we don't understand why people would
+                # want to use them. we also don't support them, so this is us
+                # trying to figure out what is intended by the ranges
+                if column.data_type == DataType.INTEGER:
+                    n_levels = abs(high - low)
+                    if n_levels > 12:
+                        # then only treat the value closer to zero as relevant
+                        if abs(high) < abs(low):
+                            missings.append('<= {}'.format(high))
+                        else:
+                            missings.append('>= {}'.format(low))
+                    else:
+                        # if the no. levels is low, then make lots of equals
+                        for i in range(low, high + 1):
+                            missings.append('== {}'.format(i))
+                else:
+                    # treat the value closer to zero as relevant
+                    if abs(high) < abs(low):
+                        missings.append('<= {}'.format(high))
+                    else:
+                        missings.append('>= {}'.format(low))
+            else:
+                # shouldn't get here
+                missings.append('== {}'.format(low))
+                missings.append('== {}'.format(high))
+
+        if missings:
+            column.set_missing_values(missings)
+
 
     def handle_value(self, var_index, row_index, value):
 
