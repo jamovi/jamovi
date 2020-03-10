@@ -233,7 +233,7 @@ const MissingValueListItem = function(value) {
             for (let i = 0; i < validOps.length; i++) {
                 if (text.startsWith(validOps[i])) {
                     op = validOps[i];
-                    value = text.substring(op.length).trim();
+                    value = text.substring(op.length);
                     let ff = text[op.length];
                     if (text.length > op.length && ff !== ' ') {
                         if (start >= op.length)
@@ -257,39 +257,47 @@ const MissingValueListItem = function(value) {
                 offsets.end += 1;
             }
 
-            if (isRealTime === false && isNaN(value) && value.trim() !== '.' && value.trim() !== '-') {
-                let index = text.indexOf(value);
-                let quoted = false;
-                if (value.startsWith("'") && value.endsWith("'") === false)
-                    value = value + "'";
-                else if (value.startsWith("'") === false && value.endsWith("'")) {
-                    value = "'" + value;
-                    quoted = true;
-                }
-                else if (value.startsWith('"') && value.endsWith('"') === false)
-                    value = value + '"';
-                else if (value.startsWith('"') === false && value.endsWith('"')) {
-                    value = '"' + value;
-                    quoted = true;
-                }
-                else if (((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) === false) {
-                    if (value.indexOf("'") === -1) {
-                        value = "'" + value + "'";
+            if (isRealTime === false) {
+                value = value.trim();
+                if (isNaN(value) && value !== '.' && value !== '-') {
+                    let index = text.indexOf(value);
+                    let quoted = false;
+                    if (value.startsWith("'") && value.endsWith("'") === false)
+                        value = value + "'";
+                    else if (value.startsWith("'") === false && value.endsWith("'")) {
+                        value = "'" + value;
                         quoted = true;
                     }
-                    else if (value.indexOf('"') === -1) {
-                        value = '"' + value + '"';
+                    else if (value.startsWith('"') && value.endsWith('"') === false)
+                        value = value + '"';
+                    else if (value.startsWith('"') === false && value.endsWith('"')) {
+                        value = '"' + value;
                         quoted = true;
                     }
-                }
-                if (quoted) {
-                    if (start >= index)
-                        offsets.start += 1;
-                    if (end >= index)
-                        offsets.end += 1;
+                    else if (((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) === false) {
+                        if (value.indexOf("'") === -1) {
+                            value = "'" + value + "'";
+                            quoted = true;
+                        }
+                        else if (value.indexOf('"') === -1) {
+                            value = '"' + value + '"';
+                            quoted = true;
+                        }
+                    }
+                    if (quoted) {
+                        if (start >= index)
+                            offsets.start += 1;
+                        if (end >= index)
+                            offsets.end += 1;
+                    }
                 }
             }
-            text = op + ' ' + value;
+            if (isRealTime === false && value === '')
+                text =  `${ op } ''`;
+            else if (value.startsWith(' '))
+                text = op + value;
+            else
+                text = `${ op } ${ value }`;
         }
 
         if (text !== $formula.text().replace(/\u00A0/gi, ' ')) {
