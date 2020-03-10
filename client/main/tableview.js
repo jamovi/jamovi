@@ -3215,7 +3215,7 @@ const TableView = SilkyView.extend({
 
             let cellInfo = cellList[changed.rowIndex];
             let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
-            let filt = filtered[cellInfo.rowIndex];
+            let filt = filtered[changed.rowIndex];
             let missing = cellInfo.missing;
 
             this._updateCell(cell, content, dps, filt, missing, isFC);
