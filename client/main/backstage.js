@@ -168,7 +168,22 @@ var FSEntryBrowserView = SilkyView.extend({
         'keyup .silky-bs-fslist-browser-import-name' : '_importNameChanged',
         'paste .silky-bs-fslist-browser-import-name' : '_importNameChanged',
         'focus .silky-bs-fslist-browser-import-name' : '_nameGotFocus',
-        'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged'
+        'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
+        'input .search' : '_searchChanged',
+        'keydown .search' : '_searchKeyDown'
+    },
+    _setSelection: function($target) {
+        if (this._selectedIndices.length > 0)
+            this.clearSelection();
+        this._selectedIndices.push($target.data('index'));
+        $target.addClass('silky-bs-fslist-selected-item');
+        $target.find('.jmv-bs-fslist-checkbox').prop( "checked", true );
+    },
+    _searchChanged: function(event) {
+        this._render();
+        setTimeout(() => {
+            this.$itemsList.scrollTop(0);
+        }, 0);
     },
     _saveTypeChanged : function() {
         var selected = this.$el.find('option:selected');
@@ -324,6 +339,14 @@ var FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
+        if ( ! isSaving) {
+            let searchHtml = `<div class="searchbox">
+                            <div class="image"></div>
+                            <input class="search" type="text"></input>
+                        </div>`;
+            this.$el.append(searchHtml);
+        }
+
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
@@ -379,11 +402,19 @@ var FSEntryBrowserView = SilkyView.extend({
 
         this.$header.find('.silky-bs-fslist-browser-location').text(path);
 
+        let searchValue = '';
+        let $search = this.$el.find('.searchbox > input');
+        if ($search.length > 0) {
+            searchValue = $search.val().trim();
+            setTimeout(() => {
+                $search.focus();
+            }, 100);
+        }
+
         let html = '';
         this._orderItems('type', 1, items);
         this.$items = [];
         this.$itemsList.empty();
-
 
         if (status === 'error') {
             let errorMessage = this.model.get('error');
@@ -398,6 +429,25 @@ var FSEntryBrowserView = SilkyView.extend({
             `);
         }
         else if (status === 'ok') {
+            let isUrl = false;
+            if (searchValue !== '') {
+                if (searchValue.startsWith('https://') || searchValue.startsWith('http://')) {
+                    try {
+                        let url = new URL(searchValue);
+                        items = [{
+                            name: Path.basename(decodeURIComponent(url.pathname)),
+                            path: searchValue,
+                            type: FSItemType.File,
+                            isExample: false,
+                            tags: ['Online file'],
+                            description: `An online file hosted by ${ decodeURIComponent(url.hostname) }`
+                        }];
+                        isUrl = true;
+                    } catch (e) {
+                        isUrl = false;
+                    }
+                }
+            }
             for (let i = 0; i < items.length; i++) {
                 html = '';
                 let item = items[i];
@@ -406,6 +456,23 @@ var FSEntryBrowserView = SilkyView.extend({
                 let lname = name.toLowerCase();
                 let itemPath = item.path;
                 let itemType = item.type;
+
+                if (isUrl === false && searchValue !== '') {
+                    let lsearchValue = searchValue.toLowerCase();
+                    if (lname.indexOf(lsearchValue) === -1) {
+                        if ( ! item.description || item.description.toLowerCase().indexOf(lsearchValue) === -1) {
+                            let found = false;
+                            for (let tag of item.tags) {
+                                if (tag.toLowerCase().startsWith(lsearchValue)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if ( ! found)
+                                continue;
+                        }
+                    }
+                }
 
                 if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
                     continue;
@@ -472,8 +539,12 @@ var FSEntryBrowserView = SilkyView.extend({
                 this.$items.push($item);
             }
 
-            if (this.$items.length === 0)
+            if (this.$items.length === 0) {
+                this.clearSelection();
                 this.$itemsList.append("<span>No recognised data files were found.</span>");
+            }
+            else
+                this._setSelection(this.$items[0]);
         }
     },
     _getSelectedPaths : function() {
@@ -635,8 +706,10 @@ var FSEntryBrowserView = SilkyView.extend({
     },
     clearSelection: function() {
         for (let i of this._selectedIndices) {
-            this.$items[i].removeClass('silky-bs-fslist-selected-item');
-            this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+            if (this.$items[i]) {
+                this.$items[i].removeClass('silky-bs-fslist-selected-item');
+                this.$items[i].find('.jmv-bs-fslist-checkbox').prop( "checked", false );
+            }
         }
         this._selectedIndices = [];
         this._baseSelectionIndex = -1;
@@ -1527,8 +1600,6 @@ var BackstageView = SilkyView.extend({
 
         this._opChanged();
 
-        //if ('places' in currentOp)
-        //    this.main = new BackstagePlaces({ el: ".silky-bs-main", model: this.model });
         this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
     },
     activate : function() {
