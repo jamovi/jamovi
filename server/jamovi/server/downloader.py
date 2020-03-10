@@ -25,7 +25,7 @@ class Download:
         else:
             chain_path = None
 
-        client = AsyncHTTPClient()
+        client = AsyncHTTPClient(max_body_size=512 * 1024 * 1024)
         response = client.fetch(
             url,
             header_callback=self._header_callback,
