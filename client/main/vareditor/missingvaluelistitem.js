@@ -175,7 +175,7 @@ const MissingValueListItem = function(value) {
             if (text.startsWith(op)) {
                 let value = text.substring(op.length);
                 let ff = text[op.length];
-                if (text.length > op.length && ff !== ' ' && ff !== '\xa0') {
+                if (text.length > op.length && ff !== ' ' && ff !== '\xa0') { // \xa0 represents a non breaking space
                     text = op + ' ' + value;
                     if (start >= op.length)
                         offsets.start += 1;
@@ -199,11 +199,11 @@ const MissingValueListItem = function(value) {
         }
     };
 
-    this._postCheckFormula = function($formula, isRealTime) {
+    this._postCheckFormula = function($formula, isRealTime) {   // Non realtime check is more strict
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
         let text = $formula.text().trimLeft();
-        text = text.replace(/\u00A0/gi, ' ');
+        text = text.replace(/\u00A0/gi, ' '); //\u00A0 represents a non breaking space
         if (text === '')
             return true;
 
@@ -300,7 +300,7 @@ const MissingValueListItem = function(value) {
                 text = `${ op } ${ value }`;
         }
 
-        if (text !== $formula.text().replace(/\u00A0/gi, ' ')) {
+        if (text !== $formula.text().replace(/\u00A0/gi, ' ')) { //\u00A0 represents a non breaking space
             $formula[0].textContent = text;
             sel.setBaseAndExtent($formula[0].firstChild, start+offsets.start, $formula[0].firstChild, end+offsets.end);
         }
