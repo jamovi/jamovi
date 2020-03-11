@@ -86,6 +86,14 @@ const marshallArgs = function(args, wd, first) {
 
     let cmd = { first: first };
 
+    let i = 0;
+    while (i < args.length) {
+        if (['--no-sandbox'].includes(args[i]))
+            args.splice(i, 1);
+        else
+            i++;
+    }
+
     if (args.length < 1) {
         cmd.open = '';
     }
