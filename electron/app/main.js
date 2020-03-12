@@ -7,11 +7,16 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const shell = electron.shell;
+const Menu = electron.Menu;
 
 const ini = require('./ini');
 const tmp = require('./tmp');
 
 app.allowRendererProcessReuse = true;
+
+// required to hide the application menu on linux
+// https://github.com/electron/electron/issues/16521
+Menu.setApplicationMenu(null);
 
 process.on('uncaughtException', (e) => {
     console.log(e);
