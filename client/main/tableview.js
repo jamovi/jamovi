@@ -2846,9 +2846,11 @@ const TableView = SilkyView.extend({
     _copySelectionToClipboard() {
         return this.model.requestCells(this.selection)
             .then(cells => {
+                let values = cells.data[0].values;
+                values = values.map(col => col.map(cell => cell.value));
                 host.copyToClipboard({
-                    text: csvifyCells(cells.data[0].values),
-                    html: htmlifyCells(cells.data[0].values),
+                    text: csvifyCells(values),
+                    html: htmlifyCells(values),
                 }).then(() => {
                     this.$selection.addClass('copying');
                     setTimeout(() => this.$selection.removeClass('copying'), 200);

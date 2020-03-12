@@ -1537,12 +1537,14 @@ const DataSetViewModel = DataSetModel.extend({
                     if (blockPB.clear === false)
                         cellPB = blockPB.values[(c*blockPB.rowCount) + r];
 
-                    let value;
-                    if (cellPB === null || cellPB.type === 'o')
-                        value = null;
-                    else
-                        value = cellPB[cellPB.type];
-                    values[c][r] = { value: value, missing: cellPB.missing };
+                    if (cellPB === null || cellPB.type === 'o') {
+                        values[c][r] = { value: null, missing: false };
+                    }
+                    else {
+                        let value = cellPB[cellPB.type];
+                        values[c][r] = { value: value, missing: cellPB.missing };
+                    }
+
                 }
             }
 
