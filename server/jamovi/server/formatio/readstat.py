@@ -214,7 +214,6 @@ class Parser(ReadStatParser):
         if missings:
             column.set_missing_values(missings)
 
-
     def handle_value(self, var_index, row_index, value):
 
         if row_index >= self._data.row_count:
