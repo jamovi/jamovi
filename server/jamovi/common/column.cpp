@@ -35,6 +35,15 @@ const char *Column::importName() const
     return _mm->resolve(struc()->importName);
 }
 
+const char *Column::description() const
+{
+    const char *desc = struc()->description;
+    if (desc != NULL)
+        return _mm->resolve(desc);
+    else
+        return "";
+}
+
 ColumnType::Type Column::columnType() const
 {
     return (ColumnType::Type) struc()->columnType;

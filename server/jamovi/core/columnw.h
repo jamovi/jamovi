@@ -27,6 +27,7 @@ public:
     void setId(int id);
     void setName(const char *name);
     void setImportName(const char *name);
+    void setDescription(const char *description);
     void setColumnType(ColumnType::Type columnType);
     void setDataType(DataType::Type dataType);
     void setMeasureType(MeasureType::Type measureType);
