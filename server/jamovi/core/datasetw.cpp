@@ -187,6 +187,7 @@ void DataSetW::initColumn(MemoryMapW *mm, ColumnStruct *&columnp)
 
     column->name = NULL;
     column->importName = NULL;
+    column->description = NULL;
     column->id = -1;
 
     column->columnType = ColumnType::DATA;
