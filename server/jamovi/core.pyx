@@ -190,6 +190,8 @@ cdef extern from "columnw.h":
         void setName(const char *name)
         const char *importName() const
         void setImportName(const char *name)
+        const char *description() const
+        void setDescription(const char *description)
         int id() const
         void setId(int id)
         void setColumnType(CColumnType columnType)
@@ -289,6 +291,16 @@ cdef class Column:
                 raise TypeError('name must be instance of str')
             name = name[:63]
             self._this.setImportName(name.encode('utf-8'))
+
+    property description:
+        def __get__(self):
+            return self._this.description().decode('utf-8')
+
+        def __set__(self, desc):
+            if not isinstance(desc, str):
+                raise TypeError('desc must be instance of str')
+            desc = desc[:1024]
+            self._this.setDescription(desc.encode('utf-8'))
 
     property column_type:
         def __get__(self):

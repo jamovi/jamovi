@@ -98,6 +98,8 @@ typedef struct
 
     char changes;
 
+    char *description;
+
 } ColumnStruct;
 
 namespace ColumnType
@@ -121,6 +123,7 @@ public:
     int id() const;
     const char *name() const;
     const char *importName() const;
+    const char *description() const;
     int rowCount() const;
     int rowCountExFiltered() const;
     int dps() const;

@@ -109,9 +109,16 @@ DataFrame readDF(
 
         columnNames[colNo] = String(columnName);
 
+        SEXP desc = R_NilValue;
+        string description = column.description();
+        if (description != "")
+            desc = Rcpp::wrap(description);
+
         if (column.columnType() == ColumnType::FILTER)
         {
-            columns[colNo] = LogicalVector(rowCountExFiltered, true);
+            LogicalVector v = LogicalVector(rowCountExFiltered, true);
+            v.attr("jmv-desc") = desc;
+            columns[colNo] = v;
         }
         else if (column.dataType() == DataType::DECIMAL)
         {
@@ -128,6 +135,7 @@ DataFrame readDF(
                 }
             }
 
+            v.attr("jmv-desc") = desc;
             columns[colNo] = v;
         }
         else if (column.dataType() == DataType::INTEGER && ! column.hasLevels())
@@ -148,6 +156,7 @@ DataFrame readDF(
             if (column.measureType() == MeasureType::ID)
                 v.attr("jmv-id") = true;
 
+            v.attr("jmv-desc") = desc;
             columns[colNo] = v;
         }
         else if (column.dataType() == DataType::TEXT &&
@@ -167,6 +176,7 @@ DataFrame readDF(
             }
 
             v.attr("jmv-id") = true;
+            v.attr("jmv-desc") = desc;
             columns[colNo] = v;
         }
         else
@@ -260,6 +270,7 @@ DataFrame readDF(
             if (column.measureType() == MeasureType::ID)
                 v.attr("jmv-id") = true;
 
+            v.attr("jmv-desc") = desc;
             columns[colNo] = v;
         }
 

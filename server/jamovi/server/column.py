@@ -37,7 +37,6 @@ class Column:
         if child is not None:
             self._id = child.id
         self._index = -1
-        self._description = ''
         self._width = 100
         self._hidden = False
         self._filter_no = -1
@@ -119,7 +118,6 @@ class Column:
             self._node._remove_node_parent(self)
             self._node = None
 
-        self._description = ''
         self._hidden = False
         self._filter_no = -1
         self._transform = 0  # zero mean 'none'
@@ -168,14 +166,6 @@ class Column:
         if self._child is not None:
             return self._child.missing_values
         return []
-
-    @property
-    def description(self):
-        return self._description
-
-    @description.setter
-    def description(self, description):
-        self._description = description
 
     @property
     def width(self):
@@ -264,6 +254,18 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.import_name = name
+
+    @property
+    def description(self):
+        if self._child is not None:
+            return self._child.description
+        return ''
+
+    @description.setter
+    def description(self, desc):
+        if self._child is None:
+            self._create_child()
+        self._child.description = desc
 
     @property
     def column_type(self):
