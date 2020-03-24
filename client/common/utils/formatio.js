@@ -99,6 +99,11 @@ function exportElem(el, format, options={ images:'absolute', margin: '24', docTy
             if (options.margin !== undefined)
                 margin = options.margin;
 
+            // In the following style sheet, i've removed all the macOS fonts
+            // i.e. -apple-system,BlinkMacSystemFont,"Apple Color Emoji"
+            // At this stage, they totally mess-up pdf rendering on macOS
+            // https://github.com/electron/electron/issues/21724
+
             return `${ docType }
 <html>
     <head>
@@ -108,7 +113,7 @@ function exportElem(el, format, options={ images:'absolute', margin: '24', docTy
         <style>
 
     body {
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
+        font-family: "Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol" ;
         color: #333333 ;
         cursor: default ;
         margin: ${ margin }px;
