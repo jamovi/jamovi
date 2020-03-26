@@ -105,6 +105,8 @@ void EngineR::run(AnalysisRequest &analysis)
     ss << analysis.name();
     string nameAndId = ss.str();
 
+    bool requiresMissings = Rcpp::as<bool>(ana["requiresMissings"]);
+
     std::function<Rcpp::DataFrame(Rcpp::List)> readDatasetHeader;
     std::function<Rcpp::DataFrame(Rcpp::List)> readDataset;
 
@@ -114,7 +116,8 @@ void EngineR::run(AnalysisRequest &analysis)
         analysis.sessionid(),
         analysis.instanceid(),
         std::placeholders::_1,
-        true);
+        true,
+        requiresMissings);
     Rcpp::as<Rcpp::Function>(ana[".setReadDatasetHeaderSource"])(Rcpp::InternalFunction(readDatasetHeader));
 
     readDataset = std::bind(
@@ -123,7 +126,8 @@ void EngineR::run(AnalysisRequest &analysis)
         analysis.sessionid(),
         analysis.instanceid(),
         std::placeholders::_1,
-        false);
+        false,
+        requiresMissings);
     Rcpp::as<Rcpp::Function>(ana[".setReadDatasetSource"])(Rcpp::InternalFunction(readDataset));
 
     std::function<string()> statePath = std::bind(
@@ -331,7 +335,8 @@ Rcpp::DataFrame EngineR::readDataset(
     const string &sessionId,
     const string &instanceId,
     Rcpp::List columnsRequired,
-    bool headerOnly)
+    bool headerOnly,
+    bool requiresMissings)
 {
     if (_rInside == NULL)
         initR();
@@ -343,7 +348,7 @@ Rcpp::DataFrame EngineR::readDataset(
     for (SEXP sexp : columnsRequired)
         req[count++] = Rcpp::as<Rcpp::String>(sexp);
 
-    return readDF(path, req, headerOnly);
+    return readDF(path, req, headerOnly, requiresMissings);
 }
 
 void EngineR::setCheckForAbortCB(std::function<bool()> check)

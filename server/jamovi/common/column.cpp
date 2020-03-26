@@ -110,7 +110,7 @@ int Column::levelCount() const
     return struc()->levelsUsed;
 }
 
-int Column::levelCountExFilteredExMissing() const
+int Column::levelCountExFiltered(bool requiresMissings) const
 {
     int count = 0;
     ColumnStruct *s = struc();
@@ -118,7 +118,8 @@ int Column::levelCountExFilteredExMissing() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &level = levels[i];
-        if (level.countExFiltered > 0 && level.treatAsMissing == false)
+        if (level.countExFiltered > 0
+                && (requiresMissings || level.treatAsMissing == false))
             count++;
     }
     return count;
