@@ -7,6 +7,7 @@
 Rcpp::DataFrame readDF(
     Rcpp::String path,
     SEXP columnsRequired,
-    bool headerOnly);
+    bool headerOnly,
+    bool requiresMissings = false);
 
 #endif // READDF_H

@@ -42,7 +42,8 @@ private:
         const std::string &sessionId,
         const std::string &instanceId,
         Rcpp::List columns,
-        bool headerOnly);
+        bool headerOnly,
+        bool requiresMissings);
 
     std::string analysisDirPath(
         const std::string &sessionId,
