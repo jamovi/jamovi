@@ -134,7 +134,7 @@ public:
     DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
-    int levelCountExFilteredExMissing() const;
+    int levelCountExFiltered(bool requiresMissings = false) const;
     const std::vector<LevelData> levels() const;
     const std::vector<MissingValue> missingValues() const;
     const char *getLabel(int value) const;
