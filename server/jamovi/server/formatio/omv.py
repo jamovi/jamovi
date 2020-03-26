@@ -353,7 +353,10 @@ def read(data, path, prog_cb):
             column.transform = meta_column.get('transform', 0)
             column.parent_id = meta_column.get('parentId', 0)
             column.cell_tracker.edited_cell_ranges = meta_column.get('edits', [])
-            column.set_missing_values(meta_column.get('missingValues', []))
+
+            missing_values = meta_column.get('missingValues', [])
+            if missing_values:
+                column.set_missing_values(missing_values)
 
             if column.is_filter:
                 column.filter_no = meta_column.get('filterNo', -1)
