@@ -311,6 +311,14 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     if (importValue == NULL)
         importValue = label;
 
+    bool treatAsMissing;
+    if (dataType() == DataType::TEXT)
+        treatAsMissing = shouldTreatAsMissing(label, importValue);
+    else if (dataType() == DataType::INTEGER)
+        treatAsMissing = shouldTreatAsMissing(label, value);
+    else
+        treatAsMissing = false; // shouldn't get here
+
     if (s->levelsUsed + 1 >= s->levelsCapacity)
     {
         int oldCapacity = s->levelsCapacity;
@@ -359,7 +367,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     l.importValue = importChars;
     l.count = 0;
     l.countExFiltered = 0;
-    l.treatAsMissing = false;
+    l.treatAsMissing = treatAsMissing;
 
     s->levelsUsed++;
     s->changes++;
