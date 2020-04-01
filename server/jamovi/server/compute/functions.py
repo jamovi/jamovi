@@ -165,8 +165,9 @@ def VSTDEV(values: float):
 
 @column_wise
 def VSE(values: float):
-    values = filter(lambda x: not math.isnan(x), values)
-    return stats.pstdev(values)
+    values = list(filter(lambda x: not math.isnan(x), values))
+    n = sum(1 for _ in values)
+    return math.sqrt(stats.variance(values) / n)
 
 
 @row_wise
