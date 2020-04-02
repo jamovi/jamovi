@@ -3,6 +3,7 @@ from collections import OrderedDict
 from numbers import Number
 from datetime import date
 import math
+import re
 
 from jamovi.core import ColumnType
 from jamovi.core import DataType
@@ -296,7 +297,27 @@ def write(data, path, prog_cb, format):
     writer.open(path, format)
     writer.set_file_label('jamovi data set')
 
-    for column in data:
+    regex_start = re.compile(r'[a-z@]', re.IGNORECASE)
+    regex_all = re.compile(r'^[a-z0-9@#$,._]+$', re.IGNORECASE)
+    regex_end = re.compile(r'[a-z0-9@#$]', re.IGNORECASE)
+    regex_char = re.compile(r'[a-z0-9@#$,._]', re.IGNORECASE)
+
+    def fix_name(name):
+        name = name[0:64]
+        if not regex_start.match(name[0]):
+            name = '@' + name[1:]
+        if not regex_all.match(name):
+            name = name[0] + ''.join(map(lambda c: c if regex_char.match(c) else '_', name[1:-1])) + name[-1]
+        if not regex_end.match(name[-1]):
+            name = name[0:-1] + '@'
+        return name
+
+    columns = filter(lambda col: not col.is_virtual, data)
+    column_names = map(lambda col: col.name, columns)
+    column_names = map(fix_name, column_names)
+    column_names = list(column_names)
+
+    for col_no, column in enumerate(data):
         if column.is_virtual:
             break
 
@@ -325,8 +346,10 @@ def write(data, path, prog_cb, format):
         else:
             measure_type = Measure.UNKNOWN
 
+        name = column_names[col_no]
+
         var = writer.add_variable(
-            column.name,
+            name,
             data_type,
             storage_width)
 
