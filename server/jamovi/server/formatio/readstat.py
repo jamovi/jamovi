@@ -9,6 +9,7 @@ from jamovi.core import DataType
 from jamovi.core import MeasureType
 
 from jamovi.readstat import Parser as ReadStatParser
+from jamovi.readstat import Error as ReadStatError
 from jamovi.readstat import Writer
 from jamovi.readstat import Measure
 
@@ -48,11 +49,21 @@ class Parser(ReadStatParser):
 
         self._data = data
         self._prog_cb = prog_cb
+        self._max_row_index = 0
 
         self._tmp_value_labels = { }
 
         self._metadata = None
         self._labels = [ ]
+
+    def parse(self, path, format):
+        try:
+            return super().parse(path, format)
+        except ReadStatError as e:
+            if e.errno == 9:  # not expected no. of rows
+                self._data.set_row_count(self._max_row_index + 1)
+            else:
+                raise e
 
     def handle_metadata(self, metadata):
         if metadata.row_count >= 0:  # negative values are possible here!
@@ -221,6 +232,8 @@ class Parser(ReadStatParser):
         else:
             if var_index == 0 and row_index % 100 == 0:
                 self._prog_cb(row_index / self._data.row_count)
+
+        self._max_row_index = max(self._max_row_index, row_index)
 
         vt = type(value)
 
