@@ -696,6 +696,7 @@ const DataSetModel = Backbone.Model.extend({
                     let created = column === undefined;
                     let dpsChanged = false;
                     let oldName;
+                    let oldDescription;
                     let oldColumnType;
                     let oldMeasureType;
                     let oldDataType;
@@ -709,6 +710,7 @@ const DataSetModel = Backbone.Model.extend({
 
                     if ( ! created) {
                         oldName = column.name;
+                        oldDescription = column.description;
                         oldColumnType = column.columnType;
                         oldMessage = column.formulaMessage;
                         oldDIndex = column.dIndex;
@@ -727,6 +729,7 @@ const DataSetModel = Backbone.Model.extend({
                     }
                     else {
                         oldName = columnPB.name;
+                        oldDescription = columnPB.description;
                         oldTransform = 0;
                         oldParentId = 0;
                         oldColumnType = 0;
@@ -743,6 +746,7 @@ const DataSetModel = Backbone.Model.extend({
                             columns[i].index = i;
                     }
                     let nameChanged = (oldName !== columnPB.name);
+                    let descriptionChanged = (oldDescription !== columnPB.description);
 
                     changed[i] = columnPB.name;
                     changes[i] = {
@@ -764,6 +768,7 @@ const DataSetModel = Backbone.Model.extend({
                         formulaChanged: column.formula !== oldFormula,
                         levelNameChanges: levelChanges.names,
                         nameChanged: nameChanged,
+                        descriptionChanged: descriptionChanged,
                         dpsChanged: dpsChanged,
                         dataChanged: columnPB.dataChanged,
                         created: created,
