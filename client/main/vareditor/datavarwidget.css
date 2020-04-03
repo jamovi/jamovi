@@ -225,9 +225,14 @@
     margin-bottom: 12px;
 }
 
+.jmv-variable-editor-datavarwidget .measure-box .label {
+    white-space: nowrap;
+}
+
 .jmv-variable-editor-datavarwidget .measure-box #type {
     margin-left: 5px;
     flex-grow: 1;
+    flex-shrink: 1;
 }
 
 .jmv-variable-editor-datavarwidget .measure-box .icon {
