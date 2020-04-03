@@ -35,24 +35,25 @@ ifeq ($(os),OSX)
 endif
 
 SRCDIR ?= $(dir $(firstword $(MAKEFILE_LIST)))
-BINDIR ?= bin
 TARGET = jamovi-engine
 CXXFLAGS += -std=c++11
 INCLUDES += -I.
 
 ifeq ($(os),OSX)
+	BINDIR ?= MacOS
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.6/Resources
 	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../../Frameworks \
-				-L$(SRCDIR)/../../lib \
 				-L$(R_HOME)/lib \
 				-L$(BASE_MODULE_PATH)/RInside/lib \
+				-L/usr/local/lib \
 				-lboost_filesystem \
 				-lboost_system \
 				-framework Foundation
 	CXXFLAGS += -mmacosx-version-min=10.11
 else
 ifeq ($(os),Linux)
+	BINDIR ?= bin
 	R_HOME ?= $(SRCDIR)/../../../lib/R
 	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	R_PATH ?= $$ORIGIN/../lib  $$ORIGIN/../Resources/modules/base/R/RInside/lib
@@ -63,6 +64,7 @@ ifeq ($(os),Linux)
 				-lpthread \
 				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)')
 else
+	BINDIR ?= bin
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R
 	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../lib \
