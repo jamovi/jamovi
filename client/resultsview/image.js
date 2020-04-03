@@ -66,6 +66,7 @@ const ImageView = Elem.View.extend({
 
         $(`<div
             class="jmv-results-image-image"
+            data-address="${ btoa(this.address().join('/')) }"
             style="
                 background-image: ${ backgroundImage };
                 width: ${ element.width }px ;

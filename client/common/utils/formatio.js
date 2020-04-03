@@ -387,6 +387,7 @@ function _htmlifyDiv(el, options) {
     let width = $(el).css('width');
     let height = $(el).css('height');
     let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
+    let address = el.dataset.address;
 
     if (options.images === 'absolute') {
         return `<img src="${ bgi }" style="width: ${ width }; height: ${ height };">`;
@@ -402,7 +403,7 @@ function _htmlifyDiv(el, options) {
             console.log('Unable to resolve relative address');
             bgi = '';
         }
-        return `<img src="${ bgi }" style="width: ${ width }; height: ${ height };" alt="">`;
+        return `<img src="${ bgi }" data-address="${ address }" style="width: ${ width }; height: ${ height };" alt="">`;
     }
 
     return new Promise((resolve, reject) => {
