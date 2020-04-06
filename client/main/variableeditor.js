@@ -61,15 +61,15 @@ const VariableEditor = Backbone.View.extend({
             this._hideEditor();
         });
 
-        tippy('.jmv-tooltip', {
-          placement: 'right',
-          animation: 'perspective',
-          duration: 200,
-          delay: 700,
-          flip: true,
-          theme: 'jmv'
-        });
-        this.$revert[0]._tippy.disable();
+        // tippy('.jmv-tooltip', {
+        //   placement: 'right',
+        //   animation: 'perspective',
+        //   duration: 200,
+        //   delay: 700,
+        //   flip: true,
+        //   theme: 'jmv'
+        // });
+        // this.$revert[0]._tippy.disable();
 
         this.editorModel = new VariableModel(this.model);
 
@@ -126,12 +126,12 @@ const VariableEditor = Backbone.View.extend({
             else
                 this.model.set('editingVar', null);
 
-            this.$ok[0]._tippy.hide();
-            this.$ok[0]._tippy.disable();
+            // this.$ok[0]._tippy.hide();
+            // this.$ok[0]._tippy.disable();
         });
 
         this.$ok.on('mouseout', event => {
-            this.$ok[0]._tippy.enable();
+            // this.$ok[0]._tippy.enable();
         });
 
         this.$revert.on('click', event => {
@@ -151,12 +151,12 @@ const VariableEditor = Backbone.View.extend({
         this.$left.on('click', event => {
             this._moveLeft();
 
-            this.$left[0]._tippy.hide();
-            this.$left[0]._tippy.disable();
+            // this.$left[0]._tippy.hide();
+            // this.$left[0]._tippy.disable();
         });
 
         this.$left.on('mouseout', event => {
-            this.$left[0]._tippy.enable();
+            // this.$left[0]._tippy.enable();
         });
 
         this._moveRight = function() {
@@ -171,12 +171,12 @@ const VariableEditor = Backbone.View.extend({
         this.$right.on('click', event => {
             this._moveRight();
 
-            this.$right[0]._tippy.hide();
-            this.$right[0]._tippy.disable();
+            // this.$right[0]._tippy.hide();
+            // this.$right[0]._tippy.disable();
         });
 
         this.$right.on('mouseout', event => {
-            this.$right[0]._tippy.enable();
+            // this.$right[0]._tippy.enable();
         });
 
         this.editorModel.on('change:changes', event => {
@@ -185,12 +185,12 @@ const VariableEditor = Backbone.View.extend({
             else
                 this.$ok.attr('title', 'Hide');
 
-            if (this.$revert.hasClass('apply'))
-                this.$revert[0]._tippy.enable();
-            else {
-                this.$revert[0]._tippy.hide();
-                this.$revert[0]._tippy.disable();
-            }
+            // if (this.$revert.hasClass('apply'))
+            //     this.$revert[0]._tippy.enable();
+            // else {
+            //     this.$revert[0]._tippy.hide();
+            //     this.$revert[0]._tippy.disable();
+            // }
         });
 
         this.editorModel.on('notification', note => this.trigger('notification', note));
@@ -285,20 +285,20 @@ const VariableEditor = Backbone.View.extend({
             this.$left.toggleClass('hidden', now <= 0);
             if (this.$left.hasClass('hidden'))
             {
-                this.$left[0]._tippy.hide();
-                this.$left[0]._tippy.disable();
+                // this.$left[0]._tippy.hide();
+                // this.$left[0]._tippy.disable();
             }
-            else
-                this.$left[0]._tippy.enable();
+            // else
+                // this.$left[0]._tippy.enable();
 
             this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
             if (this.$right.hasClass('hidden'))
             {
-                this.$right[0]._tippy.hide();
-                this.$right[0]._tippy.disable();
+                // this.$right[0]._tippy.hide();
+                // this.$right[0]._tippy.disable();
             }
-            else
-                this.$right[0]._tippy.enable();
+            // else
+                // this.$right[0]._tippy.enable();
 
             this._previousKeyboardContext = keyboardJS.getContext();
             keyboardJS.setContext('spreadsheet');
