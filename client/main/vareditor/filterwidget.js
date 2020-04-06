@@ -41,25 +41,25 @@ const FilterWidget = Backbone.View.extend({
 
         this.$addFilter = $('<div class="filter-button filter-button-tooltip add-filter" title="Add new filter" data-tippy-placement="left"></div>').appendTo(this.$filterListButtons);
         this.$addFilter.on('click', (event) => {
-            this.$addFilter[0]._tippy.hide();
-            this.$addFilter[0]._tippy.disable();
+            // this.$addFilter[0]._tippy.hide();
+            // this.$addFilter[0]._tippy.disable();
             this._internalCreate = true;
             this._addFilter();
 
         });
         this.$addFilter.on('mouseout', event => {
-            this.$addFilter[0]._tippy.enable();
+            // this.$addFilter[0]._tippy.enable();
             this._clickedButton = false;
         });
 
-        tippy(this.$addFilter[0], {
-            placement: 'right',
-            animation: 'perspective',
-            duration: 200,
-            delay: 700,
-            flip: true,
-            theme: 'jmv-filter'
-        });
+        // tippy(this.$addFilter[0], {
+        //     placement: 'right',
+        //     animation: 'perspective',
+        //     duration: 200,
+        //     delay: 700,
+        //     flip: true,
+        //     theme: 'jmv-filter'
+        // });
 
         this.dataset.on('dataSetLoaded', this._dataSetLoaded, this);
         this.dataset.on('columnsDeleted', event => this._columnsDeleted(event));
@@ -71,25 +71,25 @@ const FilterWidget = Backbone.View.extend({
 
         this.$showFilter = $('<div class="filter-button filter-button-tooltip ' + (filtersVisible ? 'show-filter-columns' : 'hide-filter-columns') + '" title="Show filter columns" data-tippy-placement="left" data-tippy-dynamictitle="true"></div>').appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
-            this.$showFilter[0]._tippy.hide();
-            this.$showFilter[0]._tippy.disable();
+            // this.$showFilter[0]._tippy.hide();
+            // this.$showFilter[0]._tippy.disable();
 
             this.dataset.toggleFilterVisibility();
         });
         this.$showFilter.on('mouseout', event => {
-            this.$showFilter[0]._tippy.enable();
+            // this.$showFilter[0]._tippy.enable();
         });
 
         this.dataset.on('change:filtersVisible', event => this._updateEyeButton());
 
-        tippy(this.$showFilter[0], {
-            placement: 'right',
-            animation: 'perspective',
-            duration: 200,
-            delay: 700,
-            flip: true,
-            theme: 'jmv-filter'
-        });
+        // tippy(this.$showFilter[0], {
+        //     placement: 'right',
+        //     animation: 'perspective',
+        //     duration: 200,
+        //     delay: 700,
+        //     flip: true,
+        //     theme: 'jmv-filter'
+        // });
 
     },
     _updateEyeButton() {
@@ -781,8 +781,8 @@ const FilterWidget = Backbone.View.extend({
         if ( ! this.attached)
             return;
 
-        this.$addFilter[0]._tippy.hide();
-        this.$showFilter[0]._tippy.hide();
+        // this.$addFilter[0]._tippy.hide();
+        // this.$showFilter[0]._tippy.hide();
 
         this.$el.find('.remove').remove(); //clean up any removes that exist because the transistionend was not called.
 

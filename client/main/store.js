@@ -25,17 +25,17 @@ const Store = Backbone.View.extend({
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
         this.$close = $('<div class="jmv-store-button-close" title="Hide library"><span class="mif-arrow-up"></span></div>').appendTo(this.$header);
-        tippy(this.$close[0], {
-            placement: 'left',
-            animation: 'perspective',
-            duration: 200,
-            delay: 700,
-            flip: true,
-            theme: 'jmv-library'
-        });
+        // tippy(this.$close[0], {
+        //     placement: 'left',
+        //     animation: 'perspective',
+        //     duration: 200,
+        //     delay: 700,
+        //     flip: true,
+        //     theme: 'jmv-library'
+        // });
 
         this.$close.on('click', event => {
-            this.$close[0]._tippy.hide();
+            // this.$close[0]._tippy.hide();
             this.hide();
         });
 

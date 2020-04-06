@@ -37,14 +37,14 @@ const AppMenuButton = Backbone.View.extend({
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
         this.$back = $('<div class="jmv-ribbon-appmenu-back-button" title="Hide settings"></div>').appendTo(this.$backOuter);
-        tippy(this.$back[0], {
-            placement: 'left',
-            animation: 'perspective',
-            duration: 200,
-            delay: 700,
-            flip: true,
-            theme: 'jmv'
-        });
+        // tippy(this.$back[0], {
+        //     placement: 'left',
+        //     animation: 'perspective',
+        //     duration: 200,
+        //     delay: 700,
+        //     flip: true,
+        //     theme: 'jmv'
+        // });
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {
