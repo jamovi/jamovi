@@ -189,8 +189,8 @@ def latexify(content, out):
                 # ===================================================================================================================
                 # set table header, body and footer together again and replace the original table data with it
                 # ===================================================================================================================
-                trpl = ('\n\\begin{table}[h]\n\\caption{' + re.compile('<span[\s\S]*?>(.+?)<\/span>').findall(thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
-                        '\\centering\n\\begin{adjustbox}{max size={\\textwidth}{\\textheight}}\n' +
+                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.compile('<span[\s\S]*?>(.+?)<\/span>').findall(thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
+                        '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n' +
                         '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n' +
                         '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
                 body = body.replace(tdta[i], trpl);
@@ -217,9 +217,9 @@ def latexify(content, out):
                     raise ValueError('Unexpected amount of figure data (' + str(len(iraw)) + ' instead of 1 [for base64-embedded pictures] or 0 [for picture links]):\n' + '\n'.join(iraw))
 
                 i_fn = 'Figure_{}|{}'.format(i + 1, i_fn)
-                irpl = ('\n\\begin{figure}\n\\caption{PLACEHOLDER}\n\\label{fig:Figure_' + str(i + 1) + '}\n' +
+                irpl = ('\n\\begin{figure}[htbp]\n\\caption{PLACEHOLDER}\n\\label{fig:Figure_' + str(i + 1) + '}\n' +
                         '% (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)\n' +
-                        '\\centering\n\\includegraphics[max size={\\textwidth}{\\textheight}]{'  + i_fn + '}\n\\end{figure}')
+                        '\\centering\n\\includegraphics[max size={\\columnwidth}{\\textheight}]{'  + i_fn + '}\n\\end{figure}')
                 body = body.replace(idta[i], irpl);
 
         # handle references
