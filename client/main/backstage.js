@@ -962,6 +962,7 @@ var BackstageModel = Backbone.Model.extend({
             { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
             { extensions: ['omt'], description: 'jamovi template (.omt)' },
             { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
+            { extensions: ['zip'], description: 'LaTeX bundle (.zip)' },
             { extensions: ['rds'], description: 'R object (.rds)' },
             { extensions: ['RData'], description: 'R object (.RData)' },
             { extensions: ['sav'], description: 'SPSS sav (.sav)' },

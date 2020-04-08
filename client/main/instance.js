@@ -238,6 +238,9 @@ const Instance = Backbone.Model.extend({
             else if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
                 return this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
             }
+            else if (filePath.endsWith('.zip')) {
+                return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app}, options.part);
+            }
             else if (filePath.endsWith('.pdf')) {
                 return this.attributes.resultsSupplier.getAsHTML({images:'absolute', generator:app}, options.part)
                     .then(html => this._requestPDF(html));

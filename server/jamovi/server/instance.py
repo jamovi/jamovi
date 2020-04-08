@@ -42,9 +42,11 @@ from urllib import parse
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
 from tempfile import mkstemp
+from io import StringIO
 
 from .utils import fs
 from .utils import is_int32
+from .utils import latexify
 
 log = logging.getLogger('jamovi')
 
@@ -490,9 +492,14 @@ class Instance:
     def _on_save_content(self, request):
         path = request.filePath
         path = Instance._normalise_path(path)
+        content = request.content
 
-        with open(path, 'wb') as file:
-            file.write(request.content)
+        if path.endswith('.zip'):
+            with open(path, 'wb') as file:
+                latexify(content.decode('utf-8'), file)
+        else:
+            with open(path, 'wb') as file:
+                file.write(content)
 
         response = jcoms.SaveProgress()
         response.success = True

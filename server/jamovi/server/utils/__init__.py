@@ -6,6 +6,7 @@ from .htmlparser import HTMLParser
 
 from .fileentry import FileEntry
 from .nulllog import NullLog
+from .latexify import latexify
 
 
 def int32(value):
