@@ -9,7 +9,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const util = require('util');
-const tippy = require('tippy.js');
 const keyboardJS = require('keyboardjs');
 
 const PageModules = require('./store/pagemodules');
@@ -25,17 +24,8 @@ const Store = Backbone.View.extend({
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
         this.$close = $('<div class="jmv-store-button-close" title="Hide library"><span class="mif-arrow-up"></span></div>').appendTo(this.$header);
-        // tippy(this.$close[0], {
-        //     placement: 'left',
-        //     animation: 'perspective',
-        //     duration: 200,
-        //     delay: 700,
-        //     flip: true,
-        //     theme: 'jmv-library'
-        // });
 
         this.$close.on('click', event => {
-            // this.$close[0]._tippy.hide();
             this.hide();
         });
 

@@ -6,7 +6,6 @@ const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 const Framesg = require('framesg').default;
-const tippy = require('tippy.js');
 Backbone.$ = $;
 
 const Options = require('./options');
@@ -169,14 +168,6 @@ $(document).ready(function() {
 
     parentFrame.send("frameDocumentReady", null);
 
-    tippy('.silky-sp-back-button', {
-        placement: 'left',
-        animation: 'perspective',
-        duration: 200,
-        delay: 700,
-        flip: true,
-        theme: 'jmv'
-    });
 });
 
 

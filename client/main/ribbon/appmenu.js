@@ -5,7 +5,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const keyboardjs = require('keyboardjs');
-const tippy = require('tippy.js');
 
 const host = require('../host');
 
@@ -37,25 +36,11 @@ const AppMenuButton = Backbone.View.extend({
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
         this.$back = $('<div class="jmv-ribbon-appmenu-back-button" title="Hide settings"></div>').appendTo(this.$backOuter);
-        // tippy(this.$back[0], {
-        //     placement: 'left',
-        //     animation: 'perspective',
-        //     duration: 200,
-        //     delay: 700,
-        //     flip: true,
-        //     theme: 'jmv'
-        // });
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {
             this.toggleMenu();
             event.stopPropagation();
-            this.$back[0]._tippy.hide();
-            this.$back[0]._tippy.disable();
-        });
-
-        this.$back.on('mouseout', event => {
-            this.$back[0]._tippy.enable();
         });
 
         this.$content = $('<div class="jmv-ribbon-appmenu-content"></div>').appendTo(this.$menu);

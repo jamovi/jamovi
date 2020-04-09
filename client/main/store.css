@@ -1,15 +1,3 @@
-.tippy-tooltip.jmv-library-theme {
-    background-color: transparent;
-    border: 2px solid white;
-}
-
-.tippy-tooltip.jmv-library-theme .tippy-content {
-    color: white;
-}
-
-.tippy-tooltip.jmv-library-theme .tippy-backdrop {
-    background-color: transparent;
-}
 
 .mode-msg {
     text-align: center;
