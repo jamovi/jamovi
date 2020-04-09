@@ -9,10 +9,6 @@
     position: absolute;
 }
 
- .tippy-tooltip.jmv-theme .tippy-backdrop {
-    background-color: #999999;
-}
-
 .jmv-variable-editor {
     background-color: #F8F8F8 ;
     width: 100% ;
