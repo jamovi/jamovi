@@ -324,7 +324,9 @@ def latexify(content, out):
 
         head = ('\\documentclass[a4paper,man,hidelinks]{apa7}\n' +
                 '% This LaTeX output is designed to use APA7 style and to run on local TexLive-installation (use pdflatex) as well as on web interfaces (e.g., overleaf.com).\n' +
-                '% To use APA6 style change apa7 to apa6 in the first line (\\documentclass), comment or remove the \\addORCIDlink line, and change the order of \\caption and \\label lines for the figures.\n\n' +
+                '% To use APA6 style change apa7 to apa6 in the first line (\\documentclass), comment or remove the \\addORCIDlink line, and change the order of \\caption and \\label lines for the figures.\n' +
+                '% If you prefer having your figures within the body of the text instead of postponing them until after the reference list, please add ",floatsintext" after "hidelinks" in the documentclass options.\n' +
+                '% Further information on these styles can be found here: https://www.ctan.org/pkg/apa7 and here: https://www.ctan.org/pkg/apa6\n\n' +
                 '\\usepackage[british]{babel}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath}\n\\usepackage{graphicx}\n\\usepackage[export]{adjustbox}\n\\usepackage{csquotes}\n' +
                 ('' if len(rdta) > 0 else '%') + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}\n' +
                 ('' if len(rdta) > 0 else '%') + '\\DeclareLanguageMapping{british}{british-apa}\n' +
