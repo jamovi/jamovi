@@ -7,14 +7,6 @@
     max-height: 255px;
 }
 
-.tippy-tooltip.jmv-filter-theme .tippy-backdrop {
-   background-color: #c0d0e4;
-}
-
-.tippy-tooltip.jmv-filter-theme .tippy-content {
-    color: #658ec2;
-}
-
 .jmv-filter-list-box {
     flex-grow: 1;
     overflow-y: auto;
