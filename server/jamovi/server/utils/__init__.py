@@ -7,6 +7,9 @@ from .htmlparser import HTMLParser
 from .fileentry import FileEntry
 from .nulllog import NullLog
 
+import os.path
+import ssl
+
 
 def int32(value):
     value = int(value)
@@ -20,6 +23,9 @@ def is_int32(value):
     except ValueError:
         return False
     return True
+
+def is_url(path):
+    return path.startswith('https://') or path.startswith('http://')
 
 def req_str(request):
     if request.perform == 0:
@@ -42,3 +48,12 @@ def req_str(request):
         request.analysisId,
         request.revision,
         perform)
+
+def ssl_context():
+    context = None
+    server_path = conf.get('server_path')
+    if server_path is not None:
+        chain_path = os.path.join(server_path, 'resources', 'chain.pem')
+        if os.path.isfile(chain_path):
+            context = ssl.create_default_context(cafile=chain_path)
+    return context

@@ -2,11 +2,6 @@
 # Copyright (C) 2016 Jonathon Love
 #
 
-import os
-import os.path
-import platform
-import re
-
 from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
@@ -22,13 +17,18 @@ from .utils import conf
 from .utils import FileEntry
 from .utils import CSVParser
 from .utils import HTMLParser
+from .utils import ssl_context
 from .modules import Modules
 from .instancemodel import InstanceModel
 from . import formatio
 from .modtracker import ModTracker
 from .permissions import Permissions
-from .downloader import Downloader
+from .integrations import get_special_handler
 
+import os
+import os.path
+import platform
+import re
 import posixpath
 import math
 import yaml
@@ -38,6 +38,7 @@ import functools
 from time import monotonic
 from itertools import islice
 from urllib import parse
+from aiohttp import ClientSession
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -45,6 +46,8 @@ from tempfile import mkstemp
 
 from .utils import fs
 from .utils import is_int32
+from .utils import is_url
+
 
 log = logging.getLogger('jamovi')
 
@@ -442,27 +445,44 @@ class Instance:
     async def _on_save(self, request):
 
         path = request.filePath
-        path = Instance._normalise_path(path)
+        i9n = self._data.integration
 
         try:
-            if self._perms.save.local is False:
-                raise PermissionError()
+            if i9n and i9n.is_for(path):
 
-            file_exists = os.path.isfile(path)
-            if file_exists is False or request.overwrite is True:
-                if path.endswith('.omv'):
-                    await self._on_save_everything(request)
-                elif request.incContent:
-                    self._on_save_content(request)
-                elif request.part != '':
-                    self._on_save_part(request)
-                else:
-                    await self._on_save_everything(request)
-            else:
+                async for progress in i9n.save(self._data, request.content):
+                    self._coms.send(None, self._instance_id, request,
+                                    complete=False, progress=progress)
+                status = i9n.gen_message()
+
                 response = jcoms.SaveProgress()
-                response.fileExists = True
-                response.success = False
-                self._coms.send(response, self._instance_id, request)
+                response.success = True
+                response.path = self._data.path
+                response.title = self._data.title
+                response.saveFormat = self._data.save_format
+                self._coms.send(response, self._instance_id, request, status=status)
+
+            else:
+                path = Instance._normalise_path(path)
+
+                if self._perms.save.local is False:
+                    raise PermissionError()
+
+                file_exists = os.path.isfile(path)
+                if file_exists is False or request.overwrite is True:
+                    if path.endswith('.omv'):
+                        await self._on_save_everything(request)
+                    elif request.incContent:
+                        self._on_save_content(request)
+                    elif request.part != '':
+                        self._on_save_part(request)
+                    else:
+                        await self._on_save_everything(request)
+                else:
+                    response = jcoms.SaveProgress()
+                    response.fileExists = True
+                    response.success = False
+                    self._coms.send(response, self._instance_id, request)
 
         except PermissionError as e:
             log.exception(e)
@@ -485,6 +505,8 @@ class Instance:
             base    = os.path.basename(path)
             message = 'Unable to save {}'.format(base)
             cause = str(e)
+            if not cause:
+                cause = type(e).__name__
             self._coms.send_error(message, cause, self._instance_id, request)
 
     def _on_save_content(self, request):
@@ -495,6 +517,7 @@ class Instance:
             file.write(request.content)
 
         response = jcoms.SaveProgress()
+        response.path = request.filePath
         response.success = True
         self._coms.send(response, self._instance_id, request)
 
@@ -516,17 +539,23 @@ class Instance:
         await ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content)
 
         if not is_export:
-            self._data.title = os.path.splitext(os.path.basename(path))[0]
+            title = os.path.basename(path)
+            title, ext = os.path.splitext(title)
+            self._data.title = title
             self._data.path = path
+            self._data.saveFormat = 'jamovi'
             self._data.is_edited = False
+            self._data.integration = None
 
         response = jcoms.SaveProgress()
         response.success = True
+        response.title = self._data.title
         response.path = Instance._virtualise_path(path)
+        response.saveFormat = self._data.saveFormat
         self._coms.send(response, self._instance_id, request)
 
         if not is_export:
-            self._add_to_recents(path)
+            self._add_to_recents(path, self._data.title)
 
     def _on_save_part(self, request):
         path = request.filePath
@@ -549,6 +578,7 @@ class Instance:
         try:
             result.result()
             response = jcoms.SaveProgress()
+            response.path = request.filePath
             response.success = True
             self._coms.send(response, self._instance_id, request)
         except Exception as e:
@@ -567,39 +597,62 @@ class Instance:
         temp_file_path = None
 
         try:
+            url = None
             title = None
             was_downloaded = False
+            integ_handler = None
 
-            if path.startswith('http://') or path.startswith('https://'):
+            if is_url(path):
 
                 if self._perms.open.remote is False:
                     raise PermissionError()
 
                 url = parse.urlsplit(path)
                 path = parse.unquote(url.path)
-                file_name = os.path.basename(path)
-                if not formatio.is_supported(file_name):
-                    raise RuntimeError('Unrecognised file format')
 
                 url = list(url)
                 url[2] = parse.quote(path)
                 url = parse.urlunsplit(url)
 
-                title, ext = os.path.splitext(file_name)
-                fd, temp_file_path = mkstemp(suffix=ext)
-                temp_file = os.fdopen(fd, 'wb')
+                filename = os.path.basename(path)
+                path = url
 
-                download = Downloader.download_to(url, temp_file)
+                integ_handler = get_special_handler(url)
 
-                async for progress in download:
-                    if not download.is_complete:
-                        progress = (progress[0], progress[1] * 2)  # only goes up to 50%
+                async with ClientSession(raise_for_status=True) as session:
+                    async with session.get(url, ssl=ssl_context()) as response:
+
+                        if integ_handler is not None:
+                            await integ_handler.read(response)
+
+                        content_length = response.content_length
+
+                        if response.content_disposition and response.content_disposition.filename:
+                            filename = response.content_disposition.filename
+
+                        if not formatio.is_supported(filename):
+                            raise RuntimeError('Unrecognised file format')
+
+                        title, ext = os.path.splitext(filename)
+                        fd, temp_file_path = mkstemp(suffix=ext)
+                        temp_file = os.fdopen(fd, 'wb')
+
+                        if content_length:
+                            progress = [ 0, 2 * content_length ]  # only goes up to 50%
+                        else:
+                            progress = [ 0, 1 ]
                         self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+
+                        async for data in response.content.iter_any():
+                            temp_file.write(data)
+                            if content_length:
+                                progress[0] += len(data)
+                                self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
 
                 temp_file.close()
                 norm_path = temp_file_path
-                virt_path = path
-                is_example = True  # forces the user to save to a new location
+                virt_path = ''
+                is_example = False
                 was_downloaded = True
 
             else:
@@ -622,9 +675,10 @@ class Instance:
 
             def prog_cb(p):
                 coms = self._coms
-                progress = (1000 * p, 1000)
                 if was_downloaded:
                     progress = (500 + 500 * p, 1000)
+                else:
+                    progress = (1000 * p, 1000)
                 ioloop.call_soon_threadsafe(
                     functools.partial(
                         coms.send, None, self._instance_id, request,
@@ -632,13 +686,17 @@ class Instance:
 
             await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example, title)
 
+            if integ_handler is not None:
+                self._data.integration = integ_handler
+                await integ_handler.process(self._data)
+
             response = jcoms.OpenProgress()
             response.path = virt_path
 
             self._coms.send(response, self._instance_id, request)
 
             if path != '' and not is_example:
-                self._add_to_recents(path)
+                self._add_to_recents(path, self._data.title)
 
         except PermissionError as e:
             log.exception(e)
@@ -881,9 +939,9 @@ class Instance:
         if has_dataset:
             response.title = self._data.title
             response.path = Instance._virtualise_path(self._data.path)
+            response.saveFormat = self._data.save_format
             response.edited = self._data.is_edited
             response.blank = self._data.is_blank
-            response.importPath = Instance._virtualise_path(self._data.import_path)
             response.changesCount = self._mod_tracker.count
             response.changesPosition = self._mod_tracker.position
 
@@ -2431,7 +2489,7 @@ class Instance:
                 cell_range_pb.start = range['start']
                 cell_range_pb.end = range['end']
 
-    def _add_to_recents(self, path):
+    def _add_to_recents(self, path, title=None):
 
         settings = Settings.retrieve('backstage')
         recents  = settings.get('recents', [ ])
@@ -2441,12 +2499,16 @@ class Instance:
                 recents.remove(recent)
                 break
 
-        name = os.path.basename(path)
-        location = os.path.dirname(path)
+        if is_url(path):
+            location = parse.urlsplit(path).netloc
+            if not title:
+                title = 'Remote data set'
+        else:
+            title = os.path.basename(path)
+            location = os.path.dirname(path)
+            location = Instance._virtualise_path(location)
 
-        location = Instance._virtualise_path(location)
-
-        recents.insert(0, { 'name': name, 'path': path, 'location': location })
+        recents.insert(0, { 'name': title, 'path': path, 'location': location })
         recents = recents[0:5]
 
         settings.set('recents', recents)

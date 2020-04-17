@@ -36,6 +36,10 @@ function crc16(s) {
     return crc;
 }
 
+function isUrl(s) {
+    return s.startsWith('https://') || s.startsWith('http://');
+}
+
 const FSEntryListModel = Backbone.Model.extend({
     defaults: {
         items : [ ],
@@ -427,9 +431,9 @@ const FSEntryBrowserView = SilkyView.extend({
             `);
         }
         else if (status === 'ok') {
-            let isUrl = false;
+
             if (searchValue !== '') {
-                if (searchValue.startsWith('https://') || searchValue.startsWith('http://')) {
+                if (isUrl(searchValue)) {
                     try {
                         let url = new URL(searchValue);
                         let name = path.basename(decodeURIComponent(url.pathname));
@@ -442,10 +446,12 @@ const FSEntryBrowserView = SilkyView.extend({
                             isExample: false,
                             tags: ['Online data set'],
                             description: description,
+                            isUrl: true,
+                            skipExtensionCheck: true,
                         }];
-                        isUrl = true;
+
                     } catch (e) {
-                        isUrl = false;
+                        // do nothing
                     }
                 }
             }
@@ -458,7 +464,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 let itemPath = item.path;
                 let itemType = item.type;
 
-                if (isUrl === false && searchValue !== '') {
+                if ( ! item.isUrl && searchValue !== '') {
                     let lsearchValue = searchValue.toLowerCase();
                     if (lname.includes(searchValue) === false) {
                         if ( ! item.description || item.description.toLowerCase().includes(searchValue) === false) {
@@ -475,7 +481,9 @@ const FSEntryBrowserView = SilkyView.extend({
                     }
                 }
 
-                if (itemType === FSItemType.File && ! item.isExample && ! this._hasValidExtension(name))
+                if (itemType === FSItemType.File
+                        && ! item.isExample
+                        && ! (item.skipExtensionCheck || this._hasValidExtension(name)))
                     continue;
 
                 html += '<div class="silky-bs-fslist-item">';
@@ -980,7 +988,7 @@ const BackstageModel = Backbone.Model.extend({
 
         this._savePromiseResolve = null;
 
-        ActionHub.get('save').on('request', () => this.requestSave(this.instance.get('path'), true));
+        ActionHub.get('save').on('request', () => this.requestSave());
 
         this.attributes.ops = [
 
@@ -1054,7 +1062,7 @@ const BackstageModel = Backbone.Model.extend({
                 name: 'save',
                 title: 'Save',
                 action: () => {
-                    this.requestSave(this.instance.get('path'), true);
+                    this.requestSave();
                 }
             },
             {
@@ -1425,45 +1433,53 @@ const BackstageModel = Backbone.Model.extend({
             $saveIcon.removeClass('saving-file');
         }
     },
+    async requestSave(filePath, overwrite=false) {
 
-        // can be called as requestSave(path, overwrite), requestSave(path), requestSave(), requestSave(overwrite)
-    requestSave(filePath, overwrite) {
-
-        // can be called as requestSave(filePath, overwrite), requestSave(filePath), requestSave(), requestSave(overwrite)
-
-        // if filePath is not specified then the current opened path is used. If overwrite is not specified it defaults to false.
+        // if filePath is not specified then the current opened path is used.
         // if overwrite is false and the specified file already exists a popup asks for overwrite.
         // if overwrite is true and the specified file already exists the file is overwritten.
 
-        if (overwrite === undefined && typeof filePath === 'boolean') {
-            overwrite = filePath;
-            filePath = null;
-        }
-
-        return new Promise((resolve, reject) => {
-            if ( ! filePath) {
+        if ( ! filePath) {
+            if (this.instance.attributes.saveFormat) {
+                // saveFormat is typically either empty, or 'jamovi'
+                // empty means the user hasn't saved it as a .omv file yet, and
+                // they need to be prompted where to save.
+                // saveFormat can have other values when the data set is loaded
+                // from an url, and it needs to be saved back to that url in a
+                // particular format
+                // it follows that when saveFormat isn't empty, the saveAs
+                // shouldn't appear either on save, or on save failure
+                overwrite = true;
+            }
+            else {
                 this.set('activated', true);
                 this.set('operation', 'saveAs');
-                reject();
-                return;
+                throw undefined;
             }
+        }
 
+        try {
             this.setSavingState(true);
-            this.instance.save(filePath, undefined, overwrite)
-                .then(() => {
-                    this.setSavingState(false);
-                    if (this._savePromiseResolve !== null)
-                        this._savePromiseResolve();
-                    this.set('activated', false);
-                    this.trigger('saved');
-                    resolve();
-                }).catch(error => {
-                    this.setSavingState(false);
-                    this.set('activated', true);
-                    this.set('operation', 'saveAs');
-                    reject(error);
-                });
-        });
+            // instance.save() itself triggers notifications about the save
+            // being successful (if you were wondering why it's not here.)
+            await this.instance.save(filePath, undefined, overwrite);
+            this.setSavingState(false);
+            if (this._savePromiseResolve !== null)
+                this._savePromiseResolve();
+            this.set('activated', false);
+            this.trigger('saved');
+        }
+        catch (e) {
+            this.setSavingState(false);
+            if ( ! this.instance.attributes.saveFormat) {
+                // this should probably be performed by the caller,
+                // rather than here, but whatevs
+                this.set('activated', true);
+                this.set('operation', 'saveAs');
+            }
+            throw e;
+        }
+
     },
     _determineSavePath: function() {
         let filePath = this.instance.get('path');

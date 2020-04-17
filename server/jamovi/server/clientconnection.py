@@ -87,7 +87,8 @@ class ClientConnection(WebSocketHandler):
             # would be nice to send_error()
             log.exception(e)
 
-    def send(self, message=None, instance_id=None, response_to=None, complete=True, progress=(0, 0)):
+    def send(self, message=None, instance_id=None, response_to=None,
+             complete=True, progress=(0, 0), status=None):
 
         if message is None and response_to is None:
             return
@@ -110,6 +111,9 @@ class ClientConnection(WebSocketHandler):
         if message is not None:
             m.payload = message.SerializeToString()
             m.payloadType = message.__class__.__name__
+
+        if status is not None:
+            m.error.message, m.error.cause = status
 
         if complete:
             m.status = MessageStatus.Value('COMPLETE')

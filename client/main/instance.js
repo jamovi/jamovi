@@ -60,7 +60,6 @@ const Instance = Backbone.Model.extend({
         path : null,
         title : '',
         blank : false,
-        importPath : '',
         resultsSupplier: null,
         arbitraryCodePresent: false
     },
@@ -217,6 +216,12 @@ const Instance = Backbone.Model.extend({
 
         let coms = this.attributes.coms;
 
+        if ( ! filePath) {
+            filePath = this.attributes.path;
+            options.format = this.attributes.saveFormat;
+            overwrite = true;
+        }
+
         return Promise.resolve().then(() => {
 
             return host.nameAndVersion;
@@ -232,7 +237,7 @@ const Instance = Backbone.Model.extend({
                 // images are handled specially below
                 return undefined;
             }
-            else if (filePath.endsWith('.omv')) {
+            else if (filePath.endsWith('.omv') || options.format === 'abs-html') {
                 return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
             }
             else if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
@@ -297,18 +302,31 @@ const Instance = Backbone.Model.extend({
 
             let info = coms.Messages.SaveProgress.decode(response.payload);
             if (info.success) {
+
+                let filename = path.basename(info.path);
+                let status = { message: '', cause: '' };
+
                 if (options.export) {
-                    return { message: "Exported", cause: "Exported to '" + path.basename(filePath) + "'" };
+                    status.message = 'Exported';
+                    status.cause = `Exported to '${ filename }'`;
                 }
                 else {
-                    if (info.path)
-                        filePath = info.path;
-                    let ext = path.extname(filePath);
-                    this.set('path', filePath);
-                    this.set('title', path.basename(filePath, ext));
+                    this.set('path', info.path);
+                    this.set('title', info.title);
+                    this.set('saveFormat', info.saveFormat);
                     this._dataSetModel.set('edited', false);
-                    return { message: "File Saved", cause: "Saved to '" + path.basename(filePath) + "'" };
+                    status.message = 'File Saved';
+                    status.cause = `Saved to '${ filename }'`;
                 }
+
+                if (response.error) {
+                    if (response.error.message)
+                        status.message = response.error.message;
+                    if (response.error.cause)
+                        status.cause = response.error.cause;
+                }
+
+                return status;
             }
             else {
                 if (overwrite === false && info.fileExists) {
@@ -491,10 +509,10 @@ const Instance = Backbone.Model.extend({
             if (info.hasDataSet) {
                 this._dataSetModel.setup(info);
                 this.set('hasDataSet', true);
-                this.set('title', info.title);
-                this.set('path',  info.path);
-                this.set('blank', info.blank);
-                this.set('importPath', info.importPath);
+                this.set('title',      info.title);
+                this.set('path',       info.path);
+                this.set('saveFormat', info.saveFormat);
+                this.set('blank',      info.blank);
             }
 
             let allReady = [ ];
