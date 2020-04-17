@@ -83,6 +83,7 @@ def read(data, path, prog_cb, is_example=False, title=None):
         omv.read(data, path, prog_cb)
         if not is_example:
             data.path = path
+        data.save_format = 'jamovi'
     elif ext == '.omt':
         omv.read(data, path, prog_cb)
     else:
