@@ -22,10 +22,8 @@ class InstanceModel:
         self._dataset = None
         self._analyses = Analyses(self)
         self._path = ''
+        self._save_format = ''
         self._title = ''
-        self._import_path = ''
-        self._embedded_path = ''
-        self._embedded_name = ''
         self._reuseable_virtual_ids = collections.deque([])
         self._filters_visible = True
 
@@ -40,6 +38,8 @@ class InstanceModel:
 
         self._log = NullLog()
         self._row_tracker = RowTracker()
+
+        self.integration = None
 
     @property
     def filters_visible(self):
@@ -601,28 +601,12 @@ class InstanceModel:
         self._path = path
 
     @property
-    def import_path(self):
-        return self._import_path
+    def save_format(self):
+        return self._save_format
 
-    @import_path.setter
-    def import_path(self, path):
-        self._import_path = path
-
-    @property
-    def embedded_path(self):
-        return self._embedded_path
-
-    @embedded_path.setter
-    def embedded_path(self, path):
-        self._embedded_path = path
-
-    @property
-    def embedded_name(self):
-        return self._embedded_name
-
-    @embedded_name.setter
-    def embedded_name(self, name):
-        self._embedded_name = name
+    @save_format.setter
+    def save_format(self, format):
+        self._save_format = format
 
     def get_column(self, index, base=0, is_display_index=False):
         column = None
