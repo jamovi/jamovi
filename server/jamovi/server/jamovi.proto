@@ -293,6 +293,8 @@ message SaveProgress {
     bool fileExists = 1;
     bool success = 2;
     string path = 3;
+    string title = 4;
+    string saveFormat = 5;
 }
 
 message FSEntry {
@@ -523,10 +525,11 @@ message InfoResponse {
     bool hasDataSet = 1;
     string title = 2;
     string path = 3;
-    bool edited = 4;
-    bool blank = 5;
-    DataSetSchema schema = 6;
-    string importPath = 7;
+    string saveFormat = 4;
+    bool edited = 5;
+    bool blank = 6;
+    DataSetSchema schema = 7;
+
     repeated AnalysisResponse analyses = 9;
     uint32 changesCount = 10;
     int32 changesPosition = 11;
