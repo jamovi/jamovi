@@ -238,8 +238,12 @@ def VBOXCOXLAMBDA(values: float):
 
 @row_wise
 def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
-    # numpy returns numpy.float64, so need to convert back to float
-    return float(boxcox(x=x, lmbda=lmbda))
+    if lmbda > 0:
+        return (x ** lmbda - 1) / lmbda
+    elif lmbda == 0:
+        return math.log(x)
+    else:
+        return NaN
 
 
 @row_wise
