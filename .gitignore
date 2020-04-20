@@ -2,6 +2,7 @@
 *.so
 *.pyd
 *.swp
+*.o
 .DS_Store
 
 node_modules/
@@ -24,3 +25,7 @@ client/*.css
 *.pb.h
 *_pb2.py
 *_pb.js
+
+server/jamovi/hydra/
+modules/
+bin/
