@@ -43,10 +43,6 @@ def init(app_home=None):
         config = ConfigParser()
         config.read(ini_path)
 
-        for k in environ:
-            if k.startswith('JAMOVI_'):
-                config_values[k[7:].lower()] = environ[k]
-
         config_values['home'] = root
 
         try:
@@ -72,3 +68,9 @@ def init(app_home=None):
                     config_values[k] = value
         except KeyError:
             pass
+
+        for k in environ:
+            if k == 'JAMOVI_HOME':  # already set
+                continue
+            if k.startswith('JAMOVI_'):
+                config_values[k[7:].lower()] = environ[k]
