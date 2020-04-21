@@ -7,6 +7,8 @@ Backbone.$ = $;
 
 const Elem = require('./element');
 
+const flatten = require('../common/utils/addresses').flatten;
+
 const ImageModel = Elem.Model.extend({
     defaults : {
         name: 'name',
@@ -64,9 +66,11 @@ const ImageView = Elem.View.extend({
             backgroundImage = "url('" + url + "')";
         }
 
+        let address = flatten(this.address());
+
         $(`<div
             class="jmv-results-image-image"
-            data-address="${ btoa(this.address().join('/')) }"
+            data-address="${ encodeURI(address) }"
             style="
                 background-image: ${ backgroundImage };
                 width: ${ element.width }px ;

@@ -13,6 +13,8 @@ const ContextMenu = require('./contextmenu');
 const Notify = require('./notification');
 const host = require('./host');
 
+const { flatten, unflatten } = require('../common/utils/addresses');
+
 require('./references');
 
 const ResultsPanel = Backbone.View.extend({
@@ -397,7 +399,8 @@ const ResultsPanel = Backbone.View.extend({
                     analysis.setOptions(options);
                     break;
                 case 'setParam':
-                    let root = 'results/' + eventData.address.join('/');
+                    let address = flatten(eventData.address);
+                    let root = `results/${ address }`;
                     for (let optionName in eventData.options) {
                         let value = eventData.options[optionName];
                         let path = root + '/' + optionName;
@@ -484,7 +487,7 @@ const ResultsPanel = Backbone.View.extend({
             options.exclude = [ ];
         options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
-        let address = part.split('/');
+        let address = unflatten(part);
         return this._getContent(address, options)
             .then((content) => content.html);
     },
@@ -505,7 +508,7 @@ const ResultsPanel = Backbone.View.extend({
             let responseHandler = (event) => {
                 if (event.source === iframeWindow
                         && event.data.type === 'getcontent'
-                        && event.data.data.address.join('/') === address.join('/')) {
+                        && flatten(event.data.data.address) === flatten(address)) {
                     window.removeEventListener('message', responseHandler);
                     resolve(event.data.data.content);
                 }
@@ -548,7 +551,7 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (event.op === 'export') {
 
-            let part = event.address.join('/');
+            let part = flatten(event.address);
 
             if (event.target.type === 'Image') {
                 let options = {
