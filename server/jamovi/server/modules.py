@@ -159,7 +159,7 @@ class Modules:
         try:
             message = None
             modules = [ ]
-            module_data = yaml.load(path)
+            module_data = yaml.safe_load(path)
             if 'jds' not in module_data:
                 raise Exception('No jds')
             jds = float(module_data['jds'])
