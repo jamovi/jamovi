@@ -249,11 +249,11 @@ class Analyses:
             r_defn = None
 
             with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
-                a_defn = yaml.load(stream)
+                a_defn = yaml.safe_load(stream)
 
             if os.path.isfile(analysis_root + '.r.yaml'):
                 with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
-                    r_defn = yaml.load(stream)
+                    r_defn = yaml.safe_load(stream)
             else:
                 r_defn = { 'items': { } }
 
