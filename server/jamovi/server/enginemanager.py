@@ -174,10 +174,11 @@ class Engine:
         env['FONTCONFIG_PATH'] = conf.get('fontconfig_path', env.get('FONTCONFIG_PATH', ''))
         env['JAMOVI_MODULES_PATH'] = conf.get('modules_path', env.get('JAMOVI_MODULES_PATH', ''))
 
-        # plotting often doesn't work without this
-        env['LC_ALL'] = 'en_US.UTF-8'
-        # https://github.com/jamovi/jamovi/issues/801
-        # https://github.com/jamovi/jamovi/issues/831
+        if platform.uname().system == 'Linux':
+            # plotting under linux sometimes doesn't work without this
+            env['LC_ALL'] = 'en_US.UTF-8'
+            # https://github.com/jamovi/jamovi/issues/801
+            # https://github.com/jamovi/jamovi/issues/831
 
         con = '--con={}'.format(self._conn_path)
         pth = '--path={}'.format(self._data_path)
