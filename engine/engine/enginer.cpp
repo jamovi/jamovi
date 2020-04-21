@@ -93,7 +93,7 @@ void EngineR::run(AnalysisRequest &analysis)
 
     if (Rcpp::as<bool>(ana["errored"]))
     {
-        sendResults2(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, INC_SYNTAX, COMPLETE);
         return;
     }
 
@@ -168,7 +168,7 @@ void EngineR::run(AnalysisRequest &analysis)
 
     if (Rcpp::as<bool>(ana["errored"]))
     {
-        sendResults2(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, INC_SYNTAX, COMPLETE);
         setOptions(optionsValues);
         return;
     }
@@ -181,10 +181,6 @@ void EngineR::run(AnalysisRequest &analysis)
 
     Rcpp::as<Rcpp::Function>(ana["postInit"])(true);
 
-    // here i assign the analysis to a variable, and access it by
-    // name from here on. my intention is to replace all this stuff later.
-    rInside["analysis"] = ana;
-
     if (analysis.perform() == 5)  // SAVE
     {
         AnalysisResponse response;
@@ -194,50 +190,43 @@ void EngineR::run(AnalysisRequest &analysis)
         response.set_ns(analysis.ns());
         response.set_revision(analysis.revision());
 
-        ss.str("");
-        ss << "result <- try(";
-        ss << "  analysis$.savePart(";
-        ss << "  path='" << analysis.path() << "',";
-        ss << "  part='" << analysis.part() << "',";
-        ss << "  format='" << analysis.format() << "')";
-        ss << ", silent=TRUE);";
-        ss << "if (inherits(result, 'try-error')) {";
-        ss << "  result <- jmvcore::extractErrorMessage(result)";
-        ss << "} else {";
-        ss << "  result <- ''";  // success
-        ss << "};";
-        ss << "result";
-
-        std::string result = rInside.parseEval(ss.str());
-
-        if (result == "")
+        try
         {
+            Rcpp::Function savePart = ana[".savePart"];
+            savePart(
+                Rcpp::Named("path", analysis.path()),
+                Rcpp::Named("part", analysis.part()),
+                Rcpp::Named("format", analysis.format()),
+                Rcpp::Named("silent", true));
+
             response.set_status(AnalysisStatus::ANALYSIS_COMPLETE);
         }
-        else
+        catch (const std::exception &e)
         {
-            response.mutable_error()->set_message(result);
-            response.mutable_error()->set_cause(result);
+            std::string message = e.what();
+            response.mutable_error()->set_message(message);
+            response.mutable_error()->set_cause(message);
             response.set_status(AnalysisStatus::ANALYSIS_ERROR);
         }
 
+        std::string result;
         response.SerializeToString(&result);
-
         resultsReceived(result, true);
     }
-    else if (rInside.parseEvalNT("analysis$errored || analysis$complete"))
+    else if (Rcpp::as<bool>(ana["errored"]) || Rcpp::as<bool>(ana["complete"]))
     {
-        sendResults(INC_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("analysis$.save()");
+        sendResults(ana, INC_SYNTAX, COMPLETE);
+        Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
     else if (analysis.perform() == 0)   // INIT
     {
-        sendResults(NO_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("analysis$.save()");
+        sendResults(ana, NO_SYNTAX, COMPLETE);
+        Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
     else
     {
-        bool shouldSend = rInside.parseEvalNT("analysis$run(noThrow=TRUE);");
+        Rcpp::Function run = ana["run"];
+        bool shouldSend = run(Rcpp::Named("noThrow", true));
         // shouldn't send if aborted by callback (for example)
         if ( ! shouldSend)
         {
@@ -245,31 +234,21 @@ void EngineR::run(AnalysisRequest &analysis)
             return;
         }
 
-        sendResults(NO_SYNTAX, IN_PROGRESS);
-        rInside.parseEvalQNT("analysis$.createImages(noThrow=TRUE);");
-        sendResults(NO_SYNTAX, IN_PROGRESS);
-        sendResults(INC_SYNTAX, COMPLETE);
-        rInside.parseEvalQ("analysis$.save()");
+        sendResults(ana, NO_SYNTAX, IN_PROGRESS);
+        Rcpp::as<Rcpp::Function>(ana[".createImages"])(Rcpp::Named("noThrow", true));
+        sendResults(ana, NO_SYNTAX, IN_PROGRESS);
+        sendResults(ana, INC_SYNTAX, COMPLETE);
+        Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
 
     setOptions(optionsValues); // restore options
 }
 
-void EngineR::sendResults2(Rcpp::Environment &ana, bool incAsText, bool complete)
+void EngineR::sendResults(Rcpp::Environment &ana, bool incAsText, bool complete)
 {
     Rcpp::Function serialize = ana["serialize"];
     Rcpp::RawVector results = serialize(incAsText);
     string raw(results.begin(), results.end());
-    resultsReceived(raw, complete);
-}
-
-void EngineR::sendResults(bool incAsText, bool complete)
-{
-    stringstream ss;
-    ss << "analysis$serialize(";
-    ss << "incAsText=" << (incAsText ? "TRUE" : "FALSE") << ")\n";
-    Rcpp::RawVector rawVec = _rInside->parseEval(ss.str());
-    string raw(rawVec.begin(), rawVec.end());
     resultsReceived(raw, complete);
 }
 
