@@ -466,8 +466,8 @@ const FSEntryBrowserView = SilkyView.extend({
 
                 if ( ! item.isUrl && searchValue !== '') {
                     let lsearchValue = searchValue.toLowerCase();
-                    if (lname.includes(searchValue) === false) {
-                        if ( ! item.description || item.description.toLowerCase().includes(searchValue) === false) {
+                    if (lname.includes(lsearchValue) === false) {
+                        if ( ! item.description || item.description.toLowerCase().includes(lsearchValue) === false) {
                             let found = false;
                             for (let tag of item.tags) {
                                 if (tag.toLowerCase().startsWith(lsearchValue)) {
