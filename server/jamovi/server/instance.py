@@ -522,9 +522,8 @@ class Instance:
             async def resolve_image(part):
                 ext = '.pdf'
 
-                id, address = part.split('/')
+                id, address = part.split('/', maxsplit=1)
                 id = int(id)
-                address = b64decode(address).decode('utf-8')
 
                 fd, temp_file_path = mkstemp(suffix=ext)
                 temp_file_path = temp_file_path.replace('\\', '/')

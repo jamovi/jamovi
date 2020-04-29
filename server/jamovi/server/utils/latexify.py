@@ -7,6 +7,11 @@ from zipfile import ZipFile
 from zipfile import ZipInfo
 from io import TextIOWrapper
 from time import localtime
+from urllib.parse import unquote
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 async def latexify(content, out, resolve_image):
@@ -25,64 +30,64 @@ async def latexify(content, out, resolve_image):
         # remove references and table footer for now: if it contains useful information, it has to be handled
         # remove empty table lines or empty headings
         # remove style attributes (which make the HTML code pretty unreadable)
-        body = re.compile(' style="text-align:.*?"'         ).sub('',               body)
-        body = re.compile(' style="font-weight:.*?"'        ).sub('',               body)
-        body = re.compile(' style="font-style:.*?"'         ).sub('',               body)
-        body = re.compile(' style="width:.*?"',             ).sub('',               body)
-        body = re.compile(' alt=".+?"',                     ).sub('',               body)
+        body = re.sub(' style="text-align:.*?"'         , '',               body)
+        body = re.sub(' style="font-weight:.*?"'        , '',               body)
+        body = re.sub(' style="font-style:.*?"'         , '',               body)
+        body = re.sub(' style="width:.*?"'              , '',               body)
+        body = re.sub(' alt=".+?"'                      , '',               body)
 
         # remove empty table lines
-        body = re.compile('<tr><\/tr>[\s]*?'                ).sub('',                 body)
-        body = re.compile('<h[1-5]><\/h[1-5]>[\s]*?'        ).sub('',                 body)
-        body = re.compile('<span>\[[1-9]\]<\/span>[\s]*?'   ).sub('',                 body)
-        body = re.compile('<a href="" target="_blank"><\/a>').sub('',                 body)
-        body = re.compile('<\/h[1-5]>[\s]*?<h[1-5]>'        ).sub(': ',               body)
-        body = re.compile('[\s]*?<p>&nbsp;<\/p>'            ).sub('\n',               body)
-        body = re.compile('><\/img>'                        ).sub('>',                body)
+        body = re.sub('<tr><\/tr>[\s]*?'                , '',                 body)
+        body = re.sub('<h[1-5]><\/h[1-5]>[\s]*?'        , '',                 body)
+        body = re.sub('<span>\[[1-9]\]<\/span>[\s]*?'   , '',                 body)
+        body = re.sub('<a href="" target="_blank"><\/a>', '',                 body)
+        body = re.sub('<\/h[1-5]>[\s]*?<h[1-5]>'        , ': ',               body)
+        body = re.sub('[\s]*?<p>&nbsp;<\/p>'            , '\n',               body)
+        body = re.sub('><\/img>'                        , '>',                body)
         # remove or change characters that either have special functions in LaTeX or are not-printable
-        body = re.compile('_'                               ).sub('\\_',              body)
-        body = re.compile('%'                               ).sub('\\%',              body)
+        body = re.sub('_'                               , '\\_',              body)
+        body = re.sub('%'                               , '\\%',              body)
         # replace subscripts (e.g., tukey for post-hoc p-values)
-        body = re.compile('<sub>(\S+)<\/sub>'               ).sub(r'$_{\1}$',         body)
-        body = re.compile('&nbsp;'                          ).sub('',                 body)
-        body = re.compile('\xA0'                            ).sub(' ',                body)
-        body = re.compile('\xB1'                            ).sub('$\\\\pm$',         body)
-        body = re.compile('\xB2'                            ).sub('$^2$',             body)
-        body = re.compile('\u0394'                          ).sub('$\\\\Delta$',      body)
-        body = re.compile('\u03B1'                          ).sub('$\\\\alpha$',      body)
-        body = re.compile('\u03B5'                          ).sub('$\\\\epsilon$',    body)
-        body = re.compile('\u03B7'                          ).sub('$\\\\eta$',        body)
-        body = re.compile('\u03BC'                          ).sub('$\\\\mu$',         body)
-        body = re.compile('\u03C7'                          ).sub('$\\\\chi$',        body)
-        body = re.compile('\u03C9'                          ).sub('$\\\\omega$',      body)
-        body = re.compile('\u1D43'                          ).sub('a',                body)
-        body = re.compile('\u2009'                          ).sub('',                 body)
-        body = re.compile(' \u2013 '                        ).sub('~\\\\textemdash~', body)
-        body = re.compile('\u2013'                          ).sub('-',                body)
-        body = re.compile('\u2014'                          ).sub('\\\\textemdash',   body)
-        body = re.compile('\u207A'                          ).sub('+',                body)
-        body = re.compile('\u207B'                          ).sub('-',                body)
-        body = re.compile('\u2081\u2080'                    ).sub('$_{10}$',          body)
-        body = re.compile('\u2090'                          ).sub('$_{a}$',           body)
-        body = re.compile('\u2260'                          ).sub('$\\\\neq$',        body)
-        body = re.compile('\u2212'                          ).sub('-',                body)
-        body = re.compile('\u273B'                          ).sub('~$\\\\times$~',    body)
+        body = re.sub('<sub>(\S+)<\/sub>'               , r'$_{\1}$',         body)
+        body = re.sub('&nbsp;'                          , '',                 body)
+        body = re.sub('\xA0'                            , ' ',                body)
+        body = re.sub('\xB1'                            , '$\\\\pm$',         body)
+        body = re.sub('\xB2'                            , '$^2$',             body)
+        body = re.sub('\u0394'                          , '$\\\\Delta$',      body)
+        body = re.sub('\u03B1'                          , '$\\\\alpha$',      body)
+        body = re.sub('\u03B5'                          , '$\\\\epsilon$',    body)
+        body = re.sub('\u03B7'                          , '$\\\\eta$',        body)
+        body = re.sub('\u03BC'                          , '$\\\\mu$',         body)
+        body = re.sub('\u03C7'                          , '$\\\\chi$',        body)
+        body = re.sub('\u03C9'                          , '$\\\\omega$',      body)
+        body = re.sub('\u1D43'                          , 'a',                body)
+        body = re.sub('\u2009'                          , '',                 body)
+        body = re.sub(' \u2013 '                        , '~\\\\textemdash~', body)
+        body = re.sub('\u2013'                          , '-',                body)
+        body = re.sub('\u2014'                          , '\\\\textemdash',   body)
+        body = re.sub('\u207A'                          , '+',                body)
+        body = re.sub('\u207B'                          , '-',                body)
+        body = re.sub('\u2081\u2080'                    , '$_{10}$',          body)
+        body = re.sub('\u2090'                          , '$_{a}$',           body)
+        body = re.sub('\u2260'                          , '$\\\\neq$',        body)
+        body = re.sub('\u2212'                          , '-',                body)
+        body = re.sub('\u273B'                          , '~$\\\\times$~',    body)
         # remove double line feeds or double "begin/end-LaTeX"-markers
-        body = re.compile('\n\n'                            ).sub('\n',               body)
-        body = re.compile('  '                              ).sub(' ',                body)
-        body = re.compile('\$\$'                            ).sub('',                 body)
+        body = re.sub('\n\n'                            , '\n',               body)
+        body = re.sub('  '                              , ' ',                body)
+        body = re.sub('\$\$'                            , '',                 body)
         # reformat partial eta squared
-        body = re.compile('\\\\eta\^2\$p'                   ).sub('\\\\eta^2_{p}$',   body)
+        body = re.sub('\\\\eta\^2\$p'                   , '\\\\eta^2_{p}$',   body)
 
         # handle tables: create LaTeX code
         tdta = [];
-        if re.search('<table>', body) != None:
-            tdta = re.compile('<table>[\s\S]*?<\/table>').findall(body)
+        if re.search('<table>', body):
+            tdta = re.findall('<table>[\s\S]*?<\/table>', body)
             for i in range(len(tdta)):
                 # assign tdta[i] to a variable for processing, remove LF (to not disturb the automatic below)
                 tcrr = tdta[i].replace('\n', '').strip()
                 # determine the number of columns in the table by analyzing the colspan from the first header line
-                tcol = int(int(re.compile('<thead>[\s]*?<tr>[\s]*?<th colspan="(.+?)">').findall(tcrr)[0]) / 2)
+                tcol = int(int(re.findall('<thead>[\s]*?<tr>[\s]*?<th colspan="(.+?)">', tcrr)[0]) / 2)
                 tmxl = [0] * tcol
                 talg = ['l'] + ['r'] * (tcol - 1)
                 # (a) separate table into header, body and footer; (b) cut table body into lines (insert \n)
@@ -104,12 +109,12 @@ async def latexify(content, out, resolve_image):
                 # table has spanners: the first line is used as caption, the second line contains the spanner, the third the column headers
                 elif len(thdr) == 3:
                     thnm = thdr[2]
-                    thsp = re.compile('<th colspan[\s\S]*?<\/th>').findall(thdr[1])
+                    thsp = re.findall('<th colspan[\s\S]*?<\/th>', thdr[1])
                     tcln = ''
                     tcmi = 0
                     for j in range(len(thsp)):
-                        tmpl = int(int(re.compile('<th colspan="(\d+?)"').findall(thsp[j])[0]) / 2)
-                        tmpc = re.compile('<th colspan[\S\s]*?>(.+?)<\/th>').findall(thsp[j])
+                        tmpl = int(int(re.findall('<th colspan="(\d+?)"', thsp[j])[0]) / 2)
+                        tmpc = re.findall('<th colspan[\S\s]*?>(.+?)<\/th>', thsp[j])
                         thsp[j] = ('\\multicolumn{' + str(tmpl) + '}{c}{' + ('~' if len(tmpc) == 0 else tmpc[0]) + '}')
                         tcln = tcln + ('' if len(tmpc) == 0 else ('\\cline{' + str(tcmi + 1) + '-' + str(tcmi + tmpl) + '}\n'))
                         tcmi = tcmi + tmpl
@@ -171,13 +176,13 @@ async def latexify(content, out, resolve_image):
                 # process table footer
                 # ===================================================================================================================
                 for j in range(len(tftr)):
-                    tfln = re.compile('<td colspan[\S\s]*?>(.+?)<\/td>').findall(tftr[j])
+                    tfln = re.findall('<td colspan[\S\s]*?>(.+?)<\/td>', tftr[j])
                     if (len(tfln) > 0):
                         # general, specific, and significance notes
                         if (tfln[0].find('<span>Note.</span>') > -1):
-                            tftr[j] = ('\\textit{Note.}~' + re.compile('p < ').sub('\\\\textit{p}~<~', re.compile('([\*]+) ').sub('\\\\tabfnt{\\1}~', tfln[0].replace('<span>Note.</span> ', ''))) + '. \\\\\n')
-                        elif (len(re.compile('^[a-z]+?').findall(tfln[0])) > 0):
-                            tftr[j] = (re.compile('^([a-z]+) ').sub('\\\\tabfnt{\\1}~', tfln[0]) + '. \\\\\n')
+                            tftr[j] = ('\\textit{Note.}~' + re.sub('p < ', '\\\\textit{p}~<~', re.sub('([\*]+) ', '\\\\tabfnt{\\1}~', tfln[0].replace('<span>Note.</span> ', ''))) + '. \\\\\n')
+                        elif (len(re.findall('^[a-z]+?', tfln[0])) > 0):
+                            tftr[j] = (re.sub('^([a-z]+) ', '\\\\tabfnt{\\1}~', tfln[0]) + '. \\\\\n')
                         elif (len(tfln[0].strip()) == 0):
                             tftr[j] = None
                         else:
@@ -189,62 +194,68 @@ async def latexify(content, out, resolve_image):
                 # ===================================================================================================================
                 # set table header, body and footer together again and replace the original table data with it
                 # ===================================================================================================================
-                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.compile('<span[\s\S]*?>(.+?)<\/span>').findall(thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
+                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
                         '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n' +
                         '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n' +
                         '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
                 body = body.replace(tdta[i], trpl);
 
         # handle figures: convert from embedded base64 to files, and create LaTeX code
-        idta = []
-        if re.search('<img src', body) != None:
-            idta = re.compile('<img src=".*?>').findall(body)
-            n_idta = len(idta)
-            for i in range(n_idta):
-                iraw = re.compile('img src="data:\w+\/\w+;base64,(\S+)"').findall(idta[i])
-                if len(iraw) == 1:
-                    i_fn = r_fn.replace('.html', '_' + str(i + 1) + '.png')
-                    zi = ZipInfo(f_fn.replace(r_fn, i_fn), now)
+        idta = re.findall('<img src=".*?>', body)
+        n_idta = len(idta)
+
+        for i, url in enumerate(idta):
+            i_fn = f'figure_{ i + 1 }.png'
+
+            try:
+                data_uri = re.findall('img src="data:\w+\/\w+;base64,(\S+)"', url)
+                if data_uri:
+                    zi = ZipInfo(i_fn, now)
                     with z.open(zi, 'w') as f:
-                        f.write(base64.b64decode(iraw[0]))
-                        f.close()
-                elif len(iraw) == 0:
-                    try:
-                        # extract data address, get place where the file is stored, and write it with
-                        # the file name Figure + counter (using the original extension) into the ZIP file
-                        i_adr = re.compile('img src=".*?" data-address="(.+?)"').findall(idta[i])[0]
-                        i_tmp = await resolve_image(i_adr)
-                        _, ext = os.path.splitext(i_tmp)
-                        i_fn = f'figure_{ i + 1 }{ ext }'
-                        z.write(i_tmp, i_fn)
-                    except:
-                        i_fn = 'EXPORT_FAILED'
+                        f.write(base64.b64decode(data_uri.group(1)))
                 else:
-                    i_fn = 'EXPORT_FAILED'
+                    # extract data address, get place where the file is stored, and write it with
+                    # the file name Figure + counter (using the original extension) into the ZIP file
+                    i_adr = re.findall('<img src=".*?" data-address="(.+?)"', idta[i])[0]
+                    i_adr = unquote(i_adr).replace('\\"', '"')
+                    yield (i, n_idta)  # progress
+                    i_tmp = await resolve_image(i_adr)
+                    _, ext = os.path.splitext(i_tmp)
+                    i_fn = f'figure_{ i + 1 }{ ext }'
+                    z.write(i_tmp, i_fn)
+                error_message = ''
+                prefix = ''
+            except Exception as e:
+                log.exception(e)
+                error_message = '% the figure file could not be exported, the LaTeX command below including that figure was therefore commented out\n%'
+                prefix = '%'
 
-                yield (i, n_idta)  # progress
-
-                irpl = ('\n\\begin{figure}[htbp]\n\\caption{PLACEHOLDER}\n\\label{fig:Figure_' + str(i + 1) + '}\n' +
-                        '% (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)\n' +
-                        ('' if i_fn != 'EXPORT_FAILED' else '% the figure file could not be exported, the LaTeX command below including that figure was therefore commented out\n%') +
-                        '\\centering\n\\includegraphics[max size={\\columnwidth}{\\textheight}]{'  + i_fn + '}\n\\end{figure}')
-                body = body.replace(idta[i], irpl);
+            irpl = '''\
+\\begin{{figure}}[htbp]
+\\caption{{PLACEHOLDER}}
+\\label{{fig:Figure_{fig_no}}}
+% (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
+{error_message}\\centering
+{prefix}\\includegraphics[maxsize={{\\columnwidth}}{{textheight}}]{{{i_fn}}}
+{prefix}\\end{{figure}}\
+'''.format(fig_no=i + 1, error_message=error_message, prefix=prefix, i_fn=i_fn)
+            body = body.replace(idta[i], irpl);
 
         # handle references
         rdta = [];
         rtxt = 'The description of the statistical procedures that were used to analyse your data goes here.\n\n';
         if re.search('<h1>References', body) != None:
-            rdta = re.compile('<h1>References[\s\S]*').findall(body)[0]
+            rdta = re.findall('<h1>References[\s\S]*', body)[0]
             body = body.replace(rdta, '')
             # remove heading
-            rdta = re.compile('<h1>References<\/h1>').sub('', rdta)
-            rref = re.compile('<p>[\s\S]*?<\/p>').findall(rdta)
+            rdta = re.sub('<h1>References<\/h1>', '', rdta)
+            rref = re.findall('<p>[\s\S]*?<\/p>', rdta)
             rbib = ''
             rkey = [None] * len(rref)
             for i in range(len(rref)):
-                rcrr = re.compile('<span>(.+?)<\/span>').findall(rref[i])[0]
-                r_yr = re.compile('[\s\S]*\(([1-2][0-9][0-9][0-9])\)[\s\S]*').findall(rcrr)[0]
-                raut = re.compile('([\s\S]*)[1-2][0-9][0-9][0-9]').findall(rcrr)[0].replace(' (', '').replace('&amp; ', '').replace('& ', '')
+                rcrr = re.findall('<span>(.+?)<\/span>', rref[i])[0]
+                r_yr = re.findall('[\s\S]*\(([1-2][0-9][0-9][0-9])\)[\s\S]*', rcrr)[0]
+                raut = re.findall('([\s\S]*)[1-2][0-9][0-9][0-9]', rcrr)[0].replace(' (', '').replace('&amp; ', '').replace('& ', '')
                 if re.search(', ', raut) != None:
                     raus = re.compile(', ').split(raut)
                     for j in range(len(raus)):
@@ -256,10 +267,10 @@ async def latexify(content, out, resolve_image):
                     raut = '{' + raut + '}'
                 # URL-References
                 if re.search('Retrieved from ', rcrr) != None:
-                    rtit = re.compile('[\s\S]*[1-2][0-9][0-9][0-9](.+?). Retrieved').findall(rcrr)[0].replace('). ', '').replace('<em>', '')
+                    rtit = re.findall('[\s\S]*[1-2][0-9][0-9][0-9](.+?). Retrieved', rcrr)[0].replace('). ', '').replace('<em>', '')
                     rtit = re.compile('<\/em>. ').split(rtit)
                     rkey[i] = re.compile('[:, ]').split(rtit[0])[0]
-                    rurl = re.compile('Retrieved from <a[\s\S]*>(\S*)<\/a>').findall(rcrr)[0]
+                    rurl = re.findall('Retrieved from <a[\s\S]*>(\S*)<\/a>', rcrr)[0]
                     rbib = (rbib + '@MISC{' + rkey[i] + ',\n  author       = {' + raut + '},\n  year         = {' + r_yr + '},\n  title        = {' + rtit[0] + '},\n  note         = {' +
                                               rtit[1].replace(') [', ', ').replace('] (', ', ').replace('[', '').replace(']', '').replace('(', '').replace(')', '') + '},\n  howpublished = {\\url{' + rurl + '}},\n}\n\n')
                 # Articles and books: not yet finished
@@ -294,7 +305,7 @@ async def latexify(content, out, resolve_image):
 
         # handle labels: currently, the figures captions are based upon the heading before whereas the captions for the tables are taken from the first line of the table header (that can be changed though)
         # NB: has to happen AFTER references are processed
-        ldta = re.compile('<h[1-5]>[\s\S]*?<\/h[1-5]>').finditer(body)
+        ldta = re.finditer('<h[1-5]>[\s\S]*?<\/h[1-5]>', body)
         lorg = []
         lrpl = []
         for i in ldta:
@@ -305,8 +316,8 @@ async def latexify(content, out, resolve_image):
                 lorg.append(body[i.start():i.end()])
                 lrpl.append('')
             elif (lbps < 20):
-                lcpt = re.compile('<h[1-5]>([\s\S]*?)<\/h[1-5]>').findall(body[i.start():i.end()])[0]
-                lpos = re.compile('\\\\caption{PLACEHOLDER}').finditer(body[i.end():len(body)])
+                lcpt = re.findall('<h[1-5]>([\s\S]*?)<\/h[1-5]>', body[i.start():i.end()])[0]
+                lpos = re.finditer('\\\\caption{PLACEHOLDER}', body[i.end():len(body)])
                 try:
                     lpos = next(lpos)
                     if (lpos.start() < 100):
@@ -326,8 +337,8 @@ async def latexify(content, out, resolve_image):
             for i in range(len(lorg)):
                 body = body.replace(lorg[i], lrpl[i])
 
-        body = re.compile('\\\\end{table}[\s]*' ).sub('\\\\end{table}\n\n\n',  body);
-        body = re.compile('\\\\end{figure}[\s]*').sub('\\\\end{figure}\n\n\n', body);
+        body = re.sub('\\\\end{table}[\s]*' , '\\\\end{table}\n\n\n',  body);
+        body = re.sub('\\\\end{figure}[\s]*', '\\\\end{figure}\n\n\n', body);
         body = '\n\n' + body.strip() + '\n\n\n';
 
         head = ('\\documentclass[a4paper,man,hidelinks]{apa7}\n' +
