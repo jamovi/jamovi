@@ -1708,6 +1708,7 @@ class Instance:
                 old_trim = column.trim_levels
                 old_transform = column.transform
                 old_parent_id = column.parent_id
+                old_missing_values = column.missing_values
 
                 levels = None
                 if column_pb.hasLevels:
@@ -1773,7 +1774,8 @@ class Instance:
                         and column.active == old_active
                         and column.trim_levels == old_trim
                         and column.transform == old_transform
-                        and column.parent_id == old_parent_id):
+                        and column.parent_id == old_parent_id
+                        and column.missing_values == old_missing_values):
                     continue
 
                 recalc.add(column)
@@ -1851,6 +1853,11 @@ class Instance:
 
         recalc.update(reparse)
 
+        dependents = set()
+        for column in recalc:
+            dependents.update(column.dependents)
+        recalc.update(dependents)
+
         filter_changed = False
         for column in recalc:
             # if a filter has changed, recalc everything
@@ -1863,8 +1870,6 @@ class Instance:
             column.set_needs_recalc()
         for column in recalc:
             column.recalc()
-            for dep in column.dependents:    # not sure if these two lines are needed
-                dep.recalc()
 
         cols_changed.update(recalc)
 
