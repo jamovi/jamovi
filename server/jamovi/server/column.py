@@ -95,7 +95,11 @@ class Column:
         if self._child is not None:
             if filt and self._parent.is_row_filtered(index):
                 return (-2147483648, '')
-            v = self._child[index]
+            if self._child.should_treat_as_missing(index):
+                return (-2147483648, '')
+                
+            v = self._child.get_value(index)
+
             if self._child.data_type is DataType.INTEGER and self.has_levels:
                 if is_missing(v):
                     return (-2147483648, '')
