@@ -30,11 +30,11 @@ async def latexify(content, out, resolve_image):
         # remove references and table footer for now: if it contains useful information, it has to be handled
         # remove empty table lines or empty headings
         # remove style attributes (which make the HTML code pretty unreadable)
-        body = re.sub(' style="text-align:.*?"'         , '',               body)
-        body = re.sub(' style="font-weight:.*?"'        , '',               body)
-        body = re.sub(' style="font-style:.*?"'         , '',               body)
-        body = re.sub(' style="width:.*?"'              , '',               body)
-        body = re.sub(' alt=".+?"'                      , '',               body)
+        body = re.sub(' style="text-align:.*?"'         , '',                 body)
+        body = re.sub(' style="font-weight:.*?"'        , '',                 body)
+        body = re.sub(' style="font-style:.*?"'         , '',                 body)
+        body = re.sub(' style="width:.*?"'              , '',                 body)
+        body = re.sub(' alt=".+?"'                      , '',                 body)
 
         # remove empty table lines
         body = re.sub('<tr><\/tr>[\s]*?'                , '',                 body)
@@ -92,9 +92,9 @@ async def latexify(content, out, resolve_image):
                 talg = ['l'] + ['r'] * (tcol - 1)
                 # (a) separate table into header, body and footer; (b) cut table body into lines (insert \n)
                 # and (c) remove remove <tr> and </tr> markers from the very begin and end of the table body
-                thdr = re.compile('^[\s]*?<tr>').sub('', re.compile('<\/tr>$').sub('', re.compile('<\/tr>[\s]*?<tr>').sub('\n', re.compile('<thead>([\s\S]*)?<\/thead>').findall(tcrr)[0]))).split('\n')
-                tbdy = re.compile('^[\s]*?<tr>').sub('', re.compile('<\/tr>$').sub('', re.compile('<\/tr>[\s]*?<tr>').sub('\n', re.compile('<tbody>([\s\S]*)?<\/tbody>').findall(tcrr)[0]))).split('\n')
-                tftr = re.compile('^[\s]*?<tr>').sub('', re.compile('<\/tr>$').sub('', re.compile('<\/tr>[\s]*?<tr>').sub('\n', re.compile('<tfoot>([\s\S]*)?<\/tfoot>').findall(tcrr)[0]))).split('\n')
+                thdr = re.sub('^[\s]*?<tr>', '', re.sub('<\/tr>$', '', re.sub('<\/tr>[\s]*?<tr>', '\n', re.findall('<thead>([\s\S]*)?<\/thead>', tcrr)[0]))).split('\n')
+                tbdy = re.sub('^[\s]*?<tr>', '', re.sub('<\/tr>$', '', re.sub('<\/tr>[\s]*?<tr>', '\n', re.findall('<tbody>([\s\S]*)?<\/tbody>', tcrr)[0]))).split('\n')
+                tftr = re.sub('^[\s]*?<tr>', '', re.sub('<\/tr>$', '', re.sub('<\/tr>[\s]*?<tr>', '\n', re.findall('<tfoot>([\s\S]*)?<\/tfoot>', tcrr)[0]))).split('\n')
                 # ===================================================================================================================
                 # process table header
                 # ===================================================================================================================
@@ -120,7 +120,7 @@ async def latexify(content, out, resolve_image):
                         tcmi = tcmi + tmpl
                     thsp = (' & '.join(thsp) + ' \\\\\n')
                 # process the column headers: replace colspan="2" with single cells and split cells using <th> and </th>
-                thcl = re.compile('<th>([\s\S]*?)<\/th>').findall(re.compile('<th colspan="2">').sub('<th></th><th>', thnm))
+                thcl = re.findall('<th>([\s\S]*?)<\/th>', re.sub('<th colspan="2">', '<th></th><th>', thnm))
                 if int(len(thcl) / 2) != tcol:
                     raise ValueError('Mismatch between number of columns in the table definition (' + str(tcol) + ') and the actual number of cells in the table header (' + str(len(thcl) / 2) + '): ' + thnm)
                 for j in range(tcol):
@@ -136,7 +136,7 @@ async def latexify(content, out, resolve_image):
                 # whether the column should be left (contains only text) or right aligned (contains at least one number)
                 for j in range(len(tbdy)):
                     # process the rows in the table body: replace colspan="2" with single cells and split cells using <td> and </td>
-                    tbcl = re.compile('<td>([\s\S]*?)<\/td>').findall(re.compile('<td colspan="2">').sub('<td></td><td>', tbdy[j]))
+                    tbcl = re.findall('<td>([\s\S]*?)<\/td>', re.sub('<td colspan="2">', '<td></td><td>', tbdy[j]))
                     if int(len(tbcl) / 2) != tcol:
                         raise ValueError('Mismatch between number of columns in the table definition (' + str(tcol) + ') and the actual number of cells in the table row (' + str(len(tbcl) / 2) + '): ' + tbdy[j])
                     for k in range(tcol):
@@ -231,9 +231,9 @@ async def latexify(content, out, resolve_image):
                 prefix = '%'
 
             irpl = '''\
-\\begin{{figure}}[htbp]
-\\caption{{PLACEHOLDER}}
-\\label{{fig:Figure_{fig_no}}}
+{prefix}\\begin{{figure}}[htbp]
+{prefix}\\caption{{PLACEHOLDER}}
+{prefix}\\label{{fig:Figure_{fig_no}}}
 % (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
 {error_message}\\centering
 {prefix}\\includegraphics[maxsize={{\\columnwidth}}{{textheight}}]{{{i_fn}}}
@@ -257,7 +257,7 @@ async def latexify(content, out, resolve_image):
                 r_yr = re.findall('[\s\S]*\(([1-2][0-9][0-9][0-9])\)[\s\S]*', rcrr)[0]
                 raut = re.findall('([\s\S]*)[1-2][0-9][0-9][0-9]', rcrr)[0].replace(' (', '').replace('&amp; ', '').replace('& ', '')
                 if re.search(', ', raut) != None:
-                    raus = re.compile(', ').split(raut)
+                    raus = re.split(', ', raut)
                     for j in range(len(raus)):
                         if j % 2 == 0:
                             raus[j] = (raus[j + 1].strip() + ' ' + raus[j].strip())
@@ -268,8 +268,8 @@ async def latexify(content, out, resolve_image):
                 # URL-References
                 if re.search('Retrieved from ', rcrr) != None:
                     rtit = re.findall('[\s\S]*[1-2][0-9][0-9][0-9](.+?). Retrieved', rcrr)[0].replace('). ', '').replace('<em>', '')
-                    rtit = re.compile('<\/em>. ').split(rtit)
-                    rkey[i] = re.compile('[:, ]').split(rtit[0])[0]
+                    rtit = re.split('<\/em>. ', rtit)
+                    rkey[i] = re.split('[:, ]', rtit[0])[0]
                     rurl = re.findall('Retrieved from <a[\s\S]*>(\S*)<\/a>', rcrr)[0]
                     rbib = (rbib + '@MISC{' + rkey[i] + ',\n  author       = {' + raut + '},\n  year         = {' + r_yr + '},\n  title        = {' + rtit[0] + '},\n  note         = {' +
                                               rtit[1].replace(') [', ', ').replace('] (', ', ').replace('[', '').replace(']', '').replace('(', '').replace(')', '') + '},\n  howpublished = {\\url{' + rurl + '}},\n}\n\n')
