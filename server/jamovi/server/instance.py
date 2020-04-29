@@ -43,10 +43,13 @@ from aiohttp import ClientSession
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
 from tempfile import mkstemp
+from io import StringIO
+from base64 import b64decode
 
 from .utils import fs
 from .utils import is_int32
 from .utils import is_url
+from .utils import latexify
 
 
 log = logging.getLogger('jamovi')
@@ -473,9 +476,9 @@ class Instance:
                     if path.endswith('.omv'):
                         await self._on_save_everything(request)
                     elif request.incContent:
-                        self._on_save_content(request)
+                        await self._on_save_content(request)
                     elif request.part != '':
-                        self._on_save_part(request)
+                        await self._on_save_part(request)
                     else:
                         await self._on_save_everything(request)
                 else:
@@ -509,12 +512,37 @@ class Instance:
                 cause = type(e).__name__
             self._coms.send_error(message, cause, self._instance_id, request)
 
-    def _on_save_content(self, request):
+    async def _on_save_content(self, request):
         path = request.filePath
         path = Instance._normalise_path(path)
+        content = request.content
 
-        with open(path, 'wb') as file:
-            file.write(request.content)
+        if path.endswith('.zip'):  # latex bundle export
+
+            async def resolve_image(part):
+                ext = '.pdf'
+
+                id, address = part.split('/')
+                id = int(id)
+                address = b64decode(address).decode('utf-8')
+
+                fd, temp_file_path = mkstemp(suffix=ext)
+                temp_file_path = temp_file_path.replace('\\', '/')
+
+                analysis = self.analyses.get(id)
+                await analysis.save(temp_file_path, address)
+
+                return temp_file_path
+
+            with open(path, 'wb') as file:
+                content = content.decode('utf-8')
+                async for progress in latexify(content, file, resolve_image):
+                    self._coms.send(None, self._instance_id, request,
+                        complete=False, progress=progress)
+
+        else:
+            with open(path, 'wb') as file:
+                file.write(content)
 
         response = jcoms.SaveProgress()
         response.path = request.filePath
@@ -557,7 +585,7 @@ class Instance:
         if not is_export:
             self._add_to_recents(path, self._data.title)
 
-    def _on_save_part(self, request):
+    async def _on_save_part(self, request):
         path = request.filePath
         path = Instance._normalise_path(path)
         part = request.part
