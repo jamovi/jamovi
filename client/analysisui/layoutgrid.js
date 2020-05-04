@@ -51,7 +51,7 @@ const LayoutGrid = function() {
         let sy = y + this.$el.scrollTop();
         for (let i = 0; i < this._cells.length; i++) {
             let cell = this._cells[i];
-            let pos = cell.$el.offset();
+            let pos = cell.$el.position();
             let size = { width: cell.$el.outerWidth(true), height: cell.$el.outerHeight(true) };
             if (sx >= pos.left && sx <= pos.left + size.width && sy >= pos.top && sy <= pos.top + size.height)
                 return cell;
