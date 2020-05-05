@@ -146,7 +146,7 @@ class Session(dict):
             settings = Settings.retrieve('main')
             settings.sync()
             if settings.get('autoUpdate', False):
-                self._update_status_req('downloading')
+                self.request_update('downloading')
 
     def set_update_request_handler(self, request_fun):
         self.request_update = request_fun
