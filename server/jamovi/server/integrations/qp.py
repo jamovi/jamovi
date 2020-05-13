@@ -1,5 +1,7 @@
 
-from .base import IntegrationHandler
+from jamovi.core import ColumnType
+from jamovi.core import DataType
+from jamovi.core import MeasureType
 from jamovi.server.utils import ssl_context
 
 from urllib.parse import unquote
@@ -8,6 +10,8 @@ from aiohttp import FormData
 import re
 import posixpath as path
 from mimetypes import guess_type
+
+from .base import IntegrationHandler
 
 import logging
 
@@ -65,6 +69,56 @@ class Handler(IntegrationHandler):
             dataset.title = self.title
             dataset.save_format = 'abs-html'
             dataset.path = self.url
+
+        column_regex = re.compile(r'^\[(Q[0-9].*?)\] (.*)$')
+        level_regex = re.compile(r'^\[([0-9]+)\] (.*)$')
+
+        for column_index in range(dataset.column_count):
+            column = dataset.get_column(column_index)
+            match = column_regex.fullmatch(column.name)
+            if match:
+                name = match.group(1).strip()
+                description = match.group(2).strip()
+
+                should_recode_levels = False
+
+                if column.has_levels and column.data_type == DataType.TEXT:
+                    for value, label, _ in column.levels:
+                        if not level_regex.fullmatch(label):
+                            break
+                    else:
+                        should_recode_levels = True
+
+                if should_recode_levels:
+                    new_column = dataset.insert_column(column.index, name, name)
+                    new_column.column_type = ColumnType.DATA
+                    new_column.description = description
+
+                    new_levels = [ ]
+                    for value, label, _ in column.levels:
+                        match = level_regex.fullmatch(label)
+                        value = int(match.group(1).strip())
+                        label = match.group(2).strip()
+                        new_levels.append((value, label))
+
+                    new_column.change(
+                        data_type=DataType.INTEGER,
+                        measure_type=MeasureType.NOMINAL,
+                        levels=new_levels)
+
+                    for row_index in range(dataset.row_count):
+                        value = column.get_value(row_index)
+                        if value == '':
+                            value = -2147483648
+                        else:
+                            value = int(level_regex.fullmatch(value).group(1))
+                        new_column.set_value(row_index, value)
+
+                    dataset.delete_columns_by_id([column.id])
+                else:
+                    column.name = name
+                    column.import_name = name
+                    column.description = description
 
     async def save(self, dataset, content):
 
