@@ -76,8 +76,8 @@ class Queue:
             request, stream = value
             if stream.is_complete:
                 del self._wait_rx[key]
+                log.debug('%s %s', 'removing', req_str(request))
                 break
-        log.debug('%s %s', 'removing', req_str(request))
 
     def stream(self):
 
