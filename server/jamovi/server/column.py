@@ -97,7 +97,7 @@ class Column:
                 return (-2147483648, '')
             if self._child.should_treat_as_missing(index):
                 return (-2147483648, '')
-                
+
             v = self._child.get_value(index)
 
             if self._child.data_type is DataType.INTEGER and self.has_levels:
