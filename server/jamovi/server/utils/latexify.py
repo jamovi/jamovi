@@ -194,7 +194,7 @@ async def latexify(content, out, resolve_image):
                 # ===================================================================================================================
                 # set table header, body and footer together again and replace the original table data with it
                 # ===================================================================================================================
-                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
+                trpl = ('\n\\begin{table}[!htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
                         '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n' +
                         '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n' +
                         '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
