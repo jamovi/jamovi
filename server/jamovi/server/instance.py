@@ -535,7 +535,7 @@ class Instance:
                 content = content.decode('utf-8')
                 async for progress in latexify(content, file, resolve_image):
                     self._coms.send(None, self._instance_id, request,
-                                          complete=False, progress=progress)
+                                    complete=False, progress=progress)
 
         else:
             with open(path, 'wb') as file:
