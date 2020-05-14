@@ -43,8 +43,6 @@ from aiohttp import ClientSession
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
 from tempfile import mkstemp
-from io import StringIO
-from base64 import b64decode
 
 from .utils import fs
 from .utils import is_int32
