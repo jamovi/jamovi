@@ -1,5 +1,3 @@
-
-import sys
 import os.path
 import re
 import base64
@@ -48,7 +46,7 @@ async def latexify(content, out, resolve_image):
         # remove or change characters that either have special functions in LaTeX or are not-printable
         body = re.sub('_',                                 '\\_',              body)
         body = re.sub('%',                                 '\\%',              body)
-        
+
         # replace subscripts (e.g., tukey for post-hoc p-values)
         body = re.sub(r'<sub>(\S+)<\/sub>',                r'$_{\1}$',         body)
         body = re.sub('&nbsp;',                            '',                 body)
@@ -74,12 +72,12 @@ async def latexify(content, out, resolve_image):
         body = re.sub('\u2260',                            '$\\\\neq$',        body)
         body = re.sub('\u2212',                            '-',                body)
         body = re.sub('\u273B',                            '~$\\\\times$~',    body)
-        
+
         # remove double line feeds or double "begin/end-LaTeX"-markers
         body = re.sub('\n\n',                              '\n',               body)
         body = re.sub('  ',                                ' ',                body)
         body = re.sub(r'\$\$',                             '',                 body)
-        
+
         # reformat partial eta squared
         body = re.sub(r'\\\\eta\^2\$p',                    '\\\\eta^2_{p}$',   body)
 
@@ -304,7 +302,7 @@ async def latexify(content, out, resolve_image):
                     rkey.remove('R')
                     rkey = [k for k in rkey if k]
                     rtxt = ('Statistical analyses were performed using jamovi \\parencite{jamovi}, and the R statistical language \\parencite{R}'
-                            + ('.'  if len(rkey) < 1 else (', as well as the ' + ('module / package ' if len(rkey) == 1 else 'modules / packages ')
+                            + ('.' if len(rkey) < 1 else (', as well as the ' + ('module / package ' if len(rkey) == 1 else 'modules / packages ')
                                + ', '.join(rkey)[::-1].replace(', '[::-1], ' and '[::-1], 1)[::-1] + ' \\parencite{' + ', '.join(rkey) + '}.')) + '\n\n')
 
         # handle labels: currently, the figures captions are based upon the heading before whereas the captions for the tables are taken from the first line of the table header (that can be changed though)
@@ -341,7 +339,7 @@ async def latexify(content, out, resolve_image):
             for i in range(len(lorg)):
                 body = body.replace(lorg[i], lrpl[i])
 
-        body = re.sub(r'\\\\end{table}[\s]*' , '\\\\end{table}\n\n\n',  body)
+        body = re.sub(r'\\\\end{table}[\s]*',  '\\\\end{table}\n\n\n',  body)
         body = re.sub(r'\\\\end{figure}[\s]*', '\\\\end{figure}\n\n\n', body)
         body = '\n\n' + body.strip() + '\n\n\n'
 
