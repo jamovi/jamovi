@@ -194,7 +194,7 @@ async def latexify(content, out, resolve_image):
                 # ===================================================================================================================
                 # set table header, body and footer together again and replace the original table data with it
                 # ===================================================================================================================
-                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
+                trpl = ('\n\\begin{table}[!htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
                         '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n' +
                         '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n' +
                         '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
@@ -231,7 +231,7 @@ async def latexify(content, out, resolve_image):
                 prefix = '%'
 
             irpl = '''\
-{prefix}\\begin{{figure}}[htbp]
+{prefix}\\begin{{figure}}[!htbp]
 {prefix}\\caption{{PLACEHOLDER}}
 {prefix}\\label{{fig:Figure_{fig_no}}}
 % (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
