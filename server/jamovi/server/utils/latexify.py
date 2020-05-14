@@ -194,7 +194,7 @@ async def latexify(content, out, resolve_image):
                 # ===================================================================================================================
                 # set table header, body and footer together again and replace the original table data with it
                 # ===================================================================================================================
-                trpl = ('\n\\begin{table}[htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
+                trpl = ('\n\\begin{table}[!htbp]\n\\caption{' + re.findall('<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
                         '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n' +
                         '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n' +
                         '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
@@ -231,7 +231,7 @@ async def latexify(content, out, resolve_image):
                 prefix = '%'
 
             irpl = '''\
-{prefix}\\begin{{figure}}[htbp]
+{prefix}\\begin{{figure}}[!htbp]
 {prefix}\\caption{{PLACEHOLDER}}
 {prefix}\\label{{fig:Figure_{fig_no}}}
 % (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
@@ -341,10 +341,10 @@ async def latexify(content, out, resolve_image):
         body = re.sub('\\\\end{figure}[\s]*', '\\\\end{figure}\n\n\n', body);
         body = '\n\n' + body.strip() + '\n\n\n';
 
-        head = ('\\documentclass[a4paper,man,hidelinks]{apa7}\n' +
+        head = ('\\documentclass[a4paper,man,hidelinks,floatsintext]{apa7}\n' +
                 '% This LaTeX output is designed to use APA7 style and to run on local TexLive-installation (use pdflatex) as well as on web interfaces (e.g., overleaf.com).\n' +
                 '% To use APA6 style change apa7 to apa6 in the first line (\\documentclass), comment or remove the \\addORCIDlink line, and change the order of \\caption and \\label lines for the figures.\n' +
-                '% If you prefer having your figures within the body of the text instead of postponing them until after the reference list, please add ",floatsintext" after "hidelinks" in the documentclass options.\n' +
+                '% If you prefer postponing your figures and table until after the reference list instead of having them within the body of the text, please remove the ",floatsintext" from the documentclass options.\n' +
                 '% Further information on these styles can be found here: https://www.ctan.org/pkg/apa7 and here: https://www.ctan.org/pkg/apa6\n\n' +
                 '\\usepackage[british]{babel}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath}\n\\usepackage{graphicx}\n\\usepackage[export]{adjustbox}\n\\usepackage{csquotes}\n' +
                 ('' if len(rdta) > 0 else '%') + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}\n' +
@@ -353,16 +353,20 @@ async def latexify(content, out, resolve_image):
                 '\\title{Title of Your APA-Style Manuscript}\n\\shorttitle{Short Title}\n\\author{Full Name}\n\\leftheader{Last name}\n\\affiliation{Your Affilitation}\n' +
                 '% addORCIDlink is only available from apa7\n\\authornote{\\addORCIDlink{Your Name}{0000-0000-0000-0000}\\\\\nMore detailed information about how to contact you.\\\\\nCan continue over several lines.\n}\n\n' +
                 '\\abstract{Your abstract here.}\n\\keywords{keyword 1, keyword 2}\n\n' +
-                '\\begin{document}\n\\maketitle\n\nYour introduction starts here.\n\n' +
-                '\\section{Methods}\nFeel free to adjust the subsections below.\n\n' +
-                '\\subsection{Participants}\nYour participants description goes here.\n\n\\subsection{Materials}\nYour description of the experimental materials goes here.\n\n' +
-                '\\subsection{Procedure}\nYour description of the experimental procedures goes here.\n\n\\subsection{Statistical Analyses}\n' + rtxt + '\\section{Results}\n\n')
-        tail = ('\nReport your results here and make references to tables' + (' (see Table~\\ref{tab:Table_1})' if len(tdta) > 0 else '') +
+                '\\begin{document}\n%\\maketitle\n\n% Your introduction starts here.\n\n' +
+                '%\\section{Methods}\n% Feel free to adjust the subsections below.\n\n' +
+                '%\\subsection{Participants}\n% Your participants description goes here.\n\n' + 
+                '%\\subsection{Materials}\n% Your description of the experimental materials goes here.\n\n' +
+                '%\\subsection{Procedure}\n% Your description of the experimental procedures goes here.\n\n' + 
+                '%\\subsection{Statistical Analyses}\n%' + rtxt + '%\\section{Results}\n\n')
+        tail = ('\n% Report your results here and make references to tables' + (' (see Table~\\ref{tab:Table_1})' if len(tdta) > 0 else '') +
                 ' or figures' + (' (see Figure~\\ref{fig:Figure_1})' if len(idta) > 0 else '') +
-                '.\n\n\\section{Discussion}\nYour discussion starts here.\n\n' +
-                ('' if len(rdta) > 0 else '%') + '\\printbibliography\n\n' +
-                '%\\appendix\n\n%\\section{Additional tables and figures}\n\n%Your text introducing supplementary tables and figures.\n\n' +
-                '%If required copy tables and figures from the main results here.\n\n\\end{document}\n\n')
+                '.\n\n%\\section{Discussion}\n% Your discussion starts here.\n\n' +
+                '%\\printbibliography\n\n' +
+                '%\\appendix\n\n%\\section{Additional tables and figures}\n\n' + 
+                '% Your text introducing supplementary tables and figures.\n\n' +
+                '% If required copy tables and figures from the main results here.\n\n' + 
+                '\\end{document}\n\n')
         sprt = '% =========================================================================================================\n'
 
         zi = ZipInfo('article.tex', now)
