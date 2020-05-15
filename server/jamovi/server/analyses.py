@@ -2,7 +2,7 @@
 import os.path
 import yaml
 from enum import Enum
-from concurrent.futures import Future
+from asyncio import Future
 from copy import deepcopy
 
 from .modules import Modules
