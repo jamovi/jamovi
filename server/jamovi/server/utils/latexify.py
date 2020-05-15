@@ -355,7 +355,7 @@ async def latexify(content, out, resolve_image):
                 + ('' if len(rdta) > 0 else '%') + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\DeclareLanguageMapping{british}{british-apa}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\addbibresource{' + r_fn.replace('.html', '.bib') + '}\n\n'
-                + '\\title{Title of Your APA-Style Manuscript}\n\\shorttitle{Short Title}\n\\author{Full Name}\n\\leftheader{Last name}\n\\affiliation{Your Affilitation}\n'
+                + '\\title{APA-Style Manuscript with jamovi Results}\n\\shorttitle{jamovi Results}\n\\author{Full Name}\n\\leftheader{Last name}\n\\affiliation{Your Affilitation}\n'
                 + '% addORCIDlink is only available from apa7\n\\authornote{\\addORCIDlink{Your Name}{0000-0000-0000-0000}\\\\\nMore detailed information about how to contact you.\\\\\nCan continue over several lines.\n}\n\n'
                 + '\\abstract{Your abstract here.}\n\\keywords{keyword 1, keyword 2}\n\n'
                 + '\\begin{document}\n%\\maketitle\n\n% Your introduction starts here.\n\n'
