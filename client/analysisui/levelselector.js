@@ -13,6 +13,7 @@ const LevelSelector = function(params) {
     this.registerSimpleProperty('format', FormatDef.string);
     this.registerSimpleProperty('defaultLevelIndex', 0);
     this.registerOptionProperty('variable');
+    this.registerOptionProperty('allowNone');
 
     this.$icon = null;
     this.$label = null;
@@ -20,6 +21,7 @@ const LevelSelector = function(params) {
 
     this.levels = [];
     this.enabled = true;
+    this.none = '- None -';
 
     this.onRenderToGrid = function(grid, row, column) {
 
@@ -37,13 +39,18 @@ const LevelSelector = function(params) {
         }
 
         let t = '<select class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-' + this.getPropertyValue('margin') + '">';
+        if (this.getPropertyValue('allowNone'))
+            t += '<option>' + this.none + '</option>';
         t += '</select>';
 
         this.$input = $(t);
         this.update();
         this.$input.change((event) => {
             let value = this.$input.val();
-            this.setValue(value);
+            if (value === this.none && this.getPropertyValue('allowNone'))
+                this.setValue(null);
+            else
+                this.setValue(value);
         });
 
         cell = grid.addCell(column + columnUsed, row, this.$input);
@@ -55,6 +62,9 @@ const LevelSelector = function(params) {
     };
 
     this.update = function() {
+        let allowNone = this.getPropertyValue('allowNone');
+        if (allowNone === null)
+            allowNone = false;
         let variable = this.getPropertyValue('variable');
         let promise = this.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
         promise.then(rData => {
@@ -88,6 +98,8 @@ const LevelSelector = function(params) {
             let displayValue = this.getValue();
             this.levels = rData.levels;
             let selIndex = -1;
+            if (allowNone)
+                html += '<option>' + this.none + '</option>';
             if (this.levels) {
                 for (let i = 0; i < this.levels.length; i++) {
                     if (this.levels[i].label === displayValue)
@@ -99,6 +111,7 @@ const LevelSelector = function(params) {
             else
                 this.levels = [];
 
+            selIndex = allowNone ? selIndex + 1 : selIndex;
             this.$input.empty();
             this.$input.html(html);
             this.$input[0].selectedIndex = selIndex;
@@ -137,11 +150,21 @@ const LevelSelector = function(params) {
     this._updateSelection = function() {
         let select = this.$input[0];
         let value = this.getSourceValue();
+        let allowNone = this.getPropertyValue('allowNone');
+        if (allowNone === null)
+            allowNone = false;
         let index = -1;
-        for (let i = 0; i < this.levels.length; i++) {
-            if (this.levels[i].label === value) {
-                index = i;
-                break;
+        if (value === null && allowNone)
+            index = 0;
+        else {
+            for (let i = 0; i < this.levels.length; i++) {
+                if (this.levels[i].label === value) {
+                    if (allowNone)
+                        index = i + 1;
+                    else
+                        index = i;
+                    break;
+                }
             }
         }
         select.selectedIndex = index;
