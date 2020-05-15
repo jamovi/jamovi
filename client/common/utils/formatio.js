@@ -387,11 +387,14 @@ function _htmlifyDiv(el, options) {
     let width = $(el).css('width');
     let height = $(el).css('height');
     let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
-    let address = el.dataset.address;
 
     if (options.images === 'absolute') {
         return `<img src="${ bgi }" style="width: ${ width }; height: ${ height };">`;
     }
+
+    let address = '';
+    if (options.id)
+        address = `${ options.id }/${ el.dataset.address }`;
 
     if (options.images === 'relative') {
         let dbgi = decodeURI(bgi);
