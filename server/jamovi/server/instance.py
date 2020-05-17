@@ -543,7 +543,7 @@ class Instance:
             title, ext = os.path.splitext(title)
             self._data.title = title
             self._data.path = path
-            self._data.saveFormat = 'jamovi'
+            self._data.save_format = 'jamovi'
             self._data.is_edited = False
             self._data.integration = None
 
@@ -551,7 +551,7 @@ class Instance:
         response.success = True
         response.title = self._data.title
         response.path = Instance._virtualise_path(path)
-        response.saveFormat = self._data.saveFormat
+        response.saveFormat = self._data.save_format
         self._coms.send(response, self._instance_id, request)
 
         if not is_export:
