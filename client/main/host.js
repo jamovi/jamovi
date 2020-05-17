@@ -238,8 +238,16 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
         return { text: text, html: html };
     };
 
-    showSaveDialog = (options) => {
-        return dialog.showSaveDialog(browserWindow, options);
+    showSaveDialog = async (options) => {
+        let selection = await dialog.showSaveDialog(browserWindow, options);
+        // On linux we don't get an extension, so here we add the default one
+        // https://github.com/electron/electron/issues/21935
+        let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
+        if (hasExtension === false && options.filters) {
+            let defaultExt = options.filters[0].extensions[0];
+            selection.filePath = `${ selection.filePath }.${ defaultExt }`;
+        }
+        return selection;
     };
 
 
