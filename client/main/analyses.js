@@ -166,8 +166,22 @@ const Analyses = Backbone.Model.extend({
                 type: 'group',
                 title: title ? title : name,
                 visible: 2,
-                group: { elements: [ ] },
-                status: 'running',
+                group: { elements: [
+                    {
+                        name: '',
+                        type: 'image',
+                        title: '',
+                        visible: 2,
+                        image: {
+                            path: '',
+                            width: 500,
+                            height: 100,
+                        },
+                        status: 2,
+                        error: null,
+                    },
+                ]},
+                status: 2,
                 error: null,
                 index: (index !== undefined ? index + 1 : undefined),  // indexed from 1
             },
