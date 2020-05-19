@@ -199,7 +199,7 @@ $(document).ready(() => {
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
     ribbon.on('analysisSelected', function(analysis) {
-        instance.createAnalysis(analysis.name, analysis.ns);
+        instance.createAnalysis(analysis.name, analysis.ns, analysis.title);
     });
 
     ribbon.on('tabSelected', function(tabName) {

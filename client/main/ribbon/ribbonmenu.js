@@ -38,8 +38,8 @@ const RibbonMenu = Backbone.View.extend({
     setEnabled(enabled) {
         this.$el.prop('disabled', ! enabled);
     },
-    _notifySelected(name, ns, checked) {
-        let analysis = { name: name, ns: ns, checked: checked };
+    _notifySelected(name, ns, title, checked) {
+        let analysis = { name, ns, title, checked };
         this.parent._analysisSelected(analysis);
         if (checked === undefined)
             this.hideMenu();
@@ -140,7 +140,11 @@ const RibbonMenu = Backbone.View.extend({
             input.checked = !input.checked;
 
         let checked = input ? input.checked : undefined;
-        this._notifySelected(source.dataset.name, source.dataset.ns, checked);
+        this._notifySelected(
+            source.dataset.name,
+            source.dataset.ns,
+            source.dataset.title,
+            checked);
         $(source).removeClass('new');
         event.stopPropagation();
     },
@@ -167,7 +171,7 @@ const RibbonMenu = Backbone.View.extend({
         let source = event.delegateTarget;
 
         let checked = source ? source.checked : undefined;
-        this._notifySelected(source.dataset.name, source.dataset.ns, checked);
+        this._notifySelected(source.dataset.name, source.dataset.ns, source.dataset.title, checked);
         event.stopPropagation();
     },
     _moduleListScroll(event) {
@@ -184,7 +188,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.hidden)
             classes += ' menu-item-hiding menu-item-hidden';
 
-        let html = '<div data-name="' + item.name + '" data-ns="' + item.ns + '" class="' + classes + '">';
+        let html = `<div data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" class="${ classes }">`;
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
         if (item.subtitle)
@@ -197,7 +201,7 @@ const RibbonMenu = Backbone.View.extend({
     },
     _createModuleItem(item) {
         let classes = 'jmv-ribbon-menu-item module';
-        let html = `<div data-name="${ item.name }" data-ns="${  item.ns }" class="${  classes }">`;
+        let html = `<div data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }">`;
         html += '<div class="to-analyses-arrow"></div>';
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
