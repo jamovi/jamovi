@@ -546,11 +546,11 @@ const Instance = Backbone.Model.extend({
             return response;
         });
     },
-    createAnalysis(name, ns) {
+    createAnalysis(name, ns, title) {
 
         this._dataSetModel.set('edited', true);
 
-        let analysis = this._analyses.create(name, ns);
+        let analysis = this._analyses.create(name, ns, title);
         this.set('selectedAnalysis', analysis);
 
         let request = this._constructAnalysisRequest(analysis, { });
@@ -564,7 +564,7 @@ const Instance = Backbone.Model.extend({
 
         let duplicee = this._analyses.get(dupliceeId);
         let index = this._analyses.indexOf(duplicee.id) + 1;
-        let analysis = this._analyses.create(duplicee.name, duplicee.ns, index);
+        let analysis = this._analyses.create(duplicee.name, duplicee.ns, duplicee.title, index);
         let results = duplicee.results;
         let options = duplicee.options.getValues();
 

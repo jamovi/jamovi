@@ -259,7 +259,7 @@ const RibbonView = Backbone.View.extend({
         else if (analysis.ns === 'installed')
             this.model.modules().setModuleVisibility(analysis.name, analysis.checked);
         else
-            this.trigger('analysisSelected', { name : analysis.name, ns : analysis.ns } );
+            this.trigger('analysisSelected', analysis);
     },
 });
 

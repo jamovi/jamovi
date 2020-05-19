@@ -370,8 +370,8 @@ const ResultsPanel = Backbone.View.extend({
                     let width = eventData.width;
                     if (height < 100)
                         height = 100;
-                    if (width < 300)
-                        width = 300;
+                    if (width < 620)
+                        width = 620;
 
                     if ($iframe.height() === 0)
                         $iframe.width(width);
