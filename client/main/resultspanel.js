@@ -500,7 +500,10 @@ const ResultsPanel = Backbone.View.extend({
         }
 
         address = address.slice(); // clone
+        options = Object.assign({}, options); // clone
+
         let id = address.shift();
+        options.id = id;
         let iframeWindow = this.resources[id].iframe.contentWindow;
         iframeWindow.postMessage({ type: 'getcontent', data: { address, options } }, '*');
 
