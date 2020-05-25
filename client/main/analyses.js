@@ -209,7 +209,6 @@ const Analyses = Backbone.Model.extend({
         if (this._nextId <= id)
             this._nextId = id + 1;
 
-        this.trigger('analysisCreated', analysis);
         return analysis;
     },
     deleteAnalysis(id) {
