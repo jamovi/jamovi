@@ -39,7 +39,9 @@ var SyntaxView = Elem.View.extend({
     render: function() {
 
         let syntax = this.model.attributes.element;
-        let $syntax = $('<pre class="jmv-results-syntax-text"></pre>').appendTo(this.$el);
+        let $syntax = $('<pre class="jmv-results-syntax-text"></pre>');
+        this.addContent($syntax);
+
         $syntax.text(syntax);
 
         if (this.model.attributes.title)

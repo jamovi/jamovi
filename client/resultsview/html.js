@@ -51,7 +51,8 @@ var HtmlView = Elem.View.extend({
             this.$head.append('<script src="module/' + script + '" class="module-asset"></script>');
 
         this.ready = Promise.all(promises).then(() => {
-            this.$el.html(doc.content);
+            let $content = $(doc.content);
+            this.addContent($content);
             this.$el.find('a[href]').on('click', (event) => this._handleLinkClick(event));
         });
     },
