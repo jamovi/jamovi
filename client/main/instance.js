@@ -34,7 +34,6 @@ const Instance = Backbone.Model.extend({
 
         this._analyses = new Analyses();
         this._analyses.set('dataSetModel', this._dataSetModel);
-        this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
         this._settings.on('change:theme', event => this._themeChanged());
@@ -48,7 +47,6 @@ const Instance = Backbone.Model.extend({
     },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
-        this._analyses.off('analysisCreated', this._analysisCreated, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
@@ -493,7 +491,7 @@ const Instance = Backbone.Model.extend({
             this._instanceId = response.instanceId;
         });
     },
-    _retrieveInfo() {
+    async _retrieveInfo() {
 
         let coms = this.attributes.coms;
 
@@ -503,48 +501,44 @@ const Instance = Backbone.Model.extend({
         request.payloadType = 'InfoRequest';
         request.instanceId = this._instanceId;
 
-        return coms.send(request).then(response => {
+        let response = await coms.send(request);
+        info = coms.Messages.InfoResponse.decode(response.payload);
 
-            let info = coms.Messages.InfoResponse.decode(response.payload);
+        this._dataSetModel.set('instanceId', this._instanceId);
 
-            this._dataSetModel.set('instanceId', this._instanceId);
+        if (info.hasDataSet) {
+            this._dataSetModel.setup(info);
+            this.set('hasDataSet', true);
+            this.set('title',      info.title);
+            this.set('path',       info.path);
+            this.set('saveFormat', info.saveFormat);
+            this.set('blank',      info.blank);
+        }
 
-            if (info.hasDataSet) {
-                this._dataSetModel.setup(info);
-                this.set('hasDataSet', true);
-                this.set('title',      info.title);
-                this.set('path',       info.path);
-                this.set('saveFormat', info.saveFormat);
-                this.set('blank',      info.blank);
-            }
-
-            let allReady = [ ];
-
-            for (let analysisPB of info.analyses) {
-                let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
-                let analysis = this._analyses.addAnalysis(
-                    analysisPB.name,
-                    analysisPB.ns,
-                    analysisPB.analysisId,
-                    options,
-                    analysisPB.results,
-                    analysisPB.incAsText,
-                    analysisPB.syntax,
-                    analysisPB.references);
-                allReady.push(analysis.ready);
-            }
-
-            Promise.all(allReady).then(() => {
-                for (let analysis of this._analyses) {
-                    if (analysis.arbitraryCode)
-                        this.set('arbitraryCodePresent', true);
-                    else
-                        analysis.enabled = true;
-                }
-            });
-
-            return response;
+        let allWaits = info.analyses.map((analysisPB) => {
+            let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
+            let analysis = this._analyses.addAnalysis(
+                analysisPB.name,
+                analysisPB.ns,
+                analysisPB.analysisId,
+                options,
+                analysisPB.results,
+                analysisPB.incAsText,
+                analysisPB.syntax,
+                analysisPB.references);
+            return analysis.ready;
         });
+
+        await Promise.all(allWaits);
+
+        for (let analysis of this._analyses) {
+            if (analysis.arbitraryCode)
+                this.set('arbitraryCodePresent', true);
+            else
+                analysis.enabled = true;
+        }
+
+        return response;
     },
     createAnalysis(name, ns, title) {
 
