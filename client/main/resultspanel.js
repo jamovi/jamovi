@@ -465,10 +465,9 @@ const ResultsPanel = Backbone.View.extend({
 
             options.fragment = true;
 
-            let promises = Object.entries(this.resources)
-                .map(entry => entry[1])
-                .filter((res) => ! res.analysis.deleted)
-                .map((res => res.id))
+            let promises = Array.from(this.model.analyses())
+                .filter(analysis => ! analysis.deleted)
+                .map(analysis => analysis.id)
                 .map(id => this._getContent([ id ], options));
 
             let refs = formatIO.exportElem(this._refsTable, 'text/html', options)
