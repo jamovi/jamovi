@@ -70,7 +70,8 @@ class Analysis:
     def instance(self):
         return self.dataset.instance
 
-    def set_options(self, options, changes=[], enabled=None):
+    def set_options(self, options, changes, revision, enabled=None):
+        self.revision = revision
         wasnt_but_now_is_enabled = (self.enabled is False) and enabled
         if enabled:
             self.enabled = True
@@ -80,7 +81,6 @@ class Analysis:
         self.complete = False
         if len(changes) > 0:
             self.changes |= set(changes)
-        self.revision += 1
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
@@ -106,12 +106,10 @@ class Analysis:
         self.set_results(results)
 
     def run(self):
-        self.revision += 1
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
     def rerun(self):
-        self.revision += 1
         self.status = Analysis.Status.NONE
         self.clear_state = True
         self.parent._notify_options_changed(self)

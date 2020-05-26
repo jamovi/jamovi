@@ -905,7 +905,7 @@ class Instance:
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
                 del self._data.analyses[request.analysisId]
             else:
-                analysis.set_options(request.options, request.changed, request.enabled)
+                analysis.set_options(request.options, request.changed, request.revision, request.enabled)
 
             self._coms.send(None, self._instance_id, request, True)
 
