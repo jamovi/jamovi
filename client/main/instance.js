@@ -646,7 +646,10 @@ const Instance = Backbone.Model.extend({
 
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
-            let options = OptionsPB.fromPB(response.options, coms.Messages);
+
+            let options = {};
+            if (response.revision === analysis.revision)
+                options = OptionsPB.fromPB(response.options, coms.Messages);
 
             if (analysis.isReady === false)
                 analysis.setup(options);
