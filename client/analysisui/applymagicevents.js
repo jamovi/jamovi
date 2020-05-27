@@ -75,8 +75,6 @@ const findMagicEvents = function(ctrl, name, template) {
                         if (template[eventName] !== undefined)
                             continue;
 
-                        console.log('found event handler: ' + handler);
-
                         template[eventName] = template.handlers[handler];
                     }
                     else {
@@ -88,8 +86,6 @@ const findMagicEvents = function(ctrl, name, template) {
 
                         if (events[eventName] !== undefined)
                             continue;
-
-                        console.log('found event handler: ' + handler);
 
                         let event = { };
                         if (eventName === "change")
