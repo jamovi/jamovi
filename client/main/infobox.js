@@ -310,11 +310,6 @@ class InfoBox extends HTMLElement {
                 box-shadow: 0px 0px 10px #777777;
             }
 
-            div.body.initial-size {
-                width: 300px;
-                height: 300px;
-            }
-
             div.local {
                 margin: 20px;
             }
