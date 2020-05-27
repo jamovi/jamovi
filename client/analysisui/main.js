@@ -193,7 +193,6 @@ function loadAnalysis(def, jamoviVersion) {
             analysis = new Analysis(def, jamoviVersion);
 
             let title = analysis.getTitle();
-            console.log("loading - " + title + "...");
             $title.empty();
             $title.append(title);
 
