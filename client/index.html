@@ -9,6 +9,18 @@
             window.location.href = "https://www.jamovi.org/misc/unsupported.html";
     </script>
     <script src="../main.js"  type="text/javascript"></script>
+
+    <script>
+        if ( ! window.location.port) {
+            var optionsUrl = window.location.protocol + '//a.' + window.location.hostname;
+            var resultsUrl = window.location.protocol + '//r.' + window.location.hostname;
+            document.write('<link rel="prefetch" href="' + optionsUrl + '/analysisui.js">');
+            document.write('<link rel="prefetch" href="' + optionsUrl + '/analysisui.css">');
+            document.write('<link rel="prefetch" href="' + resultsUrl + '/resultsview.js">');
+            document.write('<link rel="prefetch" href="' + resultsUrl + '/resultsview.css">');
+        }
+    </script>
+
 </head>
 
 <body>
