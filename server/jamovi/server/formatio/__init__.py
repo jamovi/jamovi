@@ -152,10 +152,10 @@ def fix_column_names(dataset):
 
     dataset = dataset._dataset
 
-    column_names = list(map(lambda column: column.name, dataset))
+    column_names = map(lambda column: column.name, dataset)
+    column_names = list(column_names)
 
-    for i in range(len(column_names)):
-        orig = column_names[i]
+    for i, orig in enumerate(column_names):
         used = column_names[:i]
         if orig == '':
             orig = gen_column_name(i)
@@ -163,7 +163,7 @@ def fix_column_names(dataset):
             orig = re.sub(r'`',   '_', orig)
             orig = re.sub(r'^\.', '_', orig)
 
-        name = orig
+        name = orig.strip()
         c = 2
         while name in used:
             name = '{} ({})'.format(orig, c)
