@@ -73,7 +73,12 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable = document.createElement('jmv-references');
         this._refsTable.style.display = 'none';
         this._refsTable.setAnalyses(this.model.analyses());
-        this._refsTable.addEventListener('contextmenu', (event) => this._refsRightClicked(event));
+        this._refsTable.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this._refsRightClicked(event);
+            return false;
+        });
         this._refsTable.addEventListener('click', (event) => this._resultsClicked(event, 'refsTable'));
         this.el.appendChild(this._refsTable);
 
@@ -90,6 +95,8 @@ const ResultsPanel = Backbone.View.extend({
                 this._showMenu(-1, { entries: [ ], pos: { left: event.pageX, top: event.pageY }});
                 this.el.classList.add('all-selected');
             }
+            event.preventDefault();
+            return false;
         });
 
         this.model.settings().on('change:format',  () => this._updateAll());
