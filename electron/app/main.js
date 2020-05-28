@@ -111,7 +111,14 @@ const marshallArgs = function(args, wd, first) {
         cmd.exit = true;
     }
     else if (args[0] === '--install') {
+
         if (args.length > 1) {
+
+            // electron/chromium sometimes adds extra args like:
+            // --allow-file-access-from-files --original-process-start-time=XXXX
+            // so we perform the following to get rid of them
+            args = [ args[0], args[args.length - 1] ];
+
             let p = path.resolve(wd, args[1]);
             if (fs.existsSync(p))
                 cmd.install = p;
