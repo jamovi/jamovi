@@ -357,9 +357,9 @@ class Server:
         if line.startswith('install: '):
             path = line[9:]
             try:
+                await self._session.restart_engines()
                 Modules.instance().install_from_file(path)
                 self._session.notify_global_changes()
-                await self._session.restart_engines()
                 self._session.rerun_analyses()
             except Exception:
                 import traceback
