@@ -238,7 +238,7 @@ async def latexify(content, out, resolve_image):
 {prefix}\\label{{fig:Figure_{fig_no}}}
 % (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
 {error_message}\\centering
-{prefix}\\includegraphics[maxsize={{\\columnwidth}}{{textheight}}]{{{i_fn}}}
+{prefix}\\includegraphics[width=\\columnwidth]{{{i_fn}}}
 {prefix}\\end{{figure}}\
 '''.format(fig_no=i + 1, error_message=error_message, prefix=prefix, i_fn=i_fn)
             body = body.replace(idta[i], irpl)
