@@ -307,9 +307,12 @@ class Analyses:
         return analysis
 
     def recreate(self, id):
-        o = self[id]
+        old = self[id]
+        index = self._analyses.index(old)
         del self[id]
-        return self.create(id, o.name, o.ns, o.options.as_pb())
+        analysis = self.create(id, old.name, old.ns, old.options.as_pb(), index)
+        analysis.revision = old.revision
+        return analysis
 
     def rerun(self):
         for analysis in self:
