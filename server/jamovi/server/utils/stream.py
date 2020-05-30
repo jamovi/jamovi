@@ -1,6 +1,11 @@
 
+from asyncio import Queue
 from asyncio import Future
 from asyncio import Event
+from asyncio import ensure_future as create_task
+from asyncio import wait
+from asyncio import InvalidStateError
+from asyncio import FIRST_COMPLETED
 
 
 class Stream:
@@ -59,3 +64,50 @@ class Stream:
         self._complete.set()
         for listener in self._listeners:
             listener()
+
+
+class ProgressStream:
+
+    def __init__(self):
+        self._progress = Queue()
+        self._progress_task = create_task(self._progress.get())
+        self._complete = Future()
+        self._complete_task = create_task(self._complete)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+
+        if self._complete.done():
+            raise StopAsyncIteration
+
+        done, pending = await wait({ self._complete_task, self._progress_task }, return_when=FIRST_COMPLETED)
+
+        if self._complete_task in done:
+            self._progress_task.cancel()
+            self._complete_task.result()  # throws an exception (when necessary)
+            raise StopAsyncIteration
+        else:
+            progress = self._progress_task.result()
+            self._progress_task = create_task(self._progress.get())
+            return progress
+
+    def write(self, item):
+        if self._complete.done():
+            raise InvalidStateError
+        if self._progress.qsize() > 0:
+            self._progress.get_nowait()
+        self._progress.put_nowait(item)
+
+    def set_result(self, result):
+        self._complete.set_result(result)
+
+    def set_exception(self, e):
+        self._complete.set_exception(e)
+
+    def result(self):
+        return self._complete.result()
+
+    def done(self):
+        return self._complete.done()

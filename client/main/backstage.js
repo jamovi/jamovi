@@ -251,7 +251,6 @@ const FSEntryBrowserView = SilkyView.extend({
                 selected = 'selected';
             html += "                   <option data-extensions='" + JSON.stringify(exts) + "' " + selected + " value=" + i + ">" + desc + "</option>";
         }
-        //html += '                   <option data-extensions="[jasp]" value=".jasp">JASP File (.jasp)</option>';
         html += '               </select>';
         html += '           </div>';
         return html;
@@ -326,7 +325,7 @@ const FSEntryBrowserView = SilkyView.extend({
         html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
         html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
 
-        if (this.model.attributes.browseable && host.isElectron) {
+        if (this.model.attributes.browseable) {
             html += '       <div class="silky-bs-fslist-browse-button">';
             html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
             html += '           <span>Browse</span>';
@@ -341,31 +340,36 @@ const FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
-        if ( ! isSaving) {
-            let searchHtml = `<div class="searchbox">
-                            <div class="image"></div>
-                            <input class="search" type="text"></input>
-                        </div>`;
-            this.$el.append(searchHtml);
+        if (host.isElectron) {
+            if ( ! isSaving) {
+                let searchHtml = `<div class="searchbox">
+                                <div class="image"></div>
+                                <input class="search" type="text"></input>
+                            </div>`;
+                this.$el.append(searchHtml);
+            }
         }
 
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
-            setTimeout(() => {
-                this.$header.find('.silky-bs-fslist-browser-save-name').focus();
-            }, 50);
-        }
+        if (host.isElectron) {
 
-        if (this.model.attributes.extensions) {
-            this.filterExtensions = this.model.fileExtensions[0].extensions;
+            if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
+                setTimeout(() => {
+                    this.$header.find('.silky-bs-fslist-browser-save-name').focus();
+                }, 50);
+            }
 
-            this._createFooter();
+            if (this.model.attributes.extensions) {
+                this.filterExtensions = this.model.fileExtensions[0].extensions;
 
-            let extValue = this._validExtension(extension);
-            if (extValue != -1)
-                this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+                this._createFooter();
+
+                let extValue = this._validExtension(extension);
+                if (extValue != -1)
+                    this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+            }
         }
     },
     _nameKeypressHandle: function(event) {
@@ -1004,7 +1008,7 @@ const BackstageModel = Backbone.Model.extend({
         let saveAs_thispc = null;
         let export_thispc = null;
         if (mode === 'demo') {
-            open_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Opening files from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
             import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
             saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Saving data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
             export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Exporting data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
@@ -1104,7 +1108,12 @@ const BackstageModel = Backbone.Model.extend({
         }
         this._wdData[wdType].models.push(model);
     },
-    tryBrowse: function(list, type, filename) {
+    tryBrowse: async function(list, type, filename) {
+
+        let filters = [];
+        for (let i = 0; i < list.length; i++)
+            filters.push({ name: list[i].description, extensions: list[i].extensions });
+
         if (host.isElectron) {
 
             if (this._wdData.main.initialised === false)
@@ -1113,11 +1122,9 @@ const BackstageModel = Backbone.Model.extend({
             let remote = window.require('electron').remote;
             let browserWindow = remote.getCurrentWindow();
             let dialog = remote.dialog;
-
-            let filters = [];
-            for (let i = 0; i < list.length; i++)
-                filters.push({ name: list[i].description, extensions: list[i].extensions });
             let osPath = this._wdData.main.oswd;
+
+            // all this dialog stuff should get moved into host.js
 
             if (type === 'open') {
 
@@ -1159,7 +1166,13 @@ const BackstageModel = Backbone.Model.extend({
             }
         }
         else {
-            this.trigger("browse_invoker");
+            try {
+                let files = await host.showOpenDialog({ filters });
+                this.requestOpen(files[0]);
+            }
+            catch (e) {
+                // cancelled
+            }
         }
     },
     getCurrentOp: function() {
@@ -1346,16 +1359,22 @@ const BackstageModel = Backbone.Model.extend({
             cache: false
         });
     },
-    requestOpen: function(filePath) {
+    async requestOpen(filePath) {
+
         let deactivated = false;
-        let deactivate = () => {
-            if ( ! deactivated) {
-                this.set('activated', false);
-                deactivated = true;
+        try {
+            for await (let progress of this.instance.open(filePath)) {
+                if ( ! deactivated) {
+                    deactivated = true;
+                    this.set('activated', false);
+                }
             }
-        };
-        this.instance.open(filePath)
-            .then(deactivate, undefined, deactivate);
+            if ( ! deactivated)
+                this.set('activated', false);
+        } catch (e) {
+            if (deactivated)
+                this.set('activated', true);
+        }
     },
     requestImport: function(paths) {
         let deactivated = false;

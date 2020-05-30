@@ -18,6 +18,7 @@ const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
 
 const Settings = require('./settings');
+const ProgressStream = require('./utils/progressstream');
 
 const Instance = Backbone.Model.extend({
 
@@ -139,7 +140,7 @@ const Instance = Backbone.Model.extend({
             return prog;
         });
     },
-    open(filePath) {
+    open(file) {
 
         let coms = this.attributes.coms;
 
@@ -150,33 +151,82 @@ const Instance = Backbone.Model.extend({
 
         if (this.attributes.hasDataSet) {
 
-            let instance = new Instance({ coms : coms });
+            return new ProgressStream(async (setProgress) => {
 
-            return instance.connect().then(() => {
-                return instance.open(filePath);
-            }).then(() => {
-                progress.dismiss();
-                if (this.attributes.blank && this._dataSetModel.attributes.edited === false) {
-                    host.navigate(instance.instanceId());
+                let response;
+
+                if (file instanceof File) {
+                    let url = '../open';
+                    let payload = new FormData();
+                    payload.append('file', file);
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: payload,
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
                 }
                 else {
-                    host.openWindow(instance.instanceId());
-                    instance.destroy();
+                    let url = `../open?url=${ encodeURIComponent(file) }`;
+                    response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
                 }
-            }, (error) => {
-                progress.dismiss();
-                this._notify(error);
-                instance.destroy();
-                throw error;
-            }, (prog) => {
-                progress.set('progress', prog);
-                this.trigger('notification', progress);
-                return prog;
+
+                const reader = response.body.getReader();
+                const utf8Decoder = new TextDecoder('utf-8');
+
+                let message;
+                for (;;) {
+                    let { done, value } = await reader.read();
+                    let chunk = value ? utf8Decoder.decode(value) : '';
+                    let pieces = chunk.split('\n');
+
+                    while (pieces.length > 0) {
+                        let piece = pieces.pop();
+                        if (piece) {
+                            try {
+                                message = JSON.parse(piece);
+                                break;
+                            }
+                            catch (e) {
+                                // do nothing
+                            }
+                        }
+                    }
+
+                    if (message && message.status === 'in-progress') {
+                        setProgress([message.p, message.n]);
+                        progress.set('progress', [message.p, message.n]);
+                        this.trigger('notification', progress);
+                    }
+
+                    if (done)
+                        break;
+                }
+
+                if ( ! message || message.status !== 'OK') {
+                    let cause = (message && message.message) ? message.message : 'Unexpected error';
+                    let error = { message: 'Unable to open', cause: cause, type: 'error' };
+                    progress.dismiss();
+                    this._notify(error);
+                    throw error;
+                }
+                else {
+                    progress.dismiss();
+                    let iid = message.url.match(/([a-z0-9-]+)\/$/)[1];
+                    if (this.attributes.blank && this._dataSetModel.attributes.edited === false)
+                        host.navigate(iid);
+                    else
+                        host.openWindow(iid);
+                }
             });
         }
         else {
 
-            let open = new coms.Messages.OpenRequest(filePath);
+            let open = new coms.Messages.OpenRequest(file);
             let request = new coms.Messages.ComsMessage();
             request.payload = open.toArrayBuffer();
             request.payloadType = 'OpenRequest';
@@ -185,11 +235,11 @@ const Instance = Backbone.Model.extend({
             return coms.send(request).then((response) => {
                     progress.dismiss();
                     let info = coms.Messages.OpenProgress.decode(response.payload);
-                    let filePath = info.path;
-                    let ext = path.extname(filePath);
+                    let file = info.path;
+                    let ext = path.extname(file);
 
-                    this.set('path', filePath);
-                    this.set('title', path.basename(filePath, ext));
+                    this.set('path', file);
+                    this.set('title', path.basename(file, ext));
                     return this._retrieveInfo();
                 }, (error) => {
                     progress.dismiss();

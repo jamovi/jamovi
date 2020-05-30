@@ -262,8 +262,6 @@ def replace_single_equals(formula):
 
 def read(data, path, prog_cb):
 
-    data.title = os.path.splitext(os.path.basename(path))[0]
-
     with ZipFile(path, 'r') as zip:
         manifest = zip.read('META-INF/MANIFEST.MF').decode('utf-8')
 

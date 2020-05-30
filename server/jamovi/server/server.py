@@ -187,6 +187,37 @@ class EntryHandler(RequestHandler):
         self.redirect('/%s/%s' % (instance.id, query))
 
 
+class OpenHandler(RequestHandler):
+
+    def initialize(self, session):
+        self._session = session
+
+    async def get(self):
+        instance = None
+        url = self.get_query_argument('url')
+        title = self.get_query_argument('title', None)
+        temp = self.get_query_argument('temp', '0')
+
+        try:
+            instance = self._session.create()
+            async for progress in instance.open(url, title, temp == '1'):
+                self._write('progress', progress)
+        except Exception as e:
+            self._write(e)
+        else:
+            self._write('OK', redirect=instance.id)
+
+    def _write(self, status, progress=None, redirect=None):
+        if status == 'OK':
+            self.write(f'{{"status":"OK","url":"{redirect}/"}}\n')
+        elif isinstance(status, BaseException):
+            self.write(f'{{"status":"error","message":"{ status }"}}\n')
+        else:
+            p, n = progress
+            self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
+        self.flush()
+
+
 class StatusHandler(RequestHandler):
 
     def initialize(self, session):
@@ -409,6 +440,7 @@ class Server:
 
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
+            (r'/open', OpenHandler, { 'session': self._session }),
             (r'/version', SingleFileHandler, {
                 'path': version_path }),
             (r'/([a-f0-9-]+)/status', StatusHandler, { 'session': self._session }),

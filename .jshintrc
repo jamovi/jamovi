@@ -2,7 +2,7 @@
     "globalstrict": true,
     "browserify": true,
     "laxbreak": true,
-    "esversion" : 8,
+    "esversion" : 9,
     "multistr": true,
     "mocha": true,
     "globals": {
