@@ -1,4 +1,3 @@
-
 apa7_cls = r'''
 %%
 %% This is file `apa7.cls',
@@ -376,23 +375,6 @@ apa7_cls = r'''
 \def\acksname{Author Note}
 \def\keywordname{Keywords}
 \def\notesname{Footnotes}
-
-\AtBeginDocument{% so that we know what language is active in babel
-
-                           % Unfortunately, because babel is built into the format
-                           % in modern distributions, \iflanguage is defined and
-                           % \languagename contains whichever language happens to be
-                           % last in the definition list, whether or not the babel
-                           % package is loaded by the current document
-
-\@ifpackageloaded{babel}% this is defined only if the user requested loading babel
-  {\def\@apaSeven@langfile{config/APA7\languagename.txt}}
-  {\def\@apaSeven@langfile{config/APA7american.txt}}
- \InputIfFileExists{\@apaSeven@langfile}{}{%
-  \ClassInfo{apa7}{Language definition file \@apaSeven@langfile\space not found}
- }%
-}
-
 
 \@ifundefined{def@babel}{}{% -- thp 2005/07/23
  \RequirePackage{babel}    % -- thp 2005/07/23, removed options 2005/12/28
