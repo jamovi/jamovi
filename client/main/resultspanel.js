@@ -597,6 +597,9 @@ const ResultsPanel = Backbone.View.extend({
                     ]
                 };
 
+                if (part === '')
+                    options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
+
                 host.showSaveDialog(options).then((result) => {
                     if (result.canceled)
                         return;
