@@ -17,9 +17,6 @@ log = logging.getLogger(__name__)
 
 async def latexify(content, out, resolve_image):
 
-    f_fn = 'article'
-    r_fn = 'article'
-
     now = localtime()[0:6]
 
     with ZipFile(out, 'w') as z:
@@ -241,7 +238,7 @@ async def latexify(content, out, resolve_image):
 {prefix}\\label{{fig:Figure_{fig_no}}}
 % (the following arrangement follows APA7; if you want to use APA6, the caption- and label-lines have to be moved to after the includegraphics-line)
 {error_message}\\centering
-{prefix}\\includegraphics[maxsize={{\\columnwidth}}{{textheight}}]{{{i_fn}}}
+{prefix}\\includegraphics[width=\\columnwidth]{{{i_fn}}}
 {prefix}\\end{{figure}}\
 '''.format(fig_no=i + 1, error_message=error_message, prefix=prefix, i_fn=i_fn)
             body = body.replace(idta[i], irpl)
@@ -296,7 +293,7 @@ async def latexify(content, out, resolve_image):
             # end: for i in range(len(rref))
             # only write a bib-file and generate text for statstical analyses section if there are references in the original HTML
             if len(rref) > 0:
-                zi = ZipInfo(f_fn.replace('.html', '.bib'), now)
+                zi = ZipInfo('article.bib', now)
                 with z.open(zi, 'w') as f:
                     f.write(rbib.encode('utf-8'))
                     f.close()
@@ -354,7 +351,7 @@ async def latexify(content, out, resolve_image):
                 + '\\usepackage[british]{babel}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath}\n\\usepackage{graphicx}\n\\usepackage[export]{adjustbox}\n\\usepackage{csquotes}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\DeclareLanguageMapping{british}{british-apa}\n'
-                + ('' if len(rdta) > 0 else '%') + '\\addbibresource{' + r_fn.replace('.html', '.bib') + '}\n\n'
+                + ('' if len(rdta) > 0 else '%') + '\\addbibresource{article.bib}\n\n'
                 + '\\title{APA-Style Manuscript with jamovi Results}\n\\shorttitle{jamovi Results}\n\\author{Full Name}\n\\leftheader{Last name}\n\\affiliation{Your Affilitation}\n'
                 + '% addORCIDlink is only available from apa7\n\\authornote{\\addORCIDlink{Your Name}{0000-0000-0000-0000}\\\\\nMore detailed information about how to contact you.\\\\\nCan continue over several lines.\n}\n\n'
                 + '\\abstract{Your abstract here.}\n\\keywords{keyword 1, keyword 2}\n\n'
