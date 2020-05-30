@@ -36,6 +36,7 @@ let constructMenu = doNothing;
 let copyToClipboard = doNothing;
 let pasteFromClipboard = doNothing;
 let showSaveDialog = doNothing;
+let showOpenDialog = doNothing;
 let openUrl = doNothing;
 let openRecorder = doNothing;
 
@@ -342,6 +343,42 @@ else {
     pasteFromClipboard = () => {
         // should do something
     };
+
+    showOpenDialog = (window, options) => {
+        if (options === undefined) {
+            options = window;
+            window = undefined;
+        }
+
+        if ( ! showOpenDialog.browser) {
+            showOpenDialog.browser = document.createElement('input');
+            showOpenDialog.browser.setAttribute('type', 'file');
+            showOpenDialog.browser.style.display = 'none';
+            document.body.appendChild(showOpenDialog.browser);
+        }
+        if (showOpenDialog.cancelPrevious)
+            showOpenDialog.cancelPrevious();
+
+        if (options.filters) {
+            let exts = options.filters;
+            exts = exts.map(format => format.extensions);
+            exts = exts.reduce((a, v) => a.concat(v), []);
+            exts = exts.map((ext) => '.' + ext);
+            exts = exts.join(',');
+            showOpenDialog.browser.setAttribute('accept', exts);
+        } else {
+            showOpenDialog.browser.removeAttribute('accept');
+        }
+
+        return new Promise((resolve, reject) => {
+            showOpenDialog.browser.click();
+            showOpenDialog.cancelPrevious = reject;
+            showOpenDialog.browser.addEventListener('change', function(event) {
+                delete showOpenDialog.cancelPrevious;
+                resolve(this.files);
+            }, { once: true }, false);
+        });
+    };
 }
 
 module.exports = {
@@ -368,6 +405,7 @@ module.exports = {
     copyToClipboard,
     pasteFromClipboard,
     showSaveDialog,
+    showOpenDialog,
     os,
     openUrl,
     openRecorder,

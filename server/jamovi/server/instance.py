@@ -18,6 +18,7 @@ from .utils import FileEntry
 from .utils import CSVParser
 from .utils import HTMLParser
 from .utils import ssl_context
+from .utils.stream import ProgressStream
 from .modules import Modules
 from .instancemodel import InstanceModel
 from . import formatio
@@ -39,6 +40,7 @@ from time import monotonic
 from itertools import islice
 from urllib import parse
 from aiohttp import ClientSession
+from asyncio import ensure_future as create_task
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -608,6 +610,45 @@ class Instance:
             self._coms.send(response, self._instance_id, request)
         except Exception as e:
             self._coms.send_error('Unable to save', str(e), self._instance_id, request)
+
+    def open(self, path, title=None, is_temp=False):
+
+        norm_path = Instance._normalise_path(path)
+        is_example = path.startswith('{{Examples}}')
+        if is_example:
+            is_temp = True  # don't add to recents, etc.
+
+        if is_example and self._perms.open.examples is False:
+            raise PermissionError()
+        if path != '' and not is_example and self._perms.open.local is False:
+            raise PermissionError()
+
+        self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
+        dataset = DataSet.create(self._mm)
+        self._data.dataset = dataset
+
+        stream = ProgressStream()
+
+        async def read_file(stream):
+            try:
+                ioloop = asyncio.get_event_loop()
+
+                def prog_cb(p):
+                    progress = (1000 * p, 1000)
+                    ioloop.call_soon_threadsafe(
+                        functools.partial(
+                            stream.write, progress))
+
+                result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title)
+                stream.set_result(result)
+            except Exception as e:
+                stream.set_exception(e)
+            else:
+                if path != '' and not is_temp:
+                    self._add_to_recents(path, self._data.title)
+
+        create_task(read_file(stream))
+        return stream
 
     async def _on_open(self, request):
 
