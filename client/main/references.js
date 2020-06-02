@@ -142,8 +142,6 @@ class References extends HTMLElement {
         }));
 
         for (let analysis of this._analyses) {
-            if (analysis.deleted)
-                continue;
             modules.add(analysis.ns);
             for (let ref of analysis.references) {
                 refs.push(this.resolve(analysis.ns, ref));
