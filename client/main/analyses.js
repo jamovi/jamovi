@@ -22,9 +22,9 @@ const Analysis = function(id, name, ns) {
     this.isReady = false;
     this.incAsText = false;
     this.references = [ ];
+    this.index = -1;
 
     this.revision = 0;
-    this.deleted = false;
     this.missingModule = false;
     this.arbitaryCode = false;
     this.enabled = false;
@@ -68,11 +68,10 @@ Analysis.prototype.setup = function(values) {
 Analysis.prototype.setResults = function(res) {
     this.results = res.results;
     this.incAsText = res.incAsText;
-    this.syntax = res.syntax;
     this.references = res.references;
     if (this.options)
         this.options.setValues(res.options);
-    if (this.deleted === false && this._parent !== null)
+    if (this._parent !== null)
         this._parent._notifyResultsChanged(this);
 };
 
@@ -80,7 +79,7 @@ Analysis.prototype.setOptions = function(values) {
     if (this.options.setValues(values)) {
         this.enabled = true;
         this.revision++;
-        if (this.deleted === false && this._parent !== null)
+        if (this._parent !== null)
             this._parent._notifyOptionsChanged(this);
     }
 };
@@ -89,7 +88,7 @@ Analysis.prototype.renameColumns = function(columnRenames) {
     for (let i = 0; i < columnRenames.length; i++)
         this.options.renameColumn(columnRenames[i].oldName, columnRenames[i].newName);
     this.revision++;
-    if (this.deleted === false && this._parent !== null)
+    if (this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };
 
@@ -97,7 +96,7 @@ Analysis.prototype.renameLevels = function(levelRenames) {
     for (let i = 0; i < levelRenames.length; i++)
         this.options.renameLevel(levelRenames[i].variable, levelRenames[i].oldLabel, levelRenames[i].newLabel);
     this.revision++;
-    if (this.deleted === false && this._parent !== null)
+    if (this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };
 
@@ -105,7 +104,7 @@ Analysis.prototype.clearColumnUse = function(columnNames) {
     for (let i = 0; i < columnNames.length; i++)
         this.options.clearColumnUse(columnNames[i]);
     this.revision++;
-    if (this.deleted === false && this._parent !== null)
+    if (this._parent !== null)
         this._parent._notifyOptionsChanged(this);
 };
 
@@ -141,87 +140,83 @@ const Analyses = Backbone.Model.extend({
         dataSetModel : null
     },
     hasActiveAnalyses() {
-        for (let i = 0; i < this._analyses.length; i++) {
-            if (this._analyses[i].deleted === false)
-                return true;
-        }
-        return false;
+        return this._analyses.length > 0;
     },
     count() {
-        return this._analyses.reduce((acc, cur) => acc + (cur.deleted ? 0 : 1), 0);
+        return this._analyses.length;
     },
-    create(name, ns, title, index) {
-        let analysis = new Analysis(this._nextId++, name, ns);
-        analysis.enabled = true;
-        analysis._parent = this;
+    create(options) {
+        let name = options.name;
+        let ns = options.ns;
+        let id = options.id || this._nextId++;
+        let index = options.index !== undefined ? options.index : this._analyses.length;
 
-        if (index !== undefined)
-            this._analyses.splice(index, 0, analysis);
-        else
-            this._analyses.push(analysis);
+        if (options.id && options.id >= this._nextId)
+            this._nextId = options.id + 1;
 
-        let results = {
-            results: {
-                name: '',
-                type: 'group',
-                title: title ? title : name,
-                visible: 2,
-                group: { elements: [
-                    {
-                        name: '',
-                        type: 'image',
-                        title: '',
-                        visible: 2,
-                        image: {
-                            path: '',
-                            width: 500,
-                            height: 100,
-                        },
-                        status: 2,
-                        error: null,
+        let analysis = new Analysis(id, name, ns);
+        analysis.index = index;
+        analysis.enabled = (options.enabled === undefined ? true : options.enabled);
+
+        this._analyses.splice(index, 0, analysis);
+        if (index < this._analyses.length - 1) {
+            for (let i = 0; i < this._analyses.length; i++)
+                this._analyses[i].index = i;
+        }
+
+        if (options.options)
+            analysis.setup(options.options);
+
+        let results = options.results || {
+            name: '',
+            type: 'group',
+            title: options.title || name,
+            visible: 2,
+            group: { elements: [
+                {
+                    name: '',
+                    type: 'image',
+                    title: '',
+                    visible: 2,
+                    image: {
+                        path: '',
+                        width: 500,
+                        height: 100,
                     },
-                ]},
-                status: 2,
-                error: null,
-                index: (index !== undefined ? index + 1 : undefined),  // indexed from 1
-            },
-            incAsText: '',
-            syntax: '',
-            references: [ ],
+                    status: 2,
+                    error: null,
+                },
+            ]},
+            status: 2,
+            error: null,
         };
 
-        analysis.setResults(results);
-        return analysis;
-    },
-    addAnalysis(name, ns, id, values, results, incAsText, syntax, references) {
-        let analysis = new Analysis(id, name, ns);
-        analysis._parent = this;
-        this._analyses.push(analysis);
-        analysis.setup(values);
+        results.index = index + 1;  // indexed from 1
+
         analysis.setResults({
+            options: options.options,
+            incAsText: options.incAsText || '',
+            references: options.references || [ ],
             results: results,
-            options: values,
-            incAsText: incAsText,
-            syntax: syntax,
-            references: references,
         });
 
-        if (this._nextId <= id)
-            this._nextId = id + 1;
+        analysis._parent = this;
+        this._notifyAnalysisCreated(analysis);
 
         return analysis;
     },
     deleteAnalysis(id) {
-        let analysis = this.get(id);
-        analysis.deleted = true;
-        this._notifyOptionsChanged(analysis);
-        this._notifyResultsChanged(analysis);
+        let index = this.indexOf(id);
+        let analysis = this._analyses[index];
+        this._analyses.splice(index, 1);
+        for (let i = 0; i < this._analyses.length; i++)
+            this._analyses[i].index = i;
+        this._notifyAnalysisDeleted(analysis);
     },
     deleteAll() {
-        for (let analysis of this) {
-            if ( ! analysis.deleted)
-                this.deleteAnalysis(analysis.id);
-        }
+        let analyses = this._analyses.slice().reverse();
+        for (let analysis of analyses)
+            this.deleteAnalysis(analysis.id);
     },
     get(id) {
         for (let i = 0; i < this._analyses.length; i++) {
@@ -244,6 +239,12 @@ const Analyses = Backbone.Model.extend({
     },
     _notifyOptionsChanged(analysis) {
         this.trigger('analysisOptionsChanged', analysis);
+    },
+    _notifyAnalysisCreated(analysis) {
+        this.trigger('analysisCreated', analysis);
+    },
+    _notifyAnalysisDeleted(analysis) {
+        this.trigger('analysisDeleted', analysis);
     },
 });
 

@@ -58,7 +58,11 @@ const ResultsPanel = Backbone.View.extend({
         if ('mode' in args)
             this.mode = args.mode;
 
-        this.model.analyses().on('analysisResultsChanged', this._resultsEvent, this);
+        let analyses = this.model.analyses();
+        analyses.on('analysisCreated', this._analysisCreated, this);
+        analyses.on('analysisDeleted', this._analysisDeleted, this);
+        analyses.on('analysisResultsChanged', this._resultsEvent, this);
+
         this.model.on('change:selectedAnalysis', this._selectedChanged, this);
 
         window.addEventListener('message', event => this._messageEvent(event));
@@ -83,15 +87,7 @@ const ResultsPanel = Backbone.View.extend({
         this.el.appendChild(this._refsTable);
 
         this.el.addEventListener('contextmenu', (event) => {
-            let thereAreSomeAnalyses = false;
-            for (let id in this.resources) {
-                let analysis = this.resources[id].analysis;
-                if ( ! analysis.deleted) {
-                    thereAreSomeAnalyses = true;
-                    break;
-                }
-            }
-            if (thereAreSomeAnalyses) {
+            if (Object.keys(this.resources).length > 0) {
                 this._showMenu(-1, { entries: [ ], pos: { left: event.pageX, top: event.pageY }});
                 this.el.classList.add('all-selected');
             }
@@ -126,96 +122,99 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable.update();
         this._updateRefsMode();
     },
-    _resultsEvent(analysis) {
+    _analysisCreated(analysis) {
 
-        if (this._ready)
-            this._refsTable.update();
+        this._updateRefs(analysis);
 
-        let refNums = this._refsTable.getNumbers();
-        let modulesAffected = [ ];
+        let element = `
+            <iframe
+                data-id="${ analysis.id }"
+                src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/"
+                class="analysis"
+                sandbox="allow-scripts allow-same-origin"
+                scrolling="no"
+                style="border: 0 ; height : 0 ;"
+            ></iframe>`;
 
-        for (let name in this._oldNums) {
-            if ( ! _.isEqual(refNums[name], this._oldNums[name])) {
-                modulesAffected.push(name);
-            }
+        let $container = $('<div class="jmv-results-container"></div>');
+
+        let $after = $(this._refsTable);
+        if (analysis.results.index > 0) {
+            let $siblings = this.$el.children('.jmv-results-container');
+            let index = analysis.results.index - 1;
+            if (index < $siblings.length)
+                $after = $siblings[index];
         }
-        this._oldNums = refNums;
 
+        $container.insertBefore($after);
+
+        let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
+        let $iframe = $(element).appendTo($container);
+        let iframe = $iframe[0];
+
+        let selected = this.model.get('selectedAnalysis');
+        if (selected !== null && analysis.id === selected.id)
+            $container.attr('data-selected', '');
+
+        let resources = {
+            id : analysis.id,
+            analysis : analysis,
+            iframe : iframe,
+            $iframe : $iframe,
+            $container : $container,
+            loaded : false,
+        };
+
+        this.resources[analysis.id] = resources;
+
+        $iframe.on('load', () => {
+            this._sendResults(resources);
+            resources.loaded = true;
+        });
+
+        $cover.on('click', event => this._resultsClicked(event, analysis));
+        $cover.on('contextmenu', event => {
+            this._resultsRightClicked(event.offsetX, event.offsetY, analysis);
+            event.preventDefault();
+            return false;
+        });
+    },
+    _analysisDeleted(analysis) {
+        this._updateRefs();
         let resources = this.resources[analysis.id];
+        let $container = resources.$container;
+        $container.css('height', '0');
+        $container.one('transitionend', () => $container.remove());
+        delete this.resources[analysis.id];
+    },
+    _updateRefs(exclude) {
+        if ( ! this._ready)
+            return;
 
-        if (resources === undefined) {
+        let modulesWithRefChanges = [ ];
 
-            let element = `
-                <iframe
-                    data-id="${ analysis.id }"
-                    src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/"
-                    class="analysis"
-                    sandbox="allow-scripts allow-same-origin"
-                    scrolling="no"
-                    style="border: 0 ; height : 0 ;"
-                ></iframe>`;
-
-            let $container = $('<div class="jmv-results-container"></div>');
-
-            let $after = $(this._refsTable);
-            if (analysis.results.index > 0) {
-                let $siblings = this.$el.children('.jmv-results-container');
-                let index = analysis.results.index - 1;
-                if (index < $siblings.length)
-                    $after = $siblings[index];
-            }
-
-            $container.insertBefore($after);
-
-            let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
-            let $iframe = $(element).appendTo($container);
-            let iframe = $iframe[0];
-
-            let selected = this.model.get('selectedAnalysis');
-            if (selected !== null && analysis.id === selected.id)
-                $container.attr('data-selected', '');
-
-            resources = {
-                id : analysis.id,
-                analysis : analysis,
-                iframe : iframe,
-                $iframe : $iframe,
-                $container : $container,
-                loaded : false,
-            };
-
-            this.resources[analysis.id] = resources;
-
-            $iframe.on('load', () => {
-                this._sendResults(resources);
-                resources.loaded = true;
-            });
-
-            $cover.on('click', event => this._resultsClicked(event, analysis));
-            $cover.on('contextmenu', event => {
-                this._resultsRightClicked(event.offsetX, event.offsetY, analysis);
-                event.stopPropagation();
-            });
-        }
-        else if (analysis.deleted) {
-            let $container = resources.$container;
-            $container.css('height', '0');
-            $container.one('transitionend', () => $container.hide());
-        }
-        else {
-
-            resources.analysis = analysis;
-            if (resources.loaded)
-                this._sendResults(resources);
+        let oldNums = this._refsTable.getNumbers();
+        this._refsTable.update();
+        let refNums = this._refsTable.getNumbers();
+        for (let name in oldNums) {
+            if ( ! _.isEqual(refNums[name], oldNums[name]))
+                modulesWithRefChanges.push(name);
         }
 
-        for (let ana of this.model.analyses()) {
-            if (ana !== analysis && modulesAffected.includes(ana.ns)) {
-                let res = this.resources[ana.id];
+        for (let analysis of this.model.analyses()) {
+            if (analysis !== exclude && modulesWithRefChanges.includes(analysis.ns)) {
+                let res = this.resources[analysis.id];
                 if (res.loaded)
                     this._sendRefNumbers(res);
             }
         }
+    },
+    _resultsEvent(analysis) {
+        this._updateRefs(analysis);
+        let resources = this.resources[analysis.id];
+        resources.analysis = analysis;
+        if (resources.loaded)
+            this._sendResults(resources);
     },
     _updateAllRefNumbers() {
         for (let id in this.resources) {
@@ -273,8 +272,6 @@ const ResultsPanel = Backbone.View.extend({
             let resources = this.resources[id];
             if (resources === undefined)
                 continue;
-            if (resources.analysis.deleted)
-                continue;
             if (resources.loaded === false)
                 continue;
             this._sendResults(resources);
@@ -313,8 +310,6 @@ const ResultsPanel = Backbone.View.extend({
         }
     },
     _refsRightClicked(event) {
-
-        event.stopPropagation();
 
         let rect = this._refsTable.getBoundingClientRect();
         let left = rect.left + event.offsetX;
@@ -358,9 +353,6 @@ const ResultsPanel = Backbone.View.extend({
             let resources = this.resources[id];
             if (event.source !== resources.iframe.contentWindow)
                 continue;
-
-            if (resources.analysis.deleted)
-                return;
 
             let payload = event.data;
             let eventType = payload.type;
@@ -473,7 +465,6 @@ const ResultsPanel = Backbone.View.extend({
             options.fragment = true;
 
             let promises = Array.from(this.model.analyses())
-                .filter(analysis => ! analysis.deleted)
                 .map(analysis => analysis.id)
                 .map(id => this._getContent([ id ], options));
 
@@ -667,7 +658,7 @@ const ResultsPanel = Backbone.View.extend({
                 event.address = address;
             }
 
-            if (this._menuId > 0) {
+            if (this._menuId > 0 && this._menuId in this.resources) {
                 let message = { type: 'menuEvent', data: event };
                 this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
             }

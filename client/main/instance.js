@@ -34,7 +34,10 @@ const Instance = Backbone.Model.extend({
 
         this._analyses = new Analyses();
         this._analyses.set('dataSetModel', this._dataSetModel);
+
+        this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
+        this._analyses.on('analysisDeleted', this._analysisDeleted, this);
 
         this._settings.on('change:theme', event => this._themeChanged());
         this._settings.on('change:palette', event => this._paletteChanged());
@@ -47,6 +50,8 @@ const Instance = Backbone.Model.extend({
     },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
+        this._analyses.off('analysisCreated', this._analysisCreated, this);
+        this._analyses.off('analysisDeleted', this._analysisDeleted, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
@@ -517,15 +522,16 @@ const Instance = Backbone.Model.extend({
 
         let allWaits = info.analyses.map((analysisPB) => {
             let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
-            let analysis = this._analyses.addAnalysis(
-                analysisPB.name,
-                analysisPB.ns,
-                analysisPB.analysisId,
-                options,
-                analysisPB.results,
-                analysisPB.incAsText,
-                analysisPB.syntax,
-                analysisPB.references);
+            let analysis = this._analyses.create({
+                name: analysisPB.name,
+                ns: analysisPB.ns,
+                id: analysisPB.analysisId,
+                options: options,
+                results: analysisPB.results,
+                incAsText: analysisPB.incAsText,
+                references: analysisPB.references,
+                enabled: false,
+            });
             return analysis.ready;
         });
 
@@ -544,7 +550,7 @@ const Instance = Backbone.Model.extend({
 
         this._dataSetModel.set('edited', true);
 
-        let analysis = this._analyses.create(name, ns, title);
+        let analysis = this._analyses.create({ name, ns, title, enabled: true });
         this.set('selectedAnalysis', analysis);
 
         let request = this._constructAnalysisRequest(analysis, { });
@@ -557,26 +563,19 @@ const Instance = Backbone.Model.extend({
     duplicateAnalysis(dupliceeId) {
 
         let duplicee = this._analyses.get(dupliceeId);
-        let index = this._analyses.indexOf(duplicee.id) + 1;
-        let analysis = this._analyses.create(duplicee.name, duplicee.ns, duplicee.title, index);
-        let results = duplicee.results;
-        let options = duplicee.options.getValues();
-
-        results = Object.assign({}, results);
-        results.index = index + 1;
-
-        analysis.setup(options);
-        analysis.setResults({
-            results: results,
-            options: options,
+        let index = duplicee.index + 1;
+        let analysis = this._analyses.create({
+            name: duplicee.name,
+            ns: duplicee.ns,
+            index: index,
+            options: duplicee.options.getValues(),
+            results: duplicee.results,
             incAsText: duplicee.incAsText,
-            syntax: duplicee.syntax,
-            references: duplicee.references
+            references: duplicee.references,
         });
 
         let request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
         request.perform = 7; // DUPLICATE
-        request.index = index + 1;
         this._sendAnalysisRequest(request);
 
         return analysis;
@@ -598,6 +597,7 @@ const Instance = Backbone.Model.extend({
         request.ns = analysis.ns;
         request.revision = analysis.revision;
         request.enabled = analysis.enabled;
+        request.index = analysis.index + 1;
 
         if (options === undefined) {
             if (analysis.isReady)
@@ -621,6 +621,10 @@ const Instance = Backbone.Model.extend({
 
         coms.sendP(message);
     },
+    _analysisCreated(analysis) {
+        if (analysis.results.status !== 3)
+            this._runAnalysis(analysis);
+    },
     _runAnalysis(analysis, changed) {
 
         let coms = this.attributes.coms;
@@ -632,9 +636,13 @@ const Instance = Backbone.Model.extend({
         if (changed)
             request.changed = changed;
 
-        if (analysis.deleted)
-            request.perform = 6; // DELETE
-
+        this._sendAnalysisRequest(request);
+    },
+    _analysisDeleted(analysis) {
+        let coms = this.attributes.coms;
+        this._dataSetModel.set('edited', true);
+        let request = this._constructAnalysisRequest(analysis);
+        request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
     },
     _onReceive(message) {
@@ -646,6 +654,9 @@ const Instance = Backbone.Model.extend({
 
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
+
+            if ( ! analysis)  // deleted
+                return;
 
             let options = {};
             if (response.revision === analysis.revision)
@@ -659,7 +670,6 @@ const Instance = Backbone.Model.extend({
                     results: response.results,
                     options: options,
                     incAsText: response.incAsText,
-                    syntax: response.syntax,
                     references: response.references,
                 });
         }
