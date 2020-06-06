@@ -66,6 +66,7 @@ def start():  # run down below()
     slave = '--slave' in sys.argv
     stdin_slave = '--stdin-slave' in sys.argv
     start_wb = '--start-wb' in sys.argv
+    session_id = None
 
     if '--if=*' in sys.argv:
         host = ''
@@ -79,6 +80,8 @@ def start():  # run down below()
         elif arg.startswith('--spool='):
             spool_dir = arg.split('=')[1]
             conf.set('spool-dir', spool_dir)
+        elif arg.startswith('--session-id='):
+            session_id = arg.split('=')[1]
 
     sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0\n')
     sys.stdout.flush()
@@ -99,6 +102,7 @@ def start():  # run down below()
         server = Server(
             port,
             host=host,
+            session_id=session_id,
             slave=slave,
             stdin_slave=stdin_slave,
             debug=debug)
