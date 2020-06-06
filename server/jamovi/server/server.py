@@ -299,11 +299,17 @@ class Server:
     def __init__(self,
                  port,
                  host='127.0.0.1',
+                 session_id=None,
                  slave=False,
                  stdin_slave=False,
                  debug=False):
 
         self._session = None
+
+        if session_id is not None:
+            self._session_id = session_id
+        else:
+            self._session_id = str(uuid.uuid4())
 
         if port == 0:
             self._ports = [ 0, 0, 0 ]
@@ -425,12 +431,10 @@ class Server:
             version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
-        data_path = self._spool_dir
-        session_id = str(uuid.uuid4())
-        session_path = os.path.join(data_path, session_id)
+        session_path = os.path.join(self._spool_dir, self._session_id)
         os.makedirs(session_path)
 
-        self._session = Session(data_path, session_id)
+        self._session = Session(self._spool_dir, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
         self._session.add_session_listener(self._session_event)
         await self._session.start()
