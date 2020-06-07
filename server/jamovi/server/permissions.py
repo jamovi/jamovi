@@ -36,14 +36,14 @@ class Permissions:
             self.library.browseable = False
             self.library.addRemove = False
             self.library.showHide = False
-            self.browse.local = True
+            self.browse.local = False
             self.browse.examples = True
             self.open.local = True
             self.open.remote = False
             self.open.examples = True
             self.save.local = False
 
-            self.dataset.maxRows = 50000
+            self.dataset.maxRows = 10000
             self.dataset.maxColumns = 100
 
     def __init__(self):
