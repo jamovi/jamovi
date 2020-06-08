@@ -363,8 +363,16 @@ const Instance = Backbone.Model.extend({
                 let status = { message: '', cause: '' };
 
                 if (options.export) {
-                    status.message = 'Exported';
-                    status.cause = `Exported to '${ filename }'`;
+
+                    if (host.isElectron) {
+                        status.message = 'Exported';
+                        status.cause = `Exported to '${ filename }'`;
+                    }
+                    else {
+                        // don't display a notification when in the browser
+                        // because the user receives a download prompt
+                        status.path = info.path;
+                    }
                 }
                 else {
                     this.set('path', info.path);
@@ -397,10 +405,10 @@ const Instance = Backbone.Model.extend({
                 }
             }
 
-        }).then(message => {  // this stuff should get moved to the caller (so we can call this recursively)
-            if ( ! recursed && message) // hack!
-                this._notify(message);
-            return message;
+        }).then(status => {  // this stuff should get moved to the caller (so we can call this recursively)
+            if ( ! recursed && status && status.message) // hack!
+                this._notify(status);
+            return status;
         }).catch(error => {
             if ( ! recursed && error) // if not cancelled
                 this._notify({ message: 'Save failed', cause: error, type: 'error' });
