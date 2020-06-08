@@ -1010,8 +1010,8 @@ const BackstageModel = Backbone.Model.extend({
         if (mode === 'demo') {
             open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
             import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
-            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Saving data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
-            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: { title: 'Exporting data to your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
+            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView };
+            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView };
         }
         else {
             open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
@@ -1482,12 +1482,26 @@ const BackstageModel = Backbone.Model.extend({
             this.setSavingState(true);
             // instance.save() itself triggers notifications about the save
             // being successful (if you were wondering why it's not here.)
-            await this.instance.save(filePath, undefined, overwrite);
+            let status = await this.instance.save(filePath, { export: ! host.isElectron }, overwrite);
             this.setSavingState(false);
             if (this._savePromiseResolve !== null)
                 this._savePromiseResolve();
             this.set('activated', false);
             this.trigger('saved');
+
+            if ( ! host.isElectron) {
+                let source = path.basename(status.path);
+                let suffix = path.extname(source);
+                let target = `${ this.instance.attributes.title }${ suffix }`;
+                let url = `dl/${ source }?filename=${ target }`;
+
+                if ( ! this.requestSave.iframe) {
+                    this.requestSave.iframe = document.createElement('iframe');
+                    this.requestSave.iframe.style.display = 'none';
+                    document.body.appendChild(this.requestSave.iframe);
+                }
+                this.requestSave.iframe.src = url;
+            }
         }
         catch (e) {
             this.setSavingState(false);
