@@ -112,10 +112,15 @@ class Instance:
     def session(self):
         return self._session
 
-    @staticmethod
-    def _normalise_path(path):
+    def _normalise_path(self, path):
         nor_path = path
-        if path.startswith('{{Documents}}'):
+        if path.startswith('{{Temp}}'):
+            base = os.path.basename(path)
+            base, ext = os.path.splitext(base)
+            temp_path = self.temp_path()
+            os.makedirs(temp_path, exist_ok=True)
+            nor_path = mktemp(suffix=ext, dir=temp_path)
+        elif path.startswith('{{Documents}}'):
             nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
         elif path.startswith('{{Downloads}}'):
             nor_path = path.replace('{{Downloads}}', Dirs.downloads_dir())
@@ -144,8 +149,14 @@ class Instance:
 
         return nor_path
 
-    @staticmethod
-    def _virtualise_path(path):
+    def temp_path(self):
+        return os.path.join(self._instance_path, 'temp')
+
+    def _virtualise_path(self, path):
+
+        temp_path = self.temp_path()
+        if path.startswith(temp_path):
+            return path.replace(temp_path, '{{Temp}}')
 
         try:
             documents_dir = Dirs.documents_dir()
@@ -266,8 +277,8 @@ class Instance:
 
             try:
                 if path != '':
-                    path = Instance._virtualise_path(path)
-                    abs_path = Instance._normalise_path(path)
+                    path = self._virtualise_path(path)
+                    abs_path = self._normalise_path(path)
                 else:
                     path = '{{Documents}}'
                     abs_path = Dirs.documents_dir()
@@ -466,10 +477,14 @@ class Instance:
                 self._coms.send(response, self._instance_id, request, status=status)
 
             else:
-                path = Instance._normalise_path(path)
+                if path.startswith('{{Temp}}'):
+                    if self._perms.save.temp is False:
+                        raise PermissionError()
+                else:
+                    if self._perms.save.local is False:
+                        raise PermissionError()
 
-                if self._perms.save.local is False:
-                    raise PermissionError()
+                path = self._normalise_path(path)
 
                 file_exists = os.path.isfile(path)
                 if file_exists is False or request.overwrite is True:
@@ -514,7 +529,7 @@ class Instance:
 
     async def _on_save_content(self, request):
         path = request.filePath
-        path = Instance._normalise_path(path)
+        path = self._normalise_path(path)
         content = request.content
 
         if path.endswith('.zip'):  # latex bundle export
@@ -550,7 +565,7 @@ class Instance:
 
     async def _on_save_everything(self, request):
         path = request.filePath
-        path = Instance._normalise_path(path)
+        path = self._normalise_path(path)
         is_export = request.export
         content = request.content
 
@@ -577,7 +592,7 @@ class Instance:
         response = jcoms.SaveProgress()
         response.success = True
         response.title = self._data.title
-        response.path = Instance._virtualise_path(path)
+        response.path = self._virtualise_path(path)
         response.saveFormat = self._data.save_format
         self._coms.send(response, self._instance_id, request)
 
@@ -586,7 +601,7 @@ class Instance:
 
     async def _on_save_part(self, request):
         path = request.filePath
-        path = Instance._normalise_path(path)
+        path = self._normalise_path(path)
         part = request.part
 
         segments = part.split('/')
@@ -613,7 +628,7 @@ class Instance:
 
     def open(self, path, title=None, is_temp=False):
 
-        norm_path = Instance._normalise_path(path)
+        norm_path = self._normalise_path(path)
         is_example = path.startswith('{{Examples}}')
         if is_example:
             is_temp = True  # don't add to recents, etc.
@@ -722,8 +737,8 @@ class Instance:
                 was_downloaded = True
 
             else:
-                norm_path = Instance._normalise_path(path)
-                virt_path = Instance._virtualise_path(path)
+                norm_path = self._normalise_path(path)
+                virt_path = self._virtualise_path(path)
                 is_example = path.startswith('{{Examples}}')
 
                 if is_example and self._perms.open.examples is False:
@@ -854,7 +869,7 @@ class Instance:
 
                 path = self._paths[self._i]
 
-                norm_path = Instance._normalise_path(path)
+                norm_path = self._normalise_path(path)
                 name = os.path.splitext(os.path.basename(path))[0]
 
                 model = InstanceModel(instance)
@@ -1004,7 +1019,7 @@ class Instance:
 
         if has_dataset:
             response.title = self._data.title
-            response.path = Instance._virtualise_path(self._data.path)
+            response.path = self._virtualise_path(self._data.path)
             response.saveFormat = self._data.save_format
             response.edited = self._data.is_edited
             response.blank = self._data.is_blank
@@ -2577,7 +2592,7 @@ class Instance:
         else:
             title = os.path.basename(path)
             location = os.path.dirname(path)
-            location = Instance._virtualise_path(location)
+            location = self._virtualise_path(location)
 
         recents.insert(0, { 'name': title, 'path': path, 'location': location })
         recents = recents[0:5]

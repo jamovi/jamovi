@@ -32,6 +32,7 @@ class Permissions:
             self.open.remote = True
             self.open.examples = True
             self.save.local = True
+            self.save.temp = True
         elif app_mode == 'demo':
             self.library.browseable = False
             self.library.addRemove = False
@@ -42,6 +43,7 @@ class Permissions:
             self.open.remote = False
             self.open.examples = True
             self.save.local = False
+            self.save.temp = True
 
             self.dataset.maxRows = 10000
             self.dataset.maxColumns = 100
@@ -65,6 +67,7 @@ class Permissions:
 
         self.save = AttrDict({
             'local': False,
+            'temp': False
         })
 
         self.dataset = AttrDict({
