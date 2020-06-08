@@ -1161,7 +1161,7 @@ const BackstageModel = Backbone.Model.extend({
                     if (result.canceled)
                         return;
                     let filePath = result.filePath.replace(/\\/g, '/');
-                    this.requestSave(filePath, true);
+                    this.requestSave(filePath, { overwrite: true });
                 });
             }
         }
@@ -1226,7 +1226,7 @@ const BackstageModel = Backbone.Model.extend({
         this.requestSave(filePath);
     },
     tryExport: function(filePath, type) {
-        this.requestExport(filePath);
+        this.requestSave(filePath, { export: true });
     },
     setCurrentDirectory: function(wdType, dirPath, type) {
         if (dirPath === '')
@@ -1388,7 +1388,7 @@ const BackstageModel = Backbone.Model.extend({
         this.instance.import(paths)
             .then(deactivate, undefined, deactivate);
     },
-    externalRequestSave: function(filePath, overwrite) {
+    externalRequestSave: function(filePath, options) {
 
         // can be called as externalRequestSave(filePath, overwrite), externalRequestSave(filePath), externalRequestSave(), externalRequestSave(overwrite)
 
@@ -1400,7 +1400,7 @@ const BackstageModel = Backbone.Model.extend({
             throw 'This method can only be called from outside of backstage.';
 
         if (this.instance.attributes.path)
-            return this.requestSave(this.instance.attributes.path, true);
+            return this.requestSave(this.instance.attributes.path, { overwrite: true });
 
         let rej;
         let prom = new Promise((resolve, reject) => {
@@ -1410,7 +1410,7 @@ const BackstageModel = Backbone.Model.extend({
             this._savePromiseResolve = null;
         });
 
-        this.requestSave(filePath, overwrite).catch(() => {
+        this.requestSave(filePath, options).catch(() => {
             this.once('change:activated', () => {
                 if (this._savePromiseResolve !== null) {
                     this._savePromiseResolve = null;
@@ -1421,21 +1421,6 @@ const BackstageModel = Backbone.Model.extend({
 
         return prom;
     },
-    requestExport: function(filePath, overwrite) {
-        let options = { export: true };
-        this.setSavingState(true);
-        this.instance.save(filePath, options, overwrite)
-            .then(() => {
-                this.setSavingState(false);
-                this.setCurrentDirectory('main', path.dirname(filePath));
-                this.set('activated', false);
-            }).catch(() => {
-                this.setSavingState(false);
-                this.set('activated', true);
-                this.set('operation', 'export');
-            });
-    },
-
     setSavingState: function(saving) {
         let $button = $(document).find('.silky-bs-fslist-browser-save-button');
         if ( ! $button)
@@ -1453,7 +1438,13 @@ const BackstageModel = Backbone.Model.extend({
             $saveIcon.removeClass('saving-file');
         }
     },
-    async requestSave(filePath, overwrite=false) {
+    async requestSave(filePath, options) {
+
+        if ( ! options)
+            options = { };
+
+        if ( ! host.isElectron)
+            options.export = true;
 
         // if filePath is not specified then the current opened path is used.
         // if overwrite is false and the specified file already exists a popup asks for overwrite.
@@ -1469,7 +1460,7 @@ const BackstageModel = Backbone.Model.extend({
                 // particular format
                 // it follows that when saveFormat isn't empty, the saveAs
                 // shouldn't appear either on save, or on save failure
-                overwrite = true;
+                options.overwrite = true;
             }
             else {
                 this.set('activated', true);
@@ -1482,7 +1473,7 @@ const BackstageModel = Backbone.Model.extend({
             this.setSavingState(true);
             // instance.save() itself triggers notifications about the save
             // being successful (if you were wondering why it's not here.)
-            let status = await this.instance.save(filePath, { export: ! host.isElectron }, overwrite);
+            let status = await this.instance.save(filePath, options);
             this.setSavingState(false);
             if (this._savePromiseResolve !== null)
                 this._savePromiseResolve();

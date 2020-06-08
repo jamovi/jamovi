@@ -252,7 +252,7 @@ const Instance = Backbone.Model.extend({
                 });
         }
     },
-    save(filePath, options, overwrite, recursed) {  // recursed argument is a hack
+    save(filePath, options, recursed) {  // recursed argument is a hack
 
         if (options === undefined)
             options = { export: false, part: '' };
@@ -264,15 +264,15 @@ const Instance = Backbone.Model.extend({
             options.part = '';
         if (options.format === undefined)
             options.format = '';
-        if (overwrite === undefined)
-            overwrite = false;
+        if (options.overwrite === undefined)
+            options.overwrite = false;
 
         let coms = this.attributes.coms;
 
         if ( ! filePath) {
             filePath = this.attributes.path;
             options.format = this.attributes.saveFormat;
-            overwrite = true;
+            options.overwrite = true;
         }
 
         return Promise.resolve().then(() => {
@@ -313,7 +313,7 @@ const Instance = Backbone.Model.extend({
 
             let save = new coms.Messages.SaveRequest(
                 filePath,
-                overwrite,
+                options.overwrite,
                 options.export,
                 options.part,
                 options.format);
@@ -393,15 +393,15 @@ const Instance = Backbone.Model.extend({
                 return status;
             }
             else {
-                if (overwrite === false && info.fileExists) {
-                    let response = window.confirm("The file '" + path.basename(filePath) + "' already exists. Overwrite this file?", 'Confirm overwite');
+                if (options.overwrite === false && info.fileExists) {
+                    let response = window.confirm(`The file '${ path.basename(filePath) }' already exists. Overwrite this file?`, 'Confirm overwite');
                     if (response)
-                        return this.save(filePath, options, true, true);
+                        return this.save(filePath, Object.assign({}, options, { overwrite: true }), true);
                     else
                         return Promise.reject();  // cancelled
                 }
                 else {
-                    Promise.reject("File save failed.");
+                    Promise.reject('File save failed.');
                 }
             }
 
