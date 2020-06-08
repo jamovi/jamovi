@@ -306,7 +306,10 @@ class Modules:
         module.is_sys = is_sys
         module.name = str(defn['name'])
         module.title = str(defn['title'])
-        module.description = str(defn['description'])
+        if 'description' in defn:
+            module.description = str(defn['description'])
+        else:
+            module.description = ''
 
         if path != '':
             module.path = path
@@ -346,7 +349,8 @@ class Modules:
         module.min_app_version = min_app_version
 
         module.authors = [ ]
-        module.authors.extend(defn['authors'])
+        if 'authors' in defn:
+            module.authors.extend(defn['authors'])
 
         if module.incompatible:
             return module
