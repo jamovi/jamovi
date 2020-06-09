@@ -319,13 +319,12 @@ const FSEntryBrowserView = SilkyView.extend({
 
         ////////////////////////////////////////////////
 
-        html += '   <div class="silky-bs-fslist-path-browser">';
-        if (this.model.get('multiselect'))
-            html += '       <div class="silky-bs-fslist-browser-check-button"></div>';
-        html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
-        html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
-
         if (this.model.attributes.browseable) {
+            html += '   <div class="silky-bs-fslist-path-browser">';
+            if (this.model.get('multiselect'))
+                html += '       <div class="silky-bs-fslist-browser-check-button"></div>';
+            html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
+            html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
             html += '       <div class="silky-bs-fslist-browse-button">';
             html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
             html += '           <span>Browse</span>';
@@ -340,7 +339,7 @@ const FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
-        if (host.isElectron) {
+        if (this.model.attributes.browseable) {
             if ( ! isSaving) {
                 let searchHtml = `<div class="searchbox">
                                 <div class="image"></div>
@@ -353,7 +352,7 @@ const FSEntryBrowserView = SilkyView.extend({
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        if (host.isElectron) {
+        if (this.model.attributes.browseable) {
 
             if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
                 setTimeout(() => {
@@ -897,7 +896,6 @@ const BackstageModel = Backbone.Model.extend({
     initialize : function(args) {
 
         this.instance = args.instance;
-        this._hasCurrentDirectory = false;
 
         this.instance.settings().on('change:recents',
             (event) => this._settingsChanged(event));
@@ -960,7 +958,7 @@ const BackstageModel = Backbone.Model.extend({
         this._pcImportListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcImportListModel);
 
-        this._pcSaveListModel = new FSEntryListModel();
+        this._pcSaveListModel = new FSEntryListModel({ browseable: host.isElectron });
         this._pcSaveListModel.clickProcess = 'save';
         this._pcSaveListModel.suggestedPath = null;
         this._pcSaveListModel.fileExtensions = [ { extensions: ['omv'], description: "jamovi file (.omv)" } ];
@@ -969,7 +967,7 @@ const BackstageModel = Backbone.Model.extend({
         this._pcSaveListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcSaveListModel);
 
-        this._pcExportListModel = new FSEntryListModel();
+        this._pcExportListModel = new FSEntryListModel({ browseable: host.isElectron });
         this._pcExportListModel.clickProcess = 'export';
         this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
@@ -1337,27 +1335,6 @@ const BackstageModel = Backbone.Model.extend({
     _placeChanged : function() {
         if (this.attributes.place !== '')
             this.instance.settings().setSetting('openPlace', this.attributes.place);
-    },
-    uploadFile: function(file) {
-
-        let data = new FormData();
-        data.append('file', file);
-
-        let url = this.get('hostBaseUrl') + 'upload';
-
-        $.ajax({
-            url : url,
-            type: 'POST',
-            data: data,
-            xhr: () => {
-                let xhr = $.ajaxSettings.xhr();
-                xhr.upload.addEventListener('progress', this.progressHandler);
-                return xhr;
-            },
-            processData: false,
-            contentType: false,
-            cache: false
-        });
     },
     async requestOpen(filePath) {
 
