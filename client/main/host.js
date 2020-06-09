@@ -255,6 +255,8 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
 }
 else {
 
+    isElectron = false;
+
     let mainPort = window.location.port;
     if (mainPort) {
         mainPort = parseInt(mainPort);
