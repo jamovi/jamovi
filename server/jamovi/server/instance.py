@@ -558,8 +558,10 @@ class Instance:
             with open(path, 'wb') as file:
                 file.write(content)
 
+        path = self._virtualise_path(path)
+
         response = jcoms.SaveProgress()
-        response.path = request.filePath
+        response.path = path
         response.success = True
         self._coms.send(response, self._instance_id, request)
 
@@ -611,20 +613,18 @@ class Instance:
         analysis = self.analyses.get(analysisId)
 
         if analysis is not None:
-            result = analysis.save(path, address)
-            result.add_done_callback(lambda result: self._on_part_saved(request, result))
+            try:
+                await analysis.save(path, address)
+            except Exception as e:
+                self._coms.send_error('Unable to save', str(e), self._instance_id, request)
+            else:
+                path = self._virtualise_path(path)
+                response = jcoms.SaveProgress()
+                response.path = path
+                response.success = True
+                self._coms.send(response, self._instance_id, request)
         else:
             self._coms.send_error('Error', 'Unable to access analysis', self._instance_id, request)
-
-    def _on_part_saved(self, request, result):
-        try:
-            result.result()
-            response = jcoms.SaveProgress()
-            response.path = request.filePath
-            response.success = True
-            self._coms.send(response, self._instance_id, request)
-        except Exception as e:
-            self._coms.send_error('Unable to save', str(e), self._instance_id, request)
 
     def open(self, path, title=None, is_temp=False):
 
