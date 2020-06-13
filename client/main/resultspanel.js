@@ -574,8 +574,8 @@ const ResultsPanel = Backbone.View.extend({
                             export: true,
                             part: part,
                             partType: 'image',
-                        },
-                        true);
+                            overwrite: true,
+                        });
                 });
             }
             else {
@@ -601,8 +601,8 @@ const ResultsPanel = Backbone.View.extend({
                             name: 'Image',
                             export: true,
                             part: part,
-                        },
-                        true);
+                            overwrite: true,
+                        });
                 });
             }
         }
