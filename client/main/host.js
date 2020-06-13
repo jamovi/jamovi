@@ -39,6 +39,7 @@ let showSaveDialog = doNothing;
 let showOpenDialog = doNothing;
 let openUrl = doNothing;
 let openRecorder = doNothing;
+let triggerDownload = doNothing;
 
 let emitter = new events.EventEmitter();
 
@@ -381,6 +382,15 @@ else {
             }, { once: true }, false);
         });
     };
+
+    triggerDownload = async(url) => {
+        if ( ! triggerDownload.iframe) {
+            triggerDownload.iframe = document.createElement('iframe');
+            triggerDownload.iframe.style.display = 'none';
+            document.body.appendChild(triggerDownload.iframe);
+        }
+        triggerDownload.iframe.src = url;
+    };
 }
 
 module.exports = {
@@ -411,4 +421,5 @@ module.exports = {
     os,
     openUrl,
     openRecorder,
+    triggerDownload,
 };

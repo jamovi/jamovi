@@ -1462,13 +1462,7 @@ const BackstageModel = Backbone.Model.extend({
                 let suffix = path.extname(source);
                 let target = `${ this.instance.attributes.title }${ suffix }`;
                 let url = `dl/${ source }?filename=${ target }`;
-
-                if ( ! this.requestSave.iframe) {
-                    this.requestSave.iframe = document.createElement('iframe');
-                    this.requestSave.iframe.style.display = 'none';
-                    document.body.appendChild(this.requestSave.iframe);
-                }
-                this.requestSave.iframe.src = url;
+                await host.triggerDownload(url);
             }
         }
         catch (e) {

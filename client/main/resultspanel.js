@@ -17,6 +17,9 @@ const { flatten, unflatten } = require('../common/utils/addresses');
 
 require('./references');
 
+const path = require('path');
+
+
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
     initialize(args) {
@@ -516,7 +519,7 @@ const ResultsPanel = Backbone.View.extend({
             window.addEventListener('message', responseHandler);
         });
     },
-    _menuEvent(event) {
+    async _menuEvent(event) {
 
         if (event.op === 'copy') {
 
@@ -553,57 +556,78 @@ const ResultsPanel = Backbone.View.extend({
 
             let part = flatten(event.address);
 
-            if (event.target.type === 'Image') {
-                let options = {
-                    title: 'Export image',
-                    filters: [
-                        { name: 'PDF', extensions: [ 'pdf' ] },
-                        { name: 'PNG', extensions: [ 'png' ] },
-                        { name: 'SVG', extensions: [ 'svg' ] },
-                        { name: 'EPS', extensions: [ 'eps' ] }, ]
-                };
+            let saveOptions = {
+                name: 'Image',
+                export: true,
+                part: part,
+                partType: 'image',
+                overwrite: true,
+            };
 
-                host.showSaveDialog(options).then((result) => {
+            if (event.target.type === 'Image') {
+
+                if (host.isElectron) {
+                    let options = {
+                        title: 'Export image',
+                        filters: [
+                            { name: 'PDF', extensions: [ 'pdf' ] },
+                            { name: 'PNG', extensions: [ 'png' ] },
+                            { name: 'SVG', extensions: [ 'svg' ] },
+                            { name: 'EPS', extensions: [ 'eps' ] }, ]
+                    };
+                    let result = await host.showSaveDialog(options);
                     if (result.canceled)
                         return;
                     let filePath = result.filePath.replace(/\\/g, '/');
-                    return this.model.save(
-                        filePath,
-                        {
-                            name: 'Image',
-                            export: true,
-                            part: part,
-                            partType: 'image',
-                            overwrite: true,
-                        });
-                });
+                    await this.model.save(filePath, saveOptions);
+                }
+                else {
+                    let filePath = '{{Temp}}/temp.pdf';
+                    let status = await this.model.save(filePath, saveOptions);
+                    if (status.path) {
+                        let source = path.basename(status.path);
+                        let url = `dl/${ source }?filename=Plot.pdf`;
+                        await host.triggerDownload(url);
+                    }
+                }
             }
             else {
 
-                let options = {
-                    title: 'Export results',
-                    filters: [
-                        { name: 'PDF', extensions:  [ 'pdf' ] },
-                        { name: 'HTML', extensions: [ 'html', 'htm' ] },
-                    ]
+                let saveOptions = {
+                    name: 'Image',
+                    export: true,
+                    part: part,
+                    overwrite: true,
                 };
 
-                if (part === '')
-                    options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
+                if (host.isElectron) {
 
-                host.showSaveDialog(options).then((result) => {
+                    let options = {
+                        title: 'Export results',
+                        filters: [
+                            { name: 'PDF', extensions:  [ 'pdf' ] },
+                            { name: 'HTML', extensions: [ 'html', 'htm' ] },
+                        ]
+                    };
+
+                    if (part === '')
+                        options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
+
+                    let result = await host.showSaveDialog(options);
                     if (result.canceled)
                         return;
                     let filePath = result.filePath.replace(/\\/g, '/');
-                    return this.model.save(
-                        filePath,
-                        {
-                            name: 'Image',
-                            export: true,
-                            part: part,
-                            overwrite: true,
-                        });
-                });
+                    await this.model.save(filePath, saveOptions);
+                }
+                else {
+                    let filePath = '{{Temp}}/temp.html';
+                    let status = await this.model.save(filePath, saveOptions);
+                    if (status.path) {
+                        let source = path.basename(status.path);
+                        let url = `dl/${ source }?filename=Results.html`;
+                        await host.triggerDownload(url);
+                    }
+                }
             }
         }
         else if (event.op === 'duplicate') {
