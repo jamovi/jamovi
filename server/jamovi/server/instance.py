@@ -77,7 +77,7 @@ class Instance:
         self._instance_id = instance_id
 
         os.makedirs(instance_path, exist_ok=True)
-        self._buffer_path = os.path.join(instance_path, 'buffer')
+        self._buffer_path = posixpath.join(instance_path, 'buffer')
 
         self._mm = None
         self._data = InstanceModel(self)
@@ -142,7 +142,7 @@ class Instance:
                 modules = Modules.instance()
                 try:
                     module = modules[module_name]
-                    nor_path = os.path.join(module.path, 'data', file_name)
+                    nor_path = posixpath.join(module.path, 'data', file_name)
                 except KeyError:
                     # return something default-y, let somewhere else error
                     nor_path = path.replace('{{Examples}}', examples_path)
@@ -150,7 +150,7 @@ class Instance:
         return nor_path
 
     def temp_path(self):
-        return os.path.join(self._instance_path, 'temp')
+        return posixpath.join(self._instance_path, 'temp')
 
     def _virtualise_path(self, path):
 
@@ -241,7 +241,7 @@ class Instance:
         return self._data.analyses
 
     def get_path_to_resource(self, resourceId):
-        return os.path.join(self._instance_path, resourceId)
+        return posixpath.join(self._instance_path, resourceId)
 
     async def on_request(self, request):
         if type(request) == jcoms.DataSetRR:
@@ -358,7 +358,7 @@ class Instance:
 
                 if path == '{{Examples}}' or path == '{{Examples}}/':
 
-                    index_path = os.path.join(conf.get('examples_path'), 'index.yaml')
+                    index_path = posixpath.join(conf.get('examples_path'), 'index.yaml')
                     with open(index_path, encoding='utf-8') as index:
                         for dataset in yaml.safe_load(index):
                             entry = response.contents.add()
@@ -2667,7 +2667,7 @@ class Instance:
             recent_pb.location = recent['location']
 
         try:
-            path = os.path.join(conf.get('examples_path'), 'index.yaml')
+            path = posixpath.join(conf.get('examples_path'), 'index.yaml')
             with open(path, encoding='utf-8') as index:
                 for example in yaml.safe_load(index):
                     example_pb = response.examples.add()
