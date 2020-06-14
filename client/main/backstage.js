@@ -284,6 +284,8 @@ const FSEntryBrowserView = SilkyView.extend({
     },
     _createHeader: function() {
         let html = '';
+        if ( ! host.isElectron)
+            html = '<div class="place-title">' + this.model.attributes.title + '</div>';
         html += '<div class="silky-bs-fslist-header">';
 
 
@@ -319,19 +321,23 @@ const FSEntryBrowserView = SilkyView.extend({
 
         ////////////////////////////////////////////////
 
-        if (this.model.attributes.browseable) {
+        if ( ! this.model.writeOnly) {
             html += '   <div class="silky-bs-fslist-path-browser">';
             if (this.model.get('multiselect'))
                 html += '       <div class="silky-bs-fslist-browser-check-button"></div>';
             html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
             html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
-            html += '       <div class="silky-bs-fslist-browse-button">';
-            html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
-            html += '           <span>Browse</span>';
-            html += '       </div>';
-        }
 
-        html += '   </div>';
+            if (this.model.attributes.browseable) {
+
+                html += '       <div class="silky-bs-fslist-browse-button">';
+                html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
+                html += '           <span>Browse</span>';
+                html += '       </div>';
+            }
+
+            html += '   </div>';
+        }
 
         html += '</div>';
         this.$header = $(html);
@@ -339,7 +345,7 @@ const FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
-        if (this.model.attributes.browseable) {
+        //if (host.isElectron) {
             if ( ! isSaving) {
                 let searchHtml = `<div class="searchbox">
                                 <div class="image"></div>
@@ -347,12 +353,12 @@ const FSEntryBrowserView = SilkyView.extend({
                             </div>`;
                 this.$el.append(searchHtml);
             }
-        }
+        //}
 
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        if (this.model.attributes.browseable) {
+        //if (host.isElectron) {
 
             if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
                 setTimeout(() => {
@@ -369,7 +375,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 if (extValue != -1)
                     this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
             }
-        }
+        //}
     },
     _nameKeypressHandle: function(event) {
 
@@ -396,6 +402,13 @@ const FSEntryBrowserView = SilkyView.extend({
         }
     },
     _render : function() {
+
+        if (this.model.writeOnly) {
+            this.$itemsList.empty();
+            this.clearSelection();
+            this.$itemsList.append("<span>Stuff and things</span>");
+            return;
+        }
 
         let items = this.model.get('items');
         let dirInfo = this.model.get('dirInfo');
@@ -861,6 +874,9 @@ const FSEntryBrowserView = SilkyView.extend({
         }
 
         if (index <= 0) {
+            if (this.model.attributes.wdType === 'temp')
+                return '{{Temp}}';
+
             if (this.model.attributes.wdType === 'examples')
                 return '{{Examples}}';
 
@@ -907,8 +923,28 @@ const BackstageModel = Backbone.Model.extend({
             });
 
         this._wdData = {
-            main: { defaultPath: '{{Documents}}' },
-            examples: { defaultPath: '{{Examples}}' }
+            main: {
+                defaultPath: '{{Documents}}',
+                permissions: {
+                    write: true,
+                    read: true
+                }
+            },
+            examples: {
+                defaultPath: '{{Examples}}',
+                permissions: {
+                    write: false,
+                    read: true
+                }
+            },
+            temp: {
+                defaultPath: '{{Temp}}',
+                permissions: {
+                    write: true,
+                    read: false
+                },
+                fixed: true
+            }
         };
 
         this.on('change:operation', this._opChanged, this);
@@ -958,7 +994,7 @@ const BackstageModel = Backbone.Model.extend({
         this._pcImportListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcImportListModel);
 
-        this._pcSaveListModel = new FSEntryListModel({ browseable: host.isElectron });
+        this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = 'save';
         this._pcSaveListModel.suggestedPath = null;
         this._pcSaveListModel.fileExtensions = [ { extensions: ['omv'], description: "jamovi file (.omv)" } ];
@@ -967,7 +1003,18 @@ const BackstageModel = Backbone.Model.extend({
         this._pcSaveListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcSaveListModel);
 
-        this._pcExportListModel = new FSEntryListModel({ browseable: host.isElectron });
+        this._deviceSaveListModel = new FSEntryListModel();
+        this._deviceSaveListModel.attributes.wdType = 'temp';
+        this._deviceSaveListModel.writeOnly = true;
+        this._deviceSaveListModel.clickProcess = 'save';
+        this._deviceSaveListModel.suggestedPath = null;
+        this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: "jamovi file (.omv)" } ];
+        this._deviceSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
+        this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
+        this._deviceSaveListModel.on('browseRequested', this.tryBrowse, this);
+        this.addToWorkingDirData(this._deviceSaveListModel);
+
+        this._pcExportListModel = new FSEntryListModel();
         this._pcExportListModel.clickProcess = 'export';
         this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
@@ -989,6 +1036,31 @@ const BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._pcExportListModel);
 
+        this._deviceExportListModel = new FSEntryListModel();
+        this._deviceExportListModel.clickProcess = 'export';
+        this._deviceExportListModel.writeOnly = true;
+        this._deviceExportListModel.suggestedPath = null;
+        this._deviceExportListModel.fileExtensions = [
+            { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
+            { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
+            { extensions: ['omt'], description: 'jamovi template (.omt)' },
+            { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
+            { extensions: ['zip'], description: 'LaTeX bundle (.zip)' },
+            { extensions: ['rds'], description: 'R object (.rds)' },
+            { extensions: ['RData'], description: 'R object (.RData)' },
+            { extensions: ['sav'], description: 'SPSS sav (.sav)' },
+            // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
+            { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
+            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },
+            { extensions: ['dta'], description: 'Stata (.dta)' },
+        ];
+        this._deviceExportListModel.on('dataSetExportRequested', this.tryExport, this);
+        this._deviceExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
+        this._deviceExportListModel.on('browseRequested', this.tryBrowse, this);
+        this._deviceExportListModel.attributes.wdType = 'temp';
+        this.addToWorkingDirData(this._deviceExportListModel);
+
+
         this._savePromiseResolve = null;
 
         ActionHub.get('save').on('request', () => this.requestSave());
@@ -1003,106 +1075,180 @@ const BackstageModel = Backbone.Model.extend({
 
         let open_thispc = null;
         let import_thispc = null;
-        let saveAs_thispc = null;
+        let saveAs = null;
         let export_thispc = null;
-        if (mode === 'demo') {
-            open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
-            import_thispc = { name: 'thispc', title: 'This PC', model: { title: 'Importing data from your PC', msg: `Not currently available in this demo`}, view: InDevelopmentView };
-            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView };
-            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView };
+
+        if ( ! host.isElectron) {
+            return [
+                {
+                    name: 'new',
+                    title: 'New',
+                    action: () => { this.requestOpen(''); }
+                },
+                {
+                    name: 'open',
+                    title: 'Open',
+                    action: () => {
+                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                        if (place === 'thispc') {
+                            let filePath = this._determineSavePath('main');
+                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                                this.attributes.place = place;
+                            });
+                        }
+                        else
+                            this.attributes.place = place;
+                    },
+                    places: [
+                        /*{ name: 'thispc', title: 'jamovi Cloud', model: this._pcListModel, view: FSEntryBrowserView },*/
+                        { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
+                        { name: 'thisdevice', title: 'This Device', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
+                    ]
+                },
+                {
+                    name: 'import',
+                    title: 'Import',
+                    places: [
+                        /*{ name: 'thispc', title: 'jamovi Cloud',  model: this._pcImportListModel, view: FSEntryBrowserView  },*/
+                        { name: 'thisdevice', title: 'This Device', action: () => { this.tryBrowse(this._pcImportListModel.fileExtensions, 'import'); } }
+                    ]
+                },
+                {
+                    name: 'saveAs',
+                    title: 'Save As',
+                    action: () => {
+                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                        if (place === 'thispc') {
+                            let filePath = this._determineSavePath('main');
+                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                                this._pcSaveListModel.suggestedPath = filePath;
+                            });
+                        }
+                    },
+                    places: [
+                        /*{ name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
+                        {
+                            name: 'thisdevice', title: 'Download a copy', model: this._deviceSaveListModel, view: FSEntryBrowserView,
+                            action: () => {
+                                this._deviceSaveListModel.suggestedPath = this.instance.get('title');
+                            }
+                        }
+                    ]
+                },
+                {
+                    name: 'export',
+                    title: 'Export',
+                    places: [
+                        /*{
+                            name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            action: () => {
+                                this._pcExportListModel.suggestedPath = this.instance.get('title');
+                            }
+                        },*/
+                        {
+                            name: 'thisdevice', title: 'This Device', model: this._deviceExportListModel, view: FSEntryBrowserView,
+                            action: () => {
+                                this._deviceExportListModel.suggestedPath = this.instance.get('title');
+                            }
+                        },
+                    ]
+                }
+            ];
         }
         else {
-            open_thispc = { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView };
-            import_thispc = { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView };
-            saveAs_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView };
-            export_thispc = { name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView };
-        }
-
-        return [
-            {
-                name: 'new',
-                title: 'New',
-                action: () => { this.requestOpen(''); }
-            },
-            {
-                name: 'open',
-                title: 'Open',
-                action: () => {
-                    let place = this.instance.settings().getSetting('openPlace', 'thispc');
-                    if (place === 'thispc') {
-                        let filePath = this._determineSavePath();
-                        return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
-                            this.attributes.place = place;
-                        });
-                    }
-                    else
-                        this.attributes.place = place;
+            return [
+                {
+                    name: 'new',
+                    title: 'New',
+                    action: () => { this.requestOpen(''); }
                 },
-                places: [
-                    open_thispc,
-                    { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
-                ]
-            },
-            {
-                name: 'import',
-                title: 'Import',
-                action: () => {
-                    let place = this.instance.settings().getSetting('openPlace', 'thispc');
-                    if (place === 'thispc') {
-                        let filePath = this._determineSavePath();
-                        return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                {
+                    name: 'open',
+                    title: 'Open',
+                    action: () => {
+                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                        if (place === 'thispc') {
+                            let filePath = this._determineSavePath('main');
+                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                                this.attributes.place = place;
+                            });
+                        }
+                        else
                             this.attributes.place = place;
-                        });
-                    }
-                    else
-                        this.attributes.place = place;
+                    },
+                    places: [
+                        { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
+                        { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView }
+                    ]
                 },
-                places: [
-                    import_thispc
-                ]
-            },
-            {
-                name: 'save',
-                title: 'Save',
-                action: () => {
-                    this.requestSave();
+                {
+                    name: 'import',
+                    title: 'Import',
+                    action: () => {
+                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                        if (place === 'thispc') {
+                            let filePath = this._determineSavePath('main');
+                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                                this.attributes.place = place;
+                            });
+                        }
+                        else
+                            this.attributes.place = place;
+                    },
+                    places: [
+                        { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView }
+                    ]
+                },
+                {
+                    name: 'save',
+                    title: 'Save',
+                    action: () => {
+                        this.requestSave();
+                    }
+                },
+                {
+                    name: 'saveAs',
+                    title: 'Save As',
+                    action: () => {
+                        let filePath = this._determineSavePath('main');
+                        return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
+                            this._pcSaveListModel.suggestedPath = filePath;
+                        });
+                    },
+                    places: [
+                        { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
+                    ]
+                },
+                {
+                    name: 'export',
+                    title: 'Export',
+                    places: [
+                        {
+                            name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            action: () => {
+                                this._pcExportListModel.suggestedPath = this.instance.get('title');
+                            }
+                        }
+                    ]
                 }
-            },
-            {
-                name: 'saveAs',
-                title: 'Save As',
-                action: () => {
-                    let filePath = this._determineSavePath();
-                    return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
-                        this._pcSaveListModel.suggestedPath = filePath;
-                    });
-                },
-                places: [
-                    saveAs_thispc
-                ]
-            },
-            {
-                name: 'export',
-                title: 'Export',
-                places: [
-                        export_thispc
-                ]
-            }
-        ];
+            ];
+        }
     },
 
     addToWorkingDirData: function(model) {
         let wdType = model.attributes.wdType;
         if (this._wdData[wdType].models === undefined) {
             let wdTypeData = this._wdData[wdType];
-            wdTypeData.wd =  this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
+            wdTypeData.wd =  wdTypeData.fixed ? wdTypeData.defaultPath : this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
             wdTypeData.models = [ ];
             wdTypeData.path = '';
             wdTypeData.initialised = false;
             wdTypeData.wd = '';
-            this.instance.settings().on('change:' + wdType + 'WorkingDir', (event) => {
-                this._wdData[wdType].defaultPath = this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
-            });
+            if ( ! wdTypeData.fixed) {
+                this.instance.settings().on('change:' + wdType + 'WorkingDir', (event) => {
+                    this._wdData[wdType].defaultPath = this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
+                });
+            }
         }
         this._wdData[wdType].models.push(model);
     },
@@ -1164,12 +1310,23 @@ const BackstageModel = Backbone.Model.extend({
             }
         }
         else {
-            try {
-                let files = await host.showOpenDialog({ filters });
-                this.requestOpen(files[0]);
+            if (type === 'open') {
+                try {
+                    let files = await host.showOpenDialog({ filters });
+                    this.requestOpen(files[0]);
+                }
+                catch (e) {
+                    // cancelled
+                }
             }
-            catch (e) {
-                // cancelled
+            else if (type === 'import') {
+                try {
+                    let files = await host.showOpenDialog({ filters });
+                    this.requestImport(paths);
+                }
+                catch (e) {
+                    // cancelled
+                }
             }
         }
     },
@@ -1319,6 +1476,15 @@ const BackstageModel = Backbone.Model.extend({
                 if (index === -1)
                     index = 0;
 
+                if (op.places[index].view === undefined) {
+                    index = 0;
+                    while (index < op.places.length && op.places[index].view === undefined) {
+                        index += 1;
+                    }
+                    if (index > op.places.length - 1)
+                        index = 0;
+                }
+
                 let place = op.places[index].name;
                 let old = this.attributes.place;
 
@@ -1459,8 +1625,7 @@ const BackstageModel = Backbone.Model.extend({
 
             if ( ! host.isElectron) {
                 let source = path.basename(status.path);
-                let suffix = path.extname(source);
-                let target = `${ this.instance.attributes.title }${ suffix }`;
+                let target = path.basename(filePath);
                 let url = `dl/${ source }?filename=${ target }`;
                 await host.triggerDownload(url);
             }
@@ -1477,12 +1642,12 @@ const BackstageModel = Backbone.Model.extend({
         }
 
     },
-    _determineSavePath: function() {
+    _determineSavePath: function(wdType) {
         let filePath = this.instance.get('path');
         if (filePath && ! isUrl(filePath))
             return filePath;
 
-        let root = this.instance.settings().getSetting('mainWorkingDir', '{{Documents}}');
+        let root = this.instance.settings().getSetting(wdType + 'WorkingDir', this._wdData[wdType].defaultPath);
         return path.join(root, this.instance.get('title') + '.omv');
     },
     _settingsChanged : function(event) {
@@ -1681,6 +1846,27 @@ const BackstageView = SilkyView.extend({
         this._hideSubMenus();
 
         let operation = this.model.get('operation');
+
+        if ( ! host.isElectron) {
+            let op = null;
+            for (let opObj of this.model.attributes.ops) {
+                if (opObj.name === operation) {
+                    op = opObj;
+                    break;
+                }
+            }
+
+            let $logo = this.$el.find('.silky-bs-logo');
+            if (op !== null) {
+                $logo.text(op.title);
+                $logo.addClass('ops-title');
+            }
+            else {
+                $logo.text('');
+                $logo.removeClass('ops-title');
+            }
+        }
+
         let $op = this.$ops.filter('[data-op="' + operation + '-item"]');
         let $subOps = $op.find('.silky-bs-op-places');
         let $contents = $subOps.contents();
@@ -1742,7 +1928,10 @@ const BackstageChoices = SilkyView.extend({
             this.$current.appendTo(this.$el);
             if (this.current)
                 this.current.close();
+
+            place.model.set('title', place.title);
             this.current = new place.view({ el: this.$current, model: place.model });
+
             setTimeout(() => {
                 this.$current.addClass('fade-in');
             }, 0);
@@ -1751,7 +1940,7 @@ const BackstageChoices = SilkyView.extend({
         if (place.view === FSEntryBrowserView) {
             if (this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
                 if (place.model.attributes.wdType === 'thispc') {
-                    let filePath = this.model._determineSavePath();
+                    let filePath = this.model._determineSavePath('main');
                     this.model.setCurrentDirectory('main', path.dirname(filePath)).done();
                 }
                 else
@@ -1761,10 +1950,8 @@ const BackstageChoices = SilkyView.extend({
                 this.$current.removeClass('wd-changing');
         }
 
-        if (old) {
-            //$old.fadeOut(200);
+        if (old)
             setTimeout(function() { old.remove(); }, 200);
-        }
 
         if ('action' in place)
             place.action();
