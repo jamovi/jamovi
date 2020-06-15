@@ -1122,7 +1122,7 @@ const BackstageModel = Backbone.Model.extend({
                     places: [
                         /*{ name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
                         {
-                            name: 'thisdevice', title: 'Download a copy', model: this._deviceSaveListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: 'Download', model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceSaveListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1140,7 +1140,7 @@ const BackstageModel = Backbone.Model.extend({
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: 'This Device', model: this._deviceExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: 'Download', model: this._deviceExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceExportListModel.suggestedPath = this.instance.get('title');
                             }
