@@ -345,37 +345,32 @@ const FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
-        //if (host.isElectron) {
-            if ( ! isSaving) {
-                let searchHtml = `<div class="searchbox">
-                                <div class="image"></div>
-                                <input class="search" type="text"></input>
-                            </div>`;
-                this.$el.append(searchHtml);
-            }
-        //}
+        if ( ! isSaving) {
+            let searchHtml = `<div class="searchbox">
+                            <div class="image"></div>
+                            <input class="search" type="text"></input>
+                        </div>`;
+            this.$el.append(searchHtml);
+        }
 
         this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
         this.$el.append(this.$itemsList);
 
-        //if (host.isElectron) {
+        if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
+            setTimeout(() => {
+                this.$header.find('.silky-bs-fslist-browser-save-name').focus();
+            }, 50);
+        }
 
-            if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
-                setTimeout(() => {
-                    this.$header.find('.silky-bs-fslist-browser-save-name').focus();
-                }, 50);
-            }
+        if (this.model.attributes.extensions) {
+            this.filterExtensions = this.model.fileExtensions[0].extensions;
 
-            if (this.model.attributes.extensions) {
-                this.filterExtensions = this.model.fileExtensions[0].extensions;
+            this._createFooter();
 
-                this._createFooter();
-
-                let extValue = this._validExtension(extension);
-                if (extValue != -1)
-                    this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
-            }
-        //}
+            let extValue = this._validExtension(extension);
+            if (extValue != -1)
+                this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+        }
     },
     _nameKeypressHandle: function(event) {
 
@@ -406,7 +401,6 @@ const FSEntryBrowserView = SilkyView.extend({
         if (this.model.writeOnly) {
             this.$itemsList.empty();
             this.clearSelection();
-            this.$itemsList.append("<span>Stuff and things</span>");
             return;
         }
 
@@ -1322,7 +1316,7 @@ const BackstageModel = Backbone.Model.extend({
             else if (type === 'import') {
                 try {
                     let files = await host.showOpenDialog({ filters });
-                    this.requestImport(paths);
+                    this.requestImport(files);
                 }
                 catch (e) {
                     // cancelled
@@ -1756,8 +1750,6 @@ const BackstageView = SilkyView.extend({
 
         this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
 
-        // this.$opPanel.append($('<div class="silky-bs-op-button" data-op="' + 'Examples' + '" ' + '>' + 'Examples' + '</div>'));
-
         let $op = $('<div class="silky-bs-op-recents-main"></div>');
         let $opTitle = $('<div class="silky-bs-op-header" data-op="' + 'Recent' + '" ' + '>' + 'Recent' + '</div>').appendTo($op);
         let $recentsBody = $('<div class="silky-bs-op-recents"></div>').appendTo($op);
@@ -1903,8 +1895,6 @@ const BackstageChoices = SilkyView.extend({
         this.$waiting = $(this.$choices[1]);
 
         this._placeChanged();
-
-        //this._recentList = new FSEntryListView({ el : this.$recentList, model : this.model.recentsModel() });
     },
     _placeChanged : function() {
 
