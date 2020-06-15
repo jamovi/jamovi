@@ -12,6 +12,28 @@
     transition: .2s width ease-out;
 }
 
+.ops-title{
+    opacity: 1;
+    vertical-align: -moz-middle-with-baseline;
+    line-height: 100px;
+    color: white;
+    font-size: 30px;
+    font-weight: lighter;
+    background-image: none !important;
+    text-indent: 40px;
+}
+
+.place-title {
+    height: 60px;
+    line-height: 60px;
+    font-size: 30px;
+    color: #3e6da9;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    font-weight: lighter;
+    text-indent: 10px;
+}
+
 .searchbox {
     position: relative;
     margin: 5px 5px 9px 5px;
