@@ -310,6 +310,7 @@
     flex-grow: 1;
     display: flex;
     margin-top: 1px;
+    overflow: hidden;
 }
 
 .jmv-variable-editor-widget-footer {
