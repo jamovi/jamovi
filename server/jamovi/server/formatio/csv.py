@@ -102,7 +102,8 @@ class CSVReader(Reader):
 
             self._dialect.doublequote = True
         except Exception as e:
-            self._file.close()
+            if self._file:
+                self._file.close()
             raise e
 
     def progress(self):
