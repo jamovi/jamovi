@@ -33,7 +33,7 @@ const VariableLabel = function(params) {
             displayValue = '';
 
         this.$label = $('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
-        this.$icon = $('<div style="display: inline-block; overflow: hidden;"></div>');
+        this.$icon = $('<div class="silky-variable-type-img" style="display: inline-block; overflow: hidden;"></div>');
 
         this.$el.append(this.$icon);
         this.$el.append(this.$label);
