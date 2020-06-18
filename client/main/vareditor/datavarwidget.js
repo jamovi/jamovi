@@ -22,7 +22,7 @@ const DataVarWidget = Backbone.View.extend({
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor-datavarwidget');
 
-        this.$body = $('<div class="jmv-variable-editor-widget-body"></div>').appendTo(this.$el);
+        this.$body = $('<div class="jmv-datavarwidget-body"></div>').appendTo(this.$el);
         this.$left = $('<div class="jmv-variable-editor-widget-left"></div>').appendTo(this.$body);
 
         this._createMeasureTypeListBox();
