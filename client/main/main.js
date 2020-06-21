@@ -23,6 +23,8 @@ const ActionHub = require('./actionhub');
 const Instance = require('./instance');
 const Modules = require('./modules');
 const Notify = require('./notification');
+const JError = require('./errors').JError;
+
 require('./infobox');
 
 const keyboardJS = require('keyboardjs');
@@ -146,7 +148,7 @@ window.addEventListener('popstate', function () {
 });
 
 
-$(document).ready(() => {
+$(document).ready(async() => {
 
     if (navigator.platform === 'Win32')
         $('body').addClass('windows');
@@ -315,6 +317,7 @@ $(document).ready(() => {
     mainTable.on('notification', note => notifications.notify(note));
     ribbon.on('notification', note => notifications.notify(note));
     editor.on('notification', note => notifications.notify(note));
+    backstageModel.on('notification', note => notifications.notify(note));
 
     dataSetModel.on('change:edited', event => {
         host.setEdited(dataSetModel.attributes.edited);
@@ -343,11 +346,19 @@ $(document).ready(() => {
 
     let toOpen = '';  // '' denotes blank data set
 
-    Promise.resolve(() => {
+    let progNotif = new Notify({
+        title: 'Opening',
+        duration: 0
+    });
 
-        return coms.ready;
+    try {
 
-    }).then(() => {
+        await coms.ready;
+
+        let instanceId;
+        let match = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname);
+        if (match)
+            instanceId = match[1];
 
         if (window.location.search.indexOf('?open=') !== -1) {
             toOpen = `${ window.location.search }${ window.location.hash }`.split('?open=')[1];
@@ -357,62 +368,82 @@ $(document).ready(() => {
                 toOpen = decodeURI(toOpen);
         }
 
-        return fetch('status', {
-            credentials: 'include'
-        }).then((response) => {
-            if (response.status === 204)
-                return;
-            else if (response.status === 200)
-                return response.json();
-            else
-                throw 'Connection failed';
-        }).then((status) => {
-            status = status || {};
-            if (status['new-url'])
-                history.replaceState({}, '', status['new-url']);
-            if (status.message || status.title || status['message-src']) {
-                infoBox.setup(status);
-                if (status.status === 'OK')
-                    return;
-                else
-                    return new Promise((resolve, reject) => { /* never */ });
+        const notify = (progress) => {
+            progNotif.set({
+                title: progress.title,
+                progress: progress.progress,
+            });
+            notifications.notify(progNotif);
+        };
+
+        let status;
+
+        try {
+            let stream = instance.open(toOpen, { existing: !!instanceId });
+            if (toOpen !== '') {
+                // only display progress if opening a file
+                for await (let progress of stream)
+                    notify(progress);
             }
-        });
+            status = await stream;
+        }
+        catch (e) {
+            if (host.isElectron && toOpen !== '') {
+                // if opening fails, open a blank data set
+                status = await instance.open('', { existing: !!instanceId });
+                notifications.notify(new Notify({
+                    title: 'Unable to open',
+                    message: e.cause || e.message,
+                    type: 'error',
+                    duration: 3000,
+                }));
+            }
+            else {
+                throw e;
+            }
+        }
 
-    }).then(() => {
+        if ('url' in status)
+            history.replaceState({}, '', `${host.baseUrl}${status.url}`);
 
-        let instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
-        return instance.connect(instanceId);
+        if (status.message || status.title || status['message-src'])
+            infoBox.setup(status);
 
-    }).catch((err) => {
+        instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
+        await instance.connect(instanceId);
 
-        if (err.message)
-            err = err.message;
+        progNotif.dismiss();
+    }
+    catch (e) {
 
-        console.log(err);
+        progNotif.dismiss();
 
-        infoBox.setup({
-            title: 'Connection failed',
-            message: 'Unable to connect to the server',
-            status: 'disconnected',
-        });
+        if (e instanceof JError) {
+            infoBox.setup({
+                title: e.message,
+                message: e.cause,
+                status: e.status,
+                'message-src': e.messageSrc,
+            });
+        }
+        else {
+            if (e.message)
+                console.log(e.message);
+            else
+                console.log(e);
+
+            infoBox.setup({
+                title: 'Connection failed',
+                message: 'Unable to connect to the server',
+                status: 'disconnected',
+            });
+        }
+
         infoBox.style.display = null;
+        await new Promise((resolve, reject) => { /* never */ });
+    }
 
-        return new Promise((resolve, reject) => { /* never */ });
+    if (instance.get('blank') && instance.analyses().count() === 0)
+        resultsView.showWelcome();
 
-    }).then(() => {
-
-        if ( ! instance.get('hasDataSet'))
-            return instance.open(toOpen);
-
-    }).catch((err) => { // if the initial open fails
-
-        if ( ! instance.get('hasDataSet'))
-            return instance.open('');
-
-    }).then(() => {
-
-        if (instance.get('blank') && instance.analyses().count() === 0)
-            resultsView.showWelcome();
-    });
 });

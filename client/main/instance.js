@@ -19,6 +19,8 @@ const OptionsPB = require('./optionspb');
 
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
+const JError = require('./errors').JError;
+
 
 const Instance = Backbone.Model.extend({
 
@@ -140,117 +142,94 @@ const Instance = Backbone.Model.extend({
             return prog;
         });
     },
-    open(file) {
+    open(file, options) {
 
-        let coms = this.attributes.coms;
+        options = options || { };
 
-        let progress = new Notify({
-            title: 'Opening',
-            duration: 0
-        });
+        return new ProgressStream(async (setProgress) => {
 
-        if (this.attributes.hasDataSet) {
+            let response;
 
-            return new ProgressStream(async (setProgress) => {
+            if (file instanceof File) {
 
-                let response;
+                setProgress({ title: 'Uploading', progress: [0, 0] });
 
-                if (file instanceof File) {
-                    let url = '../open';
-                    let payload = new FormData();
-                    payload.append('file', file);
-                    response = await fetch(url, {
-                        method: 'POST',
-                        body: payload,
-                        credentials: 'include',
-                        cache: 'no-store',
-                    });
-                }
-                else {
-                    let url = `../open?url=${ encodeURIComponent(file) }`;
-                    response = await fetch(url, {
-                        method: 'GET',
-                        credentials: 'include',
-                        cache: 'no-store',
-                    });
-                }
+                let url = `${ host.baseUrl }open`;
+                let payload = new FormData();
+                payload.append('file', file);
+                response = await fetch(url, {
+                    method: 'POST',
+                    body: payload,
+                    credentials: 'include',
+                    cache: 'no-store',
+                });
+            }
+            else {
 
-                const reader = response.body.getReader();
-                const utf8Decoder = new TextDecoder('utf-8');
+                let url;
+                if (options.existing)
+                    url = 'open';
+                else
+                    url = `${ host.baseUrl }open`;
 
-                let message;
-                for (;;) {
-                    let { done, value } = await reader.read();
-                    let chunk = value ? utf8Decoder.decode(value) : '';
-                    let pieces = chunk.split('\n');
+                if (file)
+                    url += `?url=${ encodeURIComponent(file) }`;
 
-                    while (pieces.length > 0) {
-                        let piece = pieces.pop();
-                        if (piece) {
-                            try {
-                                message = JSON.parse(piece);
-                                break;
-                            }
-                            catch (e) {
-                                // do nothing
-                            }
+                response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    cache: 'no-store',
+                });
+            }
+
+            if (response.status === 204)
+                return { 'status': 'OK' };
+
+            if (response.status !== 200)
+                throw new JError('Unable to open', { cause: response.statusText });
+
+            const reader = response.body.getReader();
+            const utf8Decoder = new TextDecoder('utf-8');
+
+            let message;
+            for (;;) {
+                let { done, value } = await reader.read();
+                let chunk = value ? utf8Decoder.decode(value) : '';
+                let pieces = chunk.split('\n');
+
+                while (pieces.length > 0) {
+                    let piece = pieces.pop();
+                    if (piece) {
+                        try {
+                            message = JSON.parse(piece);
+                            break;
+                        }
+                        catch (e) {
+                            // do nothing
                         }
                     }
-
-                    if (message && message.status === 'in-progress') {
-                        setProgress([message.p, message.n]);
-                        progress.set('progress', [message.p, message.n]);
-                        this.trigger('notification', progress);
-                    }
-
-                    if (done)
-                        break;
                 }
 
-                if ( ! message || message.status !== 'OK') {
-                    let cause = (message && message.message) ? message.message : 'Unexpected error';
-                    let error = { message: 'Unable to open', cause: cause, type: 'error' };
-                    progress.dismiss();
-                    this._notify(error);
-                    throw error;
-                }
-                else {
-                    progress.dismiss();
-                    let iid = message.url.match(/([a-z0-9-]+)\/$/)[1];
-                    if (this.attributes.blank && this._dataSetModel.attributes.edited === false)
-                        host.navigate(iid);
-                    else
-                        host.openWindow(iid);
-                }
-            });
-        }
-        else {
+                if (message && message.status === 'in-progress')
+                    setProgress({ title: 'Opening', progress: [ message.p, message.n ] });
 
-            let open = new coms.Messages.OpenRequest(file);
-            let request = new coms.Messages.ComsMessage();
-            request.payload = open.toArrayBuffer();
-            request.payloadType = 'OpenRequest';
-            request.instanceId = this._instanceId;
+                if (done)
+                    break;
+            }
 
-            return coms.send(request).then((response) => {
-                    progress.dismiss();
-                    let info = coms.Messages.OpenProgress.decode(response.payload);
-                    let file = info.path;
-                    let ext = path.extname(file);
-
-                    this.set('path', file);
-                    this.set('title', path.basename(file, ext));
-                    return this._retrieveInfo();
-                }, (error) => {
-                    progress.dismiss();
-                    this._notify(error);
-                    throw error;
-                }, (prog) => {
-                    progress.set('progress', prog);
-                    this.trigger('notification', progress);
-                    return prog;
-                });
-        }
+            if ( ! message || message.status !== 'OK') {
+                let title = (message && message.title) ? message.title : 'Unable to open';
+                let cause = (message && message.message) ? message.message : 'Unexpected error';
+                let error = new JError(title, {
+                    cause,
+                    status: message.status,
+                    messageSrc: message['message-src'] });
+                throw error;
+            }
+            else {
+                return message;
+            }
+        });
     },
     save(filePath, options, recursed) {  // recursed argument is a hack
 

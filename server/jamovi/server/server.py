@@ -136,18 +136,6 @@ class ModuleAssetHandler(RequestHandler):
             self.write(content)
 
 
-class UploadHandler(RequestHandler):
-    def post(self):
-        file_info = self.request.files['file'][0]
-        file_name = file_info['filename']
-        ext       = os.path.splitext(file_name)[1]
-        content   = file_info['body']
-        temp_name = str(uuid.uuid4()) + ext
-        temp_file = os.path.join('/tmp', temp_name)
-        with open(temp_file, 'wb') as file:
-            file.write(content)
-
-
 class AnalysisDescriptor(RequestHandler):
 
     def get(self, module_name, analysis_name, part):
@@ -192,14 +180,26 @@ class OpenHandler(RequestHandler):
     def initialize(self, session):
         self._session = session
 
-    async def get(self):
+    async def get(self, instance_id=None):
+
         instance = None
-        url = self.get_query_argument('url')
+        url = self.get_query_argument('url', '')
+
+        if instance_id:
+            instance = self._session.get(instance_id)
+            if instance is None:
+                self.write('{"status":"terminated","message":"This data set is no longer available"}')
+                return
+            elif url == '' and instance._data.has_dataset:
+                self.set_status(204)
+                return
+
         title = self.get_query_argument('title', None)
         temp = self.get_query_argument('temp', '0')
 
         try:
-            instance = self._session.create()
+            if instance is None:
+                instance = self._session.create()
             async for progress in instance.open(url, title, temp == '1'):
                 self._write('progress', progress)
         except Exception as e:
@@ -209,31 +209,16 @@ class OpenHandler(RequestHandler):
 
     def _write(self, status, progress=None, redirect=None):
         if status == 'OK':
-            self.write(f'{{"status":"OK","url":"{redirect}/"}}\n')
+            if redirect is not None:
+                self.write(f'{{"status":"OK","url":"{redirect}/"}}\n')
+            else:
+                self.write('{"status":"OK"}\n')
         elif isinstance(status, BaseException):
             self.write(f'{{"status":"error","message":"{ status }"}}\n')
         else:
             p, n = progress
             self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
         self.flush()
-
-
-class StatusHandler(RequestHandler):
-
-    def initialize(self, session):
-        self._session = session
-
-    def get(self, instance_id):
-        if instance_id in self._session:
-            self.set_status(204)
-        else:
-            self.write(json.dumps(
-                {
-                    'title': 'Sorry',
-                    'message': 'This data set is no longer available',
-                    'status': 'terminated',
-                    # 'message-src': 'https://www.jamovi.org/misc/demo.html',
-                }))
 
 
 @stream_request_body
@@ -447,9 +432,8 @@ class Server:
             (r'/open', OpenHandler, { 'session': self._session }),
             (r'/version', SingleFileHandler, {
                 'path': version_path }),
-            (r'/([a-f0-9-]+)/status', StatusHandler, { 'session': self._session }),
+            (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
-            (r'/upload', UploadHandler),
             (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,

@@ -8,6 +8,8 @@ const events = require('events');
 const dialogs = require('dialogs');
 const $ = require('jquery');
 
+const { CancelledError } = require('./errors');
+
 const APP_NAME = 'jamovi';
 
 let baseUrl;
@@ -360,7 +362,7 @@ else {
             document.body.appendChild(showOpenDialog.browser);
         }
         if (showOpenDialog.cancelPrevious)
-            showOpenDialog.cancelPrevious();
+            showOpenDialog.cancelPrevious(new CancelledError());
 
         if (options.filters) {
             let exts = options.filters;

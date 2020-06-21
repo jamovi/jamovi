@@ -638,14 +638,14 @@ class Instance:
         if path != '' and not is_example and self._perms.open.local is False:
             raise PermissionError()
 
-        self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
-        dataset = DataSet.create(self._mm)
-        self._data.dataset = dataset
-
         stream = ProgressStream()
 
         async def read_file(stream):
             try:
+                self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
+                dataset = DataSet.create(self._mm)
+                self._data.dataset = dataset
+
                 ioloop = asyncio.get_event_loop()
 
                 def prog_cb(p):
@@ -657,6 +657,9 @@ class Instance:
                 result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title)
                 stream.set_result(result)
             except Exception as e:
+                self._data.dataset = None
+                if self._mm:
+                    self._mm.close()
                 stream.set_exception(e)
             else:
                 if path != '' and not is_temp:
