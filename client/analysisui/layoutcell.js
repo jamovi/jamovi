@@ -51,6 +51,7 @@ const LayoutCell = function(parent, properties) {
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
         this.trigger('layoutcell.mousedown', ctrlKey, event.shiftKey);
+        this.$el.one("mouseup", null, this, this.onMouseUp);
     };
 
     this.onMouseUp = (event) => {
@@ -60,15 +61,31 @@ const LayoutCell = function(parent, properties) {
         this.trigger('layoutcell.mouseup', ctrlKey, event.shiftKey);
     };
 
+    this.onTouchStart = (event) => {
+        let ctrlKey = event.ctrlKey;
+        if (navigator.platform == "MacIntel")
+            ctrlKey = event.metaKey;
+        this.trigger('layoutcell.touchstart', ctrlKey, event.shiftKey);
+        event.preventDefault();
+        this.$el.one("touchend", null, this, this.onTouchEnd);
+    };
+
+    this.onTouchEnd = (event) => {
+        let ctrlKey = event.ctrlKey;
+        if (navigator.platform == "MacIntel")
+            ctrlKey = event.metaKey;
+        this.trigger('layoutcell.touchend', ctrlKey, event.shiftKey);
+    };
+
     this.clickable = function(value) {
         this._clickable = value;
         if (value) {
             this.$el.on("mousedown", null, this, this.onMouseDown);
-            this.$el.on("mouseup", null, this, this.onMouseUp);
+            this.$el.on("touchstart", null, this, this.onTouchStart);
         }
         else {
             this.$el.off("mousedown", this.onMouseDown);
-            this.$el.off("mouseup", this.onMouseUp);
+            this.$el.off("touchstart", this.onTouchStart);
         }
     };
 
