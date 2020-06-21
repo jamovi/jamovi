@@ -41,12 +41,14 @@
     text-align: right;
 }
 
-/*Checkbox tick square*/
+.electron input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 input[type="checkbox"] {
     position: relative;
     vertical-align: middle;
-    width: 18px;
-    height: 18px;
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 0px;

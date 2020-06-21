@@ -1,16 +1,19 @@
 /*radio check circle*/
+.electron input[type="radio"] {
+    width: 18px;
+    height: 18px;
+}
+
 input[type="radio"] {
     position: relative;
     vertical-align: middle;
-    width: 18px;
-    height: 18px;
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 0px;
     margin-right: 5px;
 }
 
-label.silky-option-radio span {
+.silky-option-radio label span {
     vertical-align: middle;
     line-height: 18px;
 }

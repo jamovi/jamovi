@@ -76,32 +76,37 @@
     margin-bottom: 0px;
 }
 
-/*Checkbox tick square*/
+.electron input[type="radio"] {
+    width: 18px;
+    height: 18px;
+}
+
 input[type="radio"] {
     position: relative;
     vertical-align: middle;
-    width: 18px;
-    height: 18px;
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 0px;
     margin-right: 5px;
 }
 
-/*Checkbox tick square*/
+.electron input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 input[type="checkbox"] {
     position: relative;
     vertical-align: middle;
-    width: 18px;
-    height: 18px;
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 0px;
     margin-right: 5px;
 }
 
-label.silky-option-checkbox span, label.silky-option-radio span, {
+label.silky-option-checkbox span, .silky-option-radio label span, {
     vertical-align: middle;
+    line-height: 18px;
 }
 
 /*textbox input*/

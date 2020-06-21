@@ -162,6 +162,18 @@ let $hide = null;
 
 $(document).ready(function() {
 
+    if (navigator.platform === 'Win32')
+        $('body').addClass('windows');
+    else if (navigator.platform === 'MacIntel')
+        $('body').addClass('mac');
+    else if (navigator.platform.startsWith('Linux'))
+        $('body').addClass('linux');
+    else
+        $('body').addClass('other');
+
+    if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1)
+        $('body').addClass('electron');
+
     $(document).mousedown(this, mouseDown);
     $(document).mouseup(this, mouseUp);
     $(document).mousemove(this, mouseMove);
