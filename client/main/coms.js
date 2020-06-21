@@ -28,7 +28,7 @@ class Coms {
 
         return new Q.promise((resolve, reject) => {
 
-            let protoUrl = '../proto/coms.proto';
+            let protoUrl = `${ host.baseUrl }proto/coms.proto`;
 
             ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
                 if (err) {
