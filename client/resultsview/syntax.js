@@ -26,7 +26,7 @@ var SyntaxView = Elem.View.extend({
         this.$el.addClass('jmv-results-syntax');
 
         this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
-        this.$title.appendTo(this.$el);
+        this.addContent(this.$title);
 
         if (this.model === null)
             this.model = new SyntaxModel();
