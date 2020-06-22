@@ -258,7 +258,7 @@ const ResultsPanel = Backbone.View.extend({
                 type: 'results',
                 data: {
                     results: analysis.results,
-                    options: analysis.options.getValues(),
+                    options: analysis.options ? analysis.options.getValues() : {},
                     mode: this.mode,
                     devMode: this.model.settings().get('devMode'),
                     format: format,
