@@ -1096,7 +1096,7 @@ const BackstageModel = Backbone.Model.extend({
                     name: 'open',
                     title: 'Open',
                     action: () => {
-                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
+                        /*let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
                             let filePath = this._determineSavePath('main');
                             return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
@@ -1104,7 +1104,7 @@ const BackstageModel = Backbone.Model.extend({
                             });
                         }
                         else
-                            this.attributes.place = place;
+                            this.attributes.place = place;*/
                     },
                     places: [
                         /*{ name: 'thispc', title: 'jamovi Cloud', model: this._pcListModel, view: FSEntryBrowserView },*/
@@ -2018,7 +2018,7 @@ const BackstageChoices = SilkyView.extend({
                     let filePath = this.model._determineSavePath('main');
                     this.model.setCurrentDirectory('main', path.dirname(filePath)).done();
                 }
-                else
+                else if ( ! place.model.writeOnly)
                     this.model.setCurrentDirectory(place.model.attributes.wdType, '').done();  // empty string requests default path
             }
             else if (this.$current.attr('wdtype') === place.model.attributes.wdType)
