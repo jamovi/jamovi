@@ -121,8 +121,10 @@ async def latexify(content, out, resolve_image):
                         tcln = tcln + ('' if len(tmpc) == 0 else ('\\cline{' + str(tcmi + 1) + '-' + str(tcmi + tmpl) + '}\n'))
                         tcmi = tcmi + tmpl
                     thsp = (' & '.join(thsp) + ' \\\\\n')
-                # process the column headers: replace colspan="2" with single cells and split cells using <th> and </th>
-                thcl = re.findall(r'<th>([\s\S]*?)<\/th>', re.sub('<th colspan="2">', '<th></th><th>', thnm))
+                # process the column headers: replace colspan="[NUMBER]" with single cells and split cells using <th> and </th>
+                for j in list(set(re.findall('colspan="(\d+?)"', thnm))):
+                    thnm = re.sub('<th colspan="' + j + '">', '<th>' + '</th><th>' * (int(j) - 1), thnm)
+                thcl = re.findall(r'<th>([\s\S]*?)<\/th>', thnm)
                 if int(len(thcl) / 2) != tcol:
                     raise ValueError('Mismatch between number of columns in the table definition (' + str(tcol) + ') and the actual number of cells in the table header (' + str(len(thcl) / 2) + '): ' + thnm)
                 for j in range(tcol):
@@ -137,8 +139,10 @@ async def latexify(content, out, resolve_image):
                 # first run: do required formatting (e.g., footnootes, etc.), determine maximum length of cell content and
                 # whether the column should be left (contains only text) or right aligned (contains at least one number)
                 for j in range(len(tbdy)):
-                    # process the rows in the table body: replace colspan="2" with single cells and split cells using <td> and </td>
-                    tbcl = re.findall(r'<td>([\s\S]*?)<\/td>', re.sub('<td colspan="2">', '<td></td><td>', tbdy[j]))
+                    # process the rows in the table body: replace colspan="[NUMBER]" with single cells and split cells using <td> and </td>
+                    for k in list(set(re.findall('colspan="(\d+?)"', tbdy[j]))):
+                        tbdy[j] = re.sub('<td colspan="' + k + '">', '<td>' + '</td><td>' * (int(k) - 1), tbdy[j])
+                    tbcl = re.findall(r'<td>([\s\S]*?)<\/td>', tbdy[j])
                     if int(len(tbcl) / 2) != tcol:
                         raise ValueError('Mismatch between number of columns in the table definition (' + str(tcol) + ') and the actual number of cells in the table row (' + str(len(tbcl) / 2) + '): ' + tbdy[j])
                     for k in range(tcol):
