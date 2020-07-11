@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SCRIPT=`realpath $0`
+HERE=`dirname $SCRIPT`
+if [[ "$1" == "--version" ]]; then
+    cat /usr/lib/jamovi/version
+else
+    $HERE/electron "$@"
+fi
