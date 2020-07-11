@@ -1,0 +1,16 @@
+version: '3'
+services:
+  jamovi:
+    container_name: jamovi
+    build: .
+    image: jamovi/jamovi
+    ports:
+      - '41337:41337'
+      - '41338:41338'
+      - '41339:41339'
+    command: ["/usr/bin/python3 -m jamovi.server 41337 --if=*"]
+    stdin_open: true
+
+    volumes:
+      - $HOME/Documents:/root/Documents
+      - ./:/tmp/source  # mount the source as a volume for development

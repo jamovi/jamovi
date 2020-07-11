@@ -1,0 +1,66 @@
+#!/bin/bash
+
+SOURCE_DIR=/tmp/source
+
+if [[ $1 = "server" ]] || [[ $1 = "all" ]]; then
+    echo "building server"
+    cd "$SOURCE_DIR/server"
+    python3 setup.py install --install-lib=/usr/lib/jamovi/server
+fi
+
+if [[ $1 = "readstat" ]] || [[ $1 = "all" ]]; then
+    echo "building readstat";
+    cd "$SOURCE_DIR/readstat"
+    python3 setup.py install --install-lib=/usr/lib/jamovi/server
+fi
+
+if [[ $1 = "engine" ]] || [[ $1 = "all" ]]; then
+    echo "building engine";
+    cd "$SOURCE_DIR/engine"
+    ./configure --rhome=/usr/local/lib/R \
+        --base-module-path=/usr/local/lib/R/library \
+        --rpath=/usr/local/lib/R/library/RInside/lib \
+        --rpath=/usr/local/lib/R/lib
+    make
+    DESTDIR=/usr/lib/jamovi make install
+fi
+
+if [[ $1 = "compiler" ]] || [[ $1 = "all" ]]; then
+    echo "building compiler"
+    cd "$SOURCE_DIR/jamovi-compiler"
+    npm install
+fi
+
+if [[ $1 = "jmvcore" ]] || [[ $1 = "all" ]]; then
+    echo "building jmvcore"
+    R CMD INSTALL "$SOURCE_DIR/jmvcore" --library=/usr/local/lib/R/library
+fi
+
+if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
+    echo "building jmv"
+    cd "$SOURCE_DIR/jmv"
+    if [ ! -d 'build' ]; then
+        mkdir -p build
+        cp -r /tmp/jmv-build build/R3.6.2-linux
+    fi
+    "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
+fi
+
+if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
+    echo "building client"
+    cd "$SOURCE_DIR/client"
+    if [ ! -d 'node_modules' ]; then
+        npm install
+    fi
+    if [[ $2 = "release" ]]; then
+        npm run build:release
+    else
+        npm run prepublish
+    fi
+
+    cp *.js        /usr/lib/jamovi/client
+    cp *.html      /usr/lib/jamovi/client
+    cp *.css       /usr/lib/jamovi/client
+    cp favicon.ico /usr/lib/jamovi/client
+    cp -r assets   /usr/lib/jamovi/client
+fi
