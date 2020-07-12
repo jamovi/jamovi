@@ -207,6 +207,27 @@ class OpenHandler(RequestHandler):
         else:
             self._write('OK', redirect=instance.id)
 
+    async def post(self, instance_id=None):
+        try:
+            file = self.request.files['file'][-1]
+        except KeyError:
+            self.set_status(400)
+            self.write('400: Bad Request')
+            return
+
+        try:
+            base, ext = os.path.splitext(file.filename)
+            temp_file = NamedTemporaryFile(suffix=ext)
+            with open(temp_file.name, 'wb') as writer:
+                writer.write(file.body)
+            instance = self._session.create()
+            async for progress in instance.open(temp_file.name, base, True):
+                self._write('progress', progress)
+        except Exception as e:
+            self._write(e)
+        else:
+            self._write('OK', redirect=instance.id)
+
     def _write(self, status, progress=None, redirect=None):
         if status == 'OK':
             if redirect is not None:
