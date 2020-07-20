@@ -872,7 +872,7 @@ class Instance:
 
                 path = self._paths[self._i]
 
-                norm_path = self._normalise_path(path)
+                norm_path = instance._normalise_path(path)
                 name = os.path.splitext(os.path.basename(path))[0]
 
                 model = InstanceModel(instance)
