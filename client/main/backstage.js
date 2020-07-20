@@ -822,14 +822,19 @@ const FSEntryBrowserView = SilkyView.extend({
     },
     _saveClicked : function(event) {
         let dirInfo = this.model.get('dirInfo');
-        if (dirInfo !== undefined) {
+        let writeOnly = this.model.writeOnly;
+        if (writeOnly || dirInfo !== undefined) {
             let name = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
             if (name === '')
                 return;
 
             if (this._hasValidExtension(name) === false)
                 name = name + '.' + this.filterExtensions[0];
-            let filePath = dirInfo.path + '/' + name;
+
+            let filePath = name;
+            if ( ! writeOnly)
+                filePath = dirInfo.path + '/' + name;
+
             if (this.model.clickProcess === 'save')
                 this.model.requestSave(filePath, FSItemType.File);
             else if (this.model.clickProcess === 'export')
