@@ -637,11 +637,76 @@ class Instance:
             raise PermissionError()
         if path != '' and not is_example and self._perms.open.local is False:
             raise PermissionError()
+        if is_url(path) and self._perms.open.remote is False:
+            raise PermissionError()
 
         stream = ProgressStream()
 
-        async def read_file(stream):
+        async def read_file(path, is_temp, stream):
+
+            nonlocal title
+
+            old_mm = None
+            temp_file = None
+            temp_file_path = None
+
             try:
+                url = None
+                integ_handler = None
+
+                if is_url(path):
+
+                    url = parse.urlsplit(path)
+                    path = parse.unquote(url.path)
+
+                    url = list(url)
+                    url[2] = parse.quote(path)
+                    url = parse.urlunsplit(url)
+
+                    filename = os.path.basename(path)
+                    path = url
+
+                    integ_handler = get_special_handler(url)
+
+                    async with ClientSession(raise_for_status=True) as session:
+                        async with session.get(url, ssl=ssl_context()) as response:
+
+                            if integ_handler is not None:
+                                await integ_handler.read(response)
+
+                            content_length = response.content_length
+
+                            if response.content_disposition and response.content_disposition.filename:
+                                filename = response.content_disposition.filename
+
+                            if not formatio.is_supported(filename):
+                                raise RuntimeError('Unrecognised file format')
+
+                            title, ext = os.path.splitext(filename)
+                            fd, temp_file_path = mkstemp(suffix=ext)
+                            temp_file = os.fdopen(fd, 'wb')
+
+                            progress = [0, 1]
+                            if content_length:
+                                progress = [0, 2 * content_length]  # only goes up to 50%
+
+                            stream.write(progress)
+
+                            async for data in response.content.iter_any():
+                                temp_file.write(data)
+                                if content_length:
+                                    progress[0] += len(data)
+                                    stream.write(progress)
+
+                    temp_file.close()
+                    norm_path = temp_file_path
+                    virt_path = ''
+
+                else:
+                    norm_path = self._normalise_path(path)
+                    virt_path = self._virtualise_path(path)
+
+                old_mm = self._mm
                 self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
                 dataset = DataSet.create(self._mm)
                 self._data.dataset = dataset
@@ -649,12 +714,20 @@ class Instance:
                 ioloop = asyncio.get_event_loop()
 
                 def prog_cb(p):
-                    progress = (1000 * p, 1000)
+                    if url:  # downloaded
+                        progress = (500 + 500 * p, 1000)
+                    else:
+                        progress = (1000 * p, 1000)
                     ioloop.call_soon_threadsafe(
                         functools.partial(
                             stream.write, progress))
 
                 result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title)
+
+                if integ_handler is not None:
+                    self._data.integration = integ_handler
+                    await integ_handler.process(self._data)
+
                 stream.set_result(result)
             except Exception as e:
                 self._data.dataset = None
@@ -664,8 +737,18 @@ class Instance:
             else:
                 if path != '' and not is_temp:
                     self._add_to_recents(path, self._data.title)
+            finally:
+                if old_mm is not None:
+                    old_mm.close()
+                if temp_file:
+                    if not temp_file.closed:
+                        temp_file.close()
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        pass
 
-        create_task(read_file(stream))
+        create_task(read_file(path, is_temp, stream))
         return stream
 
     async def _on_open(self, request):
