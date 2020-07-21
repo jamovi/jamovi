@@ -280,7 +280,7 @@ else {
     closeWindow = () => {
         window.close();
         if ( ! window.closed)
-            window.location = window.location.href + '../';
+            window.location = baseUrl;
     };
 
     navigate = (instanceId) => {
