@@ -36,7 +36,7 @@
     "keyboardjs": "^2.5.1",
     "less": "^3.11.1",
     "mocha": "^7.1.0",
-    "npm": "^6.14.2",
+    "npm": "^6.14.6",
     "onchange": "^6.1.0",
     "preprocessify": "^1.0.1",
     "protobufjs": "5.0.1",
