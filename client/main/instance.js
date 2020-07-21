@@ -220,10 +220,12 @@ const Instance = Backbone.Model.extend({
             if ( ! message || message.status !== 'OK') {
                 let title = (message && message.title) ? message.title : 'Unable to open';
                 let cause = (message && message.message) ? message.message : 'Unexpected error';
+                let status = (message && message.status) ? message.status : 'error';
+                let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
                 let error = new JError(title, {
                     cause,
-                    status: message.status,
-                    messageSrc: message['message-src'] });
+                    status,
+                    messageSrc });
                 throw error;
             }
             else {
