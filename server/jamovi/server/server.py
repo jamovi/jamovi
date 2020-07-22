@@ -224,6 +224,7 @@ class OpenHandler(RequestHandler):
             async for progress in instance.open(temp_file.name, base, True):
                 self._write('progress', progress)
         except Exception as e:
+            log.exception(status)
             self._write(e)
         else:
             self._write('OK', redirect=instance.id)
@@ -231,11 +232,14 @@ class OpenHandler(RequestHandler):
     def _write(self, status, progress=None, redirect=None):
         if status == 'OK':
             if redirect is not None:
-                self.write(f'{{"status":"OK","url":"{redirect}/"}}\n')
+                self.write(f'{{"status":"OK","url":"{ redirect }/"}}\n')
             else:
                 self.write('{"status":"OK"}\n')
         elif isinstance(status, BaseException):
-            self.write(f'{{"status":"error","message":"{ status }"}}\n')
+            message = str(status)
+            if not message:
+                message = type(status).__name__
+            self.write(f'{{"status":"error","message":"{ message }"}}\n')
         else:
             p, n = progress
             self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
