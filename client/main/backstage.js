@@ -834,6 +834,8 @@ const FSEntryBrowserView = SilkyView.extend({
             let filePath = name;
             if ( ! writeOnly)
                 filePath = dirInfo.path + '/' + name;
+            else
+                filePath = '{{Temp}}/' + name;
 
             if (this.model.clickProcess === 'save')
                 this.model.requestSave(filePath, FSItemType.File);
