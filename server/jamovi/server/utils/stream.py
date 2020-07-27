@@ -66,20 +66,20 @@ class Stream:
             listener()
 
 
-class ProgressStream:
+class ProgressStream(Future):
 
     def __init__(self):
+        super().__init__()
         self._progress = Queue()
         self._progress_task = create_task(self._progress.get())
-        self._complete = Future()
-        self._complete_task = create_task(self._complete)
+        self._complete_task = create_task(self)
 
     def __aiter__(self):
         return self
 
     async def __anext__(self):
 
-        if self._complete.done():
+        if self.done():
             raise StopAsyncIteration
 
         done, pending = await wait({ self._complete_task, self._progress_task }, return_when=FIRST_COMPLETED)
@@ -94,20 +94,8 @@ class ProgressStream:
             return progress
 
     def write(self, item):
-        if self._complete.done():
+        if self.done():
             raise InvalidStateError
         if self._progress.qsize() > 0:
             self._progress.get_nowait()
         self._progress.put_nowait(item)
-
-    def set_result(self, result):
-        self._complete.set_result(result)
-
-    def set_exception(self, e):
-        self._complete.set_exception(e)
-
-    def result(self):
-        return self._complete.result()
-
-    def done(self):
-        return self._complete.done()
