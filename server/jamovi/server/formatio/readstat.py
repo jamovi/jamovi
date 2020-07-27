@@ -200,6 +200,8 @@ class Parser(ReadStatParser):
                 # want to use them. we also don't support them, so this is us
                 # trying to figure out what is intended by the ranges
                 if column.data_type == DataType.INTEGER:
+                    high = int(high)
+                    low = int(low)
                     n_levels = abs(high - low)
                     if n_levels > 12:
                         # then only treat the value closer to zero as relevant
