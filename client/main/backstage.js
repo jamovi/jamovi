@@ -823,7 +823,7 @@ const FSEntryBrowserView = SilkyView.extend({
     _saveClicked : function(event) {
         let dirInfo = this.model.get('dirInfo');
         let writeOnly = this.model.writeOnly;
-        if (writeOnly || dirInfo !== undefined) {
+        if (dirInfo !== undefined) {
             let name = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
             if (name === '')
                 return;
@@ -831,11 +831,7 @@ const FSEntryBrowserView = SilkyView.extend({
             if (this._hasValidExtension(name) === false)
                 name = name + '.' + this.filterExtensions[0];
 
-            let filePath = name;
-            if ( ! writeOnly)
-                filePath = dirInfo.path + '/' + name;
-            else
-                filePath = '{{Temp}}/' + name;
+            let filePath = dirInfo.path + '/' + name;
 
             if (this.model.clickProcess === 'save')
                 this.model.requestSave(filePath, FSItemType.File);
@@ -1430,12 +1426,31 @@ const BackstageModel = Backbone.Model.extend({
             this.set('operation', 'export');
         }
     },
-    setCurrentDirectory: function(wdType, dirPath, type) {
+    setCurrentDirectory: function(wdType, dirPath, type, writeOnly=false) {
         if (dirPath === '')
             dirPath = this._wdData[wdType].defaultPath;
 
         if (wdType === 'examples' && dirPath.startsWith('{{Examples}}') === false)
             dirPath = this._wdData[wdType].defaultPath;
+
+        if ( writeOnly) {
+            let wdData = this._wdData[wdType];
+            wdData.path = dirPath;
+            wdData.oswd = dirPath;
+            for (let model of wdData.models) {
+                model.set({
+                    error: ``,
+                    items: [ ],
+                    dirInfo: { path: dirPath, type: FSItemType.Folder },
+                    status: 'ok'
+                } );
+            }
+
+            wdData.initialised = true;
+            let resolved = Promise.Resolved();
+            resolved.done = function(){};
+            return resolved;
+        }
 
         // A little delay to the 'loading' status change means that it only enters
         // the loading state if it takes longer then 100ms. This removes the ui flicker from
@@ -2025,8 +2040,8 @@ const BackstageChoices = SilkyView.extend({
                     let filePath = this.model._determineSavePath('main');
                     this.model.setCurrentDirectory('main', path.dirname(filePath)).done();
                 }
-                else if ( ! place.model.writeOnly)
-                    this.model.setCurrentDirectory(place.model.attributes.wdType, '').done();  // empty string requests default path
+                else
+                    this.model.setCurrentDirectory(place.model.attributes.wdType, '', null, place.model.writeOnly).done();  // empty string requests default path
             }
             else if (this.$current.attr('wdtype') === place.model.attributes.wdType)
                 this.$current.removeClass('wd-changing');
