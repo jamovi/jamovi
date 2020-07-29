@@ -1447,7 +1447,7 @@ const BackstageModel = Backbone.Model.extend({
             }
 
             wdData.initialised = true;
-            let resolved = Promise.Resolved();
+            let resolved = Promise.resolve();
             resolved.done = function(){};
             return resolved;
         }
