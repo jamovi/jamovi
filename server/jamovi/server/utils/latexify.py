@@ -122,7 +122,7 @@ async def latexify(content, out, resolve_image):
                         tcmi = tcmi + tmpl
                     thsp = (' & '.join(thsp) + ' \\\\\n')
                 # process the column headers: replace colspan="[NUMBER]" with single cells and split cells using <th> and </th>
-                for j in list(set(re.findall('colspan="(\d+?)"', thnm))):
+                for j in list(set(re.findall('colspan="(\\d+?)"', thnm))):
                     thnm = re.sub('<th colspan="' + j + '">', '<th>' + '</th><th>' * (int(j) - 1), thnm)
                 thcl = re.findall(r'<th>([\s\S]*?)<\/th>', thnm)
                 if int(len(thcl) / 2) != tcol:
@@ -140,7 +140,7 @@ async def latexify(content, out, resolve_image):
                 # whether the column should be left (contains only text) or right aligned (contains at least one number)
                 for j in range(len(tbdy)):
                     # process the rows in the table body: replace colspan="[NUMBER]" with single cells and split cells using <td> and </td>
-                    for k in list(set(re.findall('colspan="(\d+?)"', tbdy[j]))):
+                    for k in list(set(re.findall('colspan="(\\d+?)"', tbdy[j]))):
                         tbdy[j] = re.sub('<td colspan="' + k + '">', '<td>' + '</td><td>' * (int(k) - 1), tbdy[j])
                     tbcl = re.findall(r'<td>([\s\S]*?)<\/td>', tbdy[j])
                     if int(len(tbcl) / 2) != tcol:
@@ -328,7 +328,7 @@ async def latexify(content, out, resolve_image):
                     lpos = next(lpos)
                     if (lpos.start() < 100):
                         lorg.append(body[i.start():i.end() + lpos.end()])
-                        lrpl.append(body[i.end():i.end() + lpos.start()].strip() + '\n\\caption{' + lcpt + '}')
+                        lrpl.append(body[i.end():i.end() + lpos.start()].strip() + '\\caption{' + lcpt + '}')
                     else:
                         lorg.append(body[i.start():i.end()])
                         lrpl.append('')
