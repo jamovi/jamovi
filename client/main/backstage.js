@@ -1650,6 +1650,8 @@ const BackstageModel = Backbone.Model.extend({
         });
 
         this.requestSave(filePath, options).catch(() => {
+            this.set('activated', true);
+            this.set('operation', 'saveAs');
             this.once('change:activated', () => {
                 if (this._savePromiseResolve !== null) {
                     this._savePromiseResolve = null;

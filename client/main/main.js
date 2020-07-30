@@ -336,7 +336,7 @@ $(document).ready(async() => {
             }
             else if (response === 0) {  // Save
                 event.preventDefault();
-                backstageModel.externalRequestSave(true)
+                backstageModel.externalRequestSave()
                     .then(() => host.closeWindow(true));
             }
         }
