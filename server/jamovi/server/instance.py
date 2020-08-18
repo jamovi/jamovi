@@ -628,7 +628,6 @@ class Instance:
 
     def open(self, path, title=None, is_temp=False):
 
-        norm_path = self._normalise_path(path)
         is_example = path.startswith('{{Examples}}')
         if is_example:
             is_temp = True  # don't add to recents, etc.
@@ -700,11 +699,9 @@ class Instance:
 
                     temp_file.close()
                     norm_path = temp_file_path
-                    virt_path = ''
 
                 else:
                     norm_path = self._normalise_path(path)
-                    virt_path = self._virtualise_path(path)
 
                 old_mm = self._mm
                 self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)

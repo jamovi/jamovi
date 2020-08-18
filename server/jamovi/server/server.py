@@ -224,7 +224,7 @@ class OpenHandler(RequestHandler):
             async for progress in instance.open(temp_file.name, base, True):
                 self._write('progress', progress)
         except Exception as e:
-            log.exception(status)
+            log.exception(e)
             self._write(e)
         else:
             self._write('OK', redirect=instance.id)
