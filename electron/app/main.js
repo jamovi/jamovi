@@ -349,6 +349,8 @@ const spawn = new Promise((resolve, reject) => {
 }).then(ports => {
 
     app.on('quit', () => server.stdin.end())  // closing stdin terminates the server
+    server.on('close', (code) => { if (code === 0) app.quit(); });
+
     global.mainPort = ports[0];
     global.analysisUIPort = ports[1];
     global.resultsViewPort = ports[2];
@@ -476,9 +478,10 @@ const handleCommand = function(cmd) {
         createWindow(cmd);
     }
     else if ('install' in cmd) {
-        server.stdin.write('install: ' + cmd.install + '\n');
         if (cmd.first)
-            app.quit();
+            server.stdin.write('install-and-quit: ' + cmd.install + '\n');
+        else
+            server.stdin.write('install: ' + cmd.install + '\n');
     }
 };
 
@@ -613,8 +616,13 @@ const checkForUpdate = function(url, type='checking', force=true) {
 
 const notifyUpdateStatus = function(status) {
     setTimeout(() => {
-        let response = 'notification: update ' + status + '\n';
-        server.stdin.write(response);
+        try {
+            let response = 'notification: update ' + status + '\n';
+            server.stdin.write(response);
+        }
+        catch (e) {
+            // do nothing
+        }
     });
 }
 
