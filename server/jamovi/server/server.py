@@ -343,6 +343,7 @@ class Server:
 
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
+            self._thread.daemon = True
             self._thread.start()
 
         self._etron_reqs = [ ]
@@ -401,8 +402,14 @@ class Server:
                 self._session.set_update_status(notification_message)
             return
 
-        if line.startswith('install: '):
-            path = line[9:]
+        if line.startswith('install: ') or line.startswith('install-and-quit: '):
+            if line.startswith('install: '):
+                path = line[9:]
+                quit = False
+            else:
+                path = line[18:]
+                quit = True
+
             try:
                 await self._session.restart_engines()
                 Modules.instance().install_from_file(path)
@@ -411,6 +418,9 @@ class Server:
             except Exception:
                 import traceback
                 print(traceback.format_exc())
+
+            if quit:
+                self.stop()
         else:
             sys.stderr.write(line)
             sys.stderr.flush()
