@@ -94,6 +94,8 @@
 }
 
 .jmv-store-page {
+    display: flex;
+    flex-direction: column;
     position: absolute ;
     box-sizing: border-box ;
     width: 100% ;
