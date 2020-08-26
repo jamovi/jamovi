@@ -280,10 +280,8 @@ void EngineR::setLibPaths(const std::string &moduleName)
     for (auto path : moduleR)
     {
         ss << ",'" << makeAbsolute(path) << "/" << moduleName << "/R'";
+        ss << ",'" << makeAbsolute(path) << "/jmv/R'";
         ss << ",'" << makeAbsolute(path) << "/base/R'";
-
-        if (moduleName == "Rj")
-            ss << ", '" << makeAbsolute(path) << "/jmv/R'";
     }
 
     for (auto path : sysR)

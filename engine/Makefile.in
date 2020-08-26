@@ -41,7 +41,7 @@ INCLUDES += -I.
 
 ifeq ($(os),OSX)
 	BINDIR ?= MacOS
-	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/3.6/Resources
+	R_HOME ?= $(SRCDIR)/../../../Frameworks/R.framework/Versions/Current/Resources
 	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(SRCDIR)/../../../Frameworks \
 				-L$(R_HOME)/lib \
@@ -50,7 +50,7 @@ ifeq ($(os),OSX)
 				-lboost_filesystem \
 				-lboost_system \
 				-framework Foundation
-	CXXFLAGS += -mmacosx-version-min=10.11
+	CXXFLAGS += -mmacosx-version-min=10.13
 else
 ifeq ($(os),Linux)
 	BINDIR ?= bin
