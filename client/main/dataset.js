@@ -1617,22 +1617,30 @@ const DataSetViewModel = DataSetModel.extend({
             return data;
         });
     },
-    changeCells(data, cbHtml, columnStart, rowStart) {
+    changeCells(data, cbHtml, selection, selectionList) {
         let coms = this.attributes.coms;
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.op = coms.Messages.GetSet.SET;
         cellsRequest.incData = true;
 
         if (typeof(data) === 'string') {
-            let blockPB = new coms.Messages.DataSetRR.DataBlock();
-            blockPB.columnStart = columnStart;
-            blockPB.rowStart = rowStart;
-            // send serialized data
-            blockPB.incCBData = true;
-            blockPB.cbText = data;
-            if (cbHtml)
-                blockPB.cbHtml = cbHtml;
-            cellsRequest.data.push(blockPB);
+            let createBlock = (sel) => {
+                let blockPB = new coms.Messages.DataSetRR.DataBlock();
+                blockPB.columnStart = sel.left;
+                blockPB.rowStart = sel.top;
+                blockPB.rowCount = sel.bottom - sel.top + 1;
+                blockPB.columnCount = sel.right - sel.left + 1;
+                // send serialized data
+                blockPB.incCBData = true;
+                blockPB.cbText = data;
+                if (cbHtml)
+                    blockPB.cbHtml = cbHtml;
+                cellsRequest.data.push(blockPB);
+            };
+            createBlock(selection);
+            for (let childSelection of selectionList) {
+                createBlock(childSelection);
+            }
         }
         else {
             for (let block of data) {
