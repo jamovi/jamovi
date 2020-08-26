@@ -2982,7 +2982,7 @@ const TableView = SilkyView.extend({
             return;
         }
 
-        return this.model.changeCells(text, html, this.selection.left, this.selection.top)
+        return this.model.changeCells(text, html, this.selection, this._selectionList)
             .then(data => {
 
                 let selections = this._convertAreaDataToSelections(data.data);

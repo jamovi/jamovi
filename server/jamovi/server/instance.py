@@ -2080,11 +2080,24 @@ class Instance:
                         cells = parser.result()
                         size += self._mod_tracker.get_size_of(block_pb.cbText)
 
-                    block['row_count'] = 0
+                    row_count = 0
                     if (len(cells) > 0):
                         row_count = len(cells[0])
-                        block['row_count'] += row_count
                     col_count = len(cells)
+
+                    if block_pb.rowCount % row_count  == 0 and block_pb.columnCount % col_count == 0:
+                        row_count = block_pb.rowCount
+                        col_count = block_pb.columnCount
+                        new_cells = []
+                        for cc in range(col_count):
+                            new_rows = []
+                            new_cells.append(new_rows)
+                            for rr in range(row_count):
+                                col_val = cells[cc % len(cells)]
+                                new_rows.append(col_val[rr % len(col_val)])
+                        cells = new_cells
+
+                    block['row_count'] = row_count
                     block['column_count'] = col_count
                     block['values'] = cells
                     block['clear'] = False
