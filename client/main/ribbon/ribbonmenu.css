@@ -55,11 +55,19 @@
     -webkit-animation-iteration-count: infinite;
 }
 
-.jmv-ribbon-button:not([disabled]):hover {
+.jmv-ribbon-button:not([disabled]):not(.maintain-color):hover {
     background-color: #DDDDDD ;
 }
 
+.jmv-ribbon-button.maintain-color:not([disabled]):hover {
+    border: 1px solid black;
+}
+
 .jmv-ribbon-button:not([disabled]):active {
+    background-color: #CCCCCC ;
+}
+
+.jmv-ribbon-button:not([disabled]).checked {
     background-color: #CCCCCC ;
 }
 

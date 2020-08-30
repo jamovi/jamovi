@@ -39,6 +39,7 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
         view = new TableView({
             el: $el,
             model: model,
+            update: updateItem,
             level: level,
             parent: parent,
             mode: mode,
@@ -75,7 +76,10 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
                 el: $el,
                 model: model,
                 create: createItem,
+                update: updateItem,
                 level: level,
+                isEmptyAnalysis: parent.isEmptyAnalysis === undefined ? false : parent.isEmptyAnalysis,
+                hasTitle: parent.hasTitle === undefined ? true : parent.hasTitle,
                 parent: parent,
                 mode: mode,
                 devMode: devMode,
@@ -98,6 +102,7 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
         view = new ImageView({
             el: $el,
             model: model,
+            update: updateItem,
             level: level,
             parent: parent,
             mode: mode });
@@ -125,6 +130,7 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
                 el: $el,
                 model: model,
                 create: createItem,
+                update: updateItem,
                 level: level,
                 parent: parent,
                 mode: mode,
@@ -148,6 +154,7 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
         view = new SyntaxView({
             el: $el,
             model: model,
+            update: updateItem,
             level: level,
             parent: parent,
             mode: mode });
@@ -166,6 +173,7 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
         view = new HtmlView({
             el: $el,
             model: model,
+            update: updateItem,
             level: level,
             parent: parent,
             mode: mode });
@@ -173,5 +181,144 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
 
     return view;
 };
+
+const updateItem = function(item, element, options, level, mode, devMode, fmt, refTable ) {
+
+    if (level === undefined)
+        level = 1;
+    if (mode === undefined)
+        mode = 'rich';
+
+    let model = item.model;
+    let view = item;
+
+    if (element.type === 'table') {
+        model.set({
+            name: element.name,
+            title: element.title,
+            element: element.table,
+            status: element.status,
+            error: element.error,
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
+        model.initialize();
+
+        view.level = level;
+        view.mode = mode;
+        view.fmt = fmt;
+    }
+    else if (element.type === 'group') {
+
+        let visible;
+
+        if (element.visible === 2) {
+            visible = true;
+        }
+        else {
+            visible = false;
+            for (let child of element.group.elements) {
+                if (child.visible === 0 || child.visible === 2) {
+                    visible = true;
+                    break;
+                }
+            }
+        }
+
+        if (visible) {
+            model.set({
+                name: element.name,
+                title: element.title,
+                element: element.group,
+                status: element.status,
+                error: element.error,
+                refs: element.refs,
+                options: options,
+                refTable: refTable });
+
+                view.level = level;
+                view.mode = mode;
+                view.devMode = devMode;
+                view.fmt = fmt;
+        }
+        else
+            return false;
+    }
+    else if (element.type === 'image') {
+        model.set({
+            name: element.name,
+            title: element.title,
+            element: element.image,
+            status: element.status,
+            error: element.error,
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
+
+        view.level = level;
+        view.mode = mode;
+    }
+    else if (element.type === 'array') {
+
+        let visible = false;
+
+        for (let child of element.array.elements) {
+            if (child.visible === 0 || child.visible === 2)
+                visible = true;
+        }
+
+        if (visible) {
+            model.set({
+                name: element.name,
+                title: element.title,
+                element: element.array,
+                status: element.status,
+                error: element.error,
+                refs: element.refs,
+                options: options,
+                refTable: refTable });
+
+            view.level = level;
+            view.mode = mode;
+            view.fmt = fmt;
+        }
+        else {
+            return false;
+        }
+    }
+    else if (element.type === 'preformatted') {
+        model.set({
+            name : element.name,
+            title : element.title,
+            element : element.preformatted,
+            status: element.status,
+            error: element.error,
+            stale: element.stale,
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
+
+        view.level = level;
+        view.mode = mode;
+    }
+    else if (element.type === 'html') {
+        model.set({
+            name : element.name,
+            title : element.title,
+            element : element.html,
+            status: element.status,
+            error: element.error,
+            stale: element.stale,
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
+
+        view.level = level;
+        view.mode = mode;
+    }
+
+    return true;
+};
+
 
 module.exports = { createItem: createItem };

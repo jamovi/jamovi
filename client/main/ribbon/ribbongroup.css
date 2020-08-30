@@ -45,6 +45,7 @@
 
 .jmv-ribbon-group-body-horizontal {
     flex-direction: row;
+    justify-content: space-between;
 }
 
 .jmv-ribbon-group-body-vertical {

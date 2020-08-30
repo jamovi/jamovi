@@ -3,6 +3,7 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
+const ActionHub = require('../actionhub');
 
 const RibbonGroup = Backbone.View.extend({
 
@@ -29,6 +30,7 @@ const RibbonGroup = Backbone.View.extend({
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let align = params.alignContents === undefined ? 'stretch' : params.alignContents;
+        let name = params.name === undefined ? null : params.name;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
@@ -36,6 +38,10 @@ const RibbonGroup = Backbone.View.extend({
         if (title !== null)
             this.$el.attr('data-position', titlePosition);
 
+        if (name !== null)
+            this.$el.attr('data-name', this.name.toLowerCase());
+
+        this.name = name;
         this.title = title;
         this.dock = right ? 'right' : 'left';
 
@@ -56,7 +62,14 @@ const RibbonGroup = Backbone.View.extend({
         this.$label = this.$el.find('.jmv-ribbon-group-label');
         this.$body   = this.$el.find('.jmv-ribbon-group-body');
 
-        this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
+        if (name !== null) {
+            this.$el.on('menuActioned', (event, item) => {
+                let action = ActionHub.get(this.name);
+                action.do(item);
+            });
+        }
+
+        //this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
 
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
@@ -92,10 +105,17 @@ const RibbonGroup = Backbone.View.extend({
     addItem(item) {
         this.items.push(item);
 
+        if (this.$separator === undefined && item.dock === 'right')
+            this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
+
         if (item.dock === 'right')
             item.$el.insertAfter(this.$separator);
-        else
-            item.$el.insertBefore(this.$separator);
+        else {
+            if (this.$separator === undefined)
+                item.$el.appendTo(this.$body);
+            else
+                item.$el.insertBefore(this.$separator);
+        }
 
         item.on('shown', (menu) => this._menuShown(menu));
     },

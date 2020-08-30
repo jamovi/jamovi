@@ -89,6 +89,9 @@ message AnalysisResponse {
     uint32 version = 14;
     int32 index = 15;
     repeated Reference references = 16;
+    int32 dependsOn = 17;
+    string title = 18;
+    bool hasTitle = 19;
 }
 
 message Reference {
@@ -422,6 +425,19 @@ enum ColumnType {
     FILTER = 4;
 }
 
+message AnnotationSchema {
+
+    enum Action {
+        CREATE = 0;
+        UPDATE = 1;
+        REMOVE = 2;
+    }
+
+    int32 id = 1;
+    Action action = 2;
+    string data = 3;
+}
+
 message DataSetSchema {
 
     enum MeasureType {
@@ -492,8 +508,8 @@ message DataSetSchema {
         int32 colourIndex = 7;
         MeasureType measureType = 8;
         string suffix = 9;
-
     }
+
     repeated ColumnSchema columns = 1;
 
     uint32 rowCount = 5;

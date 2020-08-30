@@ -38,15 +38,13 @@ const ImageView = Elem.View.extend({
         this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
         this.$title.prependTo(this.$el);
 
-        if (this.model.attributes.status === 1)
-            this.$el.attr('data-status', 'inited');
-        else if (this.model.attributes.status === 2)
-            this.$el.attr('data-status', 'running');
-        else if (this.model.attributes.status === 5)
-            this.$el.attr('data-status', 'running');
+
 
         if (this.model === null)
             this.model = new ImageModel();
+
+        let address = flatten(this.address());
+        this.$image = $(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`).appendTo(this.$el);
 
         this.render();
     },
@@ -55,7 +53,23 @@ const ImageView = Elem.View.extend({
     },
     render: function() {
 
-        this.$title.text(this.model.attributes.title);
+        if (this.$title) {
+            if (this.model.attributes.title)
+                this.$title.text(this.model.attributes.title);
+            else
+                this.$title.empty();
+        }
+
+        if (this.model.attributes.status === 1)
+            this.$el.attr('data-status', 'inited');
+        else if (this.model.attributes.status === 2)
+            this.$el.attr('data-status', 'running');
+        else if (this.model.attributes.status === 5)
+            this.$el.attr('data-status', 'running');
+        else
+            this.$el.removeAttr('data-status');
+
+        let address = flatten(this.address());
 
         let element = this.model.attributes.element;
 
@@ -66,17 +80,12 @@ const ImageView = Elem.View.extend({
             backgroundImage = "url('" + url + "')";
         }
 
-        let address = flatten(this.address());
-
-        $(`<div
-            class="jmv-results-image-image"
-            data-address="${ encodeURI(address) }"
-            style="
-                background-image: ${ backgroundImage };
-                width: ${ element.width }px ;
-                height: ${ element.height }px ;
-                background-size: ${ element.width }px ;
-            ">`).appendTo(this.$el);
+        this.$image.css({
+            'background-image': backgroundImage,
+            'width': element.width + 'px',
+            'height' : element.height + 'px',
+            'background-size': element.width + 'px'
+        });
 
     }
 });

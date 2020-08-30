@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg id="svg2" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" fill="none" version="1.1" stroke-linejoin="round" height="24" width="24" stroke="currentColor" stroke-linecap="round" stroke-width="2" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" class="feather feather-code" viewBox="0 0 24 24">
+ <metadata id="metadata12">
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <polyline id="polyline4" points="16 18 22 12 16 6" stroke="#686868"/>
+ <polyline id="polyline6" points="8 6 2 12 8 18" stroke="#686868"/>
+</svg>

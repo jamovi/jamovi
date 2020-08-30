@@ -43,7 +43,9 @@ const frameCommsApi = {
         }
     },
 
-    initialiseOptions: setOptionsValues
+    initialiseOptions: setOptionsValues,
+
+    setTitle: setTitle
 };
 
 var parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
@@ -231,6 +233,22 @@ function loadAnalysis(def, jamoviVersion) {
     }
 }
 
+function setTitle(title) {
+    if (analysis.inError)
+        return;
+
+    let $title = $('.silky-options-title');
+    $title.empty();
+
+    let original = analysis.getTitle();
+    if (title === null || title.trim() === '')
+        title = original;
+
+    if (title !== original)
+        title = `${ title }<div class="sub-title">${ original }</div>`;
+    $title.append(title);
+}
+
 function setOptionsValues(data) {
     if (analysis.inError)
         return;
@@ -241,15 +259,22 @@ function setOptionsValues(data) {
         }, 0);
         return;
     }
-
+    let titleSet = false;
     var model = analysis.model;
     model.options.beginEdit();
     if (analysis.View.beginDataInitialization(data.id)) {
         var params = Options.getDefaultEventParams("changed");
         params.silent = true;
         _.each(data.options, function(value, key, list) {
-            model.options.setOptionValue(key, value, params);
+            if (key === 'results//heading') {
+                setTitle(value);
+                titleSet = true;
+            }
+            else
+                model.options.setOptionValue(key, value, params);
         });
+        if (titleSet === false)
+            setTitle('');
         analysis.View.endDataInitialization(data.id);
     }
     model.options.endEdit();

@@ -10,8 +10,8 @@ const Action = Backbone.Model.extend({
     defaults: {
         enabled: true,
     },
-    do() {
-        this.trigger('request');
+    do(source) {
+        this.trigger('request', source);
     },
     isEnabled() {
         return this.attributes.enabled;

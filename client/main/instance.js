@@ -20,6 +20,7 @@ const OptionsPB = require('./optionspb');
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
 const JError = require('./errors').JError;
+const { flatten, unflatten } = require('../common/utils/addresses');
 
 
 const Instance = Backbone.Model.extend({
@@ -38,9 +39,8 @@ const Instance = Backbone.Model.extend({
         this._analyses = new Analyses();
         this._analyses.set('dataSetModel', this._dataSetModel);
 
-        this._analyses.on('analysisCreated', this._analysisCreated, this);
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
-        this._analyses.on('analysisDeleted', this._analysisDeleted, this);
+        //this._analyses.on('analysisDeleted', this._analysisDeleted, this);
 
         this._settings.on('change:theme', event => this._themeChanged());
         this._settings.on('change:palette', event => this._paletteChanged());
@@ -53,8 +53,7 @@ const Instance = Backbone.Model.extend({
     },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
-        this._analyses.off('analysisCreated', this._analysisCreated, this);
-        this._analyses.off('analysisDeleted', this._analysisDeleted, this);
+        //this._analyses.off('analysisDeleted', this._analysisDeleted, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
@@ -67,7 +66,8 @@ const Instance = Backbone.Model.extend({
         title : '',
         blank : false,
         resultsSupplier: null,
-        arbitraryCodePresent: false
+        arbitraryCodePresent: false,
+        editState: false
     },
     instanceId() {
         return this._instanceId;
@@ -292,11 +292,20 @@ const Instance = Backbone.Model.extend({
 
             // Send the save request
 
+            let part = options.part;
+            if (part) {
+                // convert the analysis from local Id to remote id for sending to the server
+                part = unflatten(part);
+                let analysis = this.analyses().get(parseInt(part[0]), false);
+                part[0] = analysis.id.toString();
+                part = flatten(part);
+            }
+
             let save = new coms.Messages.SaveRequest(
                 filePath,
                 options.overwrite,
                 options.export,
-                options.part,
+                part,
                 options.format);
 
             if (content) {
@@ -570,7 +579,10 @@ const Instance = Backbone.Model.extend({
                 incAsText: analysisPB.incAsText,
                 references: analysisPB.references,
                 enabled: false,
+                dependsOn: analysisPB.dependsOn
             });
+            if (analysis.results.status !== 3)
+                this._runAnalysis(analysis);
             return analysis.ready;
         });
 
@@ -590,19 +602,14 @@ const Instance = Backbone.Model.extend({
         this._dataSetModel.set('edited', true);
 
         let analysis = this._analyses.create({ name, ns, title, enabled: true });
+        this._constructAnalysis(analysis);
         this.set('selectedAnalysis', analysis);
 
-        let request = this._constructAnalysisRequest(analysis, { });
-        request.perform = 0; // INIT
-
-        this._sendAnalysisRequest(request);
-
-        return analysis;
     },
     duplicateAnalysis(dupliceeId) {
 
         let duplicee = this._analyses.get(dupliceeId);
-        let index = duplicee.index + 1;
+        let index = duplicee.index + 2; //insert after proceeding annotation
         let analysis = this._analyses.create({
             name: duplicee.name,
             ns: duplicee.ns,
@@ -610,12 +617,9 @@ const Instance = Backbone.Model.extend({
             options: duplicee.options.getValues(),
             results: duplicee.results,
             incAsText: duplicee.incAsText,
-            references: duplicee.references,
+            references: duplicee.references
         });
-
-        let request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
-        request.perform = 7; // DUPLICATE
-        this._sendAnalysisRequest(request);
+        this._constructAnalysis(analysis, duplicee);
 
         return analysis;
     },
@@ -644,12 +648,13 @@ const Instance = Backbone.Model.extend({
             else
                 options = { };
         }
+
         let extras = this._optionsExtras();
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
         return request;
     },
-    _sendAnalysisRequest(request) {
+    _sendAnalysisRequest(request, analysis) {
 
         let coms = this.attributes.coms;
 
@@ -658,14 +663,25 @@ const Instance = Backbone.Model.extend({
         message.payloadType = 'AnalysisRequest';
         message.instanceId = this._instanceId;
 
-        coms.sendP(message);
-    },
-    _analysisCreated(analysis) {
-        if (analysis.results.status !== 3)
-            this._runAnalysis(analysis);
+        return coms.send(message).then((message) => {
+            if (analysis && analysis.id === 0) {
+                let coms = this.attributes.coms;
+
+                let response = coms.Messages.AnalysisResponse.decode(message.payload);
+                analysis.id = response.analysisId;
+                analysis.results.index = response.index;
+                analysis.index = response.index - 1;
+
+                for (let current of this._analyses) {
+                    if (current.waitingFor === analysis.id) {
+                        analysis.addDependent(current);
+                    }
+                }
+            }
+            this._onReceive(message);
+        });
     },
     _runAnalysis(analysis, changed) {
-
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
@@ -675,12 +691,40 @@ const Instance = Backbone.Model.extend({
         if (changed)
             request.changed = changed;
 
-        this._sendAnalysisRequest(request);
+        this._sendAnalysisRequest(request, analysis);
     },
-    _analysisDeleted(analysis) {
+    _constructAnalysis(analysis, duplicee) {
+        let coms = this.attributes.coms;
+        this._dataSetModel.set('edited', true);
+
+        let request = null;
+        if (duplicee !== undefined) {
+            request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
+            request.perform = 7; // DUPLICATE
+        }
+        else {
+            request = this._constructAnalysisRequest(analysis);
+            request.perform = 0; // INIT
+        }
+
+        this._sendAnalysisRequest(request, analysis);
+    },
+    _analysisDeleted(remoteId) {
+        let analysis = this._analyses.get(remoteId, true);
+        this._analyses.deleteAnalysis(analysis.localId);
+    },
+    deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
         let request = this._constructAnalysisRequest(analysis);
+        request.perform = 6; // DELETE
+        this._sendAnalysisRequest(request, analysis);
+    },
+    deleteAll() {
+        let coms = this.attributes.coms;
+        this._dataSetModel.set('edited', true);
+        let request = new coms.Messages.AnalysisRequest();
+        request.analysisId = 0;
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
     },
@@ -688,29 +732,59 @@ const Instance = Backbone.Model.extend({
 
         let coms = this.attributes.coms;
 
-        if (message.payloadType === 'AnalysisResponse') {
+        if (message.payloadType === 'AnalysisRequest') {
+            let response = coms.Messages.AnalysisRequest.decode(message.payload);
+            if (response.perform === 6)  { // deleted
+                if (response.analysisId === 0)
+                    this._analyses.onDeleteAll();
+                else
+                    this._analysisDeleted(response.analysisId);
+                return;
+            }
+        }
+        else if (message.payloadType === 'AnalysisResponse') {
             let response = coms.Messages.AnalysisResponse.decode(message.payload);
 
             let id = response.analysisId;
-            let analysis = this._analyses.get(id);
+            let analysis = this._analyses.get(id, true);
 
-            if ( ! analysis)  // deleted
-                return;
+            if ( ! analysis) {
+                if (response.analysisId === 0)
+                    throw 'Analysis Id can not be 0';
 
-            let options = {};
-            if (response.revision === analysis.revision)
-                options = OptionsPB.fromPB(response.options, coms.Messages);
-
-            if (analysis.isReady === false)
-                analysis.setup(options);
-
-            if (response.results)
-                analysis.setResults({
-                    results: response.results,
+                let options = OptionsPB.fromPB(response.options, coms.Messages);
+                analysis = this._analyses.create({
+                    name: response.name,
+                    title: response.hasTitle ? response.title : undefined,
+                    ns: response.ns,
+                    id: response.analysisId,
                     options: options,
+                    results: response.results,
                     incAsText: response.incAsText,
                     references: response.references,
+                    enabled: response.enabled,
+                    index: response.index - 1,
+                    dependsOn: response.dependsOn
                 });
+                if (response.name !== 'empty')
+                    this.set('selectedAnalysis', analysis);
+            }
+            else {
+                let options = {};
+                if (response.revision === analysis.revision)
+                    options = OptionsPB.fromPB(response.options, coms.Messages);
+
+                if (analysis.isReady === false)
+                    analysis.setup(options);
+
+                if (response.results)
+                    analysis.setResults({
+                        results: response.results,
+                        options: options,
+                        incAsText: response.incAsText,
+                        references: response.references,
+                    });
+            }
         }
         else if (message.payloadType === 'ModuleRR') {
             let response = coms.Messages.ModuleRR.decode(message.payload);

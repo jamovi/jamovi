@@ -8,6 +8,7 @@ class Option:
         self.name = None
         self.type = None
         self.passive = False
+        self.default = None
 
 
 class Options:
@@ -60,6 +61,8 @@ class Options:
             else:
                 default = None
 
+            option.default = default
+
             Options._populate_pb(opt_pb, default)
 
         return options
@@ -95,13 +98,22 @@ class Options:
         self._results = None
         self._pb = AnalysisOptions()
 
+    def reset(self):
+        for i in range(len(self._pb.names)):
+            name = self._pb.names[i]
+            opt_pb = self._pb.options[i]
+            default = None
+            if name in self._options:
+                default = self._options[name].default
+
+            self._populate_pb(opt_pb, default)
+
     def set(self, pb):
         changes = False
         old_names = list(self._pb.names)
         new_names = list(pb.names)
 
-        for i in range(len(new_names)):
-            name = new_names[i]
+        for i, name in enumerate(new_names):
             new_pb = pb.options[i]
 
             changed = False
@@ -124,6 +136,14 @@ class Options:
                         changes = True
                 elif name not in self._options or not self._options[name].passive:
                     changes = True
+
+        to_delete = set(old_names) - set(new_names)
+        to_delete = filter(lambda name: name.startswith('results/'), to_delete)
+        to_delete = list(to_delete)
+        for i, old_name in reversed(list(enumerate(old_names))):
+            if old_name in to_delete:
+                del self._pb.options[i]
+                del self._pb.names[i]
 
         return changes
 

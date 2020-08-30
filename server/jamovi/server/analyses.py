@@ -59,6 +59,8 @@ class Analysis:
             addons = [ ]
         self.addons = addons
         self.load_error = load_error
+        self.dependents = [ ]
+        self.depends_on = 0
 
         self._ops = [ ]
 
@@ -70,6 +72,12 @@ class Analysis:
     def instance(self):
         return self.dataset.instance
 
+    def reset_options(self, revision):
+        self.revision = revision
+        self.options.reset()
+        self.results.options.CopyFrom(self.options.as_pb())
+        self.results.revision = revision
+
     def set_options(self, options, changes, revision, enabled=None):
         self.revision = revision
         wasnt_but_now_is_enabled = (self.enabled is False) and enabled
@@ -77,6 +85,7 @@ class Analysis:
             self.enabled = True
         non_passive_changes = self.options.set(options)
         if not non_passive_changes and len(changes) == 0 and not wasnt_but_now_is_enabled:
+            self.results.options.CopyFrom(self.options.as_pb())
             return
         self.complete = False
         if len(changes) > 0:
@@ -84,7 +93,7 @@ class Analysis:
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
-    def set_results(self, results, complete=True):
+    def set_results(self, results, complete=True, silent=False):
         self.results = results
         self.complete = complete
         if len(results.options.names) > 0:  # if not empty
@@ -93,17 +102,30 @@ class Analysis:
         else:
             # otherwise use options from analysis
             results.options.CopyFrom(self.options.as_pb())
+
+        results.dependsOn = self.depends_on
+        results.index = self.parent.index_of(self) + 1
+
         self.changes.clear()
         self.clear_state = False
-        self.parent._notify_results_changed(self)
+        if not silent:
+            self.parent._notify_results_changed(self)
 
     def copy_from(self, analysis):
         self.revision = analysis.revision
         results = deepcopy(analysis.results)
+
         results.instanceId = self.instance.id
         results.analysisId = self.id
         results.index = 0
-        self.set_results(results)
+
+        self.set_results(results, silent=True)
+
+    def add_dependent(self, child):
+        self.dependents.append(child)
+        child.depends_on = self.id
+        if child.results:
+            child.results.dependsOn = self.id
 
     def run(self):
         self.status = Analysis.Status.NONE
@@ -221,6 +243,7 @@ class Analyses:
         self._analyses = []
         self._options_changed_listeners = []
         self._results_changed_listeners = []
+        self._next_id = 1
 
         Modules.instance().add_listener(self._module_event)
 
@@ -273,38 +296,119 @@ class Analyses:
         except Exception:
             return Analysis(self._dataset, id, name, ns, Options(), self, enabled, load_error=True)
 
-    def create_from_serial(self, serial):
-
-        analysis_pb = jcoms.AnalysisResponse()
-        analysis_pb.ParseFromString(serial)
-
+    def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:
             # Handle corrupt references
             if not ref_pb.HasField('authors'):
                 del analysis_pb.references[:]
                 break
 
+        id = analysis_pb.analysisId
+        if new_id:
+            id = self._next_id
+            self._next_id += 1
+
+        if id >= self._next_id:
+            self._next_id = id + 1
+
         analysis = self._construct(
-            analysis_pb.analysisId,
+            id,
             analysis_pb.name,
             analysis_pb.ns,
             analysis_pb.options)
 
-        analysis.results = analysis_pb
-        analysis.status = Analysis.Status.COMPLETE
+        if analysis_pb.dependsOn != 0:
+            patron = self.get(analysis_pb.dependsOn)
+            patron.add_dependent(analysis)
+
+        analysis.set_results(analysis_pb, silent=True)
+        analysis.status = status
+
+        return analysis
+
+    def create_from_serial(self, serial):
+
+        analysis_pb = jcoms.AnalysisResponse()
+        analysis_pb.ParseFromString(serial)
+
+        analysis = self._construct_from_pb(analysis_pb, status=Analysis.Status.COMPLETE)
+
         self._analyses.append(analysis)
 
         return analysis
 
+    def has_header_annotation(self):
+        if len(self._analyses) == 0:
+            return False
+
+        return self._analyses[0].name == 'empty'
+
     def create(self, id, name, ns, options_pb, index=None):
 
+        if id == 0:
+            id = self._next_id
+            self._next_id += 1
+        elif id >= self._next_id:
+            self._next_id = id + 1
+
         analysis = self._construct(id, name, ns, options_pb, True)
+
         if index is not None:
             self._analyses.insert(index, analysis)
         else:
             self._analyses.append(analysis)
+            index = len(self._analyses) - 1
+
+        annotation = self.create_annotation(index + 1, update_indices=False)
+
+        self.update_indices()
+
+        analysis.add_dependent(annotation)
 
         return analysis
+
+    def create_annotation(self, index, update_indices=True):
+        options = Options.create([], [])
+        annotation = self._construct(
+            self._next_id,
+            'empty',
+            'jmv',
+            options.as_pb())
+        annotation.status = Analysis.Status.COMPLETE
+        self._next_id += 1
+
+        annotation_pb = jcoms.AnalysisResponse()
+        annotation_pb.name = annotation.name
+        annotation_pb.ns = annotation.ns
+        annotation_pb.analysisId = annotation.id
+        annotation_pb.options.ParseFromString(annotation.options.as_bytes())
+        annotation_pb.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
+        annotation_pb.index = index + 1
+        annotation_pb.title = ''
+        annotation_pb.hasTitle = True
+
+        annotation.set_results(annotation_pb, silent=True)
+
+        if index is not None:
+            self._analyses.insert(index, annotation)
+        else:
+            self._analyses.append(annotation)
+
+        if update_indices:
+            self.update_indices()
+
+        return annotation
+
+    def update_indices(self):
+        for i in range(0, len(self._analyses)):
+            if self._analyses[i].results is not None:
+                self._analyses[i].results.index = i + 1
+
+    def index_of(self, analysis):
+        try:
+            return self._analyses.index(analysis)
+        except Exception:
+            return -1
 
     def recreate(self, id):
         old = self[id]
@@ -341,6 +445,9 @@ class Analyses:
 
     def remove_options_changed_listener(self, listener):
         self._options_changed_listeners.remove(listener)
+
+    def remove_all(self):
+        self._analyses = []
 
     def _notify_options_changed(self, analysis):
         for listener in self._options_changed_listeners:

@@ -1,0 +1,205 @@
+.jmv-ribbon-button.has-icon .jmv-ribbon-button-icon {
+    background-image: unset;
+}
+
+.jmv-ribbon-button-icon svg {
+    width: auto;
+    height: 118%;
+    margin-top: -9%;
+}
+
+.jmv-ribbon-button-icon .ql-stroke {
+    fill: none;
+    stroke: #6f6f6f;;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+.jmv-ribbon-button-icon .ql-stroke-miter {
+    fill: none;
+    stroke: #6f6f6f;
+    stroke-miterlimit: 10;
+    stroke-width: 2;
+}
+.jmv-ribbon-button-icon .ql-fill,
+.jmv-ribbon-button-icon .ql-stroke.ql-fill {
+    fill: #6f6f6f;
+}
+.jmv-ribbon-button-icon .ql-empty {
+    fill: none;
+}
+.jmv-ribbon-button-icon .ql-even {
+    fill-rule: evenodd;
+}
+.jmv-ribbon-button-icon .ql-thin,
+.jmv-ribbon-button-icon .ql-stroke.ql-thin {
+    stroke-width: 1;
+}
+.jmv-ribbon-button-icon .ql-transparent {
+    opacity: 0.4;
+}
+
+
+.jmv-ribbon-button[data-name=textcopy] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-data-copy.svg');
+}
+
+.jmv-ribbon-button[data-name=textpaste] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-data-paste.svg');
+}
+
+.jmv-ribbon-button[data-name=textundo] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-undo.svg');
+}
+
+.jmv-ribbon-button[data-name=textredo] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-redo.svg');
+}
+
+.jmv-ribbon-button[data-name=textcut] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-data-cut.svg');
+}
+
+.jmv-ribbon-button[title='#000000'] {
+    background-color: #000000;
+}
+
+.jmv-ribbon-button[title='#e60000'] {
+    background-color: #e60000;
+}
+
+.jmv-ribbon-button[title='#ff9900'] {
+    background-color: #ff9900;
+}
+
+.jmv-ribbon-button[title='#ffff00'] {
+    background-color: #ffff00;
+}
+
+.jmv-ribbon-button[title='#008a00'] {
+    background-color: #008a00;
+}
+
+.jmv-ribbon-button[title='#0066cc'] {
+    background-color: #0066cc;
+}
+
+.jmv-ribbon-button[title='#9933ff'] {
+    background-color: #9933ff;
+}
+
+.jmv-ribbon-button[title='#ffffff'] {
+    background-color: #ffffff;
+}
+
+.jmv-ribbon-button[title='#facccc'] {
+    background-color: #facccc;
+}
+
+.jmv-ribbon-button[title='#ffebcc'] {
+    background-color: #ffebcc;
+}
+
+.jmv-ribbon-button[title='#ffffcc'] {
+    background-color: #ffffcc;
+}
+
+.jmv-ribbon-button[title='#cce8cc'] {
+    background-color: #cce8cc;
+}
+
+.jmv-ribbon-button[title='#cce0f5'] {
+    background-color: #cce0f5;
+}
+
+.jmv-ribbon-button[title='#ebd6ff'] {
+    background-color: #ebd6ff;
+}
+
+.jmv-ribbon-button[title='#bbbbbb'] {
+    background-color: #bbbbbb;
+}
+
+.jmv-ribbon-button[title='#f06666'] {
+    background-color: #f06666;
+}
+
+.jmv-ribbon-button[title='#ffc266'] {
+    background-color: #ffc266;
+}
+
+.jmv-ribbon-button[title='#ffff66'] {
+    background-color: #ffff66;
+}
+
+.jmv-ribbon-button[title='#66b966'] {
+    background-color: #66b966;
+}
+
+.jmv-ribbon-button[title='#66a3e0'] {
+    background-color: #66a3e0;
+}
+
+.jmv-ribbon-button[title='#c285ff'] {
+    background-color: #c285ff;
+}
+
+.jmv-ribbon-button[title='#888888'] {
+    background-color: #888888;
+}
+
+.jmv-ribbon-button[title='#a10000'] {
+    background-color: #a10000;
+}
+
+.jmv-ribbon-button[title='#b26b00'] {
+    background-color: #b26b00;
+}
+
+.jmv-ribbon-button[title='#b2b200'] {
+    background-color: #b2b200;
+}
+
+.jmv-ribbon-button[title='#006100'] {
+    background-color: #006100;
+}
+
+.jmv-ribbon-button[title='#0047b2'] {
+    background-color: #0047b2;
+}
+
+.jmv-ribbon-button[title='#6b24b2'] {
+    background-color: #6b24b2;
+}
+
+.jmv-ribbon-button[title='#444444'] {
+    background-color: #444444;
+}
+
+.jmv-ribbon-button[title='#5c0000'] {
+    background-color: #5c0000;
+}
+
+.jmv-ribbon-button[title='#663d00'] {
+    background-color: #663d00;
+}
+
+.jmv-ribbon-button[title='#666600'] {
+    background-color: #666600;
+}
+
+.jmv-ribbon-button[title='#003700'] {
+    background-color: #003700;
+}
+
+.jmv-ribbon-button[title='#002966'] {
+    background-color: #002966;
+}
+
+.jmv-ribbon-button[title='#3d1466'] {
+    background-color: #3d1466;
+}
+
+.jmv-ribbon-button.color-sample {
+    border: 1px solid white;
+}

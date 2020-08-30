@@ -17,23 +17,29 @@ const RibbonButton = Backbone.View.extend({
         tabName:    //Tab in which the button lives (namespace). Will add if not specified.
         size:       //'small', 'medium', 'large', 'huge' [default: medium]
         right:      //Is the button docked to the right? [default: false]
+        icon:       //svg to have as an icon
         $el:        //jquery element. Will create if not defined.
+        class:       //define a type so styling can be customised. It will be added as class attribute.
     }
     */
 
     initialize(params) {
 
         let title = params.title === undefined ? null : params.title;
+        let icon = params.icon === undefined ? null : params.icon;
         let name = params.name;
         let size = params.size === undefined ? 'medium' : params.size;
         let right = params.right === undefined ? false : params.right;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
+        let classes =  params.class === undefined ? null : params.class;
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button');
         this.$el.addClass('jmv-ribbon-button-size-' + size);
         this.$el.addClass('jmv-ribbon-button-margin-' + margin);
+        if (classes !== null)
+            this.$el.addClass(classes);
 
         this.tabName = null;
         this._definedTabName = false;
@@ -42,10 +48,14 @@ const RibbonButton = Backbone.View.extend({
             this._definedTabName = true;
         }
 
+        this.icon = icon;
         this.size = size;
         this.title = title;
         this.name = name;
         this.dock = right ? 'right' : 'left';
+
+        if (icon !== null)
+            this.$el.addClass('has-icon');
 
         this.$el.attr('data-name', this.name.toLowerCase());
         this.$el.attr('disabled');
@@ -69,6 +79,22 @@ const RibbonButton = Backbone.View.extend({
 
         if (this.size === 'small' && this.title !== null)
             this.$el.attr('title', this.title);
+
+        this.value = false;
+    },
+    render_xml(id, xml_string){
+        var doc = new DOMParser().parseFromString(xml_string, 'application/xml');
+        var el = document.getElementById(id);
+        el.appendChild(
+            el.ownerDocument.importNode(doc.documentElement, true)
+        );
+    },
+    setValue(value) {
+        this.value = value;
+        if (value)
+            this.$el.addClass('checked');
+        else
+            this.$el.removeClass('checked');
     },
     setParent(parent) {
         this.parent = parent;
@@ -99,11 +125,13 @@ const RibbonButton = Backbone.View.extend({
 
         if ( ! action.attributes.enabled)
             ; // do nothing
-        else if (this._menuGroup !== undefined)
+        else if (this._menuGroup !== undefined) {
             this._toggleMenu();
+            action.do(this);
+        }
         else {
-            action.do();
-            this.$el.trigger('menuActioned');
+            action.do(this);
+            this.$el.trigger('menuActioned', this);
         }
 
         event.stopPropagation();
@@ -111,10 +139,16 @@ const RibbonButton = Backbone.View.extend({
 
     addItem(item) {
         if (this._menuGroup === undefined) {
+            this.$el.addClass('has-children');
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
             this.$menu.append(this._menuGroup.$el);
             $('<div class="jmv-ribbon-menu-arrow"></div>').insertBefore(this.$menu);
+
+            this.$el.on('menuActioned', (event, item) => {
+                let action = ActionHub.get(this.name);
+                action.do(item);
+            });
         }
 
         this._menuGroup.addItem(item);
@@ -122,7 +156,7 @@ const RibbonButton = Backbone.View.extend({
 
     _refresh() {
         let html = '';
-        html += '   <div class="jmv-ribbon-button-icon"></div>';
+        html += '   <div class="jmv-ribbon-button-icon">' + (this.icon === null ? '' : this.icon) + '</div>';
         if (this.size === 'medium' || this.size === 'large')
             html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
 
