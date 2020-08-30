@@ -42,9 +42,8 @@
 
 .jmv-results-panel iframe {
     overflow: hidden ;
-    transition: width 0.4s, height 0.2s, background-color 0.2s ;
-    margin: 5px ;
     background-color: transparent ;
+    transition: 0.3s background-color;
 }
 
 .jmv-results-panel iframe::-webkit-scrollbar {
@@ -56,6 +55,10 @@
     background-color: white ;
 }
 
+.jmv-results-panel:not(.all-selected) .jmv-results-container.empty-analysis iframe.hover {
+    background-color: #f1f1f1 ;
+}
+
 .jmv-results-container[data-selected] .jmv-results-cover {
     display: none ;
 }
@@ -63,6 +66,9 @@
 .jmv-results-container {
     position: relative ;
     overflow: hidden ;
+}
+
+.jmv-results-container:not([data-analysis-name='empty']) {
     transition: 0.5s height ;
 }
 
@@ -75,11 +81,15 @@
     opacity: 0 ;
     background-color: white ;
     z-index: 1 ;
+    border: 1px dash transparent;
+}
+
+.jmv-results-cover:hover {
+    border: 1px dash black;
 }
 
 jmv-references {
     margin-top: 50px ;
-    margin-left: 6px ;
     margin-bottom: 20px ;
     border: 2px solid transparent ;
     max-width: 1000px ;

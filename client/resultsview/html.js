@@ -29,6 +29,21 @@ var HtmlView = Elem.View.extend({
             this.model = new HtmlModel();
 
         this.$head = $('head');
+
+        this.promises = [ ];
+
+        let doc = this.model.attributes.element;
+
+        for (let ss of doc.stylesheets) {
+            let url = 'module/' + ss;
+            let promise = this._insertSS(url);
+            this.promises.push(promise);
+        }
+
+        for (let script of doc.scripts)
+            this.$head.append('<script src="module/' + script + '" class="module-asset"></script>');
+
+
         this.render();
     },
     type: function() {
@@ -39,20 +54,19 @@ var HtmlView = Elem.View.extend({
         this.$head.find('.module-asset').remove();
 
         let doc = this.model.attributes.element;
-        let promises = [ ];
+        if (doc.content === '')
+            return;
 
-        for (let ss of doc.stylesheets) {
-            let url = 'module/' + ss;
-            let promise = this._insertSS(url);
-            promises.push(promise);
-        }
-
-        for (let script of doc.scripts)
-            this.$head.append('<script src="module/' + script + '" class="module-asset"></script>');
-
-        this.ready = Promise.all(promises).then(() => {
-            let $content = $(doc.content);
-            this.addContent($content);
+        this.ready = Promise.all(this.promises).then(() => {
+            let $content = this.$el.find('.content');
+            if ($content.length > 0) {
+                this.$el.find('a[href]').off('click');
+                $content.html(doc.content);
+            }
+            else {
+                $content = $(`<div class="content">${ doc.content }</div>`);
+                this.addContent($content);
+            }
             this.$el.find('a[href]').on('click', (event) => this._handleLinkClick(event));
         });
     },

@@ -1,6 +1,11 @@
 
 @import (inline) "../lib/metro-icons.css";
 
+@import (inline) '../node_modules/quill/dist/quill.core.css';
+@import (inline) '../node_modules/katex/dist/katex.min.css';
+@import (inline) './annotation.css';
+@import (inline) '../node_modules/highlight.js/styles/tomorrow.css';
+
 body {
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
     color: #333333 ;
@@ -12,19 +17,71 @@ body {
 h1 {
     font-size: 160% ;
     color: #3E6DA9 ;
-    margin-bottom: 12px ;
+    margin-bottom: 3px ;
     white-space: nowrap ;
+}
+
+.jmv-editable-header > h1 {
+    transition: 0.2s padding, 0.2s background-color, 0.2s margin;
+    cursor: text;
+    outline-style: none;
+    background-color: #ecf3fb;
+    transition: .2s background-color
+}
+
+.jmv-editable-header > .analysis-name {
+    margin-left: 5px;
+    font-size: 80%;
+    color: #bcbdbe;
+    margin-top: -3px;
+    transition: 0.2s height;
+    overflow: hidden;
+
+}
+
+#results.edit-state .jmv-editable-header > h1 {
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: -10px;
+    width: 580px;
+}
+
+#results:not(.edit-state) .jmv-editable-header > h1,
+#results.edit-state.edit-focus .jmv-editable-header:not(.focused) > h1 {
+    background-color: transparent;
+}
+
+#results.edit-state:not(.no-analysis-selected):not(.analysis-selected):not(.edit-focus) .jmv-editable-header > h1 {
+    background-color: unset;
+}
+
+#results.edit-state:not(.no-analysis-selected):not(.analysis-selected):not(.edit-focus).annotation-selected.annotation .jmv-editable-header > h1 {
+    background-color: #cddae8;
+}
+
+#results.edit-state.no-analysis-selected.hovering .jmv-editable-header > h1 {
+    background-color: #cddae8;
+}
+
+#results.edit-state.analysis-selected .jmv-editable-header > h1:hover {
+    background-color: #d2e3f3;
+}
+
+#results.edit-state.analysis-selected .jmv-editable-header.focused > h1 {
+    background-color: #f3f7fc;
 }
 
 h2 {
     font-size: 130% ;
-    margin-bottom: 12px ;
+    margin-bottom: 3px ;
+    margin-top: 3px ;
     color: #3E6DA9 ;
 }
 
 h3, h4, h5 {
     font-size: 110% ;
-    margin-bottom: 12px ;
+    margin-bottom: 3px ;
+    margin-top: 3px ;
 }
 
 table {
@@ -46,6 +103,7 @@ input, [contenteditable] {
     margin-left:    8px ;
     padding-left:  12px ;
     padding-right: 12px ;
+    /*margin-top:    10px ;*/
 }
 
 #selector {
@@ -67,11 +125,13 @@ input, [contenteditable] {
 
 .jmv-results-item {
     margin-right: 24px ;
-    padding-top: 8px ;
-    padding-bottom: 8px ;
+    padding-top: 0px ;
+    padding-bottom: 0px ;
     display: inline-block ;
     box-sizing: border-box;
     vertical-align: top ;
+    opacity: 1;
+    transition: 0.3s opacity;
 }
 
 .jmv-results-error {
@@ -94,13 +154,7 @@ input, [contenteditable] {
 }
 
 #results > .jmv-results-item:last-child {
-    margin-bottom: 24px ;
-}
-
-.jmv-results-group .jmv-results-group {
-    padding-top: 0 ;
-    padding-bottom: 0 ;
-    margin-bottom: 0 ;
+    margin-bottom: 15px ;
 }
 
 .jmv-results-group-container,
@@ -231,13 +285,7 @@ td.jmv-results-table-cell-format-narrow + td.jmv-results-table-cell-sup {
 
 td.jmv-results-table-cell-group-begin {
     padding-top: 8px ;
-    /* background-color: pink ; */
 }
-
-/*td.jmv-results-table-cell-group-end {
-    padding-bottom: 6px ;
-    background-color: lightblue ;
-}*/
 
 td.jmv-results-table-cell-negative {
     color: #DD0000 ;
@@ -340,6 +388,11 @@ table.row-selectable tr.selected td {
     margin-left: 8px ;
 }
 
+.jmv-results-item.hidden {
+    opacity: 0;
+    height: 0%;
+}
+
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h1,
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h2,
 .jmv-results-array.jmv-results-array-listselect > .jmv-results-array-container > .jmv-results-item > h3,
@@ -388,14 +441,6 @@ body[data-mode="text"] {
     padding-left: 12px ;
 }
 
-[data-mode="text"] h1,
-[data-mode="text"] h2,
-[data-mode="text"] h3,
-[data-mode="text"] h4,
-[data-mode="text"] h5 {
-    margin-left: 2px ;
-}
-
 [data-mode="text"] .jmv-results-syntax {
     margin-top: 4px ;
     margin-bottom: 8px ;
@@ -406,7 +451,6 @@ pre {
     font-family: Consolas,"Liberation Mono",Menlo,Courier,monospace;
     margin-top: 0 ;
     margin-bottom : 0;
-    border: 2px solid transparent ;
     box-sizing: border-box;
     position: relative ;
 }
@@ -428,4 +472,18 @@ pre {
 
 .jmv-results-refs {
     display: grid ;
+}
+
+.ql-toolbar {
+    transition: 0.2s height, 0.2s opacity, 0.2s padding, 0.2s border-color, 0.2s border-width;
+    opacity: 1;
+    height: 40px;
+    overflow: hidden;
+}
+
+
+.annotate .jmv-annotation {
+    height: 20px;
+    opacity: 1;
+    overflow: visible;
 }

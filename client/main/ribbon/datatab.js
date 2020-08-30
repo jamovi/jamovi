@@ -1,8 +1,6 @@
 
 'use strict';
 
-const $ = require('jquery');
-
 const RibbonButton = require('./ribbonbutton');
 const RibbonSeparator = require('./ribbonseparator');
 const RibbonGroup = require('./ribbongroup');

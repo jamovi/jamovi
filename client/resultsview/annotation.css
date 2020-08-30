@@ -1,0 +1,249 @@
+
+.jmv-annotation {
+    position: relative;
+    transition: .2s height, .2s background-color, .2s border-color;
+    color: #3E6DA9;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    border-bottom: 1px dashed transparent;
+}
+
+#results:not(.edit-state) .jmv-annotation .editor-box,
+#results.edit-state.edit-focus .jmv-annotation:not(.focused) .editor-box {
+    background-color: transparent;
+}
+
+#results:not(.edit-state) .jmv-annotation,
+#results.edit-state.edit-focus .jmv-annotation:not(.focused) {
+    background-color: transparent;
+}
+
+#results.edit-state.edit-focus.analysis-selected .jmv-annotation:not(.focused):not(.edited) {
+    border-bottom: 1px dashed #aeaeae;
+}
+
+#results.edit-state.edit-focus.annotation-selected.annotation .jmv-annotation:not(.focused):not(.edited) {
+    border-bottom: 1px dashed #aeaeae;
+}
+
+#results:not(.edit-state) .jmv-annotation {
+    background-color: transparent;
+}
+
+#results:not(.edit-state) .jmv-annotation {
+    min-height: 0px;
+}
+
+.jmv-annotation[level='0'] .editor-box, .jmv-annotation[level='0'] {
+    width: 580px;
+}
+
+.jmv-annotation[level='1'] .editor-box, .jmv-annotation[level='1'] {
+    width: 555px;
+}
+
+.jmv-annotation[level='2'] .editor-box, .jmv-annotation[level='2'] {
+    width: 530px;
+}
+
+.jmv-annotation[level='3'] .editor-box, .jmv-annotation[level='3'] {
+    width: 505px;
+}
+
+.jmv-annotation .editor-box {
+    width: 100%;
+    transition: .2s opacity, .2s background-color, 0.2s margin, 0.2s padding;
+    overflow: hidden;
+    overflow: visible;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-top: 0px;
+    background-color: #ecf3fb;
+
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: -10px;
+}
+
+#results.edit-state:not(.analysis-selected):not(.no-analysis-selected):not(.edit-focus) .jmv-annotation .editor-box {
+    background-color: unset; /*#cddae8;*/
+}
+
+#results.edit-state:not(.analysis-selected):not(.no-analysis-selected):not(.edit-focus).annotation-selected.annotation .jmv-annotation .editor-box {
+    background-color: #cddae8;
+}
+
+#results.edit-state.no-analysis-selected.hovering .jmv-annotation .editor-box {
+    background-color: #cddae8;
+}
+
+#results.edit-state.analysis-selected .jmv-annotation .editor-box:hover {
+    background-color: #d2e3f3;
+}
+
+#results.edit-state.analysis-selected .jmv-annotation.focused .editor-box {
+    background-color: #f3f7fc
+}
+
+.jmv-annotation .ql-editor {
+    padding: 0;
+    transition: 0.2s padding;
+}
+
+.jmv-annotation .ql-editor:not(.ql-blank) {
+    padding-top: 10px ;
+    padding-bottom: 10px ;
+}
+
+.jmv-annotation .ql-container {
+    font-family: unset;
+    font-size: unset;
+}
+
+.ql-toolbar {
+  display: none;
+}
+
+.editor.ql-container {
+  border: unset;
+}
+
+/* remove padding at top of editor */
+.jmv-annotation .ql-editor :first-child:not(code) {
+  padding-top: 0px;
+}
+/*
+here you set what paragraph spacing you want.
+DO NOT USE MARGIN INSIDE OF EDITOR OR IT WILL ADD NEWLINES:
+https://github.com/quilljs/quill/issues/1157
+*/
+.jmv-annotation .ql-editor p {
+  padding-top: 12px;
+}
+.jmv-annotation .ql-editor h1, .jmv-annotation .ql-editor h2, .jmv-annotation .ql-editor h3 {
+  padding-top: 16px;
+}
+
+.jmv-annotation .ql-editor pre.ql-syntax {
+    padding: 5px 5px 5px 10px;
+    border: 1px solid #CCCCCC;
+    background-color: #FAFAFA;
+    border-radius: 5px;
+    margin-top: 12px;
+    overflow: auto;
+    color: #333333;
+}
+
+.ql-container.ql-disabled .ql-tooltip {
+  visibility: hidden;
+}
+
+.jmv-note-theme .ql-hidden {
+  display: none;
+}
+
+.jmv-note-theme .ql-tooltip {
+  position: absolute;
+  transform: translateY(10px);
+}
+
+.jmv-note-theme .ql-tooltip a {
+  cursor: pointer;
+  text-decoration: none;
+}
+.jmv-note-theme .ql-tooltip.ql-flip {
+  transform: translateY(-10px);
+}
+
+.jmv-note-theme .ql-tooltip {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0px 0px 5px #ddd;
+  color: #444;
+  padding: 5px 12px;
+  white-space: nowrap;
+  z-index: 10;
+}
+.jmv-note-theme .ql-tooltip::before {
+  content: "Visit URL:";
+  line-height: 26px;
+  margin-right: 8px;
+}
+.jmv-note-theme .ql-tooltip input[type=text] {
+  display: none;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  height: 26px;
+  margin: 0px;
+  padding: 3px 5px;
+  width: 270px;
+}
+.jmv-note-theme .ql-tooltip a.ql-preview {
+  display: inline-block;
+  max-width: 200px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+.jmv-note-theme .ql-tooltip a.ql-action::after {
+  border-right: 1px solid #ccc;
+  content: 'Edit';
+  margin-left: 16px;
+  padding-right: 8px;
+}
+.jmv-note-theme .ql-tooltip a.ql-remove::before {
+  content: 'Remove';
+  margin-left: 8px;
+}
+.jmv-note-theme .ql-tooltip a {
+  line-height: 26px;
+}
+.jmv-note-theme .ql-tooltip.ql-editing a.ql-preview,
+.jmv-note-theme .ql-tooltip.ql-editing a.ql-remove {
+  display: none;
+}
+.jmv-note-theme .ql-tooltip.ql-editing input[type=text] {
+  display: inline-block;
+}
+.jmv-note-theme .ql-tooltip.ql-editing a.ql-action::after {
+  border-right: 0px;
+  content: 'Save';
+  padding-right: 0px;
+}
+.jmv-note-theme .ql-tooltip[data-mode=link]::before {
+  content: "Enter link:";
+}
+.jmv-note-theme .ql-tooltip[data-mode=formula]::before {
+  content: "Enter formula:";
+}
+.jmv-note-theme .ql-tooltip[data-mode=video]::before {
+  content: "Enter video:";
+}
+
+.jmv-note-theme .ql-tooltip .ql-help {
+    display: none;
+}
+
+.jmv-note-theme .ql-tooltip[data-mode=formula] .ql-help {
+    display: inline;
+}
+
+.ql-editor.ql-blank::before {
+    left: 0px;
+    content: '';
+    color: rgb(116, 116, 116);
+    opacity: 0;
+    transition: opacity 0.2s;
+    transition-delay: 0.2s;
+    font-style: normal;
+    color: #3E6DA9;
+}
+
+.edit-state .ql-editor.ql-blank::before {
+    color: rgba(46, 46, 46, 0.55);
+}
+
+#results:not(.edit-state) .jmv-annotation:not(.focused) .ql-editor.ql-blank:hover::before {
+    content: attr(data-placeholder);
+    opacity: 1;
+}
