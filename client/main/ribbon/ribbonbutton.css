@@ -40,6 +40,11 @@
     margin: 0 2px 0 6px;
 }
 
+.jmv-ribbon-button-size-small .jmv-ribbon-menu-arrow {
+    height: 100%;
+    margin: 0 0px 0 0px;
+}
+
 .jmv-ribbon-group-body .jmv-ribbon-button-icon {
     padding: 0px;
     background-position: center;
@@ -81,6 +86,13 @@
     align-items: center;
 }
 
+.jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-small.has-children {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 3px;
+}
+
 .jmv-ribbon-button-size-medium .jmv-ribbon-button-icon {
     height: 15px;
     width: 20px;
@@ -93,7 +105,7 @@
 }
 
 /*small button*/
-.jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-small {
+.jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-small:not(.has-children) {
     width: 18px ;
     padding: 3px;
 }

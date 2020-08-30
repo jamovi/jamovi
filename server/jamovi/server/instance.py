@@ -726,6 +726,30 @@ class Instance:
                     await integ_handler.process(self._data)
 
                 stream.set_result(result)
+
+                i = 0
+                while i < len(self._data.analyses._analyses):
+                    analysis = self._data.analyses._analyses[i]
+                    is_last = i == len(self._data.analyses._analyses) - 1
+                    if ((i % 2 == 0 or is_last) and analysis.name != 'empty'):
+                        while True:
+                            annotation = self._data.analyses.create_annotation(i)
+                            annotation.run()
+                            annotation.results.index = i + 1
+                            if i == 0:
+                                annotation.results.title = 'Results'
+
+                            if i != 0:
+                                self._data.analyses._analyses[i - 1].add_dependent(annotation)
+
+                            if is_last is False:
+                                break
+                            else:
+                                i += 2
+                                is_last = False
+
+                    i += 1
+
             except Exception as e:
                 self._data.dataset = None
                 if self._mm:
@@ -1025,29 +1049,44 @@ class Instance:
         self._coms.send(response, self._instance_id)
 
     async def _on_analysis(self, request):
-
         if request.restartEngines:
             await self.session.restart_engines()
             for analysis in self._data.analyses:
                 analysis.rerun()
             return
 
-        if request.analysisId == 0:
-            log.error('Instance._on_analysis(): Analysis id of zero is not allowed')
-            self._coms.discard(request)
+        elif request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE') and request.analysisId == 0:  # request to delete all analyses
+            self._data.analyses.remove_all()
+            self._coms.send(request, self._instance_id, request, True)
+
+            header = self._data.analyses.create_annotation(0)
+            header.run()
+            header.results.index = 1
+            header.results.title = 'Results'
+            self._coms.send(header.results, self._instance_id, complete=True)
             return
 
-        analysis = self._data.analyses.get(request.analysisId)
+        analysis = None
+        if request.analysisId != 0:
+            analysis = self._data.analyses.get(request.analysisId)
 
         if analysis is not None:  # analysis already exists
+
             self._data.is_edited = True
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
-                del self._data.analyses[request.analysisId]
+                analysis_to_delete = self._data.analyses[request.analysisId]
+                if analysis_to_delete.name != 'empty':
+                    for child in analysis_to_delete.dependents:
+                        del self._data.analyses[child.id]
+                    del self._data.analyses[request.analysisId]
+
+                    self._coms.send(request, self._instance_id, request, True)
+                else:
+                    analysis_to_delete.reset_options(request.revision)
+                    self._coms.send(analysis_to_delete.results, self._instance_id, request, True)
             else:
                 analysis.set_options(request.options, request.changed, request.revision, request.enabled)
-
-            self._coms.send(None, self._instance_id, request, True)
-
+                self._coms.send(None, self._instance_id, request, True)
         else:  # create analysis
             try:
                 duplicating = request.perform == jcoms.AnalysisRequest.Perform.Value('DUPLICATE')
@@ -1058,36 +1097,54 @@ class Instance:
                     dupliceeId = request.options.options[index].i
                     duplicee = self._data.analyses.get(dupliceeId)
 
-                analysis = self._data.analyses.create(
-                    request.analysisId,
-                    request.name,
-                    request.ns,
-                    request.options,
-                    None if request.index == 0 else request.index - 1)
+                if self._data.analyses.has_header_annotation() is False:
+                    header = self._data.analyses.create_annotation(0)
+                    header.run()
+                    header.results.index = 1
+                    header.results.title = 'Results'
+                    if request.name == 'empty':
+                        self._coms.send(header.results, self._instance_id, request, complete=True)
+                    else:
+                        self._coms.send(header.results, self._instance_id, complete=True)
+                    request.index += 1
 
-                self._data.is_edited = True
+                if request.name != 'empty':
+                    analysis = self._data.analyses.create(
+                        request.analysisId,
+                        request.name,
+                        request.ns,
+                        request.options,
+                        None if request.index == 0 else request.index - 1)
 
-                if duplicating:
-                    analysis.copy_from(duplicee)
-                    self._coms.send(analysis.results, self._instance_id, request, True)
-                else:
-                    analysis.run()
-                    response = jcoms.AnalysisResponse()
-                    response.name = request.name
-                    response.ns = request.ns
-                    response.analysisId = request.analysisId
-                    response.options.ParseFromString(analysis.options.as_bytes())
-                    response.index = request.index
-                    response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
+                    self._data.is_edited = True
 
-                    self._coms.send(response, self._instance_id, request, True)
+                    if duplicating:
+                        analysis.copy_from(duplicee)
+                        analysis.results.index = request.index
+                        self._coms.send(analysis.results, self._instance_id, request, True)
+                    else:
+                        analysis.run()
+                        response = jcoms.AnalysisResponse()
+                        response.name = request.name
+                        response.ns = request.ns
+                        response.analysisId = analysis.id
+                        response.options.ParseFromString(analysis.options.as_bytes())
+                        response.index = request.index
+                        response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
+                        self._coms.send(response, self._instance_id, request, True)
+                    child_index = request.index + 1
+                    for child in analysis.dependents:
+                        child.run()
+                        child.results.index = child_index
+                        child_index += 1
+                        self._coms.send(child.results, self._instance_id, complete=True)
 
             except OSError as e:
 
                 log.error('Could not create analysis: ' + str(e))
 
                 response = jcoms.AnalysisResponse()
-                response.analysisId = request.analysisId
+                response.analysisId = analysis.id
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
                 response.error.message = 'Could not create analysis: ' + str(e)
 

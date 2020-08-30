@@ -185,6 +185,18 @@ const TableView = Elem.View.extend({
         Elem.View.prototype.render.call(this);
 
         let table = this.model.attributes.element;
+
+        if (this.mode && this.mode !== 'rich') {
+            if (table.asText !== null) {
+                let $pre = this.$el.find('.jmv-results-text.jmv-results-item');
+                let text = '#' + table.asText.split('\n').join('\n# ');
+                if (navigator.platform === "Win32")
+                    text = text.replace(/\u273B/g, '*');
+                $pre.text(text);
+            }
+            return;
+        }
+
         let columns = table.columns;
         let sortedCells = this.model.attributes.sortedCells;
         let html;
@@ -199,6 +211,10 @@ const TableView = Elem.View.extend({
             this.$el.addClass('jmv-results-status-inited');
         else if (this.model.attributes.status === 2)
             this.$el.addClass('jmv-results-status-running');
+        else {
+            this.$el.removeClass('jmv-results-status-inited');
+            this.$el.removeClass('jmv-results-status-running');
+        }
 
         if (this.model.attributes.title)
             this.$titleText.text(this.model.attributes.title);

@@ -100,6 +100,11 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.frameComms = new Framesg(this.$frame[0].contentWindow, this.key, this.frameCommsApi);
 
+    this.setAnalysisTitle = function(title) {
+        if ( ! this.analysis.missingModule)
+            this.frameComms.send("setTitle", title);
+    };
+
     this.destroy = function() {
         this.$frame.remove();
         //this.frameComms.disconnect(); //This function doesn't yet exist which is a problem and a slight memory leak, i have submitted an issue to the project.
@@ -168,7 +173,16 @@ let OptionsPanel = SilkyView.extend({
         $(window).resize(() => { this.resizeHandler(); });
         this.$el.on('resized', () => { this.resizeHandler(); });
 
+        args.model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
+
         this.render();
+    },
+
+    _analysisNameChanged: function(analysis) {
+        let analysesKey = analysis.ns + "-" + analysis.name;
+        let resources = this._analysesResources[analysesKey];
+        if (resources)
+            resources.setAnalysisTitle(analysis.getHeading());
     },
 
     reloadAnalyses: function(moduleName) {
@@ -201,7 +215,7 @@ let OptionsPanel = SilkyView.extend({
         let resources = this._analysesResources[analysesKey];
         let createdNew = false;
 
-        if (_.isUndefined(resources)) {
+        if (resources === undefined) {
             resources = new AnalysisResources(analysis, this.$el, this.iframeUrl, this.model.instanceId());
             resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
@@ -307,10 +321,14 @@ let OptionsPanel = SilkyView.extend({
         resource.off("frameReady");
     },
 
-    hideOptions: function(data) {
-        let selectedAnalysis = this.model.attributes.selectedAnalysis;
-        if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')
-            this.model.set('selectedAnalysis', null);
+    hideOptions: function(clearSelected) {
+        if (clearSelected === undefined)
+            clearSelected = true;
+        if (clearSelected) {
+            let selectedAnalysis = this.model.attributes.selectedAnalysis;
+            if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')
+                this.model.set('selectedAnalysis', null);
+        }
         if (this._currentResources !== null)
             this._currentResources.$frame.addClass('silky-hidden-options-control');
         this.$el.trigger("splitpanel-hide");

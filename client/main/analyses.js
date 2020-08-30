@@ -3,6 +3,7 @@
 
 const $ = require('jquery');
 const _ = require('underscore');
+const Delta = require('quill-delta');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -11,9 +12,10 @@ const yaml = require('js-yaml');
 const host = require('./host');
 const Options = require('./options');
 
-const Analysis = function(id, name, ns) {
+const Analysis = function(localId, id, name, ns) {
 
     this.id = id;
+    this.localId = localId;
     this.name = name;
     this.ns = ns;
     this.values = null;
@@ -31,8 +33,16 @@ const Analysis = function(id, name, ns) {
 
     this._parent = null;
     this._defn = null;
+    this.dependsOn = null;
+    this.dependents = [ ];
 
     this.reload();
+};
+
+Analysis.prototype.addDependent = function(analysis) {
+    this.dependents.push(analysis);
+    analysis.dependsOn = this;
+    delete analysis.waitingFor;
 };
 
 Analysis.prototype.reload = function() {
@@ -75,6 +85,25 @@ Analysis.prototype.setResults = function(res) {
         this._parent._notifyResultsChanged(this);
 };
 
+Analysis.prototype.updateHeading = function(values) {
+    let heading = this.options.getHeading();
+    if (this._parent !== null)
+        this._parent._notifyHeadingChanged(this);
+};
+
+Analysis.prototype.getHeading = function() {
+    return this.options.getHeading();
+};
+
+Analysis.prototype.annotationChanged = function(sender, address) {
+    if (this._parent !== null)
+        this._parent._notifyAnnotationChanged(sender, this, address);
+};
+
+Analysis.prototype.hasUserOptions = function() {
+    return this.name !== 'empty';
+};
+
 Analysis.prototype.setOptions = function(values) {
     if (this.options.setValues(values)) {
         this.enabled = true;
@@ -110,6 +139,10 @@ Analysis.prototype.clearColumnUse = function(columnNames) {
 
 Analysis.prototype.getUsing = function() {
     return this.options.getUsedColumns();
+};
+
+Analysis.prototype.isFirst = function() {
+    return this.index === 0;
 };
 
 const Analyses = Backbone.Model.extend({
@@ -148,16 +181,31 @@ const Analyses = Backbone.Model.extend({
     create(options) {
         let name = options.name;
         let ns = options.ns;
-        let id = options.id || this._nextId++;
-        let index = options.index !== undefined ? options.index : this._analyses.length;
+        let id = options.id;
+        if (id === undefined)
+            id = 0;
 
-        if (options.id && options.id >= this._nextId)
-            this._nextId = options.id + 1;
+        let analysis = new Analysis(this._nextId++, id, name, ns);
 
-        let analysis = new Analysis(id, name, ns);
-        analysis.index = index;
+        if (options.dependsOn && options.dependsOn > 0) {
+            let patron = this.get(options.dependsOn, true);
+            if (patron !== null)
+                patron.addDependent(analysis);
+            else
+                analysis.waitingFor = options.dependsOn;
+        }
+
+        if (id !== 0) {
+            for (let current of this._analyses) {
+                if (current.waitingFor === id)
+                    analysis.addDependent(current);
+            }
+        }
+
         analysis.enabled = (options.enabled === undefined ? true : options.enabled);
 
+        let index = options.index !== undefined ? options.index : this._analyses.length;
+        analysis.index = index;
         this._analyses.splice(index, 0, analysis);
         if (index < this._analyses.length - 1) {
             for (let i = 0; i < this._analyses.length; i++)
@@ -170,7 +218,7 @@ const Analyses = Backbone.Model.extend({
         let results = options.results || {
             name: '',
             type: 'group',
-            title: options.title || name,
+            title: options.title || undefined,
             visible: 2,
             group: { elements: [
                 {
@@ -205,32 +253,85 @@ const Analyses = Backbone.Model.extend({
 
         return analysis;
     },
-    deleteAnalysis(id) {
-        let index = this.indexOf(id);
-        let analysis = this._analyses[index];
-        this._analyses.splice(index, 1);
-        for (let i = 0; i < this._analyses.length; i++)
-            this._analyses[i].index = i;
-        this._notifyAnalysisDeleted(analysis);
-    },
-    deleteAll() {
-        let analyses = this._analyses.slice().reverse();
-        for (let analysis of analyses)
-            this.deleteAnalysis(analysis.id);
-    },
-    get(id) {
+    deleteDependentAnalyses(analysis) {
         for (let i = 0; i < this._analyses.length; i++) {
-            let analysis = this._analyses[i];
-            if (analysis.id === id)
-                return analysis;
+            let dependent = this._analyses[i];
+            if (dependent.dependsOn === analysis) {
+                let index = this.indexOf(dependent.localId);
+
+                if (dependent.name === 'empty') {
+                    // before remove inbetween annotation move its contents to the previous annotation
+                    let previous = this._analyses[index - 1];
+                    let removingData = dependent.options.getOption('results//topText');
+                    if (removingData) {
+                        let removingDelta = new Delta(removingData.getValue());
+                        let previousData = previous.options.getOption('results//topText');
+                        let previousDelta = null;
+                        if (previousData) {
+                            previousDelta = new Delta(previousData.getValue());
+                            previous.options.setValues({'results//topText': { ops: previousDelta.concat(removingDelta).ops } });
+                        }
+                        else
+                            previous.options.setValues({'results//topText': { ops: removingDelta.ops } });
+                    }
+
+                    this._notifyOptionsChanged(previous);
+                    this._notifyResultsChanged(previous);
+                    ////////
+                }
+
+                this._analyses.splice(index, 1);
+                for (let i = 0; i < this._analyses.length; i++)
+                    this._analyses[i].index = i;
+                this._notifyAnalysisDeleted(dependent);
+            }
+        }
+    },
+    deleteAnalysis(localId) {
+        let index = this.indexOf(localId);
+        let analysis = this._analyses[index];
+        if (analysis.name === 'empty') {
+            if (index === 0)
+                analysis.options.setValues( { 'results//heading': 'Results', 'results//topText': null });
+            else
+                analysis.options.setValues( { 'results//topText': null } );
+            this._notifyOptionsChanged(analysis);
+            this._notifyResultsChanged(analysis);
+        }
+        else {
+            this._analyses.splice(index, 1);
+            for (let i = 0; i < this._analyses.length; i++)
+                this._analyses[i].index = i;
+            this._notifyAnalysisDeleted(analysis);
+
+            this.deleteDependentAnalyses(analysis);
+        }
+    },
+    onDeleteAll() {
+        let analyses = this._analyses.slice().reverse();
+        this._analyses = [];
+        for (let analysis of analyses)
+            this._notifyAnalysisDeleted(analysis);
+    },
+    get(id, isRemote) {
+        if (id > 0) {
+            for (let i = 0; i < this._analyses.length; i++) {
+                let analysis = this._analyses[i];
+                if ( (! isRemote && analysis.localId === id) ||
+                     (  isRemote && analysis.id === id))
+                    return analysis;
+            }
         }
         return null;
     },
-    indexOf(id) {
-        for (let i = 0; i < this._analyses.length; i++) {
-            let analysis = this._analyses[i];
-            if (analysis.id === id)
-                return i;
+    indexOf(id, isRemote) {
+        if (id > 0) {
+            for (let i = 0; i < this._analyses.length; i++) {
+                let analysis = this._analyses[i];
+                if ( (! isRemote && analysis.localId === id) ||
+                     (  isRemote && analysis.id === id))
+                    return i;
+            }
         }
         return -1;
     },
@@ -246,6 +347,12 @@ const Analyses = Backbone.Model.extend({
     _notifyAnalysisDeleted(analysis) {
         this.trigger('analysisDeleted', analysis);
     },
+    _notifyHeadingChanged(analysis) {
+        this.trigger('analysisHeadingChanged', analysis);
+    },
+    _notifyAnnotationChanged(sender, analysis, address) {
+        this.trigger('analysisAnnotationChanged', sender, analysis, address);
+    }
 });
 
 module.exports = Analyses;

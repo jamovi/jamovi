@@ -11,6 +11,7 @@ const Store = require('./store');
 const Modules = require('./modules');
 const tarp = require('./utils/tarp');
 const DataTab = require('./ribbon/datatab');
+const AnnotationTab = require('./ribbon/annotationtab');
 const AnalyseTab = require('./ribbon/analysetab');
 const Notifs = require('./ribbon/notifs');
 
@@ -24,6 +25,7 @@ const RibbonModel = Backbone.Model.extend({
             { name: 'file', title: '<span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span>' },
             new DataTab(),
             new AnalyseTab(this._modules),
+            new AnnotationTab()
         ]);
     },
     defaults : {
@@ -96,10 +98,15 @@ const RibbonView = Backbone.View.extend({
             if (this.selectedTab)
                 this.selectedTab.$el.removeClass('selected');
 
-            this.selectedTab = this.model.getSelectedTab();
+            let tab = this.model.getSelectedTab();
+            let changed = tab !== this.selectedTab;
+            this.selectedTab = tab;
 
             if (this.selectedTab)
                 this.selectedTab.$el.addClass('selected');
+
+            if (changed)
+                this.trigger('tabSelected', tab.name);
         }, this);
 
         this.$el.addClass('jmv-ribbon app-dragable');
@@ -183,7 +190,11 @@ const RibbonView = Backbone.View.extend({
         this.buttons = [ ];
         let menuShown = (menu) => this._menuShown(menu);
 
+        if (this.selectedTab && this.selectedTab.detachItems)
+            this.selectedTab.detachItems();
+
         this.$body.empty();
+
         this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
 
         let tab = this.model.getSelectedTab();
@@ -192,18 +203,18 @@ const RibbonView = Backbone.View.extend({
 
         let items = tab.getRibbonItems();
         for (let i = 0; i < items.length; i++) {
-            let button = items[i];
-            if (button.setParent)
-                button.setParent(this);
-            if (button.setTabName)
-                button.setTabName(tab.name);
+            let item = items[i];
+            if (item.setParent)
+                item.setParent(this);
+            if (item.setTabName)
+                item.setTabName(tab.name);
 
-            if (button.dock === 'right')
-                button.$el.insertAfter(this.$separator);
+            if (item.dock === 'right')
+                item.$el.insertAfter(this.$separator);
             else
-                button.$el.insertBefore(this.$separator);
-            button.on('shown', menuShown);
-            this.buttons.push(button);
+                item.$el.insertBefore(this.$separator);
+            item.on('shown', menuShown);
+            this.buttons.push(item);
         }
     },
     _menuShown(source) {
@@ -243,7 +254,8 @@ const RibbonView = Backbone.View.extend({
         let tab = this.model.getTab(index);
         if (tab.getRibbonItems)
             this.model.set('selectedTab', tab.name);
-        this.trigger('tabSelected', tab.name);
+        else
+            this.trigger('tabSelected', tab.name);
     },
     _buttonClicked : function(action) {
         this._menuClosed();
