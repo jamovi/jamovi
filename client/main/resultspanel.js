@@ -662,13 +662,7 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (event.op === 'export') {
 
-            // Change the analysis id from local to remote///////
-            let address = event.address.slice();
-            let analysis = this.model.analyses().get(parseInt(address[0]), false);
-            address[0] = analysis.id.toString();
-            ////////////////////////////////////////////////////
-
-            let part = flatten(address);
+            let part = flatten(event.address);
 
             let saveOptions = {
                 name: 'Image',

@@ -235,7 +235,7 @@ const ArrayView = Elem.View.extend({
         this.ready = Promise.all(promises);
     },
     _includeItem(current, childAddress, element, options, level) {
-        return this.layout.include(childAddress + ':item', () => {
+        return this.layout.include(childAddress + ':item:' + element.type, () => {
             let $el = $('<div></div>');
             let child = this.create(element, options, $el, level+1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
             if (child !== null) {

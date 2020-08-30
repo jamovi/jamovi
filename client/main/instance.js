@@ -20,6 +20,7 @@ const OptionsPB = require('./optionspb');
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
 const JError = require('./errors').JError;
+const { flatten, unflatten } = require('../common/utils/addresses');
 
 
 const Instance = Backbone.Model.extend({
@@ -291,11 +292,20 @@ const Instance = Backbone.Model.extend({
 
             // Send the save request
 
+            let part = options.part;
+            if (part) {
+                // convert the analysis from local Id to remote id for sending to the server
+                part = unflatten(part);
+                let analysis = this.analyses().get(parseInt(part[0]), false);
+                part[0] = analysis.id.toString();
+                part = flatten(part);
+            }
+
             let save = new coms.Messages.SaveRequest(
                 filePath,
                 options.overwrite,
                 options.export,
-                options.part,
+                part,
                 options.format);
 
             if (content) {
