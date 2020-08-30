@@ -592,7 +592,7 @@ const Instance = Backbone.Model.extend({
         this._dataSetModel.set('edited', true);
 
         let analysis = this._analyses.create({ name, ns, title, enabled: true });
-        this._createRemoteAnalysis(analysis);
+        this._constructAnalysis(analysis);
         this.set('selectedAnalysis', analysis);
 
     },
@@ -609,7 +609,7 @@ const Instance = Backbone.Model.extend({
             incAsText: duplicee.incAsText,
             references: duplicee.references
         });
-        this._createRemoteAnalysis(analysis, duplicee);
+        this._constructAnalysis(analysis, duplicee);
 
         return analysis;
     },
@@ -683,7 +683,7 @@ const Instance = Backbone.Model.extend({
 
         this._sendAnalysisRequest(request, analysis);
     },
-    _createRemoteAnalysis(analysis, duplicee) {
+    _constructAnalysis(analysis, duplicee) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
@@ -703,7 +703,7 @@ const Instance = Backbone.Model.extend({
         let analysis = this._analyses.get(remoteId, true);
         this._analyses.deleteAnalysis(analysis.localId);
     },
-    remoteDeleteAnalysis(analysis) {
+    deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
         let request = this._constructAnalysisRequest(analysis);

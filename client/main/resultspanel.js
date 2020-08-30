@@ -757,7 +757,7 @@ const ResultsPanel = Backbone.View.extend({
             else {
                 let analysisId = this.resources[this._menuId].localId;
                 let analysis = this.model.analyses().get(analysisId);
-                this.model.remoteDeleteAnalysis(analysis);
+                this.model.deleteAnalysis(analysis);
             }
         }
         else if (event.op === 'refsCopy') {
