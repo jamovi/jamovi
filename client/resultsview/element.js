@@ -4,6 +4,7 @@ const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const Tracker = require('./itemtracker');
 
 const b64 = require('../common/utils/b64');
 
@@ -19,6 +20,9 @@ const ElementModel = Backbone.Model.extend({
 const ElementView = Backbone.View.extend({
     initialize(data) {
 
+        this.layout = new Tracker();
+
+        this.updateItem = data.update;
         this.parent = data.parent;
         this.level = ('level' in data) ? data.level : 0;
         this.fmt = data.fmt;
@@ -46,11 +50,59 @@ const ElementView = Backbone.View.extend({
     render() {
         let error = this.model.get('error');
         if (error !== null) {
-            this.$el.addClass('jmv-results-error');
-            let $error = $('<div class="jmv-results-error-message"></div>');
-            $error.text(error.message);
-            $error.appendTo(this.$errorPlacement);
+            if (this.$el.hasClass('jmv-results-error'))
+                this.$errorPlacement.find('.jmv-results-error-message').text(error.message);
+            else {
+                this.$el.addClass('jmv-results-error');
+                $(`<div class="jmv-results-error-message">${ error.message }</div>`).appendTo(this.$errorPlacement);
+            }
         }
+        else {
+            this.$el.removeClass('jmv-results-error');
+            this.$errorPlacement.empty();
+        }
+    },
+
+    _collapseSection() {
+        let element = this.$el[0];
+        let sectionHeight = element.scrollHeight;
+
+        let elementTransition = element.style.transition;
+        element.style.transition = '';
+
+        requestAnimationFrame(() => {
+            element.style.height = sectionHeight + 'px';
+            element.style.transition = elementTransition;
+            requestAnimationFrame(() => {
+                element.style.height = 0 + 'px';
+            });
+        });
+    },
+
+    _expandSection(value) {
+
+        let element = this.$el[0];
+
+        element.setAttribute('data-expanding', true);
+        let sectionHeight = element.scrollHeight;
+
+        element.style.height = value === undefined ? sectionHeight : value;
+
+        element.addEventListener('transitionend', (e) => {
+            element.removeEventListener('transitionend', e.callee);
+            element.style.height = null;
+            element.setAttribute('data-expanding', false);
+        });
+    },
+    update(data) {
+
+        if (this.updateItem(this, data.element, data.options, data.level, data.mode, data.devMode, data.fmt, data.refTable)) {
+            this.layout.begin();
+            this.render();
+            this.layout.end();
+            return true;
+        }
+        return false;
     },
     addContent($el) {
         let before = this.$el.children()[this.addIndex - 1];
@@ -74,7 +126,7 @@ const ElementView = Backbone.View.extend({
         }
     },
     _menuOptions(event) {
-        return [ { label: 'Copy' }, { label: 'Export' } ];
+        return [ { label: 'Copy' }, { label: 'Export' }, { label: 'Add Note'} ];
     },
     address() {
         let addr;
