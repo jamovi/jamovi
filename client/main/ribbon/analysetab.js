@@ -63,7 +63,7 @@ const AnalyseTab = function(modules) {
                         title: analysis.menuTitle,
                         subtitle: analysis.menuSubtitle,
                         moduleName: module.name,
-                        resultTitle: analysis.title
+                        resultsTitle: analysis.title
                     };
                     analyses.items.push(analysisItem);
                 }
@@ -103,7 +103,7 @@ const AnalyseTab = function(modules) {
                     moduleName: module.name,
                     new: isNew,
                     hidden: module.visible === false,
-                    resultTitle: analysis.title
+                    resultsTitle: analysis.title
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;
