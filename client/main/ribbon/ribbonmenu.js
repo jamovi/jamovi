@@ -143,7 +143,7 @@ const RibbonMenu = Backbone.View.extend({
         this._notifySelected(
             source.dataset.name,
             source.dataset.ns,
-            source.dataset.title,
+            source.dataset.rtitle,
             checked);
         $(source).removeClass('new');
         event.stopPropagation();
@@ -188,7 +188,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.hidden)
             classes += ' menu-item-hiding menu-item-hidden';
 
-        let html = `<div data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" class="${ classes }">`;
+        let html = `<div data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }">`;
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
         if (item.subtitle)
