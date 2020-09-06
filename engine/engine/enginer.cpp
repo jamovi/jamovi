@@ -503,6 +503,11 @@ void EngineR::initR()
 
     setLibPaths("jmv");
 
+#ifdef _WIN32
+    // necessary on windows ...
+    _rInside->parseEvalQNT("requireNamespace('Rcpp', quietly=TRUE)\n");
+#endif
+
     // without this, on macOS, knitr tries to load X11
     _rInside->parseEvalQNT("env <- knitr::knit_global();env$CairoPNG <- grDevices::png\n");
 
