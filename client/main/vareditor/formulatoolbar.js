@@ -58,10 +58,10 @@ function allFunctions($functionsContent) {
     descriptions.SQRT = { label: 'SQRT( <i>number</i> )', content: 'Returns the square root of a number.' };
 
     $functionsContent.append($('<div class="subtitle" data-name="">Statistical</div>'));
-    $functionsContent.append($('<div class="item" data-name="ABSZ">ABSZ</div>'));
-    descriptions.ABSZ = { label: 'ABSZ( <i>variable</i>, group_by=0 )', content: 'Convenience short-hand for ABS(Z( variable ))' };
     $functionsContent.append($('<div class="item" data-name="ABSIQR">ABSIQR</div>'));
     descriptions.ABSIQR = { label: 'ABSIQR( <i>variable</i> )', content: 'Convenience short-hand for ABS(IQR( variable ))' };
+    $functionsContent.append($('<div class="item" data-name="ABSZ">ABSZ</div>'));
+    descriptions.ABSZ = { label: 'ABSZ( <i>variable</i>, group_by=0 )', content: 'Convenience short-hand for ABS(Z( variable ))' };
     $functionsContent.append($('<div class="item" data-name="BOXCOX">BOXCOX</div>'));
     descriptions.BOXCOX = { label: 'BOXCOX( <i>variable, lambda</i> )', content: 'Returns a Box Cox transformation of the variable.' };
     $functionsContent.append($('<div class="item" data-name="IQR">IQR</div>'));
