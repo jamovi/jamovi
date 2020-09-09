@@ -32,7 +32,7 @@ include_dirs = [
     path.join(tld, 'include') ]
 
 if os.name == 'nt':  # windows
-    libraries = [ "libboost_filesystem-vc140-mt-1_60", "libboost_system-vc140-mt-1_60" ]
+    libraries = [ "libboost_filesystem-vc141-mt-x64-1_74", "libboost_system-vc141-mt-x64-1_74", "shell32" ]
     library_dirs = [ tld + '/lib/libvc' ]
     extra_compile_args = ["/D", "UNICODE"]
     extra_link_args = [ ]
