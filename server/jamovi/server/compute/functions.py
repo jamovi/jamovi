@@ -152,6 +152,29 @@ def NOTROW(index, arg0, *args):
 
 
 @column_wise
+def Q1(values: float):
+    values = filter(lambda x: not math.isnan(x), values)
+    return stats.quantiles(values, method = "inclusive")[0]
+
+
+@column_wise
+def Q3(values: float):
+    values = filter(lambda x: not math.isnan(x), values)
+    return stats.quantiles(values, method = "inclusive")[2]
+
+
+@row_wise
+def IIQR(index, value: float, q1: float, q3: float):
+    if value < q1:
+        value = (value - q1) / (q3 - q1)
+    elif value > q3:
+        value = (value - q3) / (q3 - q1)
+    else:
+        value = 0
+    return value
+
+
+@column_wise
 def VMEAN(values: float):
     values = filter(lambda x: not math.isnan(x), values)
     return stats.mean(values)
