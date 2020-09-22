@@ -76,10 +76,6 @@ function allFunctions($functionsContent) {
     descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="MIN">MIN</div>'));
     descriptions.MIN = { label: 'MIN( <i>variable</i> )', content: 'Returns the smallest value of a set of numbers.' };
-    $functionsContent.append($('<div class="item" data-name="OUTL_IQR">OUTL_IQR</div>'));
-    descriptions.OUTL_IQR = { label: 'OUTL_IQR( variable 1, variable 2, \u2026 )', content: 'Convenience short-hand for MAX(ABSIQR( variable 1, variable 2, \u2026 ))' };
-    $functionsContent.append($('<div class="item" data-name="OUTL_Z">OUTL_Z</div>'));
-    descriptions.OUTL_Z = { label: 'OUTL_Z( variable 1, variable 2, \u2026, group_by=0 )', content: 'Convenience short-hand for MAX(ABSZ( variable 1, variable 2, \u2026 ))' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
     descriptions.SCALE = { label: 'SCALE( <i>variable</i>, group_by=0 )', content: 'Returns the normalized values of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="STDEV">STDEV</div>'));
