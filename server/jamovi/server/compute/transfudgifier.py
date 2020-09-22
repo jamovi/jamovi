@@ -32,7 +32,7 @@ class Transfudgifier(ast.NodeTransformer):
                     args=[ node.args[0] ],
                     keywords=kws))
 
-        elif node.func.id == 'MAXABSZ' or node.func.id == 'OUTL_Z':
+        elif node.func.id == 'MAXABSZ':
 
             def zabsify(arg):
                 return ast.Call(
@@ -72,7 +72,7 @@ class Transfudgifier(ast.NodeTransformer):
                         keywords=[])],
                 keywords=[]))
 
-        elif node.func.id == 'MAXABSIQR' or node.func.id == 'OUTL_IQR':
+        elif node.func.id == 'MAXABSIQR':
 
             def iqrabsify(arg):
                 return ast.Call(
