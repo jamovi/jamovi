@@ -56,5 +56,45 @@ class Transfudgifier(ast.NodeTransformer):
                         keywords=node.keywords)],
                 keywords=[]))
 
+        elif node.func.id == 'IQR':
+
+            return self.generic_visit(ast.Call(
+                func=ast.Name(id='IIQR', ctx=ast.Load()),
+                args=[
+                    node.args[0],
+                    ast.Call(
+                        func=ast.Name(id='Q1', ctx=ast.Load()),
+                        args=node.args,
+                        keywords=[]),
+                    ast.Call(
+                        func=ast.Name(id='Q3', ctx=ast.Load()),
+                        args=node.args,
+                        keywords=[])],
+                keywords=[]))
+
+        elif node.func.id == 'MAXABSIQR':
+
+            def iqrabsify(arg):
+                return ast.Call(
+                    func=ast.Name(id='ABSIQR', ctx=ast.Load()),
+                    args=[ arg ],
+                    keywords=[])
+
+            return self.generic_visit(ast.Call(
+                func=ast.Name(id='MAX', ctx=ast.Load()),
+                args=list(map(iqrabsify, node.args)),
+                keywords=[]))
+
+        elif node.func.id == 'ABSIQR':
+
+            return self.generic_visit(ast.Call(
+                func=ast.Name(id='ABS', ctx=ast.Load()),
+                args=[
+                    ast.Call(
+                        func=ast.Name(id='IQR', ctx=ast.Load()),
+                        args=node.args,
+                        keywords=[])],
+                keywords=[]))
+
         else:
             return self.generic_visit(node)
