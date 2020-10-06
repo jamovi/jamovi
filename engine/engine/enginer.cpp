@@ -423,6 +423,7 @@ void EngineR::initR()
 #endif
 
     _rInside->parseEvalQNT("base::options(max.print=1000)\n");
+    _rInside->parseEvalQNT("base::options(digits=4)\n");
 
     char *pandoc = nowide::getenv("PANDOCHOME");
 
