@@ -597,14 +597,14 @@ const Instance = Backbone.Model.extend({
 
         return response;
     },
+    createHeader() {
+        let analysis = this._analyses.createHeader();
+        this._sendAnalysis(analysis);
+    },
     createAnalysis(name, ns, title) {
-
-        this._dataSetModel.set('edited', true);
-
         let analysis = this._analyses.create({ name, ns, title, enabled: true });
-        this._constructAnalysis(analysis);
+        this._sendAnalysis(analysis);
         this.set('selectedAnalysis', analysis);
-
     },
     duplicateAnalysis(dupliceeId) {
 
@@ -619,7 +619,7 @@ const Instance = Backbone.Model.extend({
             incAsText: duplicee.incAsText,
             references: duplicee.references
         });
-        this._constructAnalysis(analysis, duplicee);
+        this._sendAnalysis(analysis, duplicee);
 
         return analysis;
     },
@@ -696,7 +696,7 @@ const Instance = Backbone.Model.extend({
 
         this._sendAnalysisRequest(request, analysis);
     },
-    _constructAnalysis(analysis, duplicee) {
+    _sendAnalysis(analysis, duplicee) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 

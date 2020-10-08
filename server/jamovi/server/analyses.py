@@ -229,6 +229,8 @@ class AnalysisIterator:
         else:
             while True:
                 analysis = self._iter.__next__()
+                if analysis.ns == 'jmv' and analysis.name == 'empty':
+                    continue
                 if analysis.status is Analysis.Status.NONE:
                     return analysis
                 if not analysis.enabled:
@@ -386,6 +388,9 @@ class Analyses:
         annotation_pb.index = index + 1
         annotation_pb.title = ''
         annotation_pb.hasTitle = True
+        annotation_pb.results.title = 'Results'
+        annotation_pb.results.group.CopyFrom(jcoms.ResultsGroup())
+        annotation_pb.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
 
         annotation.set_results(annotation_pb, silent=True)
 

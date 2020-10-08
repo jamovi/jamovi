@@ -214,7 +214,7 @@ $(document).ready(async() => {
         else if (tabName === 'annotation') {
             instance.set('editState', true);
             if (analyses.count() === 0)
-                instance.createAnalysis('empty', 'jmv', 'Results');
+                instance.createHeader();
         }
 
         if (tabName !== 'annotation')

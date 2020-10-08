@@ -178,6 +178,21 @@ const Analyses = Backbone.Model.extend({
     count() {
         return this._analyses.length;
     },
+    createHeader() {
+        return this.create({
+            name: 'empty',
+            ns: 'jmv',
+            title: 'Results',
+            enabled: true,
+            results: {
+                name: '',
+                type: 'group',
+                title: 'Results',
+                visible: 2,
+                status: 2,
+                error: null,
+            }});
+    },
     create(options) {
         let name = options.name;
         let ns = options.ns;

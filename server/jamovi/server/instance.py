@@ -1099,13 +1099,14 @@ class Instance:
 
                 if self._data.analyses.has_header_annotation() is False:
                     header = self._data.analyses.create_annotation(0)
-                    header.run()
                     header.results.index = 1
                     header.results.title = 'Results'
                     if request.name == 'empty':
                         self._coms.send(header.results, self._instance_id, request, complete=True)
                     else:
                         self._coms.send(header.results, self._instance_id, complete=True)
+
+                    # increment the index of the request, so it's placed after the header
                     request.index += 1
 
                 if request.name != 'empty':
@@ -1134,7 +1135,6 @@ class Instance:
                         self._coms.send(response, self._instance_id, request, True)
                     child_index = request.index + 1
                     for child in analysis.dependents:
-                        child.run()
                         child.results.index = child_index
                         child_index += 1
                         self._coms.send(child.results, self._instance_id, complete=True)
