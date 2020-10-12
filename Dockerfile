@@ -95,7 +95,7 @@ RUN build jmv
 
 # client
 COPY client /tmp/source/client
-RUN build client
+RUN build client release
 
 ENV LD_LIBRARY_PATH /usr/local/lib/R/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
