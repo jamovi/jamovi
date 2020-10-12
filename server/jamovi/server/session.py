@@ -13,7 +13,7 @@ from .enginemanager import EngineManager
 from .scheduler import Scheduler
 
 if platform.uname().system != 'Windows':
-    from .remotequeue import RemoteQueue
+    from .remotepool import RemotePool
 
 from .settings import Settings
 from .utils import conf
@@ -54,7 +54,7 @@ class Session(dict):
         task_queue_url = conf.get('task-queue-url')
         if task_queue_url is not None:
             self._scheduler = Scheduler(1, 3, self._analyses)
-            self._runner = RemoteQueue(task_queue_url, self._scheduler.queue)
+            self._runner = RemotePool(task_queue_url, self._scheduler.queue)
         else:
             self._scheduler = Scheduler(1, 3, self._analyses)
             self._runner = EngineManager(self._path, self._scheduler.queue)

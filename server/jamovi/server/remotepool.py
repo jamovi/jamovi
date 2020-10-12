@@ -12,7 +12,7 @@ from .jamovi_pb2 import Status as MessageStatus
 from .jamovi_pb2 import ComsMessage
 
 
-class RemoteQueue:
+class RemotePool:
 
     def __init__(self, url, queue):
         self._url = url
