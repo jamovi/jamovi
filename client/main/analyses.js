@@ -47,7 +47,7 @@ Analysis.prototype.addDependent = function(analysis) {
 
 Analysis.prototype.reload = function() {
 
-    let url = `../analyses/${ this.ns }/${ this.name }/a.yaml`;
+    let url = `../analyses/${ this.ns }/${ this.name.toLowerCase() }/a.yaml`;
 
     this.isReady = false;
     this.ready = Promise.all([
