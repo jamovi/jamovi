@@ -197,11 +197,6 @@ const ResultsPanel = Backbone.View.extend({
 
         if (isEmptyAnalysis === false) {
             $cover.on('click', event => this._resultsClicked(event, analysis));
-            $cover.on('contextmenu', event => {
-                this._resultsMouseClicked(2, event.offsetX, event.offsetY, analysis);
-                event.stopPropagation();
-                return false;
-            });
         }
         else {
             $cover.on('click', event =>  {
@@ -211,6 +206,12 @@ const ResultsPanel = Backbone.View.extend({
                 iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
             });
         }
+
+        $cover.on('contextmenu', event => {
+            this._resultsMouseClicked(2, event.offsetX, event.offsetY, analysis);
+            event.stopPropagation();
+            return false;
+        });
 
         $cover.on('mouseenter', event => {
             this._sendMouseEvent(resources, event);
