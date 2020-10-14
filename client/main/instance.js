@@ -649,7 +649,9 @@ const Instance = Backbone.Model.extend({
                 options = { };
         }
 
-        let extras = this._optionsExtras();
+        let extras = {}
+        if (analysis.ns !== 'jmv' && analysis.name !== 'empty')
+            extras = this._optionsExtras();
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
         return request;
