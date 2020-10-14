@@ -265,6 +265,9 @@ class Analyses:
 
     def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
+        if name == 'empty' and ns == 'jmv':
+            return Analysis(self._dataset, id, name, ns, Options.create({}, {}), self, enabled)
+
         try:
             module_desc = Modules.instance().get(ns)
             analysis_desc = module_desc.get(name)
