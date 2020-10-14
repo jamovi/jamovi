@@ -205,7 +205,9 @@ const GroupView = Elem.View.extend({
         return control;
     },
     _menuOptions(event) {
-        if (this.isRoot())
+        if (this.isEmptyAnalysis)
+            return [ { label: 'Copy' } ];
+        else if (this.isRoot())
             return [ { label: 'Copy' }, { label: 'Duplicate' }, { label: 'Export' } ];
         else
             return Elem.View.prototype._menuOptions.call(this);
