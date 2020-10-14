@@ -31,7 +31,7 @@ const ElementView = Backbone.View.extend({
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
         this.$el.on('contextmenu', event => {
-            if ("activeElement" in document)
+            if ('activeElement' in document)
                 document.activeElement.blur();
             event.stopPropagation();
             this._sendEvent({ type : 'menu', data : { entries : [ ], pos : { left: event.pageX, top: event.pageY } } });
