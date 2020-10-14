@@ -249,6 +249,9 @@ class Analyses:
 
         Modules.instance().add_listener(self._module_event)
 
+    def count(self):
+        return len(self._analyses)
+
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
             module_name = event['data']['name']

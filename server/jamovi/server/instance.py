@@ -727,14 +727,18 @@ class Instance:
 
                 stream.set_result(result)
 
+                if self._data.analyses.count() == 0:
+                    annotation = self._data.analyses.create_annotation(0)
+                    annotation.results.index = 1
+                    annotation.results.title = 'Results'
+
                 i = 0
-                while i < len(self._data.analyses._analyses):
+                while i < self._data.analyses.count():
                     analysis = self._data.analyses._analyses[i]
                     is_last = i == len(self._data.analyses._analyses) - 1
                     if ((i % 2 == 0 or is_last) and analysis.name != 'empty'):
                         while True:
                             annotation = self._data.analyses.create_annotation(i)
-                            annotation.run()
                             annotation.results.index = i + 1
                             if i == 0:
                                 annotation.results.title = 'Results'

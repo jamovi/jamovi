@@ -604,7 +604,7 @@ $(document).ready(async() => {
         await new Promise((resolve, reject) => { /* never */ });
     }
 
-    if (instance.get('blank') && instance.analyses().count() === 0)
+    if (instance.analyses().count() <= 1)
         resultsView.showWelcome();
 
 });
