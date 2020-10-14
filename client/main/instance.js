@@ -677,8 +677,11 @@ const Instance = Backbone.Model.extend({
                         analysis.addDependent(current);
                     }
                 }
+
+                this._onReceive(message.payloadType, response);
             }
-            this._onReceive(message);
+            else
+                this._onReceive(message);
         });
     },
     _runAnalysis(analysis, changed) {
@@ -728,12 +731,20 @@ const Instance = Backbone.Model.extend({
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
     },
-    _onReceive(message) {
+    _onReceive(payloadType, response) {
 
         let coms = this.attributes.coms;
 
-        if (message.payloadType === 'AnalysisRequest') {
-            let response = coms.Messages.AnalysisRequest.decode(message.payload);
+        if (response === undefined) {
+            let message = payloadType;
+            payloadType = message.payloadType;
+            if ( ! payloadType)
+                return;
+
+            response = coms.Messages[message.payloadType].decode(message.payload);
+        }
+
+        if (payloadType === 'AnalysisRequest') {
             if (response.perform === 6)  { // deleted
                 if (response.analysisId === 0)
                     this._analyses.onDeleteAll();
@@ -742,9 +753,7 @@ const Instance = Backbone.Model.extend({
                 return;
             }
         }
-        else if (message.payloadType === 'AnalysisResponse') {
-            let response = coms.Messages.AnalysisResponse.decode(message.payload);
-
+        else if (payloadType === 'AnalysisResponse') {
             let id = response.analysisId;
             let analysis = this._analyses.get(id, true);
 
@@ -786,8 +795,7 @@ const Instance = Backbone.Model.extend({
                     });
             }
         }
-        else if (message.payloadType === 'ModuleRR') {
-            let response = coms.Messages.ModuleRR.decode(message.payload);
+        else if (payloadType === 'ModuleRR') {
             let moduleName = response.name;
 
             for (let analysis of this._analyses) {
@@ -797,9 +805,8 @@ const Instance = Backbone.Model.extend({
 
             this.trigger('moduleInstalled', { name: moduleName });
         }
-        else if (message.payloadType === 'LogRR') {
-            let log = coms.Messages.LogRR.decode(message.payload);
-            console.log(log.content);
+        else if (payloadType === 'LogRR') {
+            console.log(response.content);
         }
     },
     _columnsChanged(event) {

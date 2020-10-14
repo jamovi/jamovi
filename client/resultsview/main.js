@@ -89,7 +89,10 @@ class Main {  // this is constructed at the bottom
 
     _sendMenuRequest(event) {
         let entries = event.data.entries;
-        entries[0].type = 'Analysis';
+        if (this.resultsDefn.isEmpty)
+            entries[0].type = 'Note';
+        else
+            entries[0].type = 'Analysis';
 
         this.mainWindow.postMessage(event, '*');
 
