@@ -211,14 +211,10 @@ $(document).ready(async() => {
             optionspanel.hideOptions();
         else if (tabName === 'analyses')
             dataSetModel.set('editingVar', null);
-        else if (tabName === 'annotation') {
-            instance.set('editState', true);
-            if (analyses.count() === 0)
-                instance.createHeader();
-        }
+        else if (tabName === 'annotation')
+            resultsView.hideWelcome();
 
-        if (tabName !== 'annotation')
-            instance.set('editState', false);
+        instance.set('editState', tabName === 'annotation');
     });
 
     let halfWindowWidth = 585 + SplitPanelSection.sepWidth;

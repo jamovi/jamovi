@@ -102,8 +102,11 @@ const ResultsView = Backbone.View.extend({
         });
 
         this.model.analyses().once('analysisCreated', (event) => {
-            this.$welcome.addClass('silky-welcome-panel-hidden');
+            this.hideWelcome();
         });
+    },
+    hideWelcome() {
+        this.$welcome.addClass('silky-welcome-panel-hidden');
     },
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);
