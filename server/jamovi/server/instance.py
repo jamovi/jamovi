@@ -1064,7 +1064,6 @@ class Instance:
             self._coms.send(request, self._instance_id, request, True)
 
             header = self._data.analyses.create_annotation(0)
-            header.run()
             header.results.index = 1
             header.results.title = 'Results'
             self._coms.send(header.results, self._instance_id, complete=True)

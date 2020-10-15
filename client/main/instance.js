@@ -597,10 +597,6 @@ const Instance = Backbone.Model.extend({
 
         return response;
     },
-    createHeader() {
-        let analysis = this._analyses.createHeader();
-        this._sendAnalysis(analysis);
-    },
     createAnalysis(name, ns, title) {
         let analysis = this._analyses.create({ name, ns, title, enabled: true });
         this._sendAnalysis(analysis);
