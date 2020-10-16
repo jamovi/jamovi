@@ -600,7 +600,15 @@ $(document).ready(async() => {
         await new Promise((resolve, reject) => { /* never */ });
     }
 
-    if (instance.analyses().count() <= 1)
-        resultsView.showWelcome();
+    // if it's just the results heading ...
+    if (instance.analyses().count() === 1) {
+        for (let analysis of instance.analyses()) {
+            // ... and it's not edited
+            if (analysis.getHeading() || analysis.options.getAnnotation('topText'))
+                break;
+            // ... then show the welcome screen
+            resultsView.showWelcome();
+        }
+    }
 
 });
