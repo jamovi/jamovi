@@ -101,9 +101,13 @@ const ResultsView = Backbone.View.extend({
             this.$welcome.attr('src', 'https://www.jamovi.org/welcome/?v=' + version + '&p=' + host.os);
         });
 
-        this.model.analyses().once('analysisResultsChanged', (event) => {
-            this.$welcome.addClass('silky-welcome-panel-hidden');
+        this.model.analyses().once('analysisCreated', (event) => {
+            this.hideWelcome();
         });
+    },
+    hideWelcome() {
+        if (this.$welcome)
+            this.$welcome.addClass('silky-welcome-panel-hidden');
     },
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);
