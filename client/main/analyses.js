@@ -47,6 +47,14 @@ Analysis.prototype.addDependent = function(analysis) {
 
 Analysis.prototype.reload = function() {
 
+    if (this.ns === 'jmv' && this.name === 'empty') {
+        this._notifySetup = function() {};
+        this.isReady = true;
+        this.ready = Promise.resolve();
+        this.options = new Options();
+        return;
+    }
+
     let url = `../analyses/${ this.ns }/${ this.name.toLowerCase() }/a.yaml`;
 
     this.isReady = false;

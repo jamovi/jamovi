@@ -229,6 +229,8 @@ class AnalysisIterator:
         else:
             while True:
                 analysis = self._iter.__next__()
+                if analysis.ns == 'jmv' and analysis.name == 'empty':
+                    continue
                 if analysis.status is Analysis.Status.NONE:
                     return analysis
                 if not analysis.enabled:
@@ -247,6 +249,9 @@ class Analyses:
 
         Modules.instance().add_listener(self._module_event)
 
+    def count(self):
+        return len(self._analyses)
+
     def _module_event(self, event):
         if event['type'] == 'moduleInstalled':
             module_name = event['data']['name']
@@ -259,6 +264,9 @@ class Analyses:
                 self.recreate(id).rerun()
 
     def _construct(self, id, name, ns, options_pb=None, enabled=None):
+
+        if name == 'empty' and ns == 'jmv':
+            return Analysis(self._dataset, id, name, ns, Options.create({}, {}), self, enabled)
 
         try:
             module_desc = Modules.instance().get(ns)
@@ -386,6 +394,9 @@ class Analyses:
         annotation_pb.index = index + 1
         annotation_pb.title = ''
         annotation_pb.hasTitle = True
+        annotation_pb.results.title = 'Results'
+        annotation_pb.results.group.CopyFrom(jcoms.ResultsGroup())
+        annotation_pb.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
 
         annotation.set_results(annotation_pb, silent=True)
 

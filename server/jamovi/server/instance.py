@@ -727,14 +727,18 @@ class Instance:
 
                 stream.set_result(result)
 
+                if self._data.analyses.count() == 0:
+                    annotation = self._data.analyses.create_annotation(0)
+                    annotation.results.index = 1
+                    annotation.results.title = 'Results'
+
                 i = 0
-                while i < len(self._data.analyses._analyses):
+                while i < self._data.analyses.count():
                     analysis = self._data.analyses._analyses[i]
                     is_last = i == len(self._data.analyses._analyses) - 1
                     if ((i % 2 == 0 or is_last) and analysis.name != 'empty'):
                         while True:
                             annotation = self._data.analyses.create_annotation(i)
-                            annotation.run()
                             annotation.results.index = i + 1
                             if i == 0:
                                 annotation.results.title = 'Results'
@@ -1060,7 +1064,6 @@ class Instance:
             self._coms.send(request, self._instance_id, request, True)
 
             header = self._data.analyses.create_annotation(0)
-            header.run()
             header.results.index = 1
             header.results.title = 'Results'
             self._coms.send(header.results, self._instance_id, complete=True)
@@ -1099,13 +1102,14 @@ class Instance:
 
                 if self._data.analyses.has_header_annotation() is False:
                     header = self._data.analyses.create_annotation(0)
-                    header.run()
                     header.results.index = 1
                     header.results.title = 'Results'
                     if request.name == 'empty':
                         self._coms.send(header.results, self._instance_id, request, complete=True)
                     else:
                         self._coms.send(header.results, self._instance_id, complete=True)
+
+                    # increment the index of the request, so it's placed after the header
                     request.index += 1
 
                 if request.name != 'empty':
@@ -1134,7 +1138,6 @@ class Instance:
                         self._coms.send(response, self._instance_id, request, True)
                     child_index = request.index + 1
                     for child in analysis.dependents:
-                        child.run()
                         child.results.index = child_index
                         child_index += 1
                         self._coms.send(child.results, self._instance_id, complete=True)

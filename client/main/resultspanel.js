@@ -187,8 +187,6 @@ const ResultsPanel = Backbone.View.extend({
         $iframe.on('load', () => {
             this._sendResults(resources);
             resources.loaded = true;
-            if (analysis.name !== 'empty')
-                this._sendSelected(analysis.localId);
         });
 
         $iframe.on('mouseover mouseout', (event) => {
