@@ -15,7 +15,7 @@ const Heading = function(address, text) {
         this.originalHeading = text;
 
         this.$el = $(`<div class="jmv-editable-header">
-                        <h1 contenteditable>${ text }</h1>
+                        <h1 contenteditable spellcheck="false">${ text }</h1>
                       </div>`
                     );
 
