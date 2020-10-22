@@ -137,10 +137,10 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             }
             else {
                 let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();
-                return $.get(url, (script) => {
+                return $.get(url, null, (script) => {
                     this.def = script;
                     resolve(script);
-                });
+                }, 'text');
             }
         }),
         new Promise((resolve, reject) => {
