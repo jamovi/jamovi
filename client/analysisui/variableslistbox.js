@@ -35,7 +35,7 @@ const VariablesListBox = function(params) {
                     return props;
             }
         }
-        else if (optType === "Variable" || optType === "Variables" || optType === "Pair" || optType === "Pairs")
+        else if (optType === "Variable" || optType === "Variables" || optType === "Pair" || optType === "Pairs" || optType === 'Output' || optType === 'Outputs')
             return properties;
 
         return null;
