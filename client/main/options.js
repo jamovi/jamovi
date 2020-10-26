@@ -153,6 +153,23 @@ OptionTypes.Level = function(template, value) {
 };
 SuperClass.create(OptionTypes.Level);
 
+OptionTypes.Output = function(template, value) {
+    OptionTypes.Variable.extendTo(this, template, value);
+
+    this._override('_onGetUsedColumns', (baseFunction) => {
+        return [];
+    });
+};
+SuperClass.create(OptionTypes.Output);
+
+OptionTypes.Outputs = function(template, value) {
+    OptionTypes.Variables.extendTo(this, template, value);
+
+    this._override('_onGetUsedColumns', (baseFunction) => {
+        return [];
+    });
+};
+SuperClass.create(OptionTypes.Outputs);
 
 OptionTypes.Variable = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
