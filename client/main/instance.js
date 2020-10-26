@@ -793,6 +793,9 @@ const Instance = Backbone.Model.extend({
                     });
             }
         }
+        else if (payloadType === 'DataSetRR') {
+            this._dataSetModel._processDatasetRR(response);
+        }
         else if (payloadType === 'ModuleRR') {
             let moduleName = response.name;
 

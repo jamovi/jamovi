@@ -1333,6 +1333,8 @@ DataSetModel.stringifyColumnType = function(type) {
             return 'recoded';
         case 4:
             return 'filter';
+        case 5:
+            return 'output';
         case 0:
             return 'none';
         default:
@@ -1350,6 +1352,8 @@ DataSetModel.parseColumnType = function(str) {
             return 3;
         case 'filter':
             return 4;
+        case 'output':
+            return 5;
         case 'none':
             return 0;
         default:

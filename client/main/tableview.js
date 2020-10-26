@@ -171,6 +171,8 @@ const TableView = SilkyView.extend({
         ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
         ActionHub.get('insertRecoded').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'recoded'; }, 'left'));
         ActionHub.get('appendRecoded').on('request', () => this._appendColumn('recoded'));
+        ActionHub.get('insertOutput').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'output'; }, 'left'));
+        ActionHub.get('appendOutput').on('request', () => this._appendColumn('output'));
         ActionHub.get('delVar').on('request', () => this._deleteColumns());
         ActionHub.get('compute').on('request', () => {
             this._insertFromSelectedColumns((item, column) => {
@@ -2724,6 +2726,8 @@ const TableView = SilkyView.extend({
                 args = { name: '', columnType: 'computed', measureType: 'continuous' };
             else if (columnType === 'recoded')
                 args = { name: '', columnType: 'recoded', measureType: 'nominal' };
+            else if (columnType === 'output')
+                args = { name: '', columnType: 'output', measureType: 'continuous' };
             else
                 args = { name: '', columnType: 'none', measureType: 'nominal' };
 
@@ -2772,6 +2776,7 @@ const TableView = SilkyView.extend({
         ActionHub.get('insertVar').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertComputed').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertRecoded').set('enabled',  selection.right <= dataSetBounds.right && hasFilters === false);
+        ActionHub.get('insertOutput').set('enabled',  selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertRow').set('enabled', selection.rowNo <= dataSetBounds.bottom);
         ActionHub.get('cut').set('enabled', hasFilters === false);
         ActionHub.get('paste').set('enabled', hasFilters === false);

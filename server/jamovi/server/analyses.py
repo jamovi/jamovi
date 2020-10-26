@@ -4,6 +4,7 @@ import yaml
 from enum import Enum
 from asyncio import Future
 from copy import deepcopy
+from collections import namedtuple
 
 from .modules import Modules
 from .options import Options
@@ -94,6 +95,7 @@ class Analysis:
         self.parent._notify_options_changed(self)
 
     def set_results(self, results, complete=True, silent=False):
+
         self.results = results
         self.complete = complete
         if len(results.options.names) > 0:  # if not empty
@@ -105,6 +107,26 @@ class Analysis:
 
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
+
+        output_data = { }
+
+        for element in results.results.group.elements:
+            if element.HasField('output'):
+                name = element.name
+                column_name = self.options.get(name)
+                output = jcoms.ResultsOutput()
+                output.CopyFrom(element.output)
+                element.Clear()
+
+                Output = namedtuple('Output', 'values levels')
+
+                if len(output.d) > 0:
+                    output_data[column_name] = Output(output.d, None)
+                elif len(output.i) > 0:
+                    output_data[column_name] = Output(output.i, output.levels)
+
+        if output_data:
+            self.parent._notify_output_received(output_data)
 
         self.changes.clear()
         self.clear_state = False
@@ -245,6 +267,7 @@ class Analyses:
         self._analyses = []
         self._options_changed_listeners = []
         self._results_changed_listeners = []
+        self._output_received_listeners = []
         self._next_id = 1
 
         Modules.instance().add_listener(self._module_event)
@@ -457,6 +480,12 @@ class Analyses:
     def remove_options_changed_listener(self, listener):
         self._options_changed_listeners.remove(listener)
 
+    def add_output_received_listener(self, listener):
+        self._output_received_listeners.append(listener)
+
+    def remove_output_received_listener(self, listener):
+        self._output_received_listeners.remove(listener)
+
     def remove_all(self):
         self._analyses = []
 
@@ -467,6 +496,10 @@ class Analyses:
     def _notify_results_changed(self, analysis):
         for listener in self._results_changed_listeners:
             listener(analysis)
+
+    def _notify_output_received(self, output):
+        for listener in self._output_received_listeners:
+            listener(output)
 
     def get(self, id, instance_id=None):
         for analysis in self._analyses:

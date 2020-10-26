@@ -249,6 +249,7 @@ cdef extern from "columnw.h":
         CColumnTypeComputed   "ColumnType::COMPUTED"
         CColumnTypeRecoded    "ColumnType::RECODED"
         CColumnTypeFilter     "ColumnType::FILTER"
+        CColumnTypeOutput     "ColumnType::OUTPUT"
 
 class CellIterator:
     def __init__(self, column):
@@ -508,6 +509,11 @@ cdef class Column:
             self._this.setSValue(index, '', False)
         else:
             self._this.setIValue(index, -2147483648, False)
+
+    def clear(self):
+        for index in range(self.row_count):
+            self.clear_at(index)
+        self.clear_levels()
 
     def __setitem__(self, index, value):
         import warnings
@@ -866,6 +872,7 @@ class ColumnType(Enum):
     COMPUTED = CColumnTypeComputed
     RECODED  = CColumnTypeRecoded
     FILTER  = CColumnTypeFilter
+    OUTPUT  = CColumnTypeOutput
 
     @staticmethod
     def stringify(value):
@@ -877,6 +884,8 @@ class ColumnType(Enum):
             return 'Recoded'
         elif value == ColumnType.FILTER:
             return 'Filter'
+        elif value == ColumnType.OUTPUT:
+            return 'Output'
         elif value == ColumnType.NONE:
             return 'None'
         else:
@@ -892,6 +901,8 @@ class ColumnType(Enum):
             return ColumnType.RECODED
         elif value == 'Filter':
             return ColumnType.FILTER
+        elif value == 'Output':
+            return ColumnType.OUTPUT
         elif value == 'None':
             return ColumnType.NONE
         else:

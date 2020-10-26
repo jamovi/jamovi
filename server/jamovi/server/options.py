@@ -108,6 +108,22 @@ class Options:
 
             self._populate_pb(opt_pb, default)
 
+    def get(self, name):
+        pb = None
+        for i, opt_name in enumerate(self._pb.names):
+            if opt_name == name:
+                pb = self._pb.options[i]
+                break
+        else:
+            raise KeyError
+
+        # it's possible that this function doesn't handle all option value types
+
+        if pb.HasField('s'):
+            return pb.s
+        else:
+            return None
+
     def set(self, pb):
         changes = False
         old_names = list(self._pb.names)

@@ -80,6 +80,14 @@
     background-image: url('../assets/menu-transformed-append.svg');
 }
 
+.jmv-ribbon-button[data-name=insertoutput] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-computed-insert.svg');
+}
+
+.jmv-ribbon-button[data-name=appendoutput] > .jmv-ribbon-button-icon {
+    background-image: url('../assets/menu-computed-append.svg');
+}
+
 .jmv-ribbon-button[data-name=compute] > .jmv-ribbon-button-icon {
     background-image: url('../assets/menu-compute.svg');
 }

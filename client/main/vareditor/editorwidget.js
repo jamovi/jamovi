@@ -142,6 +142,10 @@ const EditorWidget = Backbone.View.extend({
         this.filterWidget = new FilterWidget({ el: this.$filterWidget, model: this.model.dataset });
         this.filterWidget.on('notification', this._notifyEditProblem, this);
 
+        this.$outputWidget = $('<div></div>').appendTo(this.$body);
+        this.outputWidget = new DataVarWidget({ el: this.$outputWidget, model: this.model });
+        this.outputWidget.setParent(this);
+
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);
         this.newVarWidget = new NewVarWidget({ el: this.$newVarWidget, model: this.model });
 
@@ -150,6 +154,7 @@ const EditorWidget = Backbone.View.extend({
             this.$computedVarWidget,
             this.$recodedVarWidget,
             this.$filterWidget,
+            this.$outputWidget,
             this.$newVarWidget,
         ];
     },
@@ -223,6 +228,7 @@ const EditorWidget = Backbone.View.extend({
         this.newVarWidget.detach();
         this.recodedVarWidget.detach();
         this.filterWidget.detach();
+        this.outputWidget.detach();
     },
     _updateHeading() {
         let type = this.model.get('columnType');
@@ -245,6 +251,12 @@ const EditorWidget = Backbone.View.extend({
                 this.$label[0].textContent = 'MULTIPLE TRANSFORMED VARIABLES (' + this.model.columns.length + ')';
             else
                 this.$label[0].textContent = 'TRANSFORMED VARIABLE';
+        }
+        else if (type === 'output') {
+            if (multiSupport)
+                this.$label[0].textContent = 'OUTPUT VARIABLES (' + this.model.columns.length + ')';
+            else
+                this.$label[0].textContent = 'OUTPUT VARIABLE';
         }
         else if (type === 'filter') {
             this.$label[0].textContent = 'ROW FILTERS';
@@ -307,6 +319,16 @@ const EditorWidget = Backbone.View.extend({
             this.$description.hide();
             this._show(this.$filterWidget);
             this.filterWidget.attach();
+        }
+        else if (type === 'output') {
+            this.$footer.hide();
+            this.$labelBox.show();
+            this.$importedAs.hide();
+            this.$label.show();
+            this.$title.show();
+            this.$description.show();
+            this._show(this.$outputWidget);
+            this.outputWidget.attach();
         }
         else {
             this.$footer.hide();
