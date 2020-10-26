@@ -392,18 +392,16 @@ class Column:
         self._child.refresh_filter_state()
 
     def clear_levels(self):
-        if self._child is None:
-            self._create_child()
-        self._child.clear_levels()
+        if self._child is not None:
+            self._child.clear_levels()
 
     def clear(self):
         if self._child is not None:
             self._child.clear()
 
     def trim_unused_levels(self):
-        if self._child is None:
-            self._create_child()
-        self._child.trim_unused_levels()
+        if self._child is not None:
+            self._child.trim_unused_levels()
 
     @property
     def has_levels(self):
