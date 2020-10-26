@@ -2,11 +2,13 @@
 * {
     user-select: none ;
     -webkit-user-select: none;
-       -moz-user-select: none;
+    -moz-user-select: none;
 }
 
-input, [contenteditable] {
+input, [contenteditable], [contenteditable] * {
     user-select: initial ;
+    -webkit-user-select: initial;
+    -moz-user-select: initial;
 }
 
 html, body {
