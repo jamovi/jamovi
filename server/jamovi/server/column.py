@@ -87,6 +87,9 @@ class Column:
             else:
                 return value
 
+    def is_row_filtered(self, index):
+        return self._parent.is_row_filtered(index)
+
     @property
     def cell_tracker(self):
         return self._cell_tracker
@@ -392,6 +395,10 @@ class Column:
         if self._child is None:
             self._create_child()
         self._child.clear_levels()
+
+    def clear(self):
+        if self._child is not None:
+            self._child.clear()
 
     def trim_unused_levels(self):
         if self._child is None:

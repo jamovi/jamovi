@@ -110,7 +110,8 @@ namespace ColumnType
         DATA = 1,
         COMPUTED = 2,
         RECODED = 3,
-        FILTER = 4
+        FILTER = 4,
+        OUTPUT = 5,
     };
 }
 

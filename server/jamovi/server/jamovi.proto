@@ -234,6 +234,14 @@ message ResultsHtml {
     repeated string stylesheets = 3;
 }
 
+message ResultsOutput {
+    DataSetSchema.ColumnSchema.DataType dataType = 1;
+    DataSetSchema.MeasureType measureType = 2;
+    repeated VariableLevel levels = 3;
+    repeated int32 i = 4;
+    repeated double d = 5;
+}
+
 message ResultsElement {
     string name = 1;
     string title = 2;
@@ -249,6 +257,7 @@ message ResultsElement {
         string preformatted = 10;
         string syntax = 11;
         ResultsHtml html = 12;
+        ResultsOutput output = 13;
     }
 
     bytes state = 14;
@@ -423,6 +432,7 @@ enum ColumnType {
     COMPUTED = 2;
     RECODED = 3;
     FILTER = 4;
+    OUTPUT = 5;
 }
 
 message AnnotationSchema {

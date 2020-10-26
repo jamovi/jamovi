@@ -84,6 +84,7 @@
 
 .jmv-column[data-columntype='computed'],
 .jmv-column[data-columntype='recoded'],
+.jmv-column[data-columntype='output'],
 .jmv-column[data-columntype='filter'] {
     background-color: hsla(0, 0%, 50%, 0.05) ;
 }
@@ -221,8 +222,9 @@
     transition: opacity .2s, background-color .2s;
 }
 
-.jmv-column-header[data-columntype="computed"] > .jmv-column-header-colour,
-.jmv-column-header[data-columntype="recoded"] > .jmv-column-header-colour {
+.jmv-column-header[data-columntype='computed'] > .jmv-column-header-colour,
+.jmv-column-header[data-columntype='recoded'] > .jmv-column-header-colour,
+.jmv-column-header[data-columntype='output'] > .jmv-column-header-colour {
     opacity: 1;
 }
 
@@ -427,40 +429,27 @@ input.jmv-table-cell-selected.copying {
     pointer-events: none ;
 }
 
-
-.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .jmv-column-header-icon {
+.jmv-column-header[data-datatype='integer'][data-measuretype='nominal'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-nominal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .jmv-column-header-icon {
+.jmv-column-header[data-datatype='text'][data-measuretype='nominal'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-nominal-text.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+.jmv-column-header[data-datatype='integer'][data-measuretype='ordinal'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-ordinal.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .jmv-column-header-icon {
+.jmv-column-header[data-datatype='text'][data-measuretype='ordinal'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-ordinal-text.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="continuous"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-measuretype="continuous"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-measuretype="continuous"] > .jmv-column-header-icon {
+.jmv-column-header[data-measuretype='continuous'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-continuous.svg');
 }
 
-.jmv-column-header[data-columntype="data"][data-measuretype="id"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="recoded"][data-measuretype="id"] > .jmv-column-header-icon,
-.jmv-column-header[data-columntype="computed"][data-measuretype="id"] > .jmv-column-header-icon {
+.jmv-column-header[data-measuretype='id'] > .jmv-column-header-icon {
     background-image: url('../assets/variable-id.svg');
 }
 
@@ -468,7 +457,7 @@ input.jmv-table-cell-selected.copying {
     display: none;
 }
 
-.jmv-column-header[data-fmlaok="0"][data-active="1"] > .jmv-column-header-icon {
+.jmv-column-header[data-fmlaok='0'][data-active='1'] > .jmv-column-header-icon {
     display: block;
     cursor: default;
     background-image: url('../assets/column-error.svg') !important;

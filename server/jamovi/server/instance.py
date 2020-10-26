@@ -90,6 +90,7 @@ class Instance:
         self._inactive_clean = True
 
         self._data.analyses.add_results_changed_listener(self._on_results)
+        self._data.analyses.add_output_received_listener(self._on_output_received)
 
         settings = Settings.retrieve()
         settings.sync()
@@ -269,6 +270,56 @@ class Instance:
     def _on_results(self, analysis):
         if self._coms is not None:
             self._coms.send(analysis.results, self._instance_id, complete=analysis.complete)
+
+    def _on_output_received(self, output):
+
+        response = None
+
+        for column in self._data:
+            try:
+                column_data = output[column.name]
+            except KeyError:
+                pass
+            else:
+                if isinstance(column_data.values[0], int):
+                    if len(column_data.levels) > 0:
+                        column.clear()
+                        column.change(data_type=DataType.INTEGER, measure_type=MeasureType.NOMINAL)
+                        for level in column_data.levels:
+                            column.append_level(level.value, level.label)
+                    else:
+                        column.change(data_type=DataType.INTEGER)
+                elif isinstance(column_data.values[0], float):
+                    column.change(data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS)
+                else:
+                    # shouldn't get here
+                    continue
+
+                index = 0
+                n_values = len(column_data.values)
+                for row_no in range(column.row_count):
+                    if not column.is_row_filtered(row_no):
+                        if index < n_values:
+                            value = column_data.values[index]
+                            column.set_value(row_no, value)
+                            index += 1
+                        else:
+                            column.clear_at(row_no)
+                    else:
+                        column.clear_at(row_no)
+
+                if column.data_type == DataType.DECIMAL:
+                    column.determine_dps()
+
+                if response is None:
+                    response = jcoms.DataSetRR()
+
+                column_pb = response.schema.columns.add()
+                self._populate_column_schema(column, column_pb, True)
+
+        if self._coms is not None and response is not None:
+            self._populate_schema_info(None, response)
+            self._coms.send(response, self._instance_id)
 
     def _on_fs_request(self, request):
         try:
