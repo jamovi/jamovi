@@ -325,7 +325,7 @@ class Analyses:
             return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
 
         except Exception:
-            return Analysis(self._dataset, id, name, ns, Options(), self, enabled, load_error=True)
+            return Analysis(self._dataset, id, name, ns, Options.create({}, None), self, enabled, load_error=True)
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:
