@@ -43,6 +43,7 @@ class EngineManager:
 
         self._requests = [ None ] * queue.qsize
         self._engines = [ None ] * queue.qsize
+        self._next_conn_index = 0
 
         self._message_id = 1
         self._listeners = [ ]
@@ -54,11 +55,10 @@ class EngineManager:
             self._conn_root = "ipc://{}/conn".format(self._dir.name)
 
         for index in range(queue.qsize):
-            conn_path = '{}-{}'.format(self._conn_root, index)
             engine = Engine(
                 parent=self,
                 data_path=data_path,
-                conn_path=conn_path,
+                conn_root=self._conn_root,
                 monitor=self._monitor)
             self._engines[index] = engine
 
@@ -143,12 +143,13 @@ class Engine:
         RUNNING = 2
         OPPING = 3  # performing operation
 
-    def __init__(self, parent, data_path, conn_path, monitor=None):
+    def __init__(self, parent, data_path, conn_root, monitor=None):
         self._parent = parent
         self._data_path = data_path
-        self._conn_path = conn_path
+        self._conn_root = conn_root
         self._monitor = monitor
 
+        self._conn_path = None
         self._process = None
         self._socket = None
         self._thread = None
@@ -163,6 +164,9 @@ class Engine:
         self._current_results = None
 
     async def start(self):
+
+        self._conn_path = f'{self._conn_root}-{self._parent._next_conn_index}'
+        self._parent._next_conn_index += 1
 
         bin_dir = 'bin' if platform.system() != 'Darwin' else 'MacOS'
         exe_dir = path.join(conf.get('home'), bin_dir)
