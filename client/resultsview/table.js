@@ -527,6 +527,9 @@ const TableView = Elem.View.extend({
 
             this.$columnHeaderRowSuper.html(html);
         }
+        else {
+            this.$columnHeaderRowSuper.empty();
+        }
 
 
         html = '';
