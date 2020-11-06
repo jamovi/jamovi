@@ -27,6 +27,14 @@ MemoryMap::MemoryMap(const string &path, interprocess::file_mapping *file, inter
     _start = (char*)_region->get_address();
 }
 
+MemoryMap::~MemoryMap()
+{
+    delete _region;
+    delete _file;
+    _region = NULL;
+    _file = NULL;
+}
+
 void MemoryMap::check() const
 {
     char match[] = "jamovi";
