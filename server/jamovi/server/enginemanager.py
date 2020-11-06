@@ -165,6 +165,13 @@ class Engine:
 
     async def start(self):
 
+        if self._socket is not None:
+            try:
+                self._socket.close()
+            except Exception as e:
+                log.exception(e)
+            self._socket = None
+
         self._conn_path = f'{self._conn_root}-{self._parent._next_conn_index}'
         self._parent._next_conn_index += 1
 
@@ -293,7 +300,12 @@ class Engine:
         self._ioloop.call_soon_threadsafe(self._on_closing)
 
     def _on_closing(self):
-        self._socket.close()
+        try:
+            self._socket.close()
+        except Exception as e:
+            log.exception(e)
+        self._socket = None
+
         if self._restarting:
             log.info('Restarting engine')
             self._stopping = False
