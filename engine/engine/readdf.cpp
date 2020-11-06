@@ -287,6 +287,8 @@ DataFrame readDF(
         colNo++;
     }
 
+    delete mm;
+
     if (colNo < columnsRequired.size())
     {
         columns.erase(colNo, columnsRequired.size());

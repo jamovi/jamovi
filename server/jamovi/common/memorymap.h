@@ -17,6 +17,7 @@ class MemoryMap {
 
 public:
     static MemoryMap *attach(const std::string &path);
+    ~MemoryMap();
 
     template<class T> inline T *resolve(T *p)
     {
