@@ -818,7 +818,7 @@ const Instance = Backbone.Model.extend({
             if (analysis.isReady === false)
                 continue;
 
-            let using = analysis.getUsing();
+            let using = analysis.getUsingColumns();
 
             let columnDataChanged = false;
             let columnDeleted = false;
@@ -827,6 +827,7 @@ const Instance = Backbone.Model.extend({
             let columnRenames = [];
             let levelRenames = [];
             let columnDeletes = [];
+            let rerunAnalysis = false;
 
             for (let changes of event.changes) {
 
@@ -834,6 +835,8 @@ const Instance = Backbone.Model.extend({
                     if (using.includes(changes.name)) {
                         columnDeleted = true;
                         columnDeletes.push(changes.name);
+                        if (changes.columnType !== 'output')
+                            rerunAnalysis = true;
                     }
                 }
                 else {
@@ -851,9 +854,13 @@ const Instance = Backbone.Model.extend({
                             changes.missingValuesChanged ||
                             changes.descriptionChanged)
                         columnDataChanged = true;
+                        if (changes.columnType !== 'output')
+                            rerunAnalysis = true;
                     }
                     if (changes.nameChanged && using.includes(changes.oldName)) {
                         columnRenamed = true;
+                        if (changes.columnType !== 'output')
+                            rerunAnalysis = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
                     }
                     if (changes.levelsChanged) {
@@ -865,16 +872,17 @@ const Instance = Backbone.Model.extend({
             }
 
             if (columnRenamed)
-                analysis.renameColumns(columnRenames);
+                analysis.notifyColumnsRenamed(columnRenames);
 
             if (levelsRenamed)
-                analysis.renameLevels(levelRenames);
+                analysis.notifyLevelsRenamed(levelRenames);
 
             if (columnDataChanged || columnRenamed || columnDeleted) {
                 let selectedAnalysis = this.get('selectedAnalysis');
                 if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
                     this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
-                this._runAnalysis(analysis, event.changed);
+                if (rerunAnalysis)
+                    this._runAnalysis(analysis, event.changed);
             }
         }
     },

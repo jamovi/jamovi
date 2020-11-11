@@ -25,6 +25,10 @@
     margin-top: 1px;
 }
 
+.silky-options-supplier-group.initialising * {
+    display: none;
+}
+
 .supplier-search {
     height: 25px;
     opacity: 1;

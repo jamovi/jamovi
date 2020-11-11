@@ -10,6 +10,7 @@ const keyboardJS = require('keyboardjs');
 
 const NewVarWidget = require('./newvarwidget');
 const DataVarWidget = require('./datavarwidget');
+const OutputVarWidget = require('./outputvarwidget');
 const ComputedVarWidget = require('./computedvarwidget');
 const RecodedVarWidget = require('./recodedvarwidget');
 const FilterWidget = require('./filterwidget');
@@ -143,7 +144,7 @@ const EditorWidget = Backbone.View.extend({
         this.filterWidget.on('notification', this._notifyEditProblem, this);
 
         this.$outputWidget = $('<div></div>').appendTo(this.$body);
-        this.outputWidget = new DataVarWidget({ el: this.$outputWidget, model: this.model });
+        this.outputWidget = new OutputVarWidget({ el: this.$outputWidget, model: this.model });
         this.outputWidget.setParent(this);
 
         this.$newVarWidget = $('<div></div>').appendTo(this.$body);

@@ -42,9 +42,9 @@ const DataVarWidget = Backbone.View.extend({
         this._createMissingValuesCtrl();
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
-        this.$levelsContainer = $('<div class="jmv-variable-editor-levels-container"></div>').appendTo(this.$levelsCrtl);
-        this.$levelsTitle = $('<div class="jmv-variable-editor-levels-title">Levels</div>').appendTo(this.$levelsContainer);
-        this.$levels = $('<div class="jmv-variable-editor-levels"></div>').appendTo(this.$levelsContainer);
+        this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
+        this.$levelsTitle = $('<div class="title">Levels</div>').appendTo(this.$levelsContainer);
+        this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
         this.$levelItems = $();
         this.levelCtrls = [];
 
