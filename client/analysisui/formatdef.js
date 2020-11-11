@@ -29,7 +29,7 @@ const FormatDef = {
     constructor: function(raw, format) {
 
         this.format = format;
-        if (_.isUndefined(format))
+        if (format === undefined)
             this.format = FormatDef.infer(raw);
 
         this.raw = raw;
@@ -49,7 +49,7 @@ const FormatDef = {
                 return this.raw === value;
 
             let temp = value.raw;
-            if (_.isUndefined(temp))
+            if (temp === undefined)
                 temp = value;
             else if (this.format.name !== value.format.name)
                 return false;

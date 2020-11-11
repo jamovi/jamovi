@@ -30,8 +30,8 @@ var TargetListValueFilter = function() {
     };
 
     this.removeValue = function(rowIndex, columnName) {
-        var row = this._data[rowIndex];
-        if (_.isUndefined(row))
+        let row = this._data[rowIndex];
+        if (row === undefined)
             return;
 
         delete row[columnName];
@@ -46,9 +46,9 @@ var TargetListValueFilter = function() {
     };
 
     this.testValue = function(filterType, value, rowIndex, columnName) {
-        var filter = this["testValue_" + filterType];
-        if (_.isUndefined(filter)) {
-            console.log("Unknown List Value Filter '" + filterType + "'");
+        let filter = this['testValue_' + filterType];
+        if (filter === undefined) {
+            console.log('Unknown List Value Filter "' + filterType + '"');
             return true;
         }
         return filter.call(this, value, rowIndex, columnName);
@@ -73,7 +73,7 @@ var TargetListValueFilter = function() {
 
     this.testValue_uniquePerRow = function(value, rowIndex, columnName) {
         var row = this._data[rowIndex];
-        if (_.isUndefined(row))
+        if (row === undefined)
             return true;
 
         for (let c in row) {
@@ -89,7 +89,7 @@ var TargetListValueFilter = function() {
         for (var r = 0; r < this._data.length; r++) {
             var row = this._data[r];
             var cell = row[columnName];
-            if (_.isUndefined(cell) === false) {
+            if (cell !== undefined) {
                 if (value.equalTo(cell.value))
                     return false;
             }

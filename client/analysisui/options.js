@@ -1,7 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -17,7 +16,7 @@ const keyedQueue = function() {
     };
 
     this.getKeyLevel = function(keys) {
-        if (_.isUndefined(keys))
+        if (keys === undefined)
             return 0;
 
         return keys.length;
@@ -117,7 +116,7 @@ const keyedQueue = function() {
     };
 
     this.contains = function(key) {
-        return _.isUndefined(this.map[key]) === false;
+        return this.map[key] !== undefined;
     };
 
     this.hasEvents = function() {
@@ -193,8 +192,8 @@ const Options = function(def) {
 
     this.setOptionValue = function(name, value, keys, eventParams) {
 
-        if (_.isUndefined(eventParams)) {
-            if (_.isUndefined(keys)) {
+        if (eventParams === undefined) {
+            if (keys === undefined) {
                 keys = [];
                 eventParams = Options.getDefaultEventParams();
             }
@@ -245,7 +244,7 @@ const Options = function(def) {
 
     this.insertOptionValue = function(name, value, keys, eventParams) {
 
-        if (_.isUndefined(eventParams))
+        if (eventParams === undefined)
             eventParams = Options.getDefaultEventParams();
 
         let option = null;
@@ -263,7 +262,7 @@ const Options = function(def) {
 
     this.removeOptionValue = function(name, keys, eventParams) {
 
-        if (_.isUndefined(eventParams))
+        if (eventParams === undefined)
             eventParams = Options.getDefaultEventParams();
 
         let option = null;

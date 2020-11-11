@@ -1,10 +1,13 @@
 
 'use strict';
 
+const SuperClass = require('../common/superclass');
 const LayoutSupplierView = require('./layoutsupplierview');
 const FormatDef = require('./formatdef');
 const EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
 const EnumPropertyFilter = require('./enumpropertyfilter');
+const VariablesListBox = require('./variableslistbox');
+const $ = require('jquery');
 
 const LayoutVariablesView = function(params) {
 
@@ -13,13 +16,10 @@ const LayoutVariablesView = function(params) {
     this.$el.addClass('silky-options-variable-supplier-group');
 
     this.registerSimpleProperty('suggested', [], new EnumArrayPropertyFilter(['continuous', 'ordinal', 'nominal', 'nominaltext', 'id']));
-    this.registerSimpleProperty('permitted', [], new EnumArrayPropertyFilter(['continuous', 'ordinal', 'nominal', 'nominaltext', 'id', 'numeric', 'factor']));
+    this.registerSimpleProperty('permitted', [], new EnumArrayPropertyFilter(['continuous', 'ordinal', 'nominal', 'nominaltext', 'id', 'numeric', 'factor', 'output']));
     this.registerSimpleProperty('populate', 'auto', new EnumPropertyFilter(['auto', 'manual'], 'auto'));
+    this.registerSimpleProperty('hideNotPermitted', false);
     this.registerSimpleProperty('format', FormatDef.variable);
-
-    this._override('onPopulate', (baseFunction) => {
-        this._populateList(baseFunction);
-    });
 
     this._override('update', (baseFunction) => {
         this._populateList(baseFunction);
@@ -57,9 +57,13 @@ const LayoutVariablesView = function(params) {
     this._waitingFor = 0;
 
     this._checkPermitted = function(column, permitted) {
+        if (column.columnType === 'output' && permitted.includes('output'))
+            return true;
+
         let measureType = column.measureType;
         if ((column.measureType === 'nominal' || column.measureType === 'ordinal') && column.dataType === 'text')
             measureType = column.measureType + 'text';
+
         if (permitted.includes(measureType))
             return true;
 
@@ -94,6 +98,7 @@ const LayoutVariablesView = function(params) {
 
         let process = (column, item) => {
             return this.requestMeasureType(column.id, item).then(() => {
+
                 if (item.properties.hidden || item.properties.columnType === 'filter')
                     return;
 
@@ -106,8 +111,12 @@ const LayoutVariablesView = function(params) {
                     permittedCount += 1;
                 }
                 else {
-                    items.push(item);
-                    item.properties.permitted = permitted.length === 0;
+                    let isPermitted = permitted.length === 0;
+                    let hideNotPermitted = this.getPropertyValue('hideNotPermitted');
+                    if (isPermitted || ! hideNotPermitted) {
+                        items.push(item);
+                        item.properties.permitted = isPermitted;
+                    }
                 }
             });
         };
@@ -134,5 +143,7 @@ const LayoutVariablesView = function(params) {
         return false;
     };
 };
+
+SuperClass.create(LayoutVariablesView);
 
 module.exports = LayoutVariablesView;

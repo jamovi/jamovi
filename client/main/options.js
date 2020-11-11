@@ -68,14 +68,28 @@ OptionTypes.Option = function(template, value, isLeaf) {
             this._initialized = true;
     };
 
-    this.getUsedColumns = function() {
+    this.getAssignedColumns = function() {
         if (this._isLeaf)
-            return this._onGetUsedColumns();
+            return this._onGetAssignedColumns();
         else {
             let r = [];
             for (let i = 0; i < this.children.length; i++) {
                 let child = this.children[i];
-                r = r.concat(child.getUsedColumns());
+                r = r.concat(child.getAssignedColumns());
+            }
+            r = _.uniq(r);
+            return r;
+        }
+    };
+
+    this.getAssignedOutputs = function() {
+        if (this._isLeaf)
+            return this._onGetAssignedOutputs();
+        else {
+            let r = [];
+            for (let i = 0; i < this.children.length; i++) {
+                let child = this.children[i];
+                r = r.concat(child.getAssignedOutputs());
             }
             r = _.uniq(r);
             return r;
@@ -109,7 +123,11 @@ OptionTypes.Option = function(template, value, isLeaf) {
         }
     };
 
-    this._onGetUsedColumns = function() {
+    this._onGetAssignedColumns = function() {
+        return [];
+    };
+
+    this._onGetAssignedOutputs = function() {
         return [];
     };
 
@@ -118,7 +136,6 @@ OptionTypes.Option = function(template, value, isLeaf) {
     this._onRenameColumn = function(oldName, newName) {  };
 
     this._onRenameLevel = function(variable, oldLevel, newLevel, getOption) {  };
-
 
     this.setValue(value);
 };
@@ -156,8 +173,11 @@ SuperClass.create(OptionTypes.Level);
 OptionTypes.Output = function(template, value) {
     OptionTypes.Variable.extendTo(this, template, value);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
-        return [];
+    this._override('_onGetAssignedOutputs', (baseFunction) => {
+        if (this._value !== null)
+            return [ this._value ];
+        else
+            return [];
     });
 };
 SuperClass.create(OptionTypes.Output);
@@ -165,8 +185,13 @@ SuperClass.create(OptionTypes.Output);
 OptionTypes.Outputs = function(template, value) {
     OptionTypes.Variables.extendTo(this, template, value);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
-        return [];
+    this._override('_onGetAssignedOutputs', (baseFunction) => {
+        let r = [];
+        if (this._value !== null)
+            r = this._value;
+
+        r = _.uniq(r);
+        return r;
     });
 };
 SuperClass.create(OptionTypes.Outputs);
@@ -179,7 +204,7 @@ OptionTypes.Variable = function(template, value) {
             this._value = null;
     });
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
+    this._override('_onGetAssignedColumns', (baseFunction) => {
         if (this._value !== null)
             return [ this._value ];
         else
@@ -196,7 +221,7 @@ SuperClass.create(OptionTypes.Variable);
 OptionTypes.Variables = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
+    this._override('_onGetAssignedColumns', (baseFunction) => {
         let r = [];
         if (this._value !== null)
             r = this._value;
@@ -230,7 +255,7 @@ SuperClass.create(OptionTypes.Variables);
 OptionTypes.Terms = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
+    this._override('_onGetAssignedColumns', (baseFunction) => {
         let t = [];
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
@@ -272,7 +297,7 @@ SuperClass.create(OptionTypes.Terms);
 OptionTypes.Term = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
+    this._override('_onGetAssignedColumns', (baseFunction) => {
         let r = [];
         if (this._value !== null)
             r = this._value;
@@ -307,7 +332,7 @@ SuperClass.create(OptionTypes.Term);
 OptionTypes.Pairs = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, true);
 
-    this._override('_onGetUsedColumns', (baseFunction) => {
+    this._override('_onGetAssignedColumns', (baseFunction) => {
         let r = [];
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
@@ -358,7 +383,6 @@ OptionTypes.Pair = function(template, value) {
     OptionTypes.Group.extendTo(this, { type: 'Group', elements: [{ type: 'Variable', name: 'i1' }, { type: 'Variable', name: 'i2' }] }, value);
 };
 SuperClass.create(OptionTypes.Pair);
-
 
 OptionTypes.Array = function(template, value) {
     OptionTypes.Option.extendTo(this, template, value, false);
@@ -426,6 +450,8 @@ const Options = function(def=[]) {
 
     this._options = {};
 
+    this._changingHandles = [ ];
+
     for (var i = 0; i < def.length; i++) {
         var template = def[i];
         let defaultValue = template.default;
@@ -433,11 +459,15 @@ const Options = function(def=[]) {
         this._options[template.name] = option;
     }
 
-    this.getUsedColumns = function() {
+    this.addValueChangingHandler = function(handle) {
+        this._changingHandles.push(handle);
+    };
+
+    this.getAssignedColumns = function() {
         let r = [];
         for (let name in this._options) {
             let option = this._options[name];
-            r = r.concat(option.getUsedColumns());
+            r = r.concat(option.getAssignedColumns());
         }
         r = _.uniq(r);
         return r;
@@ -525,8 +555,21 @@ const Options = function(def=[]) {
                 }
             }
             else if (name in this._options) {
-                this._options[name].setValue(value, initializeOnly);
-                changed = true;
+                let option = this._options[name];
+                let apply = true;
+                for (let handle of this._changingHandles) {
+                    let result = handle(option, value, initializeOnly);
+                    if (result.cancel) {
+                        apply = ! result.cancel;
+                        break;
+                    }
+
+                    value = result.value;
+                }
+                if (apply) {
+                    this._options[name].setValue(value, initializeOnly);
+                    changed = true;
+                }
             }
         }
 
