@@ -13,7 +13,7 @@ var PropertySupplier = function(properties) {
     this._propertySupplier_eventsPending = {};
 
     this.registerComplexProperty = function(name, getter, setter, externalTrigger) {
-        if (_.isUndefined(this.properties[name]) === false)
+        if (this.properties[name] !== undefined)
             return;
 
         this.properties[name] = { get: getter, set: setter, trigger: externalTrigger, externalTrigger: externalTrigger };
@@ -21,10 +21,10 @@ var PropertySupplier = function(properties) {
 
     this.registerSimpleProperty = function(name, initialValue, filter, defined) {
 
-        if (_.isUndefined(defined))
+        if (defined === undefined)
             defined = false;
 
-        if (_.isUndefined(this.properties[name]) === false && this.properties[name].isDefined)
+        if (this.properties[name] !== undefined && this.properties[name].isDefined)
             return;
 
 
@@ -63,7 +63,7 @@ var PropertySupplier = function(properties) {
     this.getPropertyValue = function(property) {
 
         var propertyObj = this.properties[property];
-        if (_.isUndefined(propertyObj))
+        if (propertyObj === undefined)
             throw "property '" + property + "' does not exist";
 
         var value = propertyObj.get.call(this);
@@ -78,13 +78,13 @@ var PropertySupplier = function(properties) {
             throw "Cannot change the '" + property + "' property";
 
         var propertyObj = this.properties[property];
-        if (_.isUndefined(propertyObj))
+        if (propertyObj === undefined)
             throw "property '" + property + "' does not exist";
 
         var oldValue = propertyObj.get.call(this);
         if (oldValue !== value) {
             oldValue = propertyObj.set.call(this, value);
-            if (_.isUndefined(propertyObj.externalTrigger))
+            if (propertyObj.externalTrigger === undefined)
                 this.firePropertyChangedEvent(property);
 
             if (this.onPropertyChanged)
@@ -127,7 +127,7 @@ var PropertySupplier = function(properties) {
     };
 
     this.properties = { };
-    if (_.isUndefined(properties) === false && properties !== null) {
+    if (properties  !== undefined && properties !== null) {
         if (typeof properties !== 'object' || Array.isArray(properties) === true)
             throw 'Properties can only be an object.';
         else {

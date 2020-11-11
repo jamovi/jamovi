@@ -65,6 +65,13 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             this.trigger("hideOptions");
         },
 
+        requestAction: data => {
+            if (data.requestType === "createColumn") {
+                let column = this.dataSetModel.getFirstEmptyColumn();
+                return this.dataSetModel.changeColumn(column.id, data.requestData ).then(() => { return column.name; });
+            }
+        },
+
         requestData: data => {
             if (data.requestType === "columns") {
                 let columns = this.dataSetModel.get('columns');
@@ -72,7 +79,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 for (let i = 0; i < columns.length; i++) {
                     if (columns[i].columnType === 'none')
                         continue;
-                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType });
+                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType, columnType:  columns[i].columnType });
                 }
                 data.columns = columnData;
             }
@@ -112,8 +119,9 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         this.frameComms.receiveNamespace = "deleted"; //this will result in the internal message function exiting without executing any potentially problematic commands. However, the event handler is still attached and this is a problem.
     };
 
-    this.setDataModel = function(dataSetModel) {
+    this.setDataModel = function(dataSetModel, instance) {
         this.dataSetModel = dataSetModel;
+        this.instance = instance;
     };
 
     this.updateData = function(options) {

@@ -3,6 +3,38 @@
     margin: 0px;
 }
 
+.variablelist-button-box > .button > .text {
+    margin-left: 6px;
+    margin-bottom: 2px;
+}
+
+.variablelist-button-box > .button {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    transition: 0.2s background-color;
+    background: #3498db;
+    background-image: linear-gradient(to bottom, #3498db, #2980b9);
+    box-shadow: 0px 1px 3px #666666;
+}
+
+.variablelist-button-box > .button:hover {
+    background: #3cb0fd;
+    background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+}
+
+.variablelist-button-box {
+    position: absolute;
+    padding: 2px;
+    border-top: none;
+    box-sizing: border-box;
+    height: 25px;
+    display: flex;
+    width: 100%;
+}
+
 .silky-variablelist-icons {
     z-index: 100;
     bottom: 2px;

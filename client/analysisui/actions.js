@@ -493,6 +493,8 @@ function View() {
 
             requestData: this.requestData.bind(this),
 
+            requestAction: this.requestAction.bind(this),
+
             setCustomVariables: this.setCustomVariables.bind(this),
 
             setCustomVariable: this.setCustomVariable.bind(this),

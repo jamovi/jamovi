@@ -44,6 +44,29 @@
     background-color: rgb(255, 255, 255);
 }
 
+.variablesupplier-button-box {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    padding: 5px;
+    border: 1px solid rgb(130, 130, 130);
+    border-top: none;
+    box-sizing: border-box;
+    background-color: white;
+}
+
+.variablesupplier-button-box > .button {
+    background: #D8D8D8;
+    color: #6b6b6b;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    transition: 0.2s background-color;
+}
+
+.variablesupplier-button-box > .button:hover {
+    background-color: #ececec;
+}
 
 .silky-variable-type-img.silky-variable-type-id {
     background-image: url('../assets/variable-id.svg');

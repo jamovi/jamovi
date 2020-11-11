@@ -1,8 +1,6 @@
 
 'use strict';
 
-
-var _ = require('underscore');
 var SuperClass = require('../common/superclass');
 
 var LayoutGridBorderSupport = function() {
@@ -30,7 +28,7 @@ var LayoutGridBorderSupport = function() {
         if (cellData.row === self._firstRowIndex && self._orderedCells[cellData.row].length === 0) {
             for (let r = self._firstRowIndex + 1; r < self._orderedCells.length; r++) {
                 rowCells = self._orderedCells[r];
-                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
+                if (rowCells !== null && rowCells !== undefined && rowCells.length > 0) {
                     found = true;
                     self._firstRowIndex = r;
                     for (let j = 0; j < rowCells.length; j++) {
@@ -48,7 +46,7 @@ var LayoutGridBorderSupport = function() {
         if (cellData.column === self._firstColumnIndex && self._orderedColumns[cellData.column].length === 0) {
             for (let c = self._firstColumnIndex + 1; c < self._orderedColumns.length; c++) {
                 columnCells = self._orderedColumns[c];
-                if (columnCells !== null && _.isUndefined(columnCells) === false && columnCells.length > 0) {
+                if (columnCells !== null && columnCells !== undefined && columnCells.length > 0) {
                     found = true;
                     self._firstColumnIndex = c;
                     for (let i = 0; i < columnCells.length; i++) {
@@ -66,7 +64,7 @@ var LayoutGridBorderSupport = function() {
         if (cellData.row === self._lastRowIndex && self._orderedCells[cellData.row].length === 0) {
             for (let r = self._lastRowIndex - 1; r >= 0; r--) {
                 rowCells = self._orderedCells[r];
-                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
+                if (rowCells !== null && rowCells !== undefined && rowCells.length > 0) {
                     found = true;
                     self._lastRowIndex = r;
                     for (let j = 0; j < rowCells.length; j++) {
@@ -84,7 +82,7 @@ var LayoutGridBorderSupport = function() {
         if (cellData.column === self._lastColumnIndex && self._orderedColumns[cellData.column].length === 0) {
             for (let c = self._lastColumnIndex - 1; c >= 0; c--) {
                 columnCells = self._orderedColumns[c];
-                if (columnCells !== null && _.isUndefined(columnCells) === false && columnCells.length > 0) {
+                if (columnCells !== null && columnCells !== undefined && columnCells.length > 0) {
                     found = true;
                     self._lastColumnIndex = c;
                     for (let i = 0; i < columnCells.length; i++) {
@@ -109,7 +107,7 @@ var LayoutGridBorderSupport = function() {
         if (rowIndex <= self._firstRowIndex && rowIndex + count - 1 >= self._firstRowIndex) {
             for (let r = rowIndex; r < self._orderedCells.length; r++) {
                 rowCells = self._orderedCells[r];
-                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
+                if (rowCells !== null && rowCells !== undefined && rowCells.length > 0) {
                     found = true;
                     self._firstRowIndex = r;
                     for (let j = 0; j < rowCells.length; j++) {
@@ -127,7 +125,7 @@ var LayoutGridBorderSupport = function() {
         if (rowIndex + count - 1 >= self._lastRowIndex) {
             for (let r = rowIndex - 1; r >= 0; r--) {
                 rowCells = self._orderedCells[r];
-                if (rowCells !== null && _.isUndefined(rowCells) === false && rowCells.length > 0) {
+                if (rowCells !== null && rowCells !== undefined && rowCells.length > 0) {
                     found = true;
                     self._lastRowIndex = r;
                     for (let j = 0; j < rowCells.length; j++) {
@@ -158,7 +156,7 @@ var LayoutGridBorderSupport = function() {
     });
 
     this._checkCellValidity = function(cell) {
-        return _.isUndefined(cell) === false && cell.isVirtual === false;
+        return cell !== undefined && cell.isVirtual === false;
     };
 
     this._checkForAddedCell = function(column, row, cell) {

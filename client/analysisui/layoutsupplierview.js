@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const FormatDef = require('./formatdef');
 const SelectableLayoutGrid = require('./selectablelayoutgrid');
 const DragNDrop = require('./dragndrop');
@@ -20,6 +19,8 @@ const LayoutSupplierView = function(params) {
 
     this.setList = function(value) {
 
+        this.$el.addClass('initialising');
+
         let newItems = [];
         for (let i = 0; i < value.length; i++) {
             let item = value[i];
@@ -31,9 +32,9 @@ const LayoutSupplierView = function(params) {
                 }
             }
             item.index = i;
-            if (_.isUndefined(item.used))
+            if (item.used === undefined)
                 item.used = this.numberUsed(item);
-            if (_.isUndefined(item.properties))
+            if (item.properties === undefined)
                 item.properties = {};
 
             newItems.push(item);
@@ -41,11 +42,12 @@ const LayoutSupplierView = function(params) {
 
         this._items = newItems;
 
-
-        if (_.isUndefined(this.supplierGrid) === false) {
+        if (this.supplierGrid !== undefined) {
             this.renderItemList();
             this.filterSuppliersList();
         }
+
+        this.$el.removeClass('initialising');
 
         this.trigger('value_changed');
     };
@@ -103,12 +105,12 @@ const LayoutSupplierView = function(params) {
     };
 
     this.onContainerRendering = function(context) {
-        let baseLayout = new LayoutGrid();
-        baseLayout.$el.addClass('jmv-variable-supplier-base');
+        this.baseLayout = new LayoutGrid();
+        this.baseLayout.$el.addClass('jmv-variable-supplier-base');
         let label = this.getPropertyValue('label');
         let nextRow = 0;
         if (label !== null)
-            baseLayout.addCell(0, nextRow++, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
+            this.baseLayout.addCell(0, nextRow++, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
 
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
@@ -118,7 +120,7 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid.setMaximumHeight(200);
 
         this.ignoreTransform = true;
-        let cell = baseLayout.addCell(0, nextRow, this.supplierGrid);
+        let cell = this.baseLayout.addCell(0, nextRow, this.supplierGrid);
         this.ignoreTransform = false;
         cell.setStretchFactor(1);
         cell.setVerticalAlign('stretch');
@@ -126,7 +128,7 @@ const LayoutSupplierView = function(params) {
         this.setPickupSourceElement(this.supplierGrid.$el);
 
         this.ignoreTransform = true;
-        cell = this.addCell(0, 0, baseLayout);
+        cell = this.addCell(0, 0, this.baseLayout);
         cell.setStretchFactor(1);
         cell.setVerticalAlign('stretch');
         cell.setSpanAllRows(true);
@@ -292,7 +294,7 @@ const LayoutSupplierView = function(params) {
         for (let i = 0; i < this._items.length; i++) {
             let item = this._items[i];
             if (item.value.equalTo(formatted)) {
-                if (_.isUndefined(use) || use === true)
+                if (use === undefined || use === true)
                     item.used += 1;
                 return item;
             }

@@ -37,8 +37,20 @@ const LayoutCell = function(parent, properties) {
         }
     }
 
-    this.makeSticky = function(top) {
-        this.$el.css( { position: 'sticky', top: top !== undefined ? (top + 'px') : '0px', 'z-index': 10 });
+    this.makeSticky = function(dockcss) {
+        if (dockcss === undefined) {
+            dockcss = {
+                'z-index': 10,
+                top: '0px'
+            };
+        }
+
+        if (dockcss['z-index'] === undefined)
+            dockcss['z-index'] = 111;
+
+        dockcss.position = 'sticky';
+
+        this.$el.css(dockcss);
     };
 
     this.blockInsert = function(direction) {

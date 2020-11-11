@@ -4,8 +4,9 @@
 const $ = require('jquery');
 const keyboardJS = require('keyboardjs');
 
-const DataVarLevelWidget = function(level, model, i) {
+const DataVarLevelWidget = function(level, model, i, readOnly) {
 
+    this.readOnly = readOnly ? true : false;
     this.model = model;
 
     let diff = level.importValue !== level.label;
@@ -14,7 +15,13 @@ const DataVarLevelWidget = function(level, model, i) {
 
     this.$value = $('<div class="jmv-variable-editor-level-value">' + level.importValue + '</div>').appendTo(this.$el);
 
-    this.$label = $('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" value="' + level.label + '" />').appendTo(this.$el);
+    if (this.readOnly === false)
+        this.$label = $('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" value="' + level.label + '" />').appendTo(this.$el);
+    else
+        this.$label = $('<div class="jmv-variable-editor-level-label">' + level.label + '</div>').appendTo(this.$el);
+
+    if (this.readOnly)
+        this.$label.addClass('read-only');
 
     this._keydown = event => {
         let keypressed = event.keyCode || event.which;
@@ -47,9 +54,11 @@ const DataVarLevelWidget = function(level, model, i) {
         this.$el.removeClass('selected');
     };
 
-    this.$label.focus(this._focus);
-    this.$label.blur(this._blur);
-    this.$label.keydown(this._keydown);
+    if ( ! this.readOnly) {
+        this.$label.focus(this._focus);
+        this.$label.blur(this._blur);
+        this.$label.keydown(this._keydown);
+    }
 
     this.updateLevel = function(level) {
         if (level.label === null)

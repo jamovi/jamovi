@@ -1,0 +1,50 @@
+
+
+.jmv-variable-editor-outputvarwidget {
+    flex: 1;
+    display: flex;
+    max-height: 167px;
+}
+
+.jmv-variable-editor-outputvarwidget .jmv-variable-editor-levels-control {
+    margin-left: 15px;
+}
+
+.jmv-outputvarwidget-body {
+    flex-grow: 1;
+    display: flex;
+}
+
+.top-box {
+    display: flex;
+    flex-direction: column;
+    width: 215px;
+}
+
+.analysis-name {
+    white-space: nowrap;
+    padding: 5px 10px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    background-color: #ffffff;
+    border: 1px solid rgb(219, 219, 219);
+    transition: .2s background-color, .2s border-color, .2s border-radius;
+}
+
+.analysis-name:hover {
+    background-color: rgb(230, 241, 255);
+    border-color: rgb(62, 109, 169);
+    border-radius: 3px;
+    border: 1px solid rgb(62, 109, 169);
+}
+
+.jmv-vareditor-connection-details {
+    display: flex ;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+
+.jmv-vareditor-connection-details label {
+    white-space: nowrap;
+    margin-right: 8px;
+}

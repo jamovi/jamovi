@@ -121,20 +121,16 @@ Analysis.prototype.setOptions = function(values) {
     }
 };
 
-Analysis.prototype.renameColumns = function(columnRenames) {
+Analysis.prototype.notifyColumnsRenamed = function(columnRenames) {
     for (let i = 0; i < columnRenames.length; i++)
         this.options.renameColumn(columnRenames[i].oldName, columnRenames[i].newName);
     this.revision++;
-    if (this._parent !== null)
-        this._parent._notifyOptionsChanged(this);
 };
 
-Analysis.prototype.renameLevels = function(levelRenames) {
+Analysis.prototype.notifyLevelsRenamed = function(levelRenames) {
     for (let i = 0; i < levelRenames.length; i++)
         this.options.renameLevel(levelRenames[i].variable, levelRenames[i].oldLabel, levelRenames[i].newLabel);
     this.revision++;
-    if (this._parent !== null)
-        this._parent._notifyOptionsChanged(this);
 };
 
 Analysis.prototype.clearColumnUse = function(columnNames) {
@@ -145,8 +141,12 @@ Analysis.prototype.clearColumnUse = function(columnNames) {
         this._parent._notifyOptionsChanged(this);
 };
 
-Analysis.prototype.getUsing = function() {
-    return this.options.getUsedColumns();
+Analysis.prototype.getUsingColumns = function() {
+    return this.options.getAssignedColumns();
+};
+
+Analysis.prototype.getUsingOutputs = function() {
+    return this.options.getAssignedOutputs();
 };
 
 Analysis.prototype.isFirst = function() {
@@ -342,6 +342,17 @@ const Analyses = Backbone.Model.extend({
             }
         }
         return -1;
+    },
+    getAnalysisUsingOutput(outputName) {
+        for (let i = 0; i < this._analyses.length; i++) {
+            let analysis = this._analyses[i];
+            let usingOutputs = analysis.getUsingOutputs();
+            for (let j = 0; j < usingOutputs.length; j++) {
+                if ( (usingOutputs[j] === outputName))
+                    return analysis;
+            }
+        }
+        return null;
     },
     _notifyResultsChanged(analysis) {
         this.trigger('analysisResultsChanged', analysis);

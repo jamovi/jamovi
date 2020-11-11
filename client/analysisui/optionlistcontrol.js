@@ -142,10 +142,10 @@ const OptionListControl = function(params) {
 
                 let name = columnInfo.name;
 
-                if (_.isUndefined(name))
+                if (name === undefined)
                     throw 'columns must have a name property.';
 
-                if (_.isUndefined(this._columnInfo[name]) === false)
+                if (this._columnInfo[name] !== undefined)
                     throw "Column names must be unique. The column '" + name + "' has been duplicated.";
 
                 this._columnInfo[name] = columnInfo;
@@ -169,12 +169,14 @@ const OptionListControl = function(params) {
                 }
                 let $filler = $('<div style="white-space: nowrap;" class="list-item-ctrl"></div>');
                 let fillerInUse = false;
+                let fillerZindex = '111';
                 if (i === 0) {
                     let ghostText = this.getPropertyValue("ghostText");
                     if (ghostText !== null) {
                         this.$ghostTextLabel = $('<div class="column-ghost-label">' + ghostText + '</div>');
                         $filler.append(this.$ghostTextLabel);
                         fillerInUse = true;
+                        fillerZindex = '10';
                     }
 
 
@@ -185,14 +187,13 @@ const OptionListControl = function(params) {
                         fillerInUse = true;
                     }
                 }
-                let fillerCell = this.addCell(i, row, $filler);
-                fillerCell.$el.addClass('silky-option-list-filler');
+                this.fillerCell = this.addCell(i, row, $filler);
+                this.fillerCell.$el.addClass('silky-option-list-filler');
+                this.fillerCell.makeSticky({ bottom: '0px', 'z-index': fillerZindex });
                 if (fillerInUse)
-                    fillerCell.$el.addClass('in-use');
-                fillerCell.setStretchFactor(columnInfo.stretchFactor);
-                fillerCell.setDimensionMinMax(columnInfo.minWidth, columnInfo.maxWidth);
-                /*fillerCell.minimumWidth = columnInfo.minWidth;
-                fillerCell.maximumWidth = columnInfo.maxWidth;*/
+                    this.fillerCell.$el.addClass('in-use');
+                this.fillerCell.setStretchFactor(columnInfo.stretchFactor);
+                this.fillerCell.setDimensionMinMax(columnInfo.minWidth, columnInfo.maxWidth);
             }
         }
 
@@ -333,7 +334,7 @@ const OptionListControl = function(params) {
 
          if (this._columnInfo._list.length === 1) {
              columnInfo = this._columnInfo._list[0];
-             if (_.isUndefined(columnInfo) === false && (!onlyVirtual || columnInfo.isVirtual))
+             if (columnInfo !== undefined && (!onlyVirtual || columnInfo.isVirtual))
                  this.updateValueCell(columnInfo, dispRow, value);
          }
         else {
@@ -350,7 +351,7 @@ const OptionListControl = function(params) {
             else {
                 _.each(value, (value, key, list) => {
                     columnInfo = this._columnInfo[key];
-                    if (_.isUndefined(columnInfo) === false && (!onlyVirtual || columnInfo.isVirtual))
+                    if (columnInfo !== undefined && (!onlyVirtual || columnInfo.isVirtual))
                         this.updateValueCell(columnInfo, dispRow, value);
                 });
             }
@@ -595,7 +596,7 @@ const OptionListControl = function(params) {
             let emptyKey = null;
             for (let r = 0; r <= lastRow; r++) {
                 let value = this.getSourceValue([r]);
-                emptyKey = _.isUndefined(r) ? null : this.findEmptyProperty(value, format).key;
+                emptyKey = r === undefined ? null : this.findEmptyProperty(value, format).key;
                 if (emptyKey !== null) {
                     cellKey = [r].concat(emptyKey);
                     overrideValue = true;

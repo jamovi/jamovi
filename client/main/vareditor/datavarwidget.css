@@ -10,7 +10,7 @@
     display: flex ;
     flex-direction: column ;
     padding-top: 3px;
-    width: 200px;
+    width: 215px;
 }
 
 .jmv-variable-editor-autotype {
@@ -45,7 +45,7 @@
     flex-grow: 1;
 }
 
-.jmv-variable-editor-levels-container {
+.jmv-variable-editor-levels-control .container {
     flex-grow: 1;
     display: flex ;
     flex-direction: column;
@@ -64,7 +64,7 @@
     z-index: 300;
 }
 
-.jmv-variable-editor-levels-title {
+.jmv-variable-editor-levels-control .title {
     background-color: #E8E8E8;
     border: 1px solid #CCCCCC;
     border-bottom-style: none;
@@ -72,7 +72,7 @@
     padding: 3px 0px;
 }
 
-.jmv-variable-editor-levels {
+.jmv-variable-editor-levels-control .levels {
     background-color: white ;
     border: 1px solid #CCCCCC ;
     box-sizing: border-box ;
@@ -100,7 +100,7 @@
 .jmv-variable-editor-levels-control {
     display: flex;
     flex-grow: 1;
-    margin-left: 30px;
+    margin-left: 15px;
     transition: box-shadow 0.15s;
 }
 
@@ -157,11 +157,15 @@
     height: 1.4em;
 }
 
-.jmv-variable-editor-level-label:focus, .jmv-variable-editor-level-label:hover {
+.jmv-variable-editor-level-label:focus, .jmv-variable-editor-level-label:not(.read-only):hover {
     background-color: rgb(230, 241, 255);
     border-color: rgb(62, 109, 169);
     border-radius: 3px;
     border: 1px solid rgb(62, 109, 169);
+}
+
+.jmv-variable-editor-level-label.read-only:hover {
+    cursor: default;
 }
 
 .missing-values {

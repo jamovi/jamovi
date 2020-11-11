@@ -317,6 +317,14 @@
     margin-right: 37px;
 }
 
+.jmv-variable-editor-main[data-type='output'] .jmv-variable-editor-widget-title {
+    margin-right: 10px;
+}
+
+.jmv-variable-editor-main[data-type='output'] .jmv-variable-editor-widget-description {
+    margin-right: 10px;
+}
+
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-footer {
     margin-right: 10px;
 }

@@ -69,6 +69,11 @@ var requestData = function(requestType, requestData, getRemote) {
         return parentFrame.send("requestData", data);
 };
 
+let requestAction = function(requestType, requestData) {
+    let data = { requestType: requestType, requestData: requestData };
+    return parentFrame.send("requestAction", data);
+};
+
 var requestLocalColumnData = function(data) {
     var columns = dataResources.columns.concat(analysis.viewTemplate.customVariables);
     let found = false;
@@ -145,6 +150,10 @@ const Analysis = function(def, jamoviVersion) {
 
         this.requestData = function(requestId, data) {
             return requestData(requestId, data);
+        };
+
+        this.requestAction = function(requestType, data) {
+            return requestAction(requestType, data);
         };
 
         this.dataChanged = function(data) {
