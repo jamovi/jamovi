@@ -57,7 +57,7 @@ class Session(dict):
             self._runner = RemotePool(task_queue_url, self._scheduler.queue)
         else:
             self._scheduler = Scheduler(1, 3, self._analyses)
-            self._runner = EngineManager(self._path, self._scheduler.queue)
+            self._runner = EngineManager(self._path, self._scheduler.queue, conf)
             self._runner.add_engine_listener(self._on_engine_event)
 
         self._start_gc()
