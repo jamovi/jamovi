@@ -90,7 +90,6 @@ class Pool:
                 ex_stream.cancel()
             else:
                 raise KeyError
-        self._not_full.set()
 
     def get(self, key):
         value = self._wait_tx.get(key)
