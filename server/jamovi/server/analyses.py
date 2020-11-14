@@ -111,19 +111,33 @@ class Analysis:
         output_data = { }
 
         for element in results.results.group.elements:
-            if element.HasField('output'):
+            if element.HasField('outputs'):
                 name = element.name
-                column_name = self.options.get(name)
-                output = jcoms.ResultsOutput()
-                output.CopyFrom(element.output)
+                column_names = self.options.get(name)
+                if isinstance(column_names, str):
+                    column_names = [ column_names ]
+
+                row_nos = element.outputs.rowNos
+
+                for name, output in zip(column_names, element.outputs.outputs):
+                    try:
+                        last_row = row_nos[-1]
+                    except IndexError:
+                        last_row = 0
+
+                    Output = namedtuple('Output', 'values levels')
+                    if len(output.d) > 0:
+                        values = [float('nan')] * last_row
+                        for source_row_no, dest_row_no in enumerate(row_nos):
+                            values[dest_row_no - 1] = output.d[source_row_no]
+                        output_data[name] = Output(values, None)
+                    elif len(output.i) > 0:
+                        values = [-2147483648] * last_row
+                        for source_row_no, dest_row_no in enumerate(row_nos):
+                            values[dest_row_no - 1] = output.i[source_row_no]
+                        output_data[name] = Output(values, output.levels)
+
                 element.Clear()
-
-                Output = namedtuple('Output', 'values levels')
-
-                if len(output.d) > 0:
-                    output_data[column_name] = Output(output.d, None)
-                elif len(output.i) > 0:
-                    output_data[column_name] = Output(output.i, output.levels)
 
         if output_data:
             self.parent._notify_output_received(output_data)
