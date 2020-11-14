@@ -121,6 +121,12 @@ class Options:
 
         if pb.HasField('s'):
             return pb.s
+        elif pb.HasField('c'):
+            values = map(lambda x: x.s, pb.c.options)
+            if pb.c.hasNames:
+                return dict(zip(pb.c.names, values))
+            else:
+                return list(values)
         else:
             return None
 
