@@ -181,10 +181,17 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
             zoomLevel = 5;
             z = 100;
         }
-        webFrame.setLayoutZoomLevelLimits(-999999, 999999);
-        webFrame.setZoomFactor(z / 100);
-        let ezl = webFrame.getZoomLevel();
-        webFrame.setLayoutZoomLevelLimits(ezl, ezl);
+        if (webFrame.setLayoutZoomLevelLimits) {
+            // this was working around a bug in earlier electrons
+            webFrame.setLayoutZoomLevelLimits(-999999, 999999);
+            webFrame.setZoomFactor(z / 100);
+            let ezl = webFrame.getZoomLevel();
+            webFrame.setLayoutZoomLevelLimits(ezl, ezl);
+        }
+        else {
+            webFrame.setZoomFactor(z / 100);
+        }
+
     };
 
     currentZoom = function() {

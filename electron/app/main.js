@@ -498,6 +498,7 @@ const createWindow = function(open) {
         icon: config.iconPath,
         webPreferences: {
             nodeIntegration: true,
+            enableRemoteModule: true,
         },
     });
 
