@@ -21,7 +21,6 @@ const VariableEditor = require('./variableeditor');
 const ActionHub = require('./actionhub');
 
 const Instance = require('./instance');
-const Modules = require('./modules');
 const Notify = require('./notification');
 const JError = require('./errors').JError;
 
@@ -73,8 +72,7 @@ let dataSetModel = instance.dataSetModel();
 let analyses = instance.analyses();
 
 let backstageModel = new BackstageModel({ instance: instance });
-let modules = new Modules({ instance: instance });
-let ribbonModel = new RibbonModel({ modules: modules, settings: instance.settings() });
+let ribbonModel = new RibbonModel({ modules: instance.modules(), settings: instance.settings() });
 
 let infoBox = document.createElement('jmv-infobox');
 infoBox.style.display = 'none';

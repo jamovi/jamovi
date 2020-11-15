@@ -140,8 +140,12 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
     this.ready = Promise.all([
         new Promise((resolve, reject) => {
             if (analysis.missingModule) {
-                this.def = { error: 'Missing module: ' + analysis.name };
+                this.def = { error: 'Missing module: ' + analysis.ns };
                 resolve(this.def);
+            }
+            else if (analysis.uijs) {
+                this.def = analysis.uijs;
+                resolve(analysis.uijs);
             }
             else {
                 let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();

@@ -16,6 +16,7 @@ const Notify = require('./notification');
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
+const Modules = require('./modules');
 
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
@@ -32,12 +33,14 @@ const Instance = Backbone.Model.extend({
         this.seqNo = 0;
 
         this._settings = new Settings({ coms: this.attributes.coms });
+        this._modules = new Modules({ instance: this });
 
         this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
         this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
 
-        this._analyses = new Analyses();
-        this._analyses.set('dataSetModel', this._dataSetModel);
+        this._analyses = new Analyses({
+            modules: this._modules,
+            dataSetModel: this._dataSetModel });
 
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
         //this._analyses.on('analysisDeleted', this._analysisDeleted, this);
@@ -80,6 +83,9 @@ const Instance = Backbone.Model.extend({
     },
     settings() {
         return this._settings;
+    },
+    modules() {
+        return this._modules;
     },
     connect(instanceId) {
 
@@ -798,6 +804,7 @@ const Instance = Backbone.Model.extend({
         }
         else if (payloadType === 'ModuleRR') {
             let moduleName = response.name;
+            this._modules.purgeCache(moduleName);
 
             for (let analysis of this._analyses) {
                 if (analysis.ns === moduleName)

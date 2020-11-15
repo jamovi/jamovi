@@ -7,17 +7,16 @@ const Delta = require('quill-delta');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const yaml = require('js-yaml');
-
 const host = require('./host');
 const Options = require('./options');
 
-const Analysis = function(localId, id, name, ns) {
+const Analysis = function(localId, id, name, ns, modules) {
 
     this.id = id;
     this.localId = localId;
     this.name = name;
     this.ns = ns;
+    this.modules = modules;
     this.values = null;
     this.results = null;
     this.options = null;
@@ -25,6 +24,7 @@ const Analysis = function(localId, id, name, ns) {
     this.incAsText = false;
     this.references = [ ];
     this.index = -1;
+    this.uijs = undefined;
 
     this.revision = 0;
     this.missingModule = false;
@@ -45,7 +45,7 @@ Analysis.prototype.addDependent = function(analysis) {
     delete analysis.waitingFor;
 };
 
-Analysis.prototype.reload = function() {
+Analysis.prototype.reload = async function() {
 
     if (this.ns === 'jmv' && this.name === 'empty') {
         this._notifySetup = function() {};
@@ -55,27 +55,36 @@ Analysis.prototype.reload = function() {
         return;
     }
 
-    let url = `../analyses/${ this.ns }/${ this.name.toLowerCase() }/a.yaml`;
-
     this.isReady = false;
-    this.ready = Promise.all([
-        Promise.resolve($.get(url, null, null, 'text')).then(response => {
-            this._defn = yaml.safeLoad(response);
-            this.options = new Options(this._defn.options);
-        }),
-        new Promise((resolve, reject) => {
+    this.ready = (async () => {
+
+        let waitForDefn = (async () => {
+            let defn = await this.modules.getDefn(this.ns, this.name);
+            this.options = new Options(defn.options);
+            this.uijs = defn.uijs;
+            return defn;
+        })();
+
+        let waitForSetup = new Promise((resolve, reject) => {
             this._notifySetup = resolve;
             this._notifyFail  = reject;
-        })
-    ]).then(() => {
-        this.arbitraryCode = this._defn.arbitraryCode === true;
-        this.isReady = true;
-        this.options.setValues(this.values);
-    }, (error) => {
-        this.isReady = true;
-        this.missingModule = true;
-        this.options = new Options();
-    });
+        });
+
+        try {
+            await Promise.all([ waitForDefn, waitForSetup ]);
+            let defn = await waitForDefn;
+            this.arbitraryCode = (defn.arbitraryCode === true);
+            this.missingModule = false;
+            this.options.setValues(this.values);
+            this.isReady = true;
+        }
+        catch (e) {
+            this.missingModule = true;
+            this.options = new Options();
+            this.isReady = true;
+        }
+
+    })();
 };
 
 Analysis.prototype.setup = function(values) {
@@ -178,7 +187,8 @@ const Analyses = Backbone.Model.extend({
         };
     },
     defaults : {
-        dataSetModel : null
+        dataSetModel : null,
+        modules: null,
     },
     hasActiveAnalyses() {
         return this._analyses.length > 0;
@@ -193,7 +203,8 @@ const Analyses = Backbone.Model.extend({
         if (id === undefined)
             id = 0;
 
-        let analysis = new Analysis(this._nextId++, id, name, ns);
+        let modules = this.attributes.modules;
+        let analysis = new Analysis(this._nextId++, id, name, ns, modules);
 
         if (options.dependsOn && options.dependsOn > 0) {
             let patron = this.get(options.dependsOn, true);
