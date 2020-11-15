@@ -14,6 +14,11 @@ const yaml = require('js-yaml');
 const host = require('./host');
 const Version = require('./utils/version');
 
+class ModuleError extends Error {}
+class ModuleNotFoundError extends ModuleError {}
+class ModuleCorruptError extends ModuleError {}
+class AnalysisNotFoundError extends ModuleError {}
+
 const ModulesBase = Backbone.Model.extend({
     defaults : {
         modules : [ ],
@@ -122,6 +127,96 @@ const ModulesBase = Backbone.Model.extend({
     }
 });
 
+class Module {
+
+    constructor(ns, version) {
+        this._ns = ns;
+        this._version = version;
+        this._moduleDefn = undefined;
+        this._analysisDefns = { };
+        this._status = 'none';
+        this._ready = this._load(false);
+    }
+
+    reload() {
+        this._ready = this._load(true);
+    }
+
+    async _load(refresh) {
+        let version = await host.version;
+        let url = `../modules/${ this._ns }`;
+        if (this._version)
+            url = `${ url }?v=${ this._version }`;
+        let options = { };
+
+        if (refresh)
+            options.cache = 'reload';
+
+        let response = await fetch(url, options);
+        if (response.ok) {
+            let content = await response.text();
+            try {
+                let moduleDefn = yaml.safeLoad(content);
+                this._moduleDefn = Object.assign(...moduleDefn.analyses.map(a => {
+                    let obj = { };
+                    obj[a.name] = a;
+                    return obj;
+                }));
+                this._status = 'ok';
+            }
+            catch (e) {
+                this._status = 'corrupt';
+            }
+        }
+        else {
+            this._status = 'legacy';
+        }
+    }
+
+    async getDefn(name) {
+        await this._ready;
+        if (this._status == 'corrupt') {
+            throw new ModuleCorruptError();
+        }
+        else if (this._status == 'missing') {
+            throw new ModuleNotFoundError();
+        }
+        else if (this._status == 'ok') {
+            let defn = this._moduleDefn[name];
+            if (defn === undefined)
+                throw new AnalysisNotFoundError();
+            return defn;
+        }
+        else if (this._status == 'legacy') {
+            let defnProm = this._analysisDefns[name];
+            if (defnProm === undefined) {
+                defnProm = this._analysisDefns[name] = (async() => {
+                    let url = `../analyses/${ this._ns }/${ name.toLowerCase() }/a.yaml`;
+                    let response = await fetch(url);
+                    if (response.ok) {
+                        try {
+                            let defn = await response.text();
+                            defn = yaml.safeLoad(defn);
+                            return defn;
+                        }
+                        catch (e) {
+                            throw new ModuleCorruptError();
+                        }
+                    }
+                    else {
+                        throw new ModuleNotFoundError();
+                    }
+                })();
+            }
+            let defn = await defnProm;
+            return defn;
+        }
+        else {
+            throw new Error('shouldn\'t get here');
+        }
+    }
+}
+
 const Available = ModulesBase.extend({
 
     initialize(args) {
@@ -180,8 +275,17 @@ const Modules = ModulesBase.extend({
         ModulesBase.prototype.initialize.apply(this, arguments);
         this._available = new Available({ instance: args.instance, parent: this });
 
+        this._moduleDefns = { };
+        this._preloadedJMV = false;
+
         this._instance.settings().on('change:modules', (modules) => {
             this._setup('', modules.changed.modules);
+
+            // preload jmv
+            if ( ! this._preloadedJMV) {
+                this.getDefn('jmv', 'descriptives');
+                this._preloadedJMV = true;
+            }
         });
 
         this._instance.on('moduleInstalled', (module) => {
@@ -190,6 +294,27 @@ const Modules = ModulesBase.extend({
     },
     available() {
         return this._available;
+    },
+    purgeCache(ns) {
+        let module = this._moduleDefns[ns];
+        if (module)
+            module.reload();
+    },
+    async getDefn(ns, name) {
+
+        let version = '';
+        for (let mod of this.attributes.modules) {
+            if (mod.name === ns) {
+                version = Version.stringify(mod.version);
+                break;
+            }
+        }
+
+        let module = this._moduleDefns[ns];
+        if ( ! module)
+            module = this._moduleDefns[ns] = new Module(ns, version);
+        let defn = await module.getDefn(name);
+        return defn;
     },
     _determineOps(module) {
 
@@ -211,6 +336,9 @@ const Modules = ModulesBase.extend({
     }
 });
 
-
+Modules.ModuleError = ModuleError;
+Modules.ModuleNotFoundError = ModuleNotFoundError;
+Modules.ModuleCorruptError = ModuleCorruptError;
+Modules.AnalysisNotFoundError = AnalysisNotFoundError;
 
 module.exports = Modules;

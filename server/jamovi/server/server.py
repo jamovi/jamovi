@@ -136,30 +136,59 @@ class ModuleAssetHandler(RequestHandler):
             self.write(content)
 
 
+class ModuleDescriptor(RequestHandler):
+
+    def get(self, module_name):
+        content = None
+        try:
+            try:
+                module_path = Modules.instance().get(module_name).path
+                defn_path = os.path.join(module_path, 'jamovi-full.yaml')
+                with open(defn_path, 'rb') as file:
+                    content = file.read()
+            except (KeyError, FileNotFoundError):
+                raise
+            except Exception as e:
+                log.exception(e)
+        except Exception as e:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write(str(e))
+        else:
+            self.set_header('Content-Type', 'text/yaml')
+            self.write(content)
+
+
 class AnalysisDescriptor(RequestHandler):
 
     def get(self, module_name, analysis_name, part):
         if part == '':
             part = 'js'
 
-        module_path = Modules.instance().get(module_name).path
-
-        if part == 'js':
-            analysis_path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
-        else:
-            analysis_path = os.path.join(module_path, 'analyses', analysis_name.lower() + '.' + part)
-        analysis_path = os.path.realpath(analysis_path)
-
+        content = None
         try:
-            with open(analysis_path, 'rb') as file:
-                content = file.read()
-                self.set_header('Content-Type', 'text/plain')
-                self.write(content)
+            try:
+                module_path = Modules.instance().get(module_name).path
+
+                if part == 'js':
+                    analysis_path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
+                else:
+                    analysis_path = os.path.join(module_path, 'analyses', analysis_name.lower() + '.' + part)
+
+                analysis_path = os.path.realpath(analysis_path)
+                with open(analysis_path, 'rb') as file:
+                    content = file.read()
+            except (KeyError, FileNotFoundError):
+                raise
+            except Exception as e:
+                log.exception(e)
         except Exception as e:
-            log.exception(e)
             self.set_status(404)
             self.write('<h1>404</h1>')
             self.write(str(e))
+        else:
+            self.set_header('Content-Type', 'text/plain')
+            self.write(content)
 
 
 class EntryHandler(RequestHandler):
@@ -473,6 +502,7 @@ class Server:
                 'path': coms_path,
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
+            (r'/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
