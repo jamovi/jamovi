@@ -285,6 +285,7 @@ class Engine:
                         '''
                         This analysis has exceeded the current time limits and has been terminated.
                         ''')
+                    await self.stop()
                     results_stream.write(error, True)
                     await self.restart()
                     break
