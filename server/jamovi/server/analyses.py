@@ -149,6 +149,7 @@ class Analysis:
 
     def copy_from(self, analysis):
         self.revision = analysis.revision
+        self.status = analysis.status
         results = deepcopy(analysis.results)
 
         results.instanceId = self.instance.id
