@@ -107,38 +107,25 @@ class Pool:
                 del self._wait_rx[key]
                 log.debug('%s %s', 'removing', req_str(request))
                 self._not_full.set()
-                break
+                return
+        for key, value in self._wait_tx.items():
+            request, stream = value
+            if stream.is_complete:
+                del self._wait_tx[key]
+                log.debug('%s %s', 'removing', req_str(request))
+                self._not_full.set()
+                return
 
-    def stream(self):
+    async def stream(self):
 
-        # # this isn't compatible with python 3.5:
-        # while True:
-        #     await self._wait_tx_sem.acquire()
-        #     while len(self._wait_tx) > 0:
-        #         key, value = self._wait_tx.popitem()
-        #         self._wait_rx[key] = value
-        #         request, stream = value
-        #         log.debug('%s %s', 'yielding', req_str(request))
-        #         yield value
-        # # so we had to do this:
-
-        class AsyncGenerator:
-            def __init__(self, parent):
-                self._parent = parent
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                if len(self._parent._wait_tx) == 0:
-                    await self._parent._wait_tx_sem.acquire()
-                key, value = self._parent._wait_tx.popitem()
-                self._parent._wait_rx[key] = value
+        while True:
+            await self._wait_tx_sem.acquire()
+            while len(self._wait_tx) > 0:
+                key, value = self._wait_tx.popitem()
+                self._wait_rx[key] = value
                 request, stream = value
                 log.debug('%s %s', 'yielding', req_str(request))
-                return value
-
-        return AsyncGenerator(self)
+                yield value
 
     def __contains__(self, value):
         return value in self._wait_tx or value in self._wait_rx
