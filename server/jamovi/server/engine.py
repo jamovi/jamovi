@@ -172,6 +172,9 @@ class Engine:
             })
 
     async def stop(self):
+
+        log.debug('Stopping engine')
+
         self._message_id += 1
 
         request = AnalysisRequest()
@@ -190,24 +193,25 @@ class Engine:
         try:
             await wait_for(self._stopped.wait(), 1)
         except TimeoutError:
-            # if that doesn't work ...
             pass
         else:
+            log.debug('Engine stopped')
             return
 
+        log.debug('Terminating engine')
+        self._process.terminate()
+
         try:
-            # terminate the engine process
-            log.info('Terminating engine')
-            self._process.terminate()
             await wait_for(self._stopped.wait(), 1)
         except TimeoutError:
-            # if that doesn't work ...
             pass
         else:
+            log.debug('Terminated engine')
             return
 
         # kill and abandon the engine process
-        log.info('Killing engine')
+        log.debug('Killing engine')
+
         try:
             self._socket.close()
         except Exception:
@@ -217,6 +221,7 @@ class Engine:
         # in the end, if we still can't kill the process
         # then we've got to move on
         self._notify_process_ended()
+        log.debug('Abandoned the engine process')
 
     async def run(self, request, results_stream):
 
@@ -280,6 +285,8 @@ class Engine:
 
                 elif timeout in done:
 
+                    log.debug('Analysis timed out')
+
                     error = self._create_error_response(
                         request,
                         '''
@@ -291,6 +298,8 @@ class Engine:
                     break
 
                 elif engine_stopped in done:
+
+                    log.debug('Engine crashed during analysis')
 
                     error = self._create_error_response(
                         request,
