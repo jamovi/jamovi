@@ -106,15 +106,13 @@ class Pool:
             if stream.is_complete:
                 del self._wait_rx[key]
                 log.debug('%s %s', 'removing', req_str(request))
-                self._not_full.set()
-                return
         for key, value in self._wait_tx.items():
             request, stream = value
             if stream.is_complete:
                 del self._wait_tx[key]
                 log.debug('%s %s', 'removing', req_str(request))
-                self._not_full.set()
-                return
+        if not self.is_full:
+            self._not_full.set()
 
     async def stream(self):
 
