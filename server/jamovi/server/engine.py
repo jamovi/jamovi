@@ -301,7 +301,7 @@ class Engine:
                     await self.restart()
                     break
         except CancelledError:
-            pass
+            raise
         except Exception as e:
             self._current_analysis = None
             log.exception(e)
