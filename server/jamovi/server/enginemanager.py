@@ -90,6 +90,7 @@ class EngineManager:
             log.debug('%s %s', 'completed', req_str(request))
         except CancelledError:
             log.debug('%s %s', 'cancelled', req_str(request))
+            raise
         except Exception as e:
             log.exception(e)
 
