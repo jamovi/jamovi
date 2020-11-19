@@ -55,16 +55,19 @@ class EngineManager:
             log.info('Applying engine memory limit %s Mb', mem_limit)
 
     async def _run_loop(self):
+        tasks = set()
         try:
-            tasks = set()
             async for analysis in self._queue.stream():
                 task = create_task(self._run_analysis(analysis))
                 tasks = set(filter(lambda t: not t.done(), tasks))
                 tasks.add(task)
-            for task in tasks:
-                task.cancel()
+        except CancelledError:
+            raise
         except Exception as e:
             log.exception(e)
+        finally:
+            for task in tasks:
+                task.cancel()
 
     async def _run_analysis(self, analysis):
         request, stream = analysis
