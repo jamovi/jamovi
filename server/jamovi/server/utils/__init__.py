@@ -45,10 +45,12 @@ def req_str(request):
     else:
         perform = request.perform
 
-    return '{{ iid: {}, id: {}, rev: {}, perform: {} }}'.format(
+    return '{{ iid: {}, id: {}, rev: {}, type: {}::{}, perform: {} }}'.format(
         request.instanceId[0:8],
         request.analysisId,
         request.revision,
+        request.ns,
+        request.name,
         perform)
 
 def ssl_context():
