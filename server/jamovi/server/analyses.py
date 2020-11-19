@@ -62,7 +62,6 @@ class Analysis:
         self.load_error = load_error
         self.dependents = [ ]
         self.depends_on = 0
-        self.waiting_for = None
 
         self._ops = [ ]
 
@@ -366,15 +365,8 @@ class Analyses:
 
         if analysis_pb.dependsOn != 0:
             patron = self.get(analysis_pb.dependsOn)
-            if patron is None:
-                analysis.waiting_for = analysis_pb.dependsOn
-            else:
+            if patron is not None:
                 patron.add_dependent(analysis)
-
-        for other in self._analyses:
-            if other.waiting_for == id:
-                analysis.add_dependent(other);
-                other.waiting_for = None
 
         analysis.set_results(analysis_pb, silent=True)
         analysis.status = status
