@@ -101,12 +101,13 @@ class Pool:
         return None
 
     def _stream_complete(self):
-        for key, value in self._wait_rx.items():
+        # iterate through a copied list so we can delete from the original
+        for key, value in list(self._wait_rx.items()):
             request, stream = value
             if stream.is_complete:
                 del self._wait_rx[key]
                 log.debug('%s %s', 'removing', req_str(request))
-        for key, value in self._wait_tx.items():
+        for key, value in list(self._wait_tx.items()):
             request, stream = value
             if stream.is_complete:
                 del self._wait_tx[key]
