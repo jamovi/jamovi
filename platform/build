@@ -43,7 +43,7 @@ if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
         mkdir -p build
         cp -r /tmp/jmv-build build/R4.0.2-linux
     fi
-    "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
+    "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --patch-version
 fi
 
 if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
