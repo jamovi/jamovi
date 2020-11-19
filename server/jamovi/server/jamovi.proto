@@ -399,6 +399,13 @@ message SettingsRequest {
     repeated SettingValue settings = 4;
 }
 
+message Notification {
+    uint32 id = 1;
+    uint32 status = 2; // 0 = transient, 1 = dismiss, 2 = indefinite
+    string title = 3;
+    string message = 4;
+}
+
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
     repeated DataSetEntry examples = 2;

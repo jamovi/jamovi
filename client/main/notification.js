@@ -6,6 +6,7 @@ const Backbone = require('backbone');
 const Notify = Backbone.Model.extend({
 
     initialize(args) {
+        args = args || {};
         this.duration = args.duration || 0;
     },
     defaults : {
