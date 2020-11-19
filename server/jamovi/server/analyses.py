@@ -365,7 +365,8 @@ class Analyses:
 
         if analysis_pb.dependsOn != 0:
             patron = self.get(analysis_pb.dependsOn)
-            patron.add_dependent(analysis)
+            if patron is not None:
+                patron.add_dependent(analysis)
 
         analysis.set_results(analysis_pb, silent=True)
         analysis.status = status
