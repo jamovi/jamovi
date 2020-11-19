@@ -52,7 +52,7 @@ from .utils import is_url
 from .utils import latexify
 
 
-log = logging.getLogger('jamovi')
+log = logging.getLogger(__name__)
 
 
 # until we deploy the windows updater and are happy with it,
@@ -778,32 +778,36 @@ class Instance:
 
                 stream.set_result(result)
 
-                if self._data.analyses.count() == 0:
+                if self._data.analyses.count() == 0 or self._data.analyses._analyses[0].name != 'empty':
                     annotation = self._data.analyses.create_annotation(0)
                     annotation.results.index = 1
                     annotation.results.title = 'Results'
 
-                i = 0
+                i = 1
                 while i < self._data.analyses.count():
                     analysis = self._data.analyses._analyses[i]
-                    is_last = i == len(self._data.analyses._analyses) - 1
-                    if ((i % 2 == 0 or is_last) and analysis.name != 'empty'):
-                        while True:
-                            annotation = self._data.analyses.create_annotation(i)
-                            annotation.results.index = i + 1
-                            if i == 0:
-                                annotation.results.title = 'Results'
 
-                            if i != 0:
-                                self._data.analyses._analyses[i - 1].add_dependent(annotation)
-
-                            if is_last is False:
-                                break
-                            else:
-                                i += 2
-                                is_last = False
-
-                    i += 1
+                    if analysis.name == 'empty':
+                        log.info(f'Missing Analysis: { analysis.depends_on }')
+                        del self._data.analyses[analysis.id]
+                    else:
+                        annotation_index = i + 1
+                        if annotation_index == self._data.analyses.count():
+                            annotation = self._data.analyses.create_annotation(annotation_index)
+                            annotation.results.index = annotation_index + 1
+                            analysis.add_dependent(annotation)
+                        else:
+                            annotation = self._data.analyses._analyses[annotation_index]
+                            if annotation.name != 'empty' or annotation.depends_on != analysis.id:
+                                if annotation.depends_on != analysis.id:
+                                    log.info(f'Dependency miss-match: { annotation.depends_on }, { analysis.id }')
+                                    del self._data.analyses[annotation.id]
+                                else:
+                                    log.info(f'Missing Annotation: { analysis.id }')
+                                annotation = self._data.analyses.create_annotation(annotation_index)
+                                annotation.results.index = annotation_index + 1
+                                analysis.add_dependent(annotation)
+                        i = annotation_index + 1
 
             except Exception as e:
                 self._data.dataset = None
