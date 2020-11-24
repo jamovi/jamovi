@@ -105,7 +105,8 @@ const VariablesListBox = function(params) {
                 });
                 let value = this.getValue();
                 if (this.isSingleItem && value !== null) {
-                    this.$createButton.hide();
+                    this.fillerCell.setVisibility(false);
+                    this.$createButton.css('display', 'none');
                 }
             }
         }
@@ -117,10 +118,14 @@ const VariablesListBox = function(params) {
 
         if (this.isSingleItem && this.$createButton) {
             let value = this.getValue();
-            if (value === null)
-                this.$createButton.show();
-            else
-                this.$createButton.hide();
+            if (value === null) {
+                this.fillerCell.setVisibility(true);
+                this.$createButton.css('display', '');
+            }
+            else {
+                this.fillerCell.setVisibility(false);
+                this.$createButton.css('display', 'none');
+            }
         }
     });
 
