@@ -312,10 +312,7 @@ class Engine:
         except CancelledError:
             raise
         except Exception as e:
-            self._current_analysis = None
             log.exception(e)
-        else:
-            self._current_analysis = None
         finally:
             results_received.cancel()
             engine_stopped.cancel()
