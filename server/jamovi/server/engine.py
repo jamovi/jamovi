@@ -29,6 +29,8 @@ from asyncio import Event
 from asyncio import FIRST_COMPLETED
 from asyncio import current_task
 
+from .utils import req_str
+
 
 log = logging.getLogger(__name__)
 
@@ -213,8 +215,11 @@ class Engine:
         log.debug('Killing engine')
 
         try:
+            log.debug('Trying socket close')
             self._socket.close()
+            log.debug('Socket closed')
         except Exception:
+            log.debug('Socket close failed')
             pass
         self._process_abandoned.set()
         self._process.kill()
@@ -285,7 +290,7 @@ class Engine:
 
                 elif timeout in done:
 
-                    log.debug('Analysis timed out')
+                    log.debug('%s %s', 'timedout', req_str(request))
 
                     error = self._create_error_response(
                         request,
@@ -299,7 +304,7 @@ class Engine:
 
                 elif engine_stopped in done:
 
-                    log.debug('Engine crashed during analysis')
+                    log.debug('%s %s', 'crashed', req_str(request))
 
                     error = self._create_error_response(
                         request,
