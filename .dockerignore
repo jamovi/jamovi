@@ -1,0 +1,16 @@
+
+# build stuff
+client/node_modules
+server/build
+
+# built files
+client/*.js
+client/*.css
+
+# only needed on windows
+readstat/jamovi/libs/libiconv-win
+readstat/jamovi/libs/zlib-win
+
+# build artifacts
+**/*.o
+**/*.so
