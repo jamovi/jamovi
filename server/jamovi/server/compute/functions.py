@@ -30,12 +30,15 @@ def MAX(index, arg0: float, *args: float):
 
 
 @row_wise
-def MEAN(index, arg0: float, *args: float, ignore_missing: int = 0):
+def MEAN(index, arg0: float, *args: float, ignore_missing: int = 0, min_valid: int = 0):
     values = [ arg0 ]
     values.extend(args)
-    if ignore_missing != 0:
+    if min_valid > 0 or ignore_missing != 0:
         values = list(filter(lambda x: not is_missing(x), values))
-    return stats.mean(values)
+    if len(values) < min_valid:
+        return NaN
+    else:
+        return stats.mean(values)
 
 
 @row_wise
@@ -56,11 +59,13 @@ def STDEV(index, arg0: float, *args: float, ignore_missing: int = 0):
 
 
 @row_wise
-def SUM(index, arg0: float, *args: float, ignore_missing: int = 0):
+def SUM(index, arg0: float, *args: float, ignore_missing: int = 0, min_valid: int = 0):
     values = [ arg0 ]
     values.extend(args)
-    if ignore_missing != 0:
+    if min_valid > 0 or ignore_missing != 0:
         values = list(filter(lambda x: not is_missing(x), values))
+    if len(values) < min_valid:
+        return NaN
     return math.fsum(values)
 
 

@@ -73,7 +73,7 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="MAXABSZ">MAXABSZ</div>'));
     descriptions.MAXABSZ = { label: 'MAXABSZ( variable 1, variable 2, \u2026, group_by=0 )', content: 'Convenience short-hand for MAX(ABSZ( variable 1, variable 2, \u2026 ))' };
     $functionsContent.append($('<div class="item" data-name="MEAN">MEAN</div>'));
-    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the mean of a set of numbers.' };
+    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0, min_valid=0 )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="MIN">MIN</div>'));
     descriptions.MIN = { label: 'MIN( <i>variable</i> )', content: 'Returns the smallest value of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
@@ -81,7 +81,7 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="STDEV">STDEV</div>'));
     descriptions.STDEV = { label: 'STDEV( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the standard deviation of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
-    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the sum of a set of numbers.' };
+    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i>, ignore_missing=0, min_valid=0 )', content: 'Returns the sum of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VMAX">VMAX</div>'));
     descriptions.VMAX = { label: 'VMAX( <i>variable</i>, group_by=0 )', content: 'Returns the largest value of a variable.' };
     $functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
