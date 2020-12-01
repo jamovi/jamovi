@@ -799,7 +799,7 @@ class Instance:
                         else:
                             annotation = self._data.analyses._analyses[annotation_index]
                             if annotation.name != 'empty' or annotation.depends_on != analysis.id:
-                                if annotation.depends_on != analysis.id:
+                                if annotation.name == 'empty':
                                     log.info(f'Dependency miss-match: { annotation.depends_on }, { analysis.id }')
                                     del self._data.analyses[annotation.id]
                                 else:
