@@ -574,7 +574,10 @@ const Instance = Backbone.Model.extend({
             this.set('blank',      info.blank);
         }
 
-        let allWaits = info.analyses.map((analysisPB) => {
+        let allAnalysesReady = [ ];
+
+        for (let analysisPB of info.analyses) {
+
             let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
             let analysis = this._analyses.create({
                 name: analysisPB.name,
@@ -589,10 +592,15 @@ const Instance = Backbone.Model.extend({
             });
             if (analysis.results.status !== 3)
                 this._runAnalysis(analysis);
-            return analysis.ready;
-        });
 
-        await Promise.all(allWaits);
+            allAnalysesReady.push(analysis.ready);
+
+            // sleep to allow iframes to load, etc. so it can progressively
+            // update rather than waiting until the end
+            await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+
+        await Promise.all(allAnalysesReady);
 
         for (let analysis of this._analyses) {
             if (analysis.arbitraryCode)

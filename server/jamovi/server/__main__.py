@@ -68,6 +68,9 @@ def start():  # run down below()
     start_wb = '--start-wb' in sys.argv
     session_id = None
 
+    conf.set('devel', '--devel' in sys.argv)
+    conf.set('debug', '--debug' in sys.argv)
+
     if '--if=*' in sys.argv:
         host = ''
     else:
