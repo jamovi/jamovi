@@ -2,6 +2,7 @@
 from openpyxl import load_workbook
 
 from .reader import Reader
+from .exceptions import FileCorruptError
 
 from datetime import datetime
 
@@ -39,6 +40,10 @@ class XLSXReader(Reader):
     def open(self, path):
         wb = load_workbook(filename=path, read_only=True, data_only=True)
         self._ws = wb.active
+
+        if self._ws is None:
+            raise FileCorruptError
+
         self.set_total(self._ws.max_row - self._ws.min_row + 1)
 
         if 1 == self._ws.min_row == self._ws.min_column == self._ws.max_row == self._ws.max_column:
