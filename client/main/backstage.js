@@ -1323,6 +1323,11 @@ const BackstageModel = Backbone.Model.extend({
                     if (result.canceled)
                         return;
                     let filePath = result.filePath.replace(/\\/g, '/');
+
+                    // browse under linux often doesn't add an extension :/
+                    if (path.extname(filePath) === '')
+                        filePath = `${ filePath }.${ filters[0].extensions[0] }`;
+
                     this.requestSave(filePath, { overwrite: true }).catch((e) => {
                         if ( ! this.instance.attributes.saveFormat) {
                             this.set('activated', true);
