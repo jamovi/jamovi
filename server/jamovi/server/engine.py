@@ -201,7 +201,12 @@ class Engine:
             return
 
         log.debug('Terminating engine')
-        self._process.terminate()
+        try:
+            self._process.terminate()
+        except ProcessLookupError:
+            pass  # already terminated
+        except Exception as e:
+            log.exception(e)
 
         try:
             await wait_for(self._stopped.wait(), 1)
@@ -218,11 +223,18 @@ class Engine:
             log.debug('Trying socket close')
             self._socket.close()
             log.debug('Socket closed')
-        except Exception:
+        except Exception as e:
             log.debug('Socket close failed')
-            pass
+            log.exception(e)
+
         self._process_abandoned.set()
-        self._process.kill()
+        try:
+            self._process.kill()
+        except ProcessLookupError:
+            pass  # already terminated
+        except Exception as e:
+            log.exception(e)
+
         # in the end, if we still can't kill the process
         # then we've got to move on
         self._notify_process_ended()
