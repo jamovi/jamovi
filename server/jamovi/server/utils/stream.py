@@ -29,7 +29,7 @@ class Stream:
 
     def write(self, item, last):
         if self._complete.is_set():
-            return
+            raise InvalidStateError
         if last:
             self._set_complete()
         if self._future.done():
