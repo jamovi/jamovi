@@ -253,7 +253,8 @@ class Engine:
 
         results_received = create_task(self._results_queue.get())
         engine_stopped = create_task(self._stopped.wait())
-        pending = { results_received, engine_stopped }
+        stream_cancelled = create_task(results_stream.completed())
+        pending = { results_received, engine_stopped, stream_cancelled }
 
         timeout = None
         if self._analysis_duration_limit is not None:
@@ -314,6 +315,10 @@ class Engine:
                     results_stream.write(error, True)
                     await self.restart()
                     break
+
+                elif stream_cancelled in done:
+                    break
+
         except CancelledError:
             raise
         except Exception as e:
@@ -321,6 +326,7 @@ class Engine:
         finally:
             results_received.cancel()
             engine_stopped.cancel()
+            stream_cancelled.cancel()
             if timeout is not None:
                 timeout.cancel()
 

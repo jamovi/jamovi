@@ -59,6 +59,16 @@ class EngineManager:
         try:
             async for analysis in self._queue.stream():
                 task = create_task(self._run_analysis(analysis))
+                for t in tasks:
+                    try:
+                        if t.done():
+                            # if the task threw an exception, then let's deal
+                            # with that here
+                            t.result()
+                    except CancelledError:
+                        pass
+                    except Exception as e:
+                        log.exception(e)
                 tasks = set(filter(lambda t: not t.done(), tasks))
                 tasks.add(task)
         except CancelledError:
@@ -83,19 +93,20 @@ class EngineManager:
                 if value is None:
                     break
             else:
-                raise QueueFull()
+                raise QueueFull
 
         try:
             log.debug('%s %s on %s', 'running', req_str(request), index)
             self._requests[index] = (request, stream)
             await self._engines[index].run(request, stream)
-            self._requests[index] = None
             log.debug('%s %s', 'completed', req_str(request))
         except CancelledError:
             log.debug('%s %s', 'cancelled', req_str(request))
             raise
         except Exception as e:
             log.exception(e)
+        finally:
+            self._requests[index] = None
 
     async def start(self):
         await wait(map(lambda e: e.start(), self._engines))
