@@ -404,7 +404,6 @@ class Call(ast.Call, Node):
             else:
                 break
 
-        print("f initiated")
         self.ranks = None
         ast.Call.__init__(self, func, args, keywords)
 
