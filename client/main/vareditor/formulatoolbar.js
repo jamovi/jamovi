@@ -104,6 +104,8 @@ function allFunctions($functionsContent) {
     descriptions.VAR = { label: 'VAR( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: 'Returns the variance of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="VVAR">VVAR</div>'));
     descriptions.VVAR = { label: 'VVAR( <i>variable</i>, group_by=0 )', content: 'Returns the variance of a variable.' };
+    $functionsContent.append($('<div class="item" data-name="VRANK">VRANK</div>'));
+    descriptions.VRANK = { label: 'VRANK( <i>variable</i>)', content: 'Returns the ranked values of a variable.' };
     $functionsContent.append($('<div class="item" data-name="Z">Z</div>'));
     descriptions.Z = { label: 'Z( <i>variable</i>, group_by=0 )', content: 'Returns the normalized values of a set of numbers.' };
 

@@ -8,6 +8,7 @@ import math
 from collections import OrderedDict
 from numbers import Number
 from itertools import compress
+from scipy.stats import rankdata
 
 from jamovi.core import DataType
 from jamovi.core import MeasureType
@@ -403,7 +404,18 @@ class Call(ast.Call, Node):
             else:
                 break
 
+        print("f initiated")
+        self.ranks = None
         ast.Call.__init__(self, func, args, keywords)
+
+    def get_values(self, row_count):
+        values = []
+        for i in range(row_count):
+            values.append( self.args[0].fvalue(i, row_count, False) )
+            if values[i] == -2147483648:
+                values[i] = NaN
+            # now ignores filtered values. Need to exclude them but don't know how to get them
+        return values
 
     def fvalue(self, index, row_count, filt):
         if self._function.__name__ == 'OFFSET':
@@ -412,6 +424,17 @@ class Call(ast.Call, Node):
                 value = NaN
             else:
                 value = self.args[0].fvalue(index - offset, row_count, False)
+
+        elif self._function.__name__ == 'VRANK':
+            # reuse the list of values to be ranked
+            if self.ranks is None:
+                self.values = self.get_values(row_count)
+                self.ranks = rankdata(self.values).tolist()
+            if not math.isnan(self.values[index]):
+                value = self.ranks[index]
+            else:
+                value = NaN
+
         elif self._function.meta.is_column_wise:
             if self._cached_value is None:
                 group_by = None

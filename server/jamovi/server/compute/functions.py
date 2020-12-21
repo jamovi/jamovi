@@ -273,12 +273,16 @@ def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
     else:
         return NaN
 
+@column_wise
+def VRANK(index: float):
+    values = filter(lambda x: not math.isnan(x), values)
+     # handled in nodes.Call.fvalue
+    return values
 
 @row_wise
 def Z(index, x: float):
     # see the transfudgifier
     return x
-
 
 @row_wise
 def ABSZ(index, x: float):
