@@ -82,7 +82,10 @@ class SplitValues:
             self._calculate(row_count, filt)
 
         if self._split_by is None:
-            return self._cache
+            if isinstance(self._cache, list):
+                return self._cache[index]
+            else:
+                return self._cache
         else:
             value = self._split_by.fvalue(index, row_count, filt)
             if is_missing(value):
