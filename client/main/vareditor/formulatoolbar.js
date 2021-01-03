@@ -76,6 +76,8 @@ function allFunctions($functionsContent) {
     descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, \u2026</i>, ignore_missing=0, min_valid=0 )', content: 'Returns the mean of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="MIN">MIN</div>'));
     descriptions.MIN = { label: 'MIN( <i>variable</i> )', content: 'Returns the smallest value of a set of numbers.' };
+    $functionsContent.append($('<div class="item" data-name="RANK">RANK</div>'));
+    descriptions.RANK = { label: 'RANK( <i>variable</i> )', content: 'Ranks each value' };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
     descriptions.SCALE = { label: 'SCALE( <i>variable</i>, group_by=0 )', content: 'Returns the normalized values of a set of numbers.' };
     $functionsContent.append($('<div class="item" data-name="STDEV">STDEV</div>'));

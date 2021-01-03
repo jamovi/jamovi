@@ -6,6 +6,7 @@ import statistics as stats
 
 from scipy.stats import boxcox
 # numpy, scipy return numpy.float64's, so need to convert back to float
+from scipy.stats import rankdata
 
 from jamovi.core import DataType
 from jamovi.core import MeasureType
@@ -396,6 +397,15 @@ def CONTAINS(index, item1: str, in1: str, *args: str, in2: str = '', in3: str = 
     else:
         return 0
 
+
+@column_wise
+@returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
+def RANK(var: float):
+    ranks = rankdata(list(var)).tolist()
+    for i, v in enumerate(var):
+        if math.isnan(v):
+            ranks[i] = NaN
+    return ranks
 
 _RECODE_NOM = RECODE
 _RECODE_ORD = RECODE
