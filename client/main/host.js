@@ -340,8 +340,7 @@ else {
 
             clipboardPromptBox.setup(clipboardPrompt);
 
-            let content = (data.html ? data.html : data.text);
-            let promise = clipboardPrompt.copy(content);
+            let promise = clipboardPrompt.copy(data);
             promise.finally(() => {
                 clipboardPromptBox.hide();
             });
