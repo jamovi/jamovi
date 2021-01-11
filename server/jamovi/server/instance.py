@@ -813,6 +813,7 @@ class Instance:
                 self._data.dataset = None
                 if self._mm:
                     self._mm.close()
+                    self._mm = None
                 stream.set_exception(e)
             else:
                 if path != '' and not is_temp:
