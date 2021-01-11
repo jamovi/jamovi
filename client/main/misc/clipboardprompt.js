@@ -91,7 +91,22 @@ class ClipboardPrompt extends HTMLElement {
     }
 
     copy(content) {
-        this._textarea.innerHTML = content;
+        if ('html' in content) {
+            this._textarea.innerHTML = content.html;
+        }
+        else if ('text' in content) {
+            let pre = document.createElement('pre');
+            pre.innerText = content.text;
+            this._textarea.innerHTML = '';
+            this._textarea.appendChild(pre);
+        }
+        else if ('image' in content) {
+            let img = document.createElement('img');
+            img.src = content.image;
+            this._textarea.innerHTML = '';
+            this._textarea.appendChild(img);
+        }
+
         this._selectContent();
         return new Promise((resolve, reject) => {
             this._resolve = resolve;
