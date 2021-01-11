@@ -93,7 +93,9 @@ const marshallArgs = function(args, wd, first) {
 
     let i = 0;
     while (i < args.length) {
-        if (['--no-sandbox'].includes(args[i]))
+        let arg = args[i]
+        if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug'].includes(arg))
+            // strip the chromium switches
             args.splice(i, 1);
         else
             i++;
