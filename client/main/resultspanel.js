@@ -135,8 +135,8 @@ const ResultsPanel = Backbone.View.extend({
 
         let element = `
             <iframe
-                data-id="${ analysis.localId }"
-                src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.localId }/"
+                data-id="${ analysis.id }"
+                src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/"
                 class="analysis"
                 sandbox="allow-scripts allow-same-origin"
                 scrolling="no"
@@ -168,11 +168,11 @@ const ResultsPanel = Backbone.View.extend({
         let iframe = $iframe[0];
 
         let selected = this.model.get('selectedAnalysis');
-        if (selected !== null && analysis.localId === selected.localId)
+        if (selected !== null && analysis.id === selected.id)
             $container.attr('data-selected', '');
 
         let resources = {
-            localId: analysis.localId,
+            id: analysis.id,
             analysis : analysis,
             iframe : iframe,
             $iframe : $iframe,
@@ -182,7 +182,7 @@ const ResultsPanel = Backbone.View.extend({
             hasTitle: ! isEmptyAnalysis || analysis.isFirst()
         };
 
-        this.resources[analysis.localId] = resources;
+        this.resources[analysis.id] = resources;
 
         $iframe.on('load', () => {
             this._sendResults(resources);
@@ -223,11 +223,11 @@ const ResultsPanel = Backbone.View.extend({
     },
     _analysisDeleted(analysis) {
         this._updateRefs();
-        let resources = this.resources[analysis.localId];
+        let resources = this.resources[analysis.id];
         let $container = resources.$container;
         $container.css('height', '0');
         $container.one('transitionend', () => $container.remove());
-        delete this.resources[analysis.localId];
+        delete this.resources[analysis.id];
     },
     _updateRefs(exclude) {
         if ( ! this._ready)
@@ -245,7 +245,7 @@ const ResultsPanel = Backbone.View.extend({
 
         for (let analysis of this.model.analyses()) {
             if (analysis !== exclude && modulesWithRefChanges.includes(analysis.ns)) {
-                let res = this.resources[analysis.localId];
+                let res = this.resources[analysis.id];
                 if (res.loaded)
                     this._sendRefNumbers(res);
             }
@@ -253,7 +253,7 @@ const ResultsPanel = Backbone.View.extend({
     },
     _annotationEvent(sender, analysis, address) {
         if (sender !== this) {
-            let resources = this.resources[analysis.localId];
+            let resources = this.resources[analysis.id];
             resources.analysis = analysis;
             if (resources.loaded)
                 this._sendResults(resources);
@@ -261,7 +261,7 @@ const ResultsPanel = Backbone.View.extend({
     },
     _resultsEvent(analysis) {
         this._updateRefs(analysis);
-        let resources = this.resources[analysis.localId];
+        let resources = this.resources[analysis.id];
         resources.analysis = analysis;
         if (resources.loaded)
             this._sendResults(resources);
@@ -368,7 +368,7 @@ const ResultsPanel = Backbone.View.extend({
     _resultsMouseClicked(button, offsetX, offsetY, analysis) {
         let selected = this.model.attributes.selectedAnalysis;
         if ((selected === null && analysis !== null) || selected === analysis) {
-            let resources = this.resources[analysis.localId];
+            let resources = this.resources[analysis.id];
             let iframe = resources.iframe;
             let clickEvent = $.Event('click', { button: button, pageX: offsetX, pageY: offsetY, bubbles: true });
             iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
@@ -471,7 +471,7 @@ const ResultsPanel = Backbone.View.extend({
                         $iframe.width(width);
 
                     let selected = this.model.get('selectedAnalysis');
-                    if (eventData.scrollIntoView && selected !== null && selected.localId.toString() === id)
+                    if (eventData.scrollIntoView && selected !== null && selected.id.toString() === id)
                         this._scrollIntoView($container, height);
                     $iframe.width(width);
                     $iframe.height(height);
@@ -566,7 +566,7 @@ const ResultsPanel = Backbone.View.extend({
             options.fragment = true;
 
             let promises = Array.from(this.model.analyses())
-                .map(analysis => analysis.localId)
+                .map(analysis => analysis.id)
                 .map(id => this._getContent([ id ], options));
 
             let refs = formatIO.exportElem(this._refsTable, 'text/html', options)
@@ -738,7 +738,7 @@ const ResultsPanel = Backbone.View.extend({
             }
         }
         else if (event.op === 'duplicate') {
-            let parentId = this.resources[this._menuId].localId;
+            let parentId = this.resources[this._menuId].id;
             let analysis = this.model.duplicateAnalysis(parentId);
             this.model.set('selectedAnalysis', analysis);
         }
@@ -748,7 +748,7 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.deleteAll();
             }
             else {
-                let analysisId = this.resources[this._menuId].localId;
+                let analysisId = this.resources[this._menuId].id;
                 let analysis = this.model.analyses().get(analysisId);
                 this.model.deleteAnalysis(analysis);
             }
@@ -834,7 +834,7 @@ const ResultsPanel = Backbone.View.extend({
                 delete this._refsTable.dataset.selected;
             }
             else {
-                let oldSelectedResults = this.resources[oldSelected.localId];
+                let oldSelectedResults = this.resources[oldSelected.id];
                 if (oldSelectedResults)
                     oldSelectedResults.$container.removeAttr('data-selected');
             }
@@ -847,13 +847,13 @@ const ResultsPanel = Backbone.View.extend({
                 this._refsTable.dataset.selected = '';
             }
             else {
-                let newSelectedResults = this.resources[newSelected.localId];
+                let newSelectedResults = this.resources[newSelected.id];
                 if (newSelectedResults)
                     newSelectedResults.$container.attr('data-selected', '');
                 this._refsTable.deselect();
                 delete this._refsTable.dataset.selected;
             }
-            this._sendSelected(newSelected.localId);
+            this._sendSelected(newSelected.id);
         }
         else {
             this._sendSelected(null);
@@ -872,7 +872,7 @@ const ResultsPanel = Backbone.View.extend({
             let event = {
                 type: 'selected',
                 data: {
-                    state: resourceId === null ? null : resource.localId === resourceId,
+                    state: resourceId === null ? null : resource.id === resourceId,
                     annotationSelected: false
                 }
             };

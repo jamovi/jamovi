@@ -283,7 +283,7 @@ class Analyses:
         self._options_changed_listeners = []
         self._results_changed_listeners = []
         self._output_received_listeners = []
-        self._next_id = 1
+        self._next_id = 1   # server side created analyses always have odd ids
 
         Modules.instance().add_listener(self._module_event)
 
@@ -352,10 +352,10 @@ class Analyses:
         id = analysis_pb.analysisId
         if new_id:
             id = self._next_id
-            self._next_id += 1
+            self._next_id += 2
 
-        if id >= self._next_id:
-            self._next_id = id + 1
+        if id % 2 != 0 and id >= self._next_id:
+            self._next_id = id + 2
 
         analysis = self._construct(
             id,
@@ -394,9 +394,9 @@ class Analyses:
 
         if id == 0:
             id = self._next_id
-            self._next_id += 1
-        elif id >= self._next_id:
-            self._next_id = id + 1
+            self._next_id += 2
+        elif id % 2 != 0 and id >= self._next_id:
+            self._next_id = id + 2
 
         analysis = self._construct(id, name, ns, options_pb, True)
 
@@ -422,7 +422,7 @@ class Analyses:
             'jmv',
             options.as_pb())
         annotation.status = Analysis.Status.COMPLETE
-        self._next_id += 1
+        self._next_id += 2
 
         annotation_pb = jcoms.AnalysisResponse()
         annotation_pb.name = annotation.name

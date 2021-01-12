@@ -675,26 +675,7 @@ const Instance = Backbone.Model.extend({
         message.payloadType = 'AnalysisRequest';
         message.instanceId = this._instanceId;
 
-        return coms.send(message).then((message) => {
-            if (analysis && analysis.id === 0) {
-                let coms = this.attributes.coms;
-
-                let response = coms.Messages.AnalysisResponse.decode(message.payload);
-                analysis.id = response.analysisId;
-                analysis.results.index = response.index;
-                analysis.index = response.index - 1;
-
-                for (let current of this._analyses) {
-                    if (current.waitingFor === analysis.id) {
-                        analysis.addDependent(current);
-                    }
-                }
-
-                this._onReceive(message.payloadType, response);
-            }
-            else
-                this._onReceive(message);
-        });
+        return coms.sendP(message);
     },
     _runAnalysis(analysis, changed) {
         let coms = this.attributes.coms;
@@ -725,8 +706,8 @@ const Instance = Backbone.Model.extend({
         this._sendAnalysisRequest(request, analysis);
     },
     _analysisDeleted(remoteId) {
-        let analysis = this._analyses.get(remoteId, true);
-        this._analyses.deleteAnalysis(analysis.localId);
+        let analysis = this._analyses.get(remoteId/*, true*/);
+        this._analyses.deleteAnalysis(analysis.id /*analysis.localId*/);
     },
     deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
@@ -767,11 +748,14 @@ const Instance = Backbone.Model.extend({
         }
         else if (payloadType === 'AnalysisResponse') {
             let id = response.analysisId;
-            let analysis = this._analyses.get(id, true);
+            let analysis = this._analyses.get(id);
 
             if ( ! analysis) {
                 if (response.analysisId === 0)
                     throw 'Analysis Id can not be 0';
+
+                if (response.analysisId % 2 === 0)
+                    throw `Analysis with id ${ response.analysisId } does not exist.`;
 
                 let options = OptionsPB.fromPB(response.options, coms.Messages);
                 analysis = this._analyses.create({
@@ -787,10 +771,20 @@ const Instance = Backbone.Model.extend({
                     index: response.index - 1,
                     dependsOn: response.dependsOn
                 });
+
+                /*for (let current of this._analyses) {
+                    if (current.waitingFor === analysis.id) {
+                        analysis.addDependent(current);
+                    }
+                }*/
+
                 if (response.name !== 'empty')
                     this.set('selectedAnalysis', analysis);
             }
             else {
+                analysis.results.index = response.index;
+                analysis.index = response.index - 1;
+
                 let options = {};
                 if (response.revision === analysis.revision)
                     options = OptionsPB.fromPB(response.options, coms.Messages);
