@@ -1169,7 +1169,7 @@ class Instance:
                 if request.name != 'empty':
 
                     if request.analysisId % 2 != 0:
-                        raise Exception("Analyses created by the client must have an even id")
+                        raise Exception('Analyses created by the client must have an even id')
 
                     analysis = self._data.analyses.create(
                         request.analysisId,
