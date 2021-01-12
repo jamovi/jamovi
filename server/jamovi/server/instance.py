@@ -1129,7 +1129,6 @@ class Instance:
         if request.analysisId != 0:
             analysis = self._data.analyses.get(request.analysisId)
 
-
         if analysis is not None:  # analysis already exists
             self._data.is_edited = True
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
