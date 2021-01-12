@@ -407,6 +407,7 @@ def RANK(var: float):
             ranks[i] = NaN
     return ranks
 
+
 _RECODE_NOM = RECODE
 _RECODE_ORD = RECODE
 _RECODE_CONT = RECODE
