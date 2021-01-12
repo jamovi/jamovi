@@ -123,7 +123,7 @@ class ClientConnection(WebSocketHandler):
         m.progress = int(progress[0])
         m.progressTotal = int(progress[1])
 
-        self.write_message(m.SerializeToString(), binary=True)
+        return self.write_message(m.SerializeToString(), binary=True)
 
     def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
 

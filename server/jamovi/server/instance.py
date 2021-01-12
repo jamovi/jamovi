@@ -1129,8 +1129,8 @@ class Instance:
         if request.analysisId != 0:
             analysis = self._data.analyses.get(request.analysisId)
 
-        if analysis is not None:  # analysis already exists
 
+        if analysis is not None:  # analysis already exists
             self._data.is_edited = True
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
                 analysis_to_delete = self._data.analyses[request.analysisId]
@@ -1138,7 +1138,6 @@ class Instance:
                     for child in analysis_to_delete.dependents:
                         del self._data.analyses[child.id]
                     del self._data.analyses[request.analysisId]
-
                     self._coms.send(request, self._instance_id, request, True)
                 else:
                     analysis_to_delete.reset_options(request.revision)
@@ -1169,6 +1168,10 @@ class Instance:
                     request.index += 1
 
                 if request.name != 'empty':
+
+                    if request.analysisId % 2 != 0:
+                        raise Exception('Analyses created by the client must have an even id')
+
                     analysis = self._data.analyses.create(
                         request.analysisId,
                         request.name,
@@ -1183,7 +1186,6 @@ class Instance:
                         analysis.results.index = request.index
                         self._coms.send(analysis.results, self._instance_id, request, True)
                     else:
-                        analysis.run()
                         response = jcoms.AnalysisResponse()
                         response.name = request.name
                         response.ns = request.ns
@@ -1192,6 +1194,7 @@ class Instance:
                         response.index = request.index
                         response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
                         self._coms.send(response, self._instance_id, request, True)
+                        analysis.run()
                     child_index = request.index + 1
                     for child in analysis.dependents:
                         child.results.index = child_index

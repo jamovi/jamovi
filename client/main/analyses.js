@@ -10,10 +10,9 @@ Backbone.$ = $;
 const host = require('./host');
 const Options = require('./options');
 
-const Analysis = function(localId, id, name, ns, modules) {
+const Analysis = function(id, name, ns, modules) {
 
     this.id = id;
-    this.localId = localId;
     this.name = name;
     this.ns = ns;
     this.modules = modules;
@@ -166,7 +165,7 @@ const Analyses = Backbone.Model.extend({
 
     initialize() {
         this._analyses = [ ];
-        this._nextId = 1;
+        this._nextId = 2;  // client side created analyses always have even ids
 
         this[Symbol.iterator] = () => {
             let index = 0;
@@ -200,14 +199,23 @@ const Analyses = Backbone.Model.extend({
         let name = options.name;
         let ns = options.ns;
         let id = options.id;
-        if (id === undefined)
-            id = 0;
+        if (id === undefined) {
+            id = this._nextId;
+            this._nextId = this._nextId + 2;
+        }
+        else {
+            if (id >= this._nextId)
+                if (id % 2 === 0)
+                    this._nextId = id + 2;
+                else
+                    this._nextId = id + 1;
+        }
 
         let modules = this.attributes.modules;
-        let analysis = new Analysis(this._nextId++, id, name, ns, modules);
+        let analysis = new Analysis(id, name, ns, modules);
 
         if (options.dependsOn && options.dependsOn > 0) {
-            let patron = this.get(options.dependsOn, true);
+            let patron = this.get(options.dependsOn/*, true*/);
             if (patron !== null)
                 patron.addDependent(analysis);
             else
@@ -276,7 +284,7 @@ const Analyses = Backbone.Model.extend({
         for (let i = 0; i < this._analyses.length; i++) {
             let dependent = this._analyses[i];
             if (dependent.dependsOn === analysis) {
-                let index = this.indexOf(dependent.localId);
+                let index = this.indexOf(dependent.id);
 
                 if (dependent.name === 'empty') {
                     // before remove inbetween annotation move its contents to the previous annotation
@@ -306,8 +314,8 @@ const Analyses = Backbone.Model.extend({
             }
         }
     },
-    deleteAnalysis(localId) {
-        let index = this.indexOf(localId);
+    deleteAnalysis(id) {
+        let index = this.indexOf(id);
         let analysis = this._analyses[index];
         if (analysis.name === 'empty') {
             if (index === 0)
@@ -332,23 +340,21 @@ const Analyses = Backbone.Model.extend({
         for (let analysis of analyses)
             this._notifyAnalysisDeleted(analysis);
     },
-    get(id, isRemote) {
+    get(id) {
         if (id > 0) {
             for (let i = 0; i < this._analyses.length; i++) {
                 let analysis = this._analyses[i];
-                if ( (! isRemote && analysis.localId === id) ||
-                     (  isRemote && analysis.id === id))
+                if (analysis.id === id)
                     return analysis;
             }
         }
         return null;
     },
-    indexOf(id, isRemote) {
+    indexOf(id) {
         if (id > 0) {
             for (let i = 0; i < this._analyses.length; i++) {
                 let analysis = this._analyses[i];
-                if ( (! isRemote && analysis.localId === id) ||
-                     (  isRemote && analysis.id === id))
+                if (analysis.id === id)
                     return i;
             }
         }
