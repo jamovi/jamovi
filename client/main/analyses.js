@@ -204,8 +204,11 @@ const Analyses = Backbone.Model.extend({
             this._nextId = this._nextId + 2;
         }
         else {
-            if (id % 2 === 0 && id >= this._nextId)
-                this._nextId = id + 2;
+            if (id >= this._nextId)
+                if (id % 2 === 0)
+                    this._nextId = id + 2;
+                else
+                    this._nextId = id + 1;
         }
 
         let modules = this.attributes.modules;

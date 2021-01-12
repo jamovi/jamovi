@@ -354,8 +354,11 @@ class Analyses:
             id = self._next_id
             self._next_id += 2
 
-        if id % 2 != 0 and id >= self._next_id:
-            self._next_id = id + 2
+        if id >= self._next_id:
+            if id % 2 != 0:
+                self._next_id = id + 2
+            else:
+                self._next_id = id + 1
 
         analysis = self._construct(
             id,
@@ -395,8 +398,11 @@ class Analyses:
         if id == 0:
             id = self._next_id
             self._next_id += 2
-        elif id % 2 != 0 and id >= self._next_id:
-            self._next_id = id + 2
+        elif id >= self._next_id:
+            if id % 2 != 0:
+                self._next_id = id + 2
+            else:
+                self._next_id = id + 1
 
         analysis = self._construct(id, name, ns, options_pb, True)
 
