@@ -43,7 +43,6 @@ const Instance = Backbone.Model.extend({
             dataSetModel: this._dataSetModel });
 
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
-        //this._analyses.on('analysisDeleted', this._analysisDeleted, this);
 
         this._settings.on('change:theme', event => this._themeChanged());
         this._settings.on('change:palette', event => this._paletteChanged());
@@ -56,7 +55,6 @@ const Instance = Backbone.Model.extend({
     },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
-        //this._analyses.off('analysisDeleted', this._analysisDeleted, this);
         this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
@@ -299,13 +297,6 @@ const Instance = Backbone.Model.extend({
             // Send the save request
 
             let part = options.part;
-            if (part) {
-                // convert the analysis from local Id to remote id for sending to the server
-                part = unflatten(part);
-                let analysis = this.analyses().get(parseInt(part[0]), false);
-                part[0] = analysis.id.toString();
-                part = flatten(part);
-            }
 
             let save = new coms.Messages.SaveRequest(
                 filePath,
@@ -705,10 +696,6 @@ const Instance = Backbone.Model.extend({
 
         this._sendAnalysisRequest(request, analysis);
     },
-    _analysisDeleted(remoteId) {
-        let analysis = this._analyses.get(remoteId/*, true*/);
-        this._analyses.deleteAnalysis(analysis.id /*analysis.localId*/);
-    },
     deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
@@ -742,7 +729,7 @@ const Instance = Backbone.Model.extend({
                 if (response.analysisId === 0)
                     this._analyses.onDeleteAll();
                 else
-                    this._analysisDeleted(response.analysisId);
+                    this._analyses.deleteAnalysis(response.analysisId);
                 return;
             }
         }
