@@ -226,7 +226,19 @@ const ResultsPanel = Backbone.View.extend({
         let resources = this.resources[analysis.id];
         let $container = resources.$container;
         $container.css('height', '0');
-        $container.one('transitionend', () => $container.remove());
+        if (analysis.name === 'empty')
+            $container.remove();
+        else {
+            let removed = false;
+            $container.one('transitionend', () => {
+                $container.remove();
+                removed = true;
+            });
+            setTimeout(() => {
+                if (removed === false)
+                    $container.remove();
+            }, 400);
+        }
         delete this.resources[analysis.id];
     },
     _updateRefs(exclude) {
