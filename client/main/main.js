@@ -74,6 +74,8 @@ let analyses = instance.analyses();
 let backstageModel = new BackstageModel({ instance: instance });
 let ribbonModel = new RibbonModel({ modules: instance.modules(), settings: instance.settings() });
 
+host.setBackstage(backstageModel);
+
 let infoBox = document.createElement('jmv-infobox');
 infoBox.style.display = 'none';
 

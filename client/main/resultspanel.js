@@ -684,30 +684,23 @@ const ResultsPanel = Backbone.View.extend({
             };
 
             if (event.target.type === 'Image') {
-
-                if (host.isElectron) {
-                    let options = {
-                        title: 'Export image',
-                        filters: [
-                            { name: 'PDF', extensions: [ 'pdf' ] },
-                            { name: 'PNG', extensions: [ 'png' ] },
-                            { name: 'SVG', extensions: [ 'svg' ] },
-                            { name: 'EPS', extensions: [ 'eps' ] }, ]
-                    };
-                    let result = await host.showSaveDialog(options);
-                    if (result.canceled)
-                        return;
-                    let filePath = result.filePath.replace(/\\/g, '/');
-                    await this.model.save(filePath, saveOptions);
-                }
-                else {
-                    let filePath = '{{Temp}}/temp.pdf';
-                    let status = await this.model.save(filePath, saveOptions);
-                    if (status.path) {
-                        let source = path.basename(status.path);
-                        let url = `dl/${ source }?filename=Plot.pdf`;
-                        await host.triggerDownload(url);
-                    }
+                let options = {
+                    title: 'Export image',
+                    filters: [
+                        { name: 'PDF', extensions: [ 'pdf' ] },
+                        { name: 'PNG', extensions: [ 'png' ] },
+                        { name: 'SVG', extensions: [ 'svg' ] },
+                        { name: 'EPS', extensions: [ 'eps' ] }, ]
+                };
+                let result = await host.showSaveDialog(options);
+                if (result.canceled)
+                    return;
+                let filePath = result.filePath.replace(/\\/g, '/');
+                let status = await this.model.save(filePath, saveOptions);
+                if (host.isElectron === false && status.path) {
+                    let source = path.basename(status.path);
+                    let url = `dl/${ source }?filename=${ path.basename(filePath) }`;
+                    await host.triggerDownload(url);
                 }
             }
             else {

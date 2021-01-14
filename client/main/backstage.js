@@ -248,7 +248,7 @@ const FSEntryBrowserView = SilkyView.extend({
         html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
         for (let i = 0; i < this.model.fileExtensions.length; i++) {
             let exts = this.model.fileExtensions[i].extensions;
-            let desc = this.model.fileExtensions[i].description;
+            let desc = this.model.fileExtensions[i].description === undefined ? this.model.fileExtensions[i].name : this.model.fileExtensions[i].description;
             let selected = '';
             if (i === 0)
                 selected = 'selected';
@@ -908,6 +908,7 @@ const BackstageModel = Backbone.Model.extend({
         lastSelectedPlace : '',
         settings : null,
         ops : [ ],
+        dialogMode : false
     },
     initialize : function(args) {
 
@@ -1060,6 +1061,14 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceExportListModel.attributes.wdType = 'temp';
         this.addToWorkingDirData(this._deviceExportListModel);
 
+        this._dialogExportListModel = new FSEntryListModel();
+        this._dialogExportListModel.clickProcess = 'export';
+        this._dialogExportListModel.writeOnly = true;
+        this._dialogExportListModel.suggestedPath = null;
+        this._dialogExportListModel.fileExtensions = [ ];
+        this._dialogExportListModel.on('dataSetExportRequested', this.dialogExport, this);
+        this._dialogExportListModel.attributes.wdType = 'temp';
+        this.addToWorkingDirData(this._dialogExportListModel);
 
         this._savePromiseResolve = null;
 
@@ -1078,6 +1087,68 @@ const BackstageModel = Backbone.Model.extend({
         this.attributes.ops = [
 
         ];
+
+    },
+    asDialog: async function(type, options) {
+        this.set('dialogMode', true);
+        this._dialogPath = null;
+        this._dialogExportListModel.fileExtensions = options.filters;
+
+        let _oldOps = this.get('ops');
+
+        this.set('ops', [
+            {
+                name: type,
+                title: options.title,
+                places: [
+                    /*{
+                        name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                        action: () => {
+                            this._pcExportListModel.suggestedPath = this.instance.get('title');
+                        }
+                    },*/
+                    {
+                        name: 'thisdevice', title: 'Download', model: this._dialogExportListModel, view: FSEntryBrowserView,
+                        action: () => {
+                            this._dialogExportListModel.suggestedPath = this.instance.get('title');
+                        }
+                    },
+                ]
+            }
+        ]);
+
+        let _activePromiseReject = null;
+        let _activePromiseResolve = null;
+
+        this.set('activated', true);
+        this.once('change:activated', () => {
+            if (this.get('activated') === false) {
+                if (this._dialogPath === null && _activePromiseReject !== null)
+                    _activePromiseReject();
+                else if (_activePromiseResolve !== null && this._dialogPath !== null)
+                    _activePromiseResolve();
+
+                this.set('ops', _oldOps);
+            }
+            this.set('dialogMode', false);
+        });
+        this.set('operation', type);
+
+        return new Promise((resolve, reject) => {
+            _activePromiseResolve = resolve;
+            _activePromiseReject = reject;
+        }).then(() => {
+                return {
+                    filePath: this._dialogPath,
+                    canceled: false
+                };
+            },
+            () => {
+                return {
+                    canceled: true
+                };
+            }
+        );
 
     },
     createOps: function() {
@@ -1273,8 +1344,10 @@ const BackstageModel = Backbone.Model.extend({
     tryBrowse: async function(list, type, filename) {
 
         let filters = [];
-        for (let i = 0; i < list.length; i++)
-            filters.push({ name: list[i].description, extensions: list[i].extensions });
+        for (let i = 0; i < list.length; i++) {
+            let desc = list[i].description === undefined ? list[i].name : list[i].description;
+            filters.push({ name: desc, extensions: list[i].extensions });
+        }
 
         if (host.isElectron) {
 
@@ -1430,6 +1503,10 @@ const BackstageModel = Backbone.Model.extend({
             this.set('activated', true);
             this.set('operation', 'export');
         }
+    },
+    dialogExport: function(filePath, type) {
+        this._dialogPath = filePath;
+        this.set('activated', false);
     },
     setCurrentDirectory: function(wdType, dirPath, type, writeOnly=false) {
         if (dirPath === '')
@@ -1777,6 +1854,14 @@ const BackstageView = SilkyView.extend({
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
         this.model.on('change:ops',       this.render, this);
+        this.model.on('change:dialogMode', this._dialogModeChanged, this);
+    },
+    _dialogModeChanged: function() {
+        let $recents = this.$el.find('.silky-bs-op-recents-main');
+        if (this.model.get('dialogMode'))
+            $recents.hide();
+        else
+            $recents.show();
     },
     events: {
         'click .silky-bs-back-button div' : 'deactivate',
@@ -1860,6 +1945,11 @@ const BackstageView = SilkyView.extend({
         this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
 
         let $op = $('<div class="silky-bs-op-recents-main"></div>');
+        if (this.model.get('dialogMode'))
+            $op.hide();
+        else
+            $op.show();
+
         let $opTitle = $('<div class="silky-bs-op-header" data-op="' + 'Recent' + '" ' + '>' + 'Recent' + '</div>').appendTo($op);
         let $recentsBody = $('<div class="silky-bs-op-recents"></div>').appendTo($op);
         $op.appendTo(this.$opPanel);
