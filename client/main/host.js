@@ -403,18 +403,13 @@ else {
     };
 
     showSaveDialog = async (options) => {
-        let selection = await backstage.showDialog('export', options);
-        // On linux we don't get an extension, so here we add the default one
-        // https://github.com/electron/electron/issues/21935
-        /*let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
-        if (hasExtension === false && options.filters) {
-            let defaultExt = options.filters[0].extensions[0];
-            selection.filePath = `${ selection.filePath }.${ defaultExt }`;
-        }*/
-        return selection;
+        if (options.title === 'Export results') {
+            // hack to exclude PDF export of results for now
+            // this relies on electron, so doesn't work in the browser for now
+            options.filters = options.filters.filter(x => x.name !== 'PDF');
+        }
+        return await backstage.showDialog('export', options);
     };
-
-
 }
 
 module.exports = {
