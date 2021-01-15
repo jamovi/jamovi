@@ -1089,7 +1089,7 @@ const BackstageModel = Backbone.Model.extend({
         ];
 
     },
-    asDialog: async function(type, options) {
+    showDialog: async function(type, options) {
         this.set('dialogMode', true);
         this._dialogPath = null;
         this._dialogExportListModel.fileExtensions = options.filters;
