@@ -1116,40 +1116,26 @@ const BackstageModel = Backbone.Model.extend({
                 ]
             }
         ]);
-
-        let _activePromiseReject = null;
-        let _activePromiseResolve = null;
-
         this.set('activated', true);
-        this.once('change:activated', () => {
-            if (this.get('activated') === false) {
-                if (this._dialogPath === null && _activePromiseReject !== null)
-                    _activePromiseReject();
-                else if (_activePromiseResolve !== null && this._dialogPath !== null)
-                    _activePromiseResolve();
-
-                this.set('ops', _oldOps);
-            }
-            this.set('dialogMode', false);
-        });
         this.set('operation', type);
+        await new Promise((resolve) => {
+            this.once('change:activated', () => resolve());
+        });
 
-        return new Promise((resolve, reject) => {
-            _activePromiseResolve = resolve;
-            _activePromiseReject = reject;
-        }).then(() => {
-                return {
-                    filePath: this._dialogPath,
-                    canceled: false
-                };
-            },
-            () => {
-                return {
-                    canceled: true
-                };
-            }
-        );
-
+        try {
+            this.set('ops', _oldOps);
+            this.set('dialogMode', false);
+            if (this._dialogPath === null)
+                throw undefined;
+            return {
+                filePath: this._dialogPath,
+                canceled: false
+            };
+        } catch(e) {
+            return {
+                canceled: true
+            };
+        }
     },
     createOps: function() {
         let mode = this.instance.settings().getSetting('mode', 'normal');

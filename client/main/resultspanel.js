@@ -712,33 +712,26 @@ const ResultsPanel = Backbone.View.extend({
                     overwrite: true,
                 };
 
-                if (host.isElectron) {
+                let options = {
+                    title: 'Export results',
+                    filters: [
+                        { name: 'PDF', extensions:  [ 'pdf' ] },
+                        { name: 'HTML', extensions: [ 'html', 'htm' ] },
+                    ]
+                };
 
-                    let options = {
-                        title: 'Export results',
-                        filters: [
-                            { name: 'PDF', extensions:  [ 'pdf' ] },
-                            { name: 'HTML', extensions: [ 'html', 'htm' ] },
-                        ]
-                    };
+                if (part === '')
+                    options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
 
-                    if (part === '')
-                        options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
-
-                    let result = await host.showSaveDialog(options);
-                    if (result.canceled)
-                        return;
-                    let filePath = result.filePath.replace(/\\/g, '/');
-                    await this.model.save(filePath, saveOptions);
-                }
-                else {
-                    let filePath = '{{Temp}}/temp.html';
-                    let status = await this.model.save(filePath, saveOptions);
-                    if (status.path) {
-                        let source = path.basename(status.path);
-                        let url = `dl/${ source }?filename=Results.html`;
-                        await host.triggerDownload(url);
-                    }
+                let result = await host.showSaveDialog(options);
+                if (result.canceled)
+                    return;
+                let filePath = result.filePath.replace(/\\/g, '/');
+                let status = await this.model.save(filePath, saveOptions);
+                if (host.isElectron === false && status.path) {
+                    let source = path.basename(status.path);
+                    let url = `dl/${ source }?filename=${ path.basename(filePath) }`;
+                    await host.triggerDownload(url);
                 }
             }
         }
