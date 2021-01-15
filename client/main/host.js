@@ -312,9 +312,9 @@ else {
     let clipboardPromptBox;
     let clipboardPrompt;
 
-    copyToClipboard = (data) => {
+    copyToClipboard = async (data) => {
 
-        if (navigator.clipboard && navigator.clipboard.write) {
+        /*if (navigator.clipboard && navigator.clipboard.write) {
 
             let transfer = new DataTransfer();
 
@@ -331,7 +331,7 @@ else {
                 return navigator.clipboard.write(transfer);
             });
         }
-        else {
+        else*/ {
             if ( ! clipboardPromptBox) {
                 clipboardPromptBox = document.createElement('jmv-infobox');
                 document.body.appendChild(clipboardPromptBox);
@@ -342,14 +342,14 @@ else {
 
             clipboardPromptBox.setup(clipboardPrompt);
 
-            let promise = clipboardPrompt.copy(data);
-            promise.finally(() => {
+            try {
+                await clipboardPrompt.copy(data);
                 clipboardPromptBox.hide();
-            });
-
-
-
-            return promise;
+            }
+            catch (e) {
+                clipboardPromptBox.hide();
+                throw e;
+            }
         }
     };
 
