@@ -19,6 +19,7 @@ let resultsViewUrl;
 let isElectron;
 let version;
 let nameAndVersion;
+let backstage;
 
 let doNothing = () => {};
 
@@ -42,6 +43,7 @@ let showOpenDialog = doNothing;
 let openUrl = doNothing;
 let openRecorder = doNothing;
 let triggerDownload = doNothing;
+let setBackstage = (obj) => { backstage = obj; };
 
 let emitter = new events.EventEmitter();
 
@@ -399,6 +401,20 @@ else {
         }
         triggerDownload.iframe.src = url;
     };
+
+    showSaveDialog = async (options) => {
+        let selection = await backstage.showDialog('export', options);
+        // On linux we don't get an extension, so here we add the default one
+        // https://github.com/electron/electron/issues/21935
+        /*let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
+        if (hasExtension === false && options.filters) {
+            let defaultExt = options.filters[0].extensions[0];
+            selection.filePath = `${ selection.filePath }.${ defaultExt }`;
+        }*/
+        return selection;
+    };
+
+
 }
 
 module.exports = {
@@ -430,4 +446,5 @@ module.exports = {
     openUrl,
     openRecorder,
     triggerDownload,
+    setBackstage
 };
