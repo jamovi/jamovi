@@ -403,7 +403,7 @@ else {
     };
 
     showSaveDialog = async (options) => {
-        let selection = await backstage.asDialog('export', options);
+        let selection = await backstage.showDialog('export', options);
         // On linux we don't get an extension, so here we add the default one
         // https://github.com/electron/electron/issues/21935
         /*let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
