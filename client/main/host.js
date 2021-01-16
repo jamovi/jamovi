@@ -19,7 +19,7 @@ let resultsViewUrl;
 let isElectron;
 let version;
 let nameAndVersion;
-let backstage;
+let dialogProvider;
 
 let doNothing = () => {};
 
@@ -43,7 +43,7 @@ let showOpenDialog = doNothing;
 let openUrl = doNothing;
 let openRecorder = doNothing;
 let triggerDownload = doNothing;
-let setBackstage = (obj) => { backstage = obj; };
+let setDialogProvider = (provider) => { dialogProvider = provider; };
 
 let emitter = new events.EventEmitter();
 
@@ -252,7 +252,7 @@ if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1) {
     };
 
     showSaveDialog = async (options) => {
-        let selection = await dialog.showSaveDialog(browserWindow, options);
+        let selection = await dialogProvider.showDialog('export', options);
         // On linux we don't get an extension, so here we add the default one
         // https://github.com/electron/electron/issues/21935
         let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
@@ -408,7 +408,7 @@ else {
             // this relies on electron, so doesn't work in the browser for now
             options.filters = options.filters.filter(x => x.name !== 'PDF');
         }
-        return await backstage.showDialog('export', options);
+        return await dialogProvider.showDialog('export', options);
     };
 }
 
@@ -441,5 +441,5 @@ module.exports = {
     openUrl,
     openRecorder,
     triggerDownload,
-    setBackstage
+    setDialogProvider
 };

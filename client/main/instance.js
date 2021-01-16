@@ -402,12 +402,13 @@ const Instance = Backbone.Model.extend({
             throw error;
         });
     },
-    browse(filePath) {
+    browse(filePath, extensions) {
 
         let coms = this.attributes.coms;
 
         let fs = new coms.Messages.FSRequest();
         fs.path = filePath;
+        fs.extensions = extensions;
 
         let message = new coms.Messages.ComsMessage();
         message.payload = fs.toArrayBuffer();
