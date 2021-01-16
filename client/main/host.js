@@ -357,11 +357,9 @@ else {
         // should do something
     };
 
-    showOpenDialog = (window, options) => {
-        if (options === undefined) {
-            options = window;
-            window = undefined;
-        }
+    showOpenDialog = (_, options) => {
+        if (options === undefined)
+            options = _;
 
         if ( ! showOpenDialog.browser) {
             showOpenDialog.browser = document.createElement('input');
@@ -372,7 +370,12 @@ else {
         if (showOpenDialog.cancelPrevious)
             showOpenDialog.cancelPrevious(new CancelledError());
 
-        if (options.filters) {
+        // iOS safari and iOS chrome don't support the extension format
+        // https://caniuse.com/input-file-accept
+        let ua = window.navigator.userAgent;
+        let iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
+
+        if (options.filters && ! iOS) {
             let exts = options.filters;
             exts = exts.map(format => format.extensions);
             exts = exts.reduce((a, v) => a.concat(v), []);
