@@ -335,6 +335,7 @@ message FSEntry {
 
 message FSRequest {
     string path = 1;
+    repeated string extensions = 2;
 }
 
 message FSResponse {

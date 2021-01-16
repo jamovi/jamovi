@@ -324,6 +324,8 @@ class Instance:
     def _on_fs_request(self, request):
         try:
             path = request.path
+            extensions = request.extensions
+
             abs_path = path  # used by exception reporting
 
             try:
@@ -454,6 +456,7 @@ class Instance:
 
                 for direntry in os.scandir(abs_path + '/'):  # add a / in case we get C:
 
+                    show = False
                     if fs.is_hidden(direntry.path):
                         show = False
                     elif direntry.is_dir():
@@ -464,7 +467,13 @@ class Instance:
                             show = True
                     else:
                         entry_type = FileEntry.Type.FILE
-                        show = formatio.is_supported(direntry.name)
+                        if len(extensions) == 0:
+                            show = True
+                        else:
+                            filename = os.path.basename(direntry.name)
+                            name, ext = os.path.splitext(filename)
+                            if ext != '' and ext[1:] in extensions:
+                                show = True
 
                     if show:
                         entry = FileEntry()
