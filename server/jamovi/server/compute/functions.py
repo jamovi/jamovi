@@ -4,6 +4,7 @@ import math
 from numbers import Number as num
 import statistics as stats
 
+from numpy import quantile
 from scipy.stats import boxcox
 # numpy, scipy return numpy.float64's, so need to convert back to float
 from scipy.stats import rankdata
@@ -160,13 +161,13 @@ def NOTROW(index, arg0, *args):
 @column_wise
 def Q1(values: float):
     values = filter(lambda x: not math.isnan(x), values)
-    return stats.quantiles(values, method="inclusive")[0]
+    return float(quantile(list(values), 0.25))
 
 
 @column_wise
 def Q3(values: float):
     values = filter(lambda x: not math.isnan(x), values)
-    return stats.quantiles(values, method="inclusive")[2]
+    return float(quantile(list(values), 0.75))
 
 
 @row_wise
