@@ -620,8 +620,12 @@ const GridTargetContainer = function(params) {
         let counts = [0];
         let findPosition = (length) => {
             let pos = 0;
-            for (let k = 0; k < length; k++)
-                pos += counts[k];
+            for (let k = 0; k < length; k++) {
+                let count = counts[k];
+                if (count === undefined)
+                    count = 0;
+                pos += count;
+            }
             return pos;
         };
 
@@ -635,15 +639,19 @@ const GridTargetContainer = function(params) {
                 if (maxLength > 1 && f.length === maxLength)
                     break;
 
-                let newVar = JSON.parse(JSON.stringify(f));
+                if (f.includes(rawVar) === false) {
+                    let newVar = JSON.parse(JSON.stringify(f));
 
-                newVar.push(rawVar);
+                    newVar.push(rawVar);
 
-                if (counts[newVar.length - 1] === undefined)
-                    counts[newVar.length - 1] = 1;
-                else
-                    counts[newVar.length - 1] += 1;
-                list.splice(findPosition(newVar.length), 0, newVar);
+                    list.splice(findPosition(newVar.length), 0, newVar);
+                    if (counts[newVar.length - 1] === undefined)
+                        counts[newVar.length - 1] = 1;
+                    else
+                        counts[newVar.length - 1] += 1;
+
+                    listLength += 1;
+                }
             }
             list.splice(i, 0, [rawVar]);
             counts[0] += 1;
