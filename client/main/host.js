@@ -357,7 +357,7 @@ else {
         // should do something
     };
 
-    showOpenDialog = (_, options) => {
+    showOpenDialog = async(_, options) => {
         if (options === undefined)
             options = _;
 
@@ -370,23 +370,26 @@ else {
         if (showOpenDialog.cancelPrevious)
             showOpenDialog.cancelPrevious(new CancelledError());
 
-        // iOS safari and iOS chrome don't support the extension format
-        // https://caniuse.com/input-file-accept
         let ua = window.navigator.userAgent;
         let iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
+        let exts;
 
-        if (options.filters && ! iOS) {
-            let exts = options.filters;
+        if (options.filters) {
+            exts = options.filters;
             exts = exts.map(format => format.extensions);
             exts = exts.reduce((a, v) => a.concat(v), []);
             exts = exts.map((ext) => '.' + ext);
-            exts = exts.join(',');
-            showOpenDialog.browser.setAttribute('accept', exts);
+
+            // iOS safari and iOS chrome don't support the extension format
+            // https://caniuse.com/input-file-accept
+            if ( ! iOS)
+                showOpenDialog.browser.setAttribute('accept', exts.join(','));
+
         } else {
             showOpenDialog.browser.removeAttribute('accept');
         }
 
-        return new Promise((resolve, reject) => {
+        let files = await new Promise((resolve, reject) => {
             showOpenDialog.browser.click();
             showOpenDialog.cancelPrevious = reject;
             showOpenDialog.browser.addEventListener('change', function(event) {
@@ -394,6 +397,27 @@ else {
                 resolve(this.files);
             }, { once: true }, false);
         });
+
+        // the calling function doesn't handle exceptions, and requires a bit
+        // of work to handle them correctly, so i've disabled the following
+        // check for the time being. a check is also performed by the server,
+        // so it will get picked up there.
+
+        // if (exts) {
+        //     for (let file of files) {
+        //         let ok = false;
+        //         for (let ext of exts) {
+        //             if (file.name.endsWith(ext)) {
+        //                 ok = true;
+        //                 break;
+        //             }
+        //         }
+        //         if ( ! ok)
+        //             throw new Error('Unrecognised file format')
+        //     }
+        // }
+
+        return files;
     };
 
     triggerDownload = async(url) => {
