@@ -285,7 +285,8 @@ const Instance = Backbone.Model.extend({
                 return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app}, options.part);
             }
             else if (filePath.endsWith('.pdf')) {
-                return this.attributes.resultsSupplier.getAsHTML({images:'absolute', generator:app}, options.part)
+                let images = host.isElectron ? 'absolute' : 'inline';
+                return this.attributes.resultsSupplier.getAsHTML({images:images, generator:app}, options.part)
                     .then(html => this._requestPDF(html));
             }
             else {
