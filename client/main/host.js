@@ -430,11 +430,6 @@ else {
     };
 
     showSaveDialog = async (options) => {
-        if (options.title === 'Export results') {
-            // hack to exclude PDF export of results for now
-            // this relies on electron, so doesn't work in the browser for now
-            options.filters = options.filters.filter(x => x.name !== 'PDF');
-        }
         return await dialogProvider.showDialog('export', options);
     };
 }
