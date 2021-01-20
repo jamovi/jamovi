@@ -414,9 +414,23 @@ function _htmlify(el, options) {
                     html += ' ' + attrib.name + '="' + attrib.value + '"';
             }
             if (styles.length > 0) {
+                let cs = getComputedStyle(el);
                 html += ' style="';
-                for (let style of styles)
-                    html += style + ':' + $(el).css(style) + ';';
+                for (let style of styles) {
+                    let value = cs.getPropertyValue(style);
+                    if ( ! value) {
+                        if (style === 'padding') {
+                            value = `${ cs.getPropertyValue('padding-top') } ${ cs.getPropertyValue('padding-right')} ${ cs.getPropertyValue('padding-bottom') } ${ cs.getPropertyValue('padding-left') }`;
+                        }
+                        else if (['border-top', 'border-right', 'border-bottom', 'border-top'].includes(style)) {
+                            let w = cs.getPropertyValue(`${ style }-width`);
+                            let s = cs.getPropertyValue(`${ style }-style`);
+                            let c = cs.getPropertyValue(`${ style }-color`);
+                            value = `${ w } ${ s } ${ c }`;
+                        }
+                    }
+                    html += `${ style }:${ value };`;
+                }
                 html += '"';
             }
             html += '>';
