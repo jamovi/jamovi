@@ -179,6 +179,38 @@ const ArrayView = Elem.View.extend({
         if (this.hasAnnotations() && this.model.attributes.element.layout !== 1)
             current = this._includeAnnotation(current, this.address().join('/'), this, true);
 
+        let element = this.model.attributes.element.header;
+        if (this.model.attributes.element.hasHeader && element.visible !== 1 && element.visible !== 3) {
+            let childAddress = this.address();
+            childAddress.push(element.name);
+            childAddress = childAddress.join('/');
+
+            let item = this._includeItem(current, childAddress, element, options, level);
+
+            if (item !== null) {
+
+                current = item;
+
+                let updateData = {
+                    element: element,
+                    options: options,
+                    level: this.level + 1,
+                    mode: this.mode,
+                    fmt: this.fmt,
+                    refTable: this.model.attributes.refTable
+                };
+
+                if (current.updated() || current.update(updateData)) {
+                    let child = current.item;
+                    this.children.push(child);
+                    this.$$children.push(current.$el);
+                    promises.push(child.ready);
+                }
+            }
+        }
+
+
+
         if (this.hasSelect)
             this.$select.empty();
         for (let element of elements) {
