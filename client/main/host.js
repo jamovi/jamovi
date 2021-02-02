@@ -308,7 +308,7 @@ else {
 
     currentZoom = () => 100;
 
-    require('./misc/clipboardprompt');
+    require('./utils/clipboardprompt');
     let clipboardPromptBox;
     let clipboardPrompt;
 
