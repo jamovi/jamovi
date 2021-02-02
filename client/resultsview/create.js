@@ -111,6 +111,9 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
 
         let visible = false;
 
+        if (element.array.hasHeader)
+            visible = true;
+
         for (let child of element.array.elements) {
             if (child.visible === 0 || child.visible === 2)
                 visible = true;
@@ -262,6 +265,9 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
 
         let visible = false;
 
+        if (element.array.hasHeader)
+            visible = true;
+            
         for (let child of element.array.elements) {
             if (child.visible === 0 || child.visible === 2)
                 visible = true;

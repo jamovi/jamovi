@@ -222,6 +222,9 @@ message ResultsArray {
 
     LayoutType layout = 2;
     bool hideHeadingOnlyChild = 4;
+
+    bool hasHeader = 8;
+    ResultsElement header = 9;
 }
 
 message ResultsGroup {
