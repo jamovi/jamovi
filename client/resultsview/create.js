@@ -196,15 +196,17 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
     let view = item;
 
     if (element.type === 'table') {
-        model.set({
-            name: element.name,
-            title: element.title,
-            element: element.table,
-            status: element.status,
-            error: element.error,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
+
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.table;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
+
+
         model.initialize();
 
         view.level = level;
@@ -229,34 +231,34 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         }
 
         if (visible) {
-            model.set({
-                name: element.name,
-                title: element.title,
-                element: element.group,
-                status: element.status,
-                error: element.error,
-                refs: element.refs,
-                options: options,
-                refTable: refTable });
 
-                view.level = level;
-                view.mode = mode;
-                view.devMode = devMode;
-                view.fmt = fmt;
+            model.attributes.name = element.name;
+            model.attributes.title = element.title;
+            model.attributes.element = element.group;
+            model.attributes.status = element.status;
+            model.attributes.error = element.error;
+            model.attributes.refs = element.refs;
+            model.attributes.options = options;
+            model.attributes.refTable = refTable;
+
+            view.level = level;
+            view.mode = mode;
+            view.devMode = devMode;
+            view.fmt = fmt;
         }
         else
             return false;
     }
     else if (element.type === 'image') {
-        model.set({
-            name: element.name,
-            title: element.title,
-            element: element.image,
-            status: element.status,
-            error: element.error,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
+
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.image;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
 
         view.level = level;
         view.mode = mode;
@@ -267,22 +269,22 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
 
         if (element.array.hasHeader)
             visible = true;
-            
+
         for (let child of element.array.elements) {
             if (child.visible === 0 || child.visible === 2)
                 visible = true;
         }
 
         if (visible) {
-            model.set({
-                name: element.name,
-                title: element.title,
-                element: element.array,
-                status: element.status,
-                error: element.error,
-                refs: element.refs,
-                options: options,
-                refTable: refTable });
+
+            model.attributes.name = element.name;
+            model.attributes.title = element.title;
+            model.attributes.element = element.array;
+            model.attributes.status = element.status;
+            model.attributes.error = element.error;
+            model.attributes.refs = element.refs;
+            model.attributes.options = options;
+            model.attributes.refTable = refTable;
 
             view.level = level;
             view.mode = mode;
@@ -293,31 +295,31 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         }
     }
     else if (element.type === 'preformatted') {
-        model.set({
-            name : element.name,
-            title : element.title,
-            element : element.preformatted,
-            status: element.status,
-            error: element.error,
-            stale: element.stale,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
+
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.preformatted;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.stale = element.stale;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
 
         view.level = level;
         view.mode = mode;
     }
     else if (element.type === 'html') {
-        model.set({
-            name : element.name,
-            title : element.title,
-            element : element.html,
-            status: element.status,
-            error: element.error,
-            stale: element.stale,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
+
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.html;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.stale = element.stale;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
 
         view.level = level;
         view.mode = mode;
