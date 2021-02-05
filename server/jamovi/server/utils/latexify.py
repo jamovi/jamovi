@@ -34,21 +34,26 @@ async def latexify(content, out, resolve_image):
         body = re.sub(' style="width:.*?"',                '',                 body)
         body = re.sub(' alt=".+?"',                        '',                 body)
 
+        # remove header markings
+        body = re.sub(' contenteditable=".*?"',            '',                 body)
+        body = re.sub(' spellcheck=".*?"',                 '',                 body)
+        
         # remove empty table lines
         body = re.sub(r'<tr><\/tr>[\s]*?',                 '',                 body)
         body = re.sub(r'<h[1-5]><\/h[1-5]>[\s]*?',         '',                 body)
         body = re.sub(r'<span>\[[1-9]\]<\/span>[\s]*?',    '',                 body)
         body = re.sub(r'<a href="" target="_blank"><\/a>', '',                 body)
-        body = re.sub(r'<\/h[1-5]>[\s]*?<h[1-5]>',         ': ',               body)
         body = re.sub(r'[\s]*?<p>&nbsp;<\/p>',             '\n',               body)
         body = re.sub(r'><\/img>',                         '>',                body)
+        body = re.sub(r'<p></p>',                          '',                 body)
 
         # remove or change characters that either have special functions in LaTeX or are not-printable
         body = re.sub('_',                                 '\\_',              body)
         body = re.sub('%',                                 '\\%',              body)
 
         # replace subscripts (e.g., tukey for post-hoc p-values)
-        body = re.sub(r'<sub>(\S+)<\/sub>',                r'$_{\1}$',         body)
+        body = re.sub(r'<sup>(\S+?)<\/sup>',               r'$^{\1}$',         body)
+        body = re.sub(r'<sub>(\S+?)<\/sub>',               r'$_{\1}$',         body)
         body = re.sub('&nbsp;',                            '',                 body)
         body = re.sub('\xA0',                              ' ',                body)
         body = re.sub('\xB1',                              '$\\\\pm$',         body)
@@ -118,7 +123,7 @@ async def latexify(content, out, resolve_image):
                         tmpl = int(int(re.findall(r'<th colspan="(\d+?)"', thsp[j])[0]) / 2)
                         tmpc = re.findall(r'<th colspan[\S\s]*?>(.+?)<\/th>', thsp[j])
                         thsp[j] = ('\\multicolumn{' + str(tmpl) + '}{c}{' + ('~' if len(tmpc) == 0 else tmpc[0]) + '}')
-                        tcln = tcln + ('' if len(tmpc) == 0 else ('\\cline{' + str(tcmi + 1) + '-' + str(tcmi + tmpl) + '}\n'))
+                        tcln = tcln + ('' if len(tmpc) == 0 else ('\\cmidrule{' + str(tcmi + 1) + '-' + str(tcmi + tmpl) + '}\n'))
                         tcmi = tcmi + tmpl
                     thsp = (' & '.join(thsp) + ' \\\\\n')
                 # process the column headers: replace colspan="[NUMBER]" with single cells and split cells using <th> and </th>
@@ -162,7 +167,7 @@ async def latexify(content, out, resolve_image):
                 # second run: format and align cell content (for header line with column names and the rows in the table body)
                 tbdy = [thnm] + tbdy
                 for j in range(len(tbdy)):
-                    if (tbdy[j].find('\\hline') == -1 & tbdy[j].find('\\cline') == -1 & tbdy[j].find('\\multicolumn') == -1):
+                    if (tbdy[j].find('\\midrule') == -1 & tbdy[j].find('\\cmidrule') == -1 & tbdy[j].find('\\multicolumn') == -1):
                         tbcl = tbdy[j].split('&')
                         for k in range(len(tbcl)):
                             # trim leading and trailing spaces
@@ -202,8 +207,8 @@ async def latexify(content, out, resolve_image):
                 # ===================================================================================================================
                 trpl = ('\n\\begin{table}[!htbp]\n\\caption{' + re.findall(r'<span[\s\S]*?>(.+?)<\/span>', thdr[0])[0] + '}\n\\label{tab:Table_' + str(i + 1) + '}\n'
                         + '\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}\n\\centering\n'
-                        + '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\hline\n' + thdr[1] + '\\hline\n' + tbdy + '\n\\hline\n\\end{tabular}\n\\end{adjustbox}\n'
-                        + '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}')
+                        + '\\begin{tabular}{' + ''.join(talg) + '}\n' + '\\toprule\n' + thdr[1] + '\\midrule\n' + tbdy + '\n\\bottomrule\n\\end{tabular}\n\\end{adjustbox}\n'
+                        + '\\begin{tablenotes}[para,flushleft] {\n\\small\n' + ''.join(tftr) + '}\n\\end{tablenotes}\n\\end{table}\n\n')
                 body = body.replace(tdta[i], trpl)
 
         # handle figures: convert from embedded base64 to files, and create LaTeX code
@@ -244,7 +249,9 @@ async def latexify(content, out, resolve_image):
 {error_message}\\centering
 {prefix}\\includegraphics[width=\\columnwidth]{{{i_fn}}}
 {prefix}\\end{{figure}}\
+
 '''.format(fig_no=i + 1, error_message=error_message, prefix=prefix, i_fn=i_fn)
+
             body = body.replace(idta[i], irpl)
 
         # handle references
@@ -309,50 +316,111 @@ async def latexify(content, out, resolve_image):
                             + ('.' if len(rkey) < 1 else (', as well as the ' + ('module / package ' if len(rkey) == 1 else 'modules / packages ')
                                + ', '.join(rkey)[::-1].replace(', '[::-1], ' and '[::-1], 1)[::-1] + ' \\parencite{' + ', '.join(rkey) + '}.')) + '\n\n')
 
-        # handle labels: currently, the figures captions are based upon the heading before whereas the captions for the tables are taken from the first line of the table header (that can be changed though)
-        # NB: has to happen AFTER references are processed
-        ldta = re.finditer(r'<h[1-5]>[\s\S]*?<\/h[1-5]>', body)
-        lorg = []
-        lrpl = []
-        for i in ldta:
-            # check whether the heading is followed by begin (indicating that a table or a figure follows)
-            lbps = body[i.end():len(body)].strip().find('\\begin')
-            if (lbps == -1):
-                # nothing found, e.g. if the heading is "References"
-                lorg.append(body[i.start():i.end()])
-                lrpl.append('')
-            elif (lbps < 20):
-                lcpt = re.findall(r'<h[1-5]>([\s\S]*?)<\/h[1-5]>', body[i.start():i.end()])[0]
-                lpos = re.finditer('\\\\caption{PLACEHOLDER}', body[i.end():len(body)])
-                try:
-                    lpos = next(lpos)
-                    if (lpos.start() < 100):
-                        lorg.append(body[i.start():i.end() + lpos.end()])
-                        lrpl.append(body[i.end():i.end() + lpos.start()].strip() + '\\caption{' + lcpt + '}')
+        # handle comments
+        cdta = []
+        if re.search('<div class="note">', body):
+            cdta = re.findall(r'\s*?<div class="note">[\s\S]*?<\/div>', body)
+            for i in range(len(cdta)):
+                ccrr = cdta[i].replace(r'<div class="note">', '').replace(r'</div>', '').strip()
+                # handle text formatting: bold, italic, underline
+                ccrr = re.sub(r'<strong>', '\\\\textbf{',             re.sub(r'<\/strong>', '}',                        ccrr))
+                ccrr = re.sub(r'<em>',     '\\\\emph{',               re.sub(r'<\/em>',     '}',                        ccrr))
+                ccrr = re.sub(r'<u>',      '\\\\underline{',          re.sub(r'<\/u>',      '}',                        ccrr))
+                ccrr = re.sub(r'<s>',      '\\\\st{',                 re.sub(r'<\/s>',      '}',                        ccrr))
+                # handle ordered and unordered lists (and their items)
+                ccrr = re.sub(r'<ol>',     '\\\\begin{enumerate}\\n', re.sub(r'<\/ol>',     '\\\\end{enumerate}\\n\\n', ccrr))
+                ccrr = re.sub(r'<ul>',     '\\\\begin{itemize}\\n',   re.sub(r'<\/ul>',     '\\\\end{itemize}\\n\\n',   ccrr))
+                ccrr = re.sub('<li.*?>',   '\\\\item ',               re.sub('</li>',       '\\n',                      ccrr))
+                # handle preformatted text
+                ccrr = re.sub(r'<pre>',    '\\\\begin{verbatim}\\n',  re.sub(r'<\/pre>',    '\\\\end{verbatim}\\n\\n',  ccrr))
+                
+                # handle paragraphs
+                cpgh = re.findall(r'<p[\s\S]*?<\/p>', ccrr)
+                for j in range(len(cpgh)):
+                    cpgc = cpgh[j].strip()
+                    # decode text alignment: left as default (NB: LaTeX uses justify as default)
+                    if   re.search('ql-align-right',   cpgc):
+                        wrpp = ['\\begin{flushright}\n', '\\end{flushright}\n']
+                        cpgc = cpgc.replace('ql-align-right',   '')
+                    elif re.search('ql-align-center',  cpgc):
+                        wrpp = ['\\begin{center}\n',     '\\end{center}\n'    ]
+                        cpgc = cpgc.replace('ql-align-center',  '')                
+                    elif re.search('ql-align-justify', cpgc):
+                        wrpp = ['',                      '\n'                 ]
+                        cpgc = cpgc.replace('ql-align-justify', '')                
                     else:
-                        lorg.append(body[i.start():i.end()])
-                        lrpl.append('')
-                except StopIteration:
-                    lorg.append(body[i.start():i.end()])
-                    lrpl.append('')
-            else:
-                print('=============================================================================================')
-                print('Error with caption - lbps = ' + str(lbps) + ':')
-                print(body[i.end():len(body)].strip())
-        if (len(lorg) == len(lrpl)):
-            for i in range(len(lorg)):
-                body = body.replace(lorg[i], lrpl[i])
+                        wrpp = ['\\begin{flushleft}\n',  '\\end{flushleft}\n' ]
+                    # decode text indentation
+                    if   re.search('ql-indent-',   cpgc):
+                        indn = int(re.findall(r'ql-indent-([0-9]+) ', cpgc)[0])
+                        cpgc = re.sub(r'ql-indent-[0-9]+ ', '', cpgc)
+                        wrpp = ['{\\narrower' * indn + '\n' + wrpp[0], wrpp[1] + '}' * indn + '\n']
+                    cpgc = cpgc.replace(' class=""', '')
+                    cpgc = re.sub(r'<br/>', '\\n\\n', cpgc)          
+                    if cpgc.splitlines() != ['<p>', '', '</p>']:
+                        cpgc = cpgc.replace(r'<p>', wrpp[0] + '\\noindent\n').replace(r'</p>', '\n' + wrpp[1] + '\n')
+                        ccrr = ccrr.replace(cpgh[j], cpgc)
+                    else:
+                        ccrr = ccrr.replace(cpgh[j], '')
+                    
+                # handle spans
+                cspn = re.findall(r'<span[\s\S]*?<\/span>', ccrr)
+                for j in range(len(cspn)):
+                    # replace(r'<p>', '').replace(r'</p>', '').
+                    cspc = cspn[j].strip()
+                    # formulas
+                    if re.search(r'<span class="ql-formula">', cspc):
+                        cspc = '$' + re.findall(r'<span class="ql-formula">(.*?)<\/span>', cspc)[0] + '$'
+                    # colours: replace hex-code with X11-names
+                    if re.search(r'color:#', cspc):
+                        cspc = cspc.replace('color:#000000', 'color:Black').replace('color:#e60000', 'color:Red2').replace('color:#ff9900', 'color:Orange1').\
+                                    replace('color:#ffff00', 'color:Yellow1').replace('color:#008a00', 'color:Green3').replace('color:#0066cc', 'color:DodgerBlue3').\
+                                    replace('color:#9933ff', 'color:Purple1').replace('color:#ffffff', 'color:White').replace('color:#facccc', 'color:MistyRose2').\
+                                    replace('color:#ffebcc', 'color:Bisque1').replace('color:#ffffcc', 'color:LemonChiffon1').replace('color:#cce8cc', 'color:DarkSeaGreen1').\
+                                    replace('color:#cce0f5', 'color:LightSteelBlue1').replace('color:#ebd6ff', 'color:Thistle2').replace('color:#bbbbbb', 'color:Gray0').\
+                                    replace('color:#f06666', 'color:IndianRed2').replace('color:#ffc266', 'color:Tan1').replace('color:#ffff66', 'color:LightGoldenrod1').\
+                                    replace('color:#66b966', 'color:PaleGreen3').replace('color:#66a3e0', 'color:SteelBlue2').replace('color:#c285ff', 'color:MediumPurple1').\
+                                    replace('color:#888888', 'color:Snow4').replace('color:#a10000', 'color:Red3').replace('color:#b26b00', 'color:DarkOrange3').\
+                                    replace('color:#b2b200', 'color:Gold3').replace('color:#006100', 'color:Green4').replace('color:#0047b2', 'color:DodgerBlue4').\
+                                    replace('color:#6b24b2', 'color:Purple3').replace('color:#444444', 'color:SlateGrey4').replace('color:#5c0000', 'color:Red4').\
+                                    replace('color:#663d00', 'color:DarkOrange4').replace('color:#666600', 'color:DarkGoldenrod4').replace('color:#003700', 'color:Green4').\
+                                    replace('color:#002966', 'color:DodgerBlue4').replace('color:#3d1466', 'color:Purple4')
+                        wrps = ['', '']
+                        if re.search(r'background-color:', cspc):
+                            wrps = [wrps[0] + '\\colorbox{' + re.findall('background-color:(\S*?)[;"]', cspc)[0] + '}{', wrps[1] + '}']
+                            cspc = re.sub('background-color:\S*?[;"]', '"', cspc)
+                        if re.search(r'="color:', cspc):
+                            wrps = [wrps[0] + '\\textcolor{' + re.findall('color:(\S*?)[;"]', cspc)[0] + '}{', wrps[1] + '}']
+                            cspc = re.sub('="color:\S*?[;"]', '=""', cspc)
+                        cspc = wrps[0] + re.findall('<span style="*?>([\S\s]*?)<\/span>', cspc)[0] + wrps[1]
+                    cspc = re.sub(r'<br/>', '\\n\\n', cspc)
+                    ccrr = ccrr.replace(cspn[j], cspc)
+                
+                body = body.replace(cdta[i], '\n' + ccrr)
+                
+        # handle section headers
+        hdta = re.findall(r'<h[1-5]>[\s\S]*?<\/h[1-5]>', body)
+        for i in range(len(hdta)):
+            hcrr = hdta[i].replace('\n', '').strip()
+            hcrr = hcrr.replace('<h1>', '\n\\section{').replace('<h2>', '\n\\subsection{').replace('<h3>', '\n\\subsubsection{').replace('<h4>', '\n\\paragraph{').replace('<h5>', '\n\\subparagraph{')
+            hcrr = re.sub(r'<\/h[1-5]>', '}\n', hcrr)
+            body = body.replace(hdta[i], hcrr)
+        
+        # handle empty lines
+        edta = re.findall(r'\\end{\S*?}\s*\\begin{\S*?}', body)
+        for i in range(len(edta)):
+            ecrr = edta[i].splitlines()
+            if ecrr[len(ecrr) - 1] != '\\begin{tablenotes}':
+                body = body.replace(edta[i], ecrr[0] + '\n\n' + ecrr[len(ecrr) - 1])
 
-        body = re.sub(r'\\\\end{table}[\s]*',  '\\\\end{table}\n\n\n',  body)
-        body = re.sub(r'\\\\end{figure}[\s]*', '\\\\end{figure}\n\n\n', body)
-        body = '\n\n' + body.strip() + '\n\n\n'
+        body = '\n' + body.strip() + '\n\n'
 
-        head = ('\\documentclass[a4paper,man,hidelinks,floatsintext]{apa7}\n'
+        head = ('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}\n'
                 + '% This LaTeX output is designed to use APA7 style and to run on local TexLive-installation (use pdflatex) as well as on web interfaces (e.g., overleaf.com).\n'
                 + '% To use APA6 style change apa7 to apa6 in the first line (\\documentclass), comment or remove the \\addORCIDlink line, and change the order of \\caption and \\label lines for the figures.\n'
                 + '% If you prefer postponing your figures and table until after the reference list, instead of having them within the body of the text, please remove the ",floatsintext" from the documentclass options.\n'
                 + '% Further information on these styles can be found here: https://www.ctan.org/pkg/apa7 and here: https://www.ctan.org/pkg/apa6\n\n'
-                + '\\usepackage[british]{babel}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath}\n\\usepackage{graphicx}\n\\usepackage[export]{adjustbox}\n\\usepackage{csquotes}\n'
+                + '\\usepackage[british]{babel}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amsmath}\n\\usepackage{graphicx}\n\\usepackage[export]{adjustbox}\n\\usepackage{csquotes}\n\\usepackage{soul}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\DeclareLanguageMapping{british}{british-apa}\n'
                 + ('' if len(rdta) > 0 else '%') + '\\addbibresource{article.bib}\n\n'
@@ -364,7 +432,7 @@ async def latexify(content, out, resolve_image):
                 + '%\\subsection{Participants}\n% Your participants description goes here.\n\n'
                 + '%\\subsection{Materials}\n% Your description of the experimental materials goes here.\n\n'
                 + '%\\subsection{Procedure}\n% Your description of the experimental procedures goes here.\n\n'
-                + '%\\subsection{Statistical Analyses}\n%' + rtxt + '%\\section{Results}\n\n')
+                + '%\\subsection{Statistical Analyses}\n%' + rtxt + '\n')
         tail = ('\n% Report your results here and make references to tables' + (' (see Table~\\ref{tab:Table_1})' if len(tdta) > 0 else '')
                 + ' or figures' + (' (see Figure~\\ref{fig:Figure_1})' if len(idta) > 0 else '')
                 + '.\n\n%\\section{Discussion}\n% Your discussion starts here.\n\n'
