@@ -125,7 +125,7 @@ class References extends HTMLElement {
             name: 'jamovi',
             type: 'software',
             authors: { complete: 'The jamovi project' },
-            year: 2020,
+            year: 2021,
             title: 'jamovi',
             publisher: '(Version 1.6) [Computer Software]. Retrieved from https://www.jamovi.org',
             url: 'https://www.jamovi.org',
