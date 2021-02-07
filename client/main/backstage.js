@@ -1019,7 +1019,7 @@ const BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.clickProcess = 'export';
         this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
-            { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
+            { extensions: ['pdf'], description: "PDF Document (.pdf)" },
             { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
             { extensions: ['omt'], description: 'jamovi template (.omt)' },
             { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
@@ -1042,7 +1042,7 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceExportListModel.writeOnly = true;
         this._deviceExportListModel.suggestedPath = null;
         this._deviceExportListModel.fileExtensions = [
-            { extensions: ['pdf'], description: "Portable Document Format (.pdf)" },
+            { extensions: ['pdf'], description: "PDF Document (.pdf)" },
             { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
             { extensions: ['omt'], description: 'jamovi template (.omt)' },
             { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
