@@ -687,10 +687,10 @@ const ResultsPanel = Backbone.View.extend({
                 let options = {
                     title: 'Export image',
                     filters: [
-                        { name: 'PDF', extensions: [ 'pdf' ] },
-                        { name: 'PNG', extensions: [ 'png' ] },
-                        { name: 'SVG', extensions: [ 'svg' ] },
-                        { name: 'EPS', extensions: [ 'eps' ] }, ]
+                        { name: 'PDF', description: 'PDF Document (.pdf)', extensions: [ 'pdf' ] },
+                        { name: 'PNG', description: 'PNG Image (.png)', extensions: [ 'png' ] },
+                        { name: 'SVG', description: 'SVG Image (.svg)', extensions: [ 'svg' ] },
+                        { name: 'EPS', description: 'EPS Image (.eps)', extensions: [ 'eps' ] }, ]
                 };
                 let result = await host.showSaveDialog(options);
                 if (result.canceled)
@@ -715,13 +715,13 @@ const ResultsPanel = Backbone.View.extend({
                 let options = {
                     title: 'Export results',
                     filters: [
-                        { name: 'PDF', extensions:  [ 'pdf' ] },
-                        { name: 'HTML', extensions: [ 'html', 'htm' ] },
+                        { name: 'PDF',  description: 'PDF Document (.pdf)',    extensions: [ 'pdf' ] },
+                        { name: 'HTML', description: 'Web Page (.html, .htm)', extensions: ['html', 'htm'] },
                     ]
                 };
 
                 if (part === '')
-                    options.filters.push({ name: 'LaTeX bundle', extensions:  [ 'zip' ] });
+                    options.filters.push({ name: 'LaTeX bundle (.zip)', extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
                 if (result.canceled)
