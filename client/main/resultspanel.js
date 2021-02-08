@@ -455,6 +455,9 @@ const ResultsPanel = Backbone.View.extend({
                         this.$el.trigger('annotationFocus');
                     }
                     break;
+                case 'analysisLostFocus':
+                    this.$el.trigger('analysisLostFocus');
+                    break;
                 case 'annotationLostFocus':
                     this._focus -= 1;
                     if (this._focus === 0) {

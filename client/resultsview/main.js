@@ -333,6 +333,13 @@ class Main {  // this is constructed at the bottom
                 erd.listenTo(this.$results[0], (element) => {
                     this._notifyResize();
                 });
+
+                $(window).on('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        if (this._focus === 0)
+                            this.mainWindow.postMessage({ type: 'analysisLostFocus' }, '*');
+                    }
+                });
             });
 
             return this.results;
