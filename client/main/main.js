@@ -326,6 +326,11 @@ $(document).ready(async() => {
         }
     });
 
+    resultsView.$el.on('analysisLostFocus', (event) => {
+        $(window).focus();
+        optionspanel.hideOptions();
+    });
+
     resultsView.$el.on('activeFormatChanged', (event, data) => {
         let annotationsTab = ribbonModel.getTab('annotation');
         annotationsTab.clearValues();
