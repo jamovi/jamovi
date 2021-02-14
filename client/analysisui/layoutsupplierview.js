@@ -104,9 +104,33 @@ const LayoutSupplierView = function(params) {
             this.$searchButton.hide();
     };
 
+    this.displayMsg = function(text, time) {
+        if (time === undefined)
+            time = 3000;
+        this.$warning.text(text);
+        this.$warning.addClass('active');
+        setTimeout(() => {
+            this.$warning.removeClass('active');
+        }, time);
+    };
+
     this.onContainerRendering = function(context) {
         this.baseLayout = new LayoutGrid();
         this.baseLayout.$el.addClass('jmv-variable-supplier-base');
+
+        this.$warning = $('<div class="msg"></div>');
+
+        this.$warning.on('mouseenter', () => {
+            if (this.$warning.hasClass('active'))
+                this.$warning.addClass('hovering');
+        });
+
+        this.$warning.on('mouseleave', () => {
+            this.$warning.removeClass('hovering');
+        });
+
+        this.baseLayout.$el.append(this.$warning);
+
         let label = this.getPropertyValue('label');
         let nextRow = 0;
         if (label !== null)
