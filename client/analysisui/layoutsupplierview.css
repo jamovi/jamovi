@@ -30,9 +30,9 @@
 }
 
 @keyframes blinkingBackground {
-	0%    { background-color: #fffbe5; }
+    0%    { background-color: #fffbe5; }
     50%   { background-color: #fff5c0; }
-	100%  { background-color: #fffbe5; }
+    100%  { background-color: #fffbe5; }
 }
 
 .silky-list-item .power-box .button-box .up {
