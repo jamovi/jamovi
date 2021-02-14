@@ -9,6 +9,32 @@
     cursor: text;
 }
 
+.silky-options-supplier-group .msg {
+    opacity: 0;
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    z-index: 300;
+    padding: 5px;
+    margin: 5px;
+    border-radius: 3px;
+    line-height: 1.5em;
+    color: #484848;
+    transition: 0.5s opacity;
+    animation: blinkingBackground 0.5s infinite;
+}
+
+.silky-options-supplier-group .msg.active, .silky-options-supplier-group .msg.hovering {
+    opacity: 1;
+}
+
+@keyframes blinkingBackground {
+    0%    { background-color: #fffbe5; }
+    50%   { background-color: #fff5c0; }
+    100%  { background-color: #fffbe5; }
+}
+
 .silky-list-item .power-box .button-box .up {
     background-image: url('../assets/filters-up-arrow.svg');
     background-position: center;
