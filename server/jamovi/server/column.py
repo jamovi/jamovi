@@ -52,6 +52,12 @@ class Column:
         self._needs_recalc = False
         self._formula_status = FormulaStatus.EMPTY
 
+        self.output_analysis_id = None
+        self.output_option_name = None
+        self.output_name = None
+        self.output_desired_column_name = None
+        self.output_assigned_column_name = None
+
     def _create_child(self):
         if self._child is None:
             self._parent._realise_column(self)
