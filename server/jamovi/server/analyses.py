@@ -5,10 +5,16 @@ from enum import Enum
 from asyncio import Future
 from copy import deepcopy
 from collections import namedtuple
+from itertools import islice
 
 from .modules import Modules
 from .options import Options
 from . import jamovi_pb2 as jcoms
+
+
+Output = namedtuple('Output', 'name title description values levels')
+OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
+AnalysisOutputs = namedtuple('Outputs', 'analysis_id outputs')
 
 
 class Analysis:
@@ -108,39 +114,49 @@ class Analysis:
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
 
-        output_data = { }
+        if self.complete:
 
-        for element in results.results.group.elements:
-            if element.HasField('outputs'):
-                name = element.name
-                column_names = self.options.get(name)
-                if isinstance(column_names, str):
-                    column_names = [ column_names ]
+            analysis_outputs = [ ]
 
-                row_nos = element.outputs.rowNos
+            for element in results.results.group.elements:
+                if element.HasField('outputs'):
 
-                for name, output in zip(column_names, element.outputs.outputs):
-                    try:
-                        last_row = row_nos[-1]
-                    except IndexError:
-                        last_row = 0
+                    option_outputs = [ ]
+                    option_name = element.name
 
-                    Output = namedtuple('Output', 'values levels')
-                    if len(output.d) > 0:
-                        values = [float('nan')] * last_row
-                        for source_row_no, dest_row_no in enumerate(row_nos):
-                            values[dest_row_no - 1] = output.d[source_row_no]
-                        output_data[name] = Output(values, None)
-                    elif len(output.i) > 0:
-                        values = [-2147483648] * last_row
-                        for source_row_no, dest_row_no in enumerate(row_nos):
-                            values[dest_row_no - 1] = output.i[source_row_no]
-                        output_data[name] = Output(values, output.levels)
+                    for output in element.outputs.outputs:
 
-                element.Clear()
+                        n_rows = max(len(output.d), len(output.i))
 
-        if output_data:
-            self.parent._notify_output_received(output_data)
+                        if element.outputs.rowNums:
+                            row_nums = element.outputs.rowNums
+                            n_rows = row_nums[n_rows - 1] + 1
+                            row_nums = islice(row_nums, 0, n_rows)
+                        else:
+                            row_nums = range(n_rows)
+
+                        if not output.incData:
+                            option_outputs.append(Output(output.name, output.title, output.description, None, None))
+                        elif len(output.d) > 0:
+                            values = [float('nan')] * n_rows
+                            for source_row_no, dest_row_no in enumerate(row_nums):
+                                values[dest_row_no] = output.d[source_row_no]
+                            option_outputs.append(Output(output.name, output.title, output.description, values, None))
+                        elif len(output.i) > 0:
+                            values = [-2147483648] * n_rows
+                            for source_row_no, dest_row_no in enumerate(row_nums):
+                                values[dest_row_no] = output.i[source_row_no]
+                            option_outputs.append(Output(output.name, output.title, output.description, values, output.levels))
+                        else:
+                            option_outputs.append(Output(output.name, output.title, output.description, [ ], None))
+
+                    analysis_outputs.append(OptionOutputs(option_name, option_outputs))
+
+                    element.Clear()  # clear, no need to send to the client
+
+            if analysis_outputs:
+                outputs = AnalysisOutputs(self.id, analysis_outputs)
+                self.parent._notify_output_received(outputs)
 
         self.changes.clear()
         self.clear_state = False
