@@ -238,16 +238,19 @@ message ResultsHtml {
 }
 
 message ResultsOutput {
-    DataSetSchema.ColumnSchema.DataType dataType = 1;
-    DataSetSchema.MeasureType measureType = 2;
-    repeated VariableLevel levels = 3;
-    repeated int32 i = 4;
-    repeated double d = 5;
+    string name = 1;
+    string title = 2;
+    string description = 3;
+    bool stale = 4;
+    bool incData = 5;
+    repeated VariableLevel levels = 6;
+    repeated int32 i = 7;
+    repeated double d = 8;
 }
 
 message ResultsOutputs {
     repeated ResultsOutput outputs = 1;
-    repeated uint32 rowNos = 2;
+    repeated uint32 rowNums = 2;
 }
 
 message ResultsElement {
