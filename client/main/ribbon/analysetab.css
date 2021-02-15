@@ -1,4 +1,10 @@
 
+.modules-menu-item {
+    position: sticky !important;
+    right: 6px;
+    background-color: inherit;
+}
+
 .jmv-ribbon-button:not(.jmv-context-menu-button) .jmv-ribbon-button-icon {
     background-image: url("../assets/analysis-other.svg");
 }

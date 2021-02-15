@@ -72,7 +72,7 @@ const AnalyseTab = function(modules) {
             }
         }
 
-        let $button = $('<div></div>');
+        let $button = $('<div class="modules-menu-item"></div>');
         let  button = new RibbonMenu($button, 'Modules', 'modules', [
             { name : 'modules', title : 'jamovi library', ns : 'app' },
             { name : 'manageMods', title : 'Manage installed', ns : 'app' },
