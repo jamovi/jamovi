@@ -99,7 +99,7 @@ const Instance = Backbone.Model.extend({
 
         }).then(() => {
 
-            return this._retrieveInfo();
+            return this._readDataset();
 
         }).then(() => {
 
@@ -128,7 +128,7 @@ const Instance = Backbone.Model.extend({
 
         return coms.send(request).then((response) => {
             progress.dismiss();
-            this._retrieveInfo();
+            this._readDataset(false);
             this._notify({
                 message: 'File imported',
                 cause: 'Import successful',
@@ -138,7 +138,7 @@ const Instance = Backbone.Model.extend({
             // we still have to retrieveInfo() on failure, because the import
             // may have failed on, say, the second data set, and the data set
             // will still have changed
-            this._retrieveInfo();
+            this._readDataset(false);
             this._notify(error);
         }, (prog) => {
             progress.set('progress', prog);
@@ -543,7 +543,7 @@ const Instance = Backbone.Model.extend({
             this._instanceId = response.instanceId;
         });
     },
-    async _retrieveInfo() {
+    async _readDataset(loadAnalyses=true) {
 
         let coms = this.attributes.coms;
 
@@ -567,39 +567,42 @@ const Instance = Backbone.Model.extend({
             this.set('blank',      info.blank);
         }
 
-        let allAnalysesReady = [ ];
+        if (loadAnalyses) {
 
-        for (let analysisPB of info.analyses) {
+            let allAnalysesReady = [ ];
 
-            let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
-            let analysis = this._analyses.create({
-                name: analysisPB.name,
-                ns: analysisPB.ns,
-                id: analysisPB.analysisId,
-                options: options,
-                results: analysisPB.results,
-                incAsText: analysisPB.incAsText,
-                references: analysisPB.references,
-                enabled: false,
-                dependsOn: analysisPB.dependsOn
-            });
-            if (analysis.results.status !== 3)
-                this._runAnalysis(analysis);
+            for (let analysisPB of info.analyses) {
 
-            allAnalysesReady.push(analysis.ready);
+                let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
+                let analysis = this._analyses.create({
+                    name: analysisPB.name,
+                    ns: analysisPB.ns,
+                    id: analysisPB.analysisId,
+                    options: options,
+                    results: analysisPB.results,
+                    incAsText: analysisPB.incAsText,
+                    references: analysisPB.references,
+                    enabled: false,
+                    dependsOn: analysisPB.dependsOn
+                });
+                if (analysis.results.status !== 3)
+                    this._runAnalysis(analysis);
 
-            // sleep to allow iframes to load, etc. so it can progressively
-            // update rather than waiting until the end
-            await new Promise((resolve) => setTimeout(resolve, 10));
-        }
+                allAnalysesReady.push(analysis.ready);
 
-        await Promise.all(allAnalysesReady);
+                // sleep to allow iframes to load, etc. so it can progressively
+                // update rather than waiting until the end
+                await new Promise((resolve) => setTimeout(resolve, 10));
+            }
 
-        for (let analysis of this._analyses) {
-            if (analysis.arbitraryCode)
-                this.set('arbitraryCodePresent', true);
-            else
-                analysis.enabled = true;
+            await Promise.all(allAnalysesReady);
+
+            for (let analysis of this._analyses) {
+                if (analysis.arbitraryCode)
+                    this.set('arbitraryCodePresent', true);
+                else
+                    analysis.enabled = true;
+            }
         }
 
         return response;
