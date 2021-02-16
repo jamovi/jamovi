@@ -479,6 +479,9 @@ FormatDef.output = new Format ({
     default: null,
 
     toString: function(raw) {
+        if (raw === null)
+            return 'false';
+
         return raw.value.toString();
     },
 
@@ -487,7 +490,7 @@ FormatDef.output = new Format ({
     },
 
     isValid: function(raw) {
-        return typeof(raw) === 'object' && typeof(raw.value) === 'boolean';
+        return raw === null || (typeof(raw) === 'object' && typeof(raw.value) === 'boolean');
     },
 
     isEmpty: function(raw) {
@@ -495,6 +498,9 @@ FormatDef.output = new Format ({
     },
 
     isEqual: function(raw1, raw2) {
+        if (raw1 === null && raw2 === null)
+            return true;
+            
         if (raw1.value === raw2.value) {
             if (raw1.vars.length === raw2.vars.length) {
                 for (let i = 0; i < raw1.vars.length; i++) {
