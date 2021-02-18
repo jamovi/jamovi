@@ -363,13 +363,10 @@ class Instance:
                         index = 0
                         n_values = len(output.values)
                         for row_no in range(column.row_count):
-                            if not column.is_row_filtered(row_no):
-                                if index < n_values:
-                                    value = output.values[index]
-                                    column.set_value(row_no, value)
-                                    index += 1
-                                else:
-                                    column.clear_at(row_no)
+                            if index < n_values:
+                                value = output.values[index]
+                                column.set_value(row_no, value)
+                                index += 1
                             else:
                                 column.clear_at(row_no)
 
