@@ -2907,6 +2907,7 @@ class Instance:
         column_schema.trimLevels = column.trim_levels
         column_schema.transform = column.transform
         column_schema.parentId = column.parent_id
+        column_schema.outputAnalysisId = column.output_analysis_id
 
         column_schema.hasLevels = True
 
