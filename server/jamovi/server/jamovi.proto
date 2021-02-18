@@ -517,7 +517,7 @@ message DataSetSchema {
         repeated ColumnCellRange editedCellRanges = 22;
         bool dataChanged = 24;
         repeated string missingValues = 25;
-
+        int32 outputAnalysisId = 26;
     }
 
     message TransformSchema {

@@ -1091,6 +1091,7 @@ const DataSetModel = Backbone.Model.extend({
         column.transform = columnPB.transform;
         column.parentId = columnPB.parentId;
         column.missingValues = columnPB.missingValues;
+        column.outputAnalysisId = columnPB.outputAnalysisId;
 
         let editedCellRanges = new Array(columnPB.editedCellRanges.length);
         for (let i = 0; i < editedCellRanges.length; i++) {
