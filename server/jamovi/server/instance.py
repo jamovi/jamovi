@@ -342,17 +342,18 @@ class Instance:
                                 column.output_desired_column_name = desired_name
 
                     if output.values is None:
-                        pass
+                        if output.measure_type != column.measure_type:
+                            column.clear()
+                            column.change(measure_type=output.measure_type)
                     elif len(output.values) == 0:
                         column.clear()
+                        column.change(measure_type=output.measure_type)
                     elif isinstance(output.values[0], int):
-                        if len(output.levels) > 0:
-                            column.clear()
-                            column.change(data_type=DataType.INTEGER, measure_type=MeasureType.NOMINAL)
+                        column.clear()
+                        column.change(data_type=DataType.INTEGER, measure_type=output.measure_type)
+                        if output.measure_type is not MeasureType.CONTINUOUS:
                             for level in output.levels:
                                 column.append_level(level.value, level.label)
-                        else:
-                            column.change(data_type=DataType.INTEGER)
                     elif isinstance(output.values[0], float):
                         column.change(data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS)
                     else:
@@ -363,13 +364,10 @@ class Instance:
                         index = 0
                         n_values = len(output.values)
                         for row_no in range(column.row_count):
-                            if not column.is_row_filtered(row_no):
-                                if index < n_values:
-                                    value = output.values[index]
-                                    column.set_value(row_no, value)
-                                    index += 1
-                                else:
-                                    column.clear_at(row_no)
+                            if index < n_values:
+                                value = output.values[index]
+                                column.set_value(row_no, value)
+                                index += 1
                             else:
                                 column.clear_at(row_no)
 

@@ -6,6 +6,8 @@ from inspect import signature
 from inspect import Parameter
 from math import isnan
 
+from jamovi.core import ColumnType
+
 from . import functions
 
 
@@ -115,6 +117,10 @@ class Checker(NodeVisitor):
             if self._column.is_filter:
                 if not depcy.is_filter and depcy.uses_column_formula:
                     raise ValueError("Filters may not reference columns using 'V' or column functions")
+
+            if self._column.is_filter:
+                if depcy.column_type is ColumnType.OUTPUT:
+                    raise ValueError('Filters may not reference output variables')
 
             depcies = depcy.dependencies
             depcies_names = map(lambda x: x.name, depcies)
