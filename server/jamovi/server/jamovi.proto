@@ -241,11 +241,12 @@ message ResultsOutput {
     string name = 1;
     string title = 2;
     string description = 3;
-    bool stale = 4;
-    bool incData = 5;
-    repeated VariableLevel levels = 6;
-    repeated int32 i = 7;
-    repeated double d = 8;
+    DataSetSchema.MeasureType measureType = 4;
+    bool stale = 5;
+    bool incData = 6;
+    repeated VariableLevel levels = 7;
+    repeated int32 i = 8;
+    repeated double d = 9;
 }
 
 message ResultsOutputs {
