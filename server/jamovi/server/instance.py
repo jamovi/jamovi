@@ -342,17 +342,18 @@ class Instance:
                                 column.output_desired_column_name = desired_name
 
                     if output.values is None:
-                        pass
+                        if output.measure_type != column.measure_type:
+                            column.clear()
+                            column.change(measure_type=output.measure_type)
                     elif len(output.values) == 0:
                         column.clear()
+                        column.change(measure_type=output.measure_type)
                     elif isinstance(output.values[0], int):
-                        if len(output.levels) > 0:
-                            column.clear()
-                            column.change(data_type=DataType.INTEGER, measure_type=MeasureType.NOMINAL)
+                        column.clear()
+                        column.change(data_type=DataType.INTEGER, measure_type=output.measure_type)
+                        if output.measure_type is not MeasureType.CONTINUOUS:
                             for level in output.levels:
                                 column.append_level(level.value, level.label)
-                        else:
-                            column.change(data_type=DataType.INTEGER)
                     elif isinstance(output.values[0], float):
                         column.change(data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS)
                     else:

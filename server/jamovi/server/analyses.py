@@ -11,8 +11,10 @@ from .modules import Modules
 from .options import Options
 from . import jamovi_pb2 as jcoms
 
+from jamovi.core import MeasureType
 
-Output = namedtuple('Output', 'name title description values levels')
+
+Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
 AnalysisOutputs = namedtuple('Outputs', 'analysis_id outputs')
 
@@ -135,20 +137,32 @@ class Analysis:
                         else:
                             row_nums = range(n_rows)
 
+                        values = None
+                        levels = None
+                        measure_type = MeasureType(output.measureType)
+
                         if not output.incData:
-                            option_outputs.append(Output(output.name, output.title, output.description, None, None))
+                            pass
                         elif len(output.d) > 0:
                             values = [float('nan')] * n_rows
                             for source_row_no, dest_row_no in enumerate(row_nums):
                                 values[dest_row_no] = output.d[source_row_no]
-                            option_outputs.append(Output(output.name, output.title, output.description, values, None))
+                            measure_type = MeasureType.CONTINUOUS
                         elif len(output.i) > 0:
+                            levels = output.levels
                             values = [-2147483648] * n_rows
                             for source_row_no, dest_row_no in enumerate(row_nums):
                                 values[dest_row_no] = output.i[source_row_no]
-                            option_outputs.append(Output(output.name, output.title, output.description, values, output.levels))
                         else:
-                            option_outputs.append(Output(output.name, output.title, output.description, [ ], None))
+                            values = [ ]
+
+                        option_outputs.append(Output(
+                            output.name,
+                            output.title,
+                            output.description,
+                            measure_type,
+                            values,
+                            levels))
 
                     analysis_outputs.append(OptionOutputs(option_name, option_outputs))
 
