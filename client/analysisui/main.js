@@ -102,7 +102,9 @@ var requestLocalColumnData = function(data) {
 var dataResources = { columns: [] };
 
 
-const Analysis = function(def, jamoviVersion) {
+const Analysis = function(def, jamoviVersion, id) {
+
+    this.id = id;
 
     eval(def);
 
@@ -194,7 +196,7 @@ $(document).ready(function() {
 });
 
 
-function loadAnalysis(def, jamoviVersion) {
+function loadAnalysis(def, jamoviVersion, id) {
 
     window.jamoviVersion = jamoviVersion;
 
@@ -213,7 +215,7 @@ function loadAnalysis(def, jamoviVersion) {
 
             dataResources = { columns: data.columns };
 
-            analysis = new Analysis(def, jamoviVersion);
+            analysis = new Analysis(def, jamoviVersion, id);
 
             let title = analysis.getTitle();
             $title.empty();
@@ -268,6 +270,8 @@ function setOptionsValues(data) {
         }, 0);
         return;
     }
+
+    analysis.id = data.id;
     let titleSet = false;
     var model = analysis.model;
     model.options.beginEdit();
