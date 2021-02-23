@@ -40,7 +40,7 @@ const LayoutVariablesView = function(params) {
     };
 
     this.requestMeasureType = function(columnId, item) {
-        let promise = this.requestData('column', { columnId: columnId, properties: [ 'measureType', 'id', 'hidden', 'columnType', 'dataType' ] });
+        let promise = this.requestData('column', { columnId: columnId, properties: [ 'measureType', 'id', 'hidden', 'columnType', 'dataType', 'outputAnalysisId' ] });
         promise.then(rData => {
             if (rData.measureType === undefined)
                 rData.measureType = 'none';
@@ -50,6 +50,7 @@ const LayoutVariablesView = function(params) {
             item.properties.columnId = rData.id;
             item.properties.hidden = rData.hidden;
             item.properties.columnType = rData.columnType;
+            item.properties.outputAnalysisId = rData.outputAnalysisId;
           });
         return promise;
     };
@@ -102,7 +103,11 @@ const LayoutVariablesView = function(params) {
                 if (item.properties.hidden || item.properties.columnType === 'filter')
                     return;
 
-                if (suggested && this._contains(column.measureType, suggested)) {
+                if (column.outputAnalysisId === this.dataSourceId()) {
+                    items.push(item);
+                    item.properties.permitted = false;
+                }
+                else if (suggested && this._contains(column.measureType, suggested)) {
                     items.splice(suggestedCount, 0, item);
                     suggestedCount += 1;
                 }
