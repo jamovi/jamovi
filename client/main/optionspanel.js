@@ -79,7 +79,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 for (let i = 0; i < columns.length; i++) {
                     if (columns[i].columnType === 'none')
                         continue;
-                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType, columnType:  columns[i].columnType });
+                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType, columnType:  columns[i].columnType, outputAnalysisId: columns[i].outputAnalysisId });
                 }
                 data.columns = columnData;
             }
@@ -163,7 +163,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             this.jamoviVersion = version;
         })
     ]).then(() => {
-        return this.frameComms.send("setOptionsDefinition", this.def, this.jamoviVersion);
+        return this.frameComms.send("setOptionsDefinition", this.def, this.jamoviVersion, analysis.id);
     });
 
     this.abort = function() {

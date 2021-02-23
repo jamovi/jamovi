@@ -248,7 +248,8 @@ const TargetListSupport = function(supplier) {
 
         let testedItems = [];
         for (let i = 0; i < data.items.length; i++) {
-            if (intoSelf || this.testValue(data.items[i])) {
+            let permitted = data.items[i].properties === undefined || data.items[i].properties.permitted === undefined || data.items[i].properties.permitted === true;
+            if (intoSelf || (this.testValue(data.items[i]) && permitted)) {
                 testedItems.push(data.items[i]);
             }
         }
