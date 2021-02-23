@@ -16,6 +16,10 @@ var RequestDataSupport = function() {
     this.requestAction = function(requestId, requestData) {
         return this._requestedDataSource.requestAction(requestId, requestData);
     };
+
+    this.dataSourceId = function() {
+        return this._requestedDataSource.id;
+    };
 };
 
 SuperClass.create(RequestDataSupport);
