@@ -446,6 +446,7 @@ ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)
     scratch->levelsCapacity = levelsCapacity;*/
 
     scratch->name = old->name;
+    scratch->description = old->description;
     scratch->importName = old->importName;
     scratch->columnType = old->columnType;
     scratch->autoMeasure = old->autoMeasure;
