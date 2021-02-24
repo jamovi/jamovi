@@ -7,6 +7,10 @@ class FileReadError(FileIOError):
     pass
 
 
+class FileWriteError(FileIOError):
+    pass
+
+
 class FileCorruptError(FileReadError):
     def __init__(self, message='File is corrupt'):
         super().__init__(message)
