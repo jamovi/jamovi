@@ -216,7 +216,9 @@ class Parser(ReadStatParser):
             if isinstance(high, str):
                 high = "'{}'".format(high)
 
-            if low == high:
+            if low is None and high is None:
+                pass
+            elif low == high:
                 missings.append('== {}'.format(low))
             elif isinstance(low, Number):  # if it's a range
                 # ranges are weird, and we don't understand why people would

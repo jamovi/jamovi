@@ -9,6 +9,9 @@ from collections import OrderedDict
 
 from jamovi.server.settings import Settings
 
+from .exceptions import FileReadError
+from .exceptions import FileWriteError
+
 from . import omv
 from . import blank
 
@@ -17,6 +20,9 @@ _writers = None
 
 settings = Settings.retrieve('main')
 # settings.specify_default('embedCond', '< 10 Mb')
+
+
+__all__ = (FileReadError, FileWriteError)  # prevent flake whining F401
 
 
 def _init():
