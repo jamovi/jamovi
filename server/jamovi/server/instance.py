@@ -896,6 +896,8 @@ class Instance:
                         i = annotation_index + 1
 
             except Exception as e:
+                if not isinstance(e, formatio.FileReadError):
+                    log.exception(e)
                 self._data.dataset = None
                 if self._mm:
                     self._mm.close()
