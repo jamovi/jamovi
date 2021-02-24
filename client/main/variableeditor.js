@@ -96,7 +96,17 @@ const VariableEditor = Backbone.View.extend({
             let ids = this.model.attributes.editingVar;
             for (let changes of event.changes) {
                 if (ids.includes(changes.id)) {
-                    if (changes.columnTypeChanged) {
+                    if (changes.deleted) {
+                        this.model.set('editingVar', [-1], { silent: true });
+                        let newColumn = this.model.getColumn(changes.dIndex, true);
+                        let index = ids.indexOf(changes.id);
+                        ids.splice(index, 1);
+                        if (newColumn)
+                            ids.splice(index, 0, newColumn.id);
+                        this.model.set('editingVar', ids);
+                        this._update();
+                    }
+                    else if (changes.columnTypeChanged) {
                         this.model.set('editingVar', [-1], { silent: true });
                         this.model.set('editingVar', ids);
                         this._update();
