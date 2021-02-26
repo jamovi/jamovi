@@ -80,6 +80,14 @@ def ABS(index, value: num):
 
 
 @row_wise
+@returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
+def ROUND(index, value: num, digits: int = 0):
+    if is_missing(value):
+        return(value)
+    return round(value, digits)
+
+
+@row_wise
 def EXP(index, value: float):
     return math.exp(value)
 
