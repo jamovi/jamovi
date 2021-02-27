@@ -72,6 +72,7 @@ class Analysis:
         self.depends_on = 0
 
         self._ops = [ ]
+        self._outputs_synced = { }
 
     @property
     def has_results(self):
@@ -92,7 +93,15 @@ class Analysis:
         wasnt_but_now_is_enabled = (self.enabled is False) and enabled
         if enabled:
             self.enabled = True
+
         non_passive_changes = self.options.set(options)
+
+        for output_name, keys_synced in self._outputs_synced.items():
+            synced = list(filter(lambda k: keys_synced[k], keys_synced))
+            value = self.options.get_value(output_name, { })
+            value['synced'] = synced
+            self.options.set_value(output_name, value)
+
         if not non_passive_changes and len(changes) == 0 and not wasnt_but_now_is_enabled:
             self.results.options.CopyFrom(self.options.as_pb())
             return
@@ -126,6 +135,15 @@ class Analysis:
                     option_outputs = [ ]
                     option_name = element.name
 
+                    if option_name in self._outputs_synced:
+                        keys_synced = self._outputs_synced[option_name]
+                        keys = map(lambda x: x.name, element.outputs.outputs)
+                        keys_synced = { k : keys_synced.get(k, False) for k in keys }
+                    else:
+                        keys_synced = { }
+
+                    self._outputs_synced[option_name] = keys_synced
+
                     for output in element.outputs.outputs:
 
                         n_rows = max(len(output.d), len(output.i))
@@ -141,26 +159,31 @@ class Analysis:
                         levels = None
                         measure_type = MeasureType(output.measureType)
 
-                        if not output.incData:
-                            pass
-                        elif len(output.d) > 0:
-                            values = [float('nan')] * n_rows
-                            for source_row_no, dest_row_no in enumerate(row_nums):
-                                values[dest_row_no] = output.d[source_row_no]
-                            measure_type = MeasureType.CONTINUOUS
-                            # clear these, no need to send to client or store
-                            output.ClearField('d')
-                            output.incData = False
-                        elif len(output.i) > 0:
-                            levels = output.levels
-                            values = [-2147483648] * n_rows
-                            for source_row_no, dest_row_no in enumerate(row_nums):
-                                values[dest_row_no] = output.i[source_row_no]
-                            # clear these, no need to send to client or store
-                            output.ClearField('i')
-                            output.incData = False
+                        if output.incData:
+
+                            keys_synced[output.name] = True
+
+                            if len(output.d) > 0:
+                                values = [float('nan')] * n_rows
+                                for source_row_no, dest_row_no in enumerate(row_nums):
+                                    values[dest_row_no] = output.d[source_row_no]
+                                measure_type = MeasureType.CONTINUOUS
+                                # clear these, no need to send to client or store
+                                output.ClearField('d')
+                                output.incData = False
+                            elif len(output.i) > 0:
+                                levels = output.levels
+                                values = [-2147483648] * n_rows
+                                for source_row_no, dest_row_no in enumerate(row_nums):
+                                    values[dest_row_no] = output.i[source_row_no]
+                                # clear these, no need to send to client or store
+                                output.ClearField('i')
+                                output.incData = False
+                            else:
+                                values = [ ]
                         else:
-                            values = [ ]
+                            if output.stale:
+                                keys_synced[output.name] = False
 
                         option_outputs.append(Output(
                             output.name,
