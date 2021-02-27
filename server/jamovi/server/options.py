@@ -3,6 +3,11 @@ from .jamovi_pb2 import AnalysisOption
 from .jamovi_pb2 import AnalysisOptions
 
 
+NONE = AnalysisOption.Other.Value('NONE')
+TRUE = AnalysisOption.Other.Value('TRUE')
+FALSE = AnalysisOption.Other.Value('FALSE')
+
+
 class Option:
     def __init__(self):
         self.name = None
@@ -58,6 +63,8 @@ class Options:
                     default = first_option
             elif typ == 'NMXList':
                 default = [ ]
+            elif typ == 'Output':
+                default = { 'value': False, 'vars': [ ], 'synced': [ ] }
             else:
                 default = None
 
@@ -70,9 +77,9 @@ class Options:
     @staticmethod
     def _populate_pb(dest_pb, value):
         if value is True:
-            dest_pb.o = AnalysisOption.Other.Value('TRUE')
+            dest_pb.o = TRUE
         elif value is False:
-            dest_pb.o = AnalysisOption.Other.Value('FALSE')
+            dest_pb.o = FALSE
         elif type(value) == str:
             dest_pb.s = value
         elif type(value) == int:
@@ -80,18 +87,20 @@ class Options:
         elif type(value) == float:
             dest_pb.d = value
         elif type(value) == list:
+            dest_pb.ClearField('c')
             dest_pb.c.hasNames = False
             for v in value:
                 child_pb = dest_pb.c.options.add()
                 Options._populate_pb(child_pb, v)
         elif type(value) == dict:
+            dest_pb.ClearField('c')
             dest_pb.c.hasNames = True
             for k, v in value.items():
                 dest_pb.c.names.append(k)
                 child_pb = dest_pb.c.options.add()
                 Options._populate_pb(child_pb, v)
         else:
-            dest_pb.o = AnalysisOption.Other.Value('NONE')
+            dest_pb.o = NONE
 
     def __init__(self):
         self._options = { }
@@ -109,26 +118,52 @@ class Options:
             self._populate_pb(opt_pb, default)
 
     def get(self, name):
-        pb = None
+        return self.get_value(name)
+
+    def get_value(self, name, otherwise=None):
         for i, opt_name in enumerate(self._pb.names):
             if opt_name == name:
                 pb = self._pb.options[i]
                 break
         else:
-            raise KeyError
+            return otherwise
 
-        # it's possible that this function doesn't handle all option value types
+        return self._read_value(pb)
 
+    def _read_value(self, pb):
         if pb.HasField('s'):
             return pb.s
         elif pb.HasField('c'):
-            values = map(lambda x: x.s, pb.c.options)
+            values = map(self._read_value, pb.c.options)
             if pb.c.hasNames:
                 return dict(zip(pb.c.names, values))
             else:
                 return list(values)
+        elif pb.HasField('o'):
+            if pb.o == TRUE:
+                return True
+            elif pb.o == FALSE:
+                return False
+            else:
+                return None
+        elif pb.HasField('i'):
+            return pb.i
+        elif pb.HasField('d'):
+            return pb.d
         else:
             return None
+
+    def set_value(self, name, value):
+
+        for i, opt_name in enumerate(self._pb.names):
+            if opt_name == name:
+                option_pb = self._pb.options[i]
+                break
+        else:
+            option_pb = self._pb.options.add()
+            self._pb.names.append(name)
+
+        Options._populate_pb(option_pb, value)
 
     def set(self, pb):
         changes = False
