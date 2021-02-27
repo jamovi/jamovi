@@ -528,28 +528,38 @@ class Column:
 
     @property
     def needs_parse(self):
-        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
-            return False
-        else:
+        if (self.column_type == ColumnType.COMPUTED
+                or self.column_type == ColumnType.RECODED
+                or self.column_type == ColumnType.FILTER):
             return self._needs_parse
+        else:
+            return False
 
     @property
     def needs_recalc(self):
-        if self.column_type == ColumnType.DATA or self.column_type == ColumnType.NONE:
-            return False
-        else:
+        if (self.column_type == ColumnType.COMPUTED
+                or self.column_type == ColumnType.RECODED
+                or self.column_type == ColumnType.FILTER):
             return self._needs_recalc
+        else:
+            return False
 
     def set_needs_parse(self):
         for parent in self._node_parents:
             parent.set_needs_parse()
-        if self.column_type != ColumnType.DATA and self.column_type != ColumnType.NONE:
+
+        if (self.column_type == ColumnType.COMPUTED
+                or self.column_type == ColumnType.RECODED
+                or self.column_type == ColumnType.FILTER):
             self._needs_parse = True
 
     def set_needs_recalc(self):
         for parent in self._node_parents:
             parent.set_needs_recalc()
-        if self.column_type != ColumnType.DATA and self.column_type != ColumnType.NONE:
+
+        if (self.column_type == ColumnType.COMPUTED
+                or self.column_type == ColumnType.RECODED
+                or self.column_type == ColumnType.FILTER):
             self._needs_recalc = True
 
     def recalc(self, start=None, end=None):
