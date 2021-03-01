@@ -421,15 +421,12 @@ class Call(ast.Call, Node):
                 args = list(self.args)
                 for i in range(len(args)):
                     arg = args[i]
-                    if i != 1:
+                    if i == 1 and self._function.meta.has_group_by:
+                        group_by = arg.fvalues(row_count, filt)
+                    else:
                         arg_type_i = min(i, len(self._arg_types) - 1)
                         arg_type = self._arg_types[arg_type_i]
                         args[i] = FValueConverter(arg.fvalues(row_count, filt), arg_type)
-                    else:
-                        # at this stage, all V functions take a single argument
-                        # so the second is always the group_by ... this could
-                        # change in the future, and this will need updating
-                        group_by = arg.fvalues(row_count, filt)
                 if group_by is not None:
                     args.pop(1)
                 kwargs = {}
