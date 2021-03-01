@@ -7,6 +7,7 @@ class FuncMeta:
     def __init__(self):
         self.is_row_wise = False
         self.is_column_wise = False
+        self.has_group_by = False
         self._data_type = DataType.DECIMAL
         self._measure_type = MeasureType.CONTINUOUS
         self._returns = [ ]
@@ -86,4 +87,13 @@ def column_wise(func):
     meta = _meta(func)
     meta.is_row_wise = False
     meta.is_column_wise = True
+    meta.has_group_by = True
+    return func
+
+# column function decorator
+def column_wise_no_group_by(func):
+    meta = _meta(func)
+    meta.is_row_wise = False
+    meta.is_column_wise = True
+    meta.has_group_by = False
     return func
