@@ -144,6 +144,8 @@ function allFunctions($functionsContent) {
     descriptions.OFFSET = { label: 'OFFSET( <i>variable, integer</i> )', content: 'Offsets the values up or down.' };
     $functionsContent.append($('<div class="item" data-name="ROW">ROW</div>'));
     descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: 'Returns the row numbers.' };
+    $functionsContent.append($('<div class="item" data-name="SAMPLE">SAMPLE</div>'));
+    descriptions.SAMPLE = { label: 'SAMPLE( <i>variable, n, otherwise=NA</i> )', content: 'Draws a sample of n from the variable. i.e. SAMPLE(var, 20), i.e. SAMPLE(1, 20), i.e. SAMPLE(\'training\', 20, \'test\')' };
     $functionsContent.append($('<div class="item" data-name="VROWS">VROWS</div>'));
     descriptions.VROWS = { label: 'VROWS( <i>variable</i>, group_by=0 )', content: 'Returns the number of rows of a variable.' };
 

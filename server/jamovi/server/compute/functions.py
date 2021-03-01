@@ -16,6 +16,7 @@ from jamovi.server.compute import is_equal
 
 from .funcmeta import row_wise
 from .funcmeta import column_wise
+from .funcmeta import column_wise_no_group_by
 from .funcmeta import returns
 from .funcmeta import levels
 
@@ -415,6 +416,45 @@ def RANK(var: float):
         if math.isnan(v):
             ranks[i] = NaN
     return ranks
+
+
+@column_wise_no_group_by
+@returns(DataType.DECIMAL, MeasureType.CONTINUOUS, (0, 2))
+def SAMPLE(v, n: int, otherwise = None):
+    v = list(v)
+    v_len = len(v)
+    if v_len == 0:
+        return v
+
+    n = n.__iter__().__next__()
+    if n >= v_len:
+        return v
+
+    invert = False
+    if (v_len - n < n):
+        invert = True
+        n = v_len - n
+
+    sample = [False] * v_len
+    c = 0
+    while True:
+        if c == n:
+            break
+        index = random.randrange(v_len)
+        if not sample[index]:
+            sample[index] = True
+            c += 1
+
+    if otherwise:
+        for i, o in enumerate(otherwise):
+            if sample[i] == invert:
+                v[i] = o
+    else:
+        for i in range(v_len):
+            if sample[i] == invert:
+                v[i] = NaN
+
+    return v
 
 
 _RECODE_NOM = RECODE
