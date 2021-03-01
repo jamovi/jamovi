@@ -1856,7 +1856,7 @@ const TableView = SilkyView.extend({
         return this._selectionTransitionPromise;
     },
     _isColumnEditable(column) {
-        return ! (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'filter');
+        return (column.columnType === 'data');
     },
     _beginEditing(ch) {
 
