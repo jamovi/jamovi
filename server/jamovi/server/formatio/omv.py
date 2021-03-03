@@ -10,6 +10,9 @@ import os
 import os.path
 import re
 
+from .exceptions import FileCorruptError
+from .exceptions import FileFormatNotSupportedError
+
 from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
@@ -25,7 +28,14 @@ def write(data, path, prog_cb, html=None, is_template=False):
         content.write('Data-Archive-Version: 1.0.2\n')
         content.write('jamovi-Archive-Version: 9.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
-        zip.writestr('META-INF/MANIFEST.MF', bytes(content.getvalue(), 'utf-8'), zipfile.ZIP_DEFLATED)
+
+        byts = bytes(content.getvalue(), 'utf-8')
+
+        # this causes problems with emails
+        zip.writestr('META-INF/MANIFEST.MF', byts, zipfile.ZIP_DEFLATED)
+
+        # so we'll move to this
+        zip.writestr('meta', byts, zipfile.ZIP_DEFLATED)
 
         if html is not None:
             zip.writestr('index.html', html)
@@ -272,17 +282,26 @@ def replace_single_equals(formula):
 def read(data, path, prog_cb):
 
     with ZipFile(path, 'r') as zip:
-        manifest = zip.read('META-INF/MANIFEST.MF').decode('utf-8')
+
+        try:
+            manifest = zip.read('meta')
+            manifest = manifest.decode('utf-8')
+        except Exception:
+            try:
+                manifest = zip.read('META-INF/MANIFEST.MF')
+                manifest = manifest.decode('utf-8')
+            except Exception:
+                raise FileCorruptError('File is corrupt (manifest is corrupt or missing)')
 
         regex = r'^jamovi-Archive-Version: ?([0-9]+)\.([0-9]+) ?$'
         jav   = re.search(regex, manifest, re.MULTILINE)
 
         if not jav:
-            raise Exception('File is corrupt (no JAV)')
+            raise FileCorruptError('File is corrupt (manifest is corrupt)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
         if jav[0] > 9:
-            raise Exception('A newer version of jamovi is required')
+            raise FileFormatNotSupportedError('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
         metadata = json.loads(meta_content)
