@@ -26,7 +26,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-        content.write('jamovi-Archive-Version: 9.0\n')
+        content.write('jamovi-Archive-Version: 10.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
 
         byts = bytes(content.getvalue(), 'utf-8')
@@ -300,7 +300,7 @@ def read(data, path, prog_cb):
             raise FileCorruptError('File is corrupt (manifest is corrupt)')
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 9:
+        if jav[0] > 10:
             raise FileFormatNotSupportedError('A newer version of jamovi is required')
 
         meta_content = zip.read('metadata.json').decode('utf-8')
