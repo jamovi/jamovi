@@ -67,3 +67,15 @@
 .jmv-context-menu-button[data-icon=appendrecoded] > .jmv-ribbon-button-icon {
     background-image: url('../assets/menu-transformed-append.svg');
 }
+
+.jmv-context-menu-button[data-icon=datavar] > .jmv-ribbon-button-icon {
+    background-image: url(../assets/variable-nominal.svg);
+}
+
+.jmv-context-menu-button[data-icon=compvar] > .jmv-ribbon-button-icon {
+    background-image: url(../assets/variable-computed.svg)
+}
+
+.jmv-context-menu-button[data-icon=transvar] > .jmv-ribbon-button-icon {
+    background-image: url(../assets/menu-data-transform.svg);
+}

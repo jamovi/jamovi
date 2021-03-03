@@ -31,9 +31,9 @@ const DataSetModel = Backbone.Model.extend({
         return c;
     },
     visibleRealColumnCount() {
-        let vCount = this.get('vColumnCount');
-        let tCount = this.get('tColumnCount');
-        let rCount = this.get('columnCount');
+        let vCount = this.get('vColumnCount');  // visible columns (including virtual columns)
+        let tCount = this.get('tColumnCount');  // total columns (including virtual columns)
+        let rCount = this.get('columnCount');   // real columns (excluding virtual columns)
 
         return vCount - (tCount - rCount);
     },
@@ -1518,7 +1518,7 @@ const DataSetViewModel = DataSetModel.extend({
                 rowNums.push(null);
             }
 
-            this.readCells({ left : innerLeft, right : innerRight, top : viewport.bottom, bottom : nv.bottom });
+            this.readCells({ left : innerLeft, right : innerRight, top : viewport.bottom === -1 ? 0 : viewport.bottom, bottom : nv.bottom });
         }
 
         this.attributes.viewport = nv;

@@ -76,12 +76,16 @@ const ContextMenu = function() { // this is constructed at the bottom
         this.show(ContextMenus.createFilterRowMenuItems(), x, y);
     };
 
-    this.showVariableMenu = function(x, y, plural) {
-        this.show(ContextMenus.createVariableMenuItems(plural), x, y);
+    this.showVariableMenu = function(x, y, plural, noData) {
+        this.show(ContextMenus.createVariableMenuItems(plural, noData), x, y);
     };
 
-    this.showFilterMenu = function(x, y) {
-        this.show(ContextMenus.createFilterMenuItems(), x, y);
+    this.showAppendVariableMenu = function(x, y) {
+        this.show(ContextMenus.createAppendVariableMenuItems(), x, y);
+    };
+
+    this.showFilterMenu = function(x, y, noData) {
+        this.show(ContextMenus.createFilterMenuItems(noData), x, y);
     };
 
     this.showResultsMenu = function(entries, x, y) {

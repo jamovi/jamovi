@@ -81,7 +81,7 @@ const VariableEditor = Backbone.View.extend({
         };
 
         this._previousKeyboardContext = keyboardJS.getContext();
-        keyboardJS.setContext('spreadsheet');
+        keyboardJS.setContext('controller');
         keyboardJS.bind('', event => this._keyboardListener(event));
         keyboardJS.setContext(this._previousKeyboardContext);
 
@@ -258,7 +258,7 @@ const VariableEditor = Backbone.View.extend({
             this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
 
             this._previousKeyboardContext = keyboardJS.getContext();
-            keyboardJS.setContext('spreadsheet');
+            keyboardJS.setContext('controller');
 
             if (prevIds !== null && nowIds !== null) {
                 if ((this.editorModel.get('columnType') === 'filter' && this.commonColumn.columnType === 'filter') ||
