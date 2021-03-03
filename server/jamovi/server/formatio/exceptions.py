@@ -10,3 +10,8 @@ class FileReadError(FileIOError):
 class FileCorruptError(FileReadError):
     def __init__(self, message='File is corrupt'):
         super().__init__(message)
+
+
+class FileFormatNotSupportedError(FileReadError):
+    def __init__(self, message='File format is not supported'):
+        super().__init__(message)
