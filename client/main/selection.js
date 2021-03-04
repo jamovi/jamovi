@@ -26,21 +26,21 @@ class Selection {
         this.columnPos = 0;
         this._calcKey = '';
 
-        this.includeHidden = false;
+        this.hiddenIncluded = false;
     }
 
-    getRange(selection, includeHidden) {
+    getRange(selection, hiddenIncluded) {
 
-        if (includeHidden === undefined)
-            includeHidden = this.includeHidden;
+        if (hiddenIncluded === undefined)
+            hiddenIncluded = this.hiddenIncluded;
 
         if (selection === undefined)
             selection = this;
 
-        if (this.includeHidden !== includeHidden)
+        if (this.hiddenIncluded !== hiddenIncluded)
             this.legitimise(selection, true);
 
-        if (includeHidden)
+        if (hiddenIncluded)
             return { start: selection.columnStart, end: selection.columnEnd, focus: selection.columnFocus, pos: selection.columnPos };
         else
             return { start: selection.left, end: selection.right, focus: selection.colFocus, pos: selection.colNo };
@@ -50,18 +50,21 @@ class Selection {
         if (selection === undefined)
             selection = this;
 
-        if (this.includeHidden)
+        if (this.hiddenIncluded)
             return { start: selection.columnStart, end: selection.columnEnd, focus: selection.columnFocus, pos: selection.columnPos };
         else
             return { start: selection.left, end: selection.right, focus: selection.colFocus, pos: selection.colNo };
     };
 
-    applyKey(selection) {
-        selection._calcKey = this.compileKey(selection);
+    applyKey(selection, syncHidden) {
+        selection._calcKey = this.compileKey(selection, syncHidden);
     };
 
-    compileKey(selection) {
-        if (this.includeHidden)
+    compileKey(selection, syncHidden) {
+        if (syncHidden === undefined)
+            syncHidden = ! this.hiddenIncluded;
+
+        if (! syncHidden)
             return `${ selection.columnStart } : ${ selection.columnEnd }  : ${ selection.columnFocus }  : ${ selection.columnPos } : true`;
         else
             return `${ selection.left } : ${ selection.right } : ${ selection.colFocus } : ${ selection.colNo } : false`;
@@ -71,10 +74,16 @@ class Selection {
         if (selection === undefined)
             selection = this;
 
-        let key = this.compileKey(selection);
+        let syncHidden = ! this.hiddenIncluded;
+        if (selection.columnStart === undefined || selection.columnEnd === undefined)
+            syncHidden = true;
+        else if (selection.left === undefined || selection.right === undefined)
+            syncHidden = false;
+
+        let key = this.compileKey(selection, syncHidden);
         if (key !== selection._calcKey) {
             if (sync) {
-                if (this.includeHidden) {
+                if (! syncHidden) {
                     let range = this.createRange(selection.columnStart, selection.columnEnd, selection.columnPos, selection.columnFocus);
                     selection.left =  range.left;
                     selection.right = range.right;
@@ -209,7 +218,7 @@ class Selection {
             columnFocus: focus
         }
 
-        newSelection._calcKey = this.compileKey(newSelection);
+        newSelection._calcKey = this.compileKey(newSelection, false);
 
         if (focus) {
             newSelection.colFocus = left;
@@ -275,7 +284,7 @@ class Selection {
     }
 
     setSelection(rowNo, colNo, clearSelectionList) {
-        if (this.includeHidden) {
+        if (this.hiddenIncluded) {
             let selection = this.createRange(colNo, colNo, colNo, colNo);
             selection.rowNo = rowNo;
             selection.top = rowNo;
@@ -534,14 +543,14 @@ class Selection {
 
         let range = this._getRange(this);
         for (let c = range.start; c <= range.end; c++) {
-            let column = this.model.getColumn(c, ! this.includeHidden);
+            let column = this.model.getColumn(c, ! this.hiddenIncluded);
             columnsObj[column.id] = column;
         }
 
         for (let selection of this.subSelections) {
             let range = this._getRange(selection);
             for (let c = range.start; c <= range.end; c++) {
-                let column = this.model.getColumn(c, ! this.includeHidden);
+                let column = this.model.getColumn(c, ! this.hiddenIncluded);
                 columnsObj[column.id] = column;
             }
         }
@@ -747,7 +756,7 @@ class Selection {
         switch (direction) {
             case 'left':
                 if (extend) {
-                    if (this.includeHidden) {
+                    if (this.hiddenIncluded) {
                         if (this.getColumnEnd() > this.getColumnPos()) {
                             range.columnEnd--;
                             range.columnFocus = range.columnEnd;
@@ -777,7 +786,7 @@ class Selection {
                     }
                 }
                 else {
-                    if (this.includeHidden) {
+                    if (this.hiddenIncluded) {
                         if (this.getColumnStart() > 0) {
                             range.columnStart = range.columnStart - 1;
                             scrollLeft = true;
@@ -811,7 +820,7 @@ class Selection {
                 break;
             case 'right':
                 if (extend) {
-                    if (this.includeHidden) {
+                    if (this.hiddenIncluded) {
                         if (this.getColumnStart() < this.getColumnPos()) {
                             range.columnStart++;
                             range.columnFocus = range.columnStart;
@@ -842,7 +851,7 @@ class Selection {
 
                 }
                 else {
-                    if (this.includeHidden) {
+                    if (this.hiddenIncluded) {
                         if (range.colNo < this.model.attributes.columnCount - 1) {
                             range.columnStart = range.columnStart + 1;
                             scrollRight = true;

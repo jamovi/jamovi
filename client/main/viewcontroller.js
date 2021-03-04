@@ -19,7 +19,7 @@ class ViewController {
 
         this.selection.registerChangeEventHandler((oldSel, silent, ignoreTabStart) => {
             if ( !silent && this.model.get('editingVar') !== null) {
-                this._updateEditingVarFromSelection(this.selection.includeHidden);
+                this._updateEditingVarFromSelection(this.selection.hiddenIncluded);
             }
 
             this.enableDisableActions();
@@ -432,7 +432,7 @@ class ViewController {
 
     focusView(name) {
         this.focusedOn = this._views[name];
-        this.selection.includeHidden = this.focusedOn.selectionIncludesHidden === true;
+        this.selection.hiddenIncluded = this.focusedOn.selectionIncludesHidden === true;
         if (this.model.attributes.hasDataSet)
             this.enableDisableActions();
     }
@@ -673,13 +673,15 @@ class ViewController {
         if (direction === undefined)
             direction = 'right';
 
+        let hiddenIncluded = this.selection.hiddenIncluded;
+
         let blocks = this.selection.selectionToColumnBlocks();
 
         let inserts = [];
         let emptyIds = [];
         for (let block of blocks) {
             for (let i = 0; i < block.right - block.left + 1; i++) {
-                let column = this.model.getColumn(block.left + i, true);
+                let column = this.model.getColumn(block.left + i, ! hiddenIncluded);
                 if (column.columnType === 'none')
                     emptyIds.push(column.id);
                 else {
@@ -703,7 +705,7 @@ class ViewController {
 
         return promise.then(() => {
             if (inserts.length > 0) {
-                return this.model.insertColumn(inserts, true).then((data) => {
+                return this.model.insertColumn(inserts, ! hiddenIncluded).then((data) => {
                     let ids = data.ids.concat(emptyIds);
                     this.model.set('editingVar', ids);
                 });

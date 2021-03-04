@@ -1899,6 +1899,9 @@ const TableView = SilkyView.extend({
 
         for (let changed of changedCells) {
             let cellList = cells[changed.colIndex];
+            if (cellList.length < changed.rowIndex + 1)
+                continue;
+                
             let dIndex = viewportLeft + changed.colIndex;
             let columnInfo = this.model.getColumn(dIndex, true);
             let dps = columnInfo.dps;
