@@ -1801,6 +1801,8 @@ const TableView = SilkyView.extend({
 
         let rowNums = this.model.attributes.rowNums;
         let rowHeaders = this.$rhColumn[0].children;
+        if (rowHeaders.length === 0)
+            return;
 
         for (let index of changed) {
             let currentNum = rowNums[index];
@@ -1901,7 +1903,7 @@ const TableView = SilkyView.extend({
             let cellList = cells[changed.colIndex];
             if (cellList.length < changed.rowIndex + 1)
                 continue;
-                
+
             let dIndex = viewportLeft + changed.colIndex;
             let columnInfo = this.model.getColumn(dIndex, true);
             let dps = columnInfo.dps;
