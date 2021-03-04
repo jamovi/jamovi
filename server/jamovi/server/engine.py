@@ -152,6 +152,9 @@ class Engine:
 
             self._socket = nanomsg.Socket(nanomsg.PAIR)
             self._socket._set_recv_timeout(500)
+
+            # max size of nanomsg messages ... default was 1Mb under macOS
+            self._socket.set_int_option(nanomsg.SOL_SOCKET, nanomsg.RCVMAXSIZE, 4 * 1024 * 1024)
             self._socket.bind(self._conn_path)
 
             # need a separate thread for nanomsg :/
