@@ -1131,7 +1131,7 @@ class Selection {
 
     refreshSelection() {
         if (this.model.attributes.editingVar !== null) {
-            let now  = this.model.getDisplayedEditingColumns();
+            let now = this.model.getEditingColumns(!this.hiddenIncluded);
             if (now !== null && now.length > 0)
                 this.createSelectionsFromColumns(this.rowNo, now);
             else

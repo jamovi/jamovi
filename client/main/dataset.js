@@ -59,6 +59,19 @@ const DataSetModel = Backbone.Model.extend({
         }
         return columns;
     },
+    getEditingColumns(displayOnly) {
+        let ids = this.get('editingVar');
+        if (ids === null)
+            return null;
+
+        let columns = [];
+        for (let id of ids) {
+            let column = this.getColumnById(id);
+            if (column && !(displayOnly && column.hidden === true)) 
+                columns.push(column);
+        }
+        return columns;
+    },
     defaults : {
         hasDataSet : false,
         columns    : [ ],

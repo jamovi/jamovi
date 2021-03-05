@@ -25,6 +25,20 @@ class ViewController {
             this.enableDisableActions();
         });
 
+        this.model.on('change:editingVar', event => {
+            if (this.model._modifiedFromSelection)
+                return;
+
+            let now  = this.model.getEditingColumns(! this.selection.hiddenIncluded);
+            if (now !== null && now.length > 0) {
+                if (this.focusedOn !== null && this.focusedOn.onEditingVarChanged) {
+                    this.focusedOn.onEditingVarChanged(now);
+                }
+                else if (this.selection !== null)
+                    this.selection.createSelectionsFromColumns(this.selection.rowNo, now);
+            }
+        });
+
         this.focusedOn = null;
         this._views = { };
 
@@ -95,6 +109,8 @@ class ViewController {
         else
             this.model.set('editingVar', null);
     }
+
+
 
     enableDisableActions() {
 
@@ -435,6 +451,9 @@ class ViewController {
         this.selection.hiddenIncluded = this.focusedOn.selectionIncludesHidden === true;
         if (this.model.attributes.hasDataSet)
             this.enableDisableActions();
+
+        if (this.focusedOn.onViewControllerFocus)
+            this.focusedOn.onViewControllerFocus();
     }
 
     _updateEditingVarFromSelection(allowHidden) {

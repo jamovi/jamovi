@@ -572,7 +572,7 @@ $(document).ready(async() => {
     optionspanel.setDataSetModel(dataSetModel);
     optionspanel.$el.on('splitpanel-hide', () =>  window.focus() );
 
-    let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
+    let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
     editor.$el.on('transitionstart', event => {
         if (event.target === editor.$el[0])
             mainTable.onTransitioning();

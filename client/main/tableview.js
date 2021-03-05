@@ -212,21 +212,6 @@ const TableView = SilkyView.extend({
 
         this.selection.clearSelectionList();
 
-        this.model.on('change:editingVar', event => {
-            if (this.model._modifiedFromSelection)
-                return;
-
-            let now  = this.model.getDisplayedEditingColumns();
-            if (now !== null && now.length > 0) {
-                if (this.selection !== null) {
-                    this._endEditing().then(() => {
-                        this.selection.createSelectionsFromColumns(this.selection.rowNo, now);
-                        this._updateScroll(this.selection);
-                    }, () => {});
-                }
-            }
-        });
-
         this.$selection.on('focus', event => this._beginEditing());
         this.$selection.on('blur', event => {
             if (this._editing)
@@ -236,6 +221,21 @@ const TableView = SilkyView.extend({
             if (this._editing)
                 this._modifyingCellContents = true;
         });
+    },
+    onEditingVarChanged(editingColumns) {
+        if (this.selection !== null) {
+            this._endEditing().then(() => {
+                this.selection.createSelectionsFromColumns(this.selection.rowNo, editingColumns);
+                this._updateScroll(this.selection);
+            }, () => {});
+        }
+    },
+    onViewControllerFocus() {
+        setTimeout(() => {
+            if (this.selection.rowNo !== undefined && this.selection.colNo !== undefined)
+                this._scrollToPosition({ rowNo: this.selection.rowNo, colNo: this.selection.colNo });
+        }, 100);
+
     },
     _updateEyeButton() {
         if (this.model.get('filtersVisible'))

@@ -65,6 +65,7 @@
     display: grid;
     grid-template-columns: min-content min-content minmax(70px, max-content) auto;
     background-color: white;
+    scroll-margin-top: 5rem;
 }
 
 .jmv-variables-body .cell .text {
@@ -114,7 +115,8 @@
 }
 
 .jmv-variables-body .cell.selected {
-    background-color: rgba(94, 139, 196, .1)
+    scroll-margin-top: 30px;
+    background-color: rgba(94, 139, 196, .1);
 }
 
 .jmv-variables-body .column-header {
