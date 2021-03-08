@@ -18,7 +18,7 @@ const Notify = require('./notification');
 
 const host = require('./host');
 const ActionHub = require('./actionhub');
-const { CancelledError } = require('./errors');
+const { s6e } = require('../common/utils');
 
 
 function crc16(s) {
@@ -106,7 +106,7 @@ const FSEntryListView = SilkyView.extend({
                 location = item.description;
             }
 
-            html += '<div class="silky-bs-fslist-entry" data-path="' + filePath + '">';
+            html += '<div class="silky-bs-fslist-entry" data-path="' + s6e(filePath) + '">';
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
             else if (name.endsWith('.omt'))
@@ -114,8 +114,8 @@ const FSEntryListView = SilkyView.extend({
             else
                 html += '   <div class="silky-bs-fslist-entry-icon"></div>';
             html += '   <div class="silky-bs-fslist-entry-group">';
-            html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-            html += '       <div class="silky-bs-fslist-entry-meta">' + location + '</div>';
+            html += '       <div class="silky-bs-fslist-entry-name">' + s6e(name) + '</div>';
+            html += '       <div class="silky-bs-fslist-entry-meta">' + s6e(location) + '</div>';
             html += '   </div>';
             html += '</div>';
         }
@@ -305,14 +305,14 @@ const FSEntryBrowserView = SilkyView.extend({
             let insert = '';
             if (filePath) {
                 extension = path.extname(filePath);
-                insert = ' value="' + path.basename(filePath, extension) + '"';
+                insert = ' value="' + s6e(path.basename(filePath, extension)) + '"';
             }
 
             html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here"' + insert + ' />';
 
             html += this._createFileTypeSelector();
             html += '       </div>';
-            html += '       <div class="silky-bs-fslist-browser-save-button' + (filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
+            html += '       <div class="silky-bs-fslist-browser-save-button' + s6e(filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
             if (this.model.clickProcess === 'save')
                 html += '           <span>Save</span>';
@@ -433,7 +433,7 @@ const FSEntryBrowserView = SilkyView.extend({
 
         if (status === 'error') {
             let errorMessage = this.model.get('error');
-            this.$itemsList.append("<span>" + errorMessage + "</span>");
+            this.$itemsList.append(`<span>${ s6e(errorMessage) }</span>`);
         }
         else if (status === 'loading') {
             this.$itemsList.append(`
@@ -530,24 +530,24 @@ const FSEntryBrowserView = SilkyView.extend({
                     html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
                     html += '       <div class="silky-bs-fslist-entry-meta">';
                     if (item.description) {
-                        html += '<span class="description">' + item.description + '</span>';
+                        html += `<span class="description">${ s6e(item.description) }</span>`;
                     }
                     if (item.tags) {
                         html += '<div class="tags">';
                         for (let tag of item.tags) {
                             let hue = crc16(tag) % 360;
-                            html += '<div class="tag" style="background-color: hsl(' + hue + ', 70%, 45%); border-color: hsl(' + hue + ', 70%, 45%);">' + tag + '</div>';
+                            html += `<div class="tag" style="background-color: hsl(${ hue }, 70%, 45%); border-color: hsl(${ hue }, 70%, 45%);">${ s6e(tag) }</div>`;
                         }
                         html += '</div>';
                     }
                     if (item.license) {
-                        html += '<div class="license">Licensed ' + item.license + '</div>';
+                        html += `<div class="license">Licensed ${ s6e(item.license) }</div>`;
                     }
                     html += '       </div>';
                     html += '   </div>';
                 }
                 else {
-                    html += '   <div class="silky-bs-fslist-entry-name">' + name + '</div>';
+                    html += `   <div class="silky-bs-fslist-entry-name">${ s6e(name) }</div>`;
                 }
 
                 html += '</div>';
@@ -893,8 +893,8 @@ const InDevelopmentView = SilkyView.extend({
     },
     render: function() {
         this.$el.addClass('silky-under-development');
-        this.$el.append('<div class="silky-development-title">' + this.model.title + '</div>');
-        this.$el.append('<div class="silky-development-msg">' + this.model.msg + "</div>");
+        this.$el.append(`<div class="silky-development-title">${ s6e(this.model.title) }</div>`);
+        this.$el.append(`<div class="silky-development-msg">${ s6e(this.model.msg) }</div>`);
     }
 });
 
@@ -1153,11 +1153,11 @@ const BackstageModel = Backbone.Model.extend({
                 throw undefined;
             return {
                 filePath: this._dialogPath,
-                canceled: false
+                cancelled: false
             };
         } catch(e) {
             return {
-                canceled: true
+                cancelled: true
             };
         }
     },
@@ -1359,91 +1359,50 @@ const BackstageModel = Backbone.Model.extend({
             filters.push({ name: desc, extensions: list[i].extensions });
         }
 
+        let osPath = '';
         if (host.isElectron) {
-
             if (this._wdData.main.initialised === false)
                 return;
+            osPath = this._wdData.main.oswd
+        }
 
-            let remote = window.require('electron').remote;
-            let browserWindow = remote.getCurrentWindow();
-            let dialog = remote.dialog;
-            let osPath = this._wdData.main.oswd;
+        if (type === 'open') {
 
-            // all this dialog stuff should get moved into host.js
+            let result = await host.showOpenDialog({
+                filters: filters,
+                defaultPath: path.join(osPath, '')
+            });
 
-            if (type === 'open') {
-
-                dialog.showOpenDialog(browserWindow, {
-                    filters: filters,
-                    properties: [ 'openFile' ],
-                    defaultPath: path.join(osPath, '')
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    let filePath = result.filePaths[0].replace(/\\/g, '/');
-                    this.requestOpen(filePath);
-                });
-            }
-            else if (type === 'import') {
-
-                dialog.showOpenDialog(browserWindow, {
-                    filters: filters,
-                    properties: [ 'openFile', 'multiSelections' ],
-                    defaultPath: path.join(osPath, '')
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    let filePaths = result.filePaths.map(x => x.replace(/\\/g, '/'));
-                    this.requestImport(filePaths);
-                });
-            }
-            else if (type === 'save') {
-
-                dialog.showSaveDialog(browserWindow, {
-                    filters : filters,
-                    defaultPath: path.join(osPath, filename),
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    let filePath = result.filePath.replace(/\\/g, '/');
-
-                    // browse under linux often doesn't add an extension :/
-                    if (path.extname(filePath) === '')
-                        filePath = `${ filePath }.${ filters[0].extensions[0] }`;
-
-                    this.requestSave(filePath, { overwrite: true }).catch((e) => {
-                        if ( ! this.instance.attributes.saveFormat) {
-                            this.set('activated', true);
-                            this.set('operation', 'saveAs');
-                        }
-                    });
-                });
+            if ( ! result.cancelled) {
+                let file = result.files[0];
+                this.requestOpen(file);
             }
         }
-        else {
-            if (type === 'open') {
-                try {
-                    let files = await host.showOpenDialog({ filters });
-                    await this.requestOpen(files[0]);
-                }
-                catch (e) {
-                    if (e instanceof CancelledError)
-                        ;  // do nothing
-                    else
-                        throw e;
-                }
-            }
-            else if (type === 'import') {
-                try {
-                    let files = await host.showOpenDialog({ filters });
-                    this.requestImport(files);
-                }
-                catch (e) {
-                    if (e instanceof CancelledError)
-                        ;  // do nothing
-                    else
-                        throw e;
-                }
+        else if (type === 'import') {
+
+            let result = await host.showOpenDialog({
+                filters: filters,
+                multiple: true,
+                defaultPath: path.join(osPath, '')
+            });
+
+            if ( ! result.cancelled)
+                this.requestImport(result.files);
+        }
+        else if (type === 'save') {
+
+            let result = await host.showSaveDialogExternal({
+                filters : filters,
+                defaultPath: path.join(osPath, filename),
+            });
+
+            if ( ! result.cancelled) {
+                this.requestSave(result.file, { overwrite: true }).catch((e) => {
+                    if ( ! this.instance.attributes.saveFormat) {
+                        this.set('activated', true);
+                        this.set('operation', 'saveAs');
+                    }
+                });
             }
         }
     },
@@ -1526,84 +1485,46 @@ const BackstageModel = Backbone.Model.extend({
             filters.push({ name: desc, extensions: list[i].extensions });
         }
 
+        let osPath = '';
         if (host.isElectron) {
-
             if (this._wdData.main.initialised === false)
                 return;
+            osPath = this._wdData.main.oswd;
+        }
 
-            let remote = window.require('electron').remote;
-            let browserWindow = remote.getCurrentWindow();
-            let dialog = remote.dialog;
-            let osPath = this._wdData.main.oswd;
+        if (type === 'open') {
 
-            // all this dialog stuff should get moved into host.js
+            let result = await host.showOpenDialog({
+                filters: filters,
+                defaultPath: path.join(osPath, '')
+            });
 
-            if (type === 'open') {
+            if ( ! result.cancelled)
+                this._dialogPath = result.files[0];
+        }
+        else if (type === 'import') {
 
-                await dialog.showOpenDialog(browserWindow, {
-                    filters: filters,
-                    properties: [ 'openFile' ],
-                    defaultPath: path.join(osPath, '')
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    this._dialogPath = result.filePaths[0].replace(/\\/g, '/');
-                });
-            }
-            else if (type === 'import') {
+            let result = await host.showOpenDialog({
+                filters: filters,
+                multiple: true,
+                defaultPath: path.join(osPath, '')
+            });
 
-                await dialog.showOpenDialog(browserWindow, {
-                    filters: filters,
-                    properties: [ 'openFile', 'multiSelections' ],
-                    defaultPath: path.join(osPath, '')
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    this._dialogPath = result.filePaths.map(x => x.replace(/\\/g, '/'));
-                });
-            }
-            else if (type === 'save') {
+            if ( ! result.cancelled)
+                this._dialogPath = result.files;
+        }
+        else if (type === 'save') {
 
-                await dialog.showSaveDialog(browserWindow, {
-                    filters : filters,
-                    defaultPath: path.join(osPath, filename),
-                }).then((result) => {
-                    if (result.canceled)
-                        return;
-                    this._dialogPath = result.filePath.replace(/\\/g, '/');
+            let result = await host.showSaveDialogExternal({
+                filters : filters,
+                defaultPath: path.join(osPath, filename),
+            });
 
-                    // browse under linux often doesn't add an extension :/
-                    if (path.extname(this._dialogPath) === '')
-                        this._dialogPath = `${ this._dialogPath }.${ filters[0].extensions[0] }`;
-                });
+            if ( ! result.cancelled) {
+                this._dialogPath = result.file;
             }
         }
-        else {
-            if (type === 'open') {
-                try {
-                    let files = await host.showOpenDialog({ filters });
-                    this._dialogPath = files[0];
-                }
-                catch (e) {
-                    if (e instanceof CancelledError)
-                        ;  // do nothing
-                    else
-                        throw e;
-                }
-            }
-            else if (type === 'import') {
-                try {
-                    let files = await host.showOpenDialog({ filters });
-                    this._dialogPath = files;
-                }
-                catch (e) {
-                    if (e instanceof CancelledError)
-                        ;  // do nothing
-                    else
-                        throw e;
-                }
-            }
-        }
+
         this.set('activated', false);
     },
     setCurrentDirectory: function(wdType, dirPath, type, writeOnly=false) {
@@ -2026,15 +1947,13 @@ const BackstageView = SilkyView.extend({
             if (selected)
                 currentOp = op;
 
-            let $op = $('<div class="silky-bs-menu-item" data-op="' + op.name + '-item"></div>');
-            let $opTitle = $('<div class="silky-bs-op-button" data-op="' + op.name + '">' + op.title + '</div>').appendTo($op);
-
-
+            let $op = $(`<div class="silky-bs-menu-item" data-op="${ s6e(op.name) }-item"></div>`);
+            let $opTitle = $(`<div class="silky-bs-op-button" data-op="' + op.name + '">${ s6e(op.title) }</div>`).appendTo($op);
 
             if ('places' in op) {
                 let $opPlaces = $('<div class="silky-bs-op-places"></div>');
                 for (let place of op.places) {
-                    let $opPlace = $('<div class="silky-bs-op-place" data-op="' + place.name + '"' + '>' + place.title + '</div>');
+                    let $opPlace = $(`<div class="silky-bs-op-place" data-op="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
                     $opPlace.on('click', createCallback(place, op));
                     $opPlaces.append($opPlace);
 
@@ -2132,7 +2051,7 @@ const BackstageView = SilkyView.extend({
         else if ('view' in place) {
             $places.removeClass('selected-place');
 
-            let $place = this.$ops.find('[data-op="' + place.name + '"]');
+            let $place = this.$ops.find(`[data-op="${ s6e(place.name) }"]`);
 
             $place.addClass('selected-place');
         }
