@@ -21,6 +21,9 @@ const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
 
+const { s6e } = require('../common/utils');
+
+
 const TableView = SilkyView.extend({
     className: 'tableview',
     initialize() {
@@ -3412,7 +3415,7 @@ const TableView = SilkyView.extend({
                 "
             >
                 <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label">${ column.name }</div>
+                <div class="jmv-column-header-label">${ s6e(column.name) }</div>
                 <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>
@@ -3452,7 +3455,7 @@ const TableView = SilkyView.extend({
                     line-height: ${ height-3 }px ;
                 "
             >
-                ${ content }
+                ${ s6e(content) }
                 <div class="sub-selection-bar"></div>
             </div>`);
     },

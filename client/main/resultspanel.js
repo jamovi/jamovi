@@ -696,13 +696,12 @@ const ResultsPanel = Backbone.View.extend({
                         { name: 'EPS', description: 'EPS Image (.eps)', extensions: [ 'eps' ] }, ]
                 };
                 let result = await host.showSaveDialog(options);
-                if (result.canceled)
+                if (result.cancelled)
                     return;
-                let filePath = result.filePath.replace(/\\/g, '/');
-                let status = await this.model.save(filePath, saveOptions);
+                let status = await this.model.save(result.file, saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);
-                    let url = `dl/${ source }?filename=${ path.basename(filePath) }`;
+                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
                     await host.triggerDownload(url);
                 }
             }
@@ -727,13 +726,12 @@ const ResultsPanel = Backbone.View.extend({
                     options.filters.push({ name: 'LaTeX bundle (.zip)', extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
-                if (result.canceled)
+                if (result.cancelled)
                     return;
-                let filePath = result.filePath.replace(/\\/g, '/');
-                let status = await this.model.save(filePath, saveOptions);
+                let status = await this.model.save(result.file, saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);
-                    let url = `dl/${ source }?filename=${ path.basename(filePath) }`;
+                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
                     await host.triggerDownload(url);
                 }
             }
