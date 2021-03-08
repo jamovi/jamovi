@@ -22,25 +22,22 @@ const PageSideload = Backbone.View.extend({
             .appendTo(this.$body)
             .on('click', event => this._dropClicked());
     },
-    _dropClicked(event) {
+    async _dropClicked(event) {
         if (host.isElectron) {
 
-            const remote = window.require('electron').remote;
-            const dialog = remote.dialog;
-
             let filters = [ { name: 'jamovi modules', extensions: ['jmo']} ];
+            let result = await host.showOpenDialog({ filters });
 
-            dialog.showOpenDialog({
-                filters: filters,
-                properties: [ 'openFile' ],
-            }).then((result) => {
-                if (result.canceled)
-                    return;
-                let filePath = result.filePaths[0].replace(/\\/g, '/');
-                this.model.install(filePath).then(
-                    () => this._installSuccess(),
-                    error => this._installFailure(error));
-            });
+            if ( ! result.cancelled) {
+                let file = result.files[0];
+                try {
+                    await this.model.install(file);
+                    this._installSuccess();
+                }
+                catch (e) {
+                    this._installFailure(e);
+                }
+            }
         }
     },
     _installSuccess() {

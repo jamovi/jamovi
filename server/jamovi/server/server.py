@@ -571,6 +571,14 @@ class Server:
         server.add_sockets(sockets)
         self._ports[2] = sockets[0].getsockname()[1]
 
+        # now we have the port numbers, we can add CSP
+        cache_headers[ 'Content-Security-Policy' ] = f'''
+            default-src 'self';
+            script-src  'self' 'unsafe-eval' 'unsafe-inline';
+            style-src 'self' 'unsafe-inline';
+            frame-src 'self' 127.0.0.1:{ self._ports[1] } 127.0.0.1:{ self._ports[2] } https://www.jamovi.org;
+        '''.replace('\n', '')
+
         for listener in self._ports_opened_listeners:
             listener(self._ports)
 

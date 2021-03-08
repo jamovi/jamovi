@@ -225,7 +225,14 @@ for (let name in env) {
 
 const convertToPDF = function(path) {
 
-    let wind = new BrowserWindow({ width: 1280, height: 800, show: false });
+    let wind = new BrowserWindow({
+        width: 1280,
+        height: 800,
+        show: false,
+        webPreferences: {
+            contextIsolation: true,
+        }
+    });
     wind.webContents.loadURL('file://' + path);
 
     return new Promise((resolve, reject) => {
@@ -489,8 +496,9 @@ const createWindow = function(open) {
         frame: process.platform !== 'win32',
         icon: config.iconPath,
         webPreferences: {
-            nodeIntegration: true,
             enableRemoteModule: true,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
         },
     });
 
@@ -541,6 +549,7 @@ const createWindow = function(open) {
     }
 
     wind.loadURL(url);
+    // wind.openDevTools();
 
     wind.webContents.on('new-window', function(e, url) {
         e.preventDefault();
