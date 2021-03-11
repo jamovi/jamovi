@@ -1150,15 +1150,11 @@ const BackstageModel = Backbone.Model.extend({
             this.set('ops', _oldOps);
             this.set('dialogMode', false);
             if (this._dialogPath === null)
-                throw undefined;
-            return {
-                filePath: this._dialogPath,
-                cancelled: false
-            };
+                return { cancelled: true };
+            else
+                return { cancelled: false, file: this._dialogPath };
         } catch(e) {
-            return {
-                cancelled: true
-            };
+            return { cancelled: true };
         }
     },
     createOps: function() {

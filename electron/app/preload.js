@@ -213,15 +213,17 @@ function setDialogProvider(provider) {
 }
 
 async function showSaveDialog(options) {
-    let selection = await dialogProvider.showDialog('export', options);
+    let result = await dialogProvider.showDialog('export', options);
+    if (result.cancelled)
+        return result;
     // On linux we don't get an extension, so here we add the default one
     // https://github.com/electron/electron/issues/21935
-    let hasExtension = /\.[^\/\\]+$/.test(selection.filePath);
+    let hasExtension = /\.[^\/\\]+$/.test(result.file);
     if (hasExtension === false && options.filters) {
         let defaultExt = options.filters[0].extensions[0];
-        selection.filePath = `${ selection.filePath }.${ defaultExt }`;
+        result.file = `${ result.file }.${ defaultExt }`;
     }
-    return selection;
+    return result;
 }
 
 async function showSaveDialogExternal(options) {
