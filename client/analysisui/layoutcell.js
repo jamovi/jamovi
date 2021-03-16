@@ -159,6 +159,9 @@ const LayoutCell = function(parent, properties) {
 
     this.collapse = function(immediately) {
 
+        if (this._expandingTimer)
+            clearTimeout(this._expandingTimer);
+
         let element = this.$el[0];
         if (immediately)
             element.style.height = 0 + 'px';
@@ -190,9 +193,9 @@ const LayoutCell = function(parent, properties) {
             let sectionHeight = element.scrollHeight;
             element.style.height = sectionHeight + 'px';
 
-            this.$el.one('transitionend', (e) => {
+            this._expandingTimer = setTimeout(() => {
                 element.style.height = null;
-            });
+            }, 200);
         }
 
         element.setAttribute('data-collapsed', 'false');
