@@ -462,9 +462,9 @@ ipc.on('request', (event, arg) => {
             else
                 wind.maximize();
             break;
-        case 'openRecorder':
-            openRecorder(eventData);
-            break;
+        //case 'openRecorder':
+        //    openRecorder(eventData);
+        //    break;
     }
 });
 
@@ -628,7 +628,7 @@ const notifyUpdateStatus = function(status) {
     });
 }
 
-const openRecorder = function(id) {
+/* const openRecorder = function(id) {
     if (recorderWindow === null) {
 
         // setting focusable to false seems only useful on macOS
@@ -682,4 +682,4 @@ const openRecorder = function(id) {
     else {
         recorderWindow.show();
     }
-}
+} */
