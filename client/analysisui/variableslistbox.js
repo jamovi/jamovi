@@ -49,14 +49,20 @@ const VariablesListBox = function(params) {
         if (option === null)
             return;
 
-        var properties = this.searchForVariableProperties(option.getProperties());
+        let properties = this.searchForVariableProperties(option.getProperties());
 
-        this._suggestedVariableTypes = properties.suggested;
-        if (this._suggestedVariableTypes === undefined)
+        if (properties === null) {
             this._suggestedVariableTypes = [];
-        this._permittedVariableTypes = properties.permitted;
-        if (this._permittedVariableTypes === undefined)
             this._permittedVariableTypes = [];
+        }
+        else {
+            this._suggestedVariableTypes = properties.suggested;
+            if (this._suggestedVariableTypes === undefined)
+                this._suggestedVariableTypes = [];
+            this._permittedVariableTypes = properties.permitted;
+            if (this._permittedVariableTypes === undefined)
+                this._permittedVariableTypes = [];
+        }
 
         if (this._rendered)
             this._renderSuggestedIcons();

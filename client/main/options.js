@@ -421,7 +421,8 @@ OptionTypes.Group = function(template, value) {
         var r = { };
         for (let i = 0; i < this._template.elements.length; i++) {
             let element = this._template.elements[i];
-            r[element.name] = this.children[i].getValue();
+            if (this.children.length > i)
+                r[element.name] = this.children[i].getValue();
         }
         return r;
     });
