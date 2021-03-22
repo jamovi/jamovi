@@ -632,10 +632,21 @@ const OptionListControl = function(params) {
         if ((siblingListCount > 0 || this.isSingleItem === false) && hasMaxItemCount && (cellKey[0] > this.maxItemCount - 1 || (overrideValue === false && option.getLength(this.getValueKey()) === this.maxItemCount)))
             return false;
 
-        if (option.valueInited() === false || this.isSingleItem) {
+        if (option.valueInited() === false) {
             cellKey = [];
             if (this.isSingleItem === false)
                 data = [data];
+        }
+
+        if (this.isSingleItem) {
+            let columnCount = this._columnInfo._list.length;
+
+            let arrayOfObjects = columnCount > 1 && this.rowDataAsArray === false;
+            let arrayOfArrays = columnCount > 1 && this.rowDataAsArray === true;
+            let multiDimensional = arrayOfObjects || arrayOfArrays;
+
+            if (multiDimensional === false)
+                cellKey = [];
         }
 
         this.setValue(data, cellKey, overrideValue === false);
@@ -644,12 +655,19 @@ const OptionListControl = function(params) {
     };
 
     this.isRowEmpty = function(rowIndex) {
-        if (rowIndex >= this.getOption().getLength(this.getValueKey()))
-            return true;
+        if (this.isSingleItem) {
+            let value = this.getSourceValue();
+            if (value === null || value === undefined)
+                return true;
+        }
+        else {
+            if (rowIndex >= this.getOption().getLength(this.getValueKey()))
+                return true;
 
-        let value = this.getSourceValue([rowIndex]);
-        if (value === null || value === undefined)
-            return true;
+            let value = this.getSourceValue([rowIndex]);
+            if (value === null || value === undefined)
+                return true;
+        }
 
         return false;
     };
@@ -673,6 +691,12 @@ const OptionListControl = function(params) {
         else if (key.length === 1) {
             if (multiDimensional === false)
                 columnFormat = this._columnInfo._list[0].format;
+            else if (this.maxItemCount === 1) {
+                if (arrayOfArrays)
+                    columnFormat = this._columnInfo._list[key[0]].format;
+                else
+                    columnFormat = this._columnInfo[key[0]].format;
+            }
             else
                 return null;
         }
@@ -683,7 +707,7 @@ const OptionListControl = function(params) {
                 columnFormat = this._columnInfo[key[1]].format;
         }
 
-        if (((key.length === 0 || key.length === 1) && multiDimensional === false) || (key.length === 2 && multiDimensional === true))
+        if (((key.length === 0 || key.length === 1) && (multiDimensional === false || this.maxItemCount === 1)) || (key.length === 2 && multiDimensional === true))
             return columnFormat;
 
         return columnFormat.getFormat(key.slice(multiDimensional ? 2 : 1));
