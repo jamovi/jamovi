@@ -146,8 +146,8 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
-        this.$recorder.on('click', (event) => host.openRecorder());
+        // this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
+        // this.$recorder.on('click', (event) => host.openRecorder());
 
         this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox jmv-devmode" for="devMode"></label>').appendTo(this.$content);
         this.$dev.append($('<div>Developer mode</div>'));
