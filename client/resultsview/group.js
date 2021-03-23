@@ -90,6 +90,7 @@ const GroupView = Elem.View.extend({
             return child;
     },
     render: function() {
+        this.children = [ ];
 
         Elem.View.prototype.render.call(this);
 
