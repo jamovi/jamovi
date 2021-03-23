@@ -219,6 +219,10 @@ function _textify(el) {
 
 function _imagify(el) {
 
+    // HACK!! :/
+    if (el.classList.contains('jmv-results-image'))
+        el = el.querySelector('.jmv-results-image-image');
+
     let margin = 0;
 
     return Promise.resolve().then(() => {
