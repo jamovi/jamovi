@@ -54,10 +54,14 @@ const ImageView = Elem.View.extend({
     render: function() {
 
         if (this.$title) {
-            if (this.model.attributes.title)
+            if (this.model.attributes.title) {
                 this.$title.text(this.model.attributes.title);
-            else
+                this.$title.show();
+            }
+            else {
                 this.$title.empty();
+                this.$title.hide();
+            }
         }
 
         if (this.model.attributes.status === 1)
