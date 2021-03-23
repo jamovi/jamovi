@@ -574,6 +574,7 @@ class Server:
         # now we have the port numbers, we can add CSP
         cache_headers[ 'Content-Security-Policy' ] = f'''
             default-src 'self';
+            img-src 'self' data:;
             script-src  'self' 'unsafe-eval' 'unsafe-inline';
             style-src 'self' 'unsafe-inline';
             frame-src 'self' 127.0.0.1:{ self._ports[1] } 127.0.0.1:{ self._ports[2] } https://www.jamovi.org;
