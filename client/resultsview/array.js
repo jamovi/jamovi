@@ -137,6 +137,8 @@ const ArrayView = Elem.View.extend({
 
     render: function() {
 
+        this.children = [ ];
+
         Elem.View.prototype.render.call(this);
 
         this.updateSelect();
