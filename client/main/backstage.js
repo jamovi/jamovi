@@ -423,7 +423,7 @@ const FSEntryBrowserView = SilkyView.extend({
             searchValue = $search.val().trim();
             setTimeout(() => {
                 $search.focus();
-            }, 100);
+            }, 250);
         }
 
         let html = '';
