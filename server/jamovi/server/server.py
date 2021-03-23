@@ -283,14 +283,14 @@ class PDFConverter(RequestHandler):
         self._file = None
 
     def prepare(self):
-        self._file = NamedTemporaryFile(suffix='.html')
+        self._file = NamedTemporaryFile(suffix='.html', delete=False)
 
     def data_received(self, data):
         self._file.write(data)
 
     @gen.coroutine
     def post(self):
-        self._file.flush()
+        self._file.close()
         try:
             pdf_path = yield self._pdfify()
             with open(pdf_path, 'rb') as file:
@@ -300,6 +300,11 @@ class PDFConverter(RequestHandler):
         except Exception as e:
             self.set_status(500)
             self.write(str(e))
+        finally:
+            try:
+                os.remove(self._file.name)
+            except Exception:
+                pass
 
     def _pdfify(self):
         self._future = Future()
