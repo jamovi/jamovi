@@ -450,6 +450,11 @@ ipc.on('request', (event, arg) => {
         case 'openWindow':
             createWindow({ id: eventData });
             break;
+        case 'navigate':
+            // wind.loadURL(`${ rootUrl }${ eventData }/`);
+            createWindow({ id: eventData, bounds: wind.getBounds() });
+            wind.close();
+            break;
         case 'close':
             wind.close();
             break;
@@ -486,9 +491,20 @@ const handleCommand = function(cmd) {
 
 const createWindow = function(open) {
 
+    let width = 1280;
+    let height = 800;
+    let x = undefined;
+    let y = undefined;
+
+    if (open && open.bounds) {
+        width = open.bounds.width;
+        height = open.bounds.height;
+        x = open.bounds.x;
+        y = open.bounds.y;
+    }
+
     let wind = new BrowserWindow({
-        width: 1280,
-        height: 800,
+        width, height, x, y,
         minWidth: 800,
         minHeight: 600,
         vibrancy: 'titlebar',
