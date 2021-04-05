@@ -269,7 +269,7 @@ let ports = null;
 let windows = [ ];
 let rootUrl;
 let updateUrl;
-let recorderWindow = null;
+// let recorderWindow = null;
 
 const spawn = new Promise((resolve, reject) => {
 
@@ -513,17 +513,17 @@ const createWindow = function(open) {
         }
     });
 
-    if (recorderWindow !== null) {
-        let script = `window.notifyCurrentWindowChanged(${wind.id})`;
-        recorderWindow.webContents.executeJavaScript(script);
-    }
+    // if (recorderWindow !== null) {
+    //     let script = `window.notifyCurrentWindowChanged(${wind.id})`;
+    //     recorderWindow.webContents.executeJavaScript(script);
+    // }
 
-    wind.on('focus', (event) => {
-        if (recorderWindow !== null) {
-            let script = `window.notifyCurrentWindowChanged(${event.sender.id})`;
-            recorderWindow.webContents.executeJavaScript(script);
-        }
-    });
+    // wind.on('focus', (event) => {
+    //     if (recorderWindow !== null) {
+    //         let script = `window.notifyCurrentWindowChanged(${event.sender.id})`;
+    //         recorderWindow.webContents.executeJavaScript(script);
+    //     }
+    // });
 
     wind.webContents.on('did-finish-load', (event) => {
         if (splash != null) {
@@ -558,12 +558,12 @@ const createWindow = function(open) {
 
     wind.on('closed', (event) => {
         windows = windows.filter(w => w != wind);
-        if (windows.length === 0 && recorderWindow !== null) {
-            let recorder = recorderWindow;
-            // set it to null to really close
-            recorderWindow = null;
-            recorder.close();
-        }
+        // if (windows.length === 0 && recorderWindow !== null) {
+        //     let recorder = recorderWindow;
+        //     // set it to null to really close
+        //     recorderWindow = null;
+        //     recorder.close();
+        // }
     });
 };
 
