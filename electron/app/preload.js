@@ -5,10 +5,19 @@ const APP_NAME = 'jamovi';
 
 
 let dialogProvider;
-let emitter = new events.EventEmitter();
+let listeners = [ ];
 
-let on = (name, args) => emitter.on(name, args);
-let _notify = (name, args) => emitter.emit(name, args);
+function on(name, callback) {
+    listeners.push({ name, callback });
+}
+
+function _notify(name, event) {
+    for (let listener of listeners) {
+        let ret = listener.callback(event);
+        if (ret === false)
+            return ret;
+    }
+}
 
 let os;
 if (navigator.platform === 'Win32')
@@ -64,12 +73,12 @@ let closing = false;
 // shouldn't be able to refresh the page, but they're useful during
 // development.
 
-window.onbeforeunload = event => {
+window.onbeforeunload = (event) => {
     if (closing !== true && loading !== true) {
         setTimeout(() => {
-            let event = new Event('close', { cancelable: true });
-            _notify('close', event);
-            if (event.defaultPrevented === false) {
+            let event = { };
+            let returned = _notify('close', event);
+            if (returned !== false) {
                 closing = true;
                 closeWindow();
             }
@@ -94,8 +103,11 @@ function closeWindow(force) {
 }
 
 function navigate(instanceId) {
-    loading = true;
-    window.location = `${ window.location.origin }/${ instanceId }/`;
+    // loading = true;
+    // window.location = `${ window.location.origin }/${ instanceId }/`;
+
+    // work around for: https://github.com/electron/electron/issues/20746
+    ipc.send('request', { type: 'navigate', data: instanceId });
 }
 
 function openWindow(instanceId) {

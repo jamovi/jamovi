@@ -486,7 +486,7 @@ $(document).ready(async() => {
         host.setEdited(dataSetModel.attributes.edited);
     });
 
-    host.on('close', event => {
+    host.on('close', (event) => {
         if (dataSetModel.attributes.edited) {
             let response = host.showMessageBox({
                 type: 'question',
@@ -495,12 +495,12 @@ $(document).ready(async() => {
                 message: "Save changes to '" + instance.attributes.title + "'?",
             });
             if (response === 1) {  // Cancel
-                event.preventDefault();
+                return false;
             }
             else if (response === 0) {  // Save
-                event.preventDefault();
                 backstageModel.externalRequestSave()
                     .then(() => host.closeWindow(true));
+                return false;
             }
         }
     });
