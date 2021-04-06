@@ -10,3 +10,6 @@
 [submodule "jamovi-readstat"]
 	path = readstat
 	url = https://github.com/jamovi/jamovi-readstat.git
+[submodule "scatr"]
+	path = scatr
+	url = https://github.com/jamovi/scatr.git
