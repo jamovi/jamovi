@@ -52,6 +52,7 @@ h1 {
 
 .silky-layout-cell {
     overflow:visible;
+    visibility: visible;
 }
 
 .silky-layout-cell.cell-border:not(.first-cell) {
@@ -327,10 +328,12 @@ h1 {
 
 .silky-layout-cell.cell-invisible, .silky-layout-cell.cell-invisible * {
     pointer-events: none;
+    transition: 0.2s visibility;
+    visibility: hidden !important;
 }
 
 .silky-layout-cell.rendered {
-    transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, opacity 0.2s;
+    transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, opacity 0.2s, visibility 0.2s;
 }
 
 

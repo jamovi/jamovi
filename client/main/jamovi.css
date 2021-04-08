@@ -194,16 +194,15 @@ body.windows.electron #header-buttons {
     box-sizing: border-box;
     width: 585px;
     border: none;
+    opacity: 1;
+    transition: opacity 0.5s, visibility 0.5s;
+    visibility: visible;
 }
 
 .silky-hidden-options-control {
     visibility: hidden;
     height: 0px;
     opacity: 0;
-}
-
-.silky-options-control {
-    transition: opacity 0.5s;
 }
 
 #progress-bar-helper {

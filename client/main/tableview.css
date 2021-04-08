@@ -219,13 +219,15 @@
     top: 3px;
     opacity: 0;
     cursor: default;
-    transition: opacity .2s, background-color .2s;
+    transition: opacity .2s, background-color .2s, visibility 0.2s;
+    visibility: hidden;
 }
 
 .jmv-column-header[data-columntype='computed'] > .jmv-column-header-colour,
 .jmv-column-header[data-columntype='recoded'] > .jmv-column-header-colour,
 .jmv-column-header[data-columntype='output'] > .jmv-column-header-colour {
     opacity: 1;
+    visibility: visible;
 }
 
 .jmv-row-header-cell.virtual {
@@ -333,7 +335,8 @@
 
 .jmv-row-header-cell > .sub-selection-bar {
     opacity: 0;
-    transition: opacity .2s;
+    transition: opacity .2s, visibility 0.2s;
+    visibility: hidden;
     width: 100%;
     position: absolute;
     border-right: 2px solid #5e8bc4;
@@ -346,7 +349,8 @@
 
 .jmv-column-header > .sub-selection-bar {
     opacity: 0;
-    transition: opacity .2s;
+    transition: opacity .2s, visibility 0.2s;
+    visibility: hidden;
     height: 100%;
     position: absolute;
     border-bottom: 2px solid #5e8bc4;
@@ -359,6 +363,7 @@
 
 .highlighted.is-sub-selection > .sub-selection-bar {
     opacity: 1;
+    visibility: visible;
 }
 
 .jmv-table-cell-secondary-selected, .jmv-table-cell-selected.multi {

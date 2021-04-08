@@ -8,7 +8,7 @@ const SuperClass = require('../common/superclass');
 
 const LayoutCell = function(parent, properties) {
 
-    this.$el = $('<div style="opacity: 0; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>');
+    this.$el = $('<div style="opacity: 0; visibility: hidden; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>');
 
     //if (parent.editable)
     //    this.$el.css("border", "1px dotted red");
@@ -31,9 +31,8 @@ const LayoutCell = function(parent, properties) {
             this._visible = properties.visible;
             this.$el.addClass("cell-invisible");
             this.$el.addClass('cell-disconnected');
-            this.$el.css('height', '0px');
+            this.$el.css( { opacity:  0, visibility: 'hidden', height: '0px' });
             this.$el.attr('data-collapsed', 'true');
-            this.$el.css('opacity', 0);
         }
     }
 
@@ -150,7 +149,7 @@ const LayoutCell = function(parent, properties) {
         this.$el.removeClass("not-rendered");
         this.$el.addClass("rendered");
         if (this._visible)
-            this.$el.css("opacity", 1);
+            this.$el.css( { opacity: 1, visibility: 'visible' });
     };
 
     this.visible = function() {
@@ -225,7 +224,7 @@ const LayoutCell = function(parent, properties) {
                 }
                 this.collapse(immediately);
             }
-            this.$el.css('opacity', (this._visible ? 1 : 0));
+            this.$el.css( { opacity: (this._visible ? 1 : 0), visibility: (this._visible ? 'visible' : 'hidden') } );
 
             this.trigger('layoutcell.visibleChanged');
         }

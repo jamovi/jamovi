@@ -179,7 +179,8 @@
     opacity: 0;
     overflow: hidden;
     padding: 0px 0px 0px 0px;
-    transition: .2s height ease-out, .2s opacity ease-out;
+    transition: .2s height ease-out, .2s opacity ease-out, 0.2s visibility ease-out;
+    visibility: hidden;
 }
 
 .silky-bs-op-place.selected-place {
@@ -337,12 +338,14 @@
     min-width: 100px ;
     overflow: hidden;
     padding: 20px;
-    transition: .2s opacity ease-out;
+    transition: .2s opacity ease-out, 0.2s visibility ease-out;
     opacity: 0;
+    visibility: hidden;
 }
 
 .silky-bs-choices-list.fade-in {
     opacity: 1;
+    visibility: visible;
 }
 
 .silky-bs-fslist {
@@ -609,19 +612,22 @@
     margin-top: 5px;
     height: 30px;
     opacity: 1;
-    transition: 0.2s opacity, 0.2s height;
+    transition: 0.2s opacity, 0.2s height, 0.2s visibility;
+    visibility: visible;
 }
 
 .silky-bs-fslist-import-options.hidden {
     height: 0px;
     opacity: 0;
+    visibility: hidden;
 }
 
 .jmv-bs-fslist-checkbox {
     margin-left: 5px !important;
     margin-right: 0px !important;
     opacity: 1;
-    transition: 0.2s opacity, 0.2s width, 0.2s margin;
+    transition: 0.2s opacity, 0.2s width, 0.2s margin, 0.2s visibility;
+    visibility: visible;
 }
 
 .jmv-bs-fslist-checkbox.hidden {

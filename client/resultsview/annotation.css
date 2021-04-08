@@ -52,7 +52,7 @@
 
 .jmv-annotation .editor-box {
     width: 100%;
-    transition: .2s opacity, .2s background-color, 0.2s margin, 0.2s padding;
+    transition: .2s opacity, 0.2s visibility, .2s background-color, 0.2s margin, 0.2s padding;
     overflow: hidden;
     overflow: visible;
     padding-top: 0px;
@@ -63,6 +63,7 @@
     padding-left: 10px;
     padding-right: 10px;
     margin-left: -10px;
+    visibility: visible;
 }
 
 #results.edit-state:not(.analysis-selected):not(.no-analysis-selected):not(.edit-focus) .jmv-annotation .editor-box {
@@ -233,10 +234,11 @@ https://github.com/quilljs/quill/issues/1157
     content: '';
     color: rgb(116, 116, 116);
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: 0.2s opacity, 0.2s visibility;
     transition-delay: 0.2s;
     font-style: normal;
     color: #3E6DA9;
+    visibility: hidden;
 }
 
 .edit-state .ql-editor.ql-blank::before {
@@ -246,4 +248,5 @@ https://github.com/quilljs/quill/issues/1157
 #results:not(.edit-state) .jmv-annotation:not(.focused) .ql-editor.ql-blank:hover::before {
     content: attr(data-placeholder);
     opacity: 1;
+    visibility: visible;
 }

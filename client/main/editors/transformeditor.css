@@ -173,10 +173,11 @@
     position: relative;
     margin-top: 3px;
     align-items: center;
-    transition: .2s opacity, .2s height, .2s margin, .2s top;
+    transition: .2s opacity, .2s height, .2s margin, .2s top, 0.2s visibility;
     overflow: hidden;
     opacity: 1;
     top: 0px;
+    visibility: visible;
 }
 
 .jmv-transform-editor-options > .formula-box:first-child {
@@ -186,6 +187,7 @@
 .jmv-transform-editor-options > .formula-box.hidden {
     opacity: 0;
     height: 0px;
+    visibility: hidden;
 }
 
 .jmv-transform-editor-options > .formula-box > .reorder-cond {
@@ -232,13 +234,16 @@
     margin-left: 3px;
     overflow: hidden;
     width: 25px;
-    transition: 0.2s width, .2s opacity, .2s margin;
+    transition: 0.2s width, .2s opacity, .2s margin, 0.2s visibility;
+    opacity: 1;
+    visibility: visible;
 }
 
 .jmv-transform-editor > .contents > .content-list > .right-box.hidden {
     width: 0px;
     opacity: 0;
     margin-left: 0px;
+    visibility: hidden;
 }
 
 .jmv-transform-editor > .contents > .insert-box > .insert {

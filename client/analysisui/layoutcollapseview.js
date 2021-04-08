@@ -30,8 +30,10 @@ const LayoutCollapseView = function(params) {
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.$header = $('<div class="silky-options-collapse-button silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + t + groupText + '</div>');
 
-        if (this._collapsed)
-            this.$header.addClass("silky-gridlayout-collapsed");
+        if (this._collapsed) {
+            this.$el.addClass('view-colapsed');
+            this.$header.addClass('silky-gridlayout-collapsed');
+        }
 
         this._headerCell = this.addCell(0, 0, this.$header);
         this._headerCell.setStretchFactor(1);
@@ -57,6 +59,7 @@ const LayoutCollapseView = function(params) {
             return;
 
         this.$header.addClass("silky-gridlayout-collapsed");
+        this.$el.addClass('view-colapsed');
 
         this.setContentVisibility(false);
         this._collapsed = true;
@@ -72,6 +75,7 @@ const LayoutCollapseView = function(params) {
             return;
 
         this.$header.removeClass("silky-gridlayout-collapsed");
+        this.$el.removeClass('view-colapsed');
 
         this.setContentVisibility(true);
 

@@ -2,6 +2,10 @@
     overflow: hidden;
 }
 
+.jmv-collapse-view:not(.view-colapsed) {
+    overflow: visible;
+}
+
 .silky-options-collapse-button {
     white-space: nowrap;
 }

@@ -1,16 +1,14 @@
 
 .jmv-dropdown-widget {
-    /*display: flex;
-    max-height: 200px;*/
     max-width: 450px;
-    /*min-width: 100px;*/
     position: absolute;
     opacity: 1;
     background-color: white;
     border: 1px solid #c1c1c1;
     box-shadow: 0px 0px 5px #c1c1c1;
-    transition: 0.3s opacity;
+    transition: 0.3s opacity, 0.3s visibility;
     z-index: 500;
+    visibility: visible;
 }
 
 .jmv-dropdown-widget * {
@@ -23,6 +21,7 @@
 
 .dropdown-hidden {
     opacity: 0;
+    visibility: hidden;
 }
 
 .jmv-dropdown-contents {
