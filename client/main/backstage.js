@@ -2035,6 +2035,7 @@ const BackstageView = SilkyView.extend({
             for (let i = 0; i < $subOps.length; i++) {
                 $($subOps[i]).css('height', '');
                 $subOps.css('opacity', '');
+                $subOps.css('visibility', '');
             }
         }
     },
@@ -2089,6 +2090,7 @@ const BackstageView = SilkyView.extend({
         }
         $subOps.css('height', height);
         $subOps.css('opacity', 1);
+        $subOps.css('visibility', 'visible');
 
         let hasPlaces = op !== null && op.places !== undefined;
 

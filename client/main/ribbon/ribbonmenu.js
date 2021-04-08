@@ -82,10 +82,6 @@ const RibbonMenu = Backbone.View.extend({
 
         if (changed) {
             item.hidden = true;
-            setTimeout(() => {
-                if (item.hidden)
-                    item.$el.addClass('menu-item-hidden');
-            }, 200);
             item.$el.addClass('menu-item-hiding');
         }
     },
@@ -113,11 +109,8 @@ const RibbonMenu = Backbone.View.extend({
 
         if (changed) {
             item.hidden = false;
-            item.$el.removeClass('menu-item-hidden');
-            setTimeout(() => {
-                if (item.hidden === false)
-                    item.$el.removeClass('menu-item-hiding');
-            }, 0);
+            if (item.hidden === false)
+                item.$el.removeClass('menu-item-hiding');
         }
     },
     _toggleMenu() {
@@ -186,7 +179,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.new)
             classes += ' new';
         if (item.hidden)
-            classes += ' menu-item-hiding menu-item-hidden';
+            classes += ' menu-item-hiding';
 
         let html = `<div data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }">`;
         html += '<div class="description">';
@@ -236,7 +229,7 @@ const RibbonMenu = Backbone.View.extend({
         }
         if (allHidden) {
             group.hidden = true;
-            $group.addClass('menu-item-hiding menu-item-hidden');
+            $group.addClass('menu-item-hiding');
         }
         $group.append($items);
 
@@ -266,7 +259,7 @@ const RibbonMenu = Backbone.View.extend({
         this.$el.append($label);
         this.$el.append($menu);
         if (allHidden) {
-            this.$el.addClass('menu-item-hiding menu-item-hidden');
+            this.$el.addClass('menu-item-hiding');
             this.hidden = true;
         }
 

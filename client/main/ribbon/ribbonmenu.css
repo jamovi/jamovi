@@ -13,8 +13,9 @@
     align-items: center;
     flex-direction: column;
 
-    transition: 0.2s opacity, 0.2s width;
+    transition: 0.2s opacity, 0.2s width, 0.2s visibility;
     opacity: 1;
+    visibility: visible;
 }
 
 .jmv-ribbon[mode=demo] .display-in-menu {
@@ -152,7 +153,8 @@
     margin-left: 8px;
     filter: opacity(80%);
     opacity: 0;
-    transition: 0.2s width, 0.3s opacity, 0.2s margin-right;
+    transition: 0.2s width, 0.3s opacity, 0.2s margin-right, 0.2s visibility;
+    visibility: hidden;
 }
 
 .module-analysis-list {
@@ -196,16 +198,13 @@
 
 .jmv-ribbon-menu-item.module.open .to-analyses-arrow {
     opacity: 1;
+    visibility: visible;
 }
 
 .menu-item-hiding {
     opacity: 0;
     width: 0px;
-}
-
-.menu-item-hidden {
-    position: absolute;
-    pointer-events: none;
+    visibility: hidden;
 }
 
 .jmv-ribbon-menu-heading {
