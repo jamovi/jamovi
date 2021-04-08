@@ -170,12 +170,13 @@
     padding: 0;
     box-sizing: border-box;
     right: 0px;
-    margin-right: -100%;
+    margin-right: 100%;
     opacity: 0;
-    transition: 0.2s opacity;
+    transition: 0.2s opacity, 0.2s visibility;
     box-shadow: 0px 0px 5px #c1c1c1;
     border: 1px solid #c1c1c1;
     min-width: 250px;
+    visibility: hidden;
 }
 
 .side-panel-heading {
@@ -186,7 +187,7 @@
 
 .side-panel-visible {
     opacity: 1;
-    margin-right: 100%;
+    visibility: visible;
 }
 
 .jmv-ribbon-menu-item.module {
