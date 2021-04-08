@@ -16,7 +16,8 @@
     left: 100% ;
     top: 0;
     opacity: 1;
-    transition: .2s opacity;
+    transition: .2s opacity, 0.2s visibility;
+    visibility: visible;
 }
 
 .jmv-ribbon-button-menu.context-menu.left {
