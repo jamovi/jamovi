@@ -21,12 +21,14 @@
     border-radius: 3px;
     line-height: 1.5em;
     color: #484848;
-    transition: 0.5s opacity;
+    transition: 0.5s opacity, 0.5s visibility;
     animation: blinkingBackground 0.5s infinite;
+    visibility: hidden;
 }
 
 .silky-options-supplier-group .msg.active, .silky-options-supplier-group .msg.hovering {
     opacity: 1;
+    visibility: visible;
 }
 
 @keyframes blinkingBackground {
@@ -58,10 +60,11 @@
 .supplier-search {
     height: 25px;
     opacity: 1;
-    transition: opacity 0.2s;
+    transition: 0.2s opacity, 0.2s visibility;
     background: white;
     border-bottom: 1px solid rgb(130, 130, 130);
     z-index: 90;
+    visibility: visible;
 }
 
 .outer-text {
@@ -122,11 +125,13 @@
     display: flex;
     align-items: center;
     opacity: 0;
-    transition: opacity .2s;
+    transition: opacity .2s, 0.2s visibility;
+    visibility: hidden;
 }
 
 .silky-list-item .power-box.power-visible {
     opacity: 1;
+    visibility: visible;
 }
 
 .silky-list-item .power-box .button-box {

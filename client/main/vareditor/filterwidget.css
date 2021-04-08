@@ -30,6 +30,7 @@
 .filter-hidden {
     opacity: 0;
     height: 0px;
+    visibility: hidden;
 }
 
 .filter-button {
@@ -63,13 +64,16 @@
     margin: 4px 4px 4px 4px;
     background: #f8f8f8;
     opacity: 1;
-    transition: 0.2s opacity, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
+    transition: 0.2s opacity, 0.2s visibility, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
+    visibility: visible;
 }
 
 .jmv-filter-splitter {
     height: 2px;
     margin: 3px;
-    border-bottom: 1px solid #e9e9e9;;
+    border-bottom: 1px solid #e9e9e9;
+    opacity: 1;
+    visibility: visible;
 }
 
 .jmv-filter-list-box > .jmv-filter-options:not(.remove) ~ .jmv-filter-options:not(.remove) {
@@ -187,7 +191,7 @@
     flex-direction: row;
     position: relative;
     margin-bottom: 5px;
-    transition: 0.4s opacity, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
+    transition: 0.4s opacity, 0.4s visibility, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .equal {
@@ -345,6 +349,7 @@
     padding: 0px;
     border-width: 0px;
     min-height: unset;
+    visibility: hidden;
 }
 
 .jmv-filter-splitter.remove, .jmv-filter-options > .formula-list > .formula-box.remove {
@@ -353,6 +358,7 @@
     padding: 0px;
     border-width: 0px;
     min-height: unset;
+    visibility: hidden;
 }
 
 .jmv-filter-options > .title-box .status-box:hover .active {

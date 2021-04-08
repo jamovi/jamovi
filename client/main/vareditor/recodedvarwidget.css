@@ -171,11 +171,13 @@
     grid-column-end: 6;
     grid-row: 3;
     color: #be564d;
-    transition: 0.2s opacity;
+    transition: 0.2s opacity, 0.2s visibility;
+    visibility: hidden;
 }
 
 .jmv-variable-recoded-top .error-msg.show {
     opacity: 1;
+    visibility: visible;
 }
 
 .jmv-variable-recoded-top .edit-button:hover {

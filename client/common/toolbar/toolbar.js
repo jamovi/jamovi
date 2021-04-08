@@ -62,7 +62,7 @@ const Toolbar = function(items) {
         if ( ! this._tarpVisible) {
             tarp.show(true, 0, 10)
                 .then(() => this._menuClosed(), () => this._menuClosed());
-            this.$el.css('z-index', 100);
+            this.$el.css('z-index', 112);
             this._tarpVisible = true;
         }
     };
