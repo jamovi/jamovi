@@ -1978,11 +1978,13 @@ const BackstageView = SilkyView.extend({
         let recentsModel = this.model.recentsModel();
         let recentsView = new FSEntryListView({el: $recentsBody, model: recentsModel});
 
-
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
         this.$ops = this.$el.find('.silky-bs-menu-item');
 
         this._opChanged();
+
+        if (this.main)
+            this.main.close();
 
         this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
     },
@@ -2106,6 +2108,13 @@ const BackstageView = SilkyView.extend({
 
 const BackstageChoices = SilkyView.extend({
     className: 'silky-bs-choices',
+
+    close: function() {
+        this.remove();
+        this.unbind();
+        this.model.off('change:place', this._placeChanged);
+    },
+
     initialize : function() {
 
         this.model.on('change:place', this._placeChanged, this);
