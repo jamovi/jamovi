@@ -22,9 +22,14 @@
     color: #CCCCCC;
 }
 
+.jmv-ribbon-menu-group:not(.menu-item-hidden):first-child {
+    margin-top: 0px ;
+}
+
 .jmv-group-items {
     overflow: auto;
     max-height: 500px;
+    padding-top: 6px;
 }
 
 .jmv-analyses-button {
@@ -112,19 +117,11 @@
     background-color: #C7D8F2 ;
 }
 
-.jmv-ribbon-menu-item:not(.menu-item-hidden):first-child {
-    margin-top: 6px ;
-}
-
-.jmv-ribbon-menu-item:not(.menu-item-hidden):last-child {
-    margin-bottom: 6px ;
-}
-
 .jmv-analyses-button .jmv-ribbon-button-menu {
-    padding: 0;
-    left: 0px ;
+    left: 0px;
     top: 100%;
     margin-left: 0;
+    padding: 6px 0px;
 }
 
 .jmv-ribbon-menu-item-sub {
@@ -204,12 +201,12 @@
 .menu-item-hiding {
     opacity: 0;
     width: 0px;
+    height: 0px;
     visibility: hidden;
+    position: absolute;
 }
 
 .jmv-ribbon-menu-heading {
-    margin-top: 6px ;
-    margin-bottom: 6px ;
     background-color: #E8E8E8 ;
     color: #555555 ;
     font-size: 72% ;
