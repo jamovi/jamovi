@@ -204,6 +204,7 @@
 .menu-item-hiding {
     opacity: 0;
     width: 0px;
+    height: 0px;
     visibility: hidden;
 }
 
