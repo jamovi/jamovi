@@ -9,10 +9,31 @@ const MissingValueList = function() {
         return target === this.$list[0];
     };
 
+    this.isConditionValid = function(text) {
+
+        let trimText = text.trim();
+        let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
+
+        for (let i = 0; i < validOps.length; i++) {
+            let op = validOps[i];
+            if (trimText.startsWith(op)) {
+                if (trimText.length > op.length)
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        return false;
+    };
+
     this.getValue = function() {
         let value = [];
+        let j = 0;
         for (let i = 0; i < this.items.length; i++) {
-            value[i] = this.items[i].value;
+            let condition = this.items[i].value;
+            if (this.isConditionValid(condition))
+                value[j++] = condition;
         }
         return value;
     };
