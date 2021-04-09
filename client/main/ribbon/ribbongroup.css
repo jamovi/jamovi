@@ -6,6 +6,10 @@
     flex-grow: 1;
 }
 
+.jmv-ribbon-menu-group {
+    margin-top: 6px;
+}
+
 .jmv-ribbon-group-label {
     width: 100%;
 }
