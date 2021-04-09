@@ -66,19 +66,6 @@ const MissingValueEditor = function(model) {
 
         this.missingValueList.$el.find('add-missing-value').focus();
 
-        this.missingValueList.$el.on('add-missing-value', () => {
-            this._focusFormulaControls();
-            let values = this.model.get('missingValues');
-            let newValues = [];
-            if (values !== null) {
-                for (let value of values)
-                    newValues.push(value);
-            }
-            newValues.push('');
-            this._internalChange = true;
-            this.model.set('missingValues', newValues);
-        });
-
         this.missingValueList.$el.on('missing-value-removed', (event, index) => {
             this._focusFormulaControls();
             let values = this.model.get('missingValues');
