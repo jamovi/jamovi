@@ -41,7 +41,7 @@ if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
     cd "$SOURCE_DIR/jmv"
     if [ ! -d 'build' ]; then
         mkdir -p build
-        cp -r /tmp/jmv-build build/R4.0.2-linux
+        cp -r /tmp/jmv-build build/R4.0.5-linux
     fi
     "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --patch-version
 fi
