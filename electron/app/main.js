@@ -355,7 +355,7 @@ const spawn = new Promise((resolve, reject) => {
     else
         platform = 'linux';
 
-    updateUrl = 'https://www.jamovi.org/downloads/update?p=' + platform + '&v=' + config.version + '&f=zip';
+    updateUrl = `https://www.jamovi.org/downloads/update?p=${ platform }&v=${ config.version }&f=zip&r=${ os.release() }&a=${ process.arch }`;
 
     setTimeout(() => checkForUpdate(updateUrl), 500);
     setInterval(() => checkForUpdate(updateUrl, 'checking', false), 60 * 1000);
