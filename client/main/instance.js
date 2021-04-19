@@ -872,13 +872,11 @@ const Instance = Backbone.Model.extend({
                             changes.missingValuesChanged ||
                             changes.descriptionChanged)
                         columnDataChanged = true;
-                        if (changes.columnType !== 'output')
-                            rerunAnalysis = true;
+                        rerunAnalysis = true;
                     }
                     if (changes.nameChanged && using.includes(changes.oldName)) {
                         columnRenamed = true;
-                        if (changes.columnType !== 'output')
-                            rerunAnalysis = true;
+                        rerunAnalysis = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
                     }
                     if (changes.levelsChanged) {

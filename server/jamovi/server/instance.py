@@ -379,6 +379,7 @@ class Instance:
 
                     column_pb = response.schema.columns.add()
                     self._populate_column_schema(column, column_pb, True)
+                    column_pb.dataChanged = True
 
                 # delete columns
 
