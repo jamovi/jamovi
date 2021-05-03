@@ -583,7 +583,12 @@ class Server:
             img-src 'self' data:;
             script-src  'self' 'unsafe-eval' 'unsafe-inline';
             style-src 'self' 'unsafe-inline';
-            frame-src 'self' 127.0.0.1:{ self._ports[1] } 127.0.0.1:{ self._ports[2] } https://www.jamovi.org;
+            frame-src 'self'
+                127.0.0.1:{ self._ports[1] }
+                localhost:{ self._ports[1] }
+                127.0.0.1:{ self._ports[2] }
+                localhost:{ self._ports[2] }
+                https://www.jamovi.org;
         '''.replace('\n', '')
 
         for listener in self._ports_opened_listeners:
