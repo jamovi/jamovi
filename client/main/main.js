@@ -231,16 +231,14 @@ $(document).ready(async() => {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
             if (analysis !== null && typeof(analysis) !== 'string') {
-                analysis.ready.then(function() {
-                    if (analysis.hasUserOptions()) {
-                        splitPanel.setVisibility('main-options', true);
-                        optionspanel.setAnalysis(analysis);
-                        if (ribbonModel.get('selectedTab') === 'data')
-                            ribbonModel.set('selectedTab', 'analyses');
-                    }
-                    else
-                        optionspanel.hideOptions(false);
-                });
+                if (analysis.hasUserOptions()) {
+                    splitPanel.setVisibility('main-options', true);
+                    optionspanel.setAnalysis(analysis);
+                    if (ribbonModel.get('selectedTab') === 'data')
+                        ribbonModel.set('selectedTab', 'analyses');
+                }
+                else
+                    optionspanel.hideOptions(false);
             }
             else {
                 optionspanel.hideOptions();
