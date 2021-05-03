@@ -156,7 +156,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             }
         }),
         new Promise((resolve, reject) => {
-            this.notifyDocumentReady= resolve;
+            this.notifyDocumentReady = resolve;
             notifyAborted = reject;
         }),
         host.version.then(version => {
@@ -215,9 +215,7 @@ let OptionsPanel = SilkyView.extend({
         }
 
         if (analysis !== null) {
-            analysis.ready.then(() => {
-                this.setAnalysis(analysis);
-            });
+            this.setAnalysis(analysis);
         }
     },
 
@@ -242,8 +240,10 @@ let OptionsPanel = SilkyView.extend({
             this._currentResources = null;
         }
 
-        resources.ready.then(function() {
-            resources.updateData(analysis.options.getValues());
+        resources.ready.then(() => {
+            analysis.ready.then(() => {
+                resources.updateData(analysis.options.getValues());
+            });
         });
 
         resources.analysis = analysis;
