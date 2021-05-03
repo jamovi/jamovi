@@ -39,6 +39,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libpng16-16 \
     libjpeg9 \
     libcairo2 \
+    libharfbuzz0b \
+    libfribidi0 \
+    libtiff5 \
     git
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
