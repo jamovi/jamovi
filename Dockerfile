@@ -38,7 +38,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libcurl3-nss \
     libpng16-16 \
     libjpeg9 \
-    libcairo2
+    libcairo2 \
+    git
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
@@ -90,10 +91,10 @@ COPY scatr /tmp/source/scatr
 RUN build scatr
 
 # extra modules
-# RUN git clone https://github.com/raviselker/surveymv.git
-# RUN node jamovi-compiler/index.js --install surveymv --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
-# RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
-# RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
+RUN git clone https://github.com/raviselker/surveymv.git
+RUN node source/jamovi-compiler/index.js --install surveymv --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
+RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
+RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
 
 # client
 COPY client /tmp/source/client
