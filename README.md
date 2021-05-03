@@ -39,6 +39,7 @@ docker-compose exec jamovi build engine
 docker-compose exec jamovi build compiler
 docker-compose exec jamovi build jmvcore
 docker-compose exec jamovi build jmv
+docker-compose exec jamovi build scatr
 docker-compose exec jamovi build client
 ```
 

@@ -85,9 +85,11 @@ RUN build jmvcore
 COPY jmv /tmp/source/jmv
 RUN build jmv
 
+# scatr
+COPY scatr /tmp/source/scatr
+RUN build scatr
+
 # extra modules
-# RUN git clone https://github.com/raviselker/scatr.git
-# RUN node jamovi-compiler/index.js --install scatr --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
 # RUN git clone https://github.com/raviselker/surveymv.git
 # RUN node jamovi-compiler/index.js --install surveymv --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
 # RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
