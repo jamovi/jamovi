@@ -46,6 +46,12 @@ if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
     "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --patch-version
 fi
 
+if [[ $1 = "scatr" ]] || [[ $1 = "all" ]]; then
+    echo "building scatr"
+    cd "$SOURCE_DIR/scatr"
+    "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
+fi
+
 if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
     echo "building client"
     cd "$SOURCE_DIR/client"
