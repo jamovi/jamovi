@@ -362,7 +362,7 @@ const FSEntryBrowserView = SilkyView.extend({
         if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
-            }, 50);
+            }, 400);
         }
 
         if (this.model.attributes.extensions) {
@@ -1359,7 +1359,7 @@ const BackstageModel = Backbone.Model.extend({
         if (host.isElectron) {
             if (this._wdData.main.initialised === false)
                 return;
-            osPath = this._wdData.main.oswd
+            osPath = this._wdData.main.oswd;
         }
 
         if (type === 'open') {
@@ -1872,7 +1872,6 @@ const BackstageView = SilkyView.extend({
     className: 'backstage',
     initialize: function() {
         this.$el.attr('tabindex', 0);
-        this.render();
         this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
@@ -2177,7 +2176,9 @@ const BackstageChoices = SilkyView.extend({
         }
 
         if (old)
-            setTimeout(function() { old.remove(); }, 200);
+            setTimeout(function() {
+                old.remove();
+            }, 200);
 
         if ('action' in place)
             place.action();

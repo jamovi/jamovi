@@ -7,7 +7,10 @@ const host = require('./host');
 let Coms = require('./coms');
 let coms = new Coms();
 
+const Selection = require('./selection');
+const ViewController = require('./viewcontroller');
 const TableView   = require('./tableview');
+const VariablesView   = require('./variablesview');
 const ResultsView = require('./results');
 const SplitPanel  = require('./splitpanel');
 const Backstage   = require('./backstage').View;
@@ -19,6 +22,7 @@ const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
 const ActionHub = require('./actionhub');
+
 
 const Instance = require('./instance');
 const Notify = require('./notification');
@@ -205,15 +209,39 @@ $(document).ready(async() => {
         instance.createAnalysis(analysis.name, analysis.ns, analysis.title);
     });
 
+    let mainTableMode = 'spreadsheet';
+
+    let setMainTableMode = function(mode) {
+        $('body').attr('data-table-mode', mode);
+        mainTableMode = mode;
+        viewController.focusView(mode);
+    };
+
     ribbon.on('tabSelected', function(tabName) {
         if (tabName === 'file')
             backstage.activate();
-        else if (tabName === 'data')
+        else if (tabName === 'data') {
+            setMainTableMode('spreadsheet');
+            if (splitPanel.mode === 'results')
+                splitPanel.setMode('data', true);
             optionspanel.hideOptions();
-        else if (tabName === 'analyses')
+        }
+        else if (tabName === 'variables') {
+            setMainTableMode('variables');
+            if (splitPanel.mode === 'results')
+                splitPanel.setMode('data', true);
+            optionspanel.hideOptions();
+        }
+        else if (tabName === 'analyses') {
             dataSetModel.set('editingVar', null);
-        else if (tabName === 'annotation')
+            if (splitPanel.mode === 'data')
+                splitPanel.setMode('results', true);
+        }
+        else if (tabName === 'annotation') {
             resultsView.hideWelcome();
+            if (splitPanel.mode === 'data')
+                splitPanel.setMode('results', true);
+        }
 
         instance.set('editState', tabName === 'annotation');
     });
@@ -222,19 +250,58 @@ $(document).ready(async() => {
     let optionsFixedWidth = 585;
     let splitPanel  = new SplitPanel({el : '#main-view'});
 
-    splitPanel.addPanel('main-table', { minWidth: 90, initialWidth: halfWindowWidth < (optionsFixedWidth + SplitPanelSection.sepWidth) ? (optionsFixedWidth + SplitPanelSection.sepWidth) : halfWindowWidth, level: 1});
-    splitPanel.addPanel('main-options', { minWidth: optionsFixedWidth, maxWidth: optionsFixedWidth, preferredWidth: optionsFixedWidth, visible: false, strongEdge: 'right', stretchyEdge: 'left', level: 1 });
-    splitPanel.addPanel('results', { minWidth: 150, initialWidth: halfWindowWidth, level: 0 });
-    splitPanel.addPanel('help', { minWidth: 30, preferredWidth: 200, visible: false, strongEdge: 'right', level: 1 });
+    splitPanel.$el.on('mode-changed', () => {
+        $('body').attr('data-splitpanel-mode', splitPanel.mode);
+        switch (splitPanel.mode) {
+            case 'results':
+                let tab = ribbonModel.get('selectedTab');
+                if (tab !== 'annotation')
+                    ribbonModel.set('selectedTab', 'analyses');
+                break;
+            case 'data':
+                if (mainTableMode === 'spreadsheet')
+                    ribbonModel.set('selectedTab', 'data');
+                else
+                    ribbonModel.set('selectedTab', 'variables');
+                break;
+        }
+    });
+
+    ribbon.on('toggle-screen-state', () => {
+        if (forcedFullScreen)
+            return;
+
+        let tab = ribbonModel.get('selectedTab');
+        if (splitPanel.mode === 'mixed') {
+            switch (tab) {
+                case 'variables':
+                case 'data':
+                    splitPanel.setMode('data');
+                    break;
+                case 'analyses':
+                case 'annotation':
+                    splitPanel.setMode('results');
+                    break;
+
+            }
+        }
+        else
+            splitPanel.setMode('mixed');
+    });
+
+    splitPanel.addPanel('main-table', { adjustable: true, fixed: false, anchor: 'left' });
+    splitPanel.addPanel('main-options', { adjustable: false, fixed: true, anchor: 'right', visible: false });
+    splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
 
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
             if (analysis !== null && typeof(analysis) !== 'string') {
+                dataSetModel.set('editingVar', null);
                 if (analysis.hasUserOptions()) {
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
-                    if (ribbonModel.get('selectedTab') === 'data')
+                    if (ribbonModel.get('selectedTab') === 'data' || ribbonModel.get('selectedTab') === 'variables')
                         ribbonModel.set('selectedTab', 'analyses');
                 }
                 else
@@ -259,22 +326,48 @@ $(document).ready(async() => {
                 { name: 'dismiss',   text: "Don't enable" },
                 { name: 'enable-code', text: 'Enable' } ]
         });
-        // these splitPanel.resized(); should go somewhere else
-        splitPanel.resized();
+
         notif.on('click', (event) => {
             if (event.name === 'enable-code')
                 instance.trustArbitraryCode();
             else if (event.name === 'more-info')
                 host.openUrl('https://www.jamovi.org/about-arbitrary-code.html');
         });
-        notif.on('dismissed', (event) => {
-            splitPanel.resized();
-        });
     });
 
     instance.on('moduleInstalled', (event) => {
         optionspanel.reloadAnalyses(event.name);
     });
+
+    let currentSplitMode = null;
+    let forcedFullScreen = false;
+    window.onresize = function(event) {
+        if (window.innerWidth < 850 && currentSplitMode === null) {
+            forcedFullScreen = true;
+            currentSplitMode = splitPanel.mode;
+            if (splitPanel.mode === 'mixed') {
+                let tab = ribbonModel.get('selectedTab');
+                switch (tab) {
+                    case 'variables':
+                    case 'data':
+                        splitPanel.setMode('data');
+                        break;
+                    case 'analyses':
+                    case 'annotation':
+                        splitPanel.setMode('results');
+                        break;
+                }
+            }
+        }
+        else if (window.innerWidth > 880) {
+             if (currentSplitMode !== null && splitPanel.mode !== currentSplitMode) {
+                splitPanel.setMode(currentSplitMode);
+            }
+
+            currentSplitMode = null;
+            forcedFullScreen = false;
+        }
+    };
 
     let $fileName = $('.header-file-name');
     instance.on('change:title', function(event) {
@@ -290,18 +383,27 @@ $(document).ready(async() => {
         splitPanel.setVisibility('main-options', false);
     });
 
-    let helpSection = splitPanel.getSection('help');
-    splitPanel.getSection('results').$panel.find('.hideHelp').click(function() {
-        splitPanel.setVisibility('help', helpSection.getVisibility() === false);
-    });
-
     splitPanel.render();
 
-    let mainTable   = new TableView({el : '#main-table', model : dataSetModel });
+    let $mainTable = $('#main-table');
+    let $spreadsheet = $('<div id="spreadsheet"></div>');
+    let $variablesList = $('<div id="variablelist"></div>');
+    $mainTable.append($spreadsheet);
+    $mainTable.append($variablesList);
+
+    let selection = new Selection(dataSetModel);
+    let viewController = new ViewController(dataSetModel, selection);
+    let mainTable   = new TableView({el : '#spreadsheet', model : dataSetModel, controller: viewController });
+    let variablesTable   = new VariablesView({el : '#variablelist', model : dataSetModel, controller: viewController });
+    viewController.focusView('spreadsheet');
 
     backstageModel.on('change:activated', function(event) {
         if ('activated' in event.changed)
             mainTable.setActive( ! event.changed.activated);
+    });
+
+    splitPanel.on('form-changed', () => {
+        mainTable.$el.trigger('resized');
     });
 
     let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
@@ -463,18 +565,11 @@ $(document).ready(async() => {
     optionspanel.setDataSetModel(dataSetModel);
     optionspanel.$el.on('splitpanel-hide', () =>  window.focus() );
 
-    let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel });
-    editor.$el[0].addEventListener('transitionend', () => { splitPanel.resized(); }, false);
-    editor.on('visibility-changing', value => {
-        if (value === false) {
-            let height = parseFloat(splitPanel.$el.css('height'));
-            splitPanel.resized({ height: height + 200 });
-        }
-    });
-
+    let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
 
     let notifications = new Notifications($('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
+    viewController.on('notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
     ribbon.on('notification', note => notifications.notify(note));
     editor.on('notification', note => notifications.notify(note));
@@ -482,6 +577,10 @@ $(document).ready(async() => {
 
     dataSetModel.on('change:edited', event => {
         host.setEdited(dataSetModel.attributes.edited);
+    });
+
+    dataSetModel.on('change:editingVar', event => {
+        optionspanel.hideOptions();
     });
 
     host.on('close', (event) => {
@@ -588,9 +687,9 @@ $(document).ready(async() => {
             });
         }
         else {
-            if (e.message)
-                console.log(e.message);
-            else
+            //if (e.message)
+            //    console.log(e.message);
+            //else
                 console.log(e);
 
             infoBox.setup({

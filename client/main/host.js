@@ -184,7 +184,7 @@ async function showOpenDialog(options) {
     // }
 
     return result;
-};
+}
 
 async function triggerDownload(url) {
     if ( ! triggerDownload.iframe) {

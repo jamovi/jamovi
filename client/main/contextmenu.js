@@ -54,13 +54,11 @@ const ContextMenu = function() { // this is constructed at the bottom
                 x -= this.$el.outerWidth(true) - 10;
                 y -= openButton.$el.position().top + 10;
             }
-
             if (y + this.$el.outerHeight(true) > window.innerHeight)
                 y = y - this.$el.outerHeight(true);
 
             if (x + this.$el.outerWidth(true) > window.innerWidth)
-                x = x - this.$el.innerWidth(true);
-
+                x = x - this.$el.outerWidth(true);
             this.$el.css({ top: y, left: x });
 
             if (openButton !== null)
@@ -76,12 +74,16 @@ const ContextMenu = function() { // this is constructed at the bottom
         this.show(ContextMenus.createFilterRowMenuItems(), x, y);
     };
 
-    this.showVariableMenu = function(x, y, plural) {
-        this.show(ContextMenus.createVariableMenuItems(plural), x, y);
+    this.showVariableMenu = function(x, y, plural, noData) {
+        this.show(ContextMenus.createVariableMenuItems(plural, noData), x, y);
     };
 
-    this.showFilterMenu = function(x, y) {
-        this.show(ContextMenus.createFilterMenuItems(), x, y);
+    this.showAppendVariableMenu = function(x, y) {
+        this.show(ContextMenus.createAppendVariableMenuItems(), x, y);
+    };
+
+    this.showFilterMenu = function(x, y, noData) {
+        this.show(ContextMenus.createFilterMenuItems(noData), x, y);
     };
 
     this.showResultsMenu = function(entries, x, y) {

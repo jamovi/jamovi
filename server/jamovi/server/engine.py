@@ -157,6 +157,8 @@ class Engine:
             self._socket.set_int_option(nanomsg.SOL_SOCKET, nanomsg.RCVMAXSIZE, 4 * 1024 * 1024)
             self._socket.bind(self._conn_path)
 
+            print(self._socket.get_int_option(nanomsg.SOL_SOCKET, nanomsg.RCVBUF))
+
             # need a separate thread for nanomsg :/
             self._thread = threading.Thread(target=self._run_loop, args=(
                 self._socket,

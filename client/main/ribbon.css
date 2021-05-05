@@ -2,6 +2,8 @@
 .jmv-ribbon {
     width: 100% ;
     color: #777777 ;
+    flex-grow: 0;
+    flex-shrink: 0;
 }
 
 .jmv-ribbon-header {
@@ -31,9 +33,55 @@
     -webkit-app-region: no-drag;
 }
 
+.jmv-ribbon-fullscreen {
+    position: absolute ;
+    right: 30px ;
+    /*top: 8px ;*/
+    font-size: 150% ;
+    text-align: center ;
+    width: 24px ;
+    height: 24px ;
+    color : #FFFFFF ;
+    border-radius: 1px ;
+    padding: 0 ;
+    -webkit-app-region: no-drag;
+    background-image: url("../assets/fullscreen-hide-data.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 60% 60%
+}
+
+body[data-splitpanel-mode=results] .jmv-ribbon-fullscreen {
+    background-image: url("../assets/splitscreen.svg");
+}
+
+body[data-splitpanel-mode=data] .jmv-ribbon-fullscreen {
+    background-image: url("../assets/splitscreen.svg");
+}
+
+body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=variables] {
+    background-image: url("../assets/fullscreen-hide-data.svg");
+}
+
+body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=edit] {
+    background-image: url("../assets/fullscreen-hide-data.svg");
+}
+
+body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=variables] {
+    background-image: url("../assets/fullscreen-hide-results.svg");
+}
+
+body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=data] {
+    background-image: url("../assets/fullscreen-hide-results.svg");
+}
+
 .jmv-ribbon-appmenu span {
     line-height: 24px;
     vertical-align: top;
+}
+
+body.windows.electron .jmv-ribbon-fullscreen {
+    top: 36px ;
 }
 
 body.windows.electron .jmv-ribbon-appmenu {
@@ -41,6 +89,11 @@ body.windows.electron .jmv-ribbon-appmenu {
 }
 
 .jmv-ribbon-appmenu:hover {
+    color: #EEEEEE ;
+    background-color: #4675B1 ;
+}
+
+.jmv-ribbon-fullscreen:hover {
     color: #EEEEEE ;
     background-color: #4675B1 ;
 }
@@ -66,6 +119,14 @@ body.windows.electron .jmv-ribbon-appmenu {
     padding: 6px ;
     -webkit-app-region: no-drag;
     display: flex ;
+    /*overflow-x: overlay;
+    overflow-y: visible;*/
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.jmv-ribbon-body::-webkit-scrollbar {
+  display: none;
 }
 
 .jmv-ribbon-button-separator {
