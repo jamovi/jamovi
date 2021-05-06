@@ -54,7 +54,7 @@ const VariablesView = SilkyView.extend({
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
         this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
-        this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: 'Columns', value: 0 });
+        this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: 'Variables', value: 0 });
         this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: 'Selected', value: 0 });
 
         this.$body      = this.$el.find('.jmv-variables-body');
@@ -292,7 +292,8 @@ const VariablesView = SilkyView.extend({
             this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
 
             row += 1;
-            finalColumnCount += 1;
+            if (column.columnType !== 'filter')
+                finalColumnCount += 1;
         }
 
         if (row === 2) {
@@ -338,22 +339,45 @@ const VariablesView = SilkyView.extend({
     },
     _addTextEvents($element, propertyName, column) {
         let internalBluring = false;
-        $element.focus(() => {
-            if (this.selection.cellInSelection(0, column.index, true) === false) {
-                this.selection.setSelection(0, column.index, true);
-                $element.attr('contenteditable', '');
-                internalBluring = true;
-                $element.blur();
-                $element.focus();
-            }
-            else if ($element[0].hasAttribute('contenteditable') === false) {
+        let internalFocus = false;
+
+        $element.focus(async () => {
+
+            if ($element[0].hasAttribute('contenteditable') === false) {
                 internalBluring = true;
                 $element.blur();
                 return;
             }
 
+            if (internalFocus === false) {
+                internalBluring = true;
+                $element.blur();
+
+                if (this._focusing)
+                    return;
+
+                this._focusing = true;
+
+                await new Promise((resolve) => setTimeout(resolve, 300));
+
+                if (this._dblClicked) {
+                    this._dblClicked = null;
+                    this._focusing = false;
+                    return;
+                }
+                else {
+                    internalFocus = true;
+                    this._focusing = false;
+                    $element.focus();
+                    return;
+                }
+            }
+
+            internalFocus = false;
+
             keyboardJS.pause('varview-' + propertyName);
-            $element.select();
+            document.execCommand('selectAll', false, null);
+            this._editingColumn = column;
         } );
 
         $element.blur(() => {
@@ -363,6 +387,7 @@ const VariablesView = SilkyView.extend({
                 if (column[propertyName] !== data[propertyName])
                     this.model.changeColumn(column.id, data);
                 window.clearTextSelection();
+                this._editingColumn = null;
             }
             internalBluring = false;
             keyboardJS.resume('varview-' + propertyName);
@@ -458,8 +483,12 @@ const VariablesView = SilkyView.extend({
                 this._mouseDown(event, colNo);
             });
             $cell.on('dblclick', event => {
-                let id = $cell.attr('data-id');
-                this.model.set('editingVar', [parseInt(id)]);
+                let id = parseInt($cell.attr('data-id'));
+                if (this._editingColumn && this._editingColumn.id === id)
+                    return;
+
+                this._dblClicked = true;
+                this.model.set('editingVar', [id]);
             });
         }
         $cell.append($contents);
