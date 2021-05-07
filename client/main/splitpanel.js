@@ -48,6 +48,10 @@ const SplitPanel = SilkyView.extend({
         return this._sections[i];
     },
 
+    onWindowResize() {
+        this._saveWidths();
+    },
+
     addPanel: function(name, properties) {
         let $panel = $('<div id="' + name + '"></div>');
 
@@ -99,6 +103,7 @@ const SplitPanel = SilkyView.extend({
                 if (value) {
                     let columnTemplates = this.$el.css('grid-template-columns').split(' ');
                     this._resultsWidth = columnTemplates[columnTemplates.length - 1];
+                    this._otherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
                     this.allowDocking('left');
                 }
 
@@ -259,6 +264,13 @@ const SplitPanel = SilkyView.extend({
                 if (currentSection.listIndex * 2 === columnTemplates.length - 1)
                     currentSection.lastWidth -= 2;
             });
+
+            if (this._resultsWidth) {
+                let newOtherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
+                this._resultsWidth = parseInt(columnTemplates[columnTemplates.length - 1]) + (newOtherWidth  - this._otherWidth);
+                this._resultsWidth = `${ this._resultsWidth }px`;
+                this._dataWidth = newOtherWidth;
+            }
         }
     },
 

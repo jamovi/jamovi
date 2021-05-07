@@ -342,6 +342,8 @@ $(document).ready(async() => {
     let currentSplitMode = null;
     let forcedFullScreen = false;
     window.onresize = function(event) {
+        splitPanel.onWindowResize();
+
         if (window.innerWidth < 850 && currentSplitMode === null) {
             forcedFullScreen = true;
             currentSplitMode = splitPanel.mode;
