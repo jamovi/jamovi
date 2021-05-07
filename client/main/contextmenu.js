@@ -16,7 +16,8 @@ const ContextMenu = function() { // this is constructed at the bottom
 
     this.owner = null;
 
-    this.show = function(menuItems, x, y, openPath, owner) {
+    this.show = function(menuItems, x, y, anchor, openPath, owner) {
+        anchor = anchor === undefined ? 'left' : anchor;
         openPath = openPath === undefined ? [] : openPath;
         this.owner = owner;
         if ( ! this._visible) {
@@ -57,8 +58,9 @@ const ContextMenu = function() { // this is constructed at the bottom
             if (y + this.$el.outerHeight(true) > window.innerHeight)
                 y = y - this.$el.outerHeight(true);
 
-            if (x + this.$el.outerWidth(true) > window.innerWidth)
+            if (anchor === 'right' || x + this.$el.outerWidth(true) > window.innerWidth)
                 x = x - this.$el.outerWidth(true);
+
             this.$el.css({ top: y, left: x });
 
             if (openButton !== null)
@@ -78,8 +80,8 @@ const ContextMenu = function() { // this is constructed at the bottom
         this.show(ContextMenus.createVariableMenuItems(plural, noData), x, y);
     };
 
-    this.showAppendVariableMenu = function(x, y) {
-        this.show(ContextMenus.createAppendVariableMenuItems(), x, y);
+    this.showAppendVariableMenu = function(x, y, anchor) {
+        this.show(ContextMenus.createAppendVariableMenuItems(), x, y, anchor);
     };
 
     this.showFilterMenu = function(x, y, noData) {
@@ -92,7 +94,7 @@ const ContextMenu = function() { // this is constructed at the bottom
         if (menu[0].items.length > 0)
             openPath.push(menu[0].items[menu[0].items.length-1].name);
 
-        this.show(menu, x, y, openPath);
+        this.show(menu, x, y, 'left', openPath);
     };
 
     this.isVisible = function() {
