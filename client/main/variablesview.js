@@ -64,7 +64,7 @@ const VariablesView = SilkyView.extend({
         this.$container.append(this._createCell($newVariable, 0, 1, 'new-variable', false, 4));
 
         $newVariable.on('click', (event) => {
-            ContextMenu.showAppendVariableMenu($newVariable.offset().left, $newVariable.offset().top + $newVariable.outerHeight(false), 'right');
+            ContextMenu.showAppendVariableMenu($newVariable.offset().left + $newVariable.outerWidth(false) + 15, $newVariable.offset().top + $newVariable.outerHeight(false) + 15, 'right');
         });
 
         this.$search      = this.$el.find('.search');
