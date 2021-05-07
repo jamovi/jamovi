@@ -17,7 +17,7 @@
     "build:analysisui:release": "browserify -t uglifyify analysisui/main.js --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
     "build:resultsview:release": "browserify -t uglifyify resultsview/main.js --outfile resultsview.js && lessc resultsview/main.less resultsview.css",
     "build:recorder:release": "browserify -t uglifyify recorder/main.js --outfile recorder.js && lessc recorder/main.less recorder.css",
-    "build:release": "npm run build:main:release && npm run build:analysisui:release && npm run build:resultsview:release && npm run build:recorder:release && sh release.sh",
+    "build:release": "npm run build:main:release && npm run build:analysisui:release && npm run build:resultsview:release && npm run build:recorder:release && bash release.sh",
     "": ""
   },
   "devDependencies": {
