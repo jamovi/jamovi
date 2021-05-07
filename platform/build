@@ -60,13 +60,17 @@ if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
     fi
     if [[ $2 = "release" ]]; then
         npm run build:release
+        cp www/*.js        /usr/lib/jamovi/client
+        cp www/*.html      /usr/lib/jamovi/client
+        cp www/*.css       /usr/lib/jamovi/client
+        cp -r www/assets   /usr/lib/jamovi/client
     else
         npm run prepublish
+        cp *.js        /usr/lib/jamovi/client
+        cp *.html      /usr/lib/jamovi/client
+        cp *.css       /usr/lib/jamovi/client
+        cp -r assets   /usr/lib/jamovi/client
     fi
 
-    cp *.js        /usr/lib/jamovi/client
-    cp *.html      /usr/lib/jamovi/client
-    cp *.css       /usr/lib/jamovi/client
     cp favicon.ico /usr/lib/jamovi/client
-    cp -r assets   /usr/lib/jamovi/client
 fi
