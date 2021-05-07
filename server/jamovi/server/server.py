@@ -532,30 +532,24 @@ class Server:
             (r'/[-0-9a-f]+/', SingleFileHandler, {
                 'path': analysisui_path,
                 'extra_headers': cache_headers }),
-            (r'/(analysisui\.js)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
-            (r'/(analysisui\.css)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
             (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': assets_path }),
+            (r'/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                'path': client_path,
+                'extra_headers': cache_headers }),
         ])
 
-        resultsview_path    = os.path.join(client_path, 'resultsview.html')
+        resultsview_path = os.path.join(client_path, 'resultsview.html')
 
         self._resultsview_app = tornado.web.Application([
             (r'/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
                 'path': resultsview_path,
                 'extra_headers': cache_headers }),
-            (r'/(resultsview\.js)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
-            (r'/(resultsview\.css)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
             (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': assets_path }),
+            (r'/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                'path': client_path,
+                'extra_headers': cache_headers }),
             (r'/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
                 'session': self._session }),
             (r'/([-0-9a-z]+)/([0-9]+)/module/(.+)',
