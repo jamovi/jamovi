@@ -499,6 +499,13 @@ class Server:
         else:
             cache_headers = { 'Cache-Control': 'private, max-age=60' }
 
+        ping_interval = conf.get('websocket_ping_interval')
+        ping_timeout = conf.get('websocket_ping_timeout')
+        if ping_interval:
+            ping_interval = int(ping_interval)
+        if ping_timeout:
+            ping_timeout = int(ping_timeout)
+
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
@@ -524,7 +531,9 @@ class Server:
             (r'/([-0-9a-z.]*)', StaticFileHandler, {
                 'path': client_path,
                 'extra_headers': cache_headers })
-        ])
+        ],
+        websocket_ping_interval = ping_interval,
+        websocket_ping_timeout = ping_timeout)
 
         analysisui_path = os.path.join(client_path, 'analysisui.html')
 
