@@ -382,6 +382,9 @@ const SplitPanel = SilkyView.extend({
 
                 this._resultsWidth = null;
 
+                let transitionTime = 300;
+                let transitionDelay = 20;
+
                 let columnTemplates = this.$el.css('grid-template-columns').split(' ');
                 if (mode === 'results') {
 
@@ -409,8 +412,8 @@ const SplitPanel = SilkyView.extend({
                                this.normalise(true);
                             $dataPanel.css('width', '');
                             resolve();
-                        }, 300);
-                    }, 0);
+                        }, transitionTime);
+                    }, transitionDelay);
                 }
                 else if (mode === 'data') {
 
@@ -439,8 +442,8 @@ const SplitPanel = SilkyView.extend({
                                this.normalise(true);
                             $resultsPanel.css('width', '');
                             resolve();
-                        }, 300);
-                    }, 0);
+                        }, transitionTime);
+                    }, transitionDelay);
                 }
                 else {
                     this._allResults = false;
@@ -471,8 +474,8 @@ const SplitPanel = SilkyView.extend({
                                        this.normalise(true);
                                     $resultsPanel.css('width', '');
                                     resolve();
-                                }, 300);
-                            }, 0);
+                                }, transitionTime);
+                            }, transitionDelay);
                         }
                         else if (prevMode === 'data') {
                             this.getSection(-1).$panel.css({ width: '', opacity: '' });
@@ -497,8 +500,8 @@ const SplitPanel = SilkyView.extend({
                                        this.normalise(true);
                                     $dataPanel.css('width', '');
                                     resolve();
-                                }, 300);
-                            }, 0);
+                                }, transitionTime);
+                            }, transitionDelay);
                         }
                     }
                     else
