@@ -216,7 +216,6 @@ body.windows.electron #header-buttons {
     background-color: inherit;
     border: 1px solid #ACACAC ;
     grid-area: 2 / 3 / span 1 / span 1;
-    transition: 0.1s width, 0.1s opacity;
     width: 587px;
     opacity: 1;
     overflow: hidden;
@@ -224,6 +223,10 @@ body.windows.electron #header-buttons {
     position: relative;
     justify-self: flex-end;
     min-width: 0px;
+}
+
+#main-options.initialised {
+    transition: 0.1s width, 0.1s opacity;
 }
 
 .hidden-panel {
