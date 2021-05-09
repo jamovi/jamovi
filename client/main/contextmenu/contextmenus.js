@@ -97,10 +97,18 @@ const createVariableMenuItems = function(plural, noData) {
 const createAppendVariableMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'New Data Variable', name: 'appendVar', iconId: 'dataVar' }),
-            new ContextMenuButton({ title: 'New Computed Variable', name: 'appendComputed', iconId: 'compvar' }),
-            new ContextMenuButton({ title: 'New Transformed Variable', name: 'appendRecoded', iconId: 'transvar' })
-
+            new RibbonGroup({ title: 'Transformed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: 'Insert', name: 'insertRecoded' }),
+                new ContextMenuButton({ title: 'Append', name: 'appendRecoded' })
+            ]}),
+            new RibbonGroup({ title: 'Computed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
+                new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
+            ]}),
+            new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: 'Insert', name: 'insertVar' }),
+                new ContextMenuButton({ title: 'Append', name: 'appendVar' })
+            ]})
         ]})
     ];
 };
