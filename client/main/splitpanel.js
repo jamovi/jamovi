@@ -167,10 +167,10 @@ const SplitPanel = SilkyView.extend({
         if (layoutKey || ! this.transitionCheckActive) {
             this.transitionCheckActive = true;
             if ( ! layoutKey)
-                layoutKey = this.$el.css('grid-template-columns');
+                layoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
 
             setTimeout(() => {
-                let nextLayoutKey = this.$el.css('grid-template-columns');
+                let nextLayoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
                 if (layoutKey !== nextLayoutKey)
                     this.onTransitioning(nextLayoutKey);
                 else {
@@ -441,7 +441,6 @@ const SplitPanel = SilkyView.extend({
                         $resultsPanel.css('width', '0px');
                         setTimeout(() => {  //Normalises the columnTemplate after transition
                             this.onTransitioning();
-                            //this.allowDocking('right');
                             if (this.resetState())
                                this.normalise(true);
                             $resultsPanel.css('width', '');

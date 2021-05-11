@@ -583,6 +583,11 @@ $(document).ready(async() => {
 
     dataSetModel.on('change:editingVar', event => {
         optionspanel.hideOptions();
+        if (dataSetModel.get('editingVar') === null) {
+            setTimeout(() => {
+                splitPanel.onTransitioning();
+            }, 200);
+        }
     });
 
     host.on('close', (event) => {
