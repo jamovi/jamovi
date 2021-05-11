@@ -88,7 +88,6 @@ div[placeholder]:empty::before {
 }
 
 #variablelist {
-    /*height: 0%;*/
     visibility: visible;
     height: 100%;
     opacity: 0;
@@ -96,7 +95,6 @@ div[placeholder]:empty::before {
 }
 
 #spreadsheet {
-    /*height: 0%;*/
     visibility: visible;
     height: 100%;
     opacity: 0;
@@ -106,21 +104,19 @@ div[placeholder]:empty::before {
     display: grid;
 }
 
-body[data-table-mode=variables] #main-view #spreadsheet {
+body[data-table-mode='variables'] #main-view #spreadsheet {
     visibility: hidden;
 }
 
-body[data-table-mode=spreadsheet] #main-view #variablelist {
+body[data-table-mode='spreadsheet'] #main-view #variablelist {
     visibility: hidden;
 }
 
-body[data-table-mode=variables] #main-view #variablelist {
-    /*height: 100%;*/
+body[data-table-mode='variables'] #main-view #variablelist {
     opacity: 1;
 }
 
-body[data-table-mode=spreadsheet] #main-view #spreadsheet {
-    /*height: 100%;*/
+body[data-table-mode='spreadsheet'] #main-view #spreadsheet {
     opacity: 1;
 }
 

@@ -27,6 +27,7 @@ const VariablesView = SilkyView.extend({
         this.selectionModel = null;
 
         this.rows = [ ];
+        this.selectedRows = [];
         this.internalBluring = false;
         this.internalFocus = false;
 
@@ -102,58 +103,80 @@ const VariablesView = SilkyView.extend({
             if (this.rows.length === 0)
                 return;
 
-            this.$el.find('.selected .text').removeAttr('contenteditable');
-            this.$el.find('.cell.selected .text.name').removeAttr('placeholder');
-            this.$el.find('.cell.selected .text.description').removeAttr('placeholder');
-            this.$el.find('.selected').removeClass('selected');
-            let $current = this.$body.find('.select:checked');
-            $current.prop('checked', false);
+            this._clearRowSelections();
 
-            let selectedCount = 0;
-            let selectLog = { };
-
-            let range = this.selection.getRange(this.selection, true);
-            for (let i = range.start; i <= range.end; i++) {
-                let $cell = this._getRowByIndex(i).$elements;
-                $cell.addClass('selected');
-                $cell.find('.select').prop('checked', true);
-                selectLog[i] = 1;
-                selectedCount += 1;
-            }
-
-            for (let subsection of this.selection.subSelections) {
-                let subRange = this.selection.getRange(subsection, true);
-                for (let i = subRange.start; i <= subRange.end; i++) {
-                    let $cell = this._getRowByIndex(i).$elements;
-                    $cell.addClass('selected');
-                    $cell.find('.select').prop('checked', true);
-                    if (selectLog[i] === undefined) {
-                        selectLog[i] = 1;
-                        selectedCount += 1;
-                    }
-                    else
-                        selectLog[i] += 1;
-                }
-            }
+            let selectedCount = this._updateRowSelections();
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
 
-            if (range.start === range.end && this.selection.subSelections.length == 0) {
-                setTimeout(() => {
-                    this.$el.find('.cell.selected .text:not(.readonly)').attr('contenteditable', true);
-                    this.$el.find('.cell.selected .text.name:not(.readonly)').attr('placeholder', 'Enter name');
-                    this.$el.find('.cell.selected .text.description:not(.readonly)').attr('placeholder', 'Enter description');
-                }, 10);
+            if (this.selectedRows.length > 0) {
+                let firstSelectedRow = this.selectedRows[0];
+                let focusCell = firstSelectedRow.$elements[0];
+                if (focusCell)
+                    focusCell.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
             }
-
-
-            let focusCell = this._getRowByIndex(range.start).$elements[0];
-            if (focusCell)
-                focusCell.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
         });
 
         $(document).on('mousemove', event => this._mouseMove(event));
         $(document).on('mouseup', event => this._mouseUp(event));
     },
+    _selectRow(row, editable) {
+        this.selectedRows.push(row);
+
+        let $row = row.$elements;
+        $row.addClass('selected');
+        $row.find('.select').prop('checked', true);
+
+        if (editable) {
+            setTimeout(function () {
+                $row.find('.text:not(.readonly)').attr('contenteditable', true);
+                $row.find('.text.name:not(.readonly)').attr('placeholder', 'Enter name');
+                $row.find('.text.description:not(.readonly)').attr('placeholder', 'Enter description');
+            }, 10);
+        }
+    },
+    _clearRowSelections() {
+        for (let row of this.selectedRows) {
+            let $row = row.$elements;
+            $row.find('.text').removeAttr('contenteditable');
+            $row.find('.text.name').removeAttr('placeholder');
+            $row.find('.text.description').removeAttr('placeholder');
+            $row.find('.select:checked').prop('checked', false);
+            $row.removeClass('selected');
+        }
+        this.selectedRows = [];
+    },
+    _updateRowSelections() {
+        this.selectedRows = [];
+
+        let selectedCount = 0;
+        let selectLog = { };
+
+        let range = this.selection.getRange(this.selection, true);
+        let editable = range.start === range.end && this.selection.subSelections.length == 0;
+        for (let i = range.start; i <= range.end; i++) {
+            let row = this._getRowByIndex(i);
+            this._selectRow(row, editable);
+            selectLog[i] = 1;
+            selectedCount += 1;
+        }
+
+        for (let subsection of this.selection.subSelections) {
+            let subRange = this.selection.getRange(subsection, true);
+            for (let i = subRange.start; i <= subRange.end; i++) {
+                if (selectLog[i] === undefined) {
+                    let row = this._getRowByIndex(i);
+                    this._selectRow(row);
+                    selectLog[i] = 1;
+                    selectedCount += 1;
+                }
+                else
+                    selectLog[i] += 1;
+            }
+        }
+
+        return selectedCount;
+    },
+
     _selectionChanged() {
         if (this._selectionChanging)
             return;
@@ -179,16 +202,7 @@ const VariablesView = SilkyView.extend({
         }, 0);
     },
     _currentSelectionToColumns() {
-        let $selections = this.$body.find('.select:checked');
-        let columns = [];
-        for (let select of $selections) {
-            let $cell = $(select.parentNode);
-            let id = parseInt($cell.attr('data-id'));
-            let column = this.model.getColumnById(id);
-            if (column)
-                columns.push(column);
-        }
-        return columns;
+        return this.selectedRows.map(row => row.column);
     },
     _updateEyeButton() {
         if (this.model.get('filtersVisible'))
@@ -261,8 +275,7 @@ const VariablesView = SilkyView.extend({
 
         let editingIds = this.model.get('editingVar');
 
-        let selected = editingIds != null ? editingIds.includes(column.id) : false;
-        let $select = $(`<input type="checkbox" data-index="${colNo}" class="select" tabindex="-1" ${ selected ? 'checked' : '' }></input>`);
+        let $select = $(`<input type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
         this._addSelectEvents($select);
 
         this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
@@ -272,7 +285,10 @@ const VariablesView = SilkyView.extend({
 
         let $elements = this.$el.find(`.cell[data-index=${colNo}]`);
 
-        this.rows[colNo] = { column: column, $elements: $elements };
+        this.rows[colNo] = {
+            column: column,
+            $elements: $elements
+        };
     },
 
     _updateList() {
@@ -323,38 +339,7 @@ const VariablesView = SilkyView.extend({
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
-            let selectedCount = 0;
-            let selectLog = { };
-
-            let range = this.selection.getRange(this.selection, true);
-            for (let i = range.start; i <= range.end; i++) {
-                let $cell = this._getRowByIndex(i).$elements;
-                $cell.addClass('selected');
-                $cell.find('.select').prop('checked', true);
-                selectLog[i] = 1;
-                selectedCount += 1;
-            }
-
-            for (let subsection of this.selection.subSelections) {
-                let subRange = this.selection.getRange(subsection, true);
-                for (let i = subRange.start; i <= subRange.end; i++) {
-                    let $cell = this._getRowByIndex(i).$elements;
-                    $cell.addClass('selected');
-                    $cell.find('.select').prop('checked', true);
-                    if (selectLog[i] === undefined) {
-                        selectLog[i] = 1;
-                        selectedCount += 1;
-                    }
-                    else
-                        selectLog[i] += 1;
-                }
-            }
-
-            if (range.start === range.end && this.selection.subSelections.length == 0) {
-                this.$el.find('.cell.selected .text:not(.readonly)').attr('contenteditable', true);
-                this.$el.find('.cell.selected .text.name:not(.readonly)').attr('placeholder', 'Enter name');
-                this.$el.find('.cell.selected .text.description:not(.readonly)').attr('placeholder', 'Enter description');
-            }
+            let selectedCount = this._updateRowSelections();
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
         }
 
@@ -691,6 +676,9 @@ const VariablesView = SilkyView.extend({
 
         for (let i = 0; i < event.changes.length; i++) {
             let change = event.changes[i];
+            if (change.created)
+                continue;
+
             let id = change.id;
             if (change.nameChanged) {
                 let $row = this._getRowById(id).$elements;

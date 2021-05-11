@@ -51,27 +51,27 @@
     background-size: 60% 60%
 }
 
-body[data-splitpanel-mode=results] .jmv-ribbon-fullscreen {
+body[data-splitpanel-mode='results'] .jmv-ribbon-fullscreen {
     background-image: url("../assets/splitscreen.svg");
 }
 
-body[data-splitpanel-mode=data] .jmv-ribbon-fullscreen {
+body[data-splitpanel-mode='data'] .jmv-ribbon-fullscreen {
     background-image: url("../assets/splitscreen.svg");
 }
 
-body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=variables] {
+body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='variables'] {
     background-image: url("../assets/fullscreen-hide-data.svg");
 }
 
-body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=edit] {
+body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='edit'] {
     background-image: url("../assets/fullscreen-hide-data.svg");
 }
 
-body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=variables] {
+body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='variables'] {
     background-image: url("../assets/fullscreen-hide-results.svg");
 }
 
-body[data-splitpanel-mode=mixed] .jmv-ribbon-fullscreen[data-tabname=data] {
+body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='data'] {
     background-image: url("../assets/fullscreen-hide-results.svg");
 }
 

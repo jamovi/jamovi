@@ -21,7 +21,7 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: 15px 15px;
-    background-image: url(../assets/variable-search.svg);
+    background-image: url('../assets/variable-search.svg');
 }
 
 .jmv-variablesview .measure-box {
@@ -74,7 +74,6 @@
 .jmv-variables-body .cell .text {
     overflow: hidden;
     text-overflow: ellipsis;
-    /*white-space: nowrap;*/
     max-height: 70px;
     min-height: 100%;
     padding: 0 3px;
@@ -85,7 +84,6 @@
 }
 
 .jmv-variables-body .cell .description {
-    /*white-space: nowrap;*/
     overflow: auto;
     padding: 0px 5px 0px 3px;
 }
@@ -104,7 +102,6 @@
     justify-self: stretch;
     padding: 2px 3px;
     border-bottom: 1px solid #E6E6E6;
-    /*height: 23px;*/
     line-height: 23px;
 }
 
@@ -113,7 +110,6 @@
     align-self: stretch;
     justify-self: stretch;
     width: 12px;
-    /*cursor: col-resize;*/
     z-index: 300;
 }
 
@@ -130,7 +126,6 @@
     position: sticky;
     top: 0px;
     background-color: #d5d5d5;
-    /*padding: 5px 0px;*/
     z-index: 10;
     font-style: italic;
 }
