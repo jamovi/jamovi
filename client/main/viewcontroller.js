@@ -145,7 +145,7 @@ class ViewController {
         ActionHub.get('toggleFilterVisible').set('enabled', this.model.filterCount() > 0);
     }
 
-    _toggleFilterEditor() {
+    async _toggleFilterEditor() {
         let editingId = this.model.get('editingVar');
         let startId = editingId;
         if (startId === null)
@@ -161,18 +161,23 @@ class ViewController {
         if (editingId === null || isFilter === false || startId[0] !== editingId[0]) {
             if (isFilter)
                 this.model.set('editingVar', [column.id]);
-            else
-                this.model.insertColumn({
-                    index: 0,
-                    columnType: 'filter',
-                    hidden: this.model.get('filtersVisible') === false
-                }).then(() => this.model.set('editingVar', [this.model.getColumn(0).id])).catch((error) => {
+            else {
+                try {
+                    await this.model.insertColumn({
+                        index: 0,
+                        columnType: 'filter',
+                        hidden: this.model.get('filtersVisible') === false
+                    });
+                    await this.model.set('editingVar', [this.model.getColumn(0).id]);
+                }
+                catch (error) {
                     this._notifyEditProblem({
                         title: error.message,
                         message: error.cause,
                         type: 'error',
                     });
-                });
+                }
+            }
         }
         else
             this.model.set('editingVar', null);
@@ -182,7 +187,7 @@ class ViewController {
         this.selection.setSelection(0, 0);
     }
 
-    _deleteColumns() {
+    async _deleteColumns() {
 
         let columns = this.selection.currentSelectionToColumns();
         let contains = (nextColumn) => {
@@ -196,7 +201,7 @@ class ViewController {
             }
             else if (columns[i].columnType === 'filter') {
                 let prevColumn = this.model.getColumn(columns[i].index - 1);
-                if (!prevColumn || prevColumn.filterNo !== columns[i].filterNo) {
+                if ( ! prevColumn || prevColumn.filterNo !== columns[i].filterNo) { // if a child filter just delete, if parent filter with children filters, delete all children as well
                     let index = columns[i].index;
                     do {
                         index += 1;
@@ -250,47 +255,41 @@ class ViewController {
             }
         }
 
-        return this.selection.setSelections(selection, selections).then(() => {
+        try {
+            await this.selection.setSelections(selection, selections);
+            await new Promise((resolve, reject) => {
 
-            return new Promise((resolve, reject) => {
+                    keyboardJS.setContext('');
 
-                keyboardJS.setContext('');
+                    let cb = (result) => {
+                        keyboardJS.setContext('controller');
+                        if (result)
+                            resolve();
+                        else
+                            reject();
+                    };
 
-                let cb = (result) => {
-                    keyboardJS.setContext('controller');
-                    if (result)
-                        resolve();
-                    else
-                        reject();
-                };
+                    if (columns.length === 1) {
+                        let column = columns[0];
+                        dialogs.confirm(`Delete column '${ column.name }'?`, cb);
+                    }
+                    else {
+                        dialogs.confirm(`Delete ${ columns.length } columns?`, cb);
+                    }
+                });
 
-                if (columns.length === 1) {
-                    let column = columns[0];
-                    dialogs.confirm('Delete column \'' + column.name + '\' ?', cb);
-                }
-                else {
-                    dialogs.confirm('Delete ' + columns.length + ' columns?', cb);
-                }
-            });
-
-        }).then(() => {
-            let ids = [];
-            for (let column of columns)
-                ids.push(column.id);
-
-            return this.model.deleteColumns(ids);
-
-        }).then(() => {
-            return this.selection.setSelections(oldSelection, oldSubSelections);
-        }).then(undefined, (error) => {
+            let ids = columns.map(column => column.id);
+            await this.model.deleteColumns(ids);
+            await this.selection.setSelections(oldSelection, oldSubSelections);
+        }
+        catch(error) {
             if (error)
                 console.log(error);
-            return this.selection.setSelections(oldSelection, oldSubSelections);
-        });
-
+            await this.selection.setSelections(oldSelection, oldSubSelections);
+        }
     }
 
-    _deleteRows() {
+    async _deleteRows() {
         let oldSelection = this.selection.clone();
         let oldSubSelections = this.selection.subSelections;
 
@@ -310,9 +309,9 @@ class ViewController {
             rowCount += range.rowCount;
         }
 
-        return this.selection.setSelections(selections[0], selections.slice(1)).then(() => {
-
-            return new Promise((resolve, reject) => {
+        try {
+            await this.selection.setSelections(selections[0], selections.slice(1));
+            await new Promise((resolve, reject) => {
 
                 keyboardJS.setContext('');
 
@@ -329,30 +328,26 @@ class ViewController {
                 else
                     dialogs.confirm('Delete ' + rowCount + ' rows?', cb);
             });
-
-        }).then(() => {
-
-            return this.model.deleteRows(rowRanges);
-
-        }).then(() => {
-
-            return this.selection.setSelections(oldSelection, oldSubSelections);
-
-        }).catch((error) => {
-            this._notifyEditProblem({
-                title: error.message,
-                message: error.cause,
-                type: 'error',
-            });
-            return this.selection.setSelections(oldSelection, oldSubSelections);
-        });
+            await this.model.deleteRows(rowRanges);
+            await this.selection.setSelections(oldSelection, oldSubSelections);
+        }
+        catch(error) {
+            if (error) {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            }
+            await this.selection.setSelections(oldSelection, oldSubSelections);
+        }
     }
 
-    _onCopying() {
+    _notifyCopying() {
         this.trigger('copying');
     }
 
-    pasteClipboardToSelection() {
+    async pasteClipboardToSelection() {
         let content = host.pasteFromClipboard();
 
         let text = content.text;
@@ -371,49 +366,54 @@ class ViewController {
             return;
         }
 
-        return this.model.changeCells(text, html, this.selection, this.selection.subSelections)
-            .then(data => {
+        try {
+            let data = await this.model.changeCells(text, html, this.selection, this.selection.subSelections);
+            let selections = this.selection.convertAreaDataToSelections(data.data);
 
-                let selections = this.convertAreaDataToSelections(data.data);
+            selections[0].colFocus = selections[0].left;
+            selections[0].rowFocus = selections[0].top;
+            this.selection.setSelections(selections[0], selections.slice(1));
 
-                selections[0].colFocus = selections[0].left;
-                selections[0].rowFocus = selections[0].top;
-                this.selection.setSelections(selections[0], selections.slice(1));
-
-                this._onCopying();
-
-            }, error => {
+            this._notifyCopying();
+        }
+        catch (error) {
+            if (error) {
                 let notification = new Notify({
                     title: error.message,
                     message: error.cause,
                     duration: 4000,
                 });
                 this.trigger('notification', notification);
-            });
+            }
+        }
     }
 
-    _undo() {
-        this.model.undo().then((events) => {
+    async _undo() {
+        try {
+            let events = await this.model.undo();
             this.selection.undoRedoDataToSelection(events);
-        }).catch((error) => {
+        }
+        catch (error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     }
 
-    _redo() {
-        this.model.redo().then((events) => {
+    async _redo() {
+        try {
+            let events = await this.model.redo();
             this.selection.undoRedoDataToSelection(events);
-        }).catch((error) => {
+        }
+        catch(error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     }
 
     _notifyEditProblem(details) {
@@ -421,23 +421,29 @@ class ViewController {
         this.trigger('notification', this._editNote);
     }
 
-    cutSelectionToClipboard() {
-        return this.copySelectionToClipboard()
-            .then(() => this.selection.applyValuesToSelection([this.selection], null));
+    async cutSelectionToClipboard() {
+        await this.copySelectionToClipboard();
+        this.selection.applyValuesToSelection([this.selection], null);
     }
 
-    copySelectionToClipboard() {
-        return this.model.requestCells(this.selection)
-            .then(cells => {
-                let values = cells.data[0].values;
-                values = values.map(col => col.map(cell => cell.value));
-                host.copyToClipboard({
+    async copySelectionToClipboard() {
+        try {
+            let cells = await this.model.requestCells(this.selection);
+            let values = cells.data[0].values;
+            values = values.map(col => col.map(cell => cell.value));
+            await host.copyToClipboard({
                     text: csvifyCells(values),
                     html: htmlifyCells(values),
-                }).then(() => {
-                    this._onCopying();
                 });
+            this._notifyCopying();
+        }
+        catch(error) {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
             });
+        }
     }
 
     registerView(name, view) {
@@ -543,7 +549,7 @@ class ViewController {
         }
     }
 
-    _insertRows() {
+    async _insertRows() {
 
         let oldSelection = this.selection.clone();
         let oldSubSelections = this.selection.subSelections;
@@ -563,14 +569,52 @@ class ViewController {
             });
             rowCount += range.rowCount;
         }
+        try {
+            let n = await new Promise((resolve, reject) => {
+                if (this.selection.subSelections.length > 0)
+                    resolve(-1);
+                else {
+                    keyboardJS.setContext('');
+                    dialogs.prompt('Insert how many rows?', this.selection.bottom - this.selection.top + 1, (result) => {
+                        keyboardJS.setContext('controller');
+                        if (result === undefined)
+                            reject('cancelled by user');
+                        let n = parseInt(result);
+                        if (isNaN(n) || n <= 0)
+                            reject('' + result + ' is not a positive integer');
+                        else
+                            resolve(n);
+                    });
+                }
 
-        return new Promise((resolve, reject) => {
+            });
 
-            if (this.selection.subSelections.length > 0)
-                resolve(-1);
-            else {
+            let ranges = [{ rowStart: this.selection.top, rowCount: n }];
+            if (n === -1) {
+                ranges[0].rowCount = this.selection.bottom - this.selection.top + 1;
+                for (let selection of this.selection.subSelections) {
+                    ranges.push({ rowStart: selection.top, rowCount: selection.bottom - selection.top + 1});
+                }
+            }
+
+            await this.model.insertRows(ranges);
+        }
+        catch(error) {
+            if (error) {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            }
+        }
+    }
+
+    async _appendRows() {
+        try {
+            let n = await new Promise((resolve, reject) => {
                 keyboardJS.setContext('');
-                dialogs.prompt('Insert how many rows?', this.selection.bottom - this.selection.top + 1, (result) => {
+                dialogs.prompt('Append how many rows?', '1', (result) => {
                     keyboardJS.setContext('controller');
                     if (result === undefined)
                         reject('cancelled by user');
@@ -580,56 +624,21 @@ class ViewController {
                     else
                         resolve(n);
                 });
-            }
 
-        }).then(n => {
-            let ranges = [{ rowStart: this.selection.top, rowCount: n }];
-            if (n === -1) {
-                ranges[0].rowCount = this.selection.bottom - this.selection.top + 1;
-                for (let selection of this.selection.subSelections) {
-                    ranges.push({ rowStart: selection.top, rowCount: selection.bottom - selection.top + 1});
-                }
-            }
-
-            return this.model.insertRows(ranges);
-
-        }).catch((error) => {
-            this._notifyEditProblem({
-                title: error.message,
-                message: error.cause,
-                type: 'error',
             });
-        });
-    }
-
-    _appendRows() {
-
-        return new Promise((resolve, reject) => {
-
-            keyboardJS.setContext('');
-            dialogs.prompt('Append how many rows?', '1', (result) => {
-                keyboardJS.setContext('controller');
-                if (result === undefined)
-                    reject('cancelled by user');
-                let n = parseInt(result);
-                if (isNaN(n) || n <= 0)
-                    reject('' + result + ' is not a positive integer');
-                else
-                    resolve(n);
-            });
-
-        }).then(n => {
 
             let rowStart = this.model.visibleRowCount();
-            return this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
-
-        }).catch((error) => {
-            this._notifyEditProblem({
-                title: error.message,
-                message: error.cause,
-                type: 'error',
-            });
-        });
+            await this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
+        }
+        catch(error) {
+            if (error) {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            }
+        }
     }
 
     findFirstVisibleColumn(index) {
@@ -643,13 +652,11 @@ class ViewController {
         return column;
     }
 
-    _appendColumn(columnType) {
-
-        let rowNo = this.selection.rowNo;
-        let colNo = this.model.visibleRealColumnCount();
-        let column = this.model.getColumn(colNo, true);
-
-        Promise.resolve().then(() => {
+    async _appendColumn(columnType) {
+        try {
+            let rowNo = this.selection.rowNo;
+            let colNo = this.model.visibleRealColumnCount();
+            let column = this.model.getColumn(colNo, true);
 
             let args;
             if (columnType === 'data')
@@ -663,30 +670,26 @@ class ViewController {
             else
                 args = { name: '', columnType: 'none', measureType: 'nominal' };
 
-            return this.model.changeColumn(column.id, args);
-
-        }).then(() => {
-
-            return this.selection.setSelection(rowNo, colNo);
-
-        }).then(() => {
-
-            this._onColumnAppended(colNo);
-
-        }).catch((error) => {
-            this._notifyEditProblem({
-                title: error.message,
-                message: error.cause,
-                type: 'error',
-            });
-        });
+            await this.model.changeColumn(column.id, args);
+            await this.selection.setSelection(rowNo, colNo);
+            await this._onColumnAppended(colNo);
+        }
+        catch (error) {
+            if (error) {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
+                });
+            }
+        }
     }
 
     _onColumnAppended(colNo) {
         this.trigger('columnAppended', colNo);
     }
 
-    _insertFromSelectedColumns(itemConstruction, direction) {
+    async _insertFromSelectedColumns(itemConstruction, direction) {
         if (direction === undefined)
             direction = 'right';
 
@@ -709,31 +712,32 @@ class ViewController {
             }
         }
 
-        let promise = Promise.resolve();
-        if (emptyIds.length > 0) {
-            let pairs = [];
-            for (let id of emptyIds) {
-                let item = { };
-                itemConstruction(item, this.model.getColumnById(id));
-                pairs.push({ id: id, values: item });
+        try {
+            if (emptyIds.length > 0) {
+                let pairs = [];
+                for (let id of emptyIds) {
+                    let item = { };
+                    itemConstruction(item, this.model.getColumnById(id));
+                    pairs.push({ id: id, values: item });
+                }
+                await this.model.changeColumns(pairs);
             }
-            promise = this.model.changeColumns(pairs);
-        }
 
-        return promise.then(() => {
             if (inserts.length > 0) {
-                return this.model.insertColumn(inserts, ! hiddenIncluded).then((data) => {
-                    let ids = data.ids.concat(emptyIds);
-                    this.model.set('editingVar', ids);
+                let data = await this.model.insertColumn(inserts, ! hiddenIncluded);
+                let ids = data.ids.concat(emptyIds);
+                this.model.set('editingVar', ids);
+            }
+        }
+        catch (error) {
+            if (error) {
+                this._notifyEditProblem({
+                    title: error.message,
+                    message: error.cause,
+                    type: 'error',
                 });
             }
-        }).catch((error) => {
-            this._notifyEditProblem({
-                title: error.message,
-                message: error.cause,
-                type: 'error',
-            });
-        });
+        }
     }
 }
 

@@ -67,7 +67,7 @@ const DataSetModel = Backbone.Model.extend({
         let columns = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
-            if (column && !(displayOnly && column.hidden === true)) 
+            if (column && !(column.hidden && displayOnly)) 
                 columns.push(column);
         }
         return columns;

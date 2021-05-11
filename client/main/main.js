@@ -689,10 +689,7 @@ $(document).ready(async() => {
             });
         }
         else {
-            //if (e.message)
-            //    console.log(e.message);
-            //else
-                console.log(e);
+            console.log(e);
 
             infoBox.setup({
                 title: 'Connection failed',

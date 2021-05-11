@@ -1318,36 +1318,17 @@ const TableView = SilkyView.extend({
 
         if (event.ctrlKey || event.metaKey) {
             if (event.key.toLowerCase() === 'c') {
-                this.controller.copySelectionToClipboard()
-                    .done();
+                this.controller.copySelectionToClipboard();
                 event.preventDefault();
             }
             else if (event.key.toLowerCase() === 'v') {
-                let promise = this.controller.pasteClipboardToSelection();
-                if (promise)
-                    promise.done();
+                this.controller.pasteClipboardToSelection();
                 event.preventDefault();
             }
             else if (event.key.toLowerCase() === 'x') {
-                this.controller.cutSelectionToClipboard()
-                    .done();
+                this.controller.cutSelectionToClipboard();
                 event.preventDefault();
             }
-            /*else if (event.key.toLowerCase() === 'a') {
-                this.selection.selectAll();
-                event.preventDefault();
-            }
-            else if (event.key.toLowerCase() === 'z') {
-                if (event.shiftKey)
-                    this._redo();
-                else
-                    this._undo();
-                event.preventDefault();
-            }
-            else if (event.key.toLowerCase() === 'y') {
-                this._redo();
-                event.preventDefault();
-            }*/
             else if (event.shiftKey && event.key === ' ') {
                 this.selection.selectAll();
             }

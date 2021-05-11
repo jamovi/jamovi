@@ -25,6 +25,11 @@ const VariablesView = SilkyView.extend({
     className: 'variablesview',
     initialize(options) {
         this.selectionModel = null;
+
+        this.rows = [ ];
+        this.internalBluring = false;
+        this.internalFocus = false;
+
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('columnsChanged', event => this._columnsChanged(event));
         this.model.on('columnsDeleted', event => this._columnsDeleted(event));
@@ -60,7 +65,7 @@ const VariablesView = SilkyView.extend({
         this.$body      = this.$el.find('.jmv-variables-body');
         this.$container = this.$el.find('.jmv-variables-container');
 
-        let $newVariable = $(`<div class="add-new-variable"><span class="mif-plus"></span></div>`);
+        let $newVariable = $('<div class="add-new-variable"><span class="mif-plus"></span></div>');
         this.$container.append(this._createCell($newVariable, 0, 1, 'new-variable', false, 4));
 
         $newVariable.on('click', (event) => {
@@ -85,7 +90,7 @@ const VariablesView = SilkyView.extend({
         });
 
         this.$body.on('mouseleave', (event) => {
-            this.$body.find(`.cell.hovering`).removeClass('hovering');
+            this.$body.find('.cell.hovering').removeClass('hovering');
         });
 
         this.controller = options.controller;
@@ -94,11 +99,14 @@ const VariablesView = SilkyView.extend({
         this.selectionIncludesHidden = true;
 
         this.selection.registerChangeEventHandler((oldSel, silent, ignoreTabStart) => {
-            this.$el.find(`.selected .text`).removeAttr('contenteditable');
-            this.$el.find(`.cell.selected .text.name`).removeAttr('placeholder');
-            this.$el.find(`.cell.selected .text.description`).removeAttr('placeholder');
+            if (this.rows.length === 0)
+                return;
+
+            this.$el.find('.selected .text').removeAttr('contenteditable');
+            this.$el.find('.cell.selected .text.name').removeAttr('placeholder');
+            this.$el.find('.cell.selected .text.description').removeAttr('placeholder');
             this.$el.find('.selected').removeClass('selected');
-            let $current = this.$body.find(`.select:checked`);
+            let $current = this.$body.find('.select:checked');
             $current.prop('checked', false);
 
             let selectedCount = 0;
@@ -106,8 +114,9 @@ const VariablesView = SilkyView.extend({
 
             let range = this.selection.getRange(this.selection, true);
             for (let i = range.start; i <= range.end; i++) {
-                this.$el.find(`.cell[data-index=${i}]`).addClass('selected');
-                this.$el.find(`.cell[data-index=${i}] .select`).prop('checked', true);
+                let $cell = this._getRowByIndex(i).$elements;
+                $cell.addClass('selected');
+                $cell.find('.select').prop('checked', true);
                 selectLog[i] = 1;
                 selectedCount += 1;
             }
@@ -115,8 +124,9 @@ const VariablesView = SilkyView.extend({
             for (let subsection of this.selection.subSelections) {
                 let subRange = this.selection.getRange(subsection, true);
                 for (let i = subRange.start; i <= subRange.end; i++) {
-                    this.$el.find(`.cell[data-index=${i}]`).addClass('selected');
-                    this.$el.find(`.cell[data-index=${i}] .select`).prop('checked', true);
+                    let $cell = this._getRowByIndex(i).$elements;
+                    $cell.addClass('selected');
+                    $cell.find('.select').prop('checked', true);
                     if (selectLog[i] === undefined) {
                         selectLog[i] = 1;
                         selectedCount += 1;
@@ -129,14 +139,14 @@ const VariablesView = SilkyView.extend({
 
             if (range.start === range.end && this.selection.subSelections.length == 0) {
                 setTimeout(() => {
-                    this.$el.find(`.cell.selected .text:not(.readonly)`).attr('contenteditable', true);
-                    this.$el.find(`.cell.selected .text.name:not(.readonly)`).attr('placeholder', 'Enter name');
-                    this.$el.find(`.cell.selected .text.description:not(.readonly)`).attr('placeholder', 'Enter description');
+                    this.$el.find('.cell.selected .text:not(.readonly)').attr('contenteditable', true);
+                    this.$el.find('.cell.selected .text.name:not(.readonly)').attr('placeholder', 'Enter name');
+                    this.$el.find('.cell.selected .text.description:not(.readonly)').attr('placeholder', 'Enter description');
                 }, 10);
             }
 
 
-            let focusCell = this.$el.find(`.cell[data-index=${range.start}]`)[0];
+            let focusCell = this._getRowByIndex(range.start).$elements[0];
             if (focusCell)
                 focusCell.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
         });
@@ -230,14 +240,51 @@ const VariablesView = SilkyView.extend({
         return $resizer;
     },
 
+    _createRow(column, row) {
+        let $measureType = $('<div class="measure-box"><div class="measure-type-icon"></div>');
+
+        if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
+            let $dot = $('</div><div class="dot"></div>');
+            this._updateColumnColour(column, $dot);
+            $measureType.append($dot);
+        }
+
+        let $name = $(`<div class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
+        if (column.columnType === 'filter')
+            $name.addClass('readonly');
+        this._addTextEvents($name, 'name', column);
+
+        let $desc = $(`<div class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
+        this._addTextEvents($desc, 'description', column);
+
+        let colNo = column.index;
+
+        let editingIds = this.model.get('editingVar');
+
+        let selected = editingIds != null ? editingIds.includes(column.id) : false;
+        let $select = $(`<input type="checkbox" data-index="${colNo}" class="select" tabindex="-1" ${ selected ? 'checked' : '' }></input>`);
+        this._addSelectEvents($select);
+
+        this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
+        this.$body.append(this._applyColumnData(this._createCell($measureType, row, 2, '', true), column, colNo));
+        this.$body.append(this._applyColumnData(this._createCell($name, row, 3, '', true), column, colNo));
+        this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
+
+        let $elements = this.$el.find(`.cell[data-index=${colNo}]`);
+
+        this.rows[colNo] = { column: column, $elements: $elements };
+    },
+
     _updateList() {
         let columnCount = this.model.get('columnCount');
         this.$body.empty();
 
-        let $measureTypeHeader = $(`<div style="width:10px;"></div>`);
-        let $nameHeader = $(`<div>Name</div>`);
-        let $descHeader = $(`<div>Description</div>`);
-        let $selectHeader =$(`<input type="checkbox" class="select-header-checkbox"></input>`);
+        this.rows = [];
+
+        let $measureTypeHeader = $('<div style="width:10px;"></div>');
+        let $nameHeader = $('<div>Name</div>');
+        let $descHeader = $('<div>Description</div>');
+        let $selectHeader =$('<input type="checkbox" class="select-header-checkbox"></input>');
 
         $selectHeader.on('change', (event) => {
             if ($selectHeader.prop("checked"))
@@ -249,10 +296,7 @@ const VariablesView = SilkyView.extend({
         this.$body.append(this._createCell($selectHeader, 1, 1, 'column-header', false));
         this.$body.append(this._createCell($measureTypeHeader, 1, 2, 'column-header', false));
         this.$body.append(this._createCell($nameHeader, 1, 3, 'column-header', false));
-        //this.$body.append(this._createColumnResizer(4));
         this.$body.append(this._createCell($descHeader, 1, 4, 'column-header', false));
-
-        let editingIds = this.model.get('editingVar');
 
         let finalColumnCount = 0;
         let row = 2;
@@ -266,30 +310,8 @@ const VariablesView = SilkyView.extend({
 
             if (this._topIndex === -1)
                 this._topIndex = column.index;
-            let $measureType = $(`<div class="measure-box"><div class="measure-type-icon"></div>`);
 
-            if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
-                let $dot = $('</div><div class="dot"></div>');
-                this._updateColumnColour(column, $dot);
-                $measureType.append($dot);
-            }
-
-            let $name = $(`<div class="name text" tabindex="0">${ column.name }</div>`);
-            if (column.columnType === 'filter')
-                $name.addClass('readonly');
-            this._addTextEvents($name, 'name', column);
-
-            let $desc = $(`<div class="description text" tabindex="0">${ column.description }</div>`);
-            this._addTextEvents($desc, 'description', column);
-
-            let selected = editingIds != null ? editingIds.includes(column.id) : false;
-            let $select = $(`<input type="checkbox" data-index="${colNo}" class="select" tabindex="-1" ${ selected ? 'checked' : '' }></input>`);
-            this._addSelectEvents($select);
-
-            this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
-            this.$body.append(this._applyColumnData(this._createCell($measureType, row, 2, '', true), column, colNo));
-            this.$body.append(this._applyColumnData(this._createCell($name, row, 3, '', true), column, colNo));
-            this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
+            this._createRow(column, row);
 
             row += 1;
             if (column.columnType !== 'filter')
@@ -297,7 +319,7 @@ const VariablesView = SilkyView.extend({
         }
 
         if (row === 2) {
-            this.$body.append($(`<div class="msg">No variables match your query.</div>`));
+            this.$body.append($('<div class="msg">No variables match your query.</div>'));
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
@@ -306,8 +328,9 @@ const VariablesView = SilkyView.extend({
 
             let range = this.selection.getRange(this.selection, true);
             for (let i = range.start; i <= range.end; i++) {
-                this.$el.find(`.cell[data-index=${i}]`).addClass('selected');
-                this.$el.find(`.cell[data-index=${i}] .select`).prop('checked', true);
+                let $cell = this._getRowByIndex(i).$elements;
+                $cell.addClass('selected');
+                $cell.find('.select').prop('checked', true);
                 selectLog[i] = 1;
                 selectedCount += 1;
             }
@@ -315,8 +338,9 @@ const VariablesView = SilkyView.extend({
             for (let subsection of this.selection.subSelections) {
                 let subRange = this.selection.getRange(subsection, true);
                 for (let i = subRange.start; i <= subRange.end; i++) {
-                    this.$el.find(`.cell[data-index=${i}]`).addClass('selected');
-                    this.$el.find(`.cell[data-index=${i}] .select`).prop('checked', true);
+                    let $cell = this._getRowByIndex(i).$elements;
+                    $cell.addClass('selected');
+                    $cell.find('.select').prop('checked', true);
                     if (selectLog[i] === undefined) {
                         selectLog[i] = 1;
                         selectedCount += 1;
@@ -327,9 +351,9 @@ const VariablesView = SilkyView.extend({
             }
 
             if (range.start === range.end && this.selection.subSelections.length == 0) {
-                this.$el.find(`.cell.selected .text:not(.readonly)`).attr('contenteditable', true);
-                this.$el.find(`.cell.selected .text.name:not(.readonly)`).attr('placeholder', 'Enter name');
-                this.$el.find(`.cell.selected .text.description:not(.readonly)`).attr('placeholder', 'Enter description');
+                this.$el.find('.cell.selected .text:not(.readonly)').attr('contenteditable', true);
+                this.$el.find('.cell.selected .text.name:not(.readonly)').attr('placeholder', 'Enter name');
+                this.$el.find('.cell.selected .text.description:not(.readonly)').attr('placeholder', 'Enter description');
             }
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
         }
@@ -337,95 +361,120 @@ const VariablesView = SilkyView.extend({
         this.$body.css( { 'grid-template-rows': `repeat(${row}, auto)` });
         this.statusbar.updateInfoLabel('columnCount', finalColumnCount);
     },
-    _addTextEvents($element, propertyName, column) {
-        let internalBluring = false;
-        let internalFocus = false;
+    _getRowByIndex(index) {
+        return this.rows[index];
+    },
+    _getRowById(id) {
+        for (let row of this.rows) {
+            if (row.column.id === id)
+                return row;
+        }
+    },
 
-        $element.focus(async () => {
+    async textElementFocus(event) {
+        let self = event.data;
+        let $el = $(event.target);
+        if ($el[0].hasAttribute('contenteditable') === false) {
+            self.internalBluring = true;
+            $el.blur();
+            return;
+        }
 
-            if ($element[0].hasAttribute('contenteditable') === false) {
-                internalBluring = true;
-                $element.blur();
+        if (self.internalFocus === false) {
+            self.internalBluring = true;
+            $el.blur();
+
+            if (self._focusing)
+                return;
+
+            self._focusing = true;
+
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
+            if (self._dblClicked) {
+                self._dblClicked = null;
+                self._focusing = false;
                 return;
             }
+            else {
+                self.internalFocus = true;
+                self._focusing = false;
+                $el.focus();
+                return;
+            }
+        }
 
-            if (internalFocus === false) {
-                internalBluring = true;
-                $element.blur();
+        self.internalFocus = false;
 
-                if (this._focusing)
-                    return;
+        let propertyName = $el.attr('data-property');
+        keyboardJS.pause('varview-' + propertyName);
+        document.execCommand('selectAll', false, null);
+        let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
+        self._editingColumn = column;
+    },
 
-                this._focusing = true;
+    textElementBlur(event) {
+        let self = event.data;
+        let $el = $(event.target);
+        let propertyName = $el.attr('data-property');
+        if (self.internalBluring === false) {
+            let data = { };
+            data[propertyName] = $el.text();
+            let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
+            if (column[propertyName] !== data[propertyName])
+                self.model.changeColumn(column.id, data);
+            window.clearTextSelection();
+            self._editingColumn = null;
+        }
+        self.internalBluring = false;
+        keyboardJS.resume('varview-' + propertyName);
+    },
 
-                await new Promise((resolve) => setTimeout(resolve, 300));
-
-                if (this._dblClicked) {
-                    this._dblClicked = null;
-                    this._focusing = false;
-                    return;
-                }
-                else {
-                    internalFocus = true;
-                    this._focusing = false;
-                    $element.focus();
-                    return;
-                }
+    textElementKeyDown(event) {
+        let self = event.data;
+        let $el = $(event.target);
+        let propertyName = $el.attr('data-property');
+        let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
+        var keypressed = event.keyCode || event.which;
+        if (keypressed === 13) { // enter key
+            $el.blur();
+            let columnCount = self.model.get('columnCount');
+            let index = column.index;
+            if (event.shiftKey) {
+                if (column.index > 0)
+                    index = index - 1;
+                else
+                    index = columnCount - 1;
+            }
+            else {
+                if (column.index < columnCount - 1)
+                    index = index + 1;
+                else
+                    index = 0;
             }
 
-            internalFocus = false;
+            self.selection.setSelection(0, index, true);
+            setTimeout(() => {
+                self.$el.find(`.selected > .${ propertyName }.text`).focus().select();
+            }, 10);
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        else if (keypressed === 27) { // escape key
+            $el.text(column[propertyName]);
+            $el.blur();
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    },
 
-            keyboardJS.pause('varview-' + propertyName);
-            document.execCommand('selectAll', false, null);
-            this._editingColumn = column;
-        } );
+    _addTextEvents($element) {
 
-        $element.blur(() => {
-            if (internalBluring === false) {
-                let data = { };
-                data[propertyName] = $element.text();
-                if (column[propertyName] !== data[propertyName])
-                    this.model.changeColumn(column.id, data);
-                window.clearTextSelection();
-                this._editingColumn = null;
-            }
-            internalBluring = false;
-            keyboardJS.resume('varview-' + propertyName);
-        } );
+        $element.focus(this, this.textElementFocus);
 
-        $element.keydown((event) => {
-            var keypressed = event.keyCode || event.which;
-            if (keypressed === 13) { // enter key
-                $element.blur();
-                let columnCount = this.model.get('columnCount');
-                let index = column.index;
-                if (event.shiftKey) {
-                    if (column.index > 0)
-                        index = index - 1;
-                    else
-                        index = columnCount - 1;
-                }
-                else {
-                    if (column.index < columnCount - 1)
-                        index = index + 1;
-                    else
-                        index = 0;
-                }
+        $element.blur(this, this.textElementBlur);
 
-                this.selection.setSelection(0, index, true);
-                setTimeout(() => {
-                    this.$el.find(`.selected > .${ propertyName }.text`).focus().select();
-                }, 10);
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            else if (keypressed === 27) { // escape key
-                $element.text(column[propertyName]);
-                $element.blur();
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
+        $element.keydown(this, this.textElementKeyDown);
     },
     _updateColumnColour(column, $dot) {
         if (column.columnType === 'recoded') {
@@ -473,9 +522,9 @@ const VariablesView = SilkyView.extend({
         let $cell = $(`<div class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
         if (hasEvents) {
             $cell.on('mouseover', event => {
-                this.$body.find(`.cell.hovering`).removeClass('hovering');
-                let id = $cell.attr('data-id');
-                let $row = this.$body.find(`.cell[data-id=${ id }]`);
+                this.$body.find('.cell.hovering').removeClass('hovering');
+                let id = parseInt($cell.attr('data-id'));
+                let $row = this._getRowById(id).$elements;
                 $row.addClass('hovering');
             });
             $cell.on('mousedown', event => {
@@ -548,7 +597,8 @@ const VariablesView = SilkyView.extend({
                 let s = null;
                 let e = null;
                 for (let c = left; c <= right; c++) {
-                    if (this.$el.find(`[data-index=${ c }]`).length > 0) {
+                    let $row = this._getRowByIndex(c).$elements;
+                    if ($row.length > 0) {
                         if (s === null)
                             s = c;
                         if (e === null)
@@ -643,25 +693,28 @@ const VariablesView = SilkyView.extend({
             let change = event.changes[i];
             let id = change.id;
             if (change.nameChanged) {
-                let $element = this.$el.find(`.cell[data-id=${ id }] .name`);
+                let $row = this._getRowById(id).$elements;
+                let $element = $row.find('.name');
                 $element.text(change.name);
             }
 
             if (change.descriptionChanged) {
                 let column = this.model.getColumnById(id);
-                let $element = this.$el.find(`.cell[data-id=${ id }] .description`);
+                let $row = this._getRowById(id).$elements;
+                let $element = $row.find('.description');
                 $element.text(column.description);
             }
 
             if (change.measureTypeChanged) {
                 let column = this.model.getColumnById(id);
-                let $element = this.$el.find(`.cell[data-id=${ id }]`);
-                $element.attr('data-measuretype', column.measureType);
+                let $row = this._getRowById(id).$elements;
+                $row.attr('data-measuretype', column.measureType);
             }
 
             if (change.transformChanged) {
                 let column = this.model.getColumnById(id);
-                let $dot = this.$el.find(`.cell[data-id=${ id }] .dot`);
+                let $row = this._getRowById(id).$elements;
+                let $dot = $row.find(`.dot`);
                 this._updateColumnColour(column, $dot);
             }
 
