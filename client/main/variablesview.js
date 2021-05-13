@@ -124,23 +124,24 @@ const VariablesView = SilkyView.extend({
 
         let $row = row.$elements;
         $row.addClass('selected');
-        $row.find('.select').prop('checked', true);
+        row.$select.prop('checked', true);
 
         if (editable) {
             setTimeout(function () {
-                $row.find('.text:not(.readonly)').attr('contenteditable', true);
-                $row.find('.text.name:not(.readonly)').attr('placeholder', 'Enter name');
-                $row.find('.text.description:not(.readonly)').attr('placeholder', 'Enter description');
+                row.$editableTexts.attr('contenteditable', true);
+                if (row.nameReadOnly === false)
+                    row.$name.attr('placeholder', 'Enter name');
+                row.$description.attr('placeholder', 'Enter description');
             }, 10);
         }
     },
     _clearRowSelections() {
         for (let row of this.selectedRows) {
             let $row = row.$elements;
-            $row.find('.text').removeAttr('contenteditable');
-            $row.find('.text.name').removeAttr('placeholder');
-            $row.find('.text.description').removeAttr('placeholder');
-            $row.find('.select:checked').prop('checked', false);
+            row.$editableTexts.removeAttr('contenteditable');
+            row.$name.removeAttr('placeholder');
+            row.$description.removeAttr('placeholder');
+            row.$select.prop('checked', false);
             $row.removeClass('selected');
         }
         this.selectedRows = [];
@@ -284,10 +285,18 @@ const VariablesView = SilkyView.extend({
         this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
 
         let $elements = this.$el.find(`.cell[data-index=${colNo}]`);
+        let $editableTexts = $elements.find('.text:not(.readonly)');
+        let $dot = $elements.find(`.dot`);
 
         this.rows[colNo] = {
             column: column,
-            $elements: $elements
+            $elements: $elements,
+            $select: $select,
+            $name: $name,
+            $description: $desc,
+            $editableTexts: $editableTexts,
+            $dot: $dot,
+            nameReadOnly: column.columnType === 'filter'
         };
     },
 
@@ -680,32 +689,19 @@ const VariablesView = SilkyView.extend({
                 continue;
 
             let id = change.id;
-            if (change.nameChanged) {
-                let $row = this._getRowById(id).$elements;
-                let $element = $row.find('.name');
-                $element.text(change.name);
-            }
+            let row = this._getRowById(id);
 
-            if (change.descriptionChanged) {
-                let column = this.model.getColumnById(id);
-                let $row = this._getRowById(id).$elements;
-                let $element = $row.find('.description');
-                $element.text(column.description);
-            }
+            if (change.nameChanged)
+                row.$name.text(change.name);
 
-            if (change.measureTypeChanged) {
-                let column = this.model.getColumnById(id);
-                let $row = this._getRowById(id).$elements;
-                $row.attr('data-measuretype', column.measureType);
-            }
+            if (change.descriptionChanged)
+                row.$description.text(row.column.description);
 
-            if (change.transformChanged) {
-                let column = this.model.getColumnById(id);
-                let $row = this._getRowById(id).$elements;
-                let $dot = $row.find(`.dot`);
-                this._updateColumnColour(column, $dot);
-            }
+            if (change.measureTypeChanged)
+                row.$elements.attr('data-measuretype', row.column.measureType);
 
+            if (change.transformChanged)
+                this._updateColumnColour(row.column, row.$dot);
         }
     },
 
