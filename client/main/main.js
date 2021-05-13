@@ -156,14 +156,14 @@ window.addEventListener('popstate', function () {
 $(document).ready(async() => {
     window.$body = $('body');
     if (navigator.platform === 'Win32')
-        $body.addClass('windows');
+        window.$body.addClass('windows');
     else if (navigator.platform == 'MacIntel')
-        $body.addClass('mac');
+        window.$body.addClass('mac');
     else
-        $body.addClass('other');
+        window.$body.addClass('other');
 
     if (host.isElectron)
-        $body.addClass('electron');
+        window.$body.addClass('electron');
 
     $(window).on('keydown', function(event) {
         if (event.key === 'F10' || event.keyCode === 121) {
@@ -212,7 +212,7 @@ $(document).ready(async() => {
     let mainTableMode = 'spreadsheet';
 
     let setMainTableMode = function(mode) {
-        $body.attr('data-table-mode', mode);
+        window.$body.attr('data-table-mode', mode);
         mainTableMode = mode;
         viewController.focusView(mode);
     };
@@ -251,7 +251,7 @@ $(document).ready(async() => {
     let splitPanel  = new SplitPanel({el : '#main-view'});
 
     splitPanel.$el.on('mode-changed', () => {
-        $body.attr('data-splitpanel-mode', splitPanel.mode);
+        window.$body.attr('data-splitpanel-mode', splitPanel.mode);
         switch (splitPanel.mode) {
             case 'results':
                 let tab = ribbonModel.get('selectedTab');
