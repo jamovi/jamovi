@@ -11,76 +11,59 @@ const tarp = require('./utils/tarp');
 const SplitPanel = SilkyView.extend({
     className: "splitpanel",
 
-    initialize: function() {
+    initialize() {
 
         this._resizing = false;
-        this.isLocked = 0;
-
-        this.$children = this.$el.children();
 
         this.$el.addClass("silky-splitpanel");
         this.$el.css("position", "relative");
         this.$el.css("overflow", "hidden");
 
-        this._createSections();
+        this._allData = false;
+        this._allResults = false;
 
-        _.bindAll(this, "resized");
-        $(window).on("resize", () => { this.resized(); } );
-        $(document).mouseup(this, this._mouseUpGeneral);
-        $(document).mousemove(this, this._mouseMoveGeneral);
-    },
+        this.mode = 'mixed';
+        this._optionsVisible = false;
 
-    _getLeftZero: function() {
-        let leftZero = parseFloat(this.$el.css("padding-left"));
-        if (isNaN(leftZero))
-            return 0;
-        return leftZero;
-    },
+        this._allowDocking = { left: false, right: false, both: false };
 
-    _isLocked: function() {
-        return this.isLocked > 0;
-    },
-
-    _createSections: function() {
         this._sections = { _list: [] };
 
-        let lastSection = null;
-        for (let i = 0; i < this.$children.length; i++) {
-            let section = this.getSection(i);
-            if (lastSection !== null) {
-                section.setNextSection("left", lastSection);
-                lastSection.setNextSection("right", section);
-            }
+        $(document).mouseup(this, this._mouseUpGeneral);
+        $(document).mousemove(this, this._mouseMoveGeneral);
+
+        this._transition = Promise.resolve();
+
+        this._initialWidthsSaved = false;
+    },
+
+    getSection(i) {
+        if (i === parseInt(i, 10)) {
+            if (i < 0)
+                return this._sections._list[this._sections._list.length + i];
             else
-                this.firstSection = section;
-
-            lastSection = section;
+                return this._sections._list[i];
         }
+
+        return this._sections[i];
     },
 
-    getSection: function(i) {
-
-        let keyIsIndex = false;
-        if (i === parseInt(i, 10))
-            keyIsIndex = true;
-
-        let data;
-        if (keyIsIndex)
-            data = this._sections._list[i];
-        else
-            data = this._sections[i];
-
-        if (data === undefined)
-            data = this._createPanel(i, {});
-
-        return data;
+    onWindowResize() {
+        this._saveWidths();
     },
 
-    addPanel: function(name, properties) {
-        this.$el.append($('<div id="' + name + '"></div>'));
-        this.$children  = this.$el.children();
+    addPanel(name, properties) {
+        let $panel = $('<div id="' + name + '"></div>');
 
-        let section = this.getSection(name);
+        let section = new SplitPanelSection(this._sections._list.length, $panel, {}, this);
+        this._sections._list[section.listIndex] = section;
+        this._sections[section.name] = section;
+
+        $panel.on("splitpanel-hide", (event) => {
+            this.setVisibility(section, false);
+        });
+
+        this.$el.append($panel);
 
         if (this.firstSection === undefined)
             this.firstSection = section;
@@ -91,164 +74,125 @@ const SplitPanel = SilkyView.extend({
             section.setNextSection("left", leftSection);
          }
 
-        section.initalise(properties);
-    },
+         section.initalise(properties);
 
-    addContent: function(name, $content) {
-        let section = this.getSection(name);
-
-        section.$panel.empty();
-
-        section.$panel.append($content);
-    },
-
-    _fastDuration : 100,
-    _slowDuration : 400,
-
-    setVisibility: function(i, value) {
-
-        let section = i;
-        if (i.name === undefined)
-            section = this.getSection(i);
-
-        let direction = value ? -1 : 1;
-        let wanted = direction * section.reservedAbsoluteWidth();
-
-        if (this._isLocked() || section.setVisibility(value, true) === false)
-            return;
-
-        this.totalWidth = this.$el.width();
-
-        let amountLeft = wanted;
-        if (section.strongEdge === "right" && section.listIndex > 0) {
-
-            section.getNext("left", function(nextSection) {
-                if (amountLeft === 0) return false;
-
-                let amount = nextSection.testCoreGrowth(amountLeft);
-                if (amount !== 0) {
-                    amountLeft -= amount;
-                    nextSection.offsetCoreWidth(amount, true);
-                }
-
-                return true;
-
-            }, this);
-
-            wanted = amountLeft;
-            if (wanted !== 0) {
-                section.getNext("right", function(nextSection) {
-                    if (amountLeft === 0) return false;
-
-                    let amount = nextSection.testCoreGrowth(amountLeft);
-                    if (amount !== 0) {
-                        amountLeft -= amount;
-                        nextSection.offsetCoreWidth(amount, true);
-                    }
-
-                    return true;
-                });
-            }
-        }
-
-        let leftPos = this._getLeftZero();
-
-        this._moveThroughSections(this.firstSection, "right", function(currentSection) {
-
-            let width = currentSection.coreWidth();
-
-            currentSection.sectionOnTop = false;
-
-            currentSection.moveTo(leftPos, true);
-
-            if (currentSection.getNext("right") === null)
-                currentSection.setCoreWidth(this._getLeftZero() + this.totalWidth - leftPos - SplitPanelSection.sepWidth, true);
-            else
-                currentSection.setCoreWidth(width, true);
-
-            leftPos += currentSection.absoluteWidth();
-        }, this);
-
-        section.sectionOnTop = value === false;
-
-        this.updateDisplay();
-    },
-
-    _moveThroughSections: function(section, direction, action, context) {
-        while (section !== null)
-        {
-            if (action.call(context, section) === false)
-                return;
-
-            section = section.getNext(direction);
-        }
-    },
-
-    _createPanel: function(i, data) {
-        let keyIsIndex = false;
-        if (i === parseInt(i, 10))
-            keyIsIndex = true;
-
-        let panel = null;
-        let index = -1;
-
-        if (keyIsIndex) {
-            panel = $(this.$children[i]);
-            index = i;
-            if (panel === null)
-                throw "Splitter panel doesn't exist.";
-        }
-        else {
-            for (let j = 0; j < this.$children.length; j++) {
-                let child = $(this.$children[j]);
-                if (child.attr('id') === i) {
-
-                    panel = child;
-                    index = j;
-                    break;
-                }
-            }
-            if (panel === null)
-                throw "Splitter panel doesn't exist.";
-        }
-
-        let section = new SplitPanelSection(index, panel, data, this);
-
-        panel.on("splitpanel-hide", (event) => {
-            this.setVisibility(section, false);
-        });
-
-        this._sections._list[section.listIndex] = section;
-        this._sections[section.name] = section;
+         if (this.resetState())
+            this.normalise();
 
         return section;
     },
 
-    render: function() {
-        this._rendering = true;
+    async setVisibility(i, value) {
 
-        let totalHeight = this.$el.height();
-        this.totalWidth = this.$el.width();
+        if (this._optionsVisible === value)
+            return;
 
-        let leftPos = this._getLeftZero();
+        this._optionsVisible = value;
 
-        let lastSection = null;
 
-        this._moveThroughSections(this.firstSection, "right", function(currentSection) {
 
-            currentSection.moveTo(leftPos);
-            currentSection.setHeight(totalHeight);
+        this._transition = this._transition.then(() => {
+            return new Promise(async (resolve) => {
 
-            if (currentSection.getVisibility()) {
-                if (currentSection.initialWidth !== undefined)
-                    currentSection.setCoreWidth(currentSection.initialWidth);
-                else if (currentSection.preferredWidth)
-                    currentSection.setCoreWidth(currentSection.preferredWidth);
-                else
-                    currentSection.setCoreWidth(currentSection.displayWidth());
-            }
+                let optionsSection = this.getSection(1);
+                if (optionsSection.getVisibility() === value) {
+                    resolve();
+                    return;
+                }
 
-            leftPos += currentSection.absoluteWidth();
+                optionsSection.$panel.addClass('initialised');
+
+                this.optionsChanging = value ? 'opening' : 'closing';
+
+                if (value) {
+                    let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+                    this._resultsWidth = columnTemplates[columnTemplates.length - 1];
+                    this._otherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
+                    this.allowDocking('left');
+                }
+
+                if (this.resetState())
+                   this.normalise();
+
+                optionsSection.setVisibility(value);
+                this.onTransitioning();
+
+                optionsSection.$panel.one('transitionend', async () => {
+                    await this.checkDockConditions(false);
+                    if (value === false) {
+                        this.suspendDocking('left');
+                        this._resultsWidth = null;
+                    }
+                    this.optionsChanging = null;
+                    if (this.resetState())
+                       this.normalise(true);
+
+                    if (value === false)
+                        this._saveWidths();
+
+                    resolve();
+                });
+            });
+        });
+    },
+
+    _applyColumnTemplates(columnTemplates, normalise, clean) {
+        if (normalise)
+            this._normaliseWidths(columnTemplates, clean);
+
+        if (this.getSection(0).adjustable) {
+            if ((this._allowDocking.left === false && this._allowDocking.both === false) && ! this._allResults)
+                columnTemplates[0] = `minmax(200px, ${columnTemplates[0]} )`;
+            else
+                columnTemplates[0] = `minmax(auto, ${columnTemplates[0]} )`;
+        }
+
+        if (this.getSection(-1).adjustable) {
+            if ((this._allowDocking.right === false && this._allowDocking.both === false) && ! this._allData)
+                columnTemplates[columnTemplates.length - 1] = `minmax(200px, ${columnTemplates[columnTemplates.length - 1]} )`;
+            else
+                columnTemplates[columnTemplates.length - 1] = `minmax(auto, ${columnTemplates[columnTemplates.length - 1]} )`;
+        }
+
+        this.$el.css('grid-template-columns', columnTemplates.join(' '));
+    },
+
+    normalise(clean) {
+        let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+        this._applyColumnTemplates(columnTemplates, true, clean);
+    },
+
+    onTransitioning(layoutKey) {
+        this.trigger('form-changed');
+        if (layoutKey || ! this.transitionCheckActive) {
+            this.transitionCheckActive = true;
+            if ( ! layoutKey)
+                layoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
+
+            setTimeout(() => {
+                let nextLayoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
+                if (layoutKey !== nextLayoutKey)
+                    this.onTransitioning(nextLayoutKey);
+                else {
+                    this.transitionCheckActive = false;
+                }
+            }, 50);
+        }
+    },
+
+    applyToSections(action) {
+        let section = this.firstSection;
+        while (section !== null)
+        {
+            if (action(section) === false)
+                return;
+
+            section = section.getNext('right');
+        }
+    },
+
+    render() {
+        this.applyToSections((currentSection) => {
 
             let splitter = currentSection.getSplitter();
             if (splitter !== null) {
@@ -258,54 +202,132 @@ const SplitPanel = SilkyView.extend({
                 splitter.on("mousedown", null, data, this.onMouseDown);
             }
 
-            if (currentSection.getVisibility())
-                lastSection = currentSection;
-
-        }, this);
-
-        lastSection.setCoreWidth(this._getLeftZero() + this.totalWidth - lastSection.absolutePosition() - SplitPanelSection.sepWidth);
-
-        this._moveThroughSections(lastSection.getNext("right"), "right", function(currentSection) {
-            currentSection.moveTo(this._getLeftZero() + this.totalWidth - SplitPanelSection.sepWidth);
-        }, this);
-
-
-        this.updateDisplay();
-
-        this._rendering = false;
+        });
     },
 
-    onMouseDown: function(event) {
-        if (this._resizing === true || event.data === null)
+    onMouseDown(event) {
+        let data = event.data;
+        let self = data.self;
+
+        if (self._resizing === true || event.data === null)
             return;
 
         tarp.show('splitPanel');
-        let data = event.data;
-        let self = data.self;
 
         self._resizing = true;
         self._sizingData = data;
         self._startPosX = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
         self._startPosY = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
 
+        self._allResults = false;
+        self._allData = false;
+
+        self.allowDocking('both');
     },
 
-    _mouseUpGeneral: function(event) {
+    allowDocking(type) {
+        let changed = this._allowDocking[type] === false;
+        this._allowDocking[type] = true;
+        if (changed)
+            this.normalise();
+    },
+
+    suspendDocking(type, silent) {
+        if (this._allowDocking[type] === false)
+            return;
+
+        this._allowDocking[type] = false;
+        if ( ! silent)
+            this.normalise();
+    },
+
+    async _mouseUpGeneral(event) {
 
         let self = event.data;
         if (self === null || self._resizing === false)
             return;
 
         self._sizingData = null;
-        self._resizing = false;
         tarp.hide('splitPanel');
+
+        self._saveWidths();
+
+        self._resizing = false;
+        self.suspendDocking('both');
+
+        await self.checkDockConditions(true);
+
+        self.normalise();
     },
 
-    _mouseMoveGeneral: function(event) {
+    _saveWidths() {
+        if (! this._allData && ! this._allResults) {
+            let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+            this.applyToSections((currentSection) => {
+                currentSection.lastWidth = parseInt(columnTemplates[currentSection.listIndex * 2]);
+                if (currentSection.listIndex * 2 === columnTemplates.length - 1)
+                    currentSection.lastWidth -= 2;
+            });
+
+            if (this._resultsWidth) {
+                let newOtherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
+                this._resultsWidth = parseInt(columnTemplates[columnTemplates.length - 1]) + (newOtherWidth  - this._otherWidth);
+                this._resultsWidth = `${ this._resultsWidth }px`;
+                this._dataWidth = newOtherWidth;
+            }
+        }
+    },
+
+    _normaliseWidths(columnTemplates, clean) {
+
+        if (this._resultsWidth)
+            columnTemplates[columnTemplates.length - 1] = this._resultsWidth;
+
+        let total = 0;
+        let widthValues = [];
+        let i = 0;
+        this.applyToSections((currentSection) => {
+            if (currentSection.adjustable) {
+                if (currentSection.fixed === false) {
+                    widthValues[i] = parseInt(columnTemplates[i*2]);
+                    total += widthValues[i];
+                }
+                else
+                    widthValues[i] = columnTemplates[i*2];
+            }
+            else
+                widthValues[i] = null;
+            i += 1;
+        });
+
+        for (let i = 0; i < widthValues.length; i++) {
+            if (widthValues[i] !== null) {
+                if (clean && ((i === 0 && this._allResults) || (i === widthValues.length - 1 && this._allData)))
+                        columnTemplates[i*2] = '0fr';
+                else if (typeof widthValues[i] === 'string')
+                    columnTemplates[i*2] = widthValues[i];
+                else {
+                    if (total === 0)
+                        columnTemplates[i*2] = '10fr';
+                    else
+                        columnTemplates[i*2] = (widthValues[i] * 10) / total + 'fr';
+                }
+            }
+            else
+                columnTemplates[i*2] = 'min-content';
+
+            if (i != 0)
+                columnTemplates[i*2 - 1] = 'min-content';
+        }
+    },
+
+    async _mouseMoveGeneral(event) {
 
         let self = event.data;
         if (self === null || self._resizing === false)
             return;
+
+        self._resultsWidth = null;
 
         let data = self._sizingData;
 
@@ -318,162 +340,297 @@ const SplitPanel = SilkyView.extend({
         self._startPosX = xpos;
         self._startPosY = ypos;
 
-        if (self._isLocked())
+        await self.modifyLayout(data, diffX);
+
+        self._splittersMoved = true;
+    },
+
+    resetState() {
+
+        if (this._sections._list.length !== 3)
+            return false;
+
+        let dataPanel = this.getSection(0);
+        let resultsPanel = this.getSection(-1);
+
+        if (this.mode === 'data' || (this.mode === 'mixed' && this.optionsChanging)) {
+            resultsPanel.fixed = true;
+            dataPanel.fixed = false;
+        }
+        else {
+            resultsPanel.fixed = false;
+            dataPanel.fixed = true;
+        }
+
+        resultsPanel.adjustable = true;
+        dataPanel.adjustable = true;
+
+        return true;
+    },
+
+    setMode(mode, silent) {
+
+        if (this._initialWidthsSaved === false)
+            this._saveWidths();
+
+        this._transition = this._transition.then(() => {
+            return new Promise(async (resolve) => {
+                let changed = mode != this.mode;
+                let prevMode = this.mode;
+                this.mode = mode;
+
+                if (mode !== 'mixed' || (changed && ! this._resizing)) {  //this condition is here because low down mixed mode doesn't always get run
+                    this.allowDocking('left');
+                    this.allowDocking('right');
+                }
+
+                this._resultsWidth = null;
+
+                let transitionTime = 300;
+                let transitionDelay = 20;
+
+                let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+                if (mode === 'results') {
+
+                    this.getSection(-1).$panel.css({ width: '', opacity: '' });
+
+                    // Set layout grid state ///
+                    this.getSection(-1).fixed = false;
+                    this.getSection(0).adjustable = false;
+
+                    let $dataPanel = this.getSection(0).$panel;
+                    $dataPanel.css('width', columnTemplates[0]);
+
+                    this._applyColumnTemplates(columnTemplates, true);
+                    ///////////////////
+
+                    this._allResults = true;
+                    this._allData = false;
+
+                    setTimeout(() => {
+                        $dataPanel.css('width', '0px');
+                        setTimeout(() => {  //Normalises the columnTemplate after transition
+                            this.onTransitioning();  // this is here so that the resize event happens after transition to make it less jittery
+                            //this.allowDocking('left');
+                            if (this.resetState())
+                               this.normalise(true);
+                            $dataPanel.css('width', '');
+                            resolve();
+                        }, transitionTime);
+                    }, transitionDelay);
+                }
+                else if (mode === 'data') {
+
+                    this.getSection(0).$panel.css({ width: '', opacity: '' });
+
+                    // Set layout grid state ///
+                    this.getSection(-1).adjustable = false;
+                    this.getSection(-1).fixed = false;
+                    this.getSection(0).fixed = false;
+
+                    let $resultsPanel = this.getSection(-1).$panel;
+                    $resultsPanel.css('width', columnTemplates[columnTemplates.length - 1]);
+
+                    this._applyColumnTemplates(columnTemplates, true);
+                    //////////////////
+
+                    this._allResults = false;
+                    this._allData = true;
+
+                    setTimeout(() => {
+                        $resultsPanel.css('width', '0px');
+                        setTimeout(() => {  //Normalises the columnTemplate after transition
+                            this.onTransitioning();
+                            if (this.resetState())
+                               this.normalise(true);
+                            $resultsPanel.css('width', '');
+                            resolve();
+                        }, transitionTime);
+                    }, transitionDelay);
+                }
+                else {
+                    this._allResults = false;
+                    this._allData = false;
+
+                    if (changed && ! this._resizing) {
+                        if (prevMode === 'results') {
+                            this.getSection(0).$panel.css({ width: '', opacity: '' });
+
+                            // Set layout grid state ///
+                            this.getSection(-1).adjustable = false;
+                            this.getSection(-1).fixed = false;
+                            this.getSection(0).fixed = false;
+
+                            let $resultsPanel = this.getSection(-1).$panel;
+                            $resultsPanel.css('width', columnTemplates[columnTemplates.length - 1]);
+
+                            this._applyColumnTemplates(columnTemplates, true);
+                            //////////////////
+
+                            setTimeout(() => {
+                                let width = this.getSection(-1).lastWidth;
+                                $resultsPanel.css('width', width + 'px');
+                                setTimeout(() => {  //Normalises the columnTemplate after transition
+                                    this.onTransitioning();
+                                    this.refreshDockState(true);
+                                    if (this.resetState())
+                                       this.normalise(true);
+                                    $resultsPanel.css('width', '');
+                                    resolve();
+                                }, transitionTime);
+                            }, transitionDelay);
+                        }
+                        else if (prevMode === 'data') {
+                            this.getSection(-1).$panel.css({ width: '', opacity: '' });
+
+                            // Set layout grid state ///
+                            this.getSection(0).adjustable = false;
+                            this.getSection(-1).fixed = false;
+
+                            let $dataPanel = this.getSection(0).$panel;
+                            $dataPanel.css('width', columnTemplates[0]);
+
+                            this._applyColumnTemplates(columnTemplates, true);
+                            //////////////////
+
+                            setTimeout(() => {
+                                let width = this.getSection(0).lastWidth;
+                                $dataPanel.css('width', width + 'px');
+                                setTimeout(() => {  //Normalises the columnTemplate after transition
+                                    this.onTransitioning();
+                                    this.refreshDockState(true);
+                                    if (this.resetState())
+                                       this.normalise(true);
+                                    $dataPanel.css('width', '');
+                                    resolve();
+                                }, transitionTime);
+                            }, transitionDelay);
+                        }
+                    }
+                    else
+                        resolve();
+                }
+
+                if (! silent && changed)
+                    this.$el.trigger('mode-changed');
+            });
+        });
+    },
+
+    refreshDockState(silent) {
+        if (this.mode === 'mixed') {
+            this.suspendDocking('right', silent);
+            if (this._optionsVisible)
+                this.allowDocking('left', silent);
+            else
+                this.suspendDocking('left', silent);
+        }
+        else {
+            this.allowDocking('left', silent);
+            this.allowDocking('right', silent);
+        }
+        this.checkDockConditions(false);
+    },
+
+    async modifyLayout(data, diffX) {
+        if (diffX === 0)
             return;
 
-        let leftPanelData = data.left;
-        let testDiffX = leftPanelData.testCoreGrowth(diffX);
-        while (testDiffX === 0 && leftPanelData.getNext("left") !== null)
-        {
-            leftPanelData = leftPanelData.getNext("left");
-            testDiffX = leftPanelData.testCoreGrowth(diffX);
+        let leftSection = data.left;
+        while (leftSection && leftSection.adjustable === false)
+            leftSection = leftSection.getNext('left');
+        if ( ! leftSection || leftSection.adjustable === false)
+            return;
+
+        let rightSection = data.right;
+        while (rightSection && rightSection.adjustable === false)
+            rightSection = rightSection.getNext('right');
+        if ( ! rightSection || rightSection.adjustable === false)
+            return;
+
+        let changed = false;
+        let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+        let shrinkingSection = diffX < 0 ? leftSection : rightSection;
+        let growingSection = diffX > 0 ? leftSection : rightSection;
+
+        let shrinkingIndex = parseInt(shrinkingSection.$panel.css('grid-column-start')) - 1;
+        let currentWidth = parseInt(columnTemplates[shrinkingIndex]);
+        let shrunkWidth = currentWidth - Math.abs(diffX);
+
+        let minWidth = shrinkingSection.getMinWidth();
+        if (shrunkWidth < minWidth) {
+            shrunkWidth = minWidth;
+            diffX = minWidth - currentWidth; //how much we actually moved;
         }
-        diffX = testDiffX;
-
-        let rightPanelData = data.right;
-        if (diffX !== 0) {
-            testDiffX = rightPanelData.testCoreGrowth(-diffX);
-            while (testDiffX === 0 && rightPanelData.getNext("right") !== null) {
-                rightPanelData = rightPanelData.getNext("right");
-                testDiffX = rightPanelData.testCoreGrowth(-diffX);
-            }
-        }
-
-        diffX = -testDiffX;
-
-        if (diffX !== 0)  {
-
-            leftPanelData.offsetCoreWidth(diffX);
-            rightPanelData.offsetCoreWidth(-diffX);
-
-            let currentSection = data.right;
-            while (currentSection !== null && currentSection.listIndex <= rightPanelData.listIndex) {
-                currentSection.offset(diffX);
-                currentSection = currentSection.getNext("right");
-            }
-
-            currentSection = data.left;
-            while (currentSection !== null && currentSection.listIndex > leftPanelData.listIndex) {
-                currentSection.offset(diffX);
-                currentSection = currentSection.getNext("left");
-            }
+        else if (shrunkWidth < 0) {
+            shrunkWidth = 0;
+            diffX = -currentWidth; //how much we actually moved;
         }
 
-        self.updateDisplay();
+        if (shrinkingSection.width != shrunkWidth) {
+            columnTemplates[shrinkingIndex] = `${ shrunkWidth }px`;
+            shrinkingSection.width = shrunkWidth;
+            changed = true;
+        }
+
+        let growingIndex = parseInt(growingSection.$panel.css('grid-column-start')) - 1;
+        let grownWidth = parseInt(columnTemplates[growingIndex]) + Math.abs(diffX);
+        if (growingSection.width != grownWidth) {
+            columnTemplates[growingIndex] = `${ grownWidth }px`;
+            growingSection.width = grownWidth;
+            changed = true;
+        }
+
+        rightSection.$panel.css('width', '');
+        leftSection.$panel.css('width', '');
+
+        if (changed) {
+            this.onTransitioning();
+            this._applyColumnTemplates(columnTemplates, true);
+            await this.checkDockConditions(false);
+        }
     },
 
-    resized: function(size) {
+    async checkDockConditions(updateMode) {
+        return new Promise((resolve) => {
+            setTimeout( async() => {
+                this.widths = [];
+                let i = 0;
+                let wideCount = 0;
+                let widths = this.$el.css('grid-template-columns').split(' ');
+                for (let j = 0; j < widths.length; j = j+2) {
+                    this.widths[i] = parseInt(widths[j]);
+                    if (this.widths[i] > 40)
+                        wideCount += 1;
 
-        if (size === undefined)
-            size = { height: this.$el.height(), width: this.$el.width() };
-
-        let totalHeight = size.height;
-        if (totalHeight === undefined)
-            totalHeight = this.$el.height();
-
-        let newNetWidth = size.width;
-        if (newNetWidth === undefined)
-            newNetWidth = this.$el.width();
-
-        let oldNetWidth = 0;
-
-        this.totalWidth = this.$el.width();
-
-        let levelData = [];
-
-        let panelDataList = [];
-        let newPanelWidths = [];
-
-        this._moveThroughSections(this.firstSection, "right", function(currentSection) {
-            if (currentSection.listIndex > 0 && currentSection.getVisibility())
-                newNetWidth -= SplitPanelSection.sepWidth;
-
-            let level = currentSection.level;
-            let width = currentSection.coreWidth();
-            newPanelWidths[currentSection.listIndex] = width;
-            oldNetWidth += width;
-            if (levelData[level] === undefined)
-                levelData[level] = { width: width, panelCount: 1, panelDataList: [ currentSection ] };
-            else {
-                levelData[level].width += width;
-                levelData[level].panelCount += 1;
-                levelData[level].panelDataList.push(currentSection);
-            }
-            panelDataList.push(currentSection);
-        }, this);
-
-
-        let netWidthDiff = newNetWidth - oldNetWidth;
-
-        let currentLevel = 0;
-        let nextLevel = -1;
-        do {
-            let levelWidthOffset = netWidthDiff / levelData[currentLevel].panelCount;
-            nextLevel = -1;
-            for (let i = 0; i < panelDataList.length; i++) {
-                let panelData = panelDataList[i];
-
-                if (panelData === null)
-                    continue;
-
-                if (panelData.level !== currentLevel) {
-
-                    if (panelData.level > currentLevel && (panelData.level < nextLevel || nextLevel === -1))
-                        nextLevel = panelData.level;
-
-                    continue;
+                    i += 1;
                 }
 
-                let oldWidth = newPanelWidths[i];
-                let wantedWidth = oldWidth + levelWidthOffset;
-                let possibleWidth =  oldWidth + panelData.testCoreGrowth(wantedWidth - oldWidth);
+                this._allResults = this.widths[0] <= 40 && (wideCount <= 1 || this._allResults);
+                this._allData = this.widths[this.widths.length-1] <= 40 && wideCount <= 1;
 
-                newPanelWidths[i] = possibleWidth;
+                if (this.widths[0] <= 40)
+                    this._sections._list[0].$panel.css('opacity', '0');
+                else
+                    this._sections._list[0].$panel.css('opacity', '');
 
-                netWidthDiff -= possibleWidth - oldWidth;
-                if (wantedWidth !== possibleWidth) {
-                    panelDataList[i] = null;
-                    i = -1;
+                if (this.widths[this.widths.length-1] <= 40)
+                    this._sections._list[this._sections._list.length-1].$panel.css('opacity', '0');
+                else
+                    this._sections._list[this._sections._list.length-1].$panel.css('opacity', '');
+
+                if (updateMode) {
+                    if (this._allResults)
+                        await this.setMode('results');
+                    else if (this._allData)
+                        await this.setMode('data');
+                    else
+                        await this.setMode('mixed');
                 }
-                if (netWidthDiff === 0) {
-                    nextLevel = -1;
-                    break;
-                }
-            }
-            currentLevel = nextLevel;
-        } while (currentLevel !== -1);
 
-        let leftPos = this._getLeftZero();
-
-        let lastSection = null;
-
-        this._moveThroughSections(this.firstSection, "right", function(currentSection) {
-            let newWidth = newPanelWidths[currentSection.listIndex];
-
-            currentSection.moveTo(leftPos);
-            currentSection.setHeight(totalHeight);
-            currentSection.setCoreWidth(newWidth);
-
-            leftPos += currentSection.absoluteWidth();
-
-            if (currentSection.getVisibility())
-                lastSection = currentSection;
-        }, this);
-
-        lastSection.setCoreWidth(this._getLeftZero() + this.totalWidth - lastSection.absolutePosition() - SplitPanelSection.sepWidth);
-
-        this._moveThroughSections(lastSection.getNext("right"), "right", function(currentSection) {
-            currentSection.moveTo(this._getLeftZero() + this.totalWidth - SplitPanelSection.sepWidth);
-        }, this);
-
-
-        this.updateDisplay();
-    },
-
-    updateDisplay: function() {
-        this._moveThroughSections(this.firstSection, "right", function(currentSection) {
-            currentSection.updateDisplay();
-        }, this);
+                resolve();
+            }, 0);
+        });
     }
 });
 
