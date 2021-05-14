@@ -74,6 +74,7 @@
     border-bottom: 1px solid #ACACAC;
     box-sizing: border-box ;
     background-color: #F8F8F8 ;
+    grid-area: 2 / 1 / span 1 / span 1;
 }
 
 .jmv-column {
@@ -128,9 +129,10 @@
 }
 
 .jmv-column-row-header {
-    position: absolute ;
+    position: sticky ;
     z-index: 20 ;
     color: #555555 ;
+    left: 0px;
 }
 
 .jmv-table-header {
@@ -139,6 +141,7 @@
     z-index: 20 ;
     overflow: hidden ;
     box-sizing: border-box ;
+    grid-area: 1 / 1 / span 1 / span 1;
 }
 
 .jmv-table-header-background {
@@ -419,11 +422,20 @@ input.jmv-table-cell-selected.copying {
     pointer-events: none;
 }
 
+.jmv-table-row-highlight-wrapper {
+    position: sticky ;
+    z-index: 40 ;
+    pointer-events: none;
+    left: 0px;
+    overflow: visible;
+}
+
 .jmv-table-row-highlight {
     border-right: 2px solid #5E8BC4 ;
     transition: top 0.1s, width 0.1s, height 0.1s ;
     box-sizing: border-box;
     top: -100px ; /* overridden by code */
+    right: 0px;
 }
 
 .jmv-table-column-highlight {

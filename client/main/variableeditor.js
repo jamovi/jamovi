@@ -18,11 +18,14 @@ const TransformEditor = require('./editors/transformeditor');
 
 const VariableEditor = Backbone.View.extend({
     className: 'VariableEditor',
-    initialize() {
+    initialize(options) {
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor');
 
         this._showId = null;
+
+        this.controller = options.controller;
+        this.selection = this.controller.selection;
 
         this.$main = $('<div class="jmv-variable-editor-main" data-type="none"></div>').appendTo(this.$el);
 
@@ -81,7 +84,7 @@ const VariableEditor = Backbone.View.extend({
         };
 
         this._previousKeyboardContext = keyboardJS.getContext();
-        keyboardJS.setContext('spreadsheet');
+        keyboardJS.setContext('controller');
         keyboardJS.bind('', event => this._keyboardListener(event));
         keyboardJS.setContext(this._previousKeyboardContext);
 
@@ -133,9 +136,14 @@ const VariableEditor = Backbone.View.extend({
 
         this._moveLeft = function() {
             let colId = this.model.attributes.editingVar[0];
-            let colNo = this.model.getColumnById(colId).dIndex;
+            let column = this.model.getColumnById(colId);
+
+            let colNo = column.dIndex;
+            if (this.selection.hiddenIncluded)
+                colNo = column.index;
+
             colNo--;
-            let newColumn = this.model.getColumn(colNo, true);
+            let newColumn = this.model.getColumn(colNo, ! this.selection.hiddenIncluded);
             if (newColumn)
                 this.model.set('editingVar', [newColumn.id]);
         };
@@ -146,9 +154,13 @@ const VariableEditor = Backbone.View.extend({
 
         this._moveRight = function() {
             let colId = this.model.attributes.editingVar[0];
-            let colNo = this.model.getColumnById(colId).dIndex;
+            let column = this.model.getColumnById(colId);
+            let colNo = column.dIndex;
+            if (this.selection.hiddenIncluded)
+                colNo = column.index;
+
             colNo++;
-            let newColumn = this.model.getColumn(colNo, true);
+            let newColumn = this.model.getColumn(colNo, ! this.selection.hiddenIncluded);
             if (newColumn)
                 this.model.set('editingVar', [newColumn.id]);
         };
@@ -258,7 +270,7 @@ const VariableEditor = Backbone.View.extend({
             this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
 
             this._previousKeyboardContext = keyboardJS.getContext();
-            keyboardJS.setContext('spreadsheet');
+            keyboardJS.setContext('controller');
 
             if (prevIds !== null && nowIds !== null) {
                 if ((this.editorModel.get('columnType') === 'filter' && this.commonColumn.columnType === 'filter') ||

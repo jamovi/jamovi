@@ -13,10 +13,13 @@
     background-color: #F8F8F8 ;
     width: 100% ;
     height: 300px ;
-    transition: height .2s, border-top .2s, background-color .2s ;
+    transition: height .2s, width .2s, border-top .2s, background-color .2s, opacity .2s, margin .2s;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC ;
     position: relative;
+    grid-area: 1 / 1 / span 1 / span 5;
+    border-bottom: 1px solid #CCCCCC;
+    margin-bottom: 6px;
 }
 
 .jmv-variable-editor.sub-editor-open {
@@ -31,6 +34,8 @@
     height: 0 ;
     transition-timing-function: ease, step-end ;
     border-top: 1px solid #F0F0F0 ;
+    opacity: 0;
+    margin-bottom: 0px;
 }
 
 .jmv-variable-editor-main {

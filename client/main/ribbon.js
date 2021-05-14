@@ -11,6 +11,7 @@ const Store = require('./store');
 const Modules = require('./modules');
 const tarp = require('./utils/tarp');
 const DataTab = require('./ribbon/datatab');
+const VariablesTab = require('./ribbon/variablestab');
 const AnnotationTab = require('./ribbon/annotationtab');
 const AnalyseTab = require('./ribbon/analysetab');
 const Notifs = require('./ribbon/notifs');
@@ -23,6 +24,7 @@ const RibbonModel = Backbone.Model.extend({
 
         this.set('tabs', [
             { name: 'file', title: '<span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span>' },
+            new VariablesTab(),
             new DataTab(),
             new AnalyseTab(this._modules),
             new AnnotationTab()
@@ -102,8 +104,10 @@ const RibbonView = Backbone.View.extend({
             let changed = tab !== this.selectedTab;
             this.selectedTab = tab;
 
-            if (this.selectedTab)
+            if (this.selectedTab) {
                 this.selectedTab.$el.addClass('selected');
+                this.$fullScreen.attr('data-tabname', this.selectedTab.name);
+            }
 
             if (changed)
                 this.trigger('tabSelected', tab.name);
@@ -115,6 +119,7 @@ const RibbonView = Backbone.View.extend({
 
         this.$el.append(`
             <div class="jmv-ribbon-header">
+                <div class="jmv-ribbon-fullscreen"></div>
                 <div class="jmv-ribbon-appmenu"></div>
             </div>
             <div class="
@@ -128,8 +133,13 @@ const RibbonView = Backbone.View.extend({
         this.$header = this.$el.find('.jmv-ribbon-header');
         this.$body   = this.$el.find('.jmv-ribbon-body');
         this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
+        this.$fullScreen = this.$el.find('.jmv-ribbon-fullscreen');
         this.$store = this.$el.find('.jmv-store');
         let $notifs = this.$el.find('#jmv-ribbon-notifs');
+
+        this.$fullScreen.on('click', () => {
+            this.trigger('toggle-screen-state');
+        });
 
         this.notifs = new Notifs({ el : $notifs });
 

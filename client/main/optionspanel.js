@@ -320,7 +320,6 @@ let OptionsPanel = SilkyView.extend({
     addMsgListeners: function(resource) {
         resource.on("hideOptions", () => {
             this.model.set('selectedAnalysis', null);
-            this.$el.trigger("splitpanel-hide");
         });
 
         resource.on("frameReady", () => {
@@ -341,8 +340,7 @@ let OptionsPanel = SilkyView.extend({
             if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')
                 this.model.set('selectedAnalysis', null);
         }
-        if (this._currentResources !== null)
-            this._currentResources.$frame.addClass('silky-hidden-options-control');
+
         this.$el.trigger("splitpanel-hide");
     },
 

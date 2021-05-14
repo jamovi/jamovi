@@ -1,13 +1,16 @@
 
 .jmv-status-bar {
-    display: flex;
-    position: absolute;
+    display: grid;
+    /* position: absolute; */
     bottom: 0px;
     flex-direction: row;
     width: 100%;
     align-items: stretch;
     /* padding: 3px; */
     height: 22px;
+    grid-area: 3 / 1 / span 1 / span 1;
+    grid-template-columns: minmax(0px, min-content) minmax(0px, 1fr);
+    grid-template-rows: 22px;
 }
 
 .jmv-status-bar .left-dock {
@@ -22,18 +25,24 @@
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
+    /* justify-content: flex-end; */
     flex-grow: 1;
     flex-shrink: 1;
 }
 
 .jmv-status-bar-info-item {
     font-size: 80%;
-    line-height: 1ch;
-    margin: 0px 9px;
+    /* line-height: 1ch; */
+    padding: 0px 9px;
     white-space: nowrap;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* width: 0; */
+    /* flex-grow: 1;*/
 }
 
 
 .jmv-status-bar .jmv-status-bar-info-item[data-id=editStatus] {
-    width: 30px;
+    max-width: 30px;
 }
