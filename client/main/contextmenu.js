@@ -16,7 +16,8 @@ const ContextMenu = function() { // this is constructed at the bottom
 
     this.owner = null;
 
-    this.show = function(menuItems, x, y, openPath, owner) {
+    this.show = function(menuItems, x, y, anchor, openPath, owner) {
+        anchor = anchor === undefined ? 'left' : anchor;
         openPath = openPath === undefined ? [] : openPath;
         this.owner = owner;
         if ( ! this._visible) {
@@ -54,12 +55,11 @@ const ContextMenu = function() { // this is constructed at the bottom
                 x -= this.$el.outerWidth(true) - 10;
                 y -= openButton.$el.position().top + 10;
             }
-
             if (y + this.$el.outerHeight(true) > window.innerHeight)
                 y = y - this.$el.outerHeight(true);
 
-            if (x + this.$el.outerWidth(true) > window.innerWidth)
-                x = x - this.$el.innerWidth(true);
+            if (anchor === 'right' || x + this.$el.outerWidth(true) > window.innerWidth)
+                x = x - this.$el.outerWidth(true);
 
             this.$el.css({ top: y, left: x });
 
@@ -76,12 +76,16 @@ const ContextMenu = function() { // this is constructed at the bottom
         this.show(ContextMenus.createFilterRowMenuItems(), x, y);
     };
 
-    this.showVariableMenu = function(x, y, plural) {
-        this.show(ContextMenus.createVariableMenuItems(plural), x, y);
+    this.showVariableMenu = function(x, y, plural, noData) {
+        this.show(ContextMenus.createVariableMenuItems(plural, noData), x, y);
     };
 
-    this.showFilterMenu = function(x, y) {
-        this.show(ContextMenus.createFilterMenuItems(), x, y);
+    this.showAppendVariableMenu = function(x, y, anchor) {
+        this.show(ContextMenus.createAppendVariableMenuItems(), x, y, anchor);
+    };
+
+    this.showFilterMenu = function(x, y, noData) {
+        this.show(ContextMenus.createFilterMenuItems(noData), x, y);
     };
 
     this.showResultsMenu = function(entries, x, y) {
@@ -90,7 +94,7 @@ const ContextMenu = function() { // this is constructed at the bottom
         if (menu[0].items.length > 0)
             openPath.push(menu[0].items[menu[0].items.length-1].name);
 
-        this.show(menu, x, y, openPath);
+        this.show(menu, x, y, 'left', openPath);
     };
 
     this.isVisible = function() {
