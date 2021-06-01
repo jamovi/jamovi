@@ -93,6 +93,9 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
     }
     else {
 
+        maxNS = Infinity;
+        minNS = -Infinity;
+
         if (type === 'integer') {
             dp = 0;
             sf = n + 1;
