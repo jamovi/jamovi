@@ -580,18 +580,19 @@ class Server:
         server.add_sockets(sockets)
         self._ports[2] = sockets[0].getsockname()[1]
 
+        hostname = conf.get('hostname')
+        if hostname:
+            hosts = f'{ hostname } a.{ hostname } r.{ hostname }'
+        else:
+            hosts = f'127.0.0.1:{ self._ports[0] } 127.0.0.1:{ self._ports[1] } 127.0.0.1:{ self._ports[2] }'
+
         # now we have the port numbers, we can add CSP
         cache_headers[ 'Content-Security-Policy' ] = f'''
             default-src 'self';
             img-src 'self' data:;
             script-src  'self' 'unsafe-eval' 'unsafe-inline';
             style-src 'self' 'unsafe-inline';
-            frame-src 'self'
-                127.0.0.1:{ self._ports[1] }
-                localhost:{ self._ports[1] }
-                127.0.0.1:{ self._ports[2] }
-                localhost:{ self._ports[2] }
-                https://www.jamovi.org;
+            frame-src 'self' { hosts } https://www.jamovi.org;
         '''.replace('\n', '')
 
         for listener in self._ports_opened_listeners:
