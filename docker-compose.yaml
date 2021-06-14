@@ -10,6 +10,8 @@ services:
       - '41339:41339'
     command: ["/usr/bin/python3 -m jamovi.server 41337 --if=*"]
     stdin_open: true
+    environment:
+        JAMOVI_HOSTNAME: '127.0.0.1'
 
     volumes:
       - $HOME/Documents:/root/Documents
