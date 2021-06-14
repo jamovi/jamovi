@@ -580,11 +580,11 @@ class Server:
         server.add_sockets(sockets)
         self._ports[2] = sockets[0].getsockname()[1]
 
-        hostname = conf.get('hostname')
-        if hostname:
-            hosts = f'{ hostname } a.{ hostname } r.{ hostname }'
+        hostname = conf.get('hostname', '127.0.0.1')
+        if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', hostname):
+            hosts = f'{ hostname }:{ self._ports[0] } { hostname }:{ self._ports[1] } { hostname }:{ self._ports[2] }'
         else:
-            hosts = f'127.0.0.1:{ self._ports[0] } 127.0.0.1:{ self._ports[1] } 127.0.0.1:{ self._ports[2] }'
+            hosts = f'{ hostname } a.{ hostname } r.{ hostname }'
 
         # now we have the port numbers, we can add CSP
         cache_headers[ 'Content-Security-Policy' ] = f'''
