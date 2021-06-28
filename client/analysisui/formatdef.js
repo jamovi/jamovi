@@ -405,7 +405,7 @@ FormatDef.number = new Format ({
     },
 
     isValid: function(raw) {
-        return typeof(raw) === 'number';
+        return ! (isNaN(raw) || typeof(raw) !== 'number');
     },
 
     isEmpty: function(raw) {
@@ -500,7 +500,7 @@ FormatDef.output = new Format ({
     isEqual: function(raw1, raw2) {
         if (raw1 === null && raw2 === null)
             return true;
-            
+
         if (raw1.value === raw2.value) {
             if (raw1.vars.length === raw2.vars.length) {
                 for (let i = 0; i < raw1.vars.length; i++) {

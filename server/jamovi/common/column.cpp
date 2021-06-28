@@ -170,18 +170,19 @@ const vector<LevelData> Column::levels() const
         Level &l = levels[i];
         bool filtered = l.countExFiltered == 0;
         bool treatAsMissing = l.treatAsMissing;
+        bool pinned = l.pinned;
 
         if (dataType() == DataType::TEXT)
         {
             char *value = _mm->resolve(l.importValue);
             char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label, filtered, treatAsMissing));
+            m.push_back(LevelData(value, label, pinned, filtered, treatAsMissing));
         }
         else
         {
             int value   = l.value;
             char *label = _mm->resolve(l.label);
-            m.push_back(LevelData(value, label, filtered, treatAsMissing));
+            m.push_back(LevelData(value, label, pinned, filtered, treatAsMissing));
         }
     }
 

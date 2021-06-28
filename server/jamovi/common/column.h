@@ -46,6 +46,7 @@ typedef struct
     char *label;
     char *importValue;
     bool treatAsMissing;
+    bool pinned;
 
 } Level;
 

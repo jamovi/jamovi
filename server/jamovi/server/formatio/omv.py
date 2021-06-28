@@ -428,7 +428,11 @@ def read(data, path, prog_cb):
                                 import_value = meta_label[1]
                                 if len(meta_label) > 2:
                                     import_value = meta_label[2]
-                                column.append_level(meta_label[0], meta_label[1],  import_value)
+                                if len(meta_label) > 3:
+                                    pinned = meta_label[3]
+                                else:
+                                    pinned = column.trim_levels == False
+                                column.append_level(meta_label[0], meta_label[1],  import_value, pinned)
                         else:
                             columns_w_bad_levels.append(column.id)
                     except Exception:

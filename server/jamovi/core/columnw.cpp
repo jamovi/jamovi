@@ -121,9 +121,6 @@ void ColumnW::setTrimLevels(bool trim)
     if (s->trimLevels == trim)
         return;
 
-    if (trim)
-        trimUnusedLevels();
-
     s->trimLevels = trim;
     s->changes++;
 }
@@ -136,7 +133,7 @@ void ColumnW::trimUnusedLevels()
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &level = levels[i];
-        if (level.count == 0)
+        if (level.count == 0 && level.pinned == false)
         {
             removeLevel(level.value);
             i--;
@@ -241,7 +238,7 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
                 assert(level != NULL);
                 level->count--;
 
-                if (level->count == 0 && trimLevels())
+                if (level->count == 0 && level->pinned == false)
                     removeLevel(oldValue);
                 else if (columnType() != ColumnType::FILTER && ! this->_parent->isRowFiltered(rowIndex))
                     level->countExFiltered--;
@@ -308,7 +305,7 @@ void ColumnW::insertRows(int insStart, int insEnd)
     }
 }
 
-void ColumnW::appendLevel(int value, const char *label, const char *importValue)
+void ColumnW::appendLevel(int value, const char *label, const char *importValue, bool pinned)
 {
     ColumnStruct *s = struc();
 
@@ -381,6 +378,7 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue)
     l.count = 0;
     l.countExFiltered = 0;
     l.treatAsMissing = treatAsMissing;
+    l.pinned = pinned;
 
     s->levelsUsed++;
     s->changes++;
@@ -415,9 +413,9 @@ void ColumnW::updateLevelCounts() {
     }
 }
 
-void ColumnW::insertLevel(int value, const char *label, const char *importValue)
+void ColumnW::insertLevel(int value, const char *label, const char *importValue, bool pinned)
 {
-    appendLevel(value, label, importValue); // add to end
+    appendLevel(value, label, importValue, pinned); // add to end
 
     ColumnStruct *s = struc();
     Level *levels = _mm->resolve(s->levels);
@@ -450,6 +448,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
         level.importValue = baseImportValue;
         level.count = 0;
         level.countExFiltered = 0;
+        level.pinned = pinned;
     }
     else
     {
@@ -477,6 +476,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
                 nextLevel.importValue = baseImportValue;
                 nextLevel.count = 0;
                 nextLevel.countExFiltered = 0;
+                nextLevel.pinned = pinned;
                 inserted = true;
                 break;
             }
@@ -490,6 +490,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue)
             level.importValue = baseImportValue;
             level.count = 0;
             level.countExFiltered = 0;
+            level.pinned = pinned;
         }
     }
 
@@ -625,7 +626,7 @@ void ColumnW::setLevels(const vector<LevelData> &newLevels)
         for (int i = 0; i < newLevels.size(); i++)
         {
             const LevelData &newLevel = newLevels[i];
-            appendLevel(newLevel.ivalue(), newLevel.label(), newLevel.svalue());
+            appendLevel(newLevel.ivalue(), newLevel.label(), newLevel.svalue(), newLevel.pinned());
         }
 
         for (int i = 0; i < rowCount(); i++)
@@ -659,7 +660,7 @@ void ColumnW::setLevels(const vector<LevelData> &newLevels)
         for (int i = 0; i < newLevels.size(); i++)
         {
             const LevelData &newLevel = newLevels[i];
-            appendLevel(i, newLevel.label(), newLevel.svalue());
+            appendLevel(i, newLevel.label(), newLevel.svalue(), newLevel.pinned());
         }
 
         for (int i = 0; i < rowCount(); i++)
@@ -673,6 +674,8 @@ void ColumnW::setLevels(const vector<LevelData> &newLevels)
     {
         // shouldn't get here
     }
+
+    trimUnusedLevels();
 }
 
 void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureType)

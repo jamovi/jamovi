@@ -139,6 +139,19 @@ class Selection {
         return selection.columnPos;
     }
 
+    singleColumnSelected() {
+        let col = this.left;
+        if (col !== this.right)
+            return false;
+
+        for (let selection of this.subSelections) {
+            if (selection.left !== col || selection.right !== col)
+                return false;
+        }
+
+        return true;
+    }
+
     createRange(start, end, pos, focus) {
         let startColumn = this.model.getColumn(start);
         let endColumn = this.model.getColumn(end);
@@ -647,6 +660,19 @@ class Selection {
         return verticalOverlap && horizontalOverlap;
     }
 
+    rangeOverlaps(range) {
+        let overlap = this._rangesOverlap(this, range);
+        if (overlap === false) {
+            for (let i = 0; i < this.subSelections.length; i++) {
+                overlap = this._rangesOverlap(this.subSelections[i], range);
+                if (overlap)
+                    break;
+            }
+        }
+
+        return overlap;
+    }
+
     resolveSelectionList($el) {
         if ( ! this._selectionNegative)
             return false;
@@ -738,6 +764,8 @@ class Selection {
         }
         else
             this.setSelection(this.rowNo, this.colNo);
+
+        this.trigger('resolved');
 
         return true;
     }

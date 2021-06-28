@@ -148,6 +148,10 @@ const TableView = SilkyView.extend({
             setTimeout(() => this.$selection.removeClass('copying'), 200);
         });
 
+        this.selection.on('resolved', () => {
+            this.$selection.removeClass('negative');
+        });
+
         this.selection.on('selectionTypeChanged', (type) => {
             if (type === 'multi') {
                 if (this.$selection) {
@@ -773,7 +777,6 @@ const TableView = SilkyView.extend({
         }
 
         if (this.selection.resolveSelectionList(this.$body)) {
-            this.$selection.removeClass('negative');
             this._isClicking = false;
             this._isDragging = false;
             return;

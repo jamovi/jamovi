@@ -9,7 +9,16 @@ const EnumPropertyFilter = require('./enumpropertyfilter');
 const GridTextbox = function(params) {
 
     this.parse = function(value) {
-        return this.getPropertyValue('format').parse(value);
+        let format = this.getPropertyValue('format');
+        let raw = format.parse(value);
+        if (format.isValid(raw))
+            return { success: true, value: raw };
+
+        let defaultValue = this.getPropertyValue('defaultValue');
+        if (format.isValid(defaultValue))
+            return { success: false, value:defaultValue };
+
+        return { success: true, value: raw };
     };
 
     GridOptionControl.extendTo(this, params);
@@ -113,15 +122,21 @@ const GridTextbox = function(params) {
                 this.$input.removeClass('silky-options-option-invalid');
 
             let value = this.$input.val();
-            value = this.parse(value);
-            this.setValue(value);
+            let parsed = this.parse(value);
+
+            this.setValue(parsed.value);
+            if (parsed.success === false)
+                this.$input.val(this.getValueAsString());
         });
 
         this.$suggestValues.find('.jmv-option-text-input-suggested-option').on('mousedown', null, this,  function (event) {
             let value = $(this).data('value');
             let self = event.data;
-            value = self.parse(value);
-            self.setValue(value);
+            let parsed = self.parse(value);
+
+            self.setValue(parsed.value);
+            if (parsed.success === false)
+                self.$input.val(self.getValueAsString());
         });
 
         let $ctrl = this.$input;

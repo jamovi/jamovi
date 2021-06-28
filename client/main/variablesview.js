@@ -156,9 +156,11 @@ const VariablesView = SilkyView.extend({
         let editable = range.start === range.end && this.selection.subSelections.length == 0;
         for (let i = range.start; i <= range.end; i++) {
             let row = this._getRowByIndex(i);
-            this._selectRow(row, editable);
-            selectLog[i] = 1;
-            selectedCount += 1;
+            if (row) {
+                this._selectRow(row, editable);
+                selectLog[i] = 1;
+                selectedCount += 1;
+            }
         }
 
         for (let subsection of this.selection.subSelections) {
@@ -166,9 +168,11 @@ const VariablesView = SilkyView.extend({
             for (let i = subRange.start; i <= subRange.end; i++) {
                 if (selectLog[i] === undefined) {
                     let row = this._getRowByIndex(i);
-                    this._selectRow(row);
-                    selectLog[i] = 1;
-                    selectedCount += 1;
+                    if (row) {
+                        this._selectRow(row);
+                        selectLog[i] = 1;
+                        selectedCount += 1;
+                    }
                 }
                 else
                     selectLog[i] += 1;
@@ -547,16 +551,21 @@ const VariablesView = SilkyView.extend({
         let noChange = false;
         this._delayClear = false;
 
+        let range = this.selection.createRange(colNo, colNo, colNo);
         if (event.button === 0) {
             if (event.ctrlKey || event.metaKey) {
-                let range = this.selection.createRange(colNo, colNo, colNo);
-                if (this.selection.cellInSelection(0, colNo, true))
-                    this.selection.addNewSelectionToList(range, 'negative');
-                else
+                if (this.selection.rangeOverlaps(range)) {
+                    if (this.selection.singleColumnSelected() === false) {
+                        this.selection.addNewSelectionToList(range, 'negative');
+                        added = true;
+                    }
+                }
+                else {
                     this.selection.addNewSelectionToList(range);
-                added = true;
+                    added = true;
+                }
             }
-            else if (this.selection.cellInSelection(0, colNo, true)) {
+            else if (this.selection.rangeOverlaps(range)) {
                 if (this.selection.getColumnStart() !== this.selection.getColumnEnd() || this.selection.subSelections.length > 0)
                     this._delayClear = true;
                 else
@@ -566,7 +575,7 @@ const VariablesView = SilkyView.extend({
                 this.selection.clearSelectionList();
         }
         else {
-            if (! this.selection.cellInSelection(0, colNo, true))
+            if (! this.selection.rangeOverlaps(range))
                 this.selection.clearSelectionList();
             else
                 added = true;  // leave selection unchanged

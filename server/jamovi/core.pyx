@@ -21,11 +21,12 @@ from enum import Enum
 cdef extern from "column.h":
     cdef cppclass CLevelData "LevelData":
         CLevelData()
-        CLevelData(int value, const char *label);
-        CLevelData(const char *value, const char *label);
+        CLevelData(int value, const char *label, bool pinned);
+        CLevelData(const char *value, const char *label, bool pinned);
         int ivalue() const;
         const char *svalue() const;
         const char *label() const;
+        bool pinned() const;
     ctypedef union Value:
         char *s
         float d
@@ -212,9 +213,9 @@ cdef extern from "columnw.h":
         const char *getLabel(const char* value) const
         const char *getImportValue(int value) const
         int valueForLabel(const char *label) const
-        void appendLevel(int value, const char *label, const char *importValue)
+        void appendLevel(int value, const char *label, const char *importValue, bool pinned)
         void appendLevel(int value, const char *label)
-        void insertLevel(int value, const char *label, const char *importValue)
+        void insertLevel(int value, const char *label, const char *importValue, bool pinned)
         void insertLevel(int value, const char *label)
         int levelCount() const
         bool hasLevel(const char *label) const
@@ -412,15 +413,15 @@ cdef class Column:
         else:
             self._this.append[int](value)
 
-    def append_level(self, raw, label, importValue=None):
+    def append_level(self, raw, label, importValue=None, pinned=False):
         if importValue is None:
             importValue = label
-        self._this.appendLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
+        self._this.appendLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'), pinned)
 
-    def insert_level(self, raw, label, importValue=None):
+    def insert_level(self, raw, label, importValue=None, pinned=False):
         if importValue is None:
             importValue = label
-        self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'))
+        self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'), pinned)
 
     def get_label(self, value):
         cdef int v
@@ -467,14 +468,16 @@ cdef class Column:
                     arr.append((
                         count,
                         level.label().decode('utf-8'),
-                        level.svalue().decode('utf-8')))
+                        level.svalue().decode('utf-8'),
+                        level.pinned()))
                     count += 1
             else:
                 for level in levels:
                     arr.append((
                         level.ivalue(),
                         level.label().decode('utf-8'),
-                        level.svalue().decode('utf-8')))
+                        level.svalue().decode('utf-8'),
+                        level.pinned()))
         return arr
 
     @property
@@ -548,7 +551,7 @@ cdef class Column:
                 else:
                     level_i = self.level_count
                     level_v = value.encode('utf-8')
-                    self._this.appendLevel(level_i, level_v, ''.encode('utf-8'))
+                    self._this.appendLevel(level_i, level_v, ''.encode('utf-8'), False)
                 self._this.setIValue(index, level_i, initing)
         else:
             self._this.setIValue(index, value, initing)
@@ -594,6 +597,7 @@ cdef class Column:
         cdef const char* svalue
         cdef int ivalue
         cdef CLevelData new_level
+        cdef bool pinned
 
         if self.data_type == DataType.TEXT:
             for level in levels:
@@ -601,13 +605,15 @@ cdef class Column:
                 svalue = utf8_bytes
                 utf8_bytes = level[1].encode('utf-8')
                 label = utf8_bytes
-                new_levels.push_back(CLevelData(svalue, label))
+                pinned = level[3]
+                new_levels.push_back(CLevelData(svalue, label, pinned))
         else:
             for level in levels:
                 ivalue = level[0]
                 utf8_bytes = level[1].encode('utf-8')
                 label = utf8_bytes
-                new_levels.push_back(CLevelData(ivalue, label))
+                pinned = level[3]
+                new_levels.push_back(CLevelData(ivalue, label, pinned))
 
         self._this.setLevels(new_levels)
 
