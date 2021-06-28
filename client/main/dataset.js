@@ -67,7 +67,7 @@ const DataSetModel = Backbone.Model.extend({
         let columns = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
-            if (column && !(column.hidden && displayOnly)) 
+            if (column && !(column.hidden && displayOnly))
                 columns.push(column);
         }
         return columns;
@@ -1735,7 +1735,7 @@ const DataSetViewModel = DataSetModel.extend({
                 return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: block.rowCount };
 
             if (block.rowStart <= viewTop && blockRowEnd >= viewBottom)
-                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewTop - viewBottom + 1 };
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewBottom - viewTop + 1 };
 
             if (block.rowStart < viewTop)
                 return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: blockRowEnd - viewTop + 1 };

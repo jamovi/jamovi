@@ -156,9 +156,11 @@ const VariablesView = SilkyView.extend({
         let editable = range.start === range.end && this.selection.subSelections.length == 0;
         for (let i = range.start; i <= range.end; i++) {
             let row = this._getRowByIndex(i);
-            this._selectRow(row, editable);
-            selectLog[i] = 1;
-            selectedCount += 1;
+            if (row) {
+                this._selectRow(row, editable);
+                selectLog[i] = 1;
+                selectedCount += 1;
+            }
         }
 
         for (let subsection of this.selection.subSelections) {
@@ -166,9 +168,11 @@ const VariablesView = SilkyView.extend({
             for (let i = subRange.start; i <= subRange.end; i++) {
                 if (selectLog[i] === undefined) {
                     let row = this._getRowByIndex(i);
-                    this._selectRow(row);
-                    selectLog[i] = 1;
-                    selectedCount += 1;
+                    if (row) {
+                        this._selectRow(row);
+                        selectLog[i] = 1;
+                        selectedCount += 1;
+                    }
                 }
                 else
                     selectLog[i] += 1;
