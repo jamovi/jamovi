@@ -28,6 +28,7 @@ var OptionControl = function(params) {
     this.registerSimpleProperty('optionName', null);
     this.registerSimpleProperty('enable', true);
     this.registerOptionProperty('title', 'label');
+    this.registerOptionProperty('default', 'defaultValue');
     this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(['list', 'inline', 'list-inline', 'inline-list'], 'list'));
 
     this.registerSimpleProperty('optionPart', null);

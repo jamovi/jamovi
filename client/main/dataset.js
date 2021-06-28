@@ -67,7 +67,7 @@ const DataSetModel = Backbone.Model.extend({
         let columns = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
-            if (column && !(column.hidden && displayOnly)) 
+            if (column && !(column.hidden && displayOnly))
                 columns.push(column);
         }
         return columns;
@@ -540,11 +540,13 @@ const DataSetModel = Backbone.Model.extend({
                         levelPB.value = i;
                         levelPB.label = level.label;
                         levelPB.importValue = level.importValue;
+                        levelPB.pinned = level.pinned;
                     }
                     else {
                         levelPB.value = level.value;
                         levelPB.label = level.label;
                         levelPB.importValue = level.importValue;
+                        levelPB.pinned = level.pinned;
                     }
                     columnPB.levels.push(levelPB);
                 }
@@ -1123,6 +1125,7 @@ const DataSetModel = Backbone.Model.extend({
                         label: levelPB.label,
                         value: i,
                         importValue: levelPB.importValue,
+                        pinned: levelPB.pinned
                     };
                 }
                 else {
@@ -1130,6 +1133,7 @@ const DataSetModel = Backbone.Model.extend({
                         label: levelPB.label,
                         value: levelPB.value,
                         importValue: levelPB.value.toString(),
+                        pinned: levelPB.pinned
                     };
                 }
             }
@@ -1735,7 +1739,7 @@ const DataSetViewModel = DataSetModel.extend({
                 return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: block.rowCount };
 
             if (block.rowStart <= viewTop && blockRowEnd >= viewBottom)
-                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewTop - viewBottom + 1 };
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewBottom - viewTop + 1 };
 
             if (block.rowStart < viewTop)
                 return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: blockRowEnd - viewTop + 1 };

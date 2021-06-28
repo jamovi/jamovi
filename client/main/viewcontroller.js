@@ -586,7 +586,6 @@ class ViewController {
                             resolve(n);
                     });
                 }
-
             });
 
             let ranges = [{ rowStart: this.selection.top, rowCount: n }];

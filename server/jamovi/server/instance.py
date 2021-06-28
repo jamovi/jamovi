@@ -2135,7 +2135,8 @@ class Instance:
                         levels.append((
                             level.value,
                             level.label,
-                            level.importValue))
+                            level.importValue,
+                            level.pinned))
 
                 if column.column_type is ColumnType.NONE:
                     column.column_type = ColumnType(column_pb.columnType)
@@ -2916,6 +2917,7 @@ class Instance:
                 level_pb.value = level[0]
                 level_pb.label = level[1]
                 level_pb.importValue = level[2]
+                level_pb.pinned = level[3]
 
         if column.cell_tracker.is_edited:
             for range in column.cell_tracker.edited_cell_ranges:

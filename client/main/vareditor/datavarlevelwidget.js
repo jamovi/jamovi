@@ -13,7 +13,23 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     this.index = i;
     this.$el = $('<div data-index="' + i + '" data-changed="' + diff + '" class="jmv-variable-editor-level"></div>');
 
+    if (level.pinned)
+        this.$el.addClass('pinned');
+
+    this.$pin = $('<div class="pin" title="Pin level"></div>').appendTo(this.$el);
+    this.$pin.on('click', () => {
+        setTimeout(() => { // delay so that the parent control click can suspend applying the settings
+            let level = null;
+            if (this.$el.hasClass('pinned'))
+                level = this.model.editLevelPinned(this.index, false);
+            else
+                level = this.model.editLevelPinned(this.index, true);
+            this.updateLevel(level);
+        }, 0);
+
+    });
     this.$value = $('<div class="jmv-variable-editor-level-value">' + level.importValue + '</div>').appendTo(this.$el);
+
 
     if (this.readOnly === false)
         this.$label = $('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" value="' + level.label + '" />').appendTo(this.$el);
@@ -47,9 +63,7 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     this._blur = event => {
         let label = this.$label.val();
         let level = this.model.editLevelLabel(this.index, label);
-        let diff = level.importValue !== level.label;
-        if (label !== level.label)
-            this.$label.val(level.label);
+        this.updateLevel(level);
         keyboardJS.resume('level');
         this.$el.removeClass('selected');
     };
@@ -61,18 +75,47 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     }
 
     this.updateLevel = function(level) {
-        if (level.label === null)
-            this.$label.attr('placeholder', 'change label...');
+
+        let levels = [level, ...level.others];
+        let labels = [...new Set(levels.map(level => level.label))];
+        let imports = [...new Set(levels.map(level => level.importValue))];
+        let clash = levels.length > 1 && (labels.length > 1 || labels[0] === null);
+        let isNew = level.importValue === null;
+        let pinned = level.pinnedChanged ? level.pinned : ! levels.find(element => element.pinned === false);
+
+        if (pinned)
+            this.$el.addClass('pinned');
+        else
+            this.$el.removeClass('pinned');
+
+        let label = labels.join(', ');
+        if (isNew)
+            this.$label.attr('placeholder', label ? label : "Enter label...");
+        else if (clash)
+            this.$label.attr('placeholder', label ? label : "change label...");
         else
             this.$label.attr('placeholder', '');
 
-        this.$label.val(level.label);
+        if (clash && level.modified === false)
+            this.$label.val('');
+        else
+            this.$label.val(labels[0]);
 
-        let diff = level.importValue !== level.label;
+        let importValue = imports.join(', ');
+        if (this.model._compareWithValue) {
+            importValue = level.value.toString();
+        }
+
+        let diff = importValue !== label;
         this.$el.attr('data-changed', diff);
 
-        this.$value.text(level.importValue);
+        let subtext = importValue;
+
+        this.$value.text(subtext);
+
     };
+
+    this.updateLevel(level);
 };
 
 module.exports = DataVarLevelWidget;

@@ -32,8 +32,8 @@ public:
     void setDataType(DataType::Type dataType);
     void setMeasureType(MeasureType::Type measureType);
     void setAutoMeasure(bool yes);
-    void appendLevel(int value, const char *label = 0, const char *importValue = 0);
-    void insertLevel(int value, const char *label = 0, const char *importValue = 0);
+    void appendLevel(int value, const char *label = 0, const char *importValue = 0, bool pinned=false);
+    void insertLevel(int value, const char *label = 0, const char *importValue = 0, bool pinned=false);
     void removeLevel(int value);
     void clearLevels();
     void updateLevelCounts();
