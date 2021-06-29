@@ -125,6 +125,34 @@ const DataVarWidget = Backbone.View.extend({
                 });
 
                 let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };
+
+                let clone  = levels.slice(0);
+
+                let insertAt = -1;
+                let inOrder = true;
+                let descending = true;
+                if (this.model._compareWithValue) {
+                    for (let i = 0; i < clone.length; i++) {
+                        if (i < clone.length - 1) {
+                            if (i === 0 && clone[i].value < clone[i+1].value)
+                                descending = false;
+
+                            if ((descending === true && clone[i].value < clone[i+1].value) || (descending === false && clone[i].value > clone[i+1].value)) {
+                                inOrder = false;
+                                break;
+                            }
+                        }
+
+                        let lvl = clone[i];
+                        if (insertAt === -1 && ((descending === true && lvl.value < level.value) || (descending === false && lvl.value > level.value)))
+                            insertAt = i;
+                    }
+                }
+                if (inOrder === false || insertAt === -1)
+                    clone.push(level);
+                else
+                    clone.splice(insertAt, 0, level);
+
                 let levelCtrl = new DataVarLevelWidget(level, this.model, this.levelCtrls.length);
 
                 this.$levels.append(levelCtrl.$el);
@@ -134,9 +162,6 @@ const DataVarWidget = Backbone.View.extend({
 
                 levelCtrl.$el.addClass('selected');
 
-
-                let clone  = levels.slice(0);
-                clone.push(level);
                 this.selectedLevelIndex--;
                 this.model.levelsReordered = true;
                 this.model.set('levels', clone);
