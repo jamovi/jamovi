@@ -136,6 +136,7 @@ public:
     DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
+    int levelCountExTreatAsMissings(bool requiresMissings = false) const;
     int levelCountExFiltered(bool requiresMissings = false) const;
     const std::vector<LevelData> levels() const;
     const std::vector<MissingValue> missingValues() const;
