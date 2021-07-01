@@ -99,7 +99,7 @@ const EditorWidget = Backbone.View.extend({
 
         let $statusBox = $('<div class="status-box"></div>').appendTo(this.$footer);
         this.$active = $('<div class="active"><div class="switch"></div></div>').appendTo($statusBox);
-        let $status = $('<div class="status">Retain unused levels</div>').appendTo($statusBox);
+        let $status = $('<div class="status">Retain unused levels in analyses</div>').appendTo($statusBox);
 
         if (this.model.get('trimLevels') === false)
             this.$active.addClass('retain-levels');
