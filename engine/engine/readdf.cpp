@@ -188,7 +188,12 @@ DataFrame readDF(
 
             vector<LevelData> m = column.levels();
 
-            int nLevels = column.levelCountExFiltered(requiresMissings);
+            int nLevels;
+            if (column.trimLevels())
+                nLevels = column.levelCountExFiltered(requiresMissings);
+            else
+                nLevels = column.levelCountExTreatAsMissings(requiresMissings);
+
             CharacterVector levels = CharacterVector(nLevels);
             IntegerVector values = IntegerVector(nLevels);
             CharacterVector missings;
@@ -202,7 +207,7 @@ DataFrame readDF(
             {
                 LevelData &p = *itr;
 
-                if (p.filtered() == false
+                if ((p.filtered() == false || column.trimLevels() == false)
                         && (requiresMissings || p.treatAsMissing() == false))
                 {
                     int value;
@@ -254,25 +259,16 @@ DataFrame readDF(
 
             v.attr("levels") = levels;
 
-            if (column.dataType() == DataType::TEXT)
-            {
-                if (column.measureType() == MeasureType::ORDINAL)
-                    v.attr("class") = CharacterVector::create("ordered", "factor");
-                else
-                    v.attr("class") = "factor";
-            }
+            if (column.measureType() == MeasureType::ORDINAL)
+                v.attr("class") = CharacterVector::create("ordered", "factor");
             else
-            {
+                v.attr("class") = "factor";
+
+            if ( ! column.trimLevels())
+                v.attr("jmv-retain-unused") = true;
+
+            if (column.dataType() == DataType::INTEGER)
                 v.attr("values") = values;
-
-                if (column.measureType() == MeasureType::ORDINAL)
-                    v.attr("class") = CharacterVector::create("ordered", "factor");
-                else
-                    v.attr("class") = CharacterVector::create("factor");
-            }
-
-            if ( ! column.trimLevels() && column.hasUnusedLevels())
-                v.attr("jmv-unused-levels") = true;
 
             if (column.measureType() == MeasureType::ID)
                 v.attr("jmv-id") = true;
