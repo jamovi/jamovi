@@ -130,7 +130,7 @@ const DataVarWidget = Backbone.View.extend({
 
                 let insertAt = -1;
                 let inOrder = true;
-                let descending = true;
+                let descending = clone.length <= 1 ? false : true;
                 if (this.model._compareWithValue) {
                     for (let i = 0; i < clone.length; i++) {
                         if (i < clone.length - 1) {
@@ -148,10 +148,14 @@ const DataVarWidget = Backbone.View.extend({
                             insertAt = i;
                     }
                 }
-                if (inOrder === false || insertAt === -1)
+                if (inOrder === false || insertAt === -1) {
                     clone.push(level);
-                else
+                    this.selectedLevelIndex = clone.length - 1;
+                }
+                else {
+                    this.selectedLevelIndex = insertAt;
                     clone.splice(insertAt, 0, level);
+                }
 
                 let levelCtrl = new DataVarLevelWidget(level, this.model, this.levelCtrls.length);
 
@@ -160,9 +164,6 @@ const DataVarWidget = Backbone.View.extend({
 
                 levelCtrl.$el.on('click', this, this._clickLevel);
 
-                levelCtrl.$el.addClass('selected');
-
-                this.selectedLevelIndex--;
                 this.model.levelsReordered = true;
                 this.model.set('levels', clone);
             }
