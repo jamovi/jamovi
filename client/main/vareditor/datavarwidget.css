@@ -299,7 +299,7 @@
 
 .jmv-variable-editor-level:not(.pinned):hover .pin {
     opacity: 1;
-    background-image: url(assets/levels-pin-2.svg);
+    background-image: url('assets/levels-pin-2.svg');
 }
 
 .jmv-variable-editor-level .pin:hover {
@@ -308,5 +308,5 @@
 
 .jmv-variable-editor-level.pinned .pin {
     opacity: 1;
-    background-image: url(assets/levels-pin-1.svg);
+    background-image: url('assets/levels-pin-1.svg');
 }
