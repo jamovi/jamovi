@@ -148,7 +148,7 @@ class Parser(ReadStatParser):
                 level_i = 0
                 for value in level_labels:
                     label = level_labels[value]
-                    column.append_level(level_i, label, value)
+                    column.append_level(level_i, label, value, pinned=True)
                     level_i += 1
 
         elif var_type is date:
@@ -181,7 +181,7 @@ class Parser(ReadStatParser):
                         n = 0
                         for value in level_labels:
                             label = level_labels[value]
-                            column.append_level(n, label, str(value))
+                            column.append_level(n, label, str(value), pinned=True)
                             n += 1
 
                     elif var_type is float:
@@ -193,12 +193,12 @@ class Parser(ReadStatParser):
 
                         for value in level_labels:
                             label = level_labels[value]
-                            column.append_level(value, label, str(value))
+                            column.append_level(value, label, str(value), pinned=True)
 
                     else:
                         for value in level_labels:
                             label = level_labels[value]
-                            column.append_level(value, label, str(value))
+                            column.append_level(value, label, str(value), pinned=True)
             else:
                 if var_type is float:
                     data_type = DataType.DECIMAL
@@ -275,7 +275,8 @@ class Parser(ReadStatParser):
                         column.append_level(
                             column.level_count,
                             value,
-                            value)
+                            value,
+                            pinned=False)
                     if column.level_count > 50:
                         column.change(measure_type=MeasureType.ID)
                 column.set_value(row_index, value)
