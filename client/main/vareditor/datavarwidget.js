@@ -82,6 +82,8 @@ const DataVarWidget = Backbone.View.extend({
                         if (result === undefined)
                             reject('');
 
+                        result = result.trim();
+
                         let max = 0;
                         for (let column of this.model.columns) {
                             if (column.levels.length >  max) {
@@ -118,6 +120,9 @@ const DataVarWidget = Backbone.View.extend({
                                     newN = result + ' (' + c++ + ')';
                                 result = newN;
                             }
+
+                            if (result === '')
+                                reject(`The level value cannot be blank.`);
 
                             resolve({ value: n, label: result });
                         }
