@@ -132,7 +132,7 @@
 
 .jmv-variable-recoded-widget > .contents > .insert-box > .insert {
     background-size: 80%;
-    background-image: url(assets/filters-add.svg);
+    background-image: url('assets/filters-add.svg');
     background-position: center;
     background-repeat: no-repeat;
 }

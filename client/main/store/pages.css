@@ -30,7 +30,7 @@
 }
 
 .jmv-store-message .icon {
-    background-image: url(../assets/action-info.svg);
+    background-image: url('../assets/action-info.svg');
     width: 22px;
     background-repeat: no-repeat;
     background-size: 100% 100%;

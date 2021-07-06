@@ -113,7 +113,7 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: 15px 15px;
-    background-image: url(../assets/variable-search.svg);
+    background-image: url('../assets/variable-search.svg');
     border-radius: 3px;
 }
 

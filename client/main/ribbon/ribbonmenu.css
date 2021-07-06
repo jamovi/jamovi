@@ -140,7 +140,7 @@
 }
 
 .to-analyses-arrow {
-    background-image: url(assets/modules-analyses-arrow.svg);
+    background-image: url('assets/modules-analyses-arrow.svg');
     width: 10px;
     height: 10px;
     background-position: center;
