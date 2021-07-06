@@ -98,7 +98,9 @@ class Analysis:
 
         for output_name, keys_synced in self._outputs_synced.items():
             synced = list(filter(lambda k: keys_synced[k], keys_synced))
-            value = self.options.get_value(output_name, { })
+            value = self.options.get_value(output_name, None)
+            if value is None:
+                value = { }
             value['synced'] = synced
             self.options.set_value(output_name, value)
 
