@@ -28,6 +28,7 @@
     position: relative;
     height: 100%;
     width: 100%;
+    margin-left: 3px;
 }
 
 .jmv-variablesview .measure-box .dot {
@@ -131,9 +132,9 @@
 }
 
 .measure-type-icon {
-    width: 20px;
+    width: 16px;
     height: 100%;
-    background-position: center top;
+    background-position: center 4px;
     background-repeat: no-repeat;
     background-size: contain;
 }
@@ -154,37 +155,43 @@
 
 .cell[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-nominal.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-nominal-text.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-ordinal.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-ordinal-text.svg');
 }
 
 .cell[data-columntype="data"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-continuous.svg');
 }
 
 .cell[data-columntype="data"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
-.cell[data-columntype="computed"][data-measuretype="id"] > .measure-box  > .measure-type-icon {
+.cell[data-columntype="computed"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-measuretype="id"] > .measure-box  > .measure-type-icon {
     background-image: url('../assets/variable-id.svg');
 }
 

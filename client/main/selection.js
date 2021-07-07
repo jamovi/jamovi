@@ -231,6 +231,9 @@ class Selection {
             columnFocus: focus
         };
 
+        if (newSelection.bottom < 0)
+            newSelection.bottom = 0;
+
         newSelection._calcKey = this.compileKey(newSelection, false);
 
         if (focus) {
