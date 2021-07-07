@@ -126,12 +126,13 @@ const VariablesView = SilkyView.extend({
         $row.addClass('selected');
         row.$select.prop('checked', true);
 
-        if (editable) {
-            setTimeout(function () {
+        if (editable && ! row.editableTimer) {
+            row.editableTimer = setTimeout(function () {
                 row.$editableTexts.attr('contenteditable', true);
                 if (row.nameReadOnly === false)
                     row.$name.attr('placeholder', 'Enter name');
                 row.$description.attr('placeholder', 'Enter description');
+                row.editableTimer = null;
             }, 10);
         }
     },
@@ -143,6 +144,10 @@ const VariablesView = SilkyView.extend({
             row.$description.removeAttr('placeholder');
             row.$select.prop('checked', false);
             $row.removeClass('selected');
+            if (row.editableTimer) {
+                clearTimeout(row.editableTimer);
+                row.editableTimer = null;
+            }
         }
         this.selectedRows = [];
     },
@@ -305,6 +310,8 @@ const VariablesView = SilkyView.extend({
     },
 
     _updateList() {
+        this._clearRowSelections();
+
         let columnCount = this.model.get('columnCount');
         this.$body.empty();
 

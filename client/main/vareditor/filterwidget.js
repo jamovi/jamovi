@@ -76,23 +76,26 @@ const FilterWidget = Backbone.View.extend({
             this.$showFilter.attr('title', 'Show filter columns');
         }
     },
-    _addFilter() {
+    async _addFilter() {
         let i = -1;
         let column = null;
         do {
             i += 1;
             column = this.dataset.getColumn(i);
         } while(column.columnType === 'filter');
-        this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false }).then(() => {
+
+        try {
+            await this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false });
             column = this.dataset.getColumn(i);
             this.setColumnForEdit(column.id);
-        }).catch((error) => {
+        }
+        catch(error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     },
     _notifyEditProblem(details) {
         this._editNote.set(details);
@@ -503,15 +506,14 @@ const FilterWidget = Backbone.View.extend({
         let $formulaList = $('<div class="formula-list"></div>').appendTo($filter);
         let $description = $('<div class="description" type="text" placeholder="Description"></div>').appendTo($filter);
 
-        $removeButton.on('click', (event) => {
+        $removeButton.on('click', async (event) => {
             if (this._removingFilter)
                 return;
 
             let columnId = parseInt($filter.attr('data-columnid'));
             this._removingFilter = true;
-            this._removeFilter(columnId).then(() => {
-                this._removingFilter = false;
-            });
+            await this._removeFilter(columnId);
+            this._removingFilter = false;
 
             event.stopPropagation();
             event.preventDefault();
@@ -622,7 +624,7 @@ const FilterWidget = Backbone.View.extend({
             $element.focus();
         }, 0);
     },
-    setColumnProperties($filter, pairs) {
+    async setColumnProperties($filter, pairs) {
         if (pairs.length === 0)
             return;
 
@@ -630,55 +632,63 @@ const FilterWidget = Backbone.View.extend({
         let timeoutId = setTimeout(function () {
             $title.addClass('think');
         }, 400);
-        return this.dataset.changeColumns(pairs).then(() => {
+
+        try {
+            await this.dataset.changeColumns(pairs);
             clearTimeout(timeoutId);
             $title.removeClass("think");
-        }).catch((error) => {
+        }
+        catch (error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     },
     addNestedEvents($element, id) {
-        $element.on('click.addnested', (event) => {
+        $element.on('click.addnested', async (event) => {
             let relatedColumns = this.columnsOf(id);
             let parentInfo = relatedColumns[relatedColumns.length - 1];
             let index = parentInfo.index + 1;
             let filterNo = parentInfo.column.filterNo;
             this._internalCreate = true;
-            this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
+
+            try {
+                await this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active });
                 let column = this.dataset.getColumn(index);
                 this.setColumnForEdit(column.id);
-            }).catch((error) => {
+            }
+            catch(error) {
                 this._notifyEditProblem({
                     title: error.message,
                     message: error.cause,
                     type: 'error',
                 });
-            });
+            }
             event.stopPropagation();
             event.preventDefault();
         });
     },
     removeNestedEvents($element, id) {
-        $element.on('click.removenested', (event) => {
+        $element.on('click.removenested', async (event) => {
 
             if (this._removingFilter)
                 return;
 
             this._removingFilter = true;
 
-            this.dataset.deleteColumn(id).then(() => {
+            try {
+                await this.dataset.deleteColumn(id);
                 this._removingFilter = false;
-            }).catch((error) => {
+            }
+            catch(error) {
                 this._notifyEditProblem({
                     title: error.message,
                     message: error.cause,
                     type: 'error',
                 });
-            });
+            }
 
             event.stopPropagation();
             event.preventDefault();
@@ -815,6 +825,7 @@ const FilterWidget = Backbone.View.extend({
         let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
         let edittingIds = this.dataset.get('editingVar');
+        let $scrollTo = null;
         for (let i = 0; i < $filters.length; i++) {
             let $filter = $($filters[i]);
 
@@ -824,13 +835,17 @@ const FilterWidget = Backbone.View.extend({
             let relatedColumns = this.columnsOf(columnId);
             for (let rc = 0; rc < relatedColumns.length; rc++) {
                 let relatedColumn = relatedColumns[rc];
-                if (relatedColumn.id === edittingIds[0]) {
+                if (edittingIds.includes(relatedColumn.id)) {
                     $filter.addClass('selected');
                     let $formula = $($filter.find('.formula')[rc]);
                     $formula.addClass('selected');
+                    if ($scrollTo === null)
+                        $scrollTo = $filter;
                 }
             }
         }
+        if ($scrollTo)
+            $scrollTo[0].scrollIntoView();
     }
 });
 
