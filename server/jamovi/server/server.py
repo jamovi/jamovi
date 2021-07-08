@@ -14,6 +14,7 @@ from .session import Session
 from .session import SessionEvent
 from .modules import Modules
 from .utils import conf
+from .appinfo import app_info
 from jamovi.core import Dirs
 
 import sys
@@ -336,6 +337,11 @@ class DatasetsList(RequestHandler):
         self.write(json.dumps(datasets))
 
 
+class VersionHandler(RequestHandler):
+    def get(self):
+        self.write(app_info.version)
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -479,9 +485,6 @@ class Server:
     async def _run(self):
 
         client_path = conf.get('client_path')
-        version_path = conf.get('version_path', False)
-        if not version_path:
-            version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
         coms_path   = 'jamovi.proto'
 
         session_path = os.path.join(self._spool_dir, self._session_id)
@@ -509,8 +512,7 @@ class Server:
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
-            (r'/version', SingleFileHandler, {
-                'path': version_path }),
+            (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (r'/proto/coms.proto', SingleFileHandler, {
