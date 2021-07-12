@@ -157,6 +157,9 @@ class Selection {
         let endColumn = this.model.getColumn(end);
         let posColumn = this.model.getColumn(pos);
 
+        if ( !startColumn || !endColumn || !posColumn)
+           return null;
+
         let left = startColumn.dIndex;
         if (left === -1) {
             let column = null;
