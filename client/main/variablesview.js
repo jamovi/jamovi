@@ -559,6 +559,9 @@ const VariablesView = SilkyView.extend({
         this._delayClear = false;
 
         let range = this.selection.createRange(colNo, colNo, colNo);
+        if (range === null)
+            return;
+            
         if (event.button === 0) {
             if (event.ctrlKey || event.metaKey) {
                 if (this.selection.rangeOverlaps(range)) {
@@ -660,12 +663,16 @@ const VariablesView = SilkyView.extend({
         this._dragging = false;
 
         if (event.button === 2) {
-            let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
-            let column = this.model.getColumn(colNo);
-            if (column !== null && column.columnType === 'filter')
-                ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
-            else
-                ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+            let element = document.elementFromPoint(event.clientX, event.clientY);
+            let $view = $(element).closest('.jmv-variables-container');
+            if ($view.length > 0) {
+                let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
+                let column = this.model.getColumn(colNo);
+                if (column !== null && column.columnType === 'filter')
+                    ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
+                else
+                    ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+            }
         }
         this._mouseDownClicked = false;
     },
