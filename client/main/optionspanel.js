@@ -138,22 +138,25 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
     this.notifyDocumentReady = null;
 
     this.ready = Promise.all([
-        new Promise((resolve, reject) => {
-            if (analysis.missingModule) {
-                this.def = { error: 'Missing module: ' + analysis.ns };
-                resolve(this.def);
-            }
-            else if (analysis.uijs) {
-                this.def = analysis.uijs;
-                resolve(analysis.uijs);
-            }
-            else {
-                let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();
-                return $.get(url, null, (script) => {
-                    this.def = script;
-                    resolve(script);
-                }, 'text');
-            }
+        analysis.ready.then(() => {
+            return new Promise((resolve, reject) => {
+                if (analysis.missingModule) {
+                    this.def = { error: 'Missing module: ' + analysis.ns };
+                    resolve(this.def);
+                }
+                else if (analysis.uijs) {
+                    this.def = analysis.uijs;
+                    resolve(analysis.uijs);
+                }
+                else {
+                    // shouldn't get here
+                    let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();
+                    return $.get(url, null, (script) => {
+                        this.def = script;
+                        resolve(script);
+                    }, 'text');
+                }
+            })
         }),
         new Promise((resolve, reject) => {
             this.notifyDocumentReady = resolve;
