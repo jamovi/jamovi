@@ -451,7 +451,7 @@ class Server:
 
             try:
                 await self._session.restart_engines()
-                Modules.instance().install_from_file(path)
+                await Modules.instance().install_from_file(path)
                 self._session.notify_global_changes()
                 self._session.rerun_analyses()
             except Exception:
@@ -483,6 +483,8 @@ class Server:
             pass
 
     async def _run(self):
+
+        await Modules.instance().read()
 
         client_path = conf.get('client_path')
         coms_path   = 'jamovi.proto'
