@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# exit when any command fails
+set -e
+
 SOURCE_DIR=/tmp/source
 
 if [[ $1 = "server" ]] || [[ $1 = "all" ]]; then
