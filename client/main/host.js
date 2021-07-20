@@ -19,7 +19,7 @@ let resultsViewUrl;
 
 let hostname = window.location.hostname;
 
-if (/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/.test(hostname)) {
+if (/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/.test(hostname)) {
     let port = parseInt(window.location.port || '80');
     baseUrl = `${ window.location.protocol }//${ hostname }:${ port }/`;
     analysisUIUrl  = `${ window.location.protocol }//${ hostname }:${ port + 1 }/`;
