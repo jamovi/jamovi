@@ -39,7 +39,7 @@ fi
 if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
     echo "building jmv"
     cd "$SOURCE_DIR/jmv"
-    if [ ! -d 'build' ]; then
+    if [ ! -d 'build/R4.0.5-linux' ]; then
         mkdir -p build
         cp -r /tmp/jmv-build build/R4.0.5-linux
     fi
@@ -58,6 +58,9 @@ if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
     if [ ! -d 'node_modules' ]; then
         npm install
     fi
+
+    mkdir -p "/usr/lib/jamovi/client"
+
     if [[ $2 = "release" ]]; then
         npm run build:release
         cp www/*.js        /usr/lib/jamovi/client
