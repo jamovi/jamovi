@@ -90,18 +90,22 @@ class ResourceHandler(RequestHandler):
             self.write('instance ' + instance_id + ' could not be found')
             return
 
-        resource_path = instance.get_path_to_resource(resource_id)
-
         mt = mimetypes.guess_type(resource_id)
+        if mt[0] is not None:
+            self.set_header('Content-Type', mt[0])
+        if mt[1] is not None:
+            self.set_header('Content-Encoding', mt[1])
 
-        with open(resource_path, 'rb') as file:
-            if mt[0] is not None:
-                self.set_header('Content-Type', mt[0])
-            if mt[1] is not None:
-                self.set_header('Content-Encoding', mt[1])
-            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
-            content = file.read()
-            self.write(content)
+        if conf.get('xaccel_use', '0') != '0':
+            xaccel_root = conf.get('xaccel_root')
+            resource_path = f'/{ xaccel_root }/{ instance_id }/{ resource_id }'
+            self.set_header('X-Accel-Redirect', resource_path)
+        else:
+            resource_path = instance.get_path_to_resource(resource_id)
+            with open(resource_path, 'rb') as file:
+                self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
+                content = file.read()
+                self.write(content)
 
 
 class ModuleAssetHandler(RequestHandler):

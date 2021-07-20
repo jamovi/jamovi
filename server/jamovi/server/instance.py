@@ -151,7 +151,7 @@ class Instance:
         return nor_path
 
     def temp_path(self):
-        return posixpath.join(self._instance_path, 'temp')
+        return posixpath.join(self._instance_path, 'dl')
 
     def _virtualise_path(self, path):
 
