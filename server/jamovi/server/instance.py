@@ -1481,7 +1481,7 @@ class Instance:
                 if self._perms.library.addRemove is False:
                     raise PermissionError()
                 try:
-                    modules.uninstall(request.name)
+                    await modules.uninstall(request.name)
                     self._coms.send(None, self._instance_id, request)
                     self._session.notify_global_changes()
                 except Exception as e:

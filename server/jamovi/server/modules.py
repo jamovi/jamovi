@@ -94,7 +94,6 @@ class Modules:
     def instance(cls):
         if cls._instance is None:
             cls._instance = Modules()
-            cls._instance.read()
         return cls._instance
 
     def __init__(self):
@@ -126,9 +125,9 @@ class Modules:
         for listener in self._listeners:
             listener(event)
 
-    def read(self):
+    async def read(self):
         if self._read is False:
-            self.reread()
+            await self.reread()
             self._original = list(map(lambda x: x.name, self._modules))
 
     def read_library(self):
@@ -177,23 +176,27 @@ class Modules:
             log.exception(e)
             raise ValueError('Unable to parse module list. Please try again later.')
 
-    def reread(self):
+    async def reread(self):
 
-        sys_module_path = conf.get('modules_path')
-        user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
+        module_path = conf.get('modules_path')
+        user_module_path = None
 
-        if os.name != 'nt':
-            sys_module_paths = sys_module_path.split(':')
+        if module_path.startswith('http://') or module_path.startswith('https://'):
+            remote_modules = True
         else:
-            sys_module_paths = sys_module_path.split(';')
+            if os.name != 'nt':
+                module_paths = module_path.split(':')
+            else:
+                module_paths = module_path.split(';')
 
-        for pth in sys_module_paths:
-            os.makedirs(pth, exist_ok=True)
-        os.makedirs(user_module_path, exist_ok=True)
+            remote_modules = False
+            user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
+            os.makedirs(user_module_path, exist_ok=True)
+
 
         self._modules = [ ]
 
-        def scan_for_modules(pth, is_system):
+        def read_modules(pth, is_system):
             for entry in os.scandir(pth):
                 if entry.name == 'base':
                     continue
@@ -212,10 +215,37 @@ class Modules:
                     log.exception(e)
 
         try:
-            for pth in sys_module_paths:
-                scan_for_modules(pth, is_system=True)
+            if remote_modules:
+                try:
+                    temp_file = None
+                    stream = Downloader.download(module_path)
+                    async for progress in stream:
+                        if stream.is_complete:
+                            temp_file = progress
+                    defns = yaml.safe_load_all(temp_file)
+                    try:
+                        for defn in defns:
+                            module = Modules.parse(defn)
+                            if module.name == 'jmv':
+                                self._modules.insert(0, module)
+                            else:
+                                self._modules.append(module)
+                    except Exception as e:
+                        log.exception(e)
+                except Exception as e:
+                    log.exception(e)
+            else:
+                for pth in module_paths:
+                    try:
+                        read_modules(pth, is_system=True)
+                    except Exception as e:
+                        log.exception(e)
 
-            scan_for_modules(user_module_path, is_system=False)
+                try:
+                    read_modules(user_module_path, is_system=False)
+                except Exception as e:
+                    log.exception(e)
+
 
             # fill in addons
             modules_by_name = dict(map(lambda m: (m.name, m), self._modules))
@@ -240,13 +270,13 @@ class Modules:
                 return True
         return False
 
-    def uninstall(self, name):
+    async def uninstall(self, name):
         module_dir = os.path.join(Dirs.app_data_dir(), 'modules', name)
         shutil.rmtree(module_dir)
-        self.reread()
+        await self.reread()
         self._notify_listeners({ 'type': 'modulesChanged' })
 
-    def install_from_file(self, path):
+    async def install_from_file(self, path):
 
         with ZipFile(path) as zip:
 
@@ -259,7 +289,7 @@ class Modules:
 
         meta = self._read_module(module_path)
 
-        self.reread()
+        await self.reread()
         self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
         self._notify_listeners({ 'type': 'modulesChanged' })
 
@@ -314,7 +344,7 @@ class Modules:
         if path != '':
             module.path = path
         else:
-            for arch in defn['architectures']:
+            for arch in defn.get('architectures', [ ]):
                 if arch['name'] == '*' or arch['name'] in PlatformInfo.platform():
                     module.path = Modules.LIBRARY_ROOT + arch['path']
                     break
