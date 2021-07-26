@@ -62,11 +62,17 @@ def start():  # run down below()
     except Exception:
         port = 1337
 
+    session_id = conf.get('session_id', None)
+
+    if '--slave' in sys.argv:
+        slave = True
+    else:
+        slave = conf.get('slave', '0') != '0'
+
     debug = '--debug' in sys.argv
-    slave = '--slave' in sys.argv
+
     stdin_slave = '--stdin-slave' in sys.argv
     start_wb = '--start-wb' in sys.argv
-    session_id = None
 
     conf.set('devel', '--devel' in sys.argv)
     conf.set('debug', '--debug' in sys.argv)
@@ -79,10 +85,10 @@ def start():  # run down below()
     for arg in sys.argv:
         if arg.startswith('--task-queue-url='):
             task_queue_url = arg.split('=')[1]
-            conf.set('task-queue-url', task_queue_url)
+            conf.set('task_queue_url', task_queue_url)
         elif arg.startswith('--spool='):
-            spool_dir = arg.split('=')[1]
-            conf.set('spool-dir', spool_dir)
+            spool_path = arg.split('=')[1]
+            conf.set('spool_path', spool_path)
         elif arg.startswith('--session-id='):
             session_id = arg.split('=')[1]
 

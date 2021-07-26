@@ -379,10 +379,10 @@ class Server:
         self._debug = debug
         self._ports_opened_listeners = [ ]
 
-        self._spool_dir = conf.get('spool-dir')
-        if self._spool_dir is None:
+        self._spool_path = conf.get('spool_path')
+        if self._spool_path is None:
             self._spool = TemporaryDirectory()
-            self._spool_dir = self._spool.name
+            self._spool_path = self._spool.name
 
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
@@ -493,10 +493,10 @@ class Server:
         client_path = conf.get('client_path')
         coms_path   = 'jamovi.proto'
 
-        session_path = os.path.join(self._spool_dir, self._session_id)
+        session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
 
-        self._session = Session(self._spool_dir, self._session_id)
+        self._session = Session(self._spool_path, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
         self._session.add_session_listener(self._session_event)
         await self._session.start()
