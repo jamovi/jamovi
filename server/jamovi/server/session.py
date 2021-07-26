@@ -51,7 +51,7 @@ class Session(dict):
         self._session_listeners = [ ]
         self._running = True
 
-        task_queue_url = conf.get('task-queue-url')
+        task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:
             self._scheduler = Scheduler(1, 3, self._analyses)
             self._runner = RemotePool(task_queue_url, self._scheduler.queue)
