@@ -107,6 +107,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib/R/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
 ENV PYTHONPATH /usr/lib/jamovi/server
 ENV R_LIBS /usr/local/lib/R/library
+ENV JAMOVI_SESSION_EXPIRES 0
 
 EXPOSE 41337
 ENTRYPOINT ["/bin/sh", "-c"]

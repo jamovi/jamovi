@@ -32,6 +32,7 @@ import logging
 import pkg_resources
 import threading
 import asyncio
+from asyncio import create_task
 
 log = logging.getLogger(__name__)
 
@@ -355,7 +356,6 @@ class Server:
                  port,
                  host='127.0.0.1',
                  session_id=None,
-                 slave=False,
                  stdin_slave=False,
                  debug=False):
 
@@ -374,10 +374,10 @@ class Server:
         self._ioloop = asyncio.get_event_loop()
 
         self._host = host
-        self._slave = slave and not stdin_slave
         self._stdin_slave = stdin_slave
         self._debug = debug
-        self._ports_opened_listeners = [ ]
+
+        self.ports_opened = self._ioloop.create_future()
 
         self._spool_path = conf.get('spool_path')
         if self._spool_path is None:
@@ -408,9 +408,6 @@ class Server:
             request['args'][0])
         sys.stdout.write(cmd)
         sys.stdout.flush()
-
-    def add_ports_opened_listener(self, listener):
-        self._ports_opened_listeners.append(listener)
 
     def _read_stdin(self):
         try:
@@ -468,23 +465,17 @@ class Server:
             sys.stderr.write(line)
             sys.stderr.flush()
 
-    def _lonely_suicide(self):
-        if len(self._session) == 0:
-            self.stop()
-
     def stop(self):
-        self._ioloop.stop()
-        try:
-            os.remove(self._port_file)
-        except Exception:
-            pass
+        if self._session is not None:
+            self._session.stop()
 
     def start(self):
-        asyncio.ensure_future(self._run())
-        try:
-            self._ioloop.run_forever()
-        except KeyboardInterrupt:
-            pass
+        t = create_task(self._run())
+        t.add_done_callback(lambda t: t.result())
+
+    async def wait_ended(self):
+        if self._session is not None:
+            await self._session.wait_ended()
 
     async def _run(self):
 
@@ -508,8 +499,8 @@ class Server:
         else:
             cache_headers = { 'Cache-Control': 'private, max-age=60' }
 
-        ping_interval = conf.get('websocket_ping_interval')
-        ping_timeout = conf.get('websocket_ping_timeout')
+        ping_interval = conf.get('timeout_no_websocket_ping_interval')
+        ping_timeout = conf.get('timeout_no_websocket_ping')
         if ping_interval:
             ping_interval = int(ping_interval)
         if ping_timeout:
@@ -603,12 +594,7 @@ class Server:
             frame-src 'self' { hosts } https://www.jamovi.org;
         '''.replace('\n', '')
 
-        for listener in self._ports_opened_listeners:
-            listener(self._ports)
-
-        if self._slave:
-            check = tornado.ioloop.PeriodicCallback(self._lonely_suicide, 1000)
-            self._ioloop.call_later(3, check.start)
+        self.ports_opened.set_result(self._ports)
 
         # write the port no. to a file, so external software can
         # find out what port jamovi is running on
@@ -623,6 +609,14 @@ class Server:
                 continue
             if entry.name.endswith('.port') and entry.is_file():
                 os.remove(entry.path)
+
+        try:
+            await self._session.wait_ended()
+        finally:
+            try:
+                os.remove(self._port_file)
+            except Exception:
+                pass
 
     def _session_event(self, event):
         if event.type == SessionEvent.Type.INSTANCE_STARTED:

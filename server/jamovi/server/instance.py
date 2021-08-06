@@ -12,6 +12,7 @@ from jamovi.core import DataSet
 from .settings import Settings
 
 from . import jamovi_pb2 as jcoms
+from .jamovi_pb2 import Notification
 
 from .utils import conf
 from .utils import FileEntry
@@ -41,6 +42,7 @@ from itertools import islice
 from urllib import parse
 from aiohttp import ClientSession
 from asyncio import ensure_future as create_task
+from collections import namedtuple
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -68,6 +70,9 @@ class ForbiddenOp(PermissionError):
         self.operation = operation
 
 
+ConnectionStatus = namedtuple('ConnectionStatus', ('connected', 'inactive_since', 'unclean'), defaults=(True, None, False))
+
+
 class Instance:
 
     def __init__(self, session, instance_path, instance_id):
@@ -83,11 +88,13 @@ class Instance:
         self._data = InstanceModel(self)
         self._coms = None
         self._perms = Permissions.retrieve()
-
         self._mod_tracker = ModTracker(self._data)
 
-        self._inactive_since = None
-        self._inactive_clean = True
+        now = monotonic()
+
+        self._idle_since = now
+        self._no_connection_since = None
+        self._no_connection_unclean_disconnect = False
 
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
@@ -209,7 +216,7 @@ class Instance:
             self._coms.remove_close_listener(self._close)
         self._coms = coms
         self._coms.add_close_listener(self._close)
-        self._inactive_since = None
+        self._no_connection_since = None
 
     def close(self):
         Modules.instance().remove_listener(self._module_event)
@@ -219,23 +226,53 @@ class Instance:
     def _close(self, clean=True):
         self._coms.remove_close_listener(self._close)
         self._coms = None
-        self._inactive_clean = clean
-        self._inactive_since = monotonic()
+        self._no_connection_unclean_disconnect = not clean
+        self._no_connection_since = monotonic()
 
     @property
     def is_active(self):
         return self._coms is not None
 
-    @property
-    def inactive_for(self):
-        if self._inactive_since is None:
-            return 0
+    def connection_status(self):
+        if self._no_connection_since is None:
+            return ConnectionStatus()
         else:
-            return monotonic() - self._inactive_since
+            return ConnectionStatus(
+                    False,
+                    self._no_connection_since,
+                    self._no_connection_unclean_disconnect)
 
-    @property
-    def inactive_clean(self):
-        return self._inactive_clean
+    def idle_for(self):
+        return monotonic() - self._idle_since
+
+    def idle_since(self):
+        return self._idle_since
+
+    def notify_idle(self, id, shutdown_in):
+
+        if self._coms is None:
+            return
+
+        n = Notification()
+        n.id = id
+
+        if shutdown_in is not None:
+            nearest_30secs = int(round(shutdown_in / 30) * 30)
+            if nearest_30secs >= 120:
+                description = f'in around { nearest_30secs // 60 } minutes'
+            elif nearest_30secs >= 60:
+                description = 'in around 1 minute'
+            else:
+                description = 'any moment now'
+
+            n.title = 'Idle session'
+            n.message = f'This session will end { description }'
+            n.status = 2  # indefinite
+        else:
+            n.status = 1  # dismiss
+
+        self._coms.send(n)
+
 
     @property
     def analyses(self):
@@ -245,6 +282,9 @@ class Instance:
         return posixpath.join(self._instance_path, resourceId)
 
     async def on_request(self, request):
+
+        self._idle_since = monotonic()
+
         if type(request) == jcoms.DataSetRR:
             self._on_dataset(request)
         elif type(request) == jcoms.OpenRequest:
