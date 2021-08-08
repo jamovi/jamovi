@@ -3,13 +3,22 @@ from asyncio import open_unix_connection
 from asyncio import wait
 from asyncio import ensure_future as create_task
 from asyncio import FIRST_COMPLETED
+from asyncio import CancelledError
+from asyncio import IncompleteReadError
+
 from struct import unpack
+
+from .exceptions import AnalysisServiceTerminatedException
 
 from .jamovi_pb2 import AnalysisRequest
 from .jamovi_pb2 import AnalysisResponse
 from .jamovi_pb2 import AnalysisStatus
 from .jamovi_pb2 import Status as MessageStatus
 from .jamovi_pb2 import ComsMessage
+
+from logging import getLogger
+
+log = getLogger(__name__)
 
 
 class RemotePool:
@@ -20,12 +29,14 @@ class RemotePool:
         self._reader = None
         self._writer = None
         self._message_id = 1
+        self._listeners = [ ]
 
     async def start(self):
         (reader, writer) = await open_unix_connection(path=self._url)
         self._reader = reader
         self._writer = writer
         self._run_task = create_task(self._run())
+        self._run_task.add_done_callback(lambda f: f.result())
 
     async def stop(self):
         self._run_task.cancel()
@@ -35,11 +46,28 @@ class RemotePool:
         write_task = create_task(self._write_loop())
         read_task = create_task(self._read_loop())
 
+        done, pending = await wait({ write_task, read_task }, return_when=FIRST_COMPLETED)
+
+        for task in pending:
+            task.cancel()
+
         try:
-            done, pending = await wait({ write_task, read_task }, return_when=FIRST_COMPLETED)
-        finally:
-            read_task.cancel()
-            write_task.cancel()
+            for task in done:
+                task.result()
+        except CancelledError:
+            pass
+        except AnalysisServiceTerminatedException:
+            self._notify_engine_event({
+                'type': 'error',
+                'message': 'The analysis service terminated unexpectedly, and this session must now close',
+            })
+        except Exception as e:
+            log.exception(e)
+            self._notify_engine_event({
+                'type': 'error',
+                'message': 'An unexpected error occurred, and this session must now close',
+                'cause': str(e),
+            })
 
     async def _write_loop(self):
         async for request, stream in self._queue.stream():
@@ -59,30 +87,41 @@ class RemotePool:
             await self._writer.drain()
 
     async def _read_loop(self):
-        while True:
-            size_bytes = await self._reader.readexactly(4)
-            size = unpack('<I', size_bytes)[0]
-            byts = await self._reader.readexactly(size)
+        try:
+            while True:
+                size_bytes = await self._reader.readexactly(4)
+                size = unpack('<I', size_bytes)[0]
+                byts = await self._reader.readexactly(size)
 
-            message = ComsMessage()
-            message.ParseFromString(byts)
-            response = AnalysisResponse()
-            response.ParseFromString(message.payload)
+                message = ComsMessage()
+                message.ParseFromString(byts)
+                response = AnalysisResponse()
+                response.ParseFromString(message.payload)
 
-            key = (response.instanceId, response.analysisId)
-            value = self._queue.get(key)
-            if value is None:
-                continue
+                key = (response.instanceId, response.analysisId)
+                value = self._queue.get(key)
+                if value is None:
+                    continue
 
-            request, stream = value
+                request, stream = value
 
-            if request.revision != response.revision:
-                continue
+                if request.revision != response.revision:
+                    continue
 
-            ana_complete = (response.status == AnalysisStatus.Value('ANALYSIS_COMPLETE')
-                            or (response.status == AnalysisStatus.Value('ANALYSIS_ERROR')))
-            if request.perform == AnalysisRequest.Perform.Value('INIT'):
-                ana_complete = ana_complete or response.status == AnalysisStatus.Value('ANALYSIS_INITED')
-            complete = ana_complete and message.status == MessageStatus.Value('COMPLETE')
+                ana_complete = (response.status == AnalysisStatus.Value('ANALYSIS_COMPLETE')
+                                or (response.status == AnalysisStatus.Value('ANALYSIS_ERROR')))
+                if request.perform == AnalysisRequest.Perform.Value('INIT'):
+                    ana_complete = ana_complete or response.status == AnalysisStatus.Value('ANALYSIS_INITED')
+                complete = ana_complete and message.status == MessageStatus.Value('COMPLETE')
 
-            stream.write(response, complete)
+                stream.write(response, complete)
+        except IncompleteReadError:
+            raise AnalysisServiceTerminatedException
+
+    def add_engine_listener(self, listener):
+        self._listeners.append(('engine-event', listener))
+
+    def _notify_engine_event(self, *args):
+        for listener in self._listeners:
+            if listener[0] == 'engine-event':
+                listener[1](*args)
