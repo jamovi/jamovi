@@ -10,9 +10,6 @@
 #include <mutex>
 #include <chrono>
 
-#include <nanomsg/nn.h>
-#include <nanomsg/pair.h>
-
 #include <boost/bind.hpp>
 
 #include "host.h"
@@ -27,25 +24,16 @@ using namespace jamovi::coms;
 
 Engine::Engine()
 {
-    _slave = false;
     _exiting = false;
     _reflection = _runningRequest.GetReflection();
 
     _R = new EngineR();
-
-    _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
-    _coms.restartRequested.connect(bind(&Engine::terminate, this));
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1, _2));
-}
-
-void Engine::setSlave(bool slave)
-{
-    _slave = slave;
 }
 
 void Engine::setConnection(const string &con)
 {
-    _conString = con;
+    _connPath = con;
 }
 
 void Engine::setPath(const string &path)
@@ -56,21 +44,7 @@ void Engine::setPath(const string &path)
 
 void Engine::start()
 {
-    _socket = nn_socket(AF_SP, NN_PAIR);
-    if (_socket < 0)
-        throw runtime_error("Unable to connect : could not create socket");
-
-    int timeout;
-
-    timeout = 1500;
-    nn_setsockopt(_socket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(timeout));
-
-    timeout = 500;
-    nn_setsockopt(_socket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(timeout));
-
-    _conId = nn_connect(_socket, _conString.c_str());
-    if (_conId < 0)
-        throw runtime_error("Unable to connect : could not connect to endpoint");
+    _coms.connect(_connPath);
 
     // start the message loop thread
     thread t(&Engine::messageLoop, this);
@@ -127,7 +101,7 @@ void Engine::periodicChecks()
 void Engine::terminate()
 {
     _exiting = true;
-    nn_term();
+    _coms.close();
     std::exit(0);
 }
 
@@ -138,31 +112,9 @@ bool Engine::isNewAnalysisWaiting()
     return _waitingRequest.analysisid() != 0;
 }
 
-void Engine::analysisRequested(int messageId, AnalysisRequest& request)
-{
-    // this is called from the message loop thread
-
-    lock_guard<mutex> lock(_mutex);
-    _condition.notify_all();
-
-    _currentMessageId = messageId;
-    _waitingRequest.CopyFrom(request);
-}
-
 void Engine::resultsReceived(const string &results, bool complete)
 {
-    // this is called from the main thread
-
-    ComsMessage message;
-
-    message.set_id(_currentMessageId);
-    message.set_payload(results);
-    message.set_payloadtype("AnalysisResponse");
-    message.set_status(complete ? Status::COMPLETE : Status::IN_PROGRESS);
-
-    string data;
-    message.SerializeToString(&data);
-    nn_send(_socket, data.data(), data.size(), 0);
+    _coms.send(results, complete);
 }
 
 void Engine::messageLoop()
@@ -171,17 +123,17 @@ void Engine::messageLoop()
 
     while (_exiting == false)
     {
-        char *buf = NULL;
-        int nbytes = nn_recv (_socket, &buf, NN_MSG, 0);
+        AnalysisRequest request = _coms.read();
 
-        if (nbytes >= 0)
+        if (request.restartengines())
         {
-            _coms.parse(buf, nbytes);
-            nn_freemsg(buf);
+            terminate();
         }
         else
         {
-
+            lock_guard<mutex> lock(_mutex);
+            _condition.notify_all();
+            _waitingRequest.CopyFrom(request);
         }
     }
 }

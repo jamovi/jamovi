@@ -6,7 +6,6 @@
 #define ENGINECOMS_H
 
 #include <string>
-#include <boost/signals2.hpp>
 
 #include "jamovi.pb.h"
 
@@ -15,11 +14,14 @@ class EngineComs
 public:
     EngineComs();
 
-    boost::signals2::signal<void (int messageId, jamovi::coms::AnalysisRequest &request)> analysisRequested;
-    boost::signals2::signal<void ()> restartRequested;
+    void connect(const std::string &path);
+    jamovi::coms::AnalysisRequest read();
+    void send(const std::string &results, bool complete);
+    void close();
 
-    void parse(char *data, int len);
-
+private:
+    int _socket;
+    int _connId;
 };
 
 #endif // ENGINECOMS_H
