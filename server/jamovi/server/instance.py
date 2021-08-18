@@ -1364,6 +1364,7 @@ class Instance:
                         response = jcoms.AnalysisResponse()
                         response.name = request.name
                         response.ns = request.ns
+                        response.instanceId = self.id
                         response.analysisId = analysis.id
                         response.options.ParseFromString(analysis.options.as_bytes())
                         response.index = request.index
@@ -1381,6 +1382,7 @@ class Instance:
                 log.error('Could not create analysis: ' + str(e))
 
                 response = jcoms.AnalysisResponse()
+                response.instanceId = self.id
                 response.analysisId = analysis.id
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
                 response.error.message = 'Could not create analysis: ' + str(e)
