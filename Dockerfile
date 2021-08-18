@@ -20,6 +20,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libcurl3-nss \
     libboost-filesystem-dev \
     libboost-system-dev \
+    libasio-dev \
     libprotobuf-dev \
     libnanomsg-dev \
     zlib1g-dev \

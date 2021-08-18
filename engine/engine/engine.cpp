@@ -9,13 +9,13 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <cstdlib>
+#include <cstring>
 
 #include <boost/bind.hpp>
 
 #include "host.h"
-
 #include "enginer.h"
-
 #include "jamovi.pb.h"
 
 using namespace std;
@@ -25,8 +25,15 @@ using namespace jamovi::coms;
 Engine::Engine()
 {
     _exiting = false;
+    _headless = false;
+
+    char *headless = std::getenv("JAMOVI_ENGINE_HEADLESS");
+    if (headless != NULL && strcmp(headless, "1") == 0)
+        _headless = true;
+
     _reflection = _runningRequest.GetReflection();
 
+    _coms = NULL;
     _R = new EngineR();
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1, _2));
 }
@@ -44,7 +51,17 @@ void Engine::setPath(const string &path)
 
 void Engine::start()
 {
-    _coms.connect(_connPath);
+
+#ifdef BOOST_ASIO_HAS_LOCAL_SOCKETS
+    if (_connPath.rfind("ipc://", 0) == 0)
+        _coms = new ComsNN(); // nanomsg
+    else
+        _coms = new ComsDS();  // domain sockets
+#else
+    _coms = new ComsNN();
+#endif
+
+    _coms->connect(_connPath);
 
     // start the message loop thread
     thread t(&Engine::messageLoop, this);
@@ -55,7 +72,8 @@ void Engine::start()
     // use to end the engine processes when the server finishes.
     // semPlot won't run correctly with this thread running, on windows
     // hence the #ifndef ... who knows why.
-    thread u(&Engine::monitorStdinLoop, this);
+    if ( ! _headless)
+        thread u(&Engine::monitorStdinLoop, this);
 #endif
 
     // locks for sharing between threads
@@ -74,7 +92,8 @@ void Engine::start()
             // wait for notification from message loop
             cv_status res;
             res = _condition.wait_for(lock, chrono::milliseconds(250));
-            periodicChecks();
+            if ( ! _headless)
+                periodicChecks();
             if (res == cv_status::timeout)
                 continue;
         }
@@ -101,7 +120,7 @@ void Engine::periodicChecks()
 void Engine::terminate()
 {
     _exiting = true;
-    _coms.close();
+    _coms->close();
     std::exit(0);
 }
 
@@ -114,7 +133,7 @@ bool Engine::isNewAnalysisWaiting()
 
 void Engine::resultsReceived(const string &results, bool complete)
 {
-    _coms.send(results, complete);
+    _coms->send(results, complete);
 }
 
 void Engine::messageLoop()
@@ -123,7 +142,7 @@ void Engine::messageLoop()
 
     while (_exiting == false)
     {
-        AnalysisRequest request = _coms.read();
+        AnalysisRequest request = _coms->read();
 
         if (request.restartengines())
         {
