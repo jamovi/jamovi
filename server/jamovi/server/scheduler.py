@@ -1,5 +1,4 @@
 
-from asyncio import Queue as AsyncQueue
 from asyncio import wait
 from asyncio import FIRST_COMPLETED
 from asyncio import ensure_future as create_task
@@ -29,9 +28,6 @@ class Scheduler:
         self._analyses.add_options_changed_listener(self._send_next)
 
         self._pool = Pool(self._n_slots)
-
-        self._new_tasks = AsyncQueue()
-        self._run_loop_task = create_task(self._run_loop())
 
     def _send_next(self, analysis=None):
 
@@ -88,40 +84,15 @@ class Scheduler:
         log.debug('%s %s', 'sending_to_pool', req_str(request))
         stream = self._pool.add(request)
         task = create_task(self._handle_results(request, stream))
-        self._new_tasks.put_nowait(task)
+        task.add_done_callback(self._run_done)
 
-    async def _run_loop(self):
-
-        async def wait_for_new():
-            return await self._new_tasks.get()
-
-        pending = set()
-        wait_for_new_task = create_task(wait_for_new())
-        pending.add(wait_for_new_task)
-
+    def _run_done(self, f):
         try:
-            while True:
-                done, pending = await wait(pending, return_when=FIRST_COMPLETED)
-                if wait_for_new_task in done:
-                    new_task = wait_for_new_task.result()
-                    pending.add(new_task)
-
-                for task in done:
-                    if task.cancelled():
-                        continue
-                    e = task.exception()
-                    if e is not None:
-                        log.exception(e)
-
-                if wait_for_new_task in done:
-                    wait_for_new_task = create_task(wait_for_new())
-                    pending.add(wait_for_new_task)
-
+            f.result()
         except Exception as e:
             log.exception(e)
-        finally:
-            for task in pending:
-                task.cancel()
+
+        self._send_next()
 
     async def _handle_results(self, request, stream):
 
@@ -142,14 +113,17 @@ class Scheduler:
                             analysis.op.set_result(results)
                         analysis.status = Analysis.Status.COMPLETE
                     else:
-                        analysis.set_results(results, stream.is_complete)
-                        if stream.is_complete:
-                            if results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
-                                analysis.status = Analysis.Status.ERROR
-                            elif request.perform == INIT:
-                                analysis.status = Analysis.Status.INITED
-                            else:
-                                analysis.status = Analysis.Status.COMPLETE
+                        analysis.set_results(results, False)
+
+            results = stream.result()
+            analysis.set_results(results)
+
+            if results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
+                analysis.status = Analysis.Status.ERROR
+            elif request.perform == INIT:
+                analysis.status = Analysis.Status.INITED
+            else:
+                analysis.status = Analysis.Status.COMPLETE
         finally:
             if request.perform == INIT:
                 self._n_initing -= 1
@@ -157,8 +131,6 @@ class Scheduler:
             else:
                 self._n_running -= 1
                 log.debug('%s %s %s', 'dec_counters', 'running', (self._n_initing, self._n_running, self._n_slots))
-
-            self._send_next()
 
     @property
     def queue(self):

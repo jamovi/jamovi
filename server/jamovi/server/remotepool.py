@@ -114,7 +114,11 @@ class RemotePool:
                     ana_complete = ana_complete or response.status == AnalysisStatus.Value('ANALYSIS_INITED')
                 complete = ana_complete and message.status == MessageStatus.Value('COMPLETE')
 
-                stream.write(response, complete)
+                if not complete:
+                    stream.write(response)
+                else:
+                    stream.set_result(response)
+
         except IncompleteReadError:
             raise AnalysisServiceTerminatedException
 

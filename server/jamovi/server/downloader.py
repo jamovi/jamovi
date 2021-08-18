@@ -6,7 +6,7 @@ from tempfile import TemporaryFile
 from tornado.httpclient import AsyncHTTPClient
 
 from .utils import conf
-from .utils.stream import Stream
+from .utils.stream import ProgressStream
 
 
 class Download:
@@ -15,7 +15,7 @@ class Download:
         self._progress = 0
         self._size = -1
         self._file = file
-        self._stream = Stream()
+        self._stream = ProgressStream()
 
         server_path = conf.get('server_path')
         if server_path is not None:
@@ -33,14 +33,14 @@ class Download:
             request_timeout=24 * 60 * 60,
             ca_certs=chain_path)
         response.add_done_callback(self._done_callback)
-        self._stream.write((0, 1), last=False)
+        self._stream.write((0, 1))
 
     def _done_callback(self, future):
         try:
             future.result()
             self._file.flush()
             self._file.seek(0)
-            self._stream.write(self._file, last=True)
+            self._stream.set_result(self._file)
         except Exception as e:
             self._stream.abort(e)
 
@@ -55,7 +55,7 @@ class Download:
 
         self._file.write(chunk)
         self._progress += len(chunk)
-        self._stream.write((self._progress, self._size), last=False)
+        self._stream.write((self._progress, self._size))
 
 
 class Downloader:
