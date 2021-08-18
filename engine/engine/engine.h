@@ -12,7 +12,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "enginecoms.h"
+#include "coms.h"
 #include "enginer.h"
 
 class Engine
@@ -31,13 +31,13 @@ private:
     void terminate();
     bool isNewAnalysisWaiting();
 
-    EngineComs _coms;
-
+    Coms *_coms;
     EngineR *_R;
 
     std::string _connPath;
     std::string _path;
     bool _exiting;
+    bool _headless;
 
     jamovi::coms::AnalysisRequest _waitingRequest;
     jamovi::coms::AnalysisRequest _runningRequest;
