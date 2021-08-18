@@ -268,8 +268,8 @@ class Engine:
 
         results_received = create_task(self._results_queue.get())
         engine_stopped = create_task(self._stopped.wait())
-        stream_cancelled = create_task(results_stream.completed())
-        pending = { results_received, engine_stopped, stream_cancelled }
+
+        pending = { results_received, engine_stopped, results_stream }
 
         timeout = None
         if self._analysis_duration_limit is not None:
@@ -296,12 +296,14 @@ class Engine:
                         elif request.perform == AnalysisRequest.Perform.Value('INIT') and results.status == AnalysisStatus.Value('ANALYSIS_INITED'):
                             complete = True
 
-                        results_stream.write(results, complete)
+
 
                     if not complete:
+                        results_stream.write(results)
                         results_received = create_task(self._results_queue.get())
                         pending.add(results_received)
                     else:
+                        results_stream.set_result(results)
                         break
 
                 elif timeout in done:
@@ -314,7 +316,7 @@ class Engine:
                         This analysis has exceeded the current time limits and has been terminated.
                         ''')
                     await self.stop()
-                    results_stream.write(error, True)
+                    results_stream.set_result(error)
                     await self.restart()
                     break
 
@@ -327,11 +329,11 @@ class Engine:
                         '''
                         This analysis has terminated, likely due to hitting a resource limit.
                         ''')
-                    results_stream.write(error, True)
+                    results_stream.set_result(error)
                     await self.restart()
                     break
 
-                elif stream_cancelled in done:
+                elif results_stream in done:
                     break
 
         except CancelledError:
@@ -341,7 +343,6 @@ class Engine:
         finally:
             results_received.cancel()
             engine_stopped.cancel()
-            stream_cancelled.cancel()
             if timeout is not None:
                 timeout.cancel()
 

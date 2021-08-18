@@ -13,7 +13,7 @@ from ..core import PlatformInfo
 
 from .utils import conf
 from .downloader import Downloader
-from .utils.stream import Stream
+from .utils.stream import ProgressStream
 from .appinfo import determine_r_version
 from .appinfo import app_info
 
@@ -136,17 +136,15 @@ class Modules:
             self._read_task.cancel()
 
         url = '{}{}'.format(Modules.LIBRARY_ROOT, Modules.LIBRARY_INDEX)
-        out_stream = Stream()
+        out_stream = ProgressStream()
         in_stream = Downloader.download(url)
 
         async def transform():
             try:
                 async for progress in in_stream:
-                    if in_stream.is_complete:
-                        modules = self.parse_modules(progress)
-                        out_stream.write(modules, last=True)
-                    else:
-                        out_stream.write(progress, last=False)
+                    out_stream.write(progress)
+                modules = self.parse_modules(in_stream.result())
+                out_stream.set_result(modules)
             except Exception as e:
                 in_stream.cancel()
                 out_stream.abort(e)
@@ -217,11 +215,7 @@ class Modules:
         try:
             if remote_modules:
                 try:
-                    temp_file = None
-                    stream = Downloader.download(module_path)
-                    async for progress in stream:
-                        if stream.is_complete:
-                            temp_file = progress
+                    temp_file = await Downloader.download(module_path)
                     defns = yaml.safe_load_all(temp_file)
                     try:
                         for defn in defns:
@@ -295,7 +289,7 @@ class Modules:
 
     def install(self, path):
 
-        out_stream = Stream()
+        out_stream = ProgressStream()
 
         async def download_and_install(path):
 
@@ -304,13 +298,11 @@ class Modules:
                 if path.startswith(Modules.LIBRARY_ROOT):
                     in_stream = Downloader.download(path)
                     async for progress in in_stream:
-                        if in_stream.is_complete:
-                            path = progress
-                        else:
-                            out_stream.write(progress, last=False)
+                        out_stream.write(progress)
+                    path = in_stream.result()
 
                 self.install_from_file(path)
-                out_stream.write((1, 1), last=True)
+                out_stream.write((1, 1))
 
             except Exception as e:
                 if in_stream:
