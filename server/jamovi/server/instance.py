@@ -1510,11 +1510,10 @@ class Instance:
                 try:
                     stream = modules.install(request.path)
                     async for progress in stream:
-                        if not stream.is_complete:
-                            self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
-                        else:
-                            self._coms.send(None, self._instance_id, request)
-                            self._session.notify_global_changes()
+                        self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+
+                    self._coms.send(None, self._instance_id, request)
+                    self._session.notify_global_changes()
                 except Exception as e:
                     log.exception(e)
                     self._coms.send_error('Unable to install module', str(e), self._instance_id, request)
@@ -1566,16 +1565,16 @@ class Instance:
 
             try:
                 async for result in stream:
-                    if not stream.is_complete:
-                        self._coms.send(None, self._instance_id, request, complete=False, progress=result)
-                    else:
-                        response = jcoms.StoreResponse()
-                        if result.message is not None:
-                            response.message = result.message
-                        for module in result.modules:
-                            module_pb = response.modules.add()
-                            self._module_to_pb(module, module_pb)
-                        self._coms.send(response, self._instance_id, request)
+                    self._coms.send(None, self._instance_id, request, complete=False, progress=result)
+
+                result = stream.result()
+                response = jcoms.StoreResponse()
+                if result.message is not None:
+                    response.message = result.message
+                for module in result.modules:
+                    module_pb = response.modules.add()
+                    self._module_to_pb(module, module_pb)
+                self._coms.send(response, self._instance_id, request)
             except Exception as e:
                 self._coms.send_error('Unable to access library', str(e), self._instance_id, request)
 
