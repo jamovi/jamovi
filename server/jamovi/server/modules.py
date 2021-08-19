@@ -81,6 +81,7 @@ class AnalysisMeta:
         self.addon_for = None
         self.addons = [ ]
         self.in_menu = True
+        self.defn = ''
 
 
 class Modules:
@@ -313,10 +314,16 @@ class Modules:
         return out_stream
 
     def _read_module(self, path, is_sys=False):
-        meta_path = os.path.join(path, 'jamovi.yaml')
-        with open(meta_path, encoding='utf-8') as stream:
-            defn = yaml.safe_load(stream)
-            return Modules.parse(defn, path, is_sys)
+        defn = None
+        try:
+            meta_path = os.path.join(path, 'jamovi-full.yaml')
+            with open(meta_path, encoding='utf-8') as stream:
+                defn = yaml.safe_load(stream)
+        except FileNotFoundError:
+            meta_path = os.path.join(path, 'jamovi.yaml')
+            with open(meta_path, encoding='utf-8') as stream:
+                defn = yaml.safe_load(stream)
+        return Modules.parse(defn, path, is_sys)
 
     def __iter__(self):
         return self._modules.__iter__()
@@ -384,6 +391,7 @@ class Modules:
                 analysis.name = analysis_defn['name']
                 analysis.ns = analysis_defn['ns']
                 analysis.title = analysis_defn['title']
+                analysis.defn = analysis_defn
 
                 analysis.menuGroup = analysis_defn['menuGroup']
                 analysis.menuTitle = analysis_defn['menuTitle']
