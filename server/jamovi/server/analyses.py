@@ -6,6 +6,7 @@ from asyncio import Future
 from copy import deepcopy
 from collections import namedtuple
 from itertools import islice
+from logging import getLogger
 
 from .modules import Modules
 from .options import Options
@@ -17,6 +18,9 @@ from jamovi.core import MeasureType
 Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
 AnalysisOutputs = namedtuple('Outputs', 'analysis_id outputs')
+
+
+log = getLogger(__name__)
 
 
 class Analysis:
@@ -366,43 +370,29 @@ class Analyses:
     def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
         if name == 'empty' and ns == 'jmv':
-            return Analysis(self._dataset, id, name, ns, Options.create({}, {}), self, enabled)
+            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled)
 
         try:
-            module_desc = Modules.instance().get(ns)
-            analysis_desc = module_desc.get(name)
+            module_meta = Modules.instance().get(ns)
+            analysis_meta = module_meta.get(name)
 
-            analysis_root = os.path.join(module_desc.path, 'analyses', name.lower())
-
-            a_defn = None
-            r_defn = None
-
-            with open(analysis_root + '.a.yaml', 'r', encoding='utf-8') as stream:
-                a_defn = yaml.safe_load(stream)
-
-            if os.path.isfile(analysis_root + '.r.yaml'):
-                with open(analysis_root + '.r.yaml', 'r', encoding='utf-8') as stream:
-                    r_defn = yaml.safe_load(stream)
-            else:
-                r_defn = { 'items': { } }
-
-            analysis_name = a_defn['name']
-            option_defs = a_defn['options']
-            results_defs = r_defn['items']
+            analysis_name = analysis_meta.name
+            option_defs = analysis_meta.defn['options']
 
             if enabled is None:
-                enabled = not a_defn.get('arbitraryCode', False)
+                enabled = not defn.get('arbitraryCode', False)
 
-            options = Options.create(option_defs, results_defs)
+            options = Options.create(option_defs)
             if options_pb is not None:
                 options.set(options_pb)
 
-            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_desc.addons))
+            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
 
             return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
 
-        except Exception:
-            return Analysis(self._dataset, id, name, ns, Options.create({}, None), self, enabled, load_error=True)
+        except Exception as e:
+            log.exception(e)
+            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled, load_error=True)
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:
@@ -483,7 +473,7 @@ class Analyses:
         return analysis
 
     def create_annotation(self, index, update_indices=True):
-        options = Options.create([], [])
+        options = Options.create({})
         annotation = self._construct(
             self._next_id,
             'empty',
