@@ -2,6 +2,7 @@
 from asyncio import wait
 from asyncio import FIRST_COMPLETED
 from asyncio import ensure_future as create_task
+from asyncio import CancelledError
 from logging import getLogger
 
 from .analyses import Analysis
@@ -89,6 +90,8 @@ class Scheduler:
     def _run_done(self, f):
         try:
             f.result()
+        except CancelledError:
+            pass
         except Exception as e:
             log.exception(e)
 
