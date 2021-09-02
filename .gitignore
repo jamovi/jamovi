@@ -20,6 +20,7 @@ engine/Makefile
 client/*.js
 client/*.css
 client/www
+client/assets/coms.proto
 
 # protocol buffers
 *.pb.cc
