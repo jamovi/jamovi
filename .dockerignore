@@ -14,3 +14,6 @@ readstat/jamovi/libs/zlib-win
 # build artifacts
 **/*.o
 **/*.so
+
+# git
+.git
