@@ -302,15 +302,17 @@ class Modules:
                         out_stream.write(progress)
                     path = in_stream.result()
 
-                self.install_from_file(path)
-                out_stream.write((1, 1))
+                await self.install_from_file(path)
+                out_stream.set_result((1, 1))
 
             except Exception as e:
                 if in_stream:
                     in_stream.cancel()
                 out_stream.abort(e)
 
-        self._install_task = create_task(download_and_install(path))
+        t = create_task(download_and_install(path))
+        t.add_done_callback(lambda f: f.result())
+        
         return out_stream
 
     def _read_module(self, path, is_sys=False):
