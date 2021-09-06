@@ -154,86 +154,96 @@ const Instance = Backbone.Model.extend({
 
             let response;
 
-            if (file instanceof File) {
+            while (true) {
 
-                setProgress({ title: 'Uploading', progress: [0, 0] });
+                if (file instanceof File) {
 
-                let url = `${ host.baseUrl }open`;
-                let payload = new FormData();
-                payload.append('file', file);
-                response = await fetch(url, {
-                    method: 'POST',
-                    body: payload,
-                    credentials: 'include',
-                    cache: 'no-store',
-                });
-            }
-            else {
+                    setProgress({ title: 'Uploading', p: 0, n: 0 });
 
-                let url;
-                if (options.existing)
-                    url = 'open';
-                else
-                    url = `${ host.baseUrl }open`;
+                    let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: file,
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
+                }
+                else {
 
-                if (file)
-                    url += `?url=${ encodeURIComponent(file) }`;
+                    let url;
 
-                response = await fetch(url, {
-                    method: 'GET',
-                    credentials: 'include',
-                    cache: 'no-store',
-                });
-            }
+                    if (file)
+                        url = `${ host.baseUrl }open?p&url=${ encodeURIComponent(file) }`;
+                    else if (options.existing)
+                        url = 'open';
+                    else
+                        url = `${ host.baseUrl }open?p`;
 
-            if (response.status === 204)
-                return { 'status': 'OK' };
-
-            if (response.status !== 200)
-                throw new JError('Unable to open', { cause: response.statusText });
-
-            const reader = response.body.getReader();
-            const utf8Decoder = new TextDecoder('utf-8');
-
-            let message;
-            for (;;) {
-                let { done, value } = await reader.read();
-                let chunk = value ? utf8Decoder.decode(value) : '';
-                let pieces = chunk.split('\n');
-
-                while (pieces.length > 0) {
-                    let piece = pieces.pop();
-                    if (piece) {
-                        try {
-                            message = JSON.parse(piece);
-                            break;
-                        }
-                        catch (e) {
-                            // do nothing
-                        }
-                    }
+                    response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'include',
+                        cache: 'no-store',
+                    });
                 }
 
-                if (message && message.status === 'in-progress')
-                    setProgress({ title: 'Opening', progress: [ message.p, message.n ] });
+                if (response.status === 204)
+                    return { 'status': 'OK' };
 
-                if (done)
-                    break;
-            }
+                if (response.status !== 200)
+                    throw new JError('Unable to open', { cause: response.statusText });
 
-            if ( ! message || message.status !== 'OK') {
-                let title = (message && message.title) ? message.title : 'Unable to open';
-                let cause = (message && message.message) ? message.message : 'Unexpected error';
-                let status = (message && message.status) ? message.status : 'error';
-                let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
-                let error = new JError(title, {
-                    cause,
-                    status,
-                    messageSrc });
-                throw error;
-            }
-            else {
-                return message;
+                const reader = response.body.getReader();
+                const utf8Decoder = new TextDecoder('utf-8');
+
+                let message;
+                for (;;) {
+                    let { done, value } = await reader.read();
+                    let chunk = value ? utf8Decoder.decode(value) : '';
+                    let pieces = chunk.split('\n');
+
+                    while (pieces.length > 0) {
+                        let piece = pieces.pop();
+                        if (piece) {
+                            try {
+                                message = JSON.parse(piece);
+                                break;
+                            }
+                            catch (e) {
+                                // do nothing
+                            }
+                        }
+                    }
+
+                    if (message && message.status === 'in-progress') {
+                        if ( ! message.title)
+                            message.title = 'Opening';
+                        setProgress(message);
+                    }
+
+                    if (done)
+                        break;
+                }
+
+                if (message && message['set-cookie'])
+                    document.cookie = message['set-cookie'];
+
+                if ( ! message || message.status !== 'OK') {
+                    let title = (message && message.title) ? message.title : 'Unable to open';
+                    let cause = (message && message.message) ? message.message : 'Unexpected error';
+                    let status = (message && message.status) ? message.status : 'error';
+                    let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
+                    let error = new JError(title, {
+                        cause,
+                        status,
+                        messageSrc });
+                    throw error;
+                }
+                else if (message.url === '/open') {
+                    continue;
+                }
+                else {
+                    return message;
+                }
             }
         });
     },

@@ -636,22 +636,25 @@ $(document).ready(async() => {
         }
 
         const notify = (progress) => {
-            progNotif.set({
-                title: progress.title,
-                progress: progress.progress,
-            });
-            notifications.notify(progNotif);
+            if (progress.p !== undefined) {
+                progNotif.set({
+                    title: progress.title,
+                    progress: [ progress.p, progress.n ],
+                });
+                notifications.notify(progNotif);
+            }
+
+            if (progress.status !== undefined) {
+                infoBox.setup(progress);
+            }
         };
 
         let status;
 
         try {
             let stream = instance.open(toOpen, { existing: !!instanceId });
-            if (toOpen !== '') {
-                // only display progress if opening a file
-                for await (let progress of stream)
-                    notify(progress);
-            }
+            for await (let progress of stream)
+                notify(progress);
             status = await stream;
         }
         catch (e) {
@@ -675,6 +678,8 @@ $(document).ready(async() => {
 
         if (status.message || status.title || status['message-src'])
             infoBox.setup(status);
+        else
+            infoBox.hide();
 
         instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
         await instance.connect(instanceId);
