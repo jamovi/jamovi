@@ -71,13 +71,17 @@ def get_writers():
     return _writers
 
 
-def read(data, path, prog_cb, is_example=False, title=None):
+def read(data, path, prog_cb, is_example=False, title=None, ext=None):
 
     if title:
         data.title = title
     else:
         data.title = os.path.splitext(os.path.basename(path))[0]
-    ext = os.path.splitext(path)[1].lower()
+
+    if ext is None:
+        ext = os.path.splitext(path)[1].lower()
+        if ext != '':
+            ext = ext[1:]
 
     prog_cb(0)
 
@@ -85,25 +89,27 @@ def read(data, path, prog_cb, is_example=False, title=None):
         blank.read(data)
     elif not os.path.exists(path):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
-    elif ext == '.omv':
+    elif ext == 'omv':
         omv.read(data, path, prog_cb)
         if not is_example:
             data.path = path
             data.save_format = 'jamovi'
-    elif ext == '.omt':
+    elif ext == 'omt':
         omv.read(data, path, prog_cb)
     else:
-        _import(data, path, prog_cb, is_example)
+        _import(data, path, prog_cb, is_example, ext=ext)
 
     fix_column_names(data)
 
     data.setup()
 
 
-def _import(data, path, prog_cb, is_example=False):
+def _import(data, path, prog_cb, is_example=False, ext=None):
     readers = get_readers()
 
-    ext = os.path.splitext(path)[1].lower()[1:]
+    if ext is None:
+        ext = os.path.splitext(path)[1].lower()[1:]
+
     if ext in readers:
         readers[ext][1](data, path, prog_cb)
     else:

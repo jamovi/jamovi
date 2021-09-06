@@ -29,6 +29,7 @@ class Permissions:
             self.browse.local = True
             self.browse.examples = True
             self.open.local = True
+            self.open.temp = True
             self.open.remote = True
             self.open.examples = True
             self.save.local = True
@@ -39,7 +40,8 @@ class Permissions:
             self.library.showHide = False
             self.browse.local = False
             self.browse.examples = True
-            self.open.local = True
+            self.open.local = False
+            self.open.temp = True
             self.open.remote = True
             self.open.examples = True
             self.save.local = False
@@ -63,6 +65,7 @@ class Permissions:
         self.open = AttrDict({
             'local': False,
             'examples': False,
+            'temp': False,
         })
 
         self.save = AttrDict({
