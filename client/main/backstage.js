@@ -1690,7 +1690,7 @@ const BackstageModel = Backbone.Model.extend({
 
                 progNotif.set({
                     title: progress.title,
-                    progress: progress.progress,
+                    progress: [ progress.p, progress.n ],
                 });
                 this.trigger('notification', progNotif);
 
