@@ -809,7 +809,7 @@ class Instance:
         else:
             self._coms.send_error('Error', 'Unable to access analysis', self._instance_id, request)
 
-    def open(self, path, title=None, is_temp=False):
+    def open(self, path, title=None, is_temp=False, ext=None):
 
         is_example = path.startswith('{{Examples}}')
         if is_example:
@@ -817,16 +817,24 @@ class Instance:
 
         if is_example and self._perms.open.examples is False:
             raise PermissionError()
-        if path != '' and not is_example and self._perms.open.local is False:
-            raise PermissionError()
         if is_url(path) and self._perms.open.remote is False:
             raise PermissionError()
+        if path != '' and not is_example:
+            if self._perms.open.temp is False:
+                raise PermissionError()
+            if self._perms.open.local is False:
+                temp_dir = conf.get('upload_path', None)
+                if temp_dir and os.path.commonpath([ temp_dir, path ]) == temp_dir:
+                    pass
+                else:
+                    raise PermissionError()
 
         stream = ProgressStream()
 
         async def read_file(path, is_temp, stream):
 
             nonlocal title
+            nonlocal ext
 
             old_mm = None
             temp_file = None
@@ -902,7 +910,7 @@ class Instance:
                         functools.partial(
                             stream.write, progress))
 
-                result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title)
+                result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title, ext)
 
                 if integ_handler is not None:
                     self._data.integration = integ_handler

@@ -230,12 +230,21 @@ class OpenHandler(RequestHandler):
                 return
 
         title = self.get_query_argument('title', None)
-        temp = self.get_query_argument('temp', '0')
+        is_temp = self.get_query_argument('temp', '0') == '1'
+        ext = None
+
+        filename = self.get_query_argument('filename', None)
+        if filename:
+            name, ext = os.path.splitext(filename)
+            if ext != '':
+                ext = ext[1:].lower()  # trim leading dot
+            if title is None:
+                title = name
 
         try:
             if instance is None:
                 instance = self._session.create()
-            async for progress in instance.open(url, title, temp == '1'):
+            async for progress in instance.open(url, title, is_temp, ext):
                 self._write('progress', progress)
         except Exception as e:
             log.exception(e)
