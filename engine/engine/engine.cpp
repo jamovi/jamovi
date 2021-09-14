@@ -52,7 +52,7 @@ void Engine::setPath(const string &path)
 void Engine::start()
 {
 
-#ifdef BOOST_ASIO_HAS_LOCAL_SOCKETS
+#ifdef JAMOVI_ENGINE_SUPPORT_LOCAL_SOCKETS
     if (_connPath.rfind("ipc://", 0) == 0)
         _coms = new ComsNN(); // nanomsg
     else

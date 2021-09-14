@@ -36,7 +36,7 @@ private:
     int _connId;
 };
 
-#ifndef _WIN32
+#ifdef JAMOVI_ENGINE_SUPPORT_LOCAL_SOCKETS
 #include <boost/asio.hpp>
 
 class ComsDS: public Coms
