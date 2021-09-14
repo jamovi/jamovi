@@ -103,7 +103,7 @@ void ComsNN::close()
     nn_term();
 }
 
-#ifndef _WIN32
+#ifdef JAMOVI_ENGINE_SUPPORT_LOCAL_SOCKETS
 
 using boost::asio::local::stream_protocol;
 
