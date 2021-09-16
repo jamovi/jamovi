@@ -380,7 +380,7 @@ class Analyses:
             option_defs = analysis_meta.defn['options']
 
             if enabled is None:
-                enabled = not defn.get('arbitraryCode', False)
+                enabled = not analysis_meta.defn.get('arbitraryCode', False)
 
             options = Options.create(option_defs)
             if options_pb is not None:
