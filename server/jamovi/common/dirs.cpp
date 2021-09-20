@@ -57,7 +57,7 @@ string Dirs::appDataDir(bool sh0rt)
     if (Dirs::_appDataDir == "")
     {
         string dir;
-        filesystem::path path;
+        boost::filesystem::path path;
 
 #ifdef _WIN32
         TCHAR buffer[MAX_PATH];
@@ -78,11 +78,11 @@ string Dirs::appDataDir(bool sh0rt)
         path = dir = homeDir() + "/.jamovi";
 #endif
 
-        if ( ! filesystem::exists(path))
+        if ( ! boost::filesystem::exists(path))
         {
             system::error_code ec;
 
-            filesystem::create_directories(path, ec);
+            boost::filesystem::create_directories(path, ec);
 
             if (ec)
                 throwError("Could not create app data dir", ec.value());
@@ -119,7 +119,7 @@ string Dirs::tempDir()
     if (Dirs::_tempDir == "")
     {
         string dir;
-        filesystem::path path;
+        boost::filesystem::path path;
 
 #ifdef _WIN32
 
@@ -145,11 +145,11 @@ string Dirs::tempDir()
 
 #endif
 
-        if ( ! filesystem::exists(path))
+        if ( ! boost::filesystem::exists(path))
         {
             system::error_code ec;
 
-            filesystem::create_directories(path, ec);
+            boost::filesystem::create_directories(path, ec);
 
             if (ec)
                 throwError("Could not create temp dir", ec.value());
