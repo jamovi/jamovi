@@ -12,6 +12,13 @@ from .pool import Pool
 from .utils import req_str
 
 
+ANALYSIS_ERROR = AnalysisStatus.Value('ANALYSIS_ERROR')
+
+PERFORM_INIT = AnalysisRequest.Perform.Value('INIT')
+PERFORM_SAVE = AnalysisRequest.Perform.Value('SAVE')
+PERFORM_RUN = AnalysisRequest.Perform.Value('RUN')
+
+
 log = getLogger(__name__)
 
 
@@ -102,33 +109,31 @@ class Scheduler:
         instance_id = request.instanceId
         analysis_id = request.analysisId
         analysis = self._analyses.get(analysis_id, instance_id)
-        INIT = AnalysisRequest.Perform.Value('INIT')
-        SAVE = AnalysisRequest.Perform.Value('SAVE')
 
         try:
             async for results in stream:
-                if analysis is not None:
-                    log.debug('%s %s', 'results_received', req_str(request))
-                    if request.perform == SAVE:
-                        if results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
-                            analysis.op.set_exception(ValueError(results.error.message))
-                        else:
-                            analysis.op.set_result(results)
-                        analysis.status = Analysis.Status.COMPLETE
-                    else:
-                        analysis.set_results(results, False)
+                log.debug('%s %s', 'results_received', req_str(request))
+                analysis.set_results(results, False)
 
+            log.debug('%s %s', 'results_received', req_str(request))
             results = stream.result()
-            analysis.set_results(results)
 
-            if results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
+            if request.perform == PERFORM_SAVE:
+                if results.status == ANALYSIS_ERROR:
+                    analysis.op.set_exception(ValueError(results.error.message))
+                else:
+                    analysis.op.set_result(results)
+            else:
+                analysis.set_results(results)
+
+            if results.status == ANALYSIS_ERROR:
                 analysis.status = Analysis.Status.ERROR
-            elif request.perform == INIT:
+            elif request.perform == PERFORM_INIT:
                 analysis.status = Analysis.Status.INITED
             else:
                 analysis.status = Analysis.Status.COMPLETE
         finally:
-            if request.perform == INIT:
+            if request.perform == PERFORM_INIT:
                 self._n_initing -= 1
                 log.debug('%s %s %s', 'dec_counters', 'initing', (self._n_initing, self._n_running, self._n_slots))
             else:
@@ -159,7 +164,7 @@ class Scheduler:
             analysis.op.waiting = False
 
             request_pb.options.CopyFrom(analysis.options.as_pb())
-            request_pb.perform = AnalysisRequest.Perform.Value('SAVE')
+            request_pb.perform = PERFORM_SAVE
             request_pb.path = analysis.op.path
             request_pb.part = analysis.op.part
 
@@ -173,8 +178,8 @@ class Scheduler:
             request_pb.clearState = analysis.clear_state
 
             if perform == 'init':
-                request_pb.perform = AnalysisRequest.Perform.Value('INIT')
+                request_pb.perform = PERFORM_INIT
             else:
-                request_pb.perform = AnalysisRequest.Perform.Value('RUN')
+                request_pb.perform = PERFORM_RUN
 
         return request_pb
