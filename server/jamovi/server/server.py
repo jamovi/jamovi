@@ -27,6 +27,7 @@ import json
 
 from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
+from shutil import rmtree
 
 import logging
 import pkg_resources
@@ -626,6 +627,8 @@ class Server:
                 os.remove(self._port_file)
             except Exception:
                 pass
+                
+            rmtree(session_path, ignore_errors=True)
 
     def _session_event(self, event):
         if event.type == SessionEvent.Type.INSTANCE_STARTED:
