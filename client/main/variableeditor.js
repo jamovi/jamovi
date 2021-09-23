@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -47,10 +46,10 @@ const VariableEditor = Backbone.View.extend({
         this.editorPanel.on('notification', note => this.trigger('notification', note));
         this.transformEditor = new TransformEditor(this.model);
 
-        this.$ok = $('<div class="jmv-variable-editor-ok jmv-tooltip" title="Hide"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>').appendTo(this.$main);
-        this.$revert = $('<div class="jmv-variable-editor-revert jmv-tooltip" title="Revert changes"><span class="mif-undo"></span></div>').appendTo(this.$main);
-        this.$left = $('<div class="jmv-variable-editor-button-left  jmv-tooltip" title="Previous variable"><span class="mif-chevron-left"></span></div>').appendTo(this.$main);
-        this.$right = $('<div class="jmv-variable-editor-button-right  jmv-tooltip" title="Next variable"><span class="mif-chevron-right"></span></div>').appendTo(this.$main);
+        this.$ok = $(`<div class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide')}"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>`).appendTo(this.$main);
+        this.$revert = $(`<div class="jmv-variable-editor-revert jmv-tooltip" title="${_('Revert changes')}"><span class="mif-undo"></span></div>`).appendTo(this.$main);
+        this.$left = $(`<div class="jmv-variable-editor-button-left  jmv-tooltip" title="${_('Previous variable')}"><span class="mif-chevron-left"></span></div>`).appendTo(this.$main);
+        this.$right = $(`<div class="jmv-variable-editor-button-right  jmv-tooltip" title="${_('Next variable')}"><span class="mif-chevron-right"></span></div>`).appendTo(this.$main);
 
         this.$hoverHeader = $('<div class="hover-header"></div>').appendTo(this.$el);
         this.$hoverHeader.on('mouseout', event => {
@@ -171,9 +170,9 @@ const VariableEditor = Backbone.View.extend({
 
         this.editorModel.on('change:changes', event => {
             if (this.$ok.hasClass('apply'))
-                this.$ok.attr('title', 'Apply changes');
+                this.$ok.attr('title', _('Apply changes'));
             else
-                this.$ok.attr('title', 'Hide');
+                this.$ok.attr('title', _('Hide'));
         });
 
         this.editorModel.on('notification', note => this.trigger('notification', note));

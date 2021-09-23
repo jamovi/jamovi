@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 
 const LayoutGrid = require('./layoutgrid').Grid;
 const EnumPropertyFilter = require('./enumpropertyfilter');
@@ -27,6 +26,7 @@ const LayoutCollapseView = function(params) {
         this.$el.addClass("jmv-collapse-view silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
 
         let groupText = this.getPropertyValue('label');
+        groupText = this.translate(groupText);
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.$header = $('<div class="silky-options-collapse-button silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + t + groupText + '</div>');
 

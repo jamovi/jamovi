@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -23,7 +22,7 @@ const Store = Backbone.View.extend({
 
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
-        this.$close = $('<div class="jmv-store-button-close" title="Hide library"><span class="mif-arrow-up"></span></div>').appendTo(this.$header);
+        this.$close = $(`<div class="jmv-store-button-close" title="${_('Hide library')}"><span class="mif-arrow-up"></span></div>`).appendTo(this.$header);
 
         this.$close.on('click', event => {
             this.hide();
@@ -33,9 +32,9 @@ const Store = Backbone.View.extend({
         this.$tabContainer.on('click', event => this._tabClicked(event));
 
         for (let tab of [
-            { name: 'installed', title: 'Installed' },
-            { name: 'store', title: 'Available' },
-            { name: 'sideload', title: 'Sideload'} ]) {
+            { name: 'installed', title: _('Installed') },
+            { name: 'store', title: _('Available') },
+            { name: 'sideload', title: _('Sideload')} ]) {
 
             let $tab = $(util.format('<div class="jmv-store-tab" data-tab="%s"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
             $tab.appendTo(this.$tabContainer);
@@ -62,8 +61,8 @@ const Store = Backbone.View.extend({
 
                 let mode = settings.getSetting('mode', 'normal');
                 if (mode === 'demo') {
-                    this.$pageStore.append($('<div class="mode-msg">The jamovi library is not avaliable in this demo.</div>'));
-                    this.$pageSideload.append($('<div class="mode-msg">Side loading modules is not avaliable in this demo.</div>'));
+                    this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not avaliable in this demo.')}</div>`));
+                    this.$pageSideload.append($(`<div class="mode-msg">${_('Side loading modules is not avaliable in this demo.')}</div>`));
                 }
                 else {
                     this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );

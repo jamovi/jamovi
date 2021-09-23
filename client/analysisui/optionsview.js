@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 
 const OptionControlBase = require('./optioncontrolbase');
@@ -51,7 +50,7 @@ const OptionsView = function(uiModel) {
             this.layoutActionManager.fireCreateEvents(this);
 
             layoutGrid.render();
-            
+
             this.$el.append(layoutGrid.$el);
 
             window.setTimeout(() => {
@@ -255,6 +254,11 @@ const OptionsView = function(uiModel) {
         this._requestedDataSource = source;
     };
 
+    this._i18nSource = null;
+    this.setI18nSource = function(source) {
+        this._i18nSource = source;
+    };
+
     this._ctrlListValid = true;
     this._validateControlList = function() {
         this._ctrlListValid = true;
@@ -307,6 +311,9 @@ const OptionsView = function(uiModel) {
 
         if (ctrl.setRequestedDataSource)
             ctrl.setRequestedDataSource(this._requestedDataSource);
+
+        if (ctrl.setI18nSource)
+            ctrl.setI18nSource(this._i18nSource);
 
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);

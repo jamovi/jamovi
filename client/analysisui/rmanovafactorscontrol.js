@@ -24,7 +24,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         this.listenForCompleteRemove(this.$closeButton);
 
         let levels = [];
-        let label = "RM Factor " + (index + 1);
+        let label = parent.translate('RM Factor {0}').replace('{0}', index + 1);
         let isEmpty = true;
         if (this.data !== undefined && this.data !== null) {
             label = this.data.label;
@@ -134,7 +134,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
 
     this.createLevel = function(groupIndex, levelText, index) {
         let level = index + 1;
-        let text = "Level " + this.getSequenceChar(groupIndex, index); //level;
+        let text = s_('Level {0}').replace('{0}', this.getSequenceChar(groupIndex, index));
         let isEmpty = true;
         if (levelText !== null && levelText !== undefined) {
             text = levelText;
@@ -215,7 +215,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         this._topIndex = index;
         this.data = data;
         if (data === undefined || data === null) {
-            this.$label.val("RM Factor " + (index + 1));
+            this.$label.val(this.parent.translate('RM Factor {0}').replace('{0}', (index + 1)));
             this.$label.addClass("rma-new-factor");
             this.$closeButton.css("visibility", "hidden");
             for (let i = 0; i < this.$items.length; i++) {
@@ -286,7 +286,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         let value = $item.val().trim();
         let index = $item.data("index");
         if (value === '')
-            value = 'Level ' + this.getSequenceChar(this._topIndex, index);
+            value = s_('Level {0}').replace('{0}', this.getSequenceChar(this._topIndex, index));
 
         let checked = this.parent.checkLevelLabel(value, this._topIndex, index);
         if (checked !== value) {
@@ -308,7 +308,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         let value = $item.val().trim();
         let index = $item.data("index");
         if (value === '')
-            value = 'RM Factor ' + (index+1);
+            value = this.parent.translate('RM Factor {0}').replace('{0}', (index+1));
 
         let checked = this.parent.checkItemLabel(value, index);
         if (checked !== value) {
@@ -317,7 +317,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
         }
 
         if (this.data === undefined || this.data === null) {
-            this.parent.onItemAdded({label: value, levels: ["Level " + this.getSequenceChar(this._topIndex , 0), "Level " + this.getSequenceChar(this._topIndex , 1)]});
+            this.parent.onItemAdded({label: value, levels: [s_('Level {0}').replace('{0}', this.getSequenceChar(this._topIndex , 0)), s_('Level {0}').replace('{0}', this.getSequenceChar(this._topIndex , 1))]});
         }
         else {
             this.data.label = value;
@@ -363,8 +363,10 @@ const RMAnovaFactorsControl = function(params) {
             width += 1;
 
         let label = this.getPropertyValue("label");
-        if (label !== null)
+        if (label !== null) {
+            label = this.translate(label);
             grid.addCell(column, row, $('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
+        }
 
         let cell = grid.addCell(column, row + 1, this);
         cell.setStretchFactor(0.5);
@@ -462,7 +464,7 @@ const RMAnovaFactorsControl = function(params) {
 
     this.updateData = function() {
         if ((this.data === null || this.data.length === 0) && this.getOption().isValueInitialized())
-            this.setValue([ {label: "RM Factor 1", levels: ["Level 1", "Level 2"] } ]);
+            this.setValue([ {label: this.translate('RM Factor {0}').replace('{0}', 1), levels: [s_('Level {0}').replace('{0}', 1), s_('Level {0}').replace('{0}', 2)] } ]);
         else {
             if (this.data === null)
                 this.data = [];

@@ -10,7 +10,7 @@ const Icons = Quill.import('ui/icons');
 const DataTab = function() {
     this.name = "annotation";
 
-    this.title = "Edit";
+    this.title = _("Edit");
 
     this.getItem = function(name, _items) {
         if (_items === undefined)
@@ -103,60 +103,60 @@ const DataTab = function() {
     this.getRibbonItems = function(ribbon) {
         if (this._items === undefined) {
             this._items = [
-                new RibbonGroup({ title: 'Clipboard', margin: 'large', items: [
-                    new RibbonButton({ title: 'Paste', name: 'textPaste', size: 'large' }),
+                new RibbonGroup({ title: _('Clipboard'), margin: 'large', items: [
+                    new RibbonButton({ title: _('Paste'), name: 'textPaste', size: 'large' }),
                     new RibbonGroup({ orientation: 'vertical', items: [
-                        new RibbonButton({ title: 'Cut', name: 'textCut', size: 'small' }),
-                        new RibbonButton({ title: 'Copy', name: 'textCopy', size: 'small' })
+                        new RibbonButton({ title: _('Cut'), name: 'textCut', size: 'small' }),
+                        new RibbonButton({ title: _('Copy'), name: 'textCopy', size: 'small' })
                     ]})
                 ]}),
                 new RibbonSeparator(),
-                new RibbonGroup({ title: 'Edit', margin: 'large', alignContents: 'center', items: [
-                    new RibbonButton({ title: 'Undo Edit', name: 'textUndo', size: 'small' }),
-                    new RibbonButton({ title: 'Redo Edit', name: 'textRedo', size: 'small' })
+                new RibbonGroup({ title: _('Edit'), margin: 'large', alignContents: 'center', items: [
+                    new RibbonButton({ title: _('Undo Edit'), name: 'textUndo', size: 'small' }),
+                    new RibbonButton({ title: _('Redo Edit'), name: 'textRedo', size: 'small' })
                 ]}),
                 new RibbonSeparator(),
-                new RibbonGroup({ title: 'Font', margin: 'large', orientation: 'vertical', items: [
+                new RibbonGroup({ title: _('Font'), margin: 'large', orientation: 'vertical', items: [
                     new RibbonGroup({ orientation: 'horizontal', items: [
-                        new RibbonButton({ title: 'Bold', name: 'textBold', size: 'small', icon: Icons.bold }),
-                        new RibbonButton({ title: 'Italic', name: 'textItalic', size: 'small', icon: Icons.italic }),
-                        new RibbonButton({ title: 'Underline', name: 'textUnderline', size: 'small', icon: Icons.underline }),
-                        new RibbonButton({ title: 'Strike', name: 'textStrike', size: 'small', icon: Icons.strike })
+                        new RibbonButton({ title: _('Bold'), name: 'textBold', size: 'small', icon: Icons.bold }),
+                        new RibbonButton({ title: _('Italic'), name: 'textItalic', size: 'small', icon: Icons.italic }),
+                        new RibbonButton({ title: _('Underline'), name: 'textUnderline', size: 'small', icon: Icons.underline }),
+                        new RibbonButton({ title: _('Strike'), name: 'textStrike', size: 'small', icon: Icons.strike })
                     ]}),
                     new RibbonGroup({ orientation: 'horizontal', items: [
-                        new RibbonButton({ title: 'Sub Script', name: 'textSubScript', size: 'small', icon: Icons.script.sub }),
-                        new RibbonButton({ title: 'Super Script', name: 'textSuperScript', size: 'small', icon: Icons.script.super }),
+                        new RibbonButton({ title: _('Sub Script'), name: 'textSubScript', size: 'small', icon: Icons.script.sub }),
+                        new RibbonButton({ title: _('Super Script'), name: 'textSuperScript', size: 'small', icon: Icons.script.super }),
                         new RibbonSeparator(),
-                        new RibbonButton({ title: 'Highlight Color', name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', 'No Color') }),
-                        new RibbonButton({ title: 'Text Color', name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', 'Automatic') })
+                        new RibbonButton({ title: _('Highlight Color'), name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', _('No Color')) }),
+                        new RibbonButton({ title: _('Text Color'), name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', _('Automatic')) })
                     ]})
                 ]}),
                 new RibbonSeparator(),
-                new RibbonGroup({ title: 'Paragraph', margin: 'large', orientation: 'vertical', items: [
+                new RibbonGroup({ title: _('Paragraph'), margin: 'large', orientation: 'vertical', items: [
                     new RibbonGroup({ orientation: 'horizontal', items: [
-                        new RibbonButton({ title: 'Left Align', name: 'textAlignLeft', size: 'small', icon: Icons.align[''] }),
-                        new RibbonButton({ title: 'Center Align', name: 'textAlignCenter', size: 'small', icon: Icons.align.center }),
-                        new RibbonButton({ title: 'Right Align', name: 'textAlignRight', size: 'small', icon: Icons.align.right }),
-                        new RibbonButton({ title: 'Justify', name: 'textAlignJustify', size: 'small', icon: Icons.align.justify })
+                        new RibbonButton({ title: _('Left Align'), name: 'textAlignLeft', size: 'small', icon: Icons.align[''] }),
+                        new RibbonButton({ title: _('Center Align'), name: 'textAlignCenter', size: 'small', icon: Icons.align.center }),
+                        new RibbonButton({ title: _('Right Align'), name: 'textAlignRight', size: 'small', icon: Icons.align.right }),
+                        new RibbonButton({ title: _('Justify'), name: 'textAlignJustify', size: 'small', icon: Icons.align.justify })
                     ]}),
                     new RibbonGroup({ orientation: 'horizontal', items: [
-                        new RibbonButton({ title: 'Ordered List', name: 'textListOrdered', size: 'small', icon: Icons.list.ordered }),
-                        new RibbonButton({ title: 'Bullet List', name: 'textListBullet', size: 'small', icon: Icons.list.bullet }),
+                        new RibbonButton({ title: _('Ordered List'), name: 'textListOrdered', size: 'small', icon: Icons.list.ordered }),
+                        new RibbonButton({ title: _('Bullet List'), name: 'textListBullet', size: 'small', icon: Icons.list.bullet }),
                         new RibbonSeparator(),
-                        new RibbonButton({ title: 'Indent -1', name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'] }),
-                        new RibbonButton({ title: 'Indent +1', name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'] })
+                        new RibbonButton({ title: _('Indent -1'), name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'] }),
+                        new RibbonButton({ title: _('Indent +1'), name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'] })
                     ]})
                 ]}),
                 new RibbonSeparator(),
-                new RibbonGroup({ title: 'Insert', margin: 'large', items: [
-                    new RibbonButton({ title: 'Formula', name: 'textFormula', size: 'medium', icon: Icons.formula}),
+                new RibbonGroup({ title: _('Insert'), margin: 'large', items: [
+                    new RibbonButton({ title: _('Formula'), name: 'textFormula', size: 'medium', icon: Icons.formula}),
                 ]}),
                 new RibbonSeparator(),
-                new RibbonGroup({ title: 'Styles', margin: 'large', items: [
-                    new RibbonButton({ title: 'Code-Block', name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'] }),
-                    new RibbonButton({ title: 'Heading', name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'] }),
-                    //new RibbonButton({ title: 'Clear', name: 'textClear', margin: 'large', size: 'large', icon: Icons.clean }),
-                    new RibbonButton({ title: 'Link', name: 'textLink', margin: 'large', size: 'large', icon: Icons.link })
+                new RibbonGroup({ title: _('Styles'), margin: 'large', items: [
+                    new RibbonButton({ title: _('Code-Block'), name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'] }),
+                    new RibbonButton({ title: _('Heading'), name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'] }),
+                    //new RibbonButton({ title: _('Clear'), name: 'textClear', margin: 'large', size: 'large', icon: Icons.clean }),
+                    new RibbonButton({ title: _('Link'), name: 'textLink', margin: 'large', size: 'large', icon: Icons.link })
                 ]})
             ];
         }

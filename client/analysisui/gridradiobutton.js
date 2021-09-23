@@ -38,6 +38,8 @@ const GridRadioButton = function(params) {
         if (label === null)
             label = name;
 
+        label = this.translate(label);
+
         let $radioButton = $('<label style="white-space: nowrap;"></label>');
         this.$input = $('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
