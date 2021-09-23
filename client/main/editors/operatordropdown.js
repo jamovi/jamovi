@@ -38,17 +38,17 @@ function allFunctions($functionsContent) {
 
     //$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
     $functionsContent.append($('<div class="item item-activated" data-name="equal" data-value="==">==</div>'));
-    descriptions.equal = { label: 'Equal to', content: '' };
+    descriptions.equal = { label: _('Equal to'), content: '' };
     $functionsContent.append($('<div class="item" data-name="notequal" data-value="!=">!=</div>'));
-    descriptions.notequal = { label: 'Not equal to', content: '' };
+    descriptions.notequal = { label: _('Not equal to'), content: '' };
     $functionsContent.append($('<div class="item" data-name="gt" data-value=">">&gt;</div>'));
-    descriptions.gt = { label: 'Greater than', content: '' };
+    descriptions.gt = { label: _('Greater than'), content: '' };
     $functionsContent.append($('<div class="item" data-name="lt" data-value="<">&lt;</div>'));
-    descriptions.lt = { label: 'Less than', content: '' };
+    descriptions.lt = { label: _('Less than'), content: '' };
     $functionsContent.append($('<div class="item" data-name="gte" data-value=">=">&gt;=</div>'));
-    descriptions.gte = { label: 'Greater than or equal to', content: '' };
+    descriptions.gte = { label: _('Greater than or equal to'), content: '' };
     $functionsContent.append($('<div class="item" data-name="lte" data-value="<=">&lt;=</div>'));
-    descriptions.lte = { label: 'Less than or equal to', content: '' };
+    descriptions.lte = { label: _('Less than or equal to'), content: '' };
 
     return descriptions;
 }
@@ -67,7 +67,7 @@ const dropdown = function() {
     this.$description = $('<div class="option-description">This is the place where the option description will go!</div>').appendTo(this.$options);
 
     this.$functions = $('<div class="op"></div>').appendTo(this.$ops);
-    this.$functionsTitle = $('<div class="title">Operators</div>').appendTo(this.$functions);
+    this.$functionsTitle = $(`<div class="title">${_('Operators')}</div>`).appendTo(this.$functions);
     this.$functionsContent = $('<div class="content"></div>').appendTo(this.$functions);
 
     this.descriptions = allFunctions(this.$functionsContent);
@@ -98,7 +98,7 @@ const dropdown = function() {
             }
             else {
                 this.$label.html('');
-                this.$description.html('No information about this function is avaliable');
+                this.$description.html(_('No information about this function is avaliable'));
             }
         }
         else {

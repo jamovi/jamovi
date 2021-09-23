@@ -1,6 +1,6 @@
 
 import os.path
-import yaml
+import json
 from enum import Enum
 from asyncio import Future
 from copy import deepcopy
@@ -367,7 +367,37 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
-    def _construct(self, id, name, ns, options_pb=None, enabled=None):
+    def translate_default(self, i18n_map, opt_defn, _default_value=None):
+        if _default_value == None:
+            if 'default' in opt_defn and opt_defn['default'] is not None:
+                translated = self.translate_default(i18n_map, opt_defn, opt_defn['default'])
+                if translated != None:
+                    opt_defn['default'] = translated
+                return None
+
+        if _default_value != None:
+            typ  = opt_defn['type']
+            if typ == 'String':
+                value = _default_value
+                if _default_value in i18n_map:
+                    value = i18n_map[_default_value][0].strip()
+                    if value == '':
+                        value = _default_value
+                return value
+            elif typ == 'Group':
+                for element in opt_defn['elements']:
+                    translated = self.translate_default(i18n_map, element, _default_value[element['name']])
+                    if translated != None:
+                        _default_value[element['name']] = translated
+            elif typ == 'Array':
+                for i, value in enumerate(_default_value):
+                    translated = self.translate_default(i18n_map, opt_defn['template'], value)
+                    if translated != None:
+                        _default_value[i] = translated
+
+        return _default_value;
+
+    def _construct(self, id, name, ns, i18n=None, options_pb=None, enabled=None):
 
         if name == 'empty' and ns == 'jmv':
             return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled)
@@ -379,6 +409,15 @@ class Analyses:
             analysis_name = analysis_meta.name
             option_defs = analysis_meta.defn['options']
 
+            if i18n is not None:
+                i18n_def = None
+                i18n_root = os.path.join(module_meta.path, 'i18n', i18n + '.json')
+                with open(i18n_root, 'r', encoding='utf-8') as stream:
+                    i18n_def = json.load(stream)
+                i18n_map = i18n_def['locale_data']['messages']
+                for opt_defn in option_defs:
+                    self.translate_default(i18n_map, opt_defn)
+
             if enabled is None:
                 enabled = not analysis_meta.defn.get('arbitraryCode', False)
 
@@ -386,7 +425,7 @@ class Analyses:
             if options_pb is not None:
                 options.set(options_pb)
 
-            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
+            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0], i18n), analysis_meta.addons))
 
             return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
 
@@ -416,6 +455,7 @@ class Analyses:
             id,
             analysis_pb.name,
             analysis_pb.ns,
+            None,
             analysis_pb.options)
 
         if analysis_pb.dependsOn != 0:
@@ -445,7 +485,7 @@ class Analyses:
 
         return self._analyses[0].name == 'empty'
 
-    def create(self, id, name, ns, options_pb, index=None):
+    def create(self, id, name, ns, i18n, options_pb, index=None):
 
         if id == 0:
             id = self._next_id
@@ -456,7 +496,7 @@ class Analyses:
             else:
                 self._next_id = id + 1
 
-        analysis = self._construct(id, name, ns, options_pb, True)
+        analysis = self._construct(id, name, ns, i18n, options_pb, True)
 
         if index is not None:
             self._analyses.insert(index, analysis)
@@ -478,6 +518,7 @@ class Analyses:
             self._next_id,
             'empty',
             'jmv',
+            None,
             options.as_pb())
         annotation.status = Analysis.Status.COMPLETE
         self._next_id += 2

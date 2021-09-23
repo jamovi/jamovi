@@ -1,8 +1,6 @@
 'use strict';
 
-var _ = require("underscore");
-
-var TargetListValueFilter = function() {
+const TargetListValueFilter = function() {
 
     this._data = [];
 
