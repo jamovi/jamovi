@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -31,7 +30,6 @@ class Main {  // this is constructed at the bottom
 
         window.addEventListener('message', event => this._messageEvent(event));
 
-        //this._notifyResize = _.debounce(() => this._reallyNotifyResize(), 50);
         this._notifyResize = () => this._reallyNotifyResize();
 
         window.setOption = (name, value) => {

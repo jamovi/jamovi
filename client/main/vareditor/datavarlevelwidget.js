@@ -90,9 +90,9 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
 
         let label = labels.join(', ');
         if (isNew)
-            this.$label.attr('placeholder', label ? label : "Enter label...");
+            this.$label.attr('placeholder', label ? label : _("Enter label..."));
         else if (clash)
-            this.$label.attr('placeholder', label ? label : "change label...");
+            this.$label.attr('placeholder', label ? label : _("change label..."));
         else
             this.$label.attr('placeholder', '');
 

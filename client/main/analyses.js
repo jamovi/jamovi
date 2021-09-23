@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const Delta = require('quill-delta');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -24,6 +23,7 @@ const Analysis = function(id, name, ns, modules) {
     this.references = [ ];
     this.index = -1;
     this.uijs = undefined;
+    this.i18nTable = undefined;
 
     this.revision = 0;
     this.missingModule = false;
@@ -44,6 +44,10 @@ Analysis.prototype.addDependent = function(analysis) {
     delete analysis.waitingFor;
 };
 
+Analysis.prototype.getCurrentI18nCode = async function() {
+    return await this.modules.getCurrentI18nCode(this.ns);
+};
+
 Analysis.prototype.reload = async function() {
 
     if (this.ns === 'jmv' && this.name === 'empty') {
@@ -59,7 +63,9 @@ Analysis.prototype.reload = async function() {
 
         let waitForDefn = (async () => {
             let defn = await this.modules.getDefn(this.ns, this.name);
-            this.options = new Options(defn.options);
+            let i18nDefn = await this.modules.getI18nDefn(this.ns);
+            this.i18n = i18nDefn;
+            this.options = new Options(defn.options, this.translate.bind(this));
             this.uijs = defn.uijs;
             return defn;
         })();
@@ -84,6 +90,15 @@ Analysis.prototype.reload = async function() {
         }
 
     })();
+};
+
+Analysis.prototype.translate = function(key) {
+    if (this.i18n) {
+        let value = this.i18n.locale_data.messages[key][0];
+        if (value)
+            return value;
+    }
+    return key;
 };
 
 Analysis.prototype.setup = function(values) {
@@ -319,7 +334,7 @@ const Analyses = Backbone.Model.extend({
         let analysis = this._analyses[index];
         if (analysis.name === 'empty') {
             if (index === 0)
-                analysis.options.setValues( { 'results//heading': 'Results', 'results//topText': null });
+                analysis.options.setValues( { 'results//heading': _('Results'), 'results//topText': null });
             else
                 analysis.options.setValues( { 'results//topText': null } );
             this._notifyOptionsChanged(analysis);
