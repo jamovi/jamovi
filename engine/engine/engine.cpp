@@ -72,8 +72,9 @@ void Engine::start()
     // use to end the engine processes when the server finishes.
     // semPlot won't run correctly with this thread running, on windows
     // hence the #ifndef ... who knows why.
+    thread u;
     if ( ! _headless)
-        thread u(&Engine::monitorStdinLoop, this);
+        u = thread(&Engine::monitorStdinLoop, this);
 #endif
 
     // locks for sharing between threads
