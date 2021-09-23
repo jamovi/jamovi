@@ -39,6 +39,8 @@ const GridTextbox = function(params) {
         if (label === null)
             label = '';
 
+        label = this.translate(label);
+
         let cell = null;
         let startClass = label === '' ? '' : 'silky-option-text-start';
         this.$label = $('<div class="silky-option-text-label silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
@@ -74,7 +76,7 @@ const GridTextbox = function(params) {
                 dd = dd + '<div class="jmv-option-text-input-suggested-option" data-value="' + value + '">';
                 dd = dd + '    <div class="jmv-option-text-input-suggested-option-value">' + value + '</div>';
                 if (isObject && suggestedValues[i].label)
-                    dd = dd + '    <div class="jmv-option-text-input-suggested-option-label">' + suggestedValues[i].label + '</div>';
+                    dd = dd + '    <div class="jmv-option-text-input-suggested-option-label">' + this.translate(suggestedValues[i].label) + '</div>';
                 dd = dd + '</div>';
             }
             dd = dd + '</div>';

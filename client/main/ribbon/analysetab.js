@@ -8,7 +8,7 @@ const RibbonMenu = require('./ribbonmenu');
 const AnalyseTab = function(modules) {
     this.name = 'analyses';
 
-    this.title = 'Analyses';
+    this.title = _('Analyses');
 
     this.modules = modules;
 
@@ -36,13 +36,14 @@ const AnalyseTab = function(modules) {
         return false;
     };
 
-    this.getRibbonItems = function(ribbon) {
+    this.getRibbonItems = async function(ribbon) {
         let buttons = [ ];
 
         let moduleList = [];
         this._analysesList = { };
         this._moduleCount = 0;
         for (let module of this.modules) {
+            let _translate = await module.getTranslator();
             if (module.analyses.length > 0) {
                 if (this._analysesList[module.name] === undefined) {
                     this._analysesList[module.name] = { version: module.version, analyses: [] };
@@ -53,17 +54,17 @@ const AnalyseTab = function(modules) {
                 // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
                 let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
                 subtitle = subtitle.replace(re, '');
-                let moduleItem = { name : module.name, title : module.name, subtitle: subtitle, ns : 'installed', type: 'module', checked: module.visible  };
-                let analyses = { name: 'analyses', title: 'Analyses', type: 'group', items: [ ] };
+                let moduleItem = { name : module.name, title : _translate(module.name), subtitle: _translate(subtitle), ns : 'installed', type: 'module', checked: module.visible  };
+                let analyses = { name: 'analyses', title: _('Analyses'), type: 'group', items: [ ] };
                 for (let analysis of module.analyses) {
                     this._analysesList[module.name].analyses.push(analysis.name);
                     let analysisItem = {
                         name: analysis.name,
                         ns: analysis.ns,
-                        title: analysis.menuTitle,
-                        subtitle: analysis.menuSubtitle,
+                        title: _translate(analysis.menuTitle),
+                        subtitle: _translate(analysis.menuSubtitle),
                         moduleName: module.name,
-                        resultsTitle: analysis.title
+                        resultsTitle: _translate(analysis.title)
                     };
                     analyses.items.push(analysisItem);
                 }
@@ -73,10 +74,10 @@ const AnalyseTab = function(modules) {
         }
 
         let $button = $('<div class="modules-menu-item"></div>');
-        let  button = new RibbonMenu($button, 'Modules', 'modules', [
-            { name : 'modules', title : 'jamovi library', ns : 'app' },
-            { name : 'manageMods', title : 'Manage installed', ns : 'app' },
-            { name: 'installedList', title: 'Installed Modules', type: 'group', items: moduleList }
+        let  button = new RibbonMenu($button, _('Modules'), 'modules', [
+            { name : 'modules', title : _('jamovi library'), ns : 'app' },
+            { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
+            { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
         ], true, false);
         buttons.push(button);
 
@@ -84,22 +85,23 @@ const AnalyseTab = function(modules) {
         let lastSub = null;
 
         for (let module of this.modules) {
+            let _translate = await module.getTranslator();
             let isNew = module.new;
             for (let analysis of module.analyses) {
-                let group = analysis.menuGroup;
+                let groupName = analysis.menuGroup;
                 let subgroup = analysis.menuSubgroup;
-                let menu = group in menus ? menus[group] : { };
+                let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup)  };
                 menu._new = isNew;
                 let submenu = { name };
                 if (subgroup in menu)
                     submenu = menu[subgroup];
                 else
-                    submenu = { name: subgroup, title: subgroup, items: [ ] };
+                    submenu = { name: subgroup, title: _translate(subgroup), items: [ ] };
                 let item = {
                     name: analysis.name,
                     ns: analysis.ns,
-                    title: analysis.menuTitle,
-                    subtitle: analysis.menuSubtitle,
+                    title: _translate(analysis.menuTitle),
+                    subtitle: _translate(analysis.menuSubtitle),
                     moduleName: module.name,
                     new: isNew,
                     hidden: module.visible === false,
@@ -107,20 +109,20 @@ const AnalyseTab = function(modules) {
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;
-                menus[group] = menu;
+                menus[groupName] = menu;
             }
         }
 
-        for (let group in menus) {
-            let menu = menus[group];
+        for (let groupName in menus) {
+            let menu = menus[groupName];
             let flattened = [ ];
             let containsNew = menu._new;
             for (let subgroup in menu) {
-                if (subgroup === '_new')
+                if (subgroup === '_new' || subgroup === '_title')
                     continue;
                 flattened.push({
                     name: subgroup,
-                    title: subgroup,
+                    title: menu[subgroup].title,
                     type: 'group',
                     items: menu[subgroup].items });
             }
@@ -131,7 +133,7 @@ const AnalyseTab = function(modules) {
             }
 
             let $button = $('<div></div>');
-            let  button = new RibbonMenu($button, group, group, flattened, false, containsNew);
+            let  button = new RibbonMenu($button, menu._title, groupName, flattened, false, containsNew);
             buttons.push(button);
         }
 

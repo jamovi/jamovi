@@ -26,7 +26,7 @@ const Settings = Backbone.Model.extend({
     defaults: {
         coms: null,
         recents: [ ],
-        examples: [ ],
+        //examples: [ ],
         modules: [ ],
         theme: 'default',
         devMode: false,
@@ -59,7 +59,7 @@ const Settings = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let settingsPB = coms.Messages.SettingsResponse.decode(message.payload);
         this.set('recents',  settingsPB.recents);
-        this.set('examples', settingsPB.examples);
+        //this.set('examples', settingsPB.examples);
         this.set('modules', settingsPB.modules);
 
         for (let settingPB of settingsPB.settings) {

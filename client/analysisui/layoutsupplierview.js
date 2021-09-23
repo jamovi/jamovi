@@ -133,8 +133,10 @@ const LayoutSupplierView = function(params) {
 
         let label = this.getPropertyValue('label');
         let nextRow = 0;
-        if (label !== null)
+        if (label !== null) {
+            label = this.translate(label);
             this.baseLayout.addCell(0, nextRow++, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
+        }
 
         this.supplierGrid = new SelectableLayoutGrid();
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');

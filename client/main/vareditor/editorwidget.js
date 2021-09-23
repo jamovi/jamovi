@@ -1,7 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -41,7 +40,7 @@ const EditorWidget = Backbone.View.extend({
         this.$label = $('<div class="jmv-variable-editor-widget-label"></div>').appendTo(this.$labelBox);
         $('<div class="label-spacer"></div>').appendTo(this.$labelBox);
         this.$importedAs = $('<div class="imported-as single-variable-support"></div>').appendTo(this.$labelBox);
-        this.$importedAsLabel = $('<div class="label ">Imported as:</div>').appendTo(this.$importedAs);
+        this.$importedAsLabel = $(`<div class="label ">${_('Imported as')}:</div>`).appendTo(this.$importedAs);
         this.$importedAsName = $('<div class="name"></div>').appendTo(this.$importedAs);
 
         this.model.on('change:importName change:name', event => {
@@ -66,7 +65,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('name', this.$title.val());
         } );
 
-        this.$description = $('<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" contenteditable="true">`).appendTo(this.$descBox);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
             if ( ! this.attached)
@@ -81,7 +80,7 @@ const EditorWidget = Backbone.View.extend({
         } );
 
         this.$multiVarBox = $('<div class="multi-var-info"></div>').appendTo(this.$descBox);
-        this.$multiVarLabel = $('<div class="multi-var-info-label">Selected:</div>').appendTo(this.$multiVarBox);
+        this.$multiVarLabel = $(`<div class="multi-var-info-label">${_('Selected')}:</div>`).appendTo(this.$multiVarBox);
         this.$scrollWrapper = $('<div class="scroll-wrapper"></div>').appendTo(this.$multiVarBox);
         this.$multiVarList = $('<div class="multi-var-info-list"></div>').appendTo(this.$scrollWrapper);
 
@@ -99,7 +98,7 @@ const EditorWidget = Backbone.View.extend({
 
         let $statusBox = $('<div class="status-box"></div>').appendTo(this.$footer);
         this.$active = $('<div class="active"><div class="switch"></div></div>').appendTo($statusBox);
-        let $status = $('<div class="status">Retain unused levels in analyses</div>').appendTo($statusBox);
+        let $status = $(`<div class="status">${_('Retain unused levels in analyses')}</div>`).appendTo($statusBox);
 
         if (this.model.get('trimLevels') === false)
             this.$active.addClass('retain-levels');
@@ -235,32 +234,16 @@ const EditorWidget = Backbone.View.extend({
         let type = this.model.get('columnType');
         let ids = this.model.get('ids');
         let multiSupport = ids !== null && this.model.columns.length > 1;
-        if (type === 'data') {
-            if (multiSupport)
-                this.$label[0].textContent = 'MULTIPLE DATA VARIABLES (' + this.model.columns.length + ')';
-            else
-                this.$label[0].textContent = 'DATA VARIABLE';
-        }
-        else if (type === 'computed') {
-            if (multiSupport)
-                this.$label[0].textContent = 'MULTIPLE COMPUTED VARIABLES (' + this.model.columns.length + ')';
-            else
-                this.$label[0].textContent = 'COMPUTED VARIABLE';
-        }
-        else if (type === 'recoded') {
-            if (multiSupport)
-                this.$label[0].textContent = 'MULTIPLE TRANSFORMED VARIABLES (' + this.model.columns.length + ')';
-            else
-                this.$label[0].textContent = 'TRANSFORMED VARIABLE';
-        }
-        else if (type === 'output') {
-            if (multiSupport)
-                this.$label[0].textContent = 'OUTPUT VARIABLES (' + this.model.columns.length + ')';
-            else
-                this.$label[0].textContent = 'OUTPUT VARIABLE';
-        }
+        if (type === 'data')
+                this.$label[0].textContent = n_('Data Variable', 'Multiple Data Variables ({n})', multiSupport ? this.model.columns.length : 1);
+        else if (type === 'computed')
+                this.$label[0].textContent = n_('Computed Variable', 'Multiple Computed Variables ({n})', multiSupport ? this.model.columns.length : 1);
+        else if (type === 'recoded')
+                this.$label[0].textContent = n_('Transformed Variable', 'Multiple Transformed Variables ({n})', multiSupport ? this.model.columns.length : 1);
+        else if (type === 'output')
+                this.$label[0].textContent = n_('Output Variable', 'Multiple Output Variables ({n})', multiSupport ? this.model.columns.length : 1);
         else if (type === 'filter') {
-            this.$label[0].textContent = 'ROW FILTERS';
+            this.$label[0].textContent = _('Row Filters');
         }
     },
     attach() {
