@@ -21,7 +21,7 @@ var ProgressBar = SilkyView.extend({
         html += '<div style="position: absolute ; top: 0 ; left: 0 ; width: 100% ; height: 100% ; display: table ; pointer-events:none;">';
         html += '   <div style="display: table-cell ; vertical-align: middle ; text-align: center ; pointer-events:none;">';
         html += '       <div class="silky-progressbar-content" style="display: inline-block; pointer-events: all;">';
-        html += '           <div class="silky-progressbar-task">Loading</div>';
+        html += `           <div class="silky-progressbar-task">${_('Loading')}</div>`;
         html += '           <div class="silky-progressbar-bar-back">';
         html += '               <div class="silky-progressbar-bar-bar"></div>';
         html += '           </div>';

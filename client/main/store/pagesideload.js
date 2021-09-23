@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -25,7 +24,7 @@ const PageSideload = Backbone.View.extend({
     async _dropClicked(event) {
         if (host.isElectron) {
 
-            let filters = [ { name: 'jamovi modules', extensions: ['jmo']} ];
+            let filters = [ { name: _('jamovi modules'), extensions: ['jmo']} ];
             let result = await host.showOpenDialog({ filters });
 
             if ( ! result.cancelled) {
@@ -42,7 +41,7 @@ const PageSideload = Backbone.View.extend({
     },
     _installSuccess() {
         this.trigger('notification', new Notify({
-            title: 'Module installed successfully',
+            title: _('Module installed successfully'),
             message: '',
             duration: 3000,
             type: 'success'
@@ -52,7 +51,7 @@ const PageSideload = Backbone.View.extend({
     _installFailure(error) {
         this.trigger('notification', new Notify({
             message: error.message,
-            title: 'Unable to install module',
+            title: _('Unable to install module'),
             duration: 4000,
             type: 'error'
         }));

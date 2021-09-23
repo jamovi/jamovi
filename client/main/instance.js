@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -113,7 +112,7 @@ const Instance = Backbone.Model.extend({
         let coms = this.attributes.coms;
 
         let progress = new Notify({
-            title: 'Importing',
+            title: _('Importing'),
             duration: 0,
         });
 
@@ -130,8 +129,8 @@ const Instance = Backbone.Model.extend({
             progress.dismiss();
             this._readDataset(false);
             this._notify({
-                message: 'File imported',
-                cause: 'Import successful',
+                message: _('File imported'),
+                cause:  _('Import successful'),
             });
         }, (error) => {
             progress.dismiss();
@@ -158,7 +157,7 @@ const Instance = Backbone.Model.extend({
 
                 if (file instanceof File) {
 
-                    setProgress({ title: 'Uploading', p: 0, n: 0 });
+                    setProgress({ title: _('Uploading'), p: 0, n: 0 });
 
                     let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
                     if (options.title)
@@ -198,7 +197,7 @@ const Instance = Backbone.Model.extend({
                     return { 'status': 'OK' };
 
                 if (response.status !== 200)
-                    throw new JError('Unable to open', { cause: response.statusText });
+                    throw new JError(_('Unable to open'), { cause: response.statusText });
 
                 const reader = response.body.getReader();
                 const utf8Decoder = new TextDecoder('utf-8');
@@ -224,7 +223,7 @@ const Instance = Backbone.Model.extend({
 
                     if (message && message.status === 'in-progress') {
                         if ( ! message.title)
-                            message.title = 'Opening';
+                            message.title = _('Opening');
                         setProgress(message);
                     }
 
@@ -236,8 +235,8 @@ const Instance = Backbone.Model.extend({
                     document.cookie = message['set-cookie'];
 
                 if ( ! message || message.status !== 'OK') {
-                    let title = (message && message.title) ? message.title : 'Unable to open';
-                    let cause = (message && message.message) ? message.message : 'Unexpected error';
+                    let title = (message && message.title) ? message.title : _('Unable to open');
+                    let cause = (message && message.message) ? message.message : _('Unexpected error');
                     let status = (message && message.status) ? message.status : 'error';
                     let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
                     let error = new JError(title, {
@@ -338,7 +337,7 @@ const Instance = Backbone.Model.extend({
             request.instanceId = this._instanceId;
 
             let progress = new Notify({
-                title: 'Saving',
+                title: _('Saving'),
                 duration: 0
             });
 
@@ -371,8 +370,8 @@ const Instance = Backbone.Model.extend({
                 if (options.export) {
 
                     if (host.isElectron) {
-                        status.message = 'Exported';
-                        status.cause = `Exported to '${ filename }'`;
+                        status.message = _('Exported');
+                        status.cause = _(`Exported to '{filename}'`, {filename: filename});
                     }
                     else {
                         // don't display a notification when in the browser
@@ -385,8 +384,8 @@ const Instance = Backbone.Model.extend({
                     this.set('title', info.title);
                     this.set('saveFormat', info.saveFormat);
                     this._dataSetModel.set('edited', false);
-                    status.message = 'File Saved';
-                    status.cause = `Saved to '${ filename }'`;
+                    status.message = _('File Saved');
+                    status.cause = _(`Saved to '{filename}'`, {filename: filename});
                 }
 
                 if (response.error) {
@@ -400,14 +399,14 @@ const Instance = Backbone.Model.extend({
             }
             else {
                 if (options.overwrite === false && info.fileExists) {
-                    let response = window.confirm(`The file '${ path.basename(filePath) }' already exists. Overwrite this file?`, 'Confirm overwite');
+                    let response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, {filename: path.basename(filePath)}), _('Confirm overwite'));
                     if (response)
                         return this.save(filePath, Object.assign({}, options, { overwrite: true }), true);
                     else
                         return Promise.reject();  // cancelled
                 }
                 else {
-                    Promise.reject('File save failed.');
+                    Promise.reject(_('File save failed.'));
                 }
             }
 
@@ -417,7 +416,7 @@ const Instance = Backbone.Model.extend({
             return status;
         }).catch(error => {
             if ( ! recursed && error) // if not cancelled
-                this._notify({ message: 'Save failed', cause: error, type: 'error' });
+                this._notify({ message: _('Save failed'), cause: error, type: 'error' });
             throw error;
         });
     },
@@ -601,7 +600,7 @@ const Instance = Backbone.Model.extend({
                     incAsText: analysisPB.incAsText,
                     references: analysisPB.references,
                     enabled: false,
-                    dependsOn: analysisPB.dependsOn
+                    dependsOn: analysisPB.dependsOn,
                 });
                 if (analysis.results.status !== 3)
                     this._runAnalysis(analysis);
@@ -641,7 +640,7 @@ const Instance = Backbone.Model.extend({
             options: duplicee.options.getValues(),
             results: duplicee.results,
             incAsText: duplicee.incAsText,
-            references: duplicee.references
+            references: duplicee.references,
         });
         this._sendAnalysis(analysis, duplicee);
 
@@ -654,7 +653,7 @@ const Instance = Backbone.Model.extend({
 
         return { '.ppi': ppi, theme: theme, palette: palette };
     },
-    _constructAnalysisRequest(analysis, options) {
+    async _constructAnalysisRequest(analysis, options) {
 
         let coms = this.attributes.coms;
 
@@ -665,6 +664,7 @@ const Instance = Backbone.Model.extend({
         request.revision = analysis.revision;
         request.enabled = analysis.enabled;
         request.index = analysis.index + 1;
+        request.i18n = await analysis.getCurrentI18nCode();
 
         if (options === undefined) {
             if (analysis.isReady)
@@ -691,12 +691,12 @@ const Instance = Backbone.Model.extend({
 
         return coms.sendP(message);
     },
-    _runAnalysis(analysis, changed) {
+    async _runAnalysis(analysis, changed) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
         analysis.revision++;
-        let request = this._constructAnalysisRequest(analysis);
+        let request = await this._constructAnalysisRequest(analysis);
         request.perform = 0; // INIT
 
         if (changed)
@@ -704,26 +704,26 @@ const Instance = Backbone.Model.extend({
 
         this._sendAnalysisRequest(request, analysis);
     },
-    _sendAnalysis(analysis, duplicee) {
+    async _sendAnalysis(analysis, duplicee) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
         let request = null;
         if (duplicee !== undefined) {
-            request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
+            request = await this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
             request.perform = 7; // DUPLICATE
         }
         else {
-            request = this._constructAnalysisRequest(analysis);
+            request = await this._constructAnalysisRequest(analysis);
             request.perform = 0; // INIT
         }
 
         this._sendAnalysisRequest(request, analysis);
     },
-    deleteAnalysis(analysis) {
+    async deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
-        let request = this._constructAnalysisRequest(analysis);
+        let request = await this._constructAnalysisRequest(analysis);
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request, analysis);
     },
@@ -780,7 +780,7 @@ const Instance = Backbone.Model.extend({
                     references: response.references,
                     enabled: response.enabled,
                     index: response.index - 1,
-                    dependsOn: response.dependsOn
+                    dependsOn: response.dependsOn,
                 });
 
                 /*for (let current of this._analyses) {

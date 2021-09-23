@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-const _ = require('underscore');
+const underscore = require('underscore');
 Backbone.$ = $;
 
 const Notif = Backbone.Model.extend({
@@ -28,14 +28,14 @@ const View = Backbone.View.extend({
 
         this.nextId = 1;
 
-        this.templ = _.template(`
+        this.templ = underscore.template(`
             <div class="jmv-ribbon-notif" data-id="<%= get('id') %>">
                 <div class="inner">
                     <div class="message">
                         <%=get('text')%>
                     </div>
                     <div class="options">
-                        <% _.each(get('options'), (option) => { %>
+                        <% underscore.each(get('options'), (option) => { %>
                             <button
                                 data-id="<%= get('id') %>"
                                 data-name="<%= option.name %>"

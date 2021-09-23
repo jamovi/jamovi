@@ -1,7 +1,7 @@
 
 'use strict';
 
-const _ = require('underscore');
+const underscore = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -17,7 +17,7 @@ const VariableModel = Backbone.Model.extend({
         this.on('change', event => {
             let changes = false;
             for (let name in this.original) {
-                if ( ! _.isEqual(this.attributes[name], this.original[name])) {
+                if ( ! underscore.isEqual(this.attributes[name], this.original[name])) {
                     changes = true;
                     this._hasChanged[name] = true;
                 }
