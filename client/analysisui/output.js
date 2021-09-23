@@ -1,7 +1,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const OptionControl = require('./optioncontrol');
 const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
@@ -31,6 +30,8 @@ const Output = function(params) {
         let label = this.getPropertyValue('label');
         if (label === null)
             label = this.getPropertyValue('name');
+
+        label = this.translate(label);
 
         let $checkbox = $('<label style="white-space: nowrap;"></label>');
         this.$input = $('<input class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');

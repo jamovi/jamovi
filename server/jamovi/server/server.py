@@ -142,6 +142,51 @@ class ModuleAssetHandler(RequestHandler):
             self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             self.write(content)
 
+class ModuleI18nCodes(RequestHandler):
+    def get(self, module_name):
+
+        content = None
+        try:
+            try:
+                module_path = Modules.instance().get(module_name).path
+                manifest_path = os.path.join(module_path, 'i18n', 'manifest.json')
+                with open(manifest_path, 'rb') as file:
+                    content = file.read()
+            except (KeyError, FileNotFoundError):
+                raise
+            except Exception as e:
+                log.exception(e)
+        except Exception as e:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write(str(e))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
+            self.write(content)
+
+class ModuleI18nDescriptor(RequestHandler):
+
+    def get(self, module_name, code):
+        content = None
+        try:
+            try:
+                module_path = Modules.instance().get(module_name).path
+                defn_path = os.path.join(module_path, 'i18n', code + '.json')
+                with open(defn_path, 'rb') as file:
+                    content = file.read()
+            except (KeyError, FileNotFoundError):
+                raise
+            except Exception as e:
+                log.exception(e)
+        except Exception as e:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write(str(e))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
+            self.write(content)
 
 class ModuleDescriptor(RequestHandler):
 
@@ -488,6 +533,7 @@ class Server:
         await Modules.instance().read()
 
         client_path = conf.get('client_path')
+        i18n_path = conf.get('i18n_path')
         coms_path   = 'jamovi.proto'
 
         session_path = os.path.join(self._spool_path, self._session_id)
@@ -523,10 +569,15 @@ class Server:
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
             (r'/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
+            (r'/modules/([0-9a-zA-Z]+)/i18n/([a-z]{2}(?:-[a-z]{2})?)', ModuleI18nDescriptor),
+            (r'/modules/([0-9a-zA-Z]+)/i18n', ModuleI18nCodes),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
+            (r'/i18n/(.*)', StaticFileHandler, {
+                'path': os.path.join(i18n_path, 'build'),
+                'default_filename': 'manifest.json' }),
             (r'/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
             (r'/[a-f0-9-]+/()', StaticFileHandler, {
