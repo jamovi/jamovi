@@ -1,7 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const Format = require('./format.js');
 
 const FormatDef = {
@@ -15,12 +14,13 @@ const FormatDef = {
             case 'boolean':
                 return FormatDef.bool;
             case 'object':
-                _.each(this, function(value, key, list) {
+                for (let key in this) {
+                    let value = this[key];
                     if (value.isValid) {
                         if (value.isValid(raw))
                             return value;
                     }
-                });
+                }
                 break;
         }
         return null;

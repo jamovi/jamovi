@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -13,6 +12,7 @@ const yaml = require('js-yaml');
 
 const host = require('./host');
 const Version = require('./utils/version');
+const I18n = require('../common/i18n');
 
 class ModuleError extends Error {}
 class ModuleNotFoundError extends ModuleError {}
@@ -113,9 +113,14 @@ const ModulesBase = Backbone.Model.extend({
                 minAppVersion: modulePB.minAppVersion,
                 visible: modulePB.visible,
                 incompatible: modulePB.incompatible,
+                getTranslator: () => { return (value) => { return value; }; }
             };
 
             module.ops = this._determineOps(module);
+
+            if (this.create)
+                this.create(module);
+
             modules.push(module);
         }
 
@@ -134,7 +139,13 @@ class Module {
         this._version = version;
         this._moduleDefn = undefined;
         this._analysisDefns = { };
+        this._i18nDefns = { };
         this._status = 'none';
+        this._i18nReady = this._loadI18n();
+        this.loaded = false;
+    }
+
+    load() {
         this._ready = this._load(false);
     }
 
@@ -143,6 +154,7 @@ class Module {
     }
 
     async _load(refresh) {
+        this.loaded = true;
         let version = await host.version;
         let url = `../modules/${ this._ns }`;
         if (this._version)
@@ -173,7 +185,27 @@ class Module {
         }
     }
 
+    async _loadI18n() {
+        this.currentI18nDef = await this.getI18nDefn();
+    }
+
+    translate(key) {
+        if (key.trim() === '')
+            return key;
+
+        if ( ! this.currentI18nDef)
+            return key;
+
+        let value = this.currentI18nDef.locale_data.messages[key.trim()];
+        if (value === null || value === undefined || value[0] === '')
+            return key;
+        else
+            return value[0];
+    }
+
     async getDefn(name) {
+        if (this.loaded === false)
+            this.load();
         await this._ready;
         if (this._status == 'corrupt') {
             throw new ModuleCorruptError();
@@ -215,6 +247,85 @@ class Module {
             throw new Error('shouldn\'t get here');
         }
     }
+
+    async getI18nCodes() {
+
+        let codes = this._i18nCodes;
+        if (codes === undefined){
+            let defnProm = this._i18nCodes;
+            if (defnProm === undefined) {
+                defnProm = this._i18nCodes = (async() => {
+
+                    let url = `../modules/${ this._ns }/i18n`;
+                    let response = await fetch(url);
+                    if (response.ok) {
+                        try {
+                            return await response.json();
+                        }
+                        catch (e) {
+                            throw new ModuleCorruptError();
+                        }
+                    }
+                    else {
+                        return [ ];
+                    }
+                })();
+            }
+            let codes = await defnProm;
+            return codes;
+        }
+        return codes;
+
+    }
+
+    async getCurrentI18nCode() {
+        let code = this.currentI18nCode;
+        if ( ! code) {
+            let codes = await this.getI18nCodes();
+            code = I18n.findBestMatchingLocale([I18n.locale], codes);
+            if (code === null) {
+                if (codes.includes('en'))
+                    code = 'en';
+                else
+                    code = '';
+            }
+            this.currentI18nCode = code;
+        }
+        return code;
+    }
+
+    async getI18nDefn() {
+
+            let code = await this.getCurrentI18nCode();
+            if (code === null || code === '')
+                return '';
+
+            let defn = this._i18nDefns[code];
+            if (defn === undefined){
+                let defnProm = this._i18nDefns[code];
+                if (defnProm === undefined) {
+                    defnProm = this._i18nDefns[code] = (async() => {
+
+                        let url = `../modules/${ this._ns }/i18n/${ code }`;
+                        let response = await fetch(url);
+                        if (response.ok) {
+                            try {
+                                return await response.json();
+                            }
+                            catch (e) {
+                                throw new ModuleCorruptError();
+                            }
+                        }
+                        else {
+                            return '';
+                        }
+                    })();
+                }
+                let defn = await defnProm;
+                return defn;
+            }
+            return defn;
+        }
 }
 
 const Available = ModulesBase.extend({
@@ -278,7 +389,7 @@ const Modules = ModulesBase.extend({
         this._moduleDefns = { };
         this._preloadedJMV = false;
 
-        this._instance.settings().on('change:modules', (modules) => {
+        this._instance.settings().on('change:modules', async (modules) => {
             this._setup('', modules.changed.modules);
 
             // preload jmv
@@ -292,6 +403,13 @@ const Modules = ModulesBase.extend({
             this.trigger('moduleInstalled', module);
         });
     },
+    create(info) {
+        info.getTranslator = () => {
+            return this.getTranslator(info.name);
+        };
+
+        this._moduleDefns[info.name] = new Module(info.name, Version.stringify(info.version));
+    },
     available() {
         return this._available;
     },
@@ -300,8 +418,7 @@ const Modules = ModulesBase.extend({
         if (module)
             module.reload();
     },
-    async getDefn(ns, name) {
-
+    _createModule(ns) {
         let version = '';
         for (let mod of this.attributes.modules) {
             if (mod.name === ns) {
@@ -310,12 +427,52 @@ const Modules = ModulesBase.extend({
             }
         }
 
+        let module = new Module(ns, version);
+        this._moduleDefns[ns] = module;
+
+        return module;
+    },
+    async getDefn(ns, name) {
         let module = this._moduleDefns[ns];
         if ( ! module)
-            module = this._moduleDefns[ns] = new Module(ns, version);
-        let defn = await module.getDefn(name);
-        return defn;
+            module = this._createModule(ns);
+
+        return await module.getDefn(name);
     },
+
+    async getTranslator(ns) {
+        let module = this._moduleDefns[ns];
+        if ( ! module)
+            module = this._createModule(ns);
+
+        await module._i18nReady;
+        return module.translate.bind(module);
+    },
+
+    async getI18nCodes(ns) {
+        let module = this._moduleDefns[ns];
+        if ( ! module)
+            module = this._createModule(ns);
+
+        return await module.getI18nCodes();
+    },
+
+    async getCurrentI18nCode(ns) {
+        let module = this._moduleDefns[ns];
+        if ( ! module)
+            module = this._createModule(ns);
+
+        return await module.getCurrentI18nCode();
+    },
+
+    async getI18nDefn(ns) {
+        let module = this._moduleDefns[ns];
+        if ( ! module)
+            module = this._createModule(ns);
+
+        return await module.getI18nDefn();
+    },
+
     _determineOps(module) {
 
         let showHide = [ 'show' ];

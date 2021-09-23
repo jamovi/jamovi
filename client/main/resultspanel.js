@@ -1,7 +1,7 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
+const underscore = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -251,7 +251,7 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable.update();
         let refNums = this._refsTable.getNumbers();
         for (let name in oldNums) {
-            if ( ! _.isEqual(refNums[name], oldNums[name]))
+            if ( ! underscore.isEqual(refNums[name], oldNums[name]))
                 modulesWithRefChanges.push(name);
         }
 
@@ -401,21 +401,21 @@ const ResultsPanel = Backbone.View.extend({
 
         let entries = [
             {
-                label: 'References',
+                label: _('References'),
                 type: 'copyRef',
-                title: 'References',
+                title: _('References'),
                 options: [
                     {
-                        label: 'Copy',
+                        label: _('Copy'),
                         op: 'refsCopy',
                         enabled: nRefsSelected > 0,
                     },
                     {
-                        label: 'Select all',
+                        label: _('Select all'),
                         op: 'refsSelectAll',
                     },
                     {
-                        label: 'Clear selection',
+                        label: _('Clear selection'),
                         enabled: nRefsSelected > 0,
                         op: 'refsClearSelection',
                     },
@@ -548,7 +548,7 @@ const ResultsPanel = Backbone.View.extend({
             let address = entry.address.slice();
             let options = entry.options.slice();
             if (address.length === 0)
-                options.push({ label: 'Remove', splitter: true });
+                options.push({ label: _('Remove'), splitter: true });
             address.unshift(id);
             let e = {
                 label: entry.type,
@@ -562,13 +562,13 @@ const ResultsPanel = Backbone.View.extend({
 
         // Add root
         entries.unshift({
-            label: 'All',
+            label: _('All'),
             type: 'All',
             address: [ ],
             options: [
-                { label: 'Copy' },
-                { label: 'Export' },
-                { label: 'Remove', splitter: true },
+                { label: _('Copy') },
+                { label: _('Export') },
+                { label: _('Remove'), splitter: true },
             ],
             title: 'All',
         });
@@ -656,8 +656,8 @@ const ResultsPanel = Backbone.View.extend({
             }).then(() => {
 
                 let note = new Notify({
-                    title: 'Copied',
-                    message: 'The content has been copied to the clipboard',
+                    title: _('Copied'),
+                    message: _('The content has been copied to the clipboard'),
                     duration: 2000,
                     type: 'success'
                 });
@@ -688,12 +688,12 @@ const ResultsPanel = Backbone.View.extend({
 
             if (event.target.type === 'Image') {
                 let options = {
-                    title: 'Export image',
+                    title: _('Export image'),
                     filters: [
-                        { name: 'PDF', description: 'PDF Document (.pdf)', extensions: [ 'pdf' ] },
-                        { name: 'PNG', description: 'PNG Image (.png)', extensions: [ 'png' ] },
-                        { name: 'SVG', description: 'SVG Image (.svg)', extensions: [ 'svg' ] },
-                        { name: 'EPS', description: 'EPS Image (.eps)', extensions: [ 'eps' ] }, ]
+                        { name: 'PDF', description: _('PDF Document {ext}', { ext: '(.pdf)' }), extensions: [ 'pdf' ] },
+                        { name: 'PNG', description: _('PNG Image {ext}', { ext: '(.png)' }), extensions: [ 'png' ] },
+                        { name: 'SVG', description: _('SVG Image {ext}', { ext: '(.svg)' }), extensions: [ 'svg' ] },
+                        { name: 'EPS', description: _('EPS Image {ext}', { ext: '(.eps)' }), extensions: [ 'eps' ] }, ]
                 };
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)
@@ -717,13 +717,13 @@ const ResultsPanel = Backbone.View.extend({
                 let options = {
                     title: 'Export results',
                     filters: [
-                        { name: 'PDF',  description: 'PDF Document (.pdf)',    extensions: [ 'pdf' ] },
-                        { name: 'HTML', description: 'Web Page (.html, .htm)', extensions: ['html', 'htm'] },
+                        { name: 'PDF',  description: _('PDF Document {ext}', { ext: '(.pdf)' }),    extensions: [ 'pdf' ] },
+                        { name: 'HTML', description: _('Web Page {ext}', { ext: '(.html, .htm)' }), extensions: ['html', 'htm'] },
                     ]
                 };
 
                 if (part === '')
-                    options.filters.push({ name: 'LaTeX bundle (.zip)', extensions:  [ 'zip' ] });
+                    options.filters.push({ name: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)
@@ -758,8 +758,8 @@ const ResultsPanel = Backbone.View.extend({
                 text: this._refsTable.asText(),
             }).then(() => {
                 let note = new Notify({
-                    title: 'Copied',
-                    message: 'The content has been copied to the clipboard',
+                    title: _('Copied'),
+                    message: _('The content has been copied to the clipboard'),
                     duration: 2000,
                     type: 'success'
                 });

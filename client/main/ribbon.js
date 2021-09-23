@@ -95,8 +95,8 @@ const RibbonView = Backbone.View.extend({
                 this._refresh();
         } , this);
         this.model.modules().on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
-        this.model.on('change:selectedTab', () => {
-            this._refresh();
+        this.model.on('change:selectedTab', async () => {
+            await this._refresh();
             if (this.selectedTab)
                 this.selectedTab.$el.removeClass('selected');
 
@@ -195,7 +195,7 @@ const RibbonView = Backbone.View.extend({
                 button.showModule(name);
         }
     },
-    _refresh() {
+    async _refresh() {
 
         this.buttons = [ ];
         let menuShown = (menu) => this._menuShown(menu);
@@ -211,7 +211,7 @@ const RibbonView = Backbone.View.extend({
         if (tab.getRibbonItems === undefined)
             return;
 
-        let items = tab.getRibbonItems();
+        let items = await tab.getRibbonItems();
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             if (item.setParent)
