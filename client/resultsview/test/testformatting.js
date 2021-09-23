@@ -1,7 +1,6 @@
 'use strict';
 
 var expect = require('chai').expect;
-var _ = require('underscore');
 var mocha = require('mocha');
 
 
@@ -29,7 +28,7 @@ var tests = [
 tests.forEach(function(test) {
 
     mocha.describe('determFormat(' + JSON.stringify(test.v) + ')', function() {
-    
+
         mocha.it('should be ' + JSON.stringify(test.r), function() {
             expect(determFormat(test.v, test.sf)).to.deep.equal(test.r);
         });
@@ -47,11 +46,11 @@ tests = [
     {v : -1e-5 , f : { dp : 2, expw: 3 }, r : "-1.00e  -5" },
     {v : 0 , f : { dp : 2, expw: 0 }, r : "0.00" }
     ];
-    
+
     tests.forEach(function(test) {
 
     mocha.describe('determFormat(' + JSON.stringify(test.v) + ')', function() {
-    
+
         mocha.it('should be ' + JSON.stringify(test.r), function() {
             expect(format(test.v, test.f)).to.eql(test.r);
         });

@@ -11,7 +11,7 @@ const TitledGridControl = function(params) {
         let useSingleCell = this.getPropertyValue("useSingleCell");
         if (useSingleCell && baseFunction !== null)
             return baseFunction.call(this, name);
-            
+
         return { rows: 1, columns: 2 };
     });
 };

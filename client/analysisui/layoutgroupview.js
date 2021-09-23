@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 
 const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
@@ -35,6 +34,8 @@ const LayoutGroupView = function(params) {
 
     if (groupText === null)
         groupText = "";
+
+    groupText = this.translate(groupText);
 
     let classes = groupText === "" ? "silky-control-label-empty" : "";
     this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;"><span>' + groupText + '</span></div>');
@@ -80,9 +81,15 @@ const LayoutGroupView = function(params) {
         };
     }
 
+    this.onI18nChanged = function() {
+        this.setLabel(this.getPropertyValue('label'));
+    };
+
     this.setLabel = function(value) {
         if (value === null)
             value = '';
+
+        value = this.translate(value);
 
         this.$_subel.html('<span>' + value + '</span>');
         this.$_subel.trigger("contentchanged");

@@ -140,23 +140,24 @@ class Instance:
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
         elif path.startswith('{{Examples}}'):
-            examples_path = conf.get('examples_path')
+            modules = Modules.instance()
             if path == '{{Examples}}':
-                nor_path = examples_path
-            elif os.path.dirname(path) == '{{Examples}}':
-                # {{Examples}}/file_name.ext
-                nor_path = path.replace('{{Examples}}', examples_path)
+                module = modules['jmv']
+                nor_path = posixpath.join(module.path, 'data')
             else:
+                if os.path.dirname(path) == '{{Examples}}':
+                    module_name = 'jmv'
+                else:
+                    module_name = os.path.basename(os.path.dirname(path))
                 # {{Examples}}/module_name/[file_name.ext]
                 file_name = os.path.basename(path)
-                module_name = os.path.basename(os.path.dirname(path))
-                modules = Modules.instance()
                 try:
                     module = modules[module_name]
                     nor_path = posixpath.join(module.path, 'data', file_name)
                 except KeyError:
                     # return something default-y, let somewhere else error
-                    nor_path = path.replace('{{Examples}}', examples_path)
+                    module = modules['jmv']
+                    nor_path = posixpath.join(module.path, 'data')
 
         return nor_path
 
@@ -533,26 +534,24 @@ class Instance:
                     raise PermissionError()
 
                 if path == '{{Examples}}' or path == '{{Examples}}/':
-
-                    index_path = posixpath.join(conf.get('examples_path'), 'index.yaml')
-                    with open(index_path, encoding='utf-8') as index:
-                        for dataset in yaml.safe_load(index):
-                            entry = response.contents.add()
-                            entry.name = dataset['name']
-                            entry.path = posixpath.join('{{Examples}}', dataset['path'])
-                            entry.type = jcoms.FSEntry.Type.Value('FILE')
-                            entry.description = dataset['description']
-                            entry.isExample = True
-
                     for module in Modules.instance():
                         if module.datasets:
-                            entry = response.contents.add()
-                            entry.name = module.title
-                            entry.path = posixpath.join('{{Examples}}', module.name)
-                            entry.type = jcoms.FSEntry.Type.Value('FOLDER')
-                            if module.datasets_license:
-                                entry.license = module.datasets_license.name
-                                entry.licenseUrl = module.datasets_license.url
+                            if module.name == 'jmv':
+                                for dataset in module.datasets:
+                                    entry = response.contents.add()
+                                    entry.name = dataset.name
+                                    entry.path = posixpath.join('{{Examples}}', 'jmv', dataset.path)
+                                    entry.description = dataset.description
+                                    entry.tags[:] = dataset.tags
+                                    entry.isExample = True
+                            else:
+                                entry = response.contents.add()
+                                entry.name = module.title
+                                entry.path = posixpath.join('{{Examples}}', module.name)
+                                entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                                if module.datasets_license:
+                                    entry.license = module.datasets_license.name
+                                    entry.licenseUrl = module.datasets_license.url
                 else:
                     module_name = os.path.basename(path)
                     modules = Modules.instance()
@@ -1369,6 +1368,7 @@ class Instance:
                         request.analysisId,
                         request.name,
                         request.ns,
+                        request.i18n,
                         request.options,
                         None if request.index == 0 else request.index - 1)
 
@@ -3074,17 +3074,6 @@ class Instance:
             recent_pb.name = recent['name']
             recent_pb.path = recent['path']
             recent_pb.location = recent['location']
-
-        try:
-            path = posixpath.join(conf.get('examples_path'), 'index.yaml')
-            with open(path, encoding='utf-8') as index:
-                for example in yaml.safe_load(index):
-                    example_pb = response.examples.add()
-                    example_pb.name = example['name']
-                    example_pb.path = '{{Examples}}/' + example['path']
-                    example_pb.description = example['description']
-        except Exception as e:
-            log.exception(e)
 
         settings = Settings.retrieve('modules')
         hidden_mods = settings.get('hidden', [ ])
