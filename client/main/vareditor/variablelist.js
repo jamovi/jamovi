@@ -12,12 +12,12 @@ const VariableList = function() {
     this.items = [];
 
     this.$el = $('<div class="jmv-variable-list"></div>');
-    this.$none =$('<div class="jmv-variable-list-item none-item" data-id="0">None</div>').appendTo(this.$el);
+    this.$none =$(`<div class="jmv-variable-list-item none-item" data-id="0">${_('None')}</div>`).appendTo(this.$el);
 
     this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
 
     this.$none.on('click', (event) => {
-        this.$el.trigger('selected-variable', { name: 'None', id: 0 });
+        this.$el.trigger('selected-variable', { name: _('None'), id: 0 });
     });
 
     this.setParent = function($element) {

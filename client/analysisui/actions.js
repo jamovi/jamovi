@@ -1,7 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const FormatDef = require('./formatdef');
 const SuperClass = require('../common/superclass');
 const RequestDataSupport = require('./requestdatasupport');
@@ -533,7 +532,7 @@ SuperClass.create(View);
 View.extend = function(params) {
     return function() {
         View.extendTo(this);
-        _.extend(this, params);
+        Object.assign(this, params);
         if (this.events !== undefined)
             this.events = this._baseEvents.concat(this.events);
         else

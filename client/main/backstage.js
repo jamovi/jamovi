@@ -6,7 +6,6 @@
 
 const SilkyView = require('./view');
 const keyboardJS = require('keyboardjs');
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 const path = require('path');
@@ -19,6 +18,7 @@ const Notify = require('./notification');
 const host = require('./host');
 const ActionHub = require('./actionhub');
 const { s6e } = require('../common/utils');
+
 
 
 function crc16(s) {
@@ -53,8 +53,8 @@ const FSEntryListModel = Backbone.Model.extend({
         wdType: 'main',
         status: 'loading'
     },
-    requestOpen : function(filePath, type) {
-        this.trigger('dataSetOpenRequested', filePath, type, this.get('wdType'));
+    requestOpen : function(filePath, title, type) {
+        this.trigger('dataSetOpenRequested', filePath, title, type, this.get('wdType'));
     },
     requestImport : function(paths) {
         this.trigger('dataSetImportRequested', paths, FSItemType.File, this.get('wdType'));
@@ -126,7 +126,8 @@ const FSEntryListView = SilkyView.extend({
     _itemClicked : function(event) {
         let target = event.currentTarget;
         let filePath = $(target).attr('data-path');
-        this.model.requestOpen(filePath, FSItemType.File);
+        let fileName = $(target).attr('data-name');
+        this.model.requestOpen(filePath, fileName, FSItemType.File);
     }
 });
 
@@ -335,7 +336,7 @@ const FSEntryBrowserView = SilkyView.extend({
 
                 html += '       <div class="silky-bs-fslist-browse-button">';
                 html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
-                html += '           <span>Browse</span>';
+                html += `           <span>${_('Browse')}</span>`;
                 html += '       </div>';
             }
 
@@ -450,14 +451,14 @@ const FSEntryBrowserView = SilkyView.extend({
                     try {
                         let url = new URL(searchValue);
                         let name = path.basename(decodeURIComponent(url.pathname));
-                        let description = `An online data set hosted by ${ decodeURIComponent(url.hostname) }`;
+                        let description = _('An online data set hosted by {hostname}', { hostname : decodeURIComponent(url.hostname) });
 
                         items = [{
                             name: name,
                             path: searchValue,
                             type: FSItemType.File,
                             isExample: false,
-                            tags: ['Online data set'],
+                            tags: [_('Online data set')],
                             description: description,
                             isUrl: true,
                             skipExtensionCheck: true,
@@ -563,7 +564,7 @@ const FSEntryBrowserView = SilkyView.extend({
 
             if (this.$items.length === 0) {
                 this.clearSelection();
-                this.$itemsList.append("<span>No recognised data files were found.</span>");
+                this.$itemsList.append(`<span>${_('No recognised data files were found.')}</span>`);
             }
             else
                 this._setSelection(this.$items[0]);
@@ -604,9 +605,10 @@ const FSEntryBrowserView = SilkyView.extend({
 
         let itemType = $target.data('type');
         let itemPath = $target.data('path');
+        let itemTitle = $target.data('name');
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
             this.clearSelection();
-            this.model.requestOpen(itemPath, itemType);
+            this.model.requestOpen(itemPath, itemTitle, itemType);
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
             if (multiSelect && this._selectedIndices.length > 0 && modifier) {
@@ -713,8 +715,9 @@ const FSEntryBrowserView = SilkyView.extend({
                     let $target = this.$items[this._selectedIndices[0]];
                     let itemType = $target.data('type');
                     let itemPath = $target.data('path');
+                    let itemTitle = $target.data('name');
                     if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-                        this.model.requestOpen(itemPath, itemType);
+                        this.model.requestOpen(itemPath, itemTitle, itemType);
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
                         this.model.requestImport(this._getSelectedPaths());
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
@@ -778,10 +781,11 @@ const FSEntryBrowserView = SilkyView.extend({
         let $target = $(event.currentTarget);
         let itemType = $target.data('type');
         let itemPath = $target.data('path');
+        let itemTitle = $target.data('name');
         if (itemType === FSItemType.File)
             this._setMultiMode(false);
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-            this.model.requestOpen(itemPath, itemType);
+            this.model.requestOpen(itemPath, itemTitle, itemType);
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
             this.model.requestImport([itemPath]);
         else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
@@ -863,7 +867,7 @@ const FSEntryBrowserView = SilkyView.extend({
         }
     },
     _goToFolder: function(dirPath) {
-        this.model.requestOpen(dirPath, FSItemType.Folder);
+        this.model.requestOpen(dirPath, null, FSItemType.Folder);
     },
     _calcBackDirectory: function(filePath, type) {
         let index = -1;
@@ -963,20 +967,20 @@ const BackstageModel = Backbone.Model.extend({
         this.addToWorkingDirData(this._examplesListModel);
 
         let openExts = [
-            { description: 'Data files', extensions: [
+            { description: _('Data files'), extensions: [
                 'omv', 'omt', 'csv', 'tsv', 'txt', 'ods', 'xlsx', 'sav', 'zsav', 'por',
                 'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
             ]},
-            { description: 'jamovi files (.omv)', extensions: ['omv'] },
-            { description: 'jamovi templates (.omt)', extensions: ['omt'] },
-            { description: 'CSV (Comma delimited) (.csv, .txt)', extensions: ['csv', 'tsv', 'txt'] },
-            { description: 'Open Document (LibreOffice) (.ods)', extensions: ['ods'] },
-            { description: 'Excel (.xlsx)', extensions: ['xlsx'] },
-            { description: 'SPSS files (.sav, .zsav, .por)', extensions: ['sav', 'zsav', 'por'] },
-            { description: 'R data files (.RData, .RDS)', extensions: ['rdata', 'rds'] },
-            { description: 'Stata files (.dta)', extensions: ['dta'] },
-            { description: 'SAS files (.xpt, .sas7bdat)', extensions: ['xpt', 'sas7bdat'] },
-            { description: 'JASP files (.jasp)', extensions: ['jasp'] },
+            { description: _('jamovi files {ext}', { ext: '(.omv)' }), extensions: ['omv'] },
+            { description: _('jamovi templates {ext}', { ext: '(.omt)' }), extensions: ['omt'] },
+            { description: _('CSV (Comma delimited) {ext}', { ext: '(.csv, .txt)' }), extensions: ['csv', 'tsv', 'txt'] },
+            { description: _('Open Document (LibreOffice) {ext}', { ext: '(.ods)' }), extensions: ['ods'] },
+            { description: _('Excel {ext}', { ext: '(.xlsx)' }), extensions: ['xlsx'] },
+            { description: _('SPSS files {ext}', { ext: '(.sav, .zsav, .por)' }), extensions: ['sav', 'zsav', 'por'] },
+            { description: _('R data files {ext}', { ext: '(.RData, .RDS)' }), extensions: ['rdata', 'rds'] },
+            { description: _('Stata files {ext}', { ext: '(.dta)' }), extensions: ['dta'] },
+            { description: _('SAS files {ext}', { ext: '(.xpt, .sas7bdat)' }), extensions: ['xpt', 'sas7bdat'] },
+            { description: _('JASP files {ext}', { ext: '(.jasp)' }), extensions: ['jasp'] },
         ];
 
         this._pcListModel = new FSEntryListModel();
@@ -998,7 +1002,7 @@ const BackstageModel = Backbone.Model.extend({
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = 'save';
         this._pcSaveListModel.suggestedPath = null;
-        this._pcSaveListModel.fileExtensions = [ { extensions: ['omv'], description: "jamovi file (.omv)" } ];
+        this._pcSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
         this._pcSaveListModel.on('browseRequested', this.tryBrowse, this);
@@ -1009,7 +1013,7 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceSaveListModel.writeOnly = true;
         this._deviceSaveListModel.clickProcess = 'save';
         this._deviceSaveListModel.suggestedPath = null;
-        this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: "jamovi file (.omv)" } ];
+        this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._deviceSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
         this._deviceSaveListModel.on('browseRequested', this.tryBrowse, this);
@@ -1019,18 +1023,18 @@ const BackstageModel = Backbone.Model.extend({
         this._pcExportListModel.clickProcess = 'export';
         this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
-            { extensions: ['pdf'], description: "PDF Document (.pdf)" },
-            { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
-            { extensions: ['omt'], description: 'jamovi template (.omt)' },
-            { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
-            { extensions: ['zip'], description: 'LaTeX bundle (.zip)' },
-            { extensions: ['rds'], description: 'R object (.rds)' },
-            { extensions: ['RData'], description: 'R object (.RData)' },
-            { extensions: ['sav'], description: 'SPSS sav (.sav)' },
-            // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
-            { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
-            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },
-            { extensions: ['dta'], description: 'Stata (.dta)' },
+            { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
+            { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
+            { extensions: ['omt'], description: _('jamovi template {ext}', { ext: '(.omt)' }) },
+            { extensions: ['csv'], description: _('CSV (Comma delimited) {ext}', { ext: '(.csv)' }) },
+            { extensions: ['zip'], description: _('LaTeX bundle {ext}', { ext: '(.zip)' }) },
+            { extensions: ['rds'], description: _('R object {ext}', { ext: '(.rds)' }) },
+            { extensions: ['RData'], description: _('R object {ext}', { ext: '(.RData)' }) },
+            { extensions: ['sav'], description: _('SPSS sav {ext}', { ext: '(.v)' }) },
+            // { extensions: ['por'], description: _('SPSS portable {ext}', { ext: '(.por)' }) },  // crashes?!
+            { extensions: ['sas7bdat'], description: _('SAS 7bdat {ext}', { ext: '(.sas7bdat)' }) },
+            { extensions: ['xpt'], description: _('SAS xpt {ext}', { ext: '(.xpt)' }) },
+            { extensions: ['dta'], description: _('Stata {ext}', { ext: '(.dta)' }) },
         ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
@@ -1042,18 +1046,18 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceExportListModel.writeOnly = true;
         this._deviceExportListModel.suggestedPath = null;
         this._deviceExportListModel.fileExtensions = [
-            { extensions: ['pdf'], description: "PDF Document (.pdf)" },
-            { extensions: ['html', 'htm'], description: "Web Page (.html, .htm)" },
-            { extensions: ['omt'], description: 'jamovi template (.omt)' },
-            { extensions: ['csv'], description: 'CSV (Comma delimited) (.csv)' },
-            { extensions: ['zip'], description: 'LaTeX bundle (.zip)' },
-            { extensions: ['rds'], description: 'R object (.rds)' },
-            { extensions: ['RData'], description: 'R object (.RData)' },
-            { extensions: ['sav'], description: 'SPSS sav (.sav)' },
-            // { extensions: ['por'], description: 'SPSS portable (.por)' },  // crashes?!
-            { extensions: ['sas7bdat'], description: 'SAS 7bdat (.sas7bdat)' },
-            { extensions: ['xpt'], description: 'SAS xpt (.xpt)' },
-            { extensions: ['dta'], description: 'Stata (.dta)' },
+            { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
+            { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
+            { extensions: ['omt'], description: _('jamovi template {ext}', { ext: '(.omt)' }) },
+            { extensions: ['csv'], description: _('CSV (Comma delimited) {ext}', { ext: '(.csv)' }) },
+            { extensions: ['zip'], description: _('LaTeX bundle {ext}', { ext: '(.zip)' }) },
+            { extensions: ['rds'], description: _('R object {ext}', { ext: '(.rds)' }) },
+            { extensions: ['RData'], description: _('R object {ext}', { ext: '(.RData)' }) },
+            { extensions: ['sav'], description: _('SPSS sav {ext}', { ext: '(.sav)' }) },
+            // { extensions: ['por'], description: _('SPSS portable {ext}', { ext: '(.por)' }) },  // crashes?!
+            { extensions: ['sas7bdat'], description: _('SAS 7bdat {ext}', { ext: '(.sas7bdat)' }) },
+            { extensions: ['xpt'], description: _('SAS xpt {ext}', { ext: '(.xpt)' }) },
+            { extensions: ['dta'], description: _('Stata {ext}', { ext: '(.dta)' }) },
         ];
         this._deviceExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._deviceExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
@@ -1113,7 +1117,7 @@ const BackstageModel = Backbone.Model.extend({
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: 'Download', model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._dialogExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1129,7 +1133,7 @@ const BackstageModel = Backbone.Model.extend({
                     title: options.title,
                     places: [
                         {
-                            name: 'thispc', title: 'This PC', model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'), model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._dialogExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1169,12 +1173,12 @@ const BackstageModel = Backbone.Model.extend({
             return [
                 {
                     name: 'new',
-                    title: 'New',
+                    title: _('New'),
                     action: () => { this.requestOpen(''); }
                 },
                 {
                     name: 'open',
-                    title: 'Open',
+                    title: _('Open'),
                     action: () => {
                         /*let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1187,22 +1191,22 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;*/
                     },
                     places: [
-                        /*{ name: 'thispc', title: 'jamovi Cloud', model: this._pcListModel, view: FSEntryBrowserView },*/
-                        { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView },
-                        { name: 'thisdevice', title: 'This Device', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
+                        /*{ name: 'thispc', title: _('jamovi Cloud'), model: this._pcListModel, view: FSEntryBrowserView },*/
+                        { name: 'examples', title: _('Data Library'), model: this._examplesListModel, view: FSEntryBrowserView },
+                        { name: 'thisdevice', title: _('This Device'), action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
                     ]
                 },
                 // {
                 //     name: 'import',
-                //     title: 'Import',
+                //     title: _('Import'),
                 //     places: [
-                //         /*{ name: 'thispc', title: 'jamovi Cloud',  model: this._pcImportListModel, view: FSEntryBrowserView  },*/
-                //         { name: 'thisdevice', title: 'This Device', action: () => { this.tryBrowse(this._pcImportListModel.fileExtensions, 'import'); } }
+                //         /*{ name: 'thispc', title: _('jamovi Cloud'),  model: this._pcImportListModel, view: FSEntryBrowserView  },*/
+                //         { name: 'thisdevice', title: _('This Device'), action: () => { this.tryBrowse(this._pcImportListModel.fileExtensions, 'import'); } }
                 //     ]
                 // },
                 {
                     name: 'saveAs',
-                    title: 'Save As',
+                    title: _('Save As'),
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1213,9 +1217,9 @@ const BackstageModel = Backbone.Model.extend({
                         }
                     },
                     places: [
-                        /*{ name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
+                        /*{ name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
                         {
-                            name: 'thisdevice', title: 'Download', model: this._deviceSaveListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceSaveListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1224,16 +1228,16 @@ const BackstageModel = Backbone.Model.extend({
                 },
                 {
                     name: 'export',
-                    title: 'Export',
+                    title: _('Export'),
                     places: [
                         /*{
-                            name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._pcExportListModel.suggestedPath = this.instance.get('title');
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: 'Download', model: this._deviceExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), model: this._deviceExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1246,12 +1250,12 @@ const BackstageModel = Backbone.Model.extend({
             return [
                 {
                     name: 'new',
-                    title: 'New',
+                    title: _('New'),
                     action: () => { this.requestOpen(''); }
                 },
                 {
                     name: 'open',
-                    title: 'Open',
+                    title: _('Open'),
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1264,13 +1268,13 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: 'This PC', model: this._pcListModel, view: FSEntryBrowserView },
-                        { name: 'examples', title: 'Data Library', model: this._examplesListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), model: this._pcListModel, view: FSEntryBrowserView },
+                        { name: 'examples', title: _('Data Library'), model: this._examplesListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'import',
-                    title: 'Import',
+                    title: _('Import'),
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1283,12 +1287,12 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: 'This PC', model: this._pcImportListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), model: this._pcImportListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'save',
-                    title: 'Save',
+                    title: _('Save'),
                     action: async () => {
                         try {
                             await this.requestSave();
@@ -1303,7 +1307,7 @@ const BackstageModel = Backbone.Model.extend({
                 },
                 {
                     name: 'saveAs',
-                    title: 'Save As',
+                    title: _('Save As'),
                     action: () => {
                         let filePath = this._determineSavePath('main');
                         return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
@@ -1311,15 +1315,15 @@ const BackstageModel = Backbone.Model.extend({
                         });
                     },
                     places: [
-                        { name: 'thispc', title: 'This PC', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'export',
-                    title: 'Export',
+                    title: _('Export'),
                     places: [
                         {
-                            name: 'thispc', title: 'This PC', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'), separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._pcExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1403,7 +1407,7 @@ const BackstageModel = Backbone.Model.extend({
         }
     },
     getCurrentOp: function() {
-        let names = _.pluck(this.attributes.ops, 'name');
+        let names = this.attributes.ops.map(o => o.name);
         let index = names.indexOf(this.attributes.operation);
 
         if (index !== -1)
@@ -1417,7 +1421,7 @@ const BackstageModel = Backbone.Model.extend({
         if (op === null)
             return null;
 
-        let names = _.pluck(op.places, 'name');
+        let names = op.places.map(o => o.name);
         let index = names.indexOf(this.attributes.place);
 
         if (index === -1)
@@ -1437,9 +1441,9 @@ const BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
-    tryOpen: function(filePath, type, wdType) {
+    tryOpen: function(filePath, title, type, wdType) {
         if (type === FSItemType.File)
-            this.requestOpen(filePath);
+            this.requestOpen(filePath, title);
         else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder) {
             wdType = wdType === undefined ? 'main' : wdType;
             this.setCurrentDirectory(wdType, filePath, type)
@@ -1569,7 +1573,7 @@ const BackstageModel = Backbone.Model.extend({
         }
 
         let promise = this.instance.browse(dirPath, extensions);
-        promise = promise.then(response => {
+        promise = promise.then(async response => {
             if (statusTimeout) {
                 clearTimeout(statusTimeout);
                 statusTimeout = null;
@@ -1579,6 +1583,25 @@ const BackstageModel = Backbone.Model.extend({
             this.instance.settings().setSetting(wdType + 'WorkingDir', dirPath);
             wdData.path = dirPath;
             wdData.oswd = response.osPath;
+
+            if (dirPath.startsWith('{{Examples}}')) {
+                let moduleName = null;
+                if (dirPath === '{{Examples}}')
+                    moduleName = 'jmv';
+                else
+                    moduleName = dirPath.match(/^{{Examples}}\/?([\S][^//]*)?/)[1];
+                        
+                if (moduleName) {
+                    let translator = await this.instance.modules().getTranslator(moduleName);
+                    for (let item of response.contents) {
+                        if (item.description)
+                            item.description = translator(item.description);
+                        if (item.name)
+                            item.name = translator(item.name);
+                    }
+                }
+            }
+
             for (let model of wdData.models) {
                 model.set({
                     error: '',
@@ -1638,7 +1661,7 @@ const BackstageModel = Backbone.Model.extend({
                 return;
 
             if ('places' in op) {
-                let names = _.pluck(op.places, 'name');
+                let names = op.places.map(o => o.name);
                 let index = names.indexOf(this.attributes.lastSelectedPlace);
 
                 if (index === -1)
@@ -1675,17 +1698,20 @@ const BackstageModel = Backbone.Model.extend({
         if (this.attributes.place !== '')
             this.instance.settings().setSetting('openPlace', this.attributes.place);
     },
-    async requestOpen(filePath) {
+    async requestOpen(filePath, title) {
 
         let progNotif = new Notify({
-            title: 'Opening',
+            title: _('Opening'),
             duration: 0
         });
 
         let deactivated = false;
         try {
 
-            let stream = this.instance.open(filePath);
+            let options = { };
+            if (title)
+                options.title = title;
+            let stream = this.instance.open(filePath, options);
             for await (let progress of stream) {
 
                 progNotif.set({
@@ -1714,7 +1740,7 @@ const BackstageModel = Backbone.Model.extend({
         catch (e) {
             if (deactivated)
                 this.set('activated', true);
-            this._notify({ message: 'Unable to open', cause: e.cause || e.message, type: 'error' });
+            this._notify({ message: _('Unable to open'), cause: e.cause || e.message, type: 'error' });
         }
         finally {
             progNotif.dismiss();
@@ -1957,7 +1983,7 @@ const BackstageView = SilkyView.extend({
             }
 
             op.$el = $op;
-            $op.on('click', op, _.bind(this._opClicked, this));
+            $op.on('click', op, this._opClicked.bind(this));
             $opList.append($op);
         }
         this.$opPanel.append($opList);
@@ -1970,7 +1996,7 @@ const BackstageView = SilkyView.extend({
         else
             $op.show();
 
-        let $opTitle = $('<div class="silky-bs-op-header" data-op="' + 'Recent' + '" ' + '>' + 'Recent' + '</div>').appendTo($op);
+        let $opTitle = $(`<div class="silky-bs-op-header" data-op="Recent">${_('Recent')}</div>`).appendTo($op);
         let $recentsBody = $('<div class="silky-bs-op-recents"></div>').appendTo($op);
         $op.appendTo(this.$opPanel);
 

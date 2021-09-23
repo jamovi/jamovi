@@ -31,10 +31,10 @@ class InfoBox extends HTMLElement {
                     <slot>
                         <div class="heading">
                             <div class="icon"></div>
-                            <div class="title">Hi</div>
+                            <div class="title">${_('Hi')}</div>
                         </div>
                         <div class="content"></div>
-                        <div class="button-box"><button>OK</button></div>
+                        <div class="button-box"><button>${_('OK')}</button></div>
                     </slot>
                 </div>
                 <div class="remote" style="display: none">

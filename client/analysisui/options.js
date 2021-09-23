@@ -124,7 +124,7 @@ const keyedQueue = function() {
     };
 };
 
-const Options = function(def) {
+const Options = function(def, translator) {
 
     Object.assign(this, Backbone.Events);
 
@@ -135,17 +135,46 @@ const Options = function(def) {
     this._beginEdit = 0;
     this._serverQueuedEvents = new keyedQueue();
 
-    this.initialize = function(def) {
+    this.initialize = function(def, translator) {
         for (let i = 0;i < def.length; i++) {
             let item = def[i];
 
             if (item.default === undefined)
                 item.default = null;
 
+            let translated = this.translateDefault(translator, item, item.default);
+            if (translated !== null)
+                item.default = translated;
+
             let option = new Opt(item.default, item);
 
             this._list.push(option);
         }
+    };
+
+    this.translateDefault = function(translator, item, defaultValue) {
+        if (defaultValue) {
+            switch (item.type) {
+                case 'String':
+                    return translator(defaultValue);
+                case 'Group':
+                    for (let element of item.elements) {
+                        let translated = this.translateDefault(translator, element, defaultValue[element.name]);
+                        if (translated !== null)
+                            defaultValue[element.name] = translated;
+                    }
+                    break;
+                case 'Array':
+                    for (let i = 0; i  < defaultValue.length; i++) {
+                        let translated = this.translateDefault(translator, item.template, defaultValue[i]);
+                        if (translated !== null)
+                            defaultValue[i] = translated;
+                    }
+                    break;
+            }
+        }
+
+        return null;
     };
 
     this.beginEdit = function() {
@@ -294,7 +323,7 @@ const Options = function(def) {
         }
     };
 
-    this.initialize(def);
+    this.initialize(def, translator);
 };
 
 Options.getDefaultEventParams = function() {

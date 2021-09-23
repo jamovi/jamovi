@@ -28,9 +28,9 @@ const DataVarWidget = Backbone.View.extend({
 
         this._createMeasureTypeListBox();
 
-        this.$dataType = $('<div class="jmv-vareditor-datatype"><label for="data-type">Data type</label></div>').appendTo(this.$left);
-        this.$dataTypeList = $('<select id="data-type"><option value="integer">Integer</option><option value="decimal">Decimal</option><option value="text">Text</option></select>').appendTo(this.$dataType);
-        this.$autoType = $('<div class="jmv-variable-editor-autotype">(auto)</div>').appendTo(this.$dataType);
+        this.$dataType = $(`<div class="jmv-vareditor-datatype"><label for="data-type">${_('Data type')}</label></div>`).appendTo(this.$left);
+        this.$dataTypeList = $(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`).appendTo(this.$dataType);
+        this.$autoType = $(`<div class="jmv-variable-editor-autotype">${_('(auto)')}</div>`).appendTo(this.$dataType);
 
         this.$dataTypeList.focus(() => {
             keyboardJS.pause('');
@@ -43,9 +43,9 @@ const DataVarWidget = Backbone.View.extend({
         this._createMissingValuesCtrl();
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
-        this.$addLevelButton = $(`<div class="add-level" title="Add new level"><span class="mif-plus"></span></div>`).appendTo(this.$levelsCrtl);
+        this.$addLevelButton = $(`<div class="add-level" title="${_('Add new level')}"><span class="mif-plus"></span></div>`).appendTo(this.$levelsCrtl);
         this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
-        this.$levelsTitle = $('<div class="title">Levels</div>').appendTo(this.$levelsContainer);
+        this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
         this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
         this.$levelItems = $();
         this.levelCtrls = [];
@@ -77,7 +77,7 @@ const DataVarWidget = Backbone.View.extend({
                 let levels = this.model.get('levels');
                 let response = await new Promise((resolve, reject) => {
                     keyboardJS.setContext('');
-                    dialogs.prompt('Enter level value', '', (result) => {
+                    dialogs.prompt(_('Enter level value'), '', (result) => {
                         keyboardJS.setContext('controller');
                         if (result === undefined)
                             reject('');
@@ -97,7 +97,7 @@ const DataVarWidget = Backbone.View.extend({
                                 n = parseInt(result);
 
                             if (isNaN(n))
-                                reject('' + result + ' is not an integer');
+                                reject(_('{r} is not an integer', { r: result }));
                             else {
 
                                 let existing = new Set();
@@ -113,7 +113,7 @@ const DataVarWidget = Backbone.View.extend({
                                 if (recordValue) {
                                     getValues(levels, 'value');
                                     if (existing.has(n))
-                                        reject(`The level value ${result} is already in use.`);
+                                        reject(_('The level value {r} is already in use.', { r: result }));
                                 }
                                 else {
                                     getValues(levels, 'importValue');
@@ -125,7 +125,7 @@ const DataVarWidget = Backbone.View.extend({
                                 }
 
                                 if (result === '')
-                                    reject(`The level value cannot be blank.`);
+                                    reject(_(`The level value cannot be blank.`));
 
                                 resolve({ value: n, label: result });
                             }
@@ -181,7 +181,7 @@ const DataVarWidget = Backbone.View.extend({
             catch(msg) {
                 if (msg) {
                     this.model._notifyEditProblem({
-                        title: 'Level value',
+                        title: _('Level value'),
                         message: msg,
                         type: 'error',
                     });
@@ -241,7 +241,7 @@ const DataVarWidget = Backbone.View.extend({
         this.missingValueEditor = new MissingValueEditor(this.model);
         this.$missingValueButton = $(`
             <div class="missing-values">
-                <div class="label">Missing values</div>
+                <div class="label">${_('Missing values')}</div>
                 <div class="list" tabindex="0"></div>
             </div>`).appendTo(this.$left);
         let $list = this.$missingValueButton.find('.list');
@@ -268,13 +268,13 @@ const DataVarWidget = Backbone.View.extend({
     },
     _createMeasureTypeListBox() {
         this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$left);
-        $('<div class="label">Measure type</div>').appendTo(this.$measureBox);
+        $(`<div class="label">${_('Measure type')}</div>`).appendTo(this.$measureBox);
         this.$measureIcon = $('<div class="icon"></div>').appendTo(this.$measureBox);
         this.$measureList = $(`<select id="type">
-                                    <option value="nominal">Nominal</option>
-                                    <option value="ordinal">Ordinal</option>
-                                    <option value="continuous">Continuous</option>
-                                    <option value="id">ID</option>
+                                    <option value="nominal">${_('Nominal')}</option>
+                                    <option value="ordinal">${_('Ordinal')}</option>
+                                    <option value="continuous">${_('Continuous')}</option>
+                                    <option value="id">${_('ID')}</option>
                                 </select>`).appendTo(this.$measureBox);
         this.$measureList.val('nominal');
 

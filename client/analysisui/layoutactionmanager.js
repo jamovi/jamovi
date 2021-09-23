@@ -1,6 +1,6 @@
 'use strict';
 
-const _ = require('underscore');
+const underscore = require('underscore');
 const backbone = require('backbone');
 const LayoutAction = require('./layoutaction');
 const SuperClass = require('../common/superclass');
@@ -349,7 +349,7 @@ const LayoutActionManager = function(view) {
                 let params = JSON.parse(JSON.stringify(events[i]));
                 params.execute = execute;
 
-                if (_.isFunction(params.execute) === false)
+                if (underscore.isFunction(params.execute) === false)
                     throw "An action must contain an execute function.";
 
                 if (params.onChange === undefined && params.onEvent === undefined)
@@ -493,7 +493,7 @@ const LayoutActionManager = function(view) {
     if (Array.isArray(this._view.events)) {
         for (let i = 0; i < this._view.events.length; i++) {
             let action = this._view.events[i];
-            if (_.isFunction(action.execute) === false)
+            if (underscore.isFunction(action.execute) === false)
                 throw "An action must contain an execute function.";
 
             if (action.onChange === undefined && action.onEvent === undefined)

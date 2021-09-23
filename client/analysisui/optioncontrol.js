@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('underscore');
 var OptionControlBase = require('./optioncontrolbase');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var SuperClass = require('../common/superclass');

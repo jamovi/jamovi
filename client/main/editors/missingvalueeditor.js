@@ -11,7 +11,7 @@ const MissingValueEditor = function(model) {
     this.model = model;
     this.$el = $('<div class="jmv-missing-value-editor"></div>');
 
-    this.title = 'MISSING VALUES';
+    this.title = _('Missing Values');
     this._id = -1;
 
     this.refresh = function() {

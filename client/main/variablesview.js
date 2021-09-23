@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
@@ -46,7 +45,7 @@ const VariablesView = SilkyView.extend({
         this.$el.html(`
             <div class="jmv-variables-searchbox">
                 <div class="image"></div>
-                <input class="search" placeholder="Search variables"></input>
+                <input class="search" placeholder="${_('Search variables')}"></input>
             </div>
             <div class="jmv-variables-container">
                 <div class="jmv-variables-body">
@@ -56,12 +55,12 @@ const VariablesView = SilkyView.extend({
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
-        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
+        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
-        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
-        this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: 'Variables', value: 0 });
-        this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: 'Selected', value: 0 });
+        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
+        this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: _('Variables'), value: 0 });
+        this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: _('Selected'), value: 0 });
 
         this.$body      = this.$el.find('.jmv-variables-body');
         this.$container = this.$el.find('.jmv-variables-container');
@@ -130,8 +129,8 @@ const VariablesView = SilkyView.extend({
             row.editableTimer = setTimeout(function () {
                 row.$editableTexts.attr('contenteditable', true);
                 if (row.nameReadOnly === false)
-                    row.$name.attr('placeholder', 'Enter name');
-                row.$description.attr('placeholder', 'Enter description');
+                    row.$name.attr('placeholder', _('Enter name'));
+                row.$description.attr('placeholder', _('Enter description'));
                 row.editableTimer = null;
             }, 10);
         }
@@ -318,8 +317,8 @@ const VariablesView = SilkyView.extend({
         this.rows = [];
 
         let $measureTypeHeader = $('<div style="width:10px;"></div>');
-        let $nameHeader = $('<div>Name</div>');
-        let $descHeader = $('<div>Description</div>');
+        let $nameHeader = $(`<div>${_('Name')}</div>`);
+        let $descHeader = $(`<div>${_('Description')}</div>`);
         let $selectHeader =$('<input type="checkbox" class="select-header-checkbox"></input>');
 
         $selectHeader.on('change', (event) => {
@@ -355,7 +354,7 @@ const VariablesView = SilkyView.extend({
         }
 
         if (row === 2) {
-            this.$body.append($('<div class="msg">No variables match your query.</div>'));
+            this.$body.append($(`<div class="msg">${_('No variables match your query.')}</div>`));
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
@@ -561,7 +560,7 @@ const VariablesView = SilkyView.extend({
         let range = this.selection.createRange(colNo, colNo, colNo);
         if (range === null)
             return;
-            
+
         if (event.button === 0) {
             if (event.ctrlKey || event.metaKey) {
                 if (this.selection.rangeOverlaps(range)) {

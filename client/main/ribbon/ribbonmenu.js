@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const tarp = require('../utils/tarp');
 const Backbone = require('backbone');
 const keyboardJS = require('keyboardjs');

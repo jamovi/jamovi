@@ -1,8 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
-
 const Format = function(def) {
 
     this.isEmpty = function(raw) {
@@ -58,7 +56,8 @@ const Format = function(def) {
         }
     };
 
-    _.extend(this, def);
+
+    Object.assign(this, def);
 };
 
 

@@ -1,7 +1,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const OptionListControl = require('./optionlistcontrol');
 const GridControl = require('./gridcontrol');
 const FormatDef = require('./formatdef');
@@ -935,7 +934,7 @@ const GridTargetContainer = function(params) {
             baseFunction.call(this, name);
 
         if (name === 'label' && this.$label) {
-            let label = this.getPropertyValue('label');
+            let label = this.getTranslatedProperty('label');
             this.$label.text(label);
         }
     });
@@ -1003,6 +1002,7 @@ const GridTargetContainer = function(params) {
 
         let label = this.getPropertyValue('label');
         if (label !== null) {
+            label = this.translate(label);
             this.$label = $('<div style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-' + this.getPropertyValue('margin') + '">' + label + '</div>');
             grid.addCell(column, row, this.$label);
         }
@@ -1016,13 +1016,13 @@ const GridTargetContainer = function(params) {
 
             if (transferAction === 'interactions' || this.populateTransferActions) {
                 let transferActionItems = [
-                    new ToolbarButton({ title: 'Interaction', name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
-                    new ToolbarGroup({ title: 'Interactions', name: 'interactions', orientation: 'vertical', items: [
-                        new ToolbarButton({ title: 'Main Effects', name: 'maineffects', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarButton({ title: 'All 2 way', name: 'all2way', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarButton({ title: 'All 3 way', name: 'all3way', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarButton({ title: 'All 4 way', name: 'all4way', hasIcon: false, resultFormat: FormatDef.term }),
-                        new ToolbarButton({ title: 'All 5 way', name: 'all5way', hasIcon: false, resultFormat: FormatDef.term })
+                    new ToolbarButton({ title: s_('Interaction'), name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
+                    new ToolbarGroup({ title: s_('Interactions'), name: 'interactions', orientation: 'vertical', items: [
+                        new ToolbarButton({ title: s_('Main Effects'), name: 'maineffects', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: s_('All {n} way', { n: '2' }), name: 'all2way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: s_('All {n} way', { n: '3' }), name: 'all3way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: s_('All {n} way', { n: '4' }), name: 'all4way', hasIcon: false, resultFormat: FormatDef.term }),
+                        new ToolbarButton({ title: s_('All {n} way', { n: '5' }), name: 'all5way', hasIcon: false, resultFormat: FormatDef.term })
                     ]})
                 ];
 

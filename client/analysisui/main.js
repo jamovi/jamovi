@@ -2,7 +2,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 const Framesg = require('framesg').default;
@@ -25,7 +24,9 @@ const RequestDataSupport = require('./requestdatasupport');
 const GridOptionListControl = require('./gridoptionlistcontrol');
 const ApplyMagicEvents = require('./applymagicevents');
 
-window._ = _;
+const I18n = require("../common/i18n");
+
+window.s_ = I18n._;
 
 const frameCommsApi = {
     setOptionsDefinition: loadAnalysis,
@@ -102,9 +103,22 @@ var requestLocalColumnData = function(data) {
 var dataResources = { columns: [] };
 
 
-const Analysis = function(def, jamoviVersion, id) {
+const Analysis = function(def, i18nDef, jamoviVersion, id) {
 
     this.id = id;
+
+    this.i18n = i18nDef;
+    this.translate = (key) => {
+        if (key === null || key === undefined|| key.trim() === '' || ! this.i18n)
+            return key;
+
+        let value = this.i18n.locale_data.messages[key.trim()];
+        if (value === null || value === undefined || value[0] === '')
+            return key;
+        else
+            return value[0];
+    };
+    window._ = this.translate.bind(this);
 
     eval(def);
 
@@ -136,7 +150,7 @@ const Analysis = function(def, jamoviVersion, id) {
         });
 
         let actionManager = new LayoutActionManager(this.viewTemplate);
-        let optionsManager = new Options(options);
+        let optionsManager = new Options(options, this.translate);
         actionManager.onExecutingStateChanged = function(state) {
             if (state)
                 optionsManager.beginEdit();
@@ -149,6 +163,7 @@ const Analysis = function(def, jamoviVersion, id) {
         this.View = new OptionsView(this.model);
 
         this.View.setRequestedDataSource(this);
+        this.View.setI18nSource(this);
 
         this.requestData = function(requestId, data) {
             return requestData(requestId, data);
@@ -163,6 +178,8 @@ const Analysis = function(def, jamoviVersion, id) {
             if (this.viewTemplate.onDataChanged)
                 this.viewTemplate.onDataChanged(data);
         };
+
+
     }
 };
 
@@ -192,11 +209,13 @@ $(document).ready(function() {
     $(document).mousemove(this, mouseMove);
 
     parentFrame.send("frameDocumentReady", null);
-
 });
 
 
-function loadAnalysis(def, jamoviVersion, id) {
+function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
+
+    if (appI18nDef)
+        I18n.initialise(appI18nDef.locale_data.messages[""].lang, appI18nDef);
 
     window.jamoviVersion = jamoviVersion;
 
@@ -215,7 +234,7 @@ function loadAnalysis(def, jamoviVersion, id) {
 
             dataResources = { columns: data.columns };
 
-            analysis = new Analysis(def, jamoviVersion, id);
+            analysis = new Analysis(def, i18nDef, jamoviVersion, id);
 
             let title = analysis.getTitle();
             $title.empty();
@@ -273,19 +292,20 @@ function setOptionsValues(data) {
 
     analysis.id = data.id;
     let titleSet = false;
-    var model = analysis.model;
+    let model = analysis.model;
     model.options.beginEdit();
     if (analysis.View.beginDataInitialization(data.id)) {
-        var params = Options.getDefaultEventParams("changed");
+        let params = Options.getDefaultEventParams("changed");
         params.silent = true;
-        _.each(data.options, function(value, key, list) {
+        for (let key in data.options) {
+            let value = data.options[key];
             if (key === 'results//heading') {
                 setTitle(value);
                 titleSet = true;
             }
             else
                 model.options.setOptionValue(key, value, params);
-        });
+        }
         if (titleSet === false)
             setTitle('');
         analysis.View.endDataInitialization(data.id);
@@ -295,7 +315,7 @@ function setOptionsValues(data) {
 
 function onValuesForServerChanges(e) {
 
-    var compiledList = { values: { }, properties: { } };
+    let compiledList = { values: { }, properties: { } };
 
     for (let key in e.map) {
         let value = e.map[key];

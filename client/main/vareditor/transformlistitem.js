@@ -35,9 +35,9 @@ const TransformListItem = function(transform, checked) {
     this.$icon = $('<div class="icon"></div>').appendTo(this.$el);
     this.$colour = $('<div class="colour" style="background-color: ' + this._calculateColour(transform.colourIndex) + '"></div>').appendTo(this.$el);
     this.$label = $('<div class="label">' + this.name + '</div>').appendTo(this.$el);
-    this.$edit = $('<div class="edit hidden" title="Edit transform"></div>').appendTo(this.$el);
-    this.$duplicate = $('<div class="duplicate hidden" title="Duplicate transform"></div>').appendTo(this.$el);
-    this.$remove = $('<div class="remove hidden" title="Delete transform"><span class="mif-cross"></span></div>').appendTo(this.$el);
+    this.$edit = $(`<div class="edit hidden" title="${_('Edit transform')}"></div>`).appendTo(this.$el);
+    this.$duplicate = $(`<div class="duplicate hidden" title="${_('Duplicate transform')}"></div>`).appendTo(this.$el);
+    this.$remove = $(`<div class="remove hidden" title="${_('Delete transform')}"><span class="mif-cross"></span></div>`).appendTo(this.$el);
 
     this.$edit.on('click', (event) => {
         this.$el.trigger('editing', this);

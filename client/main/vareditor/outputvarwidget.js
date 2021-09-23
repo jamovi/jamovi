@@ -23,7 +23,7 @@ const OutputVarWidget = Backbone.View.extend({
 
         this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
         this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
-        this.$levelsTitle = $('<div class="title">Levels</div>').appendTo(this.$levelsContainer);
+        this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
         this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
         this.$levelItems = $();
         this.levelCtrls = [];

@@ -150,14 +150,14 @@ Menu.prototype._showSubMenu = function() {
 
     let ops = [
         {
-            label  : 'Copy',
+            label  : _('Copy'),
             op     : 'copy',
             address: this.active.address,
             type   : this.active.type,
             title  : this.active.title,
         },
         {
-            label  : 'Save',
+            label  : _('Save'),
             op     : 'save',
             address: this.active.address,
             type   : this.active.type,
@@ -166,7 +166,7 @@ Menu.prototype._showSubMenu = function() {
     ];
 
     if (this.active.address.length === 0)  // the analysis
-        ops.push({ label: 'Remove', op: 'remove', address: this.active.address, type: 'Analysis' });
+        ops.push({ label: _('Remove'), op: 'remove', address: this.active.address, type: 'Analysis' });
 
     this.submenu.setup(ops);
 

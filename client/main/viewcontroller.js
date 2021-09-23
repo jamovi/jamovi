@@ -269,13 +269,9 @@ class ViewController {
                             reject();
                     };
 
-                    if (columns.length === 1) {
-                        let column = columns[0];
-                        dialogs.confirm(`Delete column '${ column.name }'?`, cb);
-                    }
-                    else {
-                        dialogs.confirm(`Delete ${ columns.length } columns?`, cb);
-                    }
+                    let column = columns[0];
+                    dialogs.confirm(n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length }), cb);
+
                 });
 
             let ids = columns.map(column => column.id);
@@ -323,10 +319,7 @@ class ViewController {
                         reject();
                 };
 
-                if (rowCount === 1)
-                    dialogs.confirm('Delete row ' + (selections[0].top+1) + '?', cb);
-                else
-                    dialogs.confirm('Delete ' + rowCount + ' rows?', cb);
+                dialogs.confirm(n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount }), cb);
             });
             await this.model.deleteRows(rowRanges);
             await this.selection.setSelections(oldSelection, oldSubSelections);
@@ -360,8 +353,8 @@ class ViewController {
 
         if ((text.length + html.length) > (9 * 1024 * 1024)) {
             let notification = new Notify({
-                title: 'Unable to paste',
-                message: 'Too much data, use import instead',
+                title: _('Unable to paste'),
+                message: _('Too much data, use import instead'),
                 duration: 4000,
             });
             this.trigger('notification', notification);
@@ -577,13 +570,13 @@ class ViewController {
                     resolve(-1);
                 else {
                     keyboardJS.setContext('');
-                    dialogs.prompt('Insert how many rows?', this.selection.bottom - this.selection.top + 1, (result) => {
+                    dialogs.prompt(_('Insert how many rows?'), this.selection.bottom - this.selection.top + 1, (result) => {
                         keyboardJS.setContext('controller');
                         if (result === undefined)
                             reject('cancelled by user');
                         let n = parseInt(result);
                         if (isNaN(n) || n <= 0)
-                            reject('' + result + ' is not a positive integer');
+                            reject(_('{n} is not a positive integer', {n: result}));
                         else
                             resolve(n);
                     });
@@ -615,13 +608,13 @@ class ViewController {
         try {
             let n = await new Promise((resolve, reject) => {
                 keyboardJS.setContext('');
-                dialogs.prompt('Append how many rows?', '1', (result) => {
+                dialogs.prompt(_('Append how many rows?'), '1', (result) => {
                     keyboardJS.setContext('controller');
                     if (result === undefined)
                         reject('cancelled by user');
                     let n = parseInt(result);
                     if (isNaN(n) || n <= 0)
-                        reject('' + result + ' is not a positive integer');
+                        reject(_('{n} is not a positive integer', {n:result}));
                     else
                         resolve(n);
                 });

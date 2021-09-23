@@ -30,7 +30,7 @@ const MissingValueListItem = function(value) {
     this._createUI = function(elements) {
 
         let formula = this.value;
-        let prefix = 'when $source';
+        let prefix = `${_('when')} $source`;
         let indent = (prefix.length + 1) + 'ch';
 
         let hasOp = true;

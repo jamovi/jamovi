@@ -1,7 +1,7 @@
 
 'use strict';
 
-const _ = require('underscore');
+const underscore = require('underscore');
 const Backbone = require('backbone');
 const FormatDef = require('./formatdef');
 
@@ -152,7 +152,7 @@ const Opt = function(initialValue, params) {
         this._initialized = true;
 
         if (keys.length === 0) {
-            if (force || _.isEqual(fValue, this._value) === false) {
+            if (force || underscore.isEqual(fValue, this._value) === false) {
                 this._value = fValue;
                 if (eventParams.silent === false)
                     this.trigger(eventParams.eventType, keys, eventParams.data);
@@ -185,7 +185,7 @@ const Opt = function(initialValue, params) {
                         b = { };
                     a[index] = b;
                 }
-                else if (i === keys.length - 1 && (force || _.isEqual(b, fValue) === false)) {
+                else if (i === keys.length - 1 && (force || underscore.isEqual(b, fValue) === false)) {
                     a[index] = fValue;
                     if (eventParams.silent === false)
                         this.trigger(eventParams.eventType, keys, eventParams.data);

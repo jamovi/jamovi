@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 
 const TableModel = require('./table').Model;

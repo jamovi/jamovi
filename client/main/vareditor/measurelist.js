@@ -41,24 +41,24 @@ const MeasureList = function(includeAuto) {
         let item = null;
 
         if (this.includeAuto) {
-            item = new MeasureListItem('none', 'Auto');
+            item = new MeasureListItem('none', _('Auto'));
             item.$el.appendTo(this.$middle);
             this._createItemEvents(item);
         }
 
-        item = new MeasureListItem('nominal', 'Nominal');
+        item = new MeasureListItem('nominal', _('Nominal'));
         item.$el.appendTo(this.$middle);
         this._createItemEvents(item);
 
-        item = new MeasureListItem('ordinal', 'Ordinal');
+        item = new MeasureListItem('ordinal', _('Ordinal'));
         item.$el.appendTo(this.$middle);
         this._createItemEvents(item);
 
-        item = new MeasureListItem('continuous', 'Continuous');
+        item = new MeasureListItem('continuous', _('Continuous'));
         item.$el.appendTo(this.$middle);
         this._createItemEvents(item);
 
-        item = new MeasureListItem('id', 'ID');
+        item = new MeasureListItem('id', _('ID'));
         item.$el.appendTo(this.$middle);
         this._createItemEvents(item);
     };

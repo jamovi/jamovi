@@ -24,14 +24,14 @@ const RecodedVarWidget = Backbone.View.extend({
         this.$el.addClass('jmv-variable-recoded-widget');
 
         this.$top = $('<div class="jmv-variable-recoded-top"></div>').appendTo(this.$el);
-        $('<div class="variable-list-label single-variable-support">Source variable</div>').appendTo(this.$top);
+        $(`<div class="variable-list-label single-variable-support">${_('Source variable')}</div>`).appendTo(this.$top);
         this.$variableIcon = $('<div class="variable-type-icon single-variable-support"></div>').appendTo(this.$top);
         this.$variableList = $('<select class="recoded-from single-variable-support"></select>').appendTo(this.$top);
-        $('<div class="transform-label">using transform</div>').appendTo(this.$top);
+        $(`<div class="transform-label">${_('using transform')}</div>`).appendTo(this.$top);
         this.$transformIcon = $('<div class="transform-icon"></div>').appendTo(this.$top);
-        this.$transformList = $('<select id="transform-type"><option value="None">None</option></select>').appendTo(this.$top);
-        this.$editTransform = $('<div class="edit-button">Edit...</div>').appendTo(this.$top);
-        this.$errorMessage = $('<div class="error-msg">This transform is in error and should be edited.</div>').appendTo(this.$top);
+        this.$transformList = $(`<select id="transform-type"><option value="None">${_('None')}</option></select>`).appendTo(this.$top);
+        this.$editTransform = $(`<div class="edit-button">${_('Edit...')}</div>`).appendTo(this.$top);
+        this.$errorMessage = $(`<div class="error-msg">${_('This transform is in error and should be edited.')}</div>`).appendTo(this.$top);
         this.$editTransform.on('click', (event) => {
             let transformId = this.model.get('transform');
             if (transformId !== null && transformId !== 0)
@@ -252,7 +252,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this.variableList.populate(columns);
 
         this.$variableList.empty();
-        this.$variableList.append($('<option value="0">None</option>'));
+        this.$variableList.append($(`<option value="0">${_('None')}</option>`));
         for (let i = 0; i < columns.length; i++)
             this.$variableList.append($(`<option value=${ columns[i].id }>${ columns[i].name }</option>`));
 
@@ -281,7 +281,7 @@ const RecodedVarWidget = Backbone.View.extend({
                 let transform = this.model.dataset.getTransformById(transformId);
                 for (let msg of transform.formulaMessage) {
                     if (msg !== '') {
-                        errorMsg = 'The selected transform is in error and should be edited.';
+                        errorMsg = _('The selected transform is in error and should be edited.');
 
                         break;
                     }
@@ -302,7 +302,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this.transformList.populate(transforms);
 
         this.$transformList.empty();
-        this.$transformList.append('<option value="None">None</option>');
+        this.$transformList.append(`<option value="None">${_('None')}</option>`);
         for (let transform of transforms)
             this.$transformList.append('<option value="' + transform.name + '">' + transform.name + '</option>');
 

@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -72,7 +71,7 @@ const PageModules = Backbone.View.extend({
         else
             this.$message.removeClass('show');
     },
-    _refresh() {
+    async _refresh() {
 
         this.$modules.off();
         this.$uninstall.off();
@@ -84,9 +83,11 @@ const PageModules = Backbone.View.extend({
 
         for (let module of this.modules) {
 
+            let translator = await module.getTranslator();
+
             let version = Version.stringify(module.version, 3);
 
-            let subtitle = module.title;
+            let subtitle = translator(module.title);
             // This regex is used to trim off any leading shortname (as well as seperators) from the title
             // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
             let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
@@ -127,7 +128,8 @@ const PageModules = Backbone.View.extend({
 
             let $module = $(html);
 
-            $module.find('.description').html(module.description);
+
+            $module.find('.description').html(translator(module.description));
             $module.find('.authors').html(module.authors.join(', '));
 
             $module.appendTo(this.$content);
@@ -156,14 +158,14 @@ const PageModules = Backbone.View.extend({
         return this.modules.install(path)
             .then(() => {
                 this._notify({
-                    title: 'Module installed',
-                    message: 'module was installed successfully',
+                    title: _('Module installed'),
+                    message: _('Module was installed successfully'),
                     duration: 3000,
                     type: 'success'
                 });
             }, error => {
                 this._notify({
-                    title: 'Unable to install module',
+                    title: _('Unable to install module'),
                     message: error.cause,
                     duration: 4000,
                     type: 'error'
@@ -173,7 +175,7 @@ const PageModules = Backbone.View.extend({
     _uninstallClicked(event) {
         let $target = $(event.target);
         let moduleName = $target.attr('data-name');
-        let response = window.confirm('Really uninstall ' + moduleName + '?', 'Confirm uninstall');
+        let response = window.confirm(_('Really uninstall {m}?', {m:moduleName}), _('Confirm uninstall'));
         if (response)
             this._uninstall(moduleName);
     },
@@ -181,14 +183,14 @@ const PageModules = Backbone.View.extend({
         this.modules.uninstall(moduleName)
             .then(ok => {
                 this._notify({
-                    title: 'Module uninstalled',
-                    message: '' + moduleName + ' was uninstalled successfully',
+                    title: _('Module uninstalled'),
+                    message: _('{m} was uninstalled successfully', {m: moduleName}),
                     duration: 3000,
                     type: 'success'
                 });
             }, error => {
                 this._notify({
-                    title: 'Unable to uninstall module',
+                    title: _('Unable to uninstall module'),
                     message: error.message,
                     duration: 4000,
                     type: 'error'

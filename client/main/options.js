@@ -3,7 +3,6 @@
 'use strict';
 
 const SuperClass = require('../common/superclass');
-const _ = require('underscore');
 
 const OptionTypes = {
 
@@ -77,7 +76,7 @@ OptionTypes.Option = function(template, value, isLeaf) {
                 let child = this.children[i];
                 r = r.concat(child.getAssignedColumns());
             }
-            r = _.uniq(r);
+            r = [...new Set(r)];
             return r;
         }
     };
@@ -91,7 +90,7 @@ OptionTypes.Option = function(template, value, isLeaf) {
                 let child = this.children[i];
                 r = r.concat(child.getAssignedOutputs());
             }
-            r = _.uniq(r);
+            r = [...new Set(r)];
             return r;
         }
     };
@@ -190,7 +189,7 @@ OptionTypes.Outputs = function(template, value) {
         if (this._value !== null)
             r = this._value;
 
-        r = _.uniq(r);
+        r = [...new Set(r)];
         return r;
     });
 };
@@ -226,7 +225,7 @@ OptionTypes.Variables = function(template, value) {
         if (this._value !== null)
             r = this._value;
 
-        r = _.uniq(r);
+        r = [...new Set(r)];
         return r;
     });
 
@@ -260,7 +259,7 @@ OptionTypes.Terms = function(template, value) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] !== null && this._value[i].length > 0)
-                    t = _.uniq(t.concat(this._value[i]));
+                    t = [...new Set(t.concat(this._value[i]))];
             }
         }
         return t;
@@ -302,7 +301,7 @@ OptionTypes.Term = function(template, value) {
         if (this._value !== null)
             r = this._value;
 
-        r = _.uniq(r);
+        r = [...new Set(r)];
         return r;
     });
 
@@ -343,7 +342,7 @@ OptionTypes.Pairs = function(template, value) {
             }
         }
 
-        r = _.uniq(r);
+        r = [...new Set(r)];
         return r;
     });
 
@@ -447,14 +446,50 @@ OptionTypes.Group = function(template, value) {
 SuperClass.create(OptionTypes.Group);
 
 
-const Options = function(def=[]) {
+const Options = function(def=[], translator=null) {
 
     this._options = {};
 
     this._changingHandles = [ ];
 
+    this.translateDefault = function(translator, item, _defaultValue) {
+
+        if (_defaultValue === undefined) {
+            if (item.default) {
+                let translated = this.translateDefault(translator, item, item.default);
+                if (translated !== null)
+                    item.default = translated;
+                return;
+            }
+        }
+
+        if (_defaultValue) {
+            switch (item.type) {
+                case 'String':
+                    return translator(_defaultValue);
+                case 'Group':
+                    for (let element of item.elements) {
+                        let translated = this.translateDefault(translator, element, _defaultValue[element.name]);
+                        if (translated !== null)
+                            _defaultValue[element.name] = translated;
+                    }
+                    break;
+                case 'Array':
+                    for (let i = 0; i  < _defaultValue.length; i++) {
+                        let translated = this.translateDefault(translator, item.template, _defaultValue[i]);
+                        if (translated !== null)
+                            _defaultValue[i] = translated;
+                    }
+                    break;
+            }
+        }
+
+        return null;
+    };
+
     for (var i = 0; i < def.length; i++) {
         var template = def[i];
+        this.translateDefault(translator, template);
         let defaultValue = template.default;
         var option = OptionTypes.create(template, defaultValue);
         this._options[template.name] = option;
@@ -470,7 +505,7 @@ const Options = function(def=[]) {
             let option = this._options[name];
             r = r.concat(option.getAssignedColumns());
         }
-        r = _.uniq(r);
+        r = [...new Set(r)];
         return r;
     };
 

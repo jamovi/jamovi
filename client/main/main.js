@@ -22,11 +22,48 @@ const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
 const ActionHub = require('./actionhub');
-
+const I18n = require('../common/i18n');
 
 const Instance = require('./instance');
 const Notify = require('./notification');
 const JError = require('./errors').JError;
+
+window._ = I18n._;
+window.n_ = I18n._n;
+
+
+(async function() {
+
+let url = `../i18n/`;
+let code = await (async() => {
+    let response = await fetch(url);
+    if (response.ok) {
+        try {
+            let codes = await response.json();
+            let code = I18n.findBestMatchingLocale([I18n.locale], codes);
+            if (code === 'c')
+                code = 'en';
+            return code;
+        }
+        catch (e) {
+            return 'en';
+        }
+    }
+    else
+        return 'en';
+})();
+
+let response = await fetch(`${url}${code}.json`);
+if (response.ok) {
+    try {
+        let def = await response.json();
+        I18n.initialise(code, def);
+    }
+    catch (e) {
+        console.log(`Issue loading json for language '${ code }'.`);
+    }
+}
+
 
 require('./infobox');
 
@@ -87,15 +124,15 @@ infoBox.style.display = 'none';
 coms.on('failure', (event) => {
     if (host.isElectron) {
         infoBox.setup({
-            title: 'Connection lost',
-            message: 'An unexpected error has occured, and jamovi must now close.',
+            title: _('Connection lost'),
+            message: _('An unexpected error has occured, and jamovi must now close.'),
             status: 'terminated',
         });
     }
     else {
         infoBox.setup({
-            title: 'Connection lost',
-            message: 'Your connection has been lost. Please refresh the page to continue.',
+            title: _('Connection lost'),
+            message: _('Your connection has been lost. Please refresh the page to continue.'),
             status: 'disconnected',
         });
     }
@@ -129,13 +166,13 @@ if (window.navigator.platform === 'MacIntel') {
             ]
         },
         {
-            label: 'File',
+            label: _('File'),
             submenu: [
                 { role: 'close' },
             ]
         },
         {
-            label: 'Edit',
+            label: _('Edit'),
             submenu: [
                 { role: 'cut' },
                 { role: 'copy' },
@@ -317,14 +354,14 @@ $(document).ready(async() => {
         if ( ! instance.attributes.arbitraryCodePresent)
             return;
         let notif = ribbon.notify({
-            text:  `One or more analyses in this data set have been disabled
+            text:  _(`One or more analyses in this data set have been disabled
                     because they allow the execution of arbitrary code. You
                     should only enable them if you trust this data set's
-                    source.`,
+                    source.`),
             options: [
-                { name: 'more-info', text: 'More info ...', dismiss: false },
-                { name: 'dismiss',   text: "Don't enable" },
-                { name: 'enable-code', text: 'Enable' } ]
+                { name: 'more-info', text: _('More info ...'), dismiss: false },
+                { name: 'dismiss',   text: _("Don't enable") },
+                { name: 'enable-code', text: _('Enable') } ]
         });
 
         notif.on('click', (event) => {
@@ -594,9 +631,9 @@ $(document).ready(async() => {
         if (dataSetModel.attributes.edited) {
             let response = host.showMessageBox({
                 type: 'question',
-                buttons: [ 'Save', 'Cancel', "Don't Save" ],
+                buttons: [ _('Save'), _('Cancel'), _("Don't Save") ],
                 defaultId: 1,
-                message: "Save changes to '" + instance.attributes.title + "'?",
+                message: _("Save changes to '{title}'?", {title: instance.attributes.title}),
             });
             if (response === 1) {  // Cancel
                 return false;
@@ -614,7 +651,7 @@ $(document).ready(async() => {
     let toOpen = '';  // '' denotes blank data set
 
     let progNotif = new Notify({
-        title: 'Opening',
+        title: _('Opening'),
         duration: 0
     });
 
@@ -662,7 +699,7 @@ $(document).ready(async() => {
                 // if opening fails, open a blank data set
                 status = await instance.open('', { existing: !!instanceId });
                 notifications.notify(new Notify({
-                    title: 'Unable to open',
+                    title: _('Unable to open'),
                     message: e.cause || e.message,
                     type: 'error',
                     duration: 3000,
@@ -702,8 +739,8 @@ $(document).ready(async() => {
             console.log(e);
 
             infoBox.setup({
-                title: 'Connection failed',
-                message: 'Unable to connect to the server',
+                title: _('Connection failed'),
+                message: _('Unable to connect to the server'),
                 status: 'disconnected',
             });
         }
@@ -724,3 +761,5 @@ $(document).ready(async() => {
     }
 
 });
+
+})();

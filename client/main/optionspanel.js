@@ -1,18 +1,18 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Framesg = require('framesg').default;
 const Backbone = require('backbone');
 Backbone.$ = $;
 const host = require('./host');
+const I18n = require('../common/i18n');
 
 const SilkyView = require('./view');
 
 
 const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
-    _.extend(this, Backbone.Events);
+    Object.assign(this, Backbone.Events);
 
     this.analysis = analysis;
     this.name = analysis.name;
@@ -146,6 +146,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 }
                 else if (analysis.uijs) {
                     this.def = analysis.uijs;
+                    this.i18nDef = analysis.i18n;
                     resolve(analysis.uijs);
                 }
                 else {
@@ -166,7 +167,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             this.jamoviVersion = version;
         })
     ]).then(() => {
-        return this.frameComms.send("setOptionsDefinition", this.def, this.jamoviVersion, analysis.id);
+        return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id);
     });
 
     this.abort = function() {
@@ -178,7 +179,7 @@ let OptionsPanel = SilkyView.extend({
 
     initialize: function(args) {
 
-        if (_.has(args, 'iframeUrl'))
+        if ('iframeUrl' in args)
             this.iframeUrl = args.iframeUrl;
 
         this._analysesResources = {};
@@ -336,6 +337,9 @@ let OptionsPanel = SilkyView.extend({
     },
 
     hideOptions: function(clearSelected) {
+
+        console.log('point 1');
+
         if (clearSelected === undefined)
             clearSelected = true;
         if (clearSelected) {
@@ -343,6 +347,8 @@ let OptionsPanel = SilkyView.extend({
             if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')
                 this.model.set('selectedAnalysis', null);
         }
+
+        console.log('point 2');
 
         this.$el.trigger("splitpanel-hide");
     },

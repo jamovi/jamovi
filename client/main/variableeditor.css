@@ -303,6 +303,7 @@
     padding: 0px 4px 0px 2px;
     margin: 0px;
     font-weight: 100;
+    text-transform: uppercase;
 }
 
 .jmv-variable-editor-widget-body {

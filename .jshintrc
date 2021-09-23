@@ -11,6 +11,9 @@
     "predef": [
         "customElements",
         "DataTransfer",
-        "ResizeObserver"
+        "ResizeObserver",
+        "_",
+        "s_",
+        "n_"
     ]
 }

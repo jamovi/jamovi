@@ -17,7 +17,7 @@ class References extends HTMLElement {
         this._root.appendChild(style);
 
         let heading = document.createElement('h1');
-        heading.textContent = 'References';
+        heading.textContent = _('References');
 
         this._body = document.createElement('div');
         this._body.className += ' body';

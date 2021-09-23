@@ -89,6 +89,7 @@
     font-size: 110%;
     color: #555555;
     font-weight: 100;
+    text-transform: uppercase;
 }
 
 .jmv-editor-panel-main > .content {

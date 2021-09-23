@@ -35,7 +35,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$header = $('<div class="jmv-ribbon-appmenu-header"></div>').appendTo(this.$menu);
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
-        this.$back = $('<div class="jmv-ribbon-appmenu-back-button" title="Hide settings"></div>').appendTo(this.$backOuter);
+        this.$back = $(`<div class="jmv-ribbon-appmenu-back-button" title="${_('Hide settings')}"></div>`).appendTo(this.$backOuter);
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {
@@ -46,7 +46,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$content = $('<div class="jmv-ribbon-appmenu-content"></div>').appendTo(this.$menu);
 
         this.$zoom = $('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>').appendTo(this.$content);
-        this.$zoom.append($('<div>Zoom</div>'));
+        this.$zoom.append($(`<div>${_('Zoom')}</div>`));
         this.$zoomButtons = $('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>').appendTo(this.$zoom);
         this.$zoomOut = $('<div class="jmv-ribbon-appmenu-zoomout">&minus;</div>').appendTo(this.$zoomButtons);
         this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoomButtons);
@@ -55,41 +55,41 @@ const AppMenuButton = Backbone.View.extend({
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$results = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$resultsHeading = $('<div class="jmv-ribbon-appmenu-subheading">Results</div>').appendTo(this.$results);
+        this.$resultsHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Results')}</div>`).appendTo(this.$results);
 
         this.$nFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$nFormat.append($('<div>Number format</div>'));
-        this.$nFormatList = $('<select><optgroup label="significant figures"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="decimal places"><option value="dp:2">2 dp</option><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
+        this.$nFormat.append($(`<div>${_('Number format')}</div>`));
+        this.$nFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">2 dp</option><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>`)
             .appendTo(this.$nFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
         this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$pFormat.append($('<div>p-value format</div>'));
-        this.$pFormatList = $('<select><optgroup label="significant figures"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="decimal places"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>')
+        this.$pFormat.append($(`<div>${_('p-value format')}</div>`));
+        this.$pFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>`)
             .appendTo(this.$pFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
         this.$refsMode = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$refsMode.append($('<div>References</div>'));
-        this.$refsModeList = $('<select><option value="bottom">Visible</option><option value="hidden">Hidden</option></select>')
+        this.$refsMode.append($(`<div>${_('References')}</div>`));
+        this.$refsModeList = $(`<select><option value="bottom">${_('Visible')}</option><option value="hidden">${_('Hidden')}</option></select>`)
             .appendTo(this.$refsMode)
             .click(event => event.stopPropagation())
             .change(event => this._changeRefsMode());
 
         this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
-        this.$syntax.append($('<div>Syntax mode</div>'));
+        this.$syntax.append($(`<div>${_('Syntax mode')}</div>`));
         this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$plots = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$plotsHeading = $('<div class="jmv-ribbon-appmenu-subheading">Plots</div>').appendTo(this.$plots);
+        this.$plotsHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`).appendTo(this.$plots);
 
         this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$theme.append($('<div>Plot theme</div>'));
-        this.$themeList = $('<select><option value="default">Default</option><option value="minimal">Minimal</option><option value="iheartspss">I ♥ SPSS</option><option value="hadley">Hadley</option><option value="bw">Black & white</option></select>')
+        this.$theme.append($(`<div>${_('Plot theme')}</div>`));
+        this.$themeList = $(`<select><option value="default">${_('Default')}</option><option value="minimal">${_('Minimal')}</option><option value="iheartspss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option><option value="bw">${_('Black & white')}</option></select>`)
             .appendTo(this.$theme)
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
@@ -104,9 +104,9 @@ const AppMenuButton = Backbone.View.extend({
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$import = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$importHeading = $('<div class="jmv-ribbon-appmenu-subheading">Import</div>').appendTo(this.$import);
+        this.$importHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`).appendTo(this.$import);
 
-        this.$missings = $('<label class="jmv-ribbon-appmenu-item"><div>Default missings</div></label>').appendTo(this.$import);
+        this.$missings = $(`<label class="jmv-ribbon-appmenu-item"><div>${_('Default missings')}</div></label>`).appendTo(this.$import);
         this.$missingsInput = $('<input type="text" size="10" class="jmv-import-missings" list="missings">').appendTo(this.$missings);
         //this.$missingsItems = $('<datalist id="missings"><option value="NA"><option value="-999999"></datalist>').appendTo(this.$missings);
         this.$missingsInput.on('keydown', (event) => {
@@ -123,16 +123,16 @@ const AppMenuButton = Backbone.View.extend({
         this.$import.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
-        this.$versionInfo = $('<div class="jmv-ribbon-appmenu-subheading">Updates</div>').appendTo(this.$updateInfo);
+        this.$versionInfo = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Updates')}</div>`).appendTo(this.$updateInfo);
 
         this.$versionInfoStatus = { };
-        this.$versionInfoStatus.uptodate    = $('<div class="jmv-version-info-uptodate jmv-ribbon-appmenu-item">jamovi is up-to-date<button>Check again</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.checking    = $('<div class="jmv-version-info-checking jmv-ribbon-appmenu-item"><label>Checking for updates</label><img width="16" height="16" src="../assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.checkerror  = $('<div class="jmv-version-info-checkerror jmv-ribbon-appmenu-item">Update not found<button>Retry</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.available   = $('<div class="jmv-version-info-available jmv-ribbon-appmenu-item"><label>An update is available</label><button>Update</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.downloading = $('<div class="jmv-version-info-downloading jmv-ribbon-appmenu-item">Update is being downloaded<img width="16" height="16" src="../assets/indicator-running.svg"></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.error       = $('<div class="jmv-version-info-error jmv-ribbon-appmenu-item"><label>Update did not complete</label><button>Retry</button></div>').appendTo(this.$updateInfo);
-        this.$versionInfoStatus.ready       = $('<div class="jmv-version-info-ready jmv-ribbon-appmenu-item"><label>Update is ready</label><button>Restart and Install</button></div>').appendTo(this.$updateInfo);
+        this.$versionInfoStatus.uptodate    = $(`<div class="jmv-version-info-uptodate jmv-ribbon-appmenu-item">${_('jamovi is up-to-date')}<button>${_('Check again')}</button></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.checking    = $(`<div class="jmv-version-info-checking jmv-ribbon-appmenu-item"><label>${_('Checking for updates')}</label><img width="16" height="16" src="../assets/indicator-running.svg"></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.checkerror  = $(`<div class="jmv-version-info-checkerror jmv-ribbon-appmenu-item">${_('Update not found')}<button>${_('Retry')}</button></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.available   = $(`<div class="jmv-version-info-available jmv-ribbon-appmenu-item"><label>${_('An update is available')}</label><button>${_('Update')}</button></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.downloading = $(`<div class="jmv-version-info-downloading jmv-ribbon-appmenu-item">${_('Update is being downloaded')}<img width="16" height="16" src="../assets/indicator-running.svg"></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.error       = $(`<div class="jmv-version-info-error jmv-ribbon-appmenu-item"><label>${_('Update did not complete')}</label><button>${_('Retry')}</button></div>`).appendTo(this.$updateInfo);
+        this.$versionInfoStatus.ready       = $(`<div class="jmv-version-info-ready jmv-ribbon-appmenu-item"><label>${_('Update is ready')}</label><button>${_('Restart and Install')}</button></div>`).appendTo(this.$updateInfo);
 
         this.$versionInfoStatus.uptodate.find('button').on('click', () => this._checkForUpdate());
         this.$versionInfoStatus.checkerror.find('button').on('click', () => this._checkForUpdate());
@@ -141,7 +141,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$versionInfoStatus.ready.find('button').on('click', () => this._restartAndInstall());
 
         this.$versionInfoUpdates = $('<label class="jmv-ribbon-appmenu-item checkbox" for="keep-uptodate"></label>').appendTo(this.$updateInfo);
-        this.$versionInfoUpdates.append($('<div>Automatically install updates</div>'));
+        this.$versionInfoUpdates.append($(`<div>${_('Automatically install updates')}</div>`));
         this.$versionInfoUpdatesCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="keep-uptodate">').appendTo(this.$versionInfoUpdates);
 
         this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
@@ -150,7 +150,7 @@ const AppMenuButton = Backbone.View.extend({
         // this.$recorder.on('click', (event) => host.openRecorder());
 
         this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox jmv-devmode" for="devMode"></label>').appendTo(this.$content);
-        this.$dev.append($('<div>Developer mode</div>'));
+        this.$dev.append($(`<div>${_('Developer mode')}</div>`));
         this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
 
         this.$zoomIn.on('click', event => { this.model.settings().zoomIn(); event.stopPropagation(); });
@@ -165,7 +165,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$version = $('<div class="jmv-ribbon-appmenu-version"></div>').appendTo(this.$menu);
 
         host.version.then(version => {
-            this.$version.text('Version ' + version);
+            this.$version.text(_('Version {v}', { v: version }));
         });
 
         this.$syntaxModeCheck.on('change', event => this.model.settings().setSetting('syntaxMode', this.$syntaxModeCheck.prop('checked')));

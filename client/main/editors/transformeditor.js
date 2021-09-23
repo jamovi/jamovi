@@ -21,7 +21,7 @@ const TransformEditor = function(dataset) {
 
     this.$el = $('<div class="jmv-transform-editor"></div>');
 
-    this.title = 'TRANSFORM';
+    this.title = _('Transform');
     this.$icon = $('<div class="transform-colour"></div>');
 
     this._exampleFormulas = [
@@ -58,8 +58,8 @@ const TransformEditor = function(dataset) {
         this.$top = $('<div class="jmv-transform-editor-top"></div>').appendTo(this.$el);
         this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" maxlength="63">').appendTo(this.$top);
         this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$top);
-        this.$description = $('<div class="jmv-transform-editor-widget-description" type="text" placeholder="Description" contenteditable="true">').appendTo(this.$descBox);
-        this.$shortname = $('<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="Variable suffix" contenteditable="true">').appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" placeholder="${_('Description')}" contenteditable="true">`).appendTo(this.$descBox);
+        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="${_('Variable suffix')}" contenteditable="true">`).appendTo(this.$descBox);
 
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
@@ -120,7 +120,7 @@ const TransformEditor = function(dataset) {
 
         this.$insertBox = $('<div class="insert-box" tabindex="0"></div>').appendTo(this.$contents);
         this.$insert = $('<div class="insert"></div>').appendTo(this.$insertBox);
-        $('<div>Add recode condition</div>').appendTo(this.$insertBox);
+        $(`<div>${_('Add recode condition')}</div>`).appendTo(this.$insertBox);
 
         this.$insertBox.on('keydown', (event) => {
             if ( event.keyCode === 9 ) { //tab
@@ -220,13 +220,13 @@ const TransformEditor = function(dataset) {
         this.$bottom = $('<div class="jmv-transform-editor-bottom"></div>').appendTo(this.$el);
 
         this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$bottom);
-        $('<div class="transform-label">Measure type</div>').appendTo(this.$measureBox);
+        $(`<div class="transform-label">${_('Measure type')}</div>`).appendTo(this.$measureBox);
         this.$measureList = $(`<select id="transform-measure-type">
-                                    <option value="none">Auto</option>
-                                    <option value="nominal">Nominal</option>
-                                    <option value="ordinal">Ordinal</option>
-                                    <option value="continuous">Continuous</option>
-                                    <option value="id">ID</option>
+                                    <option value="none">${_('Auto')}</option>
+                                    <option value="nominal">${_('Nominal')}</option>
+                                    <option value="ordinal">${_('Ordinal')}</option>
+                                    <option value="continuous">${_('Continuous')}</option>
+                                    <option value="id">${_('ID')}</option>
                                 </select>`).appendTo(this.$measureBox);
         this.$measureList.val('none');
         this.$measureIcon = $('<div class="transform-measure-icon"></div>').appendTo(this.$measureBox);
@@ -257,7 +257,7 @@ const TransformEditor = function(dataset) {
         });
 
         this.$usageBox = $('<div class="usage-box"></div>').appendTo(this.$bottom);
-        this.$connectionInfo = $('<div class="usage-label">used by</div>').appendTo(this.$usageBox);
+        this.$connectionInfo = $(`<div class="usage-label">${_('used by')}</div>`).appendTo(this.$usageBox);
         this.$viewConnectionInfo = $('<div class="view-button"></div>').appendTo(this.$usageBox);
 
         this.variableList = new VariableList();
@@ -352,12 +352,12 @@ const TransformEditor = function(dataset) {
     this._addTransformUIItem = function(formula1, formula2, hasTransition) {
         let hasCondition = formula2 !== undefined;
 
-        let tag = 'if $source';
+        let tag = `${_('if')} $source`;
         if ( ! hasCondition) {
             if (this.formula.length === 1)
                 tag = '=';
             else
-                tag = 'else use';
+                tag = _('else use');
         }
 
         let elements = this._createFormulaBox(this.$options, hasCondition, hasTransition);
@@ -386,7 +386,7 @@ const TransformEditor = function(dataset) {
         });
 
         if (hasCondition) {
-            this._createSubFormula(elements, 'use', false, formula2, 1);
+            this._createSubFormula(elements, _('use'), false, formula2, 1);
             this._createFormulaButtons(elements);
         }
 
@@ -414,7 +414,7 @@ const TransformEditor = function(dataset) {
         let $formula = this.$options.find('.recode-else .formula');
         let tag = '=';
         if (this.formula.length > 1)
-            tag = 'else use';
+            tag = _('else use');
 
         let indent = (tag.length + 1) + 'ch';
         $formula.css('text-indent', indent);
@@ -628,7 +628,7 @@ const TransformEditor = function(dataset) {
         else
             $parent.append($formulaBox);
 
-        let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
+        let $showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
 
         let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
 

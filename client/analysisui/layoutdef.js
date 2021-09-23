@@ -1,9 +1,7 @@
 
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var SuperClass = require('../common/superclass');
+const SuperClass = require('../common/superclass');
 
 function LayoutDef() {
 
@@ -19,7 +17,7 @@ SuperClass.create(LayoutDef);
 LayoutDef.extend = function(params) {
     return function() {
         LayoutDef.extendTo(this);
-        _.extend(this, params);
+        Object.assign(this, params);
     };
 };
 

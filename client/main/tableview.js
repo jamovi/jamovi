@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
@@ -73,15 +72,15 @@ const TableView = SilkyView.extend({
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
-        this.statusbar.addInfoLabel('editedCells', { label: 'Cells edited ', value: 0 });
-        this.statusbar.addInfoLabel('addedRows', { label: 'Added', value: 0 });
-        this.statusbar.addInfoLabel('deletedRows', { label: 'Deleted', value: 0 });
-        this.statusbar.addInfoLabel('filteredRows', { label: 'Filtered', value: 0 });
-        this.statusbar.addInfoLabel('rowCount', { label: 'Row count', value: 0 });
-        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
+        this.statusbar.addInfoLabel('editedCells', { label: _('Cells edited '), value: 0 });
+        this.statusbar.addInfoLabel('addedRows', { label: _('Added'), value: 0 });
+        this.statusbar.addInfoLabel('deletedRows', { label: _('Deleted'), value: 0 });
+        this.statusbar.addInfoLabel('filteredRows', { label: _('Filtered'), value: 0 });
+        this.statusbar.addInfoLabel('rowCount', { label: _('Row count'), value: 0 });
+        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
-        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
+        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
 
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
@@ -269,18 +268,18 @@ const TableView = SilkyView.extend({
             if (transform) {
                 $colour.removeClass('no-transform');
                 $colour.css('background-color', ColourPalette.get(transform.colourIndex));
-                $colour.attr('title', 'Transform: ' + transform.name);
+                $colour.attr('title', _('Transform: {name}', {name: transform.name}));
             }
             else {
                 $colour.addClass('no-transform');
                 $colour.css('background-color', '#acacac');
-                $colour.attr('title', 'Transform: None');
+                $colour.attr('title', _('Transform: None'));
             }
         }
         else if (column.columnType === 'computed') {
             let $colour = $header.find('.jmv-column-header-colour');
             $colour.css('background-color', '#515151');
-            $colour.attr('title', 'Computed variable');
+            $colour.attr('title', _('Computed variable'));
         }
     },
     _addColumnToView(column) {
@@ -495,7 +494,7 @@ const TableView = SilkyView.extend({
                 $header.attr('data-fmlaok', ok ? '1' : '0');
                 let $icon = $header.find('.jmv-column-header-icon');
                 if ( ! ok)
-                    $icon.attr('title', 'Issue with formula');
+                    $icon.attr('title', _('Issue with formula'));
                 else
                     $icon.removeAttr('title');
             }
@@ -534,7 +533,7 @@ const TableView = SilkyView.extend({
             $header.attr('data-fmlaok', ok ? '1' : '0');
             let $icon = $header.find('.jmv-column-header-icon');
             if ( ! ok)
-                $icon.attr('title', 'Issue with formula');
+                $icon.attr('title', _('Issue with formula'));
             else
                 $icon.removeAttr('title');
 
@@ -589,7 +588,7 @@ const TableView = SilkyView.extend({
             $header.attr('data-fmlaok', ok ? '1' : '0');
             let $icon = $header.find('.jmv-column-header-icon');
             if ( ! ok)
-                $icon.attr('title', 'Issue with formula');
+                $icon.attr('title', _('Issue with formula'));
             else
                 $icon.removeAttr('title');
 
@@ -1160,11 +1159,9 @@ const TableView = SilkyView.extend({
 
         if ( ! this._isColumnEditable(column)) {
 
-            let columnType = column.columnType;
-            columnType = columnType[0].toUpperCase() + columnType.substring(1);
             let err = {
-                title: 'Column is not editable',
-                message: columnType + ' columns may not be edited.',
+                title: _('Column is not editable'),
+                message: _('{columnType} columns may not be edited.', { columnType: this.model.columnTypeLabel(column.columnType) }),
                 type: 'error' };
             this._notifyEditProblem(err);
 
@@ -1218,8 +1215,8 @@ const TableView = SilkyView.extend({
                         value = number;
                     else if ( ! this.currentColumn.autoMeasure)
                         throw {
-                            message: 'Could not assign data',
-                            cause: 'Cannot assign non-numeric value to column \'' + this.currentColumn.name + '\'',
+                            message: _('Could not assign data'),
+                            cause: _('Cannot assign non-numeric value to column \'{columnName}\'', {columnName:this.currentColumn.name}),
                             type: 'error',
                         };
                 }
@@ -1250,7 +1247,7 @@ const TableView = SilkyView.extend({
 
         let finaliseEdit = () => {
             this._editing = false;
-            this.statusbar.updateInfoLabel('editStatus', 'Ready');
+            this.statusbar.updateInfoLabel('editStatus', _('Ready'));
             this._edited = false;
             this._modifyingCellContents = false;
             keyboardJS.setContext('controller');
@@ -1283,7 +1280,7 @@ const TableView = SilkyView.extend({
             return;
 
         this._editing = false;
-        this.statusbar.updateInfoLabel('editStatus', 'Edit');
+        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
         this._modifyingCellContents = false;
         keyboardJS.setContext('controller');
         this._edited = false;
@@ -2016,6 +2013,14 @@ const TableView = SilkyView.extend({
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
     },
+    sortedIndex(array, value) {
+        let i = 0;
+        for (i = 0; i < array.length; i++) {
+            if (array[i] >= value)
+                return i;
+        }
+        return array.length;
+    },
     _updateViewRange() {
 
         let v = this._getViewRange();
@@ -2027,8 +2032,8 @@ const TableView = SilkyView.extend({
         let columnCount = this.model.get('vColumnCount');
 
 
-        let leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
-        let rightColumn = _.sortedIndex(this._lefts, v.right) - 1;
+        let leftColumn  = this.sortedIndex(this._lefts, v.left) - 1;
+        let rightColumn = this.sortedIndex(this._lefts, v.right) - 1;
 
         if (leftColumn > columnCount - 1)
             leftColumn = columnCount - 1;

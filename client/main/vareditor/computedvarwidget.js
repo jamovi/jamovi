@@ -75,7 +75,7 @@ const ComputedVarWidget = Backbone.View.extend({
         this.$methods = $('<div class="jmv-variable-computed-methods"></div>').appendTo(this.$el);
 
         this.$top = $('<div class="top"></div>').appendTo(this.$methods);
-        this.$top.append($('<div class="item">Formula</div>'));
+        this.$top.append($(`<div class="item">${_('Formula')}</div>`));
 
         this.$methods.append($('<div class="separator"></div>'));
 
@@ -125,7 +125,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        this.$showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
+        this.$showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {

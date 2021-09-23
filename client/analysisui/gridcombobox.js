@@ -22,7 +22,7 @@ const GridCombobox = function(params) {
             if (typeof options[0] === 'string') {
                 let newOptions = [];
                 for (let i = 0; i < options.length; i++)
-                    newOptions[i] = { title: options[i], name: options[i] };
+                    newOptions[i] = { title: this.translate(options[i]), name: options[i] };
                 this.setPropertyValue('options', newOptions);
                 options = newOptions;
             }
@@ -37,6 +37,8 @@ const GridCombobox = function(params) {
         if (label === null)
             label = '';
 
+        label = this.translate(label);
+
         let columnUsed = 0;
         let cell = null;
         if (label !== "") {
@@ -50,7 +52,7 @@ const GridCombobox = function(params) {
 
         let t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
         for (let i = 0; i < options.length; i++)
-            t += '<option>' + options[i].title + '</option>';
+            t += '<option>' + this.translate(options[i].title) + '</option>';
         t += '</select>';
 
         let self = this;

@@ -1,9 +1,8 @@
 'use strict';
 
-var _ = require('underscore');
-var $ = require('jquery');
-var Backbone = require('backbone');
-var SuperClass = require('../common/superclass');
+const $ = require('jquery');
+const Backbone = require('backbone');
+const SuperClass = require('../common/superclass');
 
 var PropertySupplier = function(properties) {
 
@@ -26,8 +25,6 @@ var PropertySupplier = function(properties) {
 
         if (this.properties[name] !== undefined && this.properties[name].isDefined)
             return;
-
-
 
         let properties = {
             trigger: name + "_changed",
@@ -111,10 +108,9 @@ var PropertySupplier = function(properties) {
         this._propertySupplier_editting -= 1;
 
         if (this._propertySupplier_editting === 0) {
-            var self = this;
-            _.each(this._propertySupplier_eventsPending, function(value, key, list) {
-                self.firePropertyChangedEvent(key);
-            });
+            for (let key in this._propertySupplier_eventsPending)
+                this.firePropertyChangedEvent(key);
+
             this._propertySupplier_eventsPending = { };
         }
     };
@@ -131,10 +127,10 @@ var PropertySupplier = function(properties) {
         if (typeof properties !== 'object' || Array.isArray(properties) === true)
             throw 'Properties can only be an object.';
         else {
-            var self = this;
-            _.each(properties, function(value, key, list) {
-                self.registerSimpleProperty(key, value, null, true);
-            });
+            for (let key in properties) {
+                let value = properties[key];
+                this.registerSimpleProperty(key, value, null, true);
+            }
         }
     }
 };
