@@ -43,7 +43,7 @@ const MissingValueList = function() {
     this.$list = $('<div class="list"></div>').appendTo(this.$el);
 
     this.$bottom = $('<div class="bottom"></div>').appendTo(this.$el);
-    this.$createNew = $('<div class="add-missing-value" tabindex="0"><div class="insert"></div><div>Add Missing Value</div></div>').appendTo(this.$bottom);
+    this.$createNew = $(`<div class="add-missing-value" tabindex="0"><div class="insert"></div><div>${_('Add Missing Value')}</div></div>`).appendTo(this.$bottom);
 
     this.$createNew.on('click', (event) => {
         this.createNew();

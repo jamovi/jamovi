@@ -10,22 +10,22 @@ const ContextMenuButton = require('./contextmenubutton');
 const createRowMenuItems = function(plural) {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Cut', name: 'cut', iconId: 'cut' }),
-            new ContextMenuButton({ title: 'Copy', name: 'copy', iconId: 'copy' }),
-            new ContextMenuButton({ title: 'Paste', name: 'paste', iconId: 'paste' })
+            new ContextMenuButton({ title: _('Cut'), name: 'cut', iconId: 'cut' }),
+            new ContextMenuButton({ title: _('Copy'), name: 'copy', iconId: 'copy' }),
+            new ContextMenuButton({ title: _('Paste'), name: 'paste', iconId: 'paste' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Filters', name: 'editFilters', iconId: 'editFilters' })
+            new ContextMenuButton({ title: _('Filters'), name: 'editFilters', iconId: 'editFilters' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({  orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Insert Row...', name: 'insertRow', iconId: 'insertrow' }),
-            new ContextMenuButton({ title: 'Append Row...', name: 'appendRow', iconId: 'appendrow' }),
+            new ContextMenuButton({ title: _('Insert Row...'), name: 'insertRow', iconId: 'insertrow' }),
+            new ContextMenuButton({ title: _('Append Row...'), name: 'appendRow', iconId: 'appendrow' }),
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Delete Row' + (plural ? 's' : ''), name: 'delRow', iconId: 'delrow' })
+            new ContextMenuButton({ title: _('Delete Row') + (plural ? 's' : ''), name: 'delRow', iconId: 'delrow' })
         ]}),
     ];
 };
@@ -33,20 +33,20 @@ const createRowMenuItems = function(plural) {
 const createFilterRowMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Copy', name: 'copy', iconId: 'copy' })
+            new ContextMenuButton({ title: _('Copy'), name: 'copy', iconId: 'copy' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Filters', name: 'editFilters', iconId: 'editFilters' })
+            new ContextMenuButton({ title: _('Filters'), name: 'editFilters', iconId: 'editFilters' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Insert Row...', name: 'insertRow', iconId: 'insertrow' }),
-            new ContextMenuButton({ title: 'Append Row...', name: 'appendRow', iconId: 'appendrow' }),
+            new ContextMenuButton({ title: _('Append Row...'), name: 'appendRow', iconId: 'appendrow' }),
+            new ContextMenuButton({ title: _('Insert Row...'), name: 'insertRow', iconId: 'insertrow' }),
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Delete Row', name: 'delRow', iconId: 'delrow' })
+            new ContextMenuButton({ title: _('Delete Row'), name: 'delRow', iconId: 'delrow' })
         ]}),
     ];
 };
@@ -54,40 +54,40 @@ const createFilterRowMenuItems = function() {
 const createVariableMenuItems = function(plural, noData) {
     let menu = [
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Add Variable', name: 'addVar', subItems: [
-                new RibbonGroup({ title: 'Data Variable', orientation: 'vertical', titlePosition: 'top', items: [
-                    new ContextMenuButton({ title: 'Insert', name: 'insertVar' }),
-                    new ContextMenuButton({ title: 'Append', name: 'appendVar' })
+            new ContextMenuButton({ title: _('Add Variable'), name: 'addVar', subItems: [
+                new RibbonGroup({ title: _('Data Variable'), orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: _('Insert'), name: 'insertVar' }),
+                    new ContextMenuButton({ title: _('Append'), name: 'appendVar' })
                 ]}),
-                new RibbonGroup({ title: 'Computed Variable', orientation: 'vertical', titlePosition: 'top', items: [
-                    new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
-                    new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
+                new RibbonGroup({ title: _('Computed Variable'), orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: _('Insert'), name: 'insertComputed' }),
+                    new ContextMenuButton({ title: _('Append'), name: 'appendComputed' })
                 ]}),
-                new RibbonGroup({ title: 'Transformed Variable', orientation: 'vertical', titlePosition: 'top', items: [
-                    new ContextMenuButton({ title: 'Insert', name: 'insertRecoded' }),
-                    new ContextMenuButton({ title: 'Append', name: 'appendRecoded' })
+                new RibbonGroup({ title: _('Transformed Variable'), orientation: 'vertical', titlePosition: 'top', items: [
+                    new ContextMenuButton({ title: _('Insert'), name: 'insertRecoded' }),
+                    new ContextMenuButton({ title: _('Append'), name: 'appendRecoded' })
                 ]})
             ]})
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Delete Variable' + (plural ? 's' : ''), name: 'delVar' })
+            new ContextMenuButton({ title: n_('Delete Variable', 'Delete Variables', plural ? 2 : 1), name: 'delVar' })
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Setup...', name: 'editVar' })
+            new ContextMenuButton({ title: _('Setup...'), name: 'editVar' })
         ]}),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Transform...', name: 'transform' })
+            new ContextMenuButton({ title: _('Transform...'), name: 'transform' })
         ]}),
     ];
 
     if (! noData) {
         menu.unshift(new RibbonSeparator());
         menu.unshift(new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: 'Cut', name: 'cut' }),
-            new ContextMenuButton({ title: 'Copy', name: 'copy' }),
-            new ContextMenuButton({ title: 'Paste', name: 'paste' })
+            new ContextMenuButton({ title: _('Cut'), name: 'cut' }),
+            new ContextMenuButton({ title: _('Copy'), name: 'copy' }),
+            new ContextMenuButton({ title: _('Paste'), name: 'paste' })
         ]}));
     }
 
@@ -97,17 +97,17 @@ const createVariableMenuItems = function(plural, noData) {
 const createAppendVariableMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
-            new RibbonGroup({ title: 'Transformed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
-                new ContextMenuButton({ title: 'Insert', name: 'insertRecoded' }),
-                new ContextMenuButton({ title: 'Append', name: 'appendRecoded' })
+            new RibbonGroup({ title: _('Transformed Variable'), orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: _('Insert'), name: 'insertRecoded' }),
+                new ContextMenuButton({ title: _('Append'), name: 'appendRecoded' })
             ]}),
-            new RibbonGroup({ title: 'Computed Variable', orientation: 'horizontal', titlePosition: 'top', items: [
-                new ContextMenuButton({ title: 'Insert', name: 'insertComputed' }),
-                new ContextMenuButton({ title: 'Append', name: 'appendComputed' })
+            new RibbonGroup({ title: _('Computed Variable'), orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: _('Insert'), name: 'insertComputed' }),
+                new ContextMenuButton({ title: _('Append'), name: 'appendComputed' })
             ]}),
-            new RibbonGroup({ title: 'Data Variable', orientation: 'horizontal', titlePosition: 'top', items: [
-                new ContextMenuButton({ title: 'Insert', name: 'insertVar' }),
-                new ContextMenuButton({ title: 'Append', name: 'appendVar' })
+            new RibbonGroup({ title: _('Data Variable'), orientation: 'horizontal', titlePosition: 'top', items: [
+                new ContextMenuButton({ title: _('Insert'), name: 'insertVar' }),
+                new ContextMenuButton({ title: _('Append'), name: 'appendVar' })
             ]})
         ]})
     ];
@@ -117,26 +117,26 @@ const createFilterMenuItems = function(noData) {
     if (noData) {
         return [
             new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Delete Filter', name: 'delVar' })
+                new ContextMenuButton({ title: _('Delete Filter'), name: 'delVar' })
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Edit...', name: 'editFilters' })
+                new ContextMenuButton({ title: _('Edit...'), name: 'editFilters' })
             ]}),
         ];
     }
     else {
         return [
             new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Copy', name: 'copy' })
+                new ContextMenuButton({ title: _('Copy'), name: 'copy' })
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Delete Filter', name: 'delVar' })
+                new ContextMenuButton({ title: _('Delete Filter'), name: 'delVar' })
             ]}),
             new RibbonSeparator(),
             new RibbonGroup({ orientation: 'vertical', items: [
-                new ContextMenuButton({ title: 'Edit...', name: 'editFilters' })
+                new ContextMenuButton({ title: _('Edit...'), name: 'editFilters' })
             ]}),
         ];
     }

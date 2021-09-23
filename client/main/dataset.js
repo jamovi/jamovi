@@ -1305,8 +1305,34 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
+    },
+    columnTypeLabel(type) {
+        switch (type) {
+            case 'data':
+            case 1:
+                return _('Data');
+            case 'computed':
+            case 2:
+                return _('Computed');
+            case 'recoded':
+            case 3:
+                return _('Transformed');
+            case 'filter':
+            case 4:
+                return _('Filter');
+            case 'output':
+            case 5:
+                return _('Output');
+            case 'none':
+            case 0:
+                return _('None');
+            default:
+                return _('None');
+        }
     }
 });
+
+
 
 DataSetModel.stringifyMeasureType = function(type) {
     switch (type) {
