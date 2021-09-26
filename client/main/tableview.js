@@ -103,16 +103,17 @@ const TableView = SilkyView.extend({
 
         this.$container.on('scroll', event => this._scrollHandler(event));
 
-        let $measureOne = this._createRHCell(0, 0, '', 0)
-            .css('width', 'auto')
-            .appendTo(this.$rhColumn);
-        let $measureTwo = this._createRHCell(0, 0, '0', 1)
-            .css('width', 'auto')
-            .appendTo(this.$rhColumn);
+        let measureOne = this._createRHCell(0, 0, '', 0);
+        measureOne.style.width = 'auto';
+        this.$rhColumn[0].append(measureOne);
+
+        let measureTwo = this._createRHCell(0, 0, '0', 1);
+        measureTwo.style.width = 'auto';
+        this.$rhColumn[0].append(measureTwo);
 
         this._rowHeaderDigits = 2;
-        this._rowHeaderWidthB = $measureOne[0].offsetWidth;
-        this._rowHeaderWidthM = $measureTwo[0].offsetWidth - this._rowHeaderWidthB;
+        this._rowHeaderWidthB = measureOne.offsetWidth;
+        this._rowHeaderWidthM = measureTwo.offsetWidth - this._rowHeaderWidthB;
         this._rowHeaderWidth = this._rowHeaderDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
 
         // read and store the row height
@@ -517,8 +518,8 @@ const TableView = SilkyView.extend({
 
             let $cells  = $column.children();
             for (let rowNo = viewport.top; rowNo <= viewport.bottom; rowNo++) {
-                let $cell = $($cells[rowNo - viewport.top]);
-                this.refreshCellColour($cell, column, rowNo);
+                let cell = $cells[rowNo - viewport.top];
+                this.refreshCellColour(cell, column, rowNo);
             }
 
             $header.attr('data-measuretype', column.measureType);
@@ -567,8 +568,8 @@ const TableView = SilkyView.extend({
             let viewport = this.viewport;
             let $cells  = $column.children();
             for (let rowNo = viewport.top; rowNo <= viewport.bottom; rowNo++) {
-                let $cell = $($cells[rowNo - viewport.top]);
-                this.refreshCellColour($cell, column, rowNo);
+                let cell = $cells[rowNo - viewport.top];
+                this.refreshCellColour(cell, column, rowNo);
             }
 
             if (changes.levelsChanged || changes.measureTypeChanged || changes.dataTypeChanged || changes.columnTypeChanged) {
@@ -1647,9 +1648,9 @@ const TableView = SilkyView.extend({
                         let $column = this.$columns[i];
                         for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
                             let top   = rowNo * this._rowHeight;
-                            let $cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
-                            this.refreshCellColour($cell, column, rowNo);
-                            $column.append($cell);
+                            let cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
+                            this.refreshCellColour(cell, column, rowNo);
+                            $column.append(cell);
                         }
                         this.$header.append($header);
                         this.$body.append($column);
@@ -2066,19 +2067,14 @@ const TableView = SilkyView.extend({
     },
     _createCell(top, height, rowNo, colNo) {
 
-        let $cell = $(`
-            <div
-                class="jmv-column-cell"
-                data-row="${ rowNo }"
-                style="
-                    top: ${ top }px ;
-                    height: ${ height + 1 }px ;
-                    line-height: ${ height-3 }px ;
-                "
-            >
-            </div>`);
+        let cell = document.createElement('div');
+        cell.classList.add('jmv-column-cell');
+        cell.dataset.row = rowNo;
+        cell.style.top = `${ top }px`;
+        cell.style.height = `${ height + 1 }px`;
+        cell.style.lineHeight = `${ height - 3}px`;
 
-        return $cell;
+        return cell;
     },
     _createRHCell(top, height, content, rowNo) {
 
@@ -2086,27 +2082,29 @@ const TableView = SilkyView.extend({
         if (this.selection && this.selection.rowNo === rowNo)
             highlighted = ' highlighted';
 
-        return $(`
-            <div
-                class="
-                    jmv-row-header-cell
-                    ${ highlighted }
-                "
-                style="
-                    top: ${ top }px ;
-                    height: ${ height + 1 }px ;
-                    line-height: ${ height-3 }px ;
-                "
-            >
-                ${ s6e(content) }
-                <div class="sub-selection-bar"></div>
-            </div>`);
+        let cell = document.createElement('div');
+        cell.classList.add('jmv-row-header-cell');
+        if (highlighted != '')
+            cell.classList.add('highlighted');
+        cell.style.top = `${ top }px`;
+        cell.style.height = `${ height + 1}px`;
+        cell.style.lineHeight = `${ height - 3 }px`;
+
+        let bar = document.createElement('div');
+        bar.classList.add('sub-selection-bar');
+
+        cell.innerText = content;
+        cell.appendChild(bar);
+
+        return cell;
     },
-    refreshCellColour($cell, columnInfo, rowNo) {
+    refreshCellColour(cell, columnInfo, rowNo) {
+        if ( ! cell)
+            return;
         if (this._isCellEdited(columnInfo, rowNo))
-            $cell.addClass('cell-edited');
+            cell.classList.add('cell-edited');
         else
-            $cell.removeClass('cell-edited');
+            cell.classList.remove('cell-edited');
     },
     refreshCells(oldViewport, newViewport) {
 
@@ -2132,8 +2130,8 @@ const TableView = SilkyView.extend({
             for (let j = 0; j < nRows; j++) {
                 let rowNo = n.top + j;
                 let top   = rowNo * this._rowHeight;
-                let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                this.$rhColumn.append($cell);
+                let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                this.$rhColumn.append(cell);
             }
 
             for (let i = n.left; i <= n.right; i++) {
@@ -2145,9 +2143,9 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = n.top + j;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                    this.refreshCellColour($cell, column, rowNo);
-                    $column.append($cell);
+                    let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                    this.refreshCellColour(cell, column, rowNo);
+                    $column.append(cell);
                 }
 
                 this.$header.append($header);
@@ -2174,9 +2172,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
 
                     this.$header.append($header);
@@ -2211,9 +2209,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
 
                     this.$header.append($header);
@@ -2242,8 +2240,8 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = o.bottom + j + 1;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                    this.$rhColumn.append($cell);
+                    let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.append(cell);
                 }
 
                 for (let i = left; i <= right; i++) {
@@ -2254,9 +2252,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.bottom + j + 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
                 }
             }
@@ -2294,8 +2292,8 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = o.top - j - 1;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                    this.$rhColumn.prepend($cell);
+                    let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.prepend(cell);
                 }
 
                 for (let i = left; i <= right; i++) {
@@ -2306,9 +2304,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.top - j - 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.prepend($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.prepend(cell);
                     }
                 }
             }
