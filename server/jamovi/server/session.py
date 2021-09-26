@@ -240,9 +240,10 @@ class Session(dict):
 
                         # close instances without connections
                         no_conn_for = now - status.inactive_since
+
                         if ((status.unclean and no_conn_for > TIMEOUT_NC_UNCLEAN)
                                 or (status.virgin is True and no_conn_for > TIMEOUT_NC_VIRGIN)
-                                or (status.virgin is False and no_conn_for > TIMEOUT_NC)):
+                                or (status.virgin is False and status.unclean is False and no_conn_for > TIMEOUT_NC)):
                             log.info('%s %s', 'destroying instance:', id)
                             self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                             instance.close()
