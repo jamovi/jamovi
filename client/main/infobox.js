@@ -62,6 +62,14 @@ class InfoBox extends HTMLElement {
     }
 
     setup(info, params) {
+
+        if (this._visible
+                && info.title === this._displayInfo.title
+                && info.message === this._displayInfo.message
+                && info.status === this._displayInfo.status
+                && info['message-src'] === this._displayInfo['message-src'])
+            return;
+
         if (params === undefined)
             params = { };
 
@@ -73,7 +81,9 @@ class InfoBox extends HTMLElement {
 
         this._displayInfo = info;
         let show = true;
+
         if (info['message-src']) {
+
             if (params.cancelable === undefined)
                 params.cancelable = false;
 
@@ -100,8 +110,9 @@ class InfoBox extends HTMLElement {
             else if (this._isElement(info)) {
                 this.appendChild(info);
             }
-            else
+            else {
                 show = false;
+            }
         }
 
         if (show) {
