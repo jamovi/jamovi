@@ -536,8 +536,8 @@ class Server:
         await Modules.instance().read()
 
         client_path = conf.get('client_path')
-        i18n_path = conf.get('i18n_path')
-        coms_path   = 'jamovi.proto'
+        i18n_path = os.path.join(conf.get('home'), 'i18n')
+        coms_path = 'jamovi.proto'
 
         session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
