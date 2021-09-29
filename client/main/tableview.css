@@ -310,6 +310,8 @@
     padding-right: 10px ;
     overflow: hidden ;
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    caret-color: transparent;
+    outline: NONE;
 }
 
 .jmv-table-cell-selected {

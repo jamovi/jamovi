@@ -347,8 +347,10 @@ class ViewController {
         this.trigger('copying');
     }
 
-    async pasteClipboardToSelection() {
-        let content = host.pasteFromClipboard();
+    async pasteClipboardToSelection(content) {
+
+        if (content === undefined)
+            content = host.pasteFromClipboard();
 
         let text = content.text;
         let html = content.html;
