@@ -1032,6 +1032,37 @@ const TableView = SilkyView.extend({
             this._applyHeaderHighlight(range, true);
         }
     },
+    _pasteEventHandler(event) {
+        const text = event.clipboardData.getData('text/plain');
+        const html = event.clipboardData.getData('text/html');
+        let content = { text: text, html: html };
+        this.controller.pasteClipboardToSelection(content);
+        event.preventDefault();
+    },
+    _inputEventHandler(event) {
+        this._focusCell.innerHTML = '';
+    },
+    _setFocusCell(cell) {
+        let pasteEventHandle = this._pasteEventHandler.bind(this);
+        let inputEventHandle = this._inputEventHandler.bind(this);
+        cell.addEventListener('blur', (event) => {
+            cell.removeAttribute('contenteditable');
+            cell.removeEventListener('paste', pasteEventHandle);
+            cell.removeEventListener('input', inputEventHandle);
+            this._focusCell = null;
+        }, { once: true });
+        cell.addEventListener('paste', pasteEventHandle);
+        cell.addEventListener('input', inputEventHandle)
+        cell.setAttribute('contenteditable', true);
+        cell.focus();
+        this._focusCell = cell;
+        let selection = window.getSelection();
+        let select = document.createRange();
+        select.setStart(cell, 0);
+        select.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(select);
+    },
     _setSelectedRange(range, oldSel, ignoreTabStart) {
 
         if (this._loaded === false)
@@ -1046,6 +1077,11 @@ const TableView = SilkyView.extend({
         //this.controller.enableDisableActions();
 
         this.currentColumn = this.model.getColumn(colNo, true);
+
+        let $column = $(this.$columns[this.currentColumn.dIndex]);
+        let $cells  = $column.children();
+        let cell = $cells[rowNo - this.viewport.top];
+        this._setFocusCell(cell);
 
         this._updateHeaderHighlight();
 
@@ -1323,10 +1359,6 @@ const TableView = SilkyView.extend({
         if (event.ctrlKey || event.metaKey) {
             if (event.key.toLowerCase() === 'c') {
                 this.controller.copySelectionToClipboard();
-                event.preventDefault();
-            }
-            else if (event.key.toLowerCase() === 'v') {
-                this.controller.pasteClipboardToSelection();
                 event.preventDefault();
             }
             else if (event.key.toLowerCase() === 'x') {
@@ -2068,6 +2100,7 @@ const TableView = SilkyView.extend({
     _createCell(top, height, rowNo, colNo) {
 
         let cell = document.createElement('div');
+        cell.setAttribute('tabindex', -1);
         cell.classList.add('jmv-column-cell');
         cell.dataset.row = rowNo;
         cell.style.top = `${ top }px`;
