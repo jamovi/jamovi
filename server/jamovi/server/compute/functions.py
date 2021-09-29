@@ -358,13 +358,19 @@ def TEXT(index, x: str):
 
 @row_wise
 def VALUE(index, x: str):
-    return float(x)
+    try:
+        return float(x)
+    except ValueError:
+        return NaN
 
 
 @row_wise
 @returns(DataType.INTEGER, MeasureType.CONTINUOUS)
 def INT(index, x):
-    return int(float(x))
+    try:
+        return int(float(x))
+    except ValueError:
+        return -2147483648
 
 
 @row_wise
