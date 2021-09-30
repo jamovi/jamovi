@@ -214,7 +214,8 @@ $(document).ready(function() {
 
 function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
 
-    I18n.initialise(appI18nDef.locale_data.messages[""].lang, appI18nDef);
+    if (appI18nDef)
+        I18n.initialise(appI18nDef.locale_data.messages[""].lang, appI18nDef);
 
     window.jamoviVersion = jamoviVersion;
 
