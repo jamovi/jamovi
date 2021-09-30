@@ -156,7 +156,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                         resolve(script);
                     }, 'text');
                 }
-            })
+            });
         }),
         new Promise((resolve, reject) => {
             this.notifyDocumentReady = resolve;
