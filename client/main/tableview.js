@@ -1038,15 +1038,23 @@ const TableView = SilkyView.extend({
         this.controller.pasteClipboardToSelection(content);
         event.preventDefault();
     },
+    _inputEventHandler(event) {
+        this._focusCell.innerHTML = '';
+    },
     _setFocusCell(cell) {
-        let eventHandle = this._pasteEventHandler.bind(this);
+        let pasteEventHandle = this._pasteEventHandler.bind(this);
+        let inputEventHandle = this._inputEventHandler.bind(this);
         cell.addEventListener('blur', (event) => {
             cell.removeAttribute('contenteditable');
-            cell.removeEventListener('paste', eventHandle);
+            cell.removeEventListener('paste', pasteEventHandle);
+            cell.removeEventListener('input', inputEventHandle);
+            this._focusCell = null;
         }, { once: true });
-        cell.addEventListener('paste', eventHandle);
+        cell.addEventListener('paste', pasteEventHandle);
+        cell.addEventListener('input', inputEventHandle)
         cell.setAttribute('contenteditable', true);
         cell.focus();
+        this._focusCell = cell;
         let selection = window.getSelection();
         let select = document.createRange();
         select.setStart(cell, 0);
