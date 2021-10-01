@@ -533,7 +533,11 @@ class Server:
         await Modules.instance().read()
 
         client_path = conf.get('client_path')
-        i18n_path = conf.get('i18n_path')
+
+        i18n_path = conf.get('i18n_path', None)
+        if i18n_path is None:
+            i18n_path = os.path.join(conf.get('home'), 'i18n')
+
         coms_path   = 'jamovi.proto'
 
         session_path = os.path.join(self._spool_path, self._session_id)
@@ -674,7 +678,7 @@ class Server:
                 os.remove(self._port_file)
             except Exception:
                 pass
-                
+
             rmtree(session_path, ignore_errors=True)
 
     def _session_event(self, event):
