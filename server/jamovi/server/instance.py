@@ -824,6 +824,8 @@ class Instance:
                 raise PermissionError()
             if self._perms.open.local is False:
                 temp_dir = conf.get('upload_path', None)
+                # prevent directory traversal attacks
+                path = os.path.join(temp_dir, path)
                 if temp_dir and os.path.commonpath([ temp_dir, path ]) == temp_dir:
                     pass
                 else:
@@ -872,9 +874,12 @@ class Instance:
                             if not formatio.is_supported(filename):
                                 raise RuntimeError('Unrecognised file format')
 
-                            title, ext = os.path.splitext(filename)
-                            fd, temp_file_path = mkstemp(suffix=ext)
+                            title, dotext = os.path.splitext(filename)
+                            fd, temp_file_path = mkstemp(suffix=dotext)
                             temp_file = os.fdopen(fd, 'wb')
+
+                            if dotext != '':
+                                ext = dotext[1:].lower()
 
                             progress = [0, 1]
                             if content_length:

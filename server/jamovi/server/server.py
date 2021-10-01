@@ -254,20 +254,16 @@ class OpenHandler(RequestHandler):
             self._write('OK', redirect=instance.id)
 
     async def post(self, instance_id=None):
-        try:
-            file = self.request.files['file'][-1]
-        except KeyError:
-            self.set_status(400)
-            self.write('400: Bad Request')
-            return
+
+        filename = self.get_query_argument('filename')
 
         try:
-            base, ext = os.path.splitext(file.filename)
+            base, ext = os.path.splitext(os.path.basename(filename))
             temp_file = NamedTemporaryFile(suffix=ext)
             with open(temp_file.name, 'wb') as writer:
-                writer.write(file.body)
+                writer.write(self.request.body)
             instance = self._session.create()
-            async for progress in instance.open(temp_file.name, base, True):
+            async for progress in instance.open(temp_file.name, title=base, is_temp=True):
                 self._write('progress', progress)
         except Exception as e:
             log.exception(e)
