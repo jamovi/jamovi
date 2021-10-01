@@ -42,7 +42,7 @@ class Download:
             self._file.seek(0)
             self._stream.set_result(self._file)
         except Exception as e:
-            self._stream.abort(e)
+            self._stream.set_exception(e)
 
     def _header_callback(self, line):
         match = re.match(r'Content-Length:[\s]*([0-9]+)', line)

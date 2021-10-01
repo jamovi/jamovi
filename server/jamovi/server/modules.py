@@ -148,7 +148,7 @@ class Modules:
                 out_stream.set_result(modules)
             except Exception as e:
                 in_stream.cancel()
-                out_stream.abort(e)
+                out_stream.set_exception(e)
 
         self._read_task = create_task(transform())
         return out_stream
@@ -308,11 +308,11 @@ class Modules:
             except Exception as e:
                 if in_stream:
                     in_stream.cancel()
-                out_stream.abort(e)
+                out_stream.set_exception(e)
 
         t = create_task(download_and_install(path))
         t.add_done_callback(lambda f: f.result())
-        
+
         return out_stream
 
     def _read_module(self, path, is_sys=False):
