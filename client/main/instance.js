@@ -161,6 +161,9 @@ const Instance = Backbone.Model.extend({
                     setProgress({ title: 'Uploading', p: 0, n: 0 });
 
                     let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
+                    if (options.title)
+                        url += `&title=${ encodeURIComponent(options.title) }`;
+
                     response = await fetch(url, {
                         method: 'POST',
                         body: file,
@@ -172,12 +175,17 @@ const Instance = Backbone.Model.extend({
 
                     let url;
 
-                    if (file)
+                    if (file) {
                         url = `${ host.baseUrl }open?p&url=${ encodeURIComponent(file) }`;
-                    else if (options.existing)
+                        if (options.title)
+                            url += `&title=${ encodeURIComponent(options.title) }`;
+                    }
+                    else if (options.existing) {
                         url = 'open';
-                    else
+                    }
+                    else {
                         url = `${ host.baseUrl }open?p`;
+                    }
 
                     response = await fetch(url, {
                         method: 'GET',
