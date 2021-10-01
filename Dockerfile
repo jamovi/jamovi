@@ -60,7 +60,6 @@ RUN mkdir -p  /usr/lib/jamovi/bin
 
 COPY version           /usr/lib/jamovi
 COPY platform/env.conf /usr/lib/jamovi/bin
-COPY examples          /usr/lib/jamovi/examples
 COPY platform/jamovi   /usr/lib/jamovi/bin
 RUN chmod u+x /usr/lib/jamovi/bin/jamovi
 
