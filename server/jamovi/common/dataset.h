@@ -14,7 +14,7 @@ typedef struct
 {
     int columnCount; // columns used
     int rowCount;
-    ColumnStruct **columns;
+    ColumnStruct ** volatile columns;
     int capacity;  // size of columns array
     int nextColumnId;
     ColumnStruct *scratch;

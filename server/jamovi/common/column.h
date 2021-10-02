@@ -79,7 +79,7 @@ typedef struct
 
     int blocksUsed;
     int blockCapacity;
-    Block **blocks;
+    Block ** volatile blocks;
 
     int levelsUsed;
     int levelsCapacity;
