@@ -106,7 +106,8 @@ class EngineManager:
         except Exception as e:
             log.exception(e)
         finally:
-            self._requests[index] = None
+            if self._requests[index] == (request, stream):
+                self._requests[index] = None
 
     async def start(self):
         await wait(map(lambda e: e.start(), self._engines))
