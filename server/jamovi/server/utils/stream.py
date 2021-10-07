@@ -41,3 +41,7 @@ class ProgressStream(Future):
         if self._progress.qsize() > 0:
             self._progress.get_nowait()
         self._progress.put_nowait(item)
+
+    def cancel(self):
+        self._progress_task.cancel()
+        super().cancel()
