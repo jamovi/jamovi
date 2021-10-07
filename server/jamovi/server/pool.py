@@ -52,13 +52,21 @@ class Pool:
         if existing is not None:
             ex_request, ex_stream = existing
             log.debug('%s %s', 'cancelling', req_str(ex_request))
+            # we need _stream_complete to be called synchronously
+            # so that's why we call it explicitly here
+            ex_stream.remove_done_callback(self._stream_complete)
             ex_stream.cancel()
+            self._stream_complete(ex_stream)
         else:
             existing = self._wait_rx.get(key)
             if existing is not None:
                 ex_request, ex_stream = existing
                 log.debug('%s %s', 'cancelling', req_str(ex_request))
+                # we need _stream_complete to be called synchronously
+                # so that's why we call it explicitly here
+                ex_stream.remove_done_callback(self._stream_complete)
                 ex_stream.cancel()
+                self._stream_complete(ex_stream)
 
         if self.full():
             raise QueueFull

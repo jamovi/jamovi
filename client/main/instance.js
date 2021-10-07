@@ -695,6 +695,7 @@ const Instance = Backbone.Model.extend({
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
+        analysis.revision++;
         let request = this._constructAnalysisRequest(analysis);
         request.perform = 0; // INIT
 
