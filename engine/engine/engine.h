@@ -26,6 +26,7 @@ public:
 private:
     void messageLoop();
     void monitorStdinLoop();
+    void heartbeat(const std::string &path);
     void resultsReceived(const std::string &results, bool complete);
     void periodicChecks();
     void terminate();
@@ -38,6 +39,7 @@ private:
     std::string _path;
     bool _exiting;
     bool _headless;
+    std::string _heartbeatPath;
 
     jamovi::coms::AnalysisRequest _waitingRequest;
     jamovi::coms::AnalysisRequest _runningRequest;
