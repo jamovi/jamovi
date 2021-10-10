@@ -31,6 +31,10 @@ Engine::Engine()
     if (headless != NULL && strcmp(headless, "1") == 0)
         _headless = true;
 
+    char *heartbeatPath = std::getenv("JAMOVI_ENGINE_HEARTBEAT_PATH");
+    if (heartbeatPath != NULL)
+        _heartbeatPath = string(heartbeatPath);
+
     _reflection = _runningRequest.GetReflection();
 
     _coms = NULL;
@@ -75,6 +79,11 @@ void Engine::start()
     thread u;
     if ( ! _headless)
         u = thread(&Engine::monitorStdinLoop, this);
+
+    // we don't worry about the heartbeat on windows
+    thread v;
+    if (_heartbeatPath != "")
+        v = thread(&Engine::heartbeat, this, _heartbeatPath);
 #endif
 
     // locks for sharing between threads
@@ -168,4 +177,22 @@ void Engine::monitorStdinLoop()
             break;
     }
     terminate();
+}
+
+#include <chrono>
+
+void Engine::heartbeat(const std::string &path)
+{
+#ifndef _WIN32
+    chrono::milliseconds duration(1000);
+    int fd = open(path.c_str(),
+                  O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK,
+                  0666);
+
+    while (true)
+    {
+        futimens(fd, nullptr);
+        this_thread::sleep_for(duration);
+    }
+#endif
 }
