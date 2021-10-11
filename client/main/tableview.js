@@ -1051,7 +1051,7 @@ const TableView = SilkyView.extend({
             this._focusCell = null;
         }, { once: true });
         cell.addEventListener('paste', pasteEventHandle);
-        cell.addEventListener('input', inputEventHandle)
+        cell.addEventListener('input', inputEventHandle);
         cell.setAttribute('contenteditable', true);
         cell.focus();
         this._focusCell = cell;
