@@ -143,6 +143,7 @@ class Module {
         this._status = 'none';
         this._i18nReady = this._loadI18n();
         this.loaded = false;
+        this._languages = [];
     }
 
     load() {
@@ -169,6 +170,9 @@ class Module {
             let content = await response.text();
             try {
                 let moduleDefn = yaml.safeLoad(content);
+                if (moduleDefn.languages)
+                    this._languages = moduleDefn.languages;
+
                 this._moduleDefn = Object.assign(...moduleDefn.analyses.map(a => {
                     let obj = { };
                     obj[a.name] = a;
@@ -249,33 +253,10 @@ class Module {
     }
 
     async getI18nCodes() {
-
-        let codes = this._i18nCodes;
-        if (codes === undefined){
-            let defnProm = this._i18nCodes;
-            if (defnProm === undefined) {
-                defnProm = this._i18nCodes = (async() => {
-
-                    let url = `../modules/${ this._ns }/i18n`;
-                    let response = await fetch(url);
-                    if (response.ok) {
-                        try {
-                            return await response.json();
-                        }
-                        catch (e) {
-                            throw new ModuleCorruptError();
-                        }
-                    }
-                    else {
-                        return [ ];
-                    }
-                })();
-            }
-            let codes = await defnProm;
-            return codes;
-        }
-        return codes;
-
+        if (this.loaded === false)
+            this.load();
+        await this._ready;
+        return this._languages;
     }
 
     async getCurrentI18nCode() {
@@ -305,7 +286,6 @@ class Module {
                 let defnProm = this._i18nDefns[code];
                 if (defnProm === undefined) {
                     defnProm = this._i18nDefns[code] = (async() => {
-
                         let url = `../modules/${ this._ns }/i18n/${ code }`;
                         let response = await fetch(url);
                         if (response.ok) {

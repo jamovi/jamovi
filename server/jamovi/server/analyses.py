@@ -409,14 +409,15 @@ class Analyses:
             analysis_name = analysis_meta.name
             option_defs = analysis_meta.defn['options']
 
-            if i18n is not None:
+            if i18n is not None and i18n != '':
                 i18n_def = None
                 i18n_root = os.path.join(module_meta.path, 'i18n', i18n + '.json')
-                with open(i18n_root, 'r', encoding='utf-8') as stream:
-                    i18n_def = json.load(stream)
-                i18n_map = i18n_def['locale_data']['messages']
-                for opt_defn in option_defs:
-                    self.translate_default(i18n_map, opt_defn)
+                if os.path.exists(i18n_root):
+                    with open(i18n_root, 'r', encoding='utf-8') as stream:
+                        i18n_def = json.load(stream)
+                    i18n_map = i18n_def['locale_data']['messages']
+                    for opt_defn in option_defs:
+                        self.translate_default(i18n_map, opt_defn)
 
             if enabled is None:
                 enabled = not analysis_meta.defn.get('arbitraryCode', False)
