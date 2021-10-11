@@ -16,3 +16,4 @@
 [submodule "i18n"]
 	path = i18n
 	url = https://github.com/jamovi/jamovi-i18n.git
+	branch = main
