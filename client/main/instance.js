@@ -198,6 +198,9 @@ const Instance = Backbone.Model.extend({
                 if (response.status === 204)
                     return { 'status': 'OK' };
 
+                if (response.status === 413)
+                    throw new JError('Unable to open', { cause: 'File size exceeds session limits' })
+
                 if (response.status !== 200)
                     throw new JError('Unable to open', { cause: response.statusText });
 
