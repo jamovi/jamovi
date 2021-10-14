@@ -153,6 +153,7 @@ const Instance = Backbone.Model.extend({
         return new ProgressStream(async (setProgress) => {
 
             let response;
+            let welcomeUrl;
 
             while (true) {
 
@@ -247,9 +248,15 @@ const Instance = Backbone.Model.extend({
                     throw error;
                 }
                 else if (message.url === '/open') {
+                    // open is performed in two steps, so we store the welcome
+                    // message from the first step
+                    welcomeUrl = message['message-src'];
                     continue;
                 }
                 else {
+                    // and apply the welcome message to the second
+                    if ( ! ('message-src' in message) && welcomeUrl !== undefined)
+                        message['message-src'] = welcomeUrl;
                     return message;
                 }
             }
