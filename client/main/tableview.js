@@ -1080,7 +1080,8 @@ const TableView = SilkyView.extend({
         let $column = $(this.$columns[this.currentColumn.dIndex]);
         let $cells  = $column.children();
         let cell = $cells[rowNo - this.viewport.top];
-        this._setFocusCell(cell);
+        if (cell)
+            this._setFocusCell(cell);
 
         this._updateHeaderHighlight();
 
