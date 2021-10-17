@@ -1081,7 +1081,8 @@ const TableView = SilkyView.extend({
         let $column = $(this.$columns[this.currentColumn.dIndex]);
         let $cells  = $column.children();
         let cell = $cells[rowNo - this.viewport.top];
-        this._setFocusCell(cell);
+        if (cell)
+            this._setFocusCell(cell);
 
         this._updateHeaderHighlight();
 
@@ -1643,8 +1644,6 @@ const TableView = SilkyView.extend({
                     this._bodyWidth += widthIncrease;
                     this.$body.css('width', this._bodyWidth);
 
-                    this.selection.refreshSelection();
-
                     let insertedAt = dIndex;
                     let nWereVisible = this.viewport.right - this.viewport.left + 1;
                     let wereVisible = new Array(nWereVisible);
@@ -1693,6 +1692,8 @@ const TableView = SilkyView.extend({
                         $column.detach();
                         $column.empty();
                     }
+
+                    this.selection.refreshSelection();
 
                     this.viewport.left = nowVisible[0];
                     this.viewport.right = nowVisible[nowVisible.length - 1];
