@@ -141,9 +141,9 @@ class Module {
         this._analysisDefns = { };
         this._i18nDefns = { };
         this._status = 'none';
-        this._i18nReady = this._loadI18n();
         this.loaded = false;
         this._languages = [];
+        this._i18nReady = this._loadI18n();
     }
 
     load() {
