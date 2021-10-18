@@ -39,6 +39,9 @@ var SyntaxView = Elem.View.extend({
     type: function() {
         return 'Syntax';
     },
+    label: function() {
+        return _('Syntax');
+    },
     render: function() {
 
         let syntax = this.model.attributes.element;

@@ -69,6 +69,9 @@ const ArrayView = Elem.View.extend({
     type: function() {
         return 'Group';
     },
+    label: function() {
+        return _('Group');
+    },
     get: function(address) {
         if (address.length === 0)
             return this;

@@ -120,6 +120,8 @@ const ElementView = Backbone.View.extend({
             let options = this._menuOptions();
             let entry = {
                 type: this.type(),
+                label: this.label(),
+                name: this.type().toLowerCase(),
                 address: this.address(),
                 title: this.model.attributes.title,
                 options: options,
@@ -129,7 +131,7 @@ const ElementView = Backbone.View.extend({
         }
     },
     _menuOptions(event) {
-        return [ { label: 'Copy' }, { label: 'Export' }, { label: 'Add Note'} ];
+        return [ { name: 'copy', label: s_('Copy') }, { name: 'export', label: `${s_('Export')}...` }, { name: 'addNote', label: s_('Add Note')} ];
     },
     address() {
         let addr;

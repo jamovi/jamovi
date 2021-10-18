@@ -49,6 +49,9 @@ var HtmlView = Elem.View.extend({
     type: function() {
         return 'Html';
     },
+    label: function() {
+        return _('Html');
+    },
     render: function() {
 
         this.$head.find('.module-asset').remove();

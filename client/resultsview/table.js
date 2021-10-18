@@ -180,6 +180,9 @@ const TableView = Elem.View.extend({
     type() {
         return 'Table';
     },
+    label() {
+        return _('Table');
+    },
     render() {
 
         Elem.View.prototype.render.call(this);

@@ -4,6 +4,7 @@ const $ = require('jquery');
 const underscore = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const I18n = require('../common/i18n');
 
 const formatIO = require('../common/utils/formatio');
 
@@ -185,6 +186,7 @@ const ResultsPanel = Backbone.View.extend({
         this.resources[analysis.id] = resources;
 
         $iframe.on('load', () => {
+            this._sendI18nDef(resources);
             this._sendResults(resources);
             resources.loaded = true;
         });
@@ -307,6 +309,20 @@ const ResultsPanel = Backbone.View.extend({
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
     },
+    async _sendI18nDef(resources) {
+        let analysis = resources.analysis;
+
+        await analysis.ready;
+
+        let event = {
+            type: 'i18nDef',
+            data: {
+                moduleI18n: analysis.i18n,
+                appI18n: I18n.localeData
+            }
+        };
+        resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
+    },
     _sendResults(resources) {
 
         if (this.mode === 'rich' || resources.analysis.incAsText) {
@@ -401,20 +417,24 @@ const ResultsPanel = Backbone.View.extend({
 
         let entries = [
             {
+                name: 'references',
                 label: _('References'),
                 type: 'copyRef',
                 title: _('References'),
                 options: [
                     {
+                        name: 'copy',
                         label: _('Copy'),
                         op: 'refsCopy',
                         enabled: nRefsSelected > 0,
                     },
                     {
+                        name: 'selectAll',
                         label: _('Select all'),
                         op: 'refsSelectAll',
                     },
                     {
+                        name: 'clearSelection',
                         label: _('Clear selection'),
                         enabled: nRefsSelected > 0,
                         op: 'refsClearSelection',
@@ -548,10 +568,11 @@ const ResultsPanel = Backbone.View.extend({
             let address = entry.address.slice();
             let options = entry.options.slice();
             if (address.length === 0)
-                options.push({ label: _('Remove'), splitter: true });
+                options.push({ name: 'remove', label: _('Remove'), splitter: true });
             address.unshift(id);
             let e = {
-                label: entry.type,
+                name: entry.name,
+                label: entry.label,
                 type: entry.type,
                 address: address,
                 options: options,
@@ -562,13 +583,14 @@ const ResultsPanel = Backbone.View.extend({
 
         // Add root
         entries.unshift({
+            name: 'all',
             label: _('All'),
             type: 'All',
             address: [ ],
             options: [
-                { label: _('Copy') },
-                { label: _('Export') },
-                { label: _('Remove'), splitter: true },
+                { name:'copy', label: _('Copy') },
+                { name: 'export', label: _('Export') },
+                { name: 'remove', label: _('Remove'), splitter: true },
             ],
             title: 'All',
         });
@@ -665,7 +687,7 @@ const ResultsPanel = Backbone.View.extend({
                 this.model.trigger('notification', note);
             });
         }
-        else if (event.op === 'add note') {
+        else if (event.op === 'addNote') {
             let address = event.address.slice(); // clone
             let id = address.shift();
             let iframeWindow = this.resources[id].iframe.contentWindow;

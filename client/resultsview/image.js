@@ -50,6 +50,9 @@ const ImageView = Elem.View.extend({
     type: function() {
         return 'Image';
     },
+    label: function() {
+        return _('Image');
+    },
     render: function() {
 
         if (this.$title) {

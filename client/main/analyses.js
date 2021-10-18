@@ -23,7 +23,6 @@ const Analysis = function(id, name, ns, modules) {
     this.references = [ ];
     this.index = -1;
     this.uijs = undefined;
-    this.i18nTable = undefined;
 
     this.revision = 0;
     this.missingModule = false;
