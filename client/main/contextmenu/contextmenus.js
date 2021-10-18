@@ -151,9 +151,7 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
 
         let title = entry.label;
         let iconId = null;
-        if (title === 'Export')
-            title = title + '...';
-        else if (title === 'Copy')
+        if (title === 'Copy')
             iconId = 'copy';
 
         let params = { title: title, iconId: iconId, name: entry.label + '_' + levelId + items.length, useActionHub: false };
@@ -164,7 +162,7 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
         else {
             let entryData = {
                 label  : title,
-                op     : entry.op || entry.label.toLowerCase(),
+                op     : entry.op || entry.name,
                 address: parent.address,
                 type   : parent.type,
                 title  : parent.title,

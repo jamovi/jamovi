@@ -12,10 +12,25 @@ const formatIO = require('../common/utils/formatio');
 const b64 = require('../common/utils/b64');
 const Annotations = require('./annotations');
 const Tracker = require('./itemtracker');
+const I18n = require("../common/i18n");
+
+window.s_ = I18n._;
 
 class Main {  // this is constructed at the bottom
 
     constructor() {
+        this.translate = (key) => {
+            if (key === null || key === undefined|| key.trim() === '' || ! this.i18nDef)
+                return key;
+
+            let value = this.i18nDef.locale_data.messages[key.trim()];
+            if (value === null || value === undefined || value[0] === '')
+                return key;
+            else
+                return value[0];
+        };
+        window._ = this.translate.bind(this);
+
         this.mainWindow = null;
         this.results = null;
         this.$results = null;
@@ -87,10 +102,16 @@ class Main {  // this is constructed at the bottom
 
     _sendMenuRequest(event) {
         let entries = event.data.entries;
-        if (this.resultsDefn.isEmpty)
+        if (this.resultsDefn.isEmpty) {
             entries[0].type = 'Note';
-        else
+            entries[0].name = 'note';
+            entries[0].label = _('Note');
+        }
+        else {
             entries[0].type = 'Analysis';
+            entries[0].name = 'analysis';
+            entries[0].label = _('Analysis');
+        }
 
         this.mainWindow.postMessage(event, '*');
 
@@ -201,6 +222,13 @@ class Main {  // this is constructed at the bottom
                 annotation.focus(options.text);
 
 
+        }
+        else if (hostEvent.type === 'i18nDef') {
+            this.i18nDef = eventData.moduleI18n;
+            if (eventData.appI18n)
+                I18n.initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
+            if (this.resultsDefn)
+                this._render();
         }
         else if (hostEvent.type === 'getcontent') {
 
