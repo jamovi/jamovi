@@ -684,8 +684,10 @@ const Instance = Backbone.Model.extend({
         }
 
         let extras = {};
-        if (analysis.ns !== 'jmv' || analysis.name !== 'empty')
+        if (analysis.ns !== 'jmv' || analysis.name !== 'empty') {
             extras = this._optionsExtras();
+            extras['.lang'] = await analysis.getCurrentI18nCode();
+        }
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
         return request;
