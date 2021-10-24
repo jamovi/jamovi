@@ -149,7 +149,7 @@ class ModuleI18nDescriptor(RequestHandler):
         try:
             try:
                 module_path = Modules.instance().get(module_name).path
-                defn_path = os.path.join(module_path, 'i18n', code + '.json')
+                defn_path = os.path.join(module_path, 'R', module_name, 'i18n', f'{ code }.json')
                 with open(defn_path, 'rb') as file:
                     content = file.read()
             except (KeyError, FileNotFoundError):
