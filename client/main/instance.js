@@ -16,6 +16,7 @@ const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
 const Modules = require('./modules');
+const I18n = require('../common/i18n');
 
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
@@ -154,6 +155,9 @@ const Instance = Backbone.Model.extend({
             let response;
             let welcomeUrl;
 
+            let headers = new Headers();
+            headers.append('Accept-Language', I18n.language);
+
             while (true) {
 
                 if (file instanceof File) {
@@ -169,6 +173,7 @@ const Instance = Backbone.Model.extend({
                         body: file,
                         credentials: 'include',
                         cache: 'no-store',
+                        headers: headers
                     });
                 }
                 else {
@@ -181,7 +186,7 @@ const Instance = Backbone.Model.extend({
                             url += `&title=${ encodeURIComponent(options.title) }`;
                     }
                     else if (options.existing) {
-                        url = 'open';
+                        url = 'open?';
                     }
                     else {
                         url = `${ host.baseUrl }open?p`;
@@ -191,6 +196,7 @@ const Instance = Backbone.Model.extend({
                         method: 'GET',
                         credentials: 'include',
                         cache: 'no-store',
+                        headers: headers
                     });
                 }
 
@@ -601,7 +607,7 @@ const Instance = Backbone.Model.extend({
             for (let analysisPB of info.analyses) {
 
                 let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
-                let analysis = this._analyses.create({
+                let analysis = await this._analyses.create({
                     name: analysisPB.name,
                     ns: analysisPB.ns,
                     id: analysisPB.analysisId,
@@ -634,16 +640,16 @@ const Instance = Backbone.Model.extend({
 
         return response;
     },
-    createAnalysis(name, ns, title) {
-        let analysis = this._analyses.create({ name, ns, title, enabled: true });
+    async createAnalysis(name, ns, title) {
+        let analysis = await this._analyses.create({ name, ns, title, enabled: true });
         this._sendAnalysis(analysis);
         this.set('selectedAnalysis', analysis);
     },
-    duplicateAnalysis(dupliceeId) {
+    async duplicateAnalysis(dupliceeId) {
 
         let duplicee = this._analyses.get(dupliceeId);
         let index = duplicee.index + 2; //insert after proceeding annotation
-        let analysis = this._analyses.create({
+        let analysis = await this._analyses.create({
             name: duplicee.name,
             ns: duplicee.ns,
             index: index,
@@ -747,7 +753,7 @@ const Instance = Backbone.Model.extend({
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
     },
-    _onReceive(payloadType, response) {
+    async _onReceive(payloadType, response) {
 
         let coms = this.attributes.coms;
 
@@ -781,7 +787,7 @@ const Instance = Backbone.Model.extend({
                     throw `Analysis with id ${ response.analysisId } does not exist.`;
 
                 let options = OptionsPB.fromPB(response.options, coms.Messages);
-                analysis = this._analyses.create({
+                analysis = await this._analyses.create({
                     name: response.name,
                     title: response.hasTitle ? response.title : undefined,
                     ns: response.ns,
@@ -794,12 +800,6 @@ const Instance = Backbone.Model.extend({
                     index: response.index - 1,
                     dependsOn: response.dependsOn,
                 });
-
-                /*for (let current of this._analyses) {
-                    if (current.waitingFor === analysis.id) {
-                        analysis.addDependent(current);
-                    }
-                }*/
 
                 if (response.name !== 'empty')
                     this.set('selectedAnalysis', analysis);

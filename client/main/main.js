@@ -40,7 +40,7 @@ let code = await (async() => {
     if (response.ok) {
         try {
             let codes = await response.json();
-            let code = I18n.findBestMatchingLocale([I18n.locale], codes);
+            let code = I18n.findBestMatchingLocale([I18n.language], codes);
             if (code === 'c')
                 code = 'en';
             return code;
@@ -242,8 +242,9 @@ $(document).ready(async() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
-    ribbon.on('analysisSelected', function(analysis) {
-        instance.createAnalysis(analysis.name, analysis.ns, analysis.title);
+    ribbon.on('analysisSelected', async function(analysis) {
+        let translate = await instance.modules().getTranslator(analysis.ns);
+        instance.createAnalysis(analysis.name, analysis.ns, translate(analysis.title));
     });
 
     let mainTableMode = 'spreadsheet';
@@ -447,22 +448,23 @@ $(document).ready(async() => {
 
     let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
 
+    let _annotationReturnTab = null;
     resultsView.$el.on('annotationFocus', (event) => {
-        if (this._annotationReturnTab === undefined)
-            this._annotationReturnTab = null;
+        if (_annotationReturnTab === undefined)
+            _annotationReturnTab = null;
 
-        if (this._annotationReturnTab === null) {
+        if (_annotationReturnTab === null) {
             let tab = ribbonModel.get('selectedTab');
             if (tab !== 'annotation')
-                this._annotationReturnTab = tab;
+                _annotationReturnTab = tab;
         }
         ribbonModel.set('selectedTab', 'annotation');
     });
 
     resultsView.$el.on('annotationLostFocus', (event) => {
-        if (this._annotationReturnTab !== null) {
-            ribbonModel.set('selectedTab', this._annotationReturnTab);
-            this._annotationReturnTab = null;
+        if (_annotationReturnTab !== null) {
+            ribbonModel.set('selectedTab', _annotationReturnTab);
+            _annotationReturnTab = null;
         }
     });
 
