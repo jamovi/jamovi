@@ -4,6 +4,7 @@ import os.path
 import logging
 import yaml
 import shutil
+import json
 from zipfile import ZipFile
 from asyncio import ensure_future as create_task
 from collections import namedtuple
@@ -16,6 +17,7 @@ from .downloader import Downloader
 from .utils.stream import ProgressStream
 from .appinfo import determine_r_version
 from .appinfo import app_info
+from functools import lru_cache
 
 
 log = logging.getLogger('jamovi')
@@ -53,6 +55,8 @@ class ModuleMeta:
         self.datasets_license = None
         self.visible = True
         self.incompatible = False
+        self.i18n_msgs = None
+        self._code = None
 
     def get(self, name):
         for analysis in self.analyses:
@@ -68,6 +72,46 @@ class ModuleMeta:
         else:
             raise KeyError
 
+    @property
+    def language(self):
+        return self._code
+
+    def set_language(self, code):
+        if code != self._code:
+            self.i18n_msgs = None
+            self._code = code
+
+    def load_translations(self, code):
+        self.set_language(code)
+        self.i18n_msgs = self._load_translations(code)
+        return bool(self.i18n_msgs)
+
+    @lru_cache(None)
+    def _load_translations(self, code):
+        if code:
+            i18n_root = os.path.join(self.path, 'R', self.name, 'i18n', code + '.json')
+            if os.path.exists(i18n_root):
+                with open(i18n_root, 'r', encoding='utf-8') as stream:
+                    i18n_def = json.load(stream)
+                    return i18n_def['locale_data']['messages']
+
+        return { }
+
+    def translate(self, value):
+        if self.i18n_msgs is None and self._code:
+            self.i18n_msgs = self._load_translations(self._code)
+
+        translation = value
+
+        if self.i18n_msgs:
+            trans = self.i18n_msgs.get(value)
+            if trans is not None:
+                translation = trans[0].strip()
+                if translation == '':
+                    translation = value
+
+        return translation
+
 
 class AnalysisMeta:
     def __init__(self):
@@ -82,6 +126,45 @@ class AnalysisMeta:
         self.addons = [ ]
         self.in_menu = True
         self.defn = ''
+        self.translated = ''
+
+    def translate_defaults(self, module_meta, code):
+        if self.translated == code:
+            return
+
+        if module_meta.load_translations(code) == False:
+            return
+
+        options_defn = self.defn['options']
+        for opt_defn in options_defn:
+            if 'name' not in opt_defn or 'type' not in opt_defn:
+                continue
+            self.tag_translatable_defaults(module_meta, opt_defn)
+        self.translated = code
+
+    def tag_translatable_defaults(self, module_meta, opt_defn, _default_value=None):
+        if _default_value is None:
+            if 'default' in opt_defn and opt_defn['default'] is not None:
+                translated = self.tag_translatable_defaults(module_meta, opt_defn, opt_defn['default'])
+                if translated is not None:
+                    opt_defn['default'] = translated
+                return None
+        else:
+            typ  = opt_defn['type']
+            if typ == 'String':
+                return  module_meta.translate(_default_value)
+            elif typ == 'Group':
+                for element in opt_defn['elements']:
+                    translated = self.tag_translatable_defaults(module_meta, element, _default_value[element['name']])
+                    if translated is not None:
+                        _default_value[element['name']] = translated
+            elif typ == 'Array':
+                for i, value in enumerate(_default_value):
+                    translated = self.tag_translatable_defaults(module_meta, opt_defn['template'], value)
+                    if translated is not None:
+                        _default_value[i] = translated
+
+        return _default_value;
 
 
 class Modules:

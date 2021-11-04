@@ -142,9 +142,7 @@ const Options = function(def, translator) {
             if (item.default === undefined)
                 item.default = null;
 
-            let translated = this.translateDefault(translator, item, item.default);
-            if (translated !== null)
-                item.default = translated;
+            this.translateDefault(translator, item);
 
             let option = new Opt(item.default, item);
 
@@ -153,6 +151,15 @@ const Options = function(def, translator) {
     };
 
     this.translateDefault = function(translator, item, defaultValue) {
+        if (defaultValue === undefined) {
+            if (item.default) {
+                let translated = this.translateDefault(translator, item, item.default);
+                if (translated !== null)
+                    item.default = translated;
+                return;
+            }
+        }
+
         if (defaultValue) {
             switch (item.type) {
                 case 'String':

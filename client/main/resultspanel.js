@@ -760,7 +760,7 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (event.op === 'duplicate') {
             let parentId = this.resources[this._menuId].id;
-            let analysis = this.model.duplicateAnalysis(parentId);
+            let analysis = await this.model.duplicateAnalysis(parentId);
             this.model.set('selectedAnalysis', analysis);
         }
         else if (event.op === 'remove') {
