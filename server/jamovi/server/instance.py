@@ -80,6 +80,7 @@ class Instance:
     def __init__(self, session, instance_path, instance_id):
 
         self._session = session
+        self._i18n = session.i18n
         self._instance_path = instance_path
         self._instance_id = instance_id
 
@@ -923,9 +924,9 @@ class Instance:
                 stream.set_result(result)
 
                 if self._data.analyses.count() == 0 or self._data.analyses._analyses[0].name != 'empty':
-                    annotation = self._data.analyses.create_annotation(0)
+                    annotation = self._data.analyses.create_annotation(0, self._i18n)
                     annotation.results.index = 1
-                    annotation.results.title = 'Results'
+                    annotation.results.title = self._i18n.translate('Results')
 
                 i = 1
                 while i < self._data.analyses.count():
@@ -937,7 +938,7 @@ class Instance:
                     else:
                         annotation_index = i + 1
                         if annotation_index == self._data.analyses.count():
-                            annotation = self._data.analyses.create_annotation(annotation_index)
+                            annotation = self._data.analyses.create_annotation(annotation_index, self._i18n)
                             annotation.results.index = annotation_index + 1
                             analysis.add_dependent(annotation)
                         else:
@@ -948,7 +949,7 @@ class Instance:
                                     del self._data.analyses[annotation.id]
                                 else:
                                     log.info(f'Missing Annotation: { analysis.id }')
-                                annotation = self._data.analyses.create_annotation(annotation_index)
+                                annotation = self._data.analyses.create_annotation(annotation_index, self._i18n)
                                 annotation.results.index = annotation_index + 1
                                 analysis.add_dependent(annotation)
                         i = annotation_index + 1
@@ -1266,9 +1267,9 @@ class Instance:
             # delete all analyses
             self._data.analyses.remove_all()
 
-            header = self._data.analyses.create_annotation(0)
+            header = self._data.analyses.create_annotation(0, self._i18n)
             header.results.index = 1
-            header.results.title = 'Results'
+            header.results.title = self._i18n.translate('Results')
 
             # find all output columns
             columns_to_delete = [ ]
@@ -1348,9 +1349,9 @@ class Instance:
                     duplicee = self._data.analyses.get(dupliceeId)
 
                 if self._data.analyses.has_header_annotation() is False:
-                    header = self._data.analyses.create_annotation(0)
+                    header = self._data.analyses.create_annotation(0, self._i18n)
                     header.results.index = 1
-                    header.results.title = 'Results'
+                    header.results.title = self._i18n.translate('Results')
                     if request.name == 'empty':
                         self._coms.send(header.results, self._instance_id, request, complete=True)
                     else:
@@ -1368,7 +1369,7 @@ class Instance:
                         request.analysisId,
                         request.name,
                         request.ns,
-                        request.i18n,
+                        self._i18n,
                         request.options,
                         None if request.index == 0 else request.index - 1)
 

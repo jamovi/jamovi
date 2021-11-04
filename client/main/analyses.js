@@ -64,7 +64,7 @@ Analysis.prototype.reload = async function() {
             let defn = await this.modules.getDefn(this.ns, this.name);
             let i18nDefn = await this.modules.getI18nDefn(this.ns);
             this.i18n = i18nDefn;
-            this.options = new Options(defn.options, this.translate.bind(this));
+            this.options = new Options(defn.options);
             this.uijs = defn.uijs;
             return defn;
         })();
@@ -105,7 +105,7 @@ Analysis.prototype.setup = function(values) {
     this._notifySetup(this);
 };
 
-Analysis.prototype.setResults = function(res) {
+Analysis.prototype.setResults = async function(res) {
     this.results = res.results;
     this.incAsText = res.incAsText;
     this.references = res.references;
@@ -209,7 +209,7 @@ const Analyses = Backbone.Model.extend({
     count() {
         return this._analyses.length;
     },
-    create(options) {
+    async create(options) {
         let name = options.name;
         let ns = options.ns;
         let id = options.id;
@@ -282,7 +282,7 @@ const Analyses = Backbone.Model.extend({
 
         results.index = index + 1;  // indexed from 1
 
-        analysis.setResults({
+        await analysis.setResults({
             options: options.options,
             incAsText: options.incAsText || '',
             references: options.references || [ ],

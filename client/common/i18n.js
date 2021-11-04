@@ -11,7 +11,7 @@ class I18n {
         this._n = this._n.bind(this);
         this.findBestMatchingLocale = this.findBestMatchingLocale.bind(this);
 
-        this.locale = this.extractLanguages()[0];
+        this.language = this.extractLanguages()[0];
     }
 
     initialise(code, localeData) {
@@ -76,7 +76,7 @@ class I18n {
         }
         else
             value = this.jed.dcnpgettext(undefined, undefined, key, plural, count);
-            
+
         if (count > 1) {
             if (! formats)
                 formats = { };

@@ -47,9 +47,15 @@ const VariableLabel = function(params) {
         this._updateIcon(displayValue);
     };
 
+    this._updateCount = 0;
+
     this._updateIcon = function(columnName) {
-        let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType", "dataType" ] });
+        this._updateCount += 1;
+        let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType", "dataType" ], requestId: this._updateCount });
         promise.then(rData => {
+            if (rData.requestData.requestId !== this._updateCount)
+                return;
+
             this.$icon.removeClass();
 
             if (rData.columnFound === false)

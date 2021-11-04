@@ -243,6 +243,10 @@ class OpenHandler(RequestHandler):
         instance = None
         url = self.get_query_argument('url', '')
 
+        lang_code = self.request.headers.get('Accept-Language', 'en')
+
+        self._session.set_language(lang_code)
+
         if instance_id:
             instance = self._session.get(instance_id)
             if instance is None:
@@ -278,6 +282,10 @@ class OpenHandler(RequestHandler):
     async def post(self, instance_id=None):
 
         filename = self.get_query_argument('filename')
+
+        lang_code = self.request.headers.get('Accept-Language', 'en')
+
+        self._session.set_language(lang_code)
 
         try:
             base, ext = os.path.splitext(os.path.basename(filename))
