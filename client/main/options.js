@@ -446,50 +446,14 @@ OptionTypes.Group = function(template, value) {
 SuperClass.create(OptionTypes.Group);
 
 
-const Options = function(def=[], translator=null) {
+const Options = function(def=[]) {
 
     this._options = {};
 
     this._changingHandles = [ ];
 
-    this.translateDefault = function(translator, item, _defaultValue) {
-
-        if (_defaultValue === undefined) {
-            if (item.default) {
-                let translated = this.translateDefault(translator, item, item.default);
-                if (translated !== null)
-                    item.default = translated;
-                return;
-            }
-        }
-
-        if (_defaultValue) {
-            switch (item.type) {
-                case 'String':
-                    return translator(_defaultValue);
-                case 'Group':
-                    for (let element of item.elements) {
-                        let translated = this.translateDefault(translator, element, _defaultValue[element.name]);
-                        if (translated !== null)
-                            _defaultValue[element.name] = translated;
-                    }
-                    break;
-                case 'Array':
-                    for (let i = 0; i  < _defaultValue.length; i++) {
-                        let translated = this.translateDefault(translator, item.template, _defaultValue[i]);
-                        if (translated !== null)
-                            _defaultValue[i] = translated;
-                    }
-                    break;
-            }
-        }
-
-        return null;
-    };
-
     for (var i = 0; i < def.length; i++) {
         var template = def[i];
-        this.translateDefault(translator, template);
         let defaultValue = template.default;
         var option = OptionTypes.create(template, defaultValue);
         this._options[template.name] = option;
