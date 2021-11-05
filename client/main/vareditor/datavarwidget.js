@@ -81,57 +81,63 @@ const DataVarWidget = Backbone.View.extend({
                         keyboardJS.setContext('controller');
                         if (result === undefined)
                             reject('');
-
-                        result = result.trim();
-
-                        let max = 0;
-                        for (let column of this.model.columns) {
-                            if (column.levels.length >  max) {
-                                max = column.levels.length;
-                            }
-                        }
-
-                        let n = max;
-                        if (recordValue)
-                            n = parseInt(result);
-
-                        if (isNaN(n))
-                            reject('' + result + ' is not an integer');
                         else {
 
-                            let existing = new Set();
-                            let getValues = (lvls, type) => {
-                                for (let alevel of lvls) {
-                                    existing.add(alevel[type]);
-                                    getValues(alevel.others);
+                            result = result.trim();
+
+                            let max = 0;
+                            for (let column of this.model.columns) {
+                                if (column.levels.length >  max) {
+                                    max = column.levels.length;
                                 }
-                            };
-
-                            if (recordValue) {
-                                getValues(levels, 'value');
-                                if (existing.has(n))
-                                    reject(`The level value ${result} is already in use.`);
                             }
+
+                            let n = max;
+                            if (recordValue)
+                                n = parseInt(result);
+
+                            if (isNaN(n))
+                                reject('' + result + ' is not an integer');
                             else {
-                                getValues(levels, 'importValue');
-                                let newN = result; // modify label if already in use
-                                let c = 2;
-                                while (existing.has(newN))
-                                    newN = result + ' (' + c++ + ')';
-                                result = newN;
+
+                                let existing = new Set();
+                                let getValues = (lvls, type) => {
+                                    if (lvls) {
+                                        for (let alevel of lvls) {
+                                            existing.add(alevel[type]);
+                                            getValues(alevel.others);
+                                        }
+                                    }
+                                };
+
+                                if (recordValue) {
+                                    getValues(levels, 'value');
+                                    if (existing.has(n))
+                                        reject(`The level value ${result} is already in use.`);
+                                }
+                                else {
+                                    getValues(levels, 'importValue');
+                                    let newN = result; // modify label if already in use
+                                    let c = 2;
+                                    while (existing.has(newN))
+                                        newN = result + ' (' + c++ + ')';
+                                    result = newN;
+                                }
+
+                                if (result === '')
+                                    reject(`The level value cannot be blank.`);
+
+                                resolve({ value: n, label: result });
                             }
-
-                            if (result === '')
-                                reject(`The level value cannot be blank.`);
-
-                            resolve({ value: n, label: result });
                         }
                     });
                 });
 
                 let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };
 
-                let clone  = levels.slice(0);
+                let clone  = [];
+                if (levels)
+                    clone = levels.slice(0);
 
                 let insertAt = -1;
                 let inOrder = true;
