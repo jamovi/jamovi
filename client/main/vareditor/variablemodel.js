@@ -259,33 +259,29 @@ const VariableModel = Backbone.Model.extend({
         if (this.original.levels === null)
             return;
 
-        if (this.original.levels.length === 0)
-            this.original.levels = null;
-        else {
-            let level = null;
-            let compare = a => {
-                return this._compareLevels(a, level);
-            };
-            for (level of column.levels) {
-                let found = this.original.levels.find(compare);
-                if (found)
-                    found.others.push(level);
-                else {
-                    let inserted = false;
-                    for (let i = this.original.levels.length - 1; i >= 0; i--) {
-                        if (this.original.levels[i].value <= level.value) {
-                            this.original.levels.splice(i+1, 0, level);
-                            inserted = true;
-                            break;
-                        }
-                        else if (i === 0) {
-                            this.original.levels.splice(i, 0, level);
-                            inserted = true;
-                        }
+        let level = null;
+        let compare = a => {
+            return this._compareLevels(a, level);
+        };
+        for (level of column.levels) {
+            let found = this.original.levels.find(compare);
+            if (found)
+                found.others.push(level);
+            else {
+                let inserted = false;
+                for (let i = this.original.levels.length - 1; i >= 0; i--) {
+                    if (this.original.levels[i].value <= level.value) {
+                        this.original.levels.splice(i+1, 0, level);
+                        inserted = true;
+                        break;
                     }
-                    if ( ! inserted) {
-                        this.original.levels.push(level);
+                    else if (i === 0) {
+                        this.original.levels.splice(i, 0, level);
+                        inserted = true;
                     }
+                }
+                if ( ! inserted) {
+                    this.original.levels.push(level);
                 }
             }
         }
