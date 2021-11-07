@@ -178,6 +178,17 @@ class Session(dict):
 
         SESSION_EXPIRES = (SESSION_EXPIRES != '0')
 
+        SESSION_EXPIRES_PREVENT_PATH = conf.get('session_expires_prevent_path', None)
+
+        def prevent_session_expiry(path):
+            try:
+                status = os.stat(path)
+                if status.st_size != 0:
+                    return True
+            except FileNotFoundError:
+                pass
+            return False
+
         try:
             TIMEOUT_NC_UNCLEAN = conf.get('timeout_no_connection_unclean_disconnect', '')
             TIMEOUT_NC_UNCLEAN = int(TIMEOUT_NC_UNCLEAN)
@@ -252,6 +263,11 @@ class Session(dict):
                         # we've got a connection
                         session_no_connection_since = now
                         session_no_connection_unclean = False
+
+                if SESSION_EXPIRES_PREVENT_PATH:
+                    if prevent_session_expiry(SESSION_EXPIRES_PREVENT_PATH):
+                        session_no_connection_since = now
+                        session_idle_since = now
 
                 if SESSION_EXPIRES and len(self) == 0:
                     # if there are no instances
