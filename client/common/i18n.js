@@ -105,8 +105,6 @@ class I18n {
     }
 
     systemLanguage() {
-        return 'ja-JP';
-        
         let languages = navigator.languages;
 
         if ( ! languages) {
@@ -128,7 +126,6 @@ class I18n {
     // for information about language codes
     // https://www.w3.org/International/articles/language-tags/
     parseLangCode(code) {
-        let sections = code.split('-');
 
         let parts = {
             language: null,
@@ -136,35 +133,44 @@ class I18n {
             script: null,
             region: null,
             variant: null,
-            code: code.toLowerCase(),
+            code: null,
             isValid: true
         };
 
-        let partIndex = 0;
-        for (let i = 0; i < sections.length && partIndex < 5 && parts.isValid; i++) {
-            let value = sections[i];
-            if (partIndex === 0 && /^[a-zA-Z]{2,3}$/g.test(value)) {  // language code of length 2 or 3 characters
-                parts.language = value.toLowerCase();
-                partIndex = 1;
+        if ( ! code) {
+            parts.isValid = false;
+            parts.code = code;
+        }
+        else {
+            parts.code = code.toLowerCase();
+
+            let sections = code.split('-');
+            let partIndex = 0;
+            for (let i = 0; i < sections.length && partIndex < 5 && parts.isValid; i++) {
+                let value = sections[i];
+                if (partIndex === 0 && /^[a-zA-Z]{2,3}$/g.test(value)) {  // language code of length 2 or 3 characters
+                    parts.language = value.toLowerCase();
+                    partIndex = 1;
+                }
+                else if (partIndex > 0 && partIndex <= 1 && /^[a-zA-Z]{3}$/g.test(value)) {  // language extension code of length 3 characters
+                    parts.extlang = value.toLowerCase();
+                    partIndex = 2;
+                }
+                else if (partIndex > 0 && partIndex <= 2 && /^[a-zA-Z]{4}$/g.test(value)) {  // language script code of length 4 characters
+                    parts.script = value.toLowerCase();
+                    partIndex = 3;
+                }
+                else if (partIndex > 0 && partIndex <= 3 && /\d{3}$|^[a-zA-Z]{2}$/g.test(value)) {  // region code of length 2 characters or 3 digits
+                    parts.region = value.toLowerCase();
+                    partIndex = 4;
+                }
+                else if (partIndex > 0 && partIndex <= 4 && /^\d{4}$|^[a-zA-Z]{5}$/g.test(value)) {  // variant code of length 5 characters or 4 digits
+                    parts.variant = value.toLowerCase();
+                    partIndex = 5;
+                }
+                else
+                    parts.isValid = false;
             }
-            else if (partIndex > 0 && partIndex <= 1 && /^[a-zA-Z]{3}$/g.test(value)) {  // language extension code of length 3 characters
-                parts.extlang = value.toLowerCase();
-                partIndex = 2;
-            }
-            else if (partIndex > 0 && partIndex <= 2 && /^[a-zA-Z]{4}$/g.test(value)) {  // language script code of length 4 characters
-                parts.script = value.toLowerCase();
-                partIndex = 3;
-            }
-            else if (partIndex > 0 && partIndex <= 3 && /\d{3}$|^[a-zA-Z]{2}$/g.test(value)) {  // region code of length 2 characters or 3 digits
-                parts.region = value.toLowerCase();
-                partIndex = 4;
-            }
-            else if (partIndex > 0 && partIndex <= 4 && /^\d{4}$|^[a-zA-Z]{5}$/g.test(value)) {  // variant code of length 5 characters or 4 digits
-                parts.variant = value.toLowerCase();
-                partIndex = 5;
-            }
-            else
-                parts.isValid = false;
         }
 
         return parts;
@@ -175,6 +181,9 @@ class I18n {
             return code;
 
         let desiredLanguage = this.parseLangCode(code);
+        if (desiredLanguage.isValid === false)
+            return null;
+
         let languages = codes.map(code => this.parseLangCode(code));
 
         // compares the tags of the two languages. Every matching tag increases the ranking.
