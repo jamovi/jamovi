@@ -1030,7 +1030,7 @@ const BackstageModel = Backbone.Model.extend({
             { extensions: ['zip'], description: _('LaTeX bundle {ext}', { ext: '(.zip)' }) },
             { extensions: ['rds'], description: _('R object {ext}', { ext: '(.rds)' }) },
             { extensions: ['RData'], description: _('R object {ext}', { ext: '(.RData)' }) },
-            { extensions: ['sav'], description: _('SPSS sav {ext}', { ext: '(.v)' }) },
+            { extensions: ['sav'], description: _('SPSS sav {ext}', { ext: '(.sav)' }) },
             // { extensions: ['por'], description: _('SPSS portable {ext}', { ext: '(.por)' }) },  // crashes?!
             { extensions: ['sas7bdat'], description: _('SAS 7bdat {ext}', { ext: '(.sas7bdat)' }) },
             { extensions: ['xpt'], description: _('SAS xpt {ext}', { ext: '(.xpt)' }) },
@@ -1590,7 +1590,7 @@ const BackstageModel = Backbone.Model.extend({
                     moduleName = 'jmv';
                 else
                     moduleName = dirPath.match(/^{{Examples}}\/?([\S][^//]*)?/)[1];
-                        
+
                 if (moduleName) {
                     let translator = await this.instance.modules().getTranslator(moduleName);
                     for (let item of response.contents) {
