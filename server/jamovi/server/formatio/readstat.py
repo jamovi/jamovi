@@ -369,6 +369,7 @@ def write(data, path, prog_cb, format):
             data_type,
             storage_width)
 
+        var.label = column.description
         var.measure = measure_type
 
         if column.has_levels:
