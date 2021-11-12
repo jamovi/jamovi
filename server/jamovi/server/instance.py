@@ -100,6 +100,7 @@ class Instance:
         self._no_connection_since = now
         self._no_connection_unclean_disconnect = False
 
+        self._data.analyses.set_i18n(self._i18n)
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
 
@@ -924,7 +925,7 @@ class Instance:
                 stream.set_result(result)
 
                 if self._data.analyses.count() == 0 or self._data.analyses._analyses[0].name != 'empty':
-                    annotation = self._data.analyses.create_annotation(0, self._i18n)
+                    annotation = self._data.analyses.create_annotation(0)
                     annotation.results.index = 1
                     annotation.results.title = self._i18n.translate('Results')
 
@@ -938,7 +939,7 @@ class Instance:
                     else:
                         annotation_index = i + 1
                         if annotation_index == self._data.analyses.count():
-                            annotation = self._data.analyses.create_annotation(annotation_index, self._i18n)
+                            annotation = self._data.analyses.create_annotation(annotation_index)
                             annotation.results.index = annotation_index + 1
                             analysis.add_dependent(annotation)
                         else:
@@ -949,7 +950,7 @@ class Instance:
                                     del self._data.analyses[annotation.id]
                                 else:
                                     log.info(f'Missing Annotation: { analysis.id }')
-                                annotation = self._data.analyses.create_annotation(annotation_index, self._i18n)
+                                annotation = self._data.analyses.create_annotation(annotation_index)
                                 annotation.results.index = annotation_index + 1
                                 analysis.add_dependent(annotation)
                         i = annotation_index + 1
@@ -1267,7 +1268,7 @@ class Instance:
             # delete all analyses
             self._data.analyses.remove_all()
 
-            header = self._data.analyses.create_annotation(0, self._i18n)
+            header = self._data.analyses.create_annotation(0)
             header.results.index = 1
             header.results.title = self._i18n.translate('Results')
 
@@ -1349,7 +1350,7 @@ class Instance:
                     duplicee = self._data.analyses.get(dupliceeId)
 
                 if self._data.analyses.has_header_annotation() is False:
-                    header = self._data.analyses.create_annotation(0, self._i18n)
+                    header = self._data.analyses.create_annotation(0)
                     header.results.index = 1
                     header.results.title = self._i18n.translate('Results')
                     if request.name == 'empty':
@@ -1369,7 +1370,6 @@ class Instance:
                         request.analysisId,
                         request.name,
                         request.ns,
-                        self._i18n,
                         request.options,
                         None if request.index == 0 else request.index - 1)
 
