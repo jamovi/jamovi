@@ -350,8 +350,12 @@ class Analyses:
         self._results_changed_listeners = []
         self._output_received_listeners = []
         self._next_id = 1   # server side created analyses always have odd ids
+        self._i18n = None
 
         Modules.instance().add_listener(self._module_event)
+
+    def set_i18n(self, i18n):
+        self._i18n = i18n
 
     def count(self):
         return len(self._analyses)
@@ -367,7 +371,7 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
-    def _construct(self, id, name, ns, code, options_pb=None, enabled=None):
+    def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
         if name == 'empty' and ns == 'jmv':
             return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled)
@@ -379,7 +383,7 @@ class Analyses:
             analysis_name = analysis_meta.name
             option_defs = analysis_meta.defn['options']
 
-            analysis_meta.translate_defaults(module_meta, code)
+            analysis_meta.translate_defaults(module_meta, self._i18n.language)
 
             if enabled is None:
                 enabled = not analysis_meta.defn.get('arbitraryCode', False)
@@ -388,7 +392,7 @@ class Analyses:
             if options_pb is not None:
                 options.set(options_pb)
 
-            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0], code), analysis_meta.addons))
+            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
 
             return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
 
@@ -448,7 +452,7 @@ class Analyses:
 
         return self._analyses[0].name == 'empty'
 
-    def create(self, id, name, ns, i18n, options_pb, index=None):
+    def create(self, id, name, ns, options_pb, index=None):
 
         if id == 0:
             id = self._next_id
@@ -459,7 +463,7 @@ class Analyses:
             else:
                 self._next_id = id + 1
 
-        analysis = self._construct(id, name, ns, i18n.language, options_pb, True)
+        analysis = self._construct(id, name, ns, options_pb, True)
 
         if index is not None:
             self._analyses.insert(index, analysis)
@@ -467,7 +471,7 @@ class Analyses:
             self._analyses.append(analysis)
             index = len(self._analyses) - 1
 
-        annotation = self.create_annotation(index + 1, i18n, update_indices=False)
+        annotation = self.create_annotation(index + 1, update_indices=False)
 
         self.update_indices()
 
@@ -475,13 +479,12 @@ class Analyses:
 
         return analysis
 
-    def create_annotation(self, index, i18n, update_indices=True):
+    def create_annotation(self, index, update_indices=True):
         options = Options.create({})
         annotation = self._construct(
             self._next_id,
             'empty',
             'jmv',
-            i18n.language,
             options.as_pb())
         annotation.status = Analysis.Status.COMPLETE
         self._next_id += 2
@@ -495,7 +498,7 @@ class Analyses:
         annotation_pb.index = index + 1
         annotation_pb.title = ''
         annotation_pb.hasTitle = True
-        annotation_pb.results.title = i18n.translate('Results')
+        annotation_pb.results.title = self._i18n.translate('Results')
         annotation_pb.results.group.CopyFrom(jcoms.ResultsGroup())
         annotation_pb.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
 
