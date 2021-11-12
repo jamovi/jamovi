@@ -9,13 +9,13 @@ class I18n {
         this._c = this._c.bind(this);
         this._nc = this._nc.bind(this);
         this._n = this._n.bind(this);
-        this.findBestMatchingLocale = this.findBestMatchingLocale.bind(this);
+        this.findBestMatchingLanguage = this.findBestMatchingLanguage.bind(this);
 
-        this.language = this.extractLanguages()[0];
+        this.language = this.systemLanguage();
     }
 
     initialise(code, localeData) {
-        this.code = code;
+        this.language = code;
         this.jed = new Jed(localeData);
         this.localeData = localeData;
     }
@@ -100,186 +100,140 @@ class I18n {
         let rtlLangs = ['ar','arc','dv','fa','ha','he','khw','ks','ku','ps','ur','yi'];
 
         return rtlLangs.find((item) => {
-            return this.code.startsWith(item + '_');
+            return this.language === item || this.language.startsWith(item + '-');
         });
     }
 
-    extractLanguages(languageString) {
-        if (languageString === undefined) {
-            languageString = navigator.language || navigator.userLanguage ||
-                navigator.systemLanguage || navigator.browserLanguage;
-        }
-        if (!languageString || languageString === "") {
-            return ["en"];
+    systemLanguage() {
+        let languages = navigator.languages;
+
+        if ( ! languages) {
+            let lang = navigator.language || navigator.userLanguage || navigator.systemLanguage || navigator.browserLanguage;
+            if (lang)
+                languages = [ lang ];
         }
 
-        var langs = [];
-        var rawLangs = languageString.split(",");
-        var buff;
-
-        // extract langs
-        var lang;
-        for (var i = 0 ; i < rawLangs.length ; i++) {
-            lang = this.parseLanguageCode(rawLangs[i]);
-            if (lang.lang) {
-                langs.push(lang);
+        if (languages) {
+            for (let lang of languages) {
+                if (this.parseLangCode(lang).isValid)
+                    return lang.toLowerCase();
             }
         }
 
-        // Empty list
-        if (langs.length === 0) {
-            return ["en"];
-        }
-
-        // Sort languages by priority
-        langs = langs.sort(function (a, b) {
-            return b.q - a.q;
-        });
-
-        // Generates final list
-        var result = [];
-
-        for (i = 0 ; i < langs.length ; i++) {
-            buff = langs[i].lang;
-            if (langs[i].lect) {
-                buff += "_";
-                buff += langs[i].lect.toUpperCase();
-            }
-            result.push(buff);
-        }
-
-        return result;
+        return 'en';
     }
 
-    parseLanguageCode(lang) {
-        lang = lang.toLowerCase().replace(/-/g, "_");
-        var result = {lang: null, lect: null, q: 1};
-        var buff = "";
+    // for information about language codes
+    // https://www.w3.org/International/articles/language-tags/
+    parseLangCode(code) {
 
-        if (lang.indexOf(";") > -1) {
-            buff = lang.split(";");
-            if (buff.length == 2 && buff[1].match(/^q=(1|0\.[0-9]+)$/)) {
-                result.q = parseFloat(buff[1].split("=")[1]);
-            }
-            buff = buff[0] || "";
-        } else {
-            buff = lang;
+        let parts = {
+            language: null,
+            extlang: null,
+            script: null,
+            region: null,
+            variant: null,
+            code: null,
+            isValid: true
+        };
+
+        if ( ! code) {
+            parts.isValid = false;
+            parts.code = code;
         }
+        else {
+            parts.code = code.toLowerCase();
 
-        if (buff.indexOf("_") > -1) {
-            buff = buff.split("_");
-            if (buff.length == 2) {
-                if (buff[0].length == 2) {
-                    result.lang = buff[0];
-                    if (buff[1].length == 2) {
-                        result.lect = buff[1];
-                    }
+            let sections = code.split('-');
+            let partIndex = 0;
+            for (let i = 0; i < sections.length && partIndex < 5 && parts.isValid; i++) {
+                let value = sections[i];
+                if (partIndex === 0 && /^[a-zA-Z]{2,3}$/g.test(value)) {  // language code of length 2 or 3 characters
+                    parts.language = value.toLowerCase();
+                    partIndex = 1;
                 }
-            } else if (buff[0].length == 2) {
-                result = buff[0];
+                else if (partIndex > 0 && partIndex <= 1 && /^[a-zA-Z]{3}$/g.test(value)) {  // language extension code of length 3 characters
+                    parts.extlang = value.toLowerCase();
+                    partIndex = 2;
+                }
+                else if (partIndex > 0 && partIndex <= 2 && /^[a-zA-Z]{4}$/g.test(value)) {  // language script code of length 4 characters
+                    parts.script = value.toLowerCase();
+                    partIndex = 3;
+                }
+                else if (partIndex > 0 && partIndex <= 3 && /\d{3}$|^[a-zA-Z]{2}$/g.test(value)) {  // region code of length 2 characters or 3 digits
+                    parts.region = value.toLowerCase();
+                    partIndex = 4;
+                }
+                else if (partIndex > 0 && partIndex <= 4 && /^\d{4}$|^[a-zA-Z]{5}$/g.test(value)) {  // variant code of length 5 characters or 4 digits
+                    parts.variant = value.toLowerCase();
+                    partIndex = 5;
+                }
+                else
+                    parts.isValid = false;
             }
-        } else if (buff.length == 2) {
-            result.lang = buff;
         }
 
-        return result;
+        return parts;
     }
 
-    findBestMatchingLocale(locale, catalogs) {
-        if (!Array.isArray(locale)) {
-            locale = [locale];
-        }
+    findBestMatchingLanguage(code, codes) {
+        if (codes.includes(code))
+            return code;
 
-        var buff;
+        let desiredLanguage = this.parseLangCode(code);
+        if (desiredLanguage.isValid === false)
+            return null;
 
-        var refCatalogs = [];
-        for (var i = 0 ; i < catalogs.length ; i++) {
-            buff = this.parseLanguageCode(catalogs[i]);
-            buff.cat = catalogs[i];
-            refCatalogs.push(buff);
-        }
+        let languages = codes.map(code => this.parseLangCode(code));
 
-        var locales = [];
-        for (i = 0 ; i < locale.length ; i++) {
-            locales.push(this.parseLanguageCode(locale[i]));
-        }
+        // compares the tags of the two languages. Every matching tag increases the ranking.
+        // Mismatched tags disqualify the compare, except if the target tag being compared is null
+        let compare = (desired, target) => {
+            if (target.isValid === false)
+                return 0;
 
-        function _match(lang, lect, catalogList) {
-            if (lang === null) {
-                return null;
-            }
-            for (var i = 0 ; i < catalogList.length ; i++) {
-                if (lect == "*" && catalogList[i].lang === lang) {
-                    return catalogList[i];
-                } else if (catalogList[i].lang === lang && catalogList[i].lect === lect) {
-                    return catalogList[i];
-                }
-            }
-        }
+            let rank = 0;
+            if (desired.language === target.language)
+                rank += 5;
+            else if (target.language !== null)
+                return 0;
 
-        // 1. Exact matching (with locale+lect > locale)
-        var bestMatchingLocale = null;
-        var indexMatch = 0;
-        for (i = 0 ; i < locales.length ; i++) {
-            buff = _match(locales[i].lang, locales[i].lect, refCatalogs);
-            if (buff && (!bestMatchingLocale)) {
-                bestMatchingLocale = buff;
-                indexMatch = i;
-            } else if (buff && bestMatchingLocale &&
-                       buff.lang === bestMatchingLocale.lang &&
-                       bestMatchingLocale.lect === null && buff.lect !== null) {
-                bestMatchingLocale = buff;
-                indexMatch = i;
-            }
-            if (bestMatchingLocale && bestMatchingLocale.lang && bestMatchingLocale.lect) {
-                break;
-            }
-        }
+            if (desired.extlang === target.extlang)
+                rank += 4;
+            else if (target.extlang !== null)
+                return 0;
 
-        // 2. Fuzzy matching of locales without lect (fr_FR == fr)
-        for (i = 0 ; i < locales.length ; i++) {
-            buff = _match(locales[i].lang, null, refCatalogs);
-            if (buff) {
-                if ((!bestMatchingLocale) || bestMatchingLocale && indexMatch >= i &&
-                    bestMatchingLocale.lang !== buff.lang) {
-                    return buff.cat;
-                }
+            if (desired.script === target.script)
+                rank += 3;
+            else if (target.script !== null)
+                return 0;
+
+            if (desired.region === target.region)
+                rank += 2;
+            else if (target.region !== null)
+                return 0;
+
+            if (desired.variant === target.variant)
+                rank += 1;
+            else if (target.variant !== null)
+                return 0;
+
+            return rank;
+        };
+
+        let bestLanguage = null;
+        let currentRank = 0;
+        for (let language of languages) {
+            let rank = compare(desiredLanguage, language);
+
+            // If two languages have the same best rank then the shortest code is used.
+            if (rank > currentRank || (rank === currentRank && (bestLanguage === null || bestLanguage.code.Length > language.code.length))) {
+                currentRank = rank;
+                bestLanguage = language;
             }
         }
 
-        // 3. Fuzzy matching with ref lect (fr_* == fr_FR)
-        for (i = 0 ; i < locales.length ; i++) {
-            buff = _match(locales[i].lang, locales[i].lang, refCatalogs);
-            if (buff) {
-                if ((!bestMatchingLocale) || bestMatchingLocale && indexMatch >= i &&
-                    bestMatchingLocale.lang !== buff.lang) {
-                    return buff.cat;
-                }
-            }
-        }
-
-        // 1.5 => set the language found at step 1 if there is nothing better
-        if (bestMatchingLocale) {
-            return bestMatchingLocale.cat;
-        }
-
-        // 4. Fuzzy matching of any lect (fr_* == fr_*)
-        for (i = 0 ; i < locales.length ; i++) {
-            buff = _match(locales[i].lang, "*", refCatalogs);
-            if (buff) {
-                return buff.cat;
-            }
-        }
-
-        // 5. Nothing matches... maybe the given locales are invalide... try to match with catalogs
-        for (i = 0 ; i < locale.length ; i++) {
-            if (catalogs.indexOf(locale[i]) >= 0) {
-                return locale[i];
-            }
-        }
-
-        // 6. Nothing matches... lang = c;
-        return null;
+        return bestLanguage ? bestLanguage.code : null;
     }
 }
 

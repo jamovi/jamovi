@@ -156,7 +156,7 @@ const GridTextbox = function(params) {
 
         startClass = suffix === '' ? '' : 'silky-option-text-end';
 
-        this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + suffix + '</div>');
+        this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + _(suffix) + '</div>');
         cell = subgrid.addCell(1, 0, this.$suffix);
         cell.setAlignment('left', 'center');
 
