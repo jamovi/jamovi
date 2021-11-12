@@ -275,15 +275,19 @@
 }
 
 .jmv-column-cell[data-type="bool"] .true {
-    background-image: url('../assets/correct.svg') ;
+    background-image: url('../assets/filter-include.svg') ;
 }
 
 .jmv-column-cell[data-type="bool"] .false {
-    background-image: url('../assets/incorrect.svg') ;
+    background-image: url('../assets/filter-exclude.svg') ;
 }
 
-[data-active="0"] > .jmv-column-cell[data-type="bool"] * {
-    background-color: #C2C2C2 ;
+[data-active="0"] > .jmv-column-cell[data-type="bool"] .true {
+    background-image: url('../assets/filter-include-inactive.svg') ;
+}
+
+[data-active="0"] > .jmv-column-cell[data-type="bool"] .false {
+    background-image: url('../assets/filter-exclude-inactive.svg') ;
 }
 
 [data-fmlaok="0"] > .jmv-column-cell[data-type="bool"] * {
