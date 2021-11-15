@@ -1715,6 +1715,7 @@ class Instance:
             # this is done so that the cell changes are sent back
             for column in self._data:
                 changes['columns'].add(column)
+                changes['data_changed'].add(column)
 
     def _on_dataset_ins_cols(self, request, response, changes):
 
@@ -1853,6 +1854,7 @@ class Instance:
         if rows_removed:
             for column in self._data:  # the column info needs sending back because the cell edit ranges have changed
                 changes['columns'].add(column)
+                changes['data_changed'].add(column)
 
     def _on_dataset_del_cols(self, request, response, changes):
 
