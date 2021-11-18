@@ -266,7 +266,7 @@ class Instance:
         if shutdown_in is not None:
             nearest_30secs = int(round(shutdown_in / 30) * 30)
             if nearest_30secs >= 120:
-                description = _('This session will end in around {} minutes').format(str(nearest_30secs / 60))
+                description = _('This session will end in around {} minutes').format(str(nearest_30secs // 60))
             elif nearest_30secs >= 60:
                 description = _('This session will end in around 1 minute')
             else:
