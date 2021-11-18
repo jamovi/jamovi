@@ -94,7 +94,7 @@ async def main():  # run down below()
             debug=debug)
 
         server.start()
-        signal.signal(signal.SIGTERM, server.stop)
+        signal.signal(signal.SIGTERM, lambda _, __: server.stop())
 
         ports = await server.ports_opened
     else:
