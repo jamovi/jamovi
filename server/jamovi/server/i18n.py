@@ -5,49 +5,50 @@ from functools import lru_cache
 
 from .utils import conf
 
+i18n_msgs = None
+_code = None
 
-class I18n:
-    def __init__(self):
-        self.i18n_msgs = None
-        self._code = None
+def get_language():
+    global _code
+    return _code
 
-    @property
-    def language(self):
-        return self._code
+def set_language(code):
+    global _code
+    global i18n_msgs
+    if _code != code:
+        _code = code
+        i18n_msgs = None
 
-    def set_language(self, code):
-        if self._code != code:
-            self._code = code
-            self.i18n_msgs = None
+@lru_cache(None)
+def _load_translations(code):
+    if code:
+        i18n_path = conf.get('i18n_path', None)
+        if i18n_path is None:
+            i18n_path = os.path.join(conf.get('home'), 'i18n')
 
-    @lru_cache(None)
-    def _load_translations(self, code):
-        if code:
-            i18n_path = conf.get('i18n_path', None)
-            if i18n_path is None:
-                i18n_path = os.path.join(conf.get('home'), 'i18n')
+        i18n_path = os.path.join(i18n_path, 'build')
 
-            i18n_path = os.path.join(i18n_path, 'build')
+        i18n_root = os.path.join(i18n_path, code + '.json')
+        if os.path.exists(i18n_root):
+            with open(i18n_root, 'r', encoding='utf-8') as stream:
+                i18n_def = json.load(stream)
+                return i18n_def['locale_data']['messages']
 
-            i18n_root = os.path.join(i18n_path, code + '.json')
-            if os.path.exists(i18n_root):
-                with open(i18n_root, 'r', encoding='utf-8') as stream:
-                    i18n_def = json.load(stream)
-                    return i18n_def['locale_data']['messages']
+    return {}
 
-        return {}
+def _(value):
+    global _code
+    global i18n_msgs
+    if i18n_msgs is None:
+        i18n_msgs = _load_translations(_code)
 
-    def translate(self, value):
-        if self.i18n_msgs is None:
-            self.i18n_msgs = self._load_translations(self._code)
+    translation = value
 
-        translation = value
+    if i18n_msgs:
+        trans = i18n_msgs.get(value)
+        if trans is not None:
+            translation = trans[0].strip()
+            if translation == '':
+                translation = value
 
-        if self.i18n_msgs:
-            trans = self.i18n_msgs.get(value)
-            if trans is not None:
-                translation = trans[0].strip()
-                if translation == '':
-                    translation = value
-
-        return translation
+    return translation

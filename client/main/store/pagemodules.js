@@ -109,6 +109,37 @@ const PageModules = Backbone.View.extend({
             if (this.settings.getSetting('mode', 'normal') !== 'demo') {
                 for (let op of module.ops) {
                     let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
+                    let label = '';
+                    switch(op) {
+                        case 'remove':
+                            label = _('Remove');
+                        break;
+                        case 'install':
+                            label = _('Install');
+                        break;
+                        case 'installed':
+                            label = _('Installed');
+                        break;
+                        case 'unavailable':
+                            label = _('Unavailable');
+                        break;
+                        case 'update':
+                            label = _('Update');
+                        break;
+                        case 'old':
+                            label = _('Requires a newer version of jamovi');
+                        break;
+                        case 'incompatible':
+                            label = _('Installed version is incompatible');
+                        break;
+                        case 'show':
+                            label = _('Show');
+                        break;
+                        case 'hide':
+                            label = _('Hide');
+                        break;
+                    }
+
                     html += `
                         <button
                             ${ disabled ? 'disabled' : '' }
@@ -117,7 +148,7 @@ const PageModules = Backbone.View.extend({
                             data-op="${ op }"
                             class="jmv-store-module-button"
                         >
-                            <span class="label"></span>
+                            <span class="label">${ label }</span>
                         </button>`;
                 }
             }

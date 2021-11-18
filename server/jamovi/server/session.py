@@ -15,7 +15,7 @@ from .instance import Instance
 from .analyses import AnalysisIterator
 from .enginemanager import EngineManager
 from .scheduler import Scheduler
-from .i18n import I18n
+from . import i18n
 
 if platform.uname().system != 'Windows':
     from .remotepool import RemotePool
@@ -56,10 +56,9 @@ class Session(dict):
         self._session_listeners = [ ]
         self._running = False
         self._ended = Event()
-        self._i18n = I18n()
         code = conf.get('lang')
         if code is not None:
-            self._i18n.set_language(code)
+            i18n.set_language(code)
 
         task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:
@@ -86,13 +85,9 @@ class Session(dict):
     def id(self):
         return self._id
 
-    @property
-    def i18n(self):
-        return self._i18n
-
     def set_language(self, lang):
-        if self._i18n.language is None:  # if the language has already been set from conf then leave it alone
-            self._i18n.set_language(lang)
+        if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
+            i18n.set_language(lang)
 
     def create(self, instance_id=None):
         if instance_id is None:

@@ -52,6 +52,7 @@ from .utils import fs
 from .utils import is_int32
 from .utils import is_url
 from .utils import latexify
+from .i18n import _
 
 
 log = logging.getLogger(__name__)
@@ -80,7 +81,6 @@ class Instance:
     def __init__(self, session, instance_path, instance_id):
 
         self._session = session
-        self._i18n = session.i18n
         self._instance_path = instance_path
         self._instance_id = instance_id
 
@@ -100,7 +100,6 @@ class Instance:
         self._no_connection_since = now
         self._no_connection_unclean_disconnect = False
 
-        self._data.analyses.set_i18n(self._i18n)
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
 
@@ -267,14 +266,14 @@ class Instance:
         if shutdown_in is not None:
             nearest_30secs = int(round(shutdown_in / 30) * 30)
             if nearest_30secs >= 120:
-                description = f'in around { nearest_30secs // 60 } minutes'
+                description = _('This session will end in around {} minutes').format(str(nearest_30secs // 60))
             elif nearest_30secs >= 60:
-                description = 'in around 1 minute'
+                description = _('This session will end in around 1 minute')
             else:
-                description = 'any moment now'
+                description = _('This session will end any moment now')
 
-            n.title = 'Idle session'
-            n.message = f'This session will end { description }'
+            n.title = _('Idle session')
+            n.message = description
             n.status = 2  # indefinite
         else:
             n.status = 1  # dismiss
@@ -481,7 +480,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.documents_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Documents'
+                        entry.name = _('Documents')
                         entry.path = '{{Documents}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -490,7 +489,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.downloads_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Downloads'
+                        entry.name = _('Downloads')
                         entry.path = '{{Downloads}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -499,7 +498,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.desktop_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Desktop'
+                        entry.name = _('Desktop')
                         entry.path = '{{Desktop}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -508,7 +507,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.home_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Home'
+                        entry.name = _('Home')
                         entry.path = '{{Home}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -624,19 +623,19 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
         except OSError as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
         except BaseException as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -689,23 +688,23 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except BaseException as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = str(e)
             if not cause:
                 cause = type(e).__name__
@@ -800,7 +799,7 @@ class Instance:
             try:
                 await analysis.save(path, address)
             except Exception as e:
-                self._coms.send_error('Unable to save', str(e), self._instance_id, request)
+                self._coms.send_error(_('Unable to save'), str(e), self._instance_id, request)
             else:
                 path = self._virtualise_path(path)
                 response = jcoms.SaveProgress()
@@ -808,7 +807,7 @@ class Instance:
                 response.success = True
                 self._coms.send(response, self._instance_id, request)
         else:
-            self._coms.send_error('Error', 'Unable to access analysis', self._instance_id, request)
+            self._coms.send_error(_('Error'), _('Unable to access analysis'), self._instance_id, request)
 
     def open(self, path, title=None, is_temp=False, ext=None):
 
@@ -873,7 +872,7 @@ class Instance:
                                 filename = response.content_disposition.filename
 
                             if not formatio.is_supported(filename):
-                                raise RuntimeError('Unrecognised file format')
+                                raise RuntimeError(_('Unrecognised file format'))
 
                             title, dotext = os.path.splitext(filename)
                             fd, temp_file_path = mkstemp(suffix=dotext)
@@ -927,7 +926,7 @@ class Instance:
                 if self._data.analyses.count() == 0 or self._data.analyses._analyses[0].name != 'empty':
                     annotation = self._data.analyses.create_annotation(0)
                     annotation.results.index = 1
-                    annotation.results.title = self._i18n.translate('Results')
+                    annotation.results.title = _('Results')
 
                 i = 1
                 while i < self._data.analyses.count():
@@ -1027,7 +1026,7 @@ class Instance:
                             filename = response.content_disposition.filename
 
                         if not formatio.is_supported(filename):
-                            raise RuntimeError('Unrecognised file format')
+                            raise RuntimeError(_('Unrecognised file format'))
 
                         title, ext = os.path.splitext(filename)
                         fd, temp_file_path = mkstemp(suffix=ext)
@@ -1097,23 +1096,23 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -1224,10 +1223,10 @@ class Instance:
             base = ''
             if e.filename is not None:
                 base = os.path.basename(e.filename)
-            message = 'Unable to import {}'.format(base)
+            message = _('Unable to import {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
@@ -1235,13 +1234,13 @@ class Instance:
             base = ''
             if e.filename is not None:
                 base = os.path.basename(e.filename)
-            message = 'Unable to import {}'.format(base)
+            message = _('Unable to import {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
             log.exception(e)
-            message = 'Unable to perform import'
+            message = _('Unable to perform import')
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -1270,7 +1269,7 @@ class Instance:
 
             header = self._data.analyses.create_annotation(0)
             header.results.index = 1
-            header.results.title = self._i18n.translate('Results')
+            header.results.title = _('Results')
 
             # find all output columns
             columns_to_delete = [ ]
@@ -1352,7 +1351,7 @@ class Instance:
                 if self._data.analyses.has_header_annotation() is False:
                     header = self._data.analyses.create_annotation(0)
                     header.results.index = 1
-                    header.results.title = self._i18n.translate('Results')
+                    header.results.title = _('Results')
                     if request.name == 'empty':
                         self._coms.send(header.results, self._instance_id, request, complete=True)
                     else:
@@ -1509,13 +1508,12 @@ class Instance:
             self._coms.send(response, self._instance_id, request)
 
         except ForbiddenOp as e:
-            message = 'Could not {}'.format(e.operation)
-            self._coms.send_error(message, str(e), self._instance_id, request)
+            self._coms.send_error(e.operation, str(e), self._instance_id, request)
         except TypeError as e:
-            self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
+            self._coms.send_error(_('Could not assign data'), str(e), self._instance_id, request)
         except Exception as e:
             log.exception(e)
-            self._coms.send_error('Could not perform operation', str(e), self._instance_id, request)
+            self._coms.send_error(_('Could not perform operation'), str(e), self._instance_id, request)
 
     async def _on_module(self, request):
 
@@ -1535,7 +1533,7 @@ class Instance:
                     self._session.notify_global_changes()
                 except Exception as e:
                     log.exception(e)
-                    self._coms.send_error('Unable to install module', str(e), self._instance_id, request)
+                    self._coms.send_error(_('Unable to install module'), str(e), self._instance_id, request)
 
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
                 if self._perms.library.addRemove is False:
@@ -1561,7 +1559,7 @@ class Instance:
                 self._session.notify_global_changes()
 
         except PermissionError as e:
-            self._coms.send_error('Unable to perform request', str(e), self._instance_id, request)
+            self._coms.send_error(_('Unable to perform request'), str(e), self._instance_id, request)
 
     def _set_module_visibility(self, name, value):
         modules = Modules.instance()
@@ -1577,7 +1575,7 @@ class Instance:
 
     async def _on_store(self, request):
         if self._perms.library.browseable is False:
-            self._coms.send_error('Unable to access library', 'The library is disabled', self._instance_id, request)
+            self._coms.send_error(_('Unable to access library'), _('The library is disabled'), self._instance_id, request)
         else:
             modules = Modules.instance()
             stream = modules.read_library()
@@ -1595,7 +1593,7 @@ class Instance:
                     self._module_to_pb(module, module_pb)
                 self._coms.send(response, self._instance_id, request)
             except Exception as e:
-                self._coms.send_error('Unable to access library', str(e), self._instance_id, request)
+                self._coms.send_error(_('Unable to access library'), str(e), self._instance_id, request)
 
     def _on_dataset_set_checks(self, request):
 
@@ -1617,14 +1615,14 @@ class Instance:
 
         if n_columns > self._perms.dataset.maxColumns:
             raise ForbiddenOp(
-                'insert columns',
-                'This session is limited to {} columns'.format(
+                _('Could not insert columns'),
+                _('This session is limited to {} columns').format(
                     self._perms.dataset.maxColumns))
 
         if n_rows > self._perms.dataset.maxRows:
             raise ForbiddenOp(
-                'insert rows',
-                'This session is limited to {} rows'.format(
+                _('Could not insert rows'),
+                _('This session is limited to {} rows').format(
                     self._perms.dataset.maxRows))
 
     def _on_dataset_set(self, request, response):
@@ -1693,8 +1691,8 @@ class Instance:
         if insertions:
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
-                    'insert rows',
-                    'You cannot insert rows while filtered rows are hidden')
+                    _('Could not insert rows'),
+                    _('You cannot insert rows while filtered rows are hidden'))
 
         insert_offsets = [0] * len(insertions)
         for i in range(0, len(insertions)):
@@ -1832,8 +1830,8 @@ class Instance:
 
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
-                    'delete rows',
-                    'You cannot delete rows while filtered rows are hidden')
+                    _('Could not delete rows'),
+                    _('You cannot delete rows while filtered rows are hidden'))
 
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
                 self._mod_tracker.log_row_deletion(row_data)
@@ -2046,8 +2044,8 @@ class Instance:
                     transform = self._data.get_transform_by_id(trans_pb.id)
                     if any(dep.is_filter for dep in transform.dependents):
                         raise ForbiddenOp(
-                            'modify transform',
-                            'You cannot modify transforms that affect filters when filtered rows are hidden')
+                            _('Could not modify transform'),
+                            _('You cannot modify transforms that affect filters when filtered rows are hidden'))
 
             for column_pb in request.schema.columns:
                 if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -2055,8 +2053,8 @@ class Instance:
                         column = self._data.get_column_by_id(column_pb.id)
                         if not column.is_filter and any(dep.is_filter for dep in column.dependents):
                             raise ForbiddenOp(
-                                'modify columns',
-                                'You cannot modify columns that affect filters when filtered rows are hidden')
+                                _('Could not modify columns'),
+                                _('You cannot modify columns that affect filters when filtered rows are hidden'))
 
         # columns that need to be reparsed, and/or recalced
         reparse = set()
@@ -2506,8 +2504,8 @@ class Instance:
                 for column in islice(self._data.columns_ex_hidden, column_start, column_end):
                     if any(dep.is_filter for dep in column.dependents):
                         raise ForbiddenOp(
-                            'modify columns',
-                            'You cannot modify columns that affect filters when filtered rows are hidden')
+                            _('Could not modify columns'),
+                            _('You cannot modify columns that affect filters when filtered rows are hidden'))
 
         data_list = []
 
@@ -2580,11 +2578,11 @@ class Instance:
 
                 if col_count == 1:
                     if column.column_type == ColumnType.COMPUTED:
-                        raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to computed column '{}'").format(column.name))
                     elif column.column_type == ColumnType.RECODED:
-                        raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to recoded column '{}'").format(column.name))
                     elif column.column_type == ColumnType.FILTER:
-                        raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to filter column '{}'").format(column.name))
 
                 if column.auto_measure:
                     continue  # skip checks
@@ -2594,15 +2592,15 @@ class Instance:
                 if column.data_type == DataType.DECIMAL:
                     for value in values:
                         if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
-                            raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
+                            raise TypeError(_("Cannot assign non-numeric value to column '{}'").format(column.name))
 
                 elif column.data_type == DataType.INTEGER:
                     for value in values:
                         if isinstance(value, int) and not is_int32(value):
-                            raise TypeError("Value is too large for column '{}' of type integer".format(column.name))
+                            raise TypeError(_("Value is too large for column '{}' of type integer").format(column.name))
 
             if col_count > 0 and data_col_count == 0:
-                raise TypeError("Cannot assign to these columns.")
+                raise TypeError(_("Cannot assign to these columns."))
 
         if bottom_most_row_index >= self._data.row_count:
             self._mod_tracker.log_rows_appended(self._data.row_count, bottom_most_row_index)
@@ -2665,7 +2663,7 @@ class Instance:
                     elif isinstance(value, int):
                         column.set_value(row_no, float(value))
                     else:
-                        raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
+                        raise TypeError(_("Cannot assign non-numeric value to column '{}'"), column.name)
 
             elif column.data_type == DataType.TEXT:
                 for j in range(row_count):
