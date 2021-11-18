@@ -13,7 +13,8 @@ from .options import Options
 from . import jamovi_pb2 as jcoms
 
 from jamovi.core import MeasureType
-
+from . import i18n
+from .i18n import _
 
 Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
@@ -350,12 +351,8 @@ class Analyses:
         self._results_changed_listeners = []
         self._output_received_listeners = []
         self._next_id = 1   # server side created analyses always have odd ids
-        self._i18n = None
 
         Modules.instance().add_listener(self._module_event)
-
-    def set_i18n(self, i18n):
-        self._i18n = i18n
 
     def count(self):
         return len(self._analyses)
@@ -383,7 +380,7 @@ class Analyses:
             analysis_name = analysis_meta.name
             option_defs = analysis_meta.defn['options']
 
-            analysis_meta.translate_defaults(module_meta, self._i18n.language)
+            analysis_meta.translate_defaults(module_meta, i18n.get_language())
 
             if enabled is None:
                 enabled = not analysis_meta.defn.get('arbitraryCode', False)
@@ -498,7 +495,7 @@ class Analyses:
         annotation_pb.index = index + 1
         annotation_pb.title = ''
         annotation_pb.hasTitle = True
-        annotation_pb.results.title = self._i18n.translate('Results')
+        annotation_pb.results.title = _('Results')
         annotation_pb.results.group.CopyFrom(jcoms.ResultsGroup())
         annotation_pb.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
 
