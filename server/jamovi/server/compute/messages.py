@@ -1,13 +1,14 @@
+from ..i18n import _
 
 class Messages:
 
     @staticmethod
     def create_from(e: BaseException):
         if isinstance(e, RecursionError):
-            return 'Circular reference detected'
+            return _('Circular reference detected')
         elif isinstance(e, SyntaxError):
-            return 'The formula is mis-specified'
+            return _('The formula is mis-specified')
         elif isinstance(e, NameError) or isinstance(e, TypeError) or isinstance(e, ValueError):
             return str(e)
         else:
-            return 'Unexpected error ({}, {})'.format(str(e), type(e).__name__)
+            return '{} ({}, {})'.format(_('Unexpected error'), str(e), type(e).__name__)
