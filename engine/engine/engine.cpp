@@ -179,7 +179,11 @@ void Engine::monitorStdinLoop()
     terminate();
 }
 
+#ifndef _WIN32
 #include <chrono>
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 
 void Engine::heartbeat(const std::string &path)
 {
