@@ -9,14 +9,7 @@ In order to contribute to the core jamovi code base (presently hosted at [www.gi
 
 More information, including the motivations for a CLA, are detailed on the [wikipedia page](https://en.wikipedia.org/wiki/Contributor_License_Agreement).
 
-There are two CLAs available, one for individuals, and one for 'entities' (i.e. companies). Select the CLA appropriate for you, fill it in, and email it to contact &lt;at&gt; jamovi.org.
-
-We may ask you to refer to this submitted CLA when submitting pull requests.
-
- - [jamovi Individual Contributor License Agreement](https://www.jamovi.org/jamovi-Individual.pdf)
- - [jamovi Entity Contributor License Agreement](https://www.jamovi.org/jamovi-Entity.pdf)
-
-You'll notice the CLA has room to specify 'Us'. Please contact us at contact &lt;at&gt; jamovi.org for the most up-to-date details.
+You can agree to the terms of the CLA through this [google form](https://docs.google.com/forms/d/e/1FAIpQLSfs5WrF_NLgXMJyGsZgpD_vkjRmf7VY1DituYDUyi65cgeQng/viewform?usp=sf_link). Note that this is the CLA for individuals -- if you wish to submit a CLA on behalf of an entity (i.e. a private company), please contact us directly.
 
 Thanks.
 
