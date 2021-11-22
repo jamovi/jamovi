@@ -24,9 +24,7 @@ def _load_translations(code):
     if code:
         i18n_path = conf.get('i18n_path', None)
         if i18n_path is None:
-            i18n_path = os.path.join(conf.get('home'), 'i18n')
-
-        i18n_path = os.path.join(i18n_path, 'build')
+            i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
 
         i18n_root = os.path.join(i18n_path, code + '.json')
         if os.path.exists(i18n_root):

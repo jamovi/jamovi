@@ -534,7 +534,7 @@ class Server:
 
         i18n_path = conf.get('i18n_path', None)
         if i18n_path is None:
-            i18n_path = os.path.join(conf.get('home'), 'i18n')
+            i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
 
         coms_path   = 'jamovi.proto'
 
@@ -577,7 +577,7 @@ class Server:
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
             (r'/i18n/(.*)', StaticFileHandler, {
-                'path': os.path.join(i18n_path, 'build'),
+                'path': i18n_path,
                 'default_filename': 'manifest.json' }),
             (r'/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
