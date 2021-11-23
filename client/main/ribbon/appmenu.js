@@ -96,7 +96,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$palette = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$palette.append($(`<div>${_('Color palette')}</div>`));
-        this.$paletteList = $(`<select><optgroup label="qualitative"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="sequential"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`)
+        this.$paletteList = $(`<select><optgroup label="${_('qualitative')}"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="${_('sequential')}"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`)
             .appendTo(this.$palette)
             .click(event => event.stopPropagation())
             .change(event => this._changePalette(event.target.value));

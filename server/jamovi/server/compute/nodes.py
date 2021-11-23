@@ -17,6 +17,7 @@ from . import is_missing
 from . import get_missing
 from . import is_equal
 from . import functions
+from ..i18n import _
 
 NaN = float('nan')
 
@@ -363,7 +364,7 @@ class Call(ast.Call, Node):
         name = func.id
 
         if not hasattr(functions, name):
-            raise NameError('Function {}() does not exist'.format(name))
+            raise NameError(_('Function {}() does not exist').format(name))
 
         self._function = getattr(functions, name)
 
