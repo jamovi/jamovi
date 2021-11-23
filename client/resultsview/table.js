@@ -621,15 +621,15 @@ const TableView = Elem.View.extend({
         html = '';
 
         for (let i = 0; i < table.notes.length; i++)
-            html += '<tr><td colspan="' + nPhysCols + '"><span style="font-style: italic ;">Note.</span> ' + table.notes[i].note + '</td></tr>';
+            html += `<tr><td colspan="${ nPhysCols }"><span style="font-style: italic ;">${ _('Note') }.</span> ${ table.notes[i].note }</td></tr>`;
 
         for (let i = 0; i < footnotes.length; i++)
-            html += '<tr><td colspan="' + nPhysCols + '">' + SUPSCRIPTS[i] + ' ' + footnotes[i] + '</td></tr>';
+            html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ footnotes[i] }</td></tr>`;
 
-        html += '<tr><td colspan="' + nPhysCols + '"></td></tr>';
+        html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
         this.$tableFooter.html(html);
 
-        let $refsRow = $('<tr class="jmvrefs"><td colspan="' + nPhysCols + '"></td></tr>');
+        let $refsRow = $(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
         // class="jmvrefs" excludes this from some exports/copy
         $refsRow[0].childNodes[0].appendChild(this.refs);
         this.$tableFooter.append($refsRow);
