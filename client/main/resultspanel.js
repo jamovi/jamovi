@@ -737,7 +737,7 @@ const ResultsPanel = Backbone.View.extend({
                 };
 
                 let options = {
-                    title: 'Export results',
+                    title: _('Export results'),
                     filters: [
                         { name: 'PDF',  description: _('PDF Document {ext}', { ext: '(.pdf)' }),    extensions: [ 'pdf' ] },
                         { name: 'HTML', description: _('Web Page {ext}', { ext: '(.html, .htm)' }), extensions: ['html', 'htm'] },

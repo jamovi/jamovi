@@ -13,6 +13,7 @@ from .nodes import BoolOp
 from .nodes import Compare
 from .nodes import Tuple
 from .nodes import keyword
+from ..i18n import _
 
 
 class Transmogrifier(NodeTransformer):
@@ -29,7 +30,7 @@ class Transmogrifier(NodeTransformer):
         try:
             return self._dataset[node.id]
         except KeyError:
-            raise NameError("Column '{}' does not exist in the dataset".format(node.id))
+            raise NameError(_("Column '{}' does not exist in the dataset").format(node.id))
 
     def visit_Call(self, node):
         new_args = node.args

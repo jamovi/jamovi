@@ -18,6 +18,8 @@ from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
 
+from ..i18n import _
+
 
 def write(data, path, prog_cb, html=None, is_template=False):
 
@@ -291,17 +293,17 @@ def read(data, path, prog_cb):
                 manifest = zip.read('META-INF/MANIFEST.MF')
                 manifest = manifest.decode('utf-8')
             except Exception:
-                raise FileCorruptError('File is corrupt (manifest is corrupt or missing)')
+                raise FileCorruptError(_('File is corrupt (manifest is corrupt or missing)'))
 
         regex = r'^jamovi-Archive-Version: ?([0-9]+)\.([0-9]+) ?$'
         jav   = re.search(regex, manifest, re.MULTILINE)
 
         if not jav:
-            raise FileCorruptError('File is corrupt (manifest is corrupt)')
+            raise FileCorruptError(_('File is corrupt (manifest is corrupt)'))
 
         jav = (int(jav.group(1)), int(jav.group(2)))
         if jav[0] > 11:
-            raise FileFormatNotSupportedError('A newer version of jamovi is required')
+            raise FileFormatNotSupportedError(_('A newer version of jamovi is required'))
 
         meta_content = zip.read('metadata.json').decode('utf-8')
         metadata = json.loads(meta_content)

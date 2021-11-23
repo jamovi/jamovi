@@ -1170,7 +1170,7 @@ const TableView = SilkyView.extend({
 
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
-        this.statusbar.updateInfoLabel('editStatus', 'Edit');
+        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
 
         this.$selection.addClass('editing');
         this.$selection.attr('data-measuretype', column.measureType);

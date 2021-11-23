@@ -9,6 +9,7 @@ from .permissions import Permissions
 from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
+from .i18n import _
 
 import collections
 
@@ -192,7 +193,7 @@ class InstanceModel:
 
     def set_transform_name(self, transform, name):
         if name == '':
-            name = 'Transform ' + str(len(self._transforms) + 1)
+            name = _('Transform {}').format(str(len(self._transforms) + 1))
         checked_name = name
         i = 2
         while self.check_for_transform_name(checked_name, transform):
@@ -261,10 +262,10 @@ class InstanceModel:
         if len(args) > 0:
             raise ValueError
         if row_count is not None and row_count > self._perms.dataset.maxRows:
-            raise PermissionError('This session is limited to {} rows'.format(
+            raise PermissionError(_('This session is limited to {} rows').format(
                 self._perms.dataset.maxRows))
         if column_count is not None and column_count > self._perms.dataset.maxColumns:
-            raise PermissionError('This session is limited to {} columns'.format(
+            raise PermissionError(_('This session is limited to {} columns').format(
                 self._perms.dataset.maxColumns))
 
     def set_row_count(self, count):
@@ -342,7 +343,7 @@ class InstanceModel:
                 column.name = 'F{} ({})'.format(filter_index, subfilter_index + 1)
                 subfilter_index += 1
             else:
-                column.name = 'Filter {}'.format(filter_index + 1)
+                column.name = _('Filter {}').format(filter_index + 1)
                 if column.filter_no == -1:
                     column.filter_no = self.find_next_filter_id()
                 filters.append(column.filter_no)

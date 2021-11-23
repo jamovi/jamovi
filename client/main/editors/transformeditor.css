@@ -323,7 +323,7 @@
     border-top: 1px solid transparent;
     border-bottom: 1px solid transparent;
     width: 3ch;
-    left: 11.5ch;
+    margin-left: 0.5ch;
     border-right: 1px dashed rgba(62, 109, 169, 0.28);
     border-left: 1px dashed rgba(62, 109, 169, 0.28);
     box-sizing: border-box;

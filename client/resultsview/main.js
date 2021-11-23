@@ -14,22 +14,22 @@ const Annotations = require('./annotations');
 const Tracker = require('./itemtracker');
 const I18n = require("../common/i18n");
 
-window.s_ = I18n._;
+window._ = I18n._;
 
 class Main {  // this is constructed at the bottom
 
     constructor() {
-        this.translate = (key) => {
-            if (key === null || key === undefined|| key.trim() === '' || ! this.i18nDef)
+        /*this.translateUsingModule = (key) => {
+            if (key === null || key === undefined|| key.trim() === '' || ! this.moduleI18nDef)
                 return key;
 
-            let value = this.i18nDef.locale_data.messages[key.trim()];
+            let value = this.moduleI18nDef.locale_data.messages[key.trim()];
             if (value === null || value === undefined || value[0] === '')
                 return key;
             else
                 return value[0];
         };
-        window._ = this.translate.bind(this);
+        window.mod_ = this.translateUsingModule.bind(this);*/
 
         this.mainWindow = null;
         this.results = null;
@@ -224,7 +224,7 @@ class Main {  // this is constructed at the bottom
 
         }
         else if (hostEvent.type === 'i18nDef') {
-            this.i18nDef = eventData.moduleI18n;
+            this.moduleI18nDef = eventData.moduleI18n;
             if (eventData.appI18n)
                 I18n.initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
             if (this.resultsDefn)

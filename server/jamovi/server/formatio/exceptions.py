@@ -1,4 +1,6 @@
 
+from ..i18n import _
+
 class FileIOError(Exception):
     pass
 
@@ -12,10 +14,10 @@ class FileWriteError(FileIOError):
 
 
 class FileCorruptError(FileReadError):
-    def __init__(self, message='File is corrupt'):
+    def __init__(self, message=_('File is corrupt')):
         super().__init__(message)
 
 
 class FileFormatNotSupportedError(FileReadError):
-    def __init__(self, message='File format is not supported'):
+    def __init__(self, message=_('File format is not supported')):
         super().__init__(message)

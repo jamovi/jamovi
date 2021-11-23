@@ -2,6 +2,7 @@
 import ast
 import base64
 import re
+from ..i18n import _
 
 
 class Parser:
@@ -18,7 +19,7 @@ class Parser:
             return None
 
         if isinstance(tree.body[0], ast.Assign):
-            raise TypeError("Formula is mis-specified (If you're wanting to test equality, use two equals signs '==')")
+            raise TypeError(_("Formula is mis-specified (If you're wanting to test equality, use two equals signs '==')"))
 
         tree = tree.body[0].value
 
