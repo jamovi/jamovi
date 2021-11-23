@@ -416,8 +416,11 @@ const TransformEditor = function(dataset) {
         if (this.formula.length > 1)
             tag = _('else use');
 
-        let indent = (tag.length + 1) + 'ch';
-        $formula.css('text-indent', indent);
+        setTimeout(() => {
+            let indent = ($equal[0].clientWidth + 1) + 'px';
+            $formula.css('text-indent', indent);
+        }, 10);
+
         $equal.html(tag);
     };
 
@@ -674,8 +677,6 @@ const TransformEditor = function(dataset) {
 
         let $formulaBox = elements.$formulaBox;
 
-        let indent = (prefix.length + 1) + 'ch';
-
         if (hasOp === undefined)
             hasOp = false;
 
@@ -694,7 +695,7 @@ const TransformEditor = function(dataset) {
         if (elements.$formulas === undefined)
             elements.$formulas = [ ];
 
-        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '" style="text-indent:' + indent + '">' + formula + '</div>').appendTo($fp);
+        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {
@@ -703,7 +704,11 @@ const TransformEditor = function(dataset) {
             prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
         }
 
-        $('<div class="equal">' + prefix + '</div>').appendTo($fp);
+        let $equal = $('<div class="equal">' + prefix + '</div>').appendTo($fp);
+        setTimeout(() => {
+            let indent = ($equal[0].clientWidth + 1) + 'px';
+            $formula.css('text-indent', indent);
+        }, 10);
 
         elements.$formulas.push($formula);
 
@@ -748,6 +753,10 @@ const TransformEditor = function(dataset) {
 
         if (hasOp) {
             $opEdit = $('<div class="down-arrow">a</div>').appendTo($fp);
+            setTimeout(() => {
+                let indent = ($equal[0].clientWidth + 1) + 'px';
+                $opEdit.css('left', indent);
+            }, 10);
             $opEdit.css('width', _sign.length + 'ch');
             $opEdit.hide();
 

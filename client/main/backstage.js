@@ -272,10 +272,10 @@ const FSEntryBrowserView = SilkyView.extend({
 
             if (multiSelect) {
                 html += '   <div class="silky-bs-fslist-import-options hidden" style="display: flex; flex-flow: row nowrap;">';
-                html += '       <input class="silky-bs-fslist-browser-import-name" type="text" placeholder="Enter file name here" />';
+                html += `       <input class="silky-bs-fslist-browser-import-name" type="text" placeholder="${_('Enter file name here')}" />`;
                 html += '       <div class="silky-bs-fslist-browser-import-button" style="display: flex; flex: 0 0 auto;">';
                 html += '           <div class="silky-bs-flist-import-icon"></div>';
-                html += '           <span>Import</span>';
+                html += `           <span>${_('Import')}</span>`;
                 html += '       </div>';
                 html += '   </div>';
             }
@@ -309,16 +309,16 @@ const FSEntryBrowserView = SilkyView.extend({
                 insert = ' value="' + s6e(path.basename(filePath, extension)) + '"';
             }
 
-            html += '           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="Enter file name here"' + insert + ' />';
+            html += `           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="${_('Enter file name here')}"' + insert + ' />`;
 
             html += this._createFileTypeSelector();
             html += '       </div>';
             html += '       <div class="silky-bs-fslist-browser-save-button' + s6e(filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
             if (this.model.clickProcess === 'save')
-                html += '           <span>Save</span>';
+                html += `           <span>${_('Save')}</span>`;
             else if (this.model.clickProcess === 'export')
-                html += '           <span>Export</span>';
+                html += `           <span>${_('Export')}</span>`;
             html += '       </div>';
             html += '   </div>';
         }
