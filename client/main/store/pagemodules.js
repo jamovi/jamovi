@@ -148,7 +148,7 @@ const PageModules = Backbone.View.extend({
                             data-op="${ op }"
                             class="jmv-store-module-button"
                         >
-                            <span class="label">${ label }</span>
+                            ${ label }
                         </button>`;
                 }
             }
