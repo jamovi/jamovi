@@ -365,6 +365,19 @@ class Server:
                  stdin_slave=False,
                  debug=False):
 
+        # these are mostly not necessary, however the mimetypes library relies
+        # on OS level config, and this can be bad/wrong. so we override these
+        # here to prevent a badly configured system from serving up bad mime
+        # types. we found some windows machines serving up application/x-css
+        # for .css files ...
+        mimetypes.add_type('text/html', '.html')
+        mimetypes.add_type('application/javascript', '.js')
+        mimetypes.add_type('text/css', '.css')
+        mimetypes.add_type('image/svg+xml', '.svg')
+        mimetypes.add_type('text/protobuf', '.proto')
+        mimetypes.add_type('application/json', '.json')
+        mimetypes.add_type('font/woff', '.woff')
+
         self._session = None
 
         if session_id is not None:
