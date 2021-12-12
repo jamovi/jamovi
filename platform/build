@@ -47,12 +47,14 @@ if [[ $1 = "jmv" ]] || [[ $1 = "all" ]]; then
         mkdir -p build
         cp -r /tmp/jmv-build build/R4.0.5-linux
     fi
+    "$SOURCE_DIR/jamovi-compiler/index.js" --i18n . --update
     "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --patch-version
 fi
 
 if [[ $1 = "scatr" ]] || [[ $1 = "all" ]]; then
     echo "building scatr"
     cd "$SOURCE_DIR/scatr"
+    # "$SOURCE_DIR/jamovi-compiler/index.js" --i18n . --update
     "$SOURCE_DIR/jamovi-compiler/index.js" --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R
 fi
 
@@ -82,4 +84,15 @@ if [[ $1 = "client" ]] || [[ $1 = "all" ]]; then
     fi
 
     cp favicon.ico /usr/lib/jamovi/client
+fi
+
+if [[ $1 = "i18n" ]] || [[ $1 = "all" ]]; then
+    echo "building i18n"
+    cd "$SOURCE_DIR/i18n"
+    if [ ! -d 'node_modules' ]; then
+        npm install
+    fi
+
+    mkdir -p "/usr/lib/jamovi/i18n/json"
+    node "$SOURCE_DIR/i18n/index.js" --build "src" --dest "/usr/lib/jamovi/i18n/json"
 fi
