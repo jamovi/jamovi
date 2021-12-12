@@ -103,6 +103,11 @@ RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r
 COPY client /tmp/source/client
 RUN build client release
 
+# i18n
+COPY i18n /tmp/source/i18n
+RUN chmod u+x /tmp/source/i18n/index.js
+RUN build i18n
+
 ENV LD_LIBRARY_PATH /usr/local/lib/R/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
 ENV PYTHONPATH /usr/lib/jamovi/server
