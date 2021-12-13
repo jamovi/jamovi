@@ -202,7 +202,7 @@ class Session(dict):
             TIMEOUT_NC_VIRGIN = conf.get('timeout_no_connection_virgin', '')
             TIMEOUT_NC_VIRGIN = int(TIMEOUT_NC_VIRGIN)
         except Exception:
-            TIMEOUT_NC_VIRGIN = 30
+            TIMEOUT_NC_VIRGIN = TIMEOUT_NC_UNCLEAN
 
         if TIMEOUT_NC_UNCLEAN < TIMEOUT_NC:
             TIMEOUT_NC_UNCLEAN = TIMEOUT_NC
