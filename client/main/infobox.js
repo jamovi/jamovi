@@ -14,10 +14,7 @@ class InfoBox extends HTMLElement {
     constructor() {
         super();
 
-        this._complete = new Promise((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-        });
+        this._complete = Promise.resolve();
 
         this._root = this.attachShadow({ mode: 'open' });
         this._host = this._root.host;
@@ -131,6 +128,12 @@ class InfoBox extends HTMLElement {
         else
             this._cancel.style.display = 'none';
 
+        this._complete = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
+
+        return this._complete;
     }
 
     _isElement(item){
@@ -250,20 +253,9 @@ class InfoBox extends HTMLElement {
                 if (this._iframe)
                     this._remote.removeChild(this._iframe);
                 this._iframe = document.createElement('iframe');
-                this._iframe.sandbox = 'allow-scripts allow-popups';
+                this._iframe.sandbox = 'allow-scripts allow-popups allow-same-origin';
+                this._iframe.setAttribute('src', src);
                 this._remote.appendChild(this._iframe);
-
-                // i could simply assign src to the src attribute
-                // of the iframe, but then i can't access the
-                // 'contentDocument' of the iframe. so i use a fetch
-                // and assign the response to the srcdoc attribute
-                // instead:
-
-                fetch(src).then((response) => {
-                    return response.text();
-                }).then((text) => {
-                    this._iframe.setAttribute('srcdoc', text);
-                });
             }
         }
         else if (name === 'title' || name === 'message' || name === 'status' || name === undefined) {

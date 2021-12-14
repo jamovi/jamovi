@@ -691,10 +691,17 @@ $(document).ready(async() => {
         let status;
 
         try {
-            let stream = instance.open(toOpen, { existing: !!instanceId });
-            for await (let progress of stream)
-                notify(progress);
-            status = await stream;
+            while (true) {
+                let stream = instance.open(toOpen, { existing: !!instanceId });
+                for await (let progress of stream)
+                    notify(progress);
+                status = await stream;
+
+                if (status.status === 'requires-auth')
+                    await infoBox.setup(status);
+                else
+                    break;
+            }
         }
         catch (e) {
             if (host.isElectron && toOpen !== '') {
