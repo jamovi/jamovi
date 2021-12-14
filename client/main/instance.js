@@ -244,16 +244,19 @@ const Instance = Backbone.Model.extend({
                 if (message && message['set-cookie'])
                     document.cookie = message['set-cookie'];
 
-                if ( ! message || message.status !== 'OK') {
-                    let title = (message && message.title) ? message.title : _('Unable to open');
-                    let cause = (message && message.message) ? message.message : _('Unexpected error');
-                    let status = (message && message.status) ? message.status : 'error';
-                    let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
-                    let error = new JError(title, {
-                        cause,
-                        status,
-                        messageSrc });
-                    throw error;
+                if ( ! message) {
+                    throw new JError(_('Unable to open'), {
+                        cause: _('Unexpected error'),
+                        status: 'error',
+                    });
+                }
+                else if (message.status !== 'OK' && message.status !== 'requires-auth') {
+                    let title = message.title || _('Unable to open');
+                    throw new JError(title, {
+                        cause: message.message || _('Unexpected error'),
+                        status: message.status || 'error',
+                        messageSrc: message['message-src'],
+                    });
                 }
                 else if (message.url === '/open') {
                     // open is performed in two steps, so we store the welcome
