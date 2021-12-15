@@ -104,6 +104,9 @@ keyboardJS.Keyboard.prototype.resume = function(key) {
 
     if (count === false && this._paused === true) {
         this._paused = false;
+        if (keyboardJS.onUnpaused) {
+            keyboardJS.onUnpaused();
+        }
     }
 };
 
