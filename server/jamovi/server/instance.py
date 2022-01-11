@@ -9,8 +9,6 @@ from jamovi.core import Dirs
 from jamovi.core import MemoryMap
 from jamovi.core import DataSet
 
-from .settings import Settings
-
 from . import jamovi_pb2 as jcoms
 from .jamovi_pb2 import Notification
 
@@ -58,13 +56,6 @@ from .i18n import _
 log = logging.getLogger(__name__)
 
 
-# until we deploy the windows updater and are happy with it,
-# we'll default autoUpdate to off -- macOS works well though.
-is_windows = platform.uname().system == 'Windows'
-def4ult = False if is_windows else True
-Settings.retrieve('main').specify_default('autoUpdate', def4ult)
-
-
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
         super().__init__(message)
@@ -78,11 +69,12 @@ ConnectionStatus = namedtuple('ConnectionStatus',
 
 class Instance:
 
-    def __init__(self, session, instance_path, instance_id):
+    def __init__(self, session, instance_path, instance_id, settings):
 
         self._session = session
         self._instance_path = instance_path
         self._instance_id = instance_id
+        self._settings = settings
 
         os.makedirs(instance_path, exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
@@ -102,9 +94,6 @@ class Instance:
 
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
-
-        settings = Settings.retrieve()
-        settings.sync()
 
         Modules.instance().add_listener(self._module_event)
 
@@ -915,7 +904,9 @@ class Instance:
                         functools.partial(
                             stream.write, progress))
 
-                result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title, ext)
+                main_settings = self._settings.group('main')
+                func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
+                result = await ioloop.run_in_executor(None, func)
 
                 if integ_handler is not None:
                     self._data.integration = integ_handler
@@ -1079,7 +1070,9 @@ class Instance:
                         coms.send, None, self._instance_id, request,
                         complete=False, progress=progress))
 
-            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example, title)
+            main_settings = self._settings.group('main')
+            func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title)
+            await ioloop.run_in_executor(None, func)
 
             if integ_handler is not None:
                 self._data.integration = integ_handler
@@ -1202,7 +1195,9 @@ class Instance:
                             coms.send, None, instance_id, request,
                             complete=False, progress=(1000 * (self._i + p) / n_files, 1000)))
 
-                await ioloop.run_in_executor(None, formatio.read, model, norm_path, prog_cb, False)
+                main_settings = self._settings.group('main')
+                func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp)
+                await ioloop.run_in_executor(None, func)
 
                 self._i += 1
                 return (name, model)
@@ -1564,14 +1559,14 @@ class Instance:
     def _set_module_visibility(self, name, value):
         modules = Modules.instance()
         if modules.set_visibility(name, value):
-            settings = Settings.retrieve('modules')
-            hidden_mods = settings.get('hidden', [ ])
+            module_settings = self._settings.group('modules')
+            hidden_mods = module_settings.get('hidden', [ ])
             if value:
                 hidden_mods = [ mod for mod in hidden_mods if mod != name ]
             else:
                 hidden_mods.append(name)
-            settings.set('hidden', hidden_mods)
-            settings.sync()
+            module_settings.set('hidden', hidden_mods)
+            module_settings.write()
 
     async def _on_store(self, request):
         if self._perms.library.browseable is False:
@@ -2987,8 +2982,8 @@ class Instance:
 
     def _add_to_recents(self, path, title=None):
 
-        settings = Settings.retrieve('backstage')
-        recents  = settings.get('recents', [ ])
+        bs_settings = self._settings.group('backstage')
+        recents  = bs_settings.get('recents', [ ])
 
         for recent in recents:
             if path == recent['path']:
@@ -3007,14 +3002,14 @@ class Instance:
         recents.insert(0, { 'name': title, 'path': path, 'location': location })
         recents = recents[0:5]
 
-        settings.set('recents', recents)
-        settings.sync()
+        bs_settings.set('recents', recents)
+        bs_settings.write()
 
         self._session.notify_global_changes()
 
     def _on_settings(self, request=None):
 
-        settings = Settings.retrieve('main')
+        main_settings = self._settings.group('main')
 
         if request and request.settings:
 
@@ -3036,9 +3031,9 @@ class Instance:
                 if name == 'updateStatus':
                     self._session.request_update(value)
                 else:
-                    settings.set(name, value)
+                    main_settings.set(name, value)
 
-            settings.sync()
+            main_settings.write()
 
             self._session.notify_global_changes()
 
@@ -3048,8 +3043,8 @@ class Instance:
         setting_pb.name = 'updateStatus'
         setting_pb.s = self._session.update_status
 
-        for name in settings:
-            value = settings.get(name)
+        for name in main_settings:
+            value = main_settings.get(name)
             if isinstance(value, str):
                 setting_pb = response.settings.add()
                 setting_pb.name = name
@@ -3067,8 +3062,8 @@ class Instance:
                 setting_pb.name = name
                 setting_pb.d = value
 
-        settings = Settings.retrieve('backstage')
-        recents = settings.get('recents', [ ])
+        bs_settings = self._settings.group('backstage')
+        recents = bs_settings.get('recents', [ ])
 
         for recent in recents:
             recent_pb = response.recents.add()
@@ -3076,8 +3071,8 @@ class Instance:
             recent_pb.path = recent['path']
             recent_pb.location = recent['location']
 
-        settings = Settings.retrieve('modules')
-        hidden_mods = settings.get('hidden', [ ])
+        module_settings = self._settings.group('modules')
+        hidden_mods = module_settings.get('hidden', [ ])
         modules = Modules.instance()
         missing_mods = [ ]
         for hidden_mod in hidden_mods:
@@ -3088,8 +3083,9 @@ class Instance:
             for missing_mod in missing_mods:
                 while missing_mod in hidden_mods:
                     hidden_mods.remove(missing_mod)
-            settings.set('hidden', hidden_mods)
-            settings.sync()
+            module_settings.set('hidden', hidden_mods)
+
+        self._settings.write()
 
         for module in modules:
             module_pb = response.modules.add()

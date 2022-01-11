@@ -3,14 +3,9 @@
 from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
-from jamovi.server.settings import Settings
 
 import re
 import math
-
-
-settings = Settings.retrieve('main')
-settings.specify_default('missings', 'NA')
 
 
 def calc_dps(value, max_dp=3):
@@ -35,7 +30,8 @@ def calc_dps(value, max_dp=3):
 
 class Reader:
 
-    def __init__(self):
+    def __init__(self, settings):
+        self._settings = settings
         self._total = 0
 
     def set_total(self, total):
@@ -72,7 +68,7 @@ class Reader:
             data.append_column(column_name, column_name)
             column = data[i]
             column.column_type = ColumnType.DATA
-            column_readers.append(ColumnReader(column, i))
+            column_readers.append(ColumnReader(column, i, self._settings))
             column_count += 1
 
         row_count = 0
@@ -132,10 +128,10 @@ class ColumnReader:
             v)
         return float(v)
 
-    def __init__(self, column, column_index):
+    def __init__(self, column, column_index, settings):
         self._column = column
         self._column_index = column_index
-        self._missings = settings.get('missings')
+        self._missings = settings.get('missings', 'NA')
 
         self._only_integers = True
         self._only_floats = True
