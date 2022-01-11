@@ -47,6 +47,11 @@ class Settings:
         else:
             self._root = { }
 
+    def group(self, name):
+        if name not in self._children:
+            self._children[name] = Settings(parent=self, name=name)
+        return self._children[name]
+
     def specify_default(self, name, value):
         self._defaults[name] = value
 

@@ -225,8 +225,8 @@ class EntryHandler(RequestHandler):
     def initialize(self, session):
         self._session = session
 
-    def get(self):
-        instance = self._session.create()
+    async def get(self):
+        instance = await self._session.create()
         query = self.get_argument('open', '')
         if query:
             query = '?open=' + query
@@ -270,7 +270,7 @@ class OpenHandler(RequestHandler):
 
         try:
             if instance is None:
-                instance = self._session.create()
+                instance = await self._session.create()
             async for progress in instance.open(url, title, is_temp, ext):
                 self._write('progress', progress)
         except Exception as e:
@@ -292,7 +292,7 @@ class OpenHandler(RequestHandler):
             temp_file = NamedTemporaryFile(suffix=ext)
             with open(temp_file.name, 'wb') as writer:
                 writer.write(self.request.body)
-            instance = self._session.create()
+            instance = await self._session.create()
             async for progress in instance.open(temp_file.name, title=base, is_temp=True):
                 self._write('progress', progress)
         except Exception as e:
@@ -376,6 +376,24 @@ class DatasetsList(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
         self.write(json.dumps(datasets))
+
+
+class AuthTokenHandler(RequestHandler):
+
+    def initialize(self, session):
+        self._session = session
+
+    def post(self):
+        auth = request.headers.get('authorization')
+        if auth is None:
+            self.set_status(401)
+            self.write('requires authorization')
+        elif not auth.strip().startswith('Bearer '):
+            self.set_status(400)
+            self.write('unsupported authorization scheme')
+        else:
+            token = auth.strip()[7:].strip()
+            self._session.set_auth_token(token)
 
 
 class VersionHandler(RequestHandler):
@@ -563,6 +581,7 @@ class Server:
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
+            (r'/auth', AuthTokenHandler, { 'session': self._session }),
             (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),

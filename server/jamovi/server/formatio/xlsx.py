@@ -11,7 +11,7 @@ def get_readers():
     return [ ( 'xlsx', read ) ]
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, **kwargs):
 
     reader = XLSXReader()
     reader.read_into(data, path, prog_cb)

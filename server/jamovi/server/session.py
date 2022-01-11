@@ -20,6 +20,8 @@ from . import i18n
 if platform.uname().system != 'Windows':
     from .remotepool import RemotePool
 
+from jamovi.core import Dirs
+
 from .settings import Settings
 from .utils import conf
 
@@ -56,6 +58,9 @@ class Session(dict):
         self._session_listeners = [ ]
         self._running = False
         self._ended = Event()
+        self._auth_token = None
+        self._settings = None
+
         code = conf.get('lang')
         if code is not None:
             i18n.set_language(code)
@@ -89,12 +94,33 @@ class Session(dict):
         if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
             i18n.set_language(lang)
 
-    def create(self, instance_id=None):
+    def set_auth_token(self, auth_token):
+        self._auth_token = auth_token
+
+    async def get_settings(self):
+        if self._settings is None:
+            if conf.get('settings', 'file') == 'file':
+                path = os.path.join(Dirs.app_data_dir(), 'settings.json')
+                self._settings = Settings(path)
+            else:
+                self._settings = Settings(None)
+
+        # until we deploy the windows updater and are happy with it,
+        # we'll default autoUpdate to off -- macOS works well though.
+        is_windows = platform.uname().system == 'Windows'
+        def4ult = False if is_windows else True
+        self._settings.group('main').specify_default('autoUpdate', def4ult)
+        self._settings.group('main').specify_default('missings', 'NA')
+
+        return self._settings
+
+    async def create(self, instance_id=None):
         if instance_id is None:
             instance_id = str(uuid.uuid4())
         log.info('%s %s', 'creating instance:', instance_id)
         instance_path = os.path.join(self._session_path, instance_id)
-        instance = Instance(self, instance_path, instance_id)
+        settings = await self.get_settings()
+        instance = Instance(self, instance_path, instance_id, settings)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
         self[instance_id] = instance
         self._notify_session_event(SessionEvent.Type.INSTANCE_STARTED, instance_id)
@@ -158,9 +184,8 @@ class Session(dict):
         self.notify_global_changes()
 
         if status == 'available':
-            settings = Settings.retrieve('main')
-            settings.sync()
-            if settings.get('autoUpdate', False):
+            main_settings = self._settings.group('main')
+            if main_settings.get('autoUpdate', False):
                 self.request_update('downloading')
 
     def set_update_request_handler(self, request_fun):
