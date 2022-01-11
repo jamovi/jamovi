@@ -17,7 +17,7 @@ def get_readers():
     return [ ( 'jasp', read ) ]
 
 
-def write(data, path, prog_cb):
+def write(data, path, prog_cb, **kwargs):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
         content = io.StringIO()

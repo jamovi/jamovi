@@ -23,9 +23,9 @@ def get_writers():
     return [ ( 'csv', write ), ( 'txt', write ) ]
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, *, settings, **kwargs):
 
-    reader = CSVReader()
+    reader = CSVReader(settings)
     reader.read_into(data, path, prog_cb)
 
 
@@ -69,8 +69,8 @@ def write(data, path, prog_cb):
 
 class CSVReader(Reader):
 
-    def __init__(self):
-        Reader.__init__(self)
+    def __init__(self, settings):
+        super().__init__(settings)
         self._file = None
         self._text_stream = None
 

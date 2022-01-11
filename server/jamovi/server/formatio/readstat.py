@@ -16,12 +16,12 @@ from jamovi.readstat import Measure
 
 def get_readers():
     return [
-        ( 'sav', lambda data, path, prog_cb: read(data, path, prog_cb, 'sav') ),
-        ( 'zsav', lambda data, path, prog_cb: read(data, path, prog_cb, 'sav') ),
-        ( 'dta', lambda data, path, prog_cb: read(data, path, prog_cb, 'dta') ),
-        ( 'por', lambda data, path, prog_cb: read(data, path, prog_cb, 'por') ),
-        ( 'xpt', lambda data, path, prog_cb: read(data, path, prog_cb, 'xpt') ),
-        ( 'sas7bdat', lambda data, path, prog_cb: read(data, path, prog_cb, 'sas7bdat') ) ]
+        ( 'sav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
+        ( 'zsav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
+        ( 'dta', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='dta', **kwargs) ),
+        ( 'por', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='por', **kwargs) ),
+        ( 'xpt', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='xpt', **kwargs) ),
+        ( 'sas7bdat', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sas7bdat', **kwargs) ) ]
 
 
 def get_writers():
@@ -33,7 +33,7 @@ def get_writers():
         ( 'sas7bdat', lambda data, path, prog_cb: write(data, path, prog_cb, 'sas7bdat') ) ]
 
 
-def read(data, path, prog_cb, format):
+def read(data, path, prog_cb, *, format, **kwargs):
     parser = Parser(data, prog_cb)
     parser.parse(path, format)
     for column in data.dataset:

@@ -7,8 +7,6 @@ import importlib
 
 from collections import OrderedDict
 
-from jamovi.server.settings import Settings
-
 from .exceptions import FileReadError
 from .exceptions import FileWriteError
 
@@ -17,9 +15,6 @@ from . import blank
 
 _readers = None
 _writers = None
-
-settings = Settings.retrieve('main')
-# settings.specify_default('embedCond', '< 10 Mb')
 
 
 __all__ = (FileReadError, FileWriteError)  # prevent flake whining F401
@@ -71,12 +66,12 @@ def get_writers():
     return _writers
 
 
-def read(data, path, prog_cb, is_example=False, title=None, ext=None):
+def read(data, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
 
     if title:
         data.title = title
     else:
-        data.title = os.path.splitext(os.path.basename(path))[0]
+        data.title, _ = os.path.splitext(os.path.basename(path))
 
     if ext is None:
         ext = os.path.splitext(path)[1].lower()
@@ -91,31 +86,31 @@ def read(data, path, prog_cb, is_example=False, title=None, ext=None):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
     elif ext == 'omv':
         omv.read(data, path, prog_cb)
-        if not is_example:
+        if not is_temp:
             data.path = path
             data.save_format = 'jamovi'
     elif ext == 'omt':
         omv.read(data, path, prog_cb)
     else:
-        _import(data, path, prog_cb, is_example, ext=ext)
+        _import(data, path, prog_cb, settings, ext)
 
     fix_column_names(data)
 
     data.setup()
 
 
-def _import(data, path, prog_cb, is_example=False, ext=None):
+def _import(data, path, prog_cb, settings, ext):
     readers = get_readers()
 
     if ext is None:
         ext = os.path.splitext(path)[1].lower()[1:]
 
     if ext in readers:
-        readers[ext][1](data, path, prog_cb)
+        readers[ext][1](data, path, prog_cb, settings=settings)
     else:
         raise RuntimeError('Unrecognised file format')
 
-    # if not is_example:
+    # if not is_temp:
     #     data.import_path = path
     #
     # if _should_embed(path):
@@ -200,27 +195,27 @@ def gen_column_name(index):
     return name
 
 
-def _should_embed(path):
-    import_cond = settings.get('embedCond')
-
-    if import_cond == 'never':
-        return False
-    elif import_cond == 'always':
-        return True
-    else:
-        m = re.compile(r'^\< ([1-9][0-9]*) ([KMB])b$', re.IGNORECASE).match(import_cond)
-        if m is None:
-            return False
-
-        num = int(m.group(1))
-        mul = m.group(2).upper()
-        if mul == 'K':
-            max_embed = num * 1024
-        elif mul == 'M':
-            max_embed = num * 1024 * 1024
-        elif mul == 'G':
-            max_embed = num * 1024 * 1024 * 1024
-        else:
-            max_embed = 0
-
-        return os.path.getsize(path) < max_embed
+# def _should_embed(path):
+#     import_cond = settings.get('embedCond')
+#
+#     if import_cond == 'never':
+#         return False
+#     elif import_cond == 'always':
+#         return True
+#     else:
+#         m = re.compile(r'^\< ([1-9][0-9]*) ([KMB])b$', re.IGNORECASE).match(import_cond)
+#         if m is None:
+#             return False
+#
+#         num = int(m.group(1))
+#         mul = m.group(2).upper()
+#         if mul == 'K':
+#             max_embed = num * 1024
+#         elif mul == 'M':
+#             max_embed = num * 1024 * 1024
+#         elif mul == 'G':
+#             max_embed = num * 1024 * 1024 * 1024
+#         else:
+#             max_embed = 0
+#
+#         return os.path.getsize(path) < max_embed
