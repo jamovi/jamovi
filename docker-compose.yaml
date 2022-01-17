@@ -1,8 +1,18 @@
 version: '3'
 services:
+  jamovi-deps:
+    image: jamovi/jamovi-deps
+    build:
+      context: .
+      dockerfile: docker/deps-Dockerfile
+    profiles:
+      - donotstart
+
   jamovi:
     container_name: jamovi
-    build: .
+    build:
+      context: .
+      dockerfile: docker/jamovi-Dockerfile
     image: jamovi/jamovi
     ports:
       - '41337:41337'
@@ -15,4 +25,4 @@ services:
 
     volumes:
       - $HOME/Documents:/root/Documents
-      - ./:/tmp/source  # mount the source as a volume for development
+      #- ./:/tmp/source  # mount the source as a volume for development

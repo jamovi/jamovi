@@ -1,0 +1,11 @@
+tornado
+Cython
+protobuf
+PyYAML
+numpy==1.21.5
+scipy
+chardet
+nanomsg
+openpyxl
+pyexcel-ezodf
+aiohttp
