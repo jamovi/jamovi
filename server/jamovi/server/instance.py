@@ -367,6 +367,7 @@ class Instance:
                         column.output_name = output.name
                         column.output_assigned_column_name = name
                         column.output_desired_column_name = desired_name
+                        column.output_assigned_column_description = output.description
                     else:
                         column = columns_by_output_name[output.name]
                         if column.name == column.output_assigned_column_name:  # user hasn't changed the name
@@ -376,6 +377,12 @@ class Instance:
                                 column.description = output.description
                                 column.output_assigned_column_name = name
                                 column.output_desired_column_name = desired_name
+                                column.output_assigned_column_description = output.description
+
+                        if (column.description == column.output_assigned_column_description
+                                and column.description != output.description):
+                            column.description = output.description
+                            column.output_assigned_column_description = output.description
 
                     if output.values is None:
                         if output.measure_type != column.measure_type:

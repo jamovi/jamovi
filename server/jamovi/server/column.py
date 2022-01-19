@@ -57,6 +57,7 @@ class Column:
         self.output_name = None
         self.output_desired_column_name = None
         self.output_assigned_column_name = None
+        self.output_assigned_column_description = None
 
     def _create_child(self):
         if self._child is None:
