@@ -1447,9 +1447,7 @@ const DataSetViewModel = DataSetModel.extend({
             colNo >= viewport.left &&
             colNo <= viewport.right) {
 
-            let cell = this.attributes.cells[colNo - viewport.left][rowNo - viewport.top];
-            if (cell)
-                return cell.value;
+            return this.attributes.cells[colNo - viewport.left][rowNo - viewport.top].value;
         }
 
         return null;

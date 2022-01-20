@@ -309,13 +309,6 @@
     font-size: 80%;
 }
 
-.jmv-column-cell.editing {
-    background-color: white;
-    caret-color: unset;
-    cursor: text;
-    z-index: 11 ;
-}
-
 .jmv-column-cell {
     padding-left: 10px ;
     padding-right: 10px ;
@@ -417,7 +410,7 @@ input.jmv-table-cell-selected.copying {
 }
 
 .jmv-table-cell-selected.editing {
-    background-color: transparent ;
+    background-color: white ;
 }
 
 .jmv-table-row-highlight,
@@ -491,22 +484,11 @@ input.jmv-table-cell-selected.copying {
     cursor: cell;
 }
 
-.jmv-column-cell.temp-focus-cell {
-    position: absolute;
-    border: none;
-    z-index: -1;
-    text-overflow: clip;
-}
-
-.jmv-column-cell.temp-focus-cell.editing {
-    z-index: 300;
-}
-
 .jmv-row-header-cell,
 .jmv-column-cell {
     position: absolute ;
     box-sizing: border-box ;
-    padding: 0px 6px;
+    padding: 1px 6px 1px 6px ;
     width: 100% ;
     line-height: normal;
 }
@@ -543,7 +525,6 @@ input.jmv-table-cell-selected.copying {
 
 .jmv-column-cell:first-child {
     border-width: 0 1px 0 0 ;
-    padding-top: 1px;
 }
 
 .jmv-column-cell:last-child {
