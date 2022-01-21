@@ -654,7 +654,7 @@ class Column:
             node = Parser.parse(self.formula)
 
             if trans_error:
-                self.formula_message = "'%s' is in error" % (trans_name)
+                self.formula_message = _("'{}' is in error").format(trans_name)
             else:
                 self.formula_message = ''
 

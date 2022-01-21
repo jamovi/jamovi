@@ -25,7 +25,7 @@ const createRowMenuItems = function(plural) {
         ]}),
         new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
-            new ContextMenuButton({ title: _('Delete Row') + (plural ? 's' : ''), name: 'delRow', iconId: 'delrow' })
+            new ContextMenuButton({ title: plural ? n_('Delete Rows') : n_('Delete Row'), name: 'delRow', iconId: 'delrow' })
         ]}),
     ];
 };

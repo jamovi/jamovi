@@ -205,7 +205,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.analyses !== undefined) {
             let panelHtml = `<div class="side-panel">
                                 <div class="side-panel-heading">Module - ${ item.name }</div>
-                                <label class="display-in-menu"><input type="checkbox"  data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>Show in main menu</label>
+                                <label class="display-in-menu"><input type="checkbox"  data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>${ _('Show in main menu') }</label>
                             </div>`;
             let $sidePanel = $(panelHtml);
             let $analysesGroup = this._createMenuGroup(item.analyses);
