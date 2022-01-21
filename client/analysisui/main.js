@@ -34,7 +34,7 @@ const frameCommsApi = {
     dataChanged: data => {
         if (analysis !== null && analysis.inError === false) {
             if (data.dataType === 'columns') {
-                requestData("columns", null, true).then(columnInfo => {
+                requestData('columns', null, true).then(columnInfo => {
                     dataResources = { columns: columnInfo.columns };
                     analysis.dataChanged(data);
                 });
@@ -208,19 +208,20 @@ $(document).ready(function() {
     $(document).mouseup(this, mouseUp);
     $(document).mousemove(this, mouseMove);
 
-    parentFrame.send("frameDocumentReady", null);
+    parentFrame.send('frameDocumentReady', null);
 });
 
 
 function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
 
     if (appI18nDef)
-        I18n.initialise(appI18nDef.locale_data.messages[""].lang, appI18nDef);
+        I18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);
 
     window.jamoviVersion = jamoviVersion;
 
     let $hide = $('.silky-sp-back-button');
-    $hide.on("click", function(event) {
+    $hide.attr('title', s_('Hide options'))
+    $hide.on('click', function(event) {
         closeOptions();
     });
 
@@ -230,7 +231,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
         $title.append(def.error);
     }
     else {
-        return requestData("columns", null, true).then(data => {
+        return requestData('columns', null, true).then(data => {
 
             dataResources = { columns: data.columns };
 

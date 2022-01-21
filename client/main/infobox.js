@@ -267,13 +267,13 @@ class InfoBox extends HTMLElement {
             this._content.textContent = this._host.getAttribute('message');
             switch (this._host.getAttribute('status')) {
             case 'terminated':
-                this._button.textContent = 'Close';
+                this._button.textContent = _('Close');
                 break;
             case 'disconnected':
-                this._button.textContent = 'Refresh';
+                this._button.textContent = _('Refresh');
                 break;
             default:
-                this._button.textContent = 'OK';
+                this._button.textContent = _('OK');
                 break;
             }
         }
