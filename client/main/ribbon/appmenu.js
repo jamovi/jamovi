@@ -59,14 +59,14 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$nFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$nFormat.append($(`<div>${_('Number format')}</div>`));
-        this.$nFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">2 dp</option><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>`)
+        this.$nFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: 2 }) }</option><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
             .appendTo(this.$nFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
         this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$pFormat.append($(`<div>${_('p-value format')}</div>`));
-        this.$pFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">3 sf</option><option value="sf:4">4 sf</option><option value="sf:5">5 sf</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">3 dp</option><option value="dp:4">4 dp</option><option value="dp:5">5 dp</option><option value="dp:16">16 dp</optgroup></option></select>`)
+        this.$pFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
             .appendTo(this.$pFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());

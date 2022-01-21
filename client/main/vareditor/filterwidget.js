@@ -68,12 +68,12 @@ const FilterWidget = Backbone.View.extend({
         if (this.dataset.get('filtersVisible')) {
             this.$showFilter.removeClass('show-filter-columns');
             this.$showFilter.addClass('hide-filter-columns');
-            this.$showFilter.attr('title', 'Hide filter columns');
+            this.$showFilter.attr('title', _('Hide filter columns'));
         }
         else {
             this.$showFilter.removeClass('hide-filter-columns');
             this.$showFilter.addClass('show-filter-columns');
-            this.$showFilter.attr('title', 'Show filter columns');
+            this.$showFilter.attr('title', _('Show filter columns'));
         }
     },
     async _addFilter() {
