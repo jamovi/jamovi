@@ -40,6 +40,7 @@ let code = await (async() => {
     if (response.ok) {
         try {
             let codes = await response.json();
+            I18n.setAvailableLanguages(codes);
             let code = I18n.findBestMatchingLanguage(I18n.language, codes);
             if (code === null)
                 code = 'en';
