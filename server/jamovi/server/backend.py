@@ -6,9 +6,12 @@ import os
 
 class Backend:
     async def read_settings(self):
-        raise NotImplementedError
+        return self.read_settings_nowait()
 
     def write_settings(self, values):
+        raise NotImplementedError
+
+    def read_settings_nowait(self):
         raise NotImplementedError
 
     def set_auth(self, auth):
@@ -16,7 +19,7 @@ class Backend:
 
 
 class NoBackend(Backend):
-    async def read_settings(self):
+    async def read_settings_nowait(self):
         return { }
 
     def write_settings(self, values):
@@ -29,6 +32,9 @@ class FileSystemBackend(Backend):
         self._settings_path = settings_path
 
     async def read_settings(self):
+        return self.read_settings_nowait()
+
+    def read_settings_nowait(self):
         try:
             with open(self._settings_path, 'r', encoding='utf-8') as contents:
                 data = json.load(contents)
