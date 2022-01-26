@@ -19,6 +19,12 @@ class Settings(dict):
             group = self.group(group_name)
             group.update(group_values)
 
+    def read_nowait(self):
+        data = self._backend.read_settings_nowait()
+        for group_name, group_values in data.items():
+            group = self.group(group_name)
+            group.update(group_values)
+
     def write(self):
         if self._parent is not None:
             self._parent.write()
@@ -55,4 +61,5 @@ class Settings(dict):
         values = dict()
         for name, group in self._children.items():
             values[name] = group
+        values.update(self)
         return values
