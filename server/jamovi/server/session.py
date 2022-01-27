@@ -112,6 +112,9 @@ class Session(dict):
         if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
             i18n.set_language(lang)
 
+    def get_language(self):
+        return i18n.get_language()
+
     def set_auth(self, auth_token):
         self._backend.set_auth(auth_token)
 
