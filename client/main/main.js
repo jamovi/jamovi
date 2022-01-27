@@ -34,35 +34,35 @@ window.n_ = I18n._n;
 
 (async function() {
 
-let url = `../i18n/`;
-let code = await (async() => {
-    let response = await fetch(url);
-    if (response.ok) {
-        try {
-            let codes = await response.json();
-            I18n.setAvailableLanguages(codes);
-            let code = I18n.findBestMatchingLanguage(I18n.language, codes);
-            if (code === null)
-                code = 'en';
-            return code;
-        }
-        catch (e) {
-            return 'en';
-        }
-    }
-    else
-        return 'en';
-})();
+try {
+    let baseUrl = '../i18n/'
 
-let response = await fetch(`${url}${code}.json`);
-if (response.ok) {
+    let response = await fetch(baseUrl);
+    if ( ! response.ok)
+        throw new Error('Unable to fetch i18n manifest');
+
+    let languages = await response.json();
+    I18n.setAvailableLanguages(languages.available);
+    let current = languages.current;
+    if ( ! current)
+        current = I18n.findBestMatchingLanguage(I18n.systemLanguage(), languages.available);
+    if ( ! current)
+        current = 'en';
+
+    response = await fetch(`${ baseUrl }${ current }.json`);
+    if ( ! response.ok)
+        throw new Error(`Unable to fetch json for language '${ current }'`);
+
     try {
         let def = await response.json();
-        I18n.initialise(code, def);
+        I18n.initialise(current, def);
     }
     catch (e) {
-        console.log(`Issue loading json for language '${ code }'.`);
+        throw new Error(`Unable to load json for language '${ current }'`);
     }
+}
+catch (e) {
+    console.log(e);
 }
 
 

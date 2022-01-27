@@ -402,6 +402,31 @@ class VersionHandler(RequestHandler):
         self.write(app_info.version)
 
 
+class I18nManifestHandler(RequestHandler):
+
+    manifest = None
+
+    def initialize(self, session, path):
+        self._session = session
+        self._path = path
+
+    def get(self):
+        if I18nManifestHandler.manifest is None:
+            with open(self._path) as file:
+                I18nManifestHandler.manifest = json.load(file)
+
+        self.set_header('Content-Type', 'application/json')
+
+        current = self._session.get_language()
+        if current:
+            manifest = { }
+            manifest.update(I18nManifestHandler.manifest)
+            manifest['current'] = current
+            self.write(json.dumps(manifest))
+        else:
+            self.write(json.dumps(I18nManifestHandler.manifest))
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -555,7 +580,7 @@ class Server:
         if i18n_path is None:
             i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
 
-        coms_path   = 'jamovi.proto'
+        coms_path = 'jamovi.proto'
 
         session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
@@ -596,9 +621,10 @@ class Server:
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
-            (r'/i18n/(.*)', StaticFileHandler, {
-                'path': i18n_path,
-                'default_filename': 'manifest.json' }),
+            (r'/i18n/', I18nManifestHandler, {
+                'session': self._session,
+                'path': f'{ i18n_path }/manifest.json' }),
+            (r'/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
             (r'/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
             (r'/[a-f0-9-]+/()', StaticFileHandler, {
