@@ -64,16 +64,24 @@ class Session(dict):
 
         self._settings = None
 
+        language = ''
+
         backend_mode = conf.get('backend', 'file')
         if backend_mode == 'file':
             settings_path = os.path.join(Dirs.app_data_dir(), 'settings.json')
             self._backend = FileSystemBackend(settings_path=settings_path)
+
+            # with a file backend, we need to read the settings straight away
+            # to get the language
+            settings = self.get_settings_nowait()
+            language = settings.group('main').get('selectedLanguage', '')
         else:
             self._backend = NoBackend()
 
-        code = conf.get('lang')
-        if code is not None:
-            i18n.set_language(code)
+        if language == '':
+            language = conf.get('lang', '')
+        if language != '':
+            i18n.set_language(language)
 
         task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:
@@ -104,22 +112,34 @@ class Session(dict):
         if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
             i18n.set_language(lang)
 
+    def get_language(self):
+        return i18n.get_language()
+
     def set_auth(self, auth_token):
         self._backend.set_auth(auth_token)
+
+    def get_settings_nowait(self):
+        if self._settings is None:
+            self._settings = Settings(backend=self._backend)
+            self._specify_defaults(self._settings)
+            self._settings.read_nowait()
+        return self._settings
 
     async def get_settings(self):
         if self._settings is None:
             self._settings = Settings(backend=self._backend)
+            self._specify_defaults(self._settings)
             await self._settings.read()
-
-            # until we deploy the windows updater and are happy with it,
-            # we'll default autoUpdate to off -- macOS works well though.
-            is_windows = platform.uname().system == 'Windows'
-            def4ult = False if is_windows else True
-            self._settings.group('main').specify_default('autoUpdate', def4ult)
-            self._settings.group('main').specify_default('missings', 'NA')
-
         return self._settings
+
+    def _specify_defaults(self, settings):
+        # until we deploy the windows updater and are happy with it,
+        # we'll default autoUpdate to off -- macOS works well though.
+        is_windows = platform.uname().system == 'Windows'
+        def4ult = False if is_windows else True
+        settings.group('main').specify_default('autoUpdate', def4ult)
+        settings.group('main').specify_default('missings', 'NA')
+        settings.group('main').specify_default('selectedLanguage', '')
 
     async def create(self, instance_id=None):
         if instance_id is None:
