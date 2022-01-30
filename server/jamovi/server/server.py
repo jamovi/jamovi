@@ -427,6 +427,15 @@ class I18nManifestHandler(RequestHandler):
             self.write(json.dumps(I18nManifestHandler.manifest))
 
 
+class DownloadFileHandler(TornadosStaticFileHandler):
+    def set_extra_headers(self, path):
+        filename = self.get_argument('filename', None)
+        if filename:
+            self.set_header(
+                'Content-Disposition',
+                f'attachment; filename="{ filename }"')
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -611,6 +620,7 @@ class Server:
             (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
+            (r'/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
             (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,
