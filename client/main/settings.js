@@ -31,6 +31,7 @@ const Settings = Backbone.Model.extend({
         theme: 'default',
         devMode: false,
         syntaxMode: false,
+        selectedLanguage: '',
         zoom: 100,
         updateStatus: 'na',
         format: '{"t":"sf","n":3,"p":3}',

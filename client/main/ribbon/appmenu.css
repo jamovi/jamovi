@@ -169,10 +169,11 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
     line-height: 45px;
 }
 
-[mode=demo] .jmv-update-info,
-[mode=demo] .jmv-recorder,
-[mode=demo] .jmv-devmode,
-[mode=demo] .jmv-zoom,
-[mode=demo] .jmv-ribbon-appmenu-version {
+:not(body.electron) .jmv-update-info,
+:not(body.electron) .jmv-recorder,
+:not(body.electron) .jmv-devmode,
+:not(body.electron) .jmv-zoom,
+:not(body.electron) .jmv-ribbon-appmenu-version,
+:not(body.electron) .jmv-language-selector {
     display: none ;
 }

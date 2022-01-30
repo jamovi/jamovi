@@ -11,6 +11,7 @@ class I18n {
         this._n = this._n.bind(this);
         this.findBestMatchingLanguage = this.findBestMatchingLanguage.bind(this);
 
+        this._availableLanguages = [ 'en' ];
         this.language = this.systemLanguage();
     }
 
@@ -18,6 +19,14 @@ class I18n {
         this.language = code;
         this.jed = new Jed(localeData);
         this.localeData = localeData;
+    }
+
+    setAvailableLanguages(available) {
+        this._availableLanguages = available;
+    }
+
+    availableLanguages() {
+        return this._availableLanguages;
     }
 
     _(key, formats) {

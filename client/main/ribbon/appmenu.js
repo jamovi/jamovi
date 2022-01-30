@@ -5,6 +5,7 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const keyboardjs = require('keyboardjs');
+const i18n = require('../../common/i18n');
 
 const host = require('../host');
 
@@ -149,6 +150,13 @@ const AppMenuButton = Backbone.View.extend({
         // this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
         // this.$recorder.on('click', (event) => host.openRecorder());
 
+        this.$language = $('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$language.append($(`<div>${_('Language')}</div>`));
+        this.$languageList = $(`<select></select>`)
+            .appendTo(this.$language)
+            .click(event => event.stopPropagation())
+            .change(event => this._changeLanguage());
+
         this.$dev = $('<label class="jmv-ribbon-appmenu-item checkbox jmv-devmode" for="devMode"></label>').appendTo(this.$content);
         this.$dev.append($(`<div>${_('Developer mode')}</div>`));
         this.$devModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">').appendTo(this.$dev);
@@ -186,6 +194,16 @@ const AppMenuButton = Backbone.View.extend({
         this.model.settings().on('change:format',       () => this._updateUI());
         this.model.settings().on('change:missings',     () => this._updateUI());
         this.model.settings().on('change:refsMode',     () => this._updateUI());
+        this.model.settings().on('change:selectedLanguage', () => this._updateUI());
+
+        let available = i18n.availableLanguages().map((code) => {
+            let ownName = new Intl.DisplayNames([code], { type: 'language' }).of(code);
+            return `<option value="${ code }">${ ownName }</option>`;
+        });
+        available.unshift(`<option value="">${ 'System default' }</option>`);
+
+        this.$languageList[0].innerHTML = available.join('');
+
         // this.model.settings().on('change:embedCond',    () => this._updateUI());
 
         this._updateUI();
@@ -229,6 +247,14 @@ const AppMenuButton = Backbone.View.extend({
         let value = JSON.stringify(fmt);
         this.model.settings().setSetting('format', value);
     },
+    _changeLanguage() {
+        let language = this.$languageList.val();
+        this.model.settings().setSetting('selectedLanguage', language);
+        host.showMessageBox({
+            title: _('Restart required'),
+            message: _('A change of language requires jamovi to be restarted'),
+        });
+    },
     _changeRefsMode() {
         this.model.settings().setSetting('refsMode', this.$refsModeList.val());
     },
@@ -265,6 +291,10 @@ const AppMenuButton = Backbone.View.extend({
         this.$zoomLevel.text(zoom);
         let missings = settings.getSetting('missings', 'NA');
         this.$missingsInput.val(missings);
+
+        let language = settings.getSetting('selectedLanguage', '');
+        this.$languageList.val(language);
+
         // let embedCond = settings.getSetting('embedCond', '< 10 Mb');
         // this.$embedList.val(embedCond);
 
