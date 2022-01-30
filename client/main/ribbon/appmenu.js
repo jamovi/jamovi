@@ -150,7 +150,7 @@ const AppMenuButton = Backbone.View.extend({
         // this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
         // this.$recorder.on('click', (event) => host.openRecorder());
 
-        this.$language = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
+        this.$language = $('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$language.append($(`<div>${_('Language')}</div>`));
         this.$languageList = $(`<select></select>`)
             .appendTo(this.$language)
