@@ -3,6 +3,8 @@
 **/node_modules
 server/build
 
+jmv/build
+
 # built files
 client/*.js
 client/*.css
