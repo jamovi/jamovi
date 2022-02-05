@@ -1,9 +1,8 @@
 'use strict';
 
-var _ = require('underscore');
-var SuperClass = require('../common/superclass');
+const SuperClass = require('../common/superclass');
 
-var LayoutActionResource = function(supplier) {
+const LayoutActionResource = function(supplier) {
 
     this._supplier = supplier;
 

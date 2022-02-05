@@ -30,7 +30,7 @@
 }
 
 .jmv-store-message .icon {
-    background-image: url(../assets/action-info.svg);
+    background-image: url('../assets/action-info.svg');
     width: 22px;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -82,42 +82,6 @@
 
 .jmv-store-module-button:not(:first-of-type) {
     margin-left: 10px;
-}
-
-.jmv-store-module-button[data-op='remove']:before {
-    content: 'Remove' ;
-}
-
-.jmv-store-module-button[data-op='install']:before {
-    content: 'Install' ;
-}
-
-.jmv-store-module-button[data-op='installed']:before {
-    content: 'Installed' ;
-}
-
-.jmv-store-module-button[data-op='unavailable']:before {
-    content: 'Unavailable' ;
-}
-
-.jmv-store-module-button[data-op='update']:before {
-    content: 'Update' ;
-}
-
-.jmv-store-module-button[data-op='old']:before {
-    content: 'Requires a newer version of jamovi' ;
-}
-
-.jmv-store-module-button[data-op='incompatible']:before {
-    content: 'Installed version is incompatible' ;
-}
-
-.jmv-store-module-button[data-op='show']:before {
-    content: 'Show' ;
-}
-
-.jmv-store-module-button[data-op='hide']:before {
-    content: 'Hide' ;
 }
 
 .jmv-store-module-button[data-op='update'] {

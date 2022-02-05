@@ -19,7 +19,7 @@ def get_writers():
     ]
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, **kwargs):
     parser = Parser(data, prog_cb)
     parser.parse(path)
     for column in data.dataset:

@@ -17,7 +17,7 @@ def get_readers():
     return [ ( 'jasp', read ) ]
 
 
-def write(data, path, prog_cb):
+def write(data, path, prog_cb, **kwargs):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
         content = io.StringIO()
@@ -128,7 +128,11 @@ def read(data, path, prog_cb):
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
                     for meta_label in meta_labels:
-                        column.append_level(meta_label[0], meta_label[1], str(meta_label[0]))
+                        if column.data_type == DataType.TEXT:
+                            # they index from 1 ... although i suppose that's on me
+                            column.append_level(meta_label[0]-1, meta_label[1], str(meta_label[0]))
+                        else:
+                            column.append_level(meta_label[0], meta_label[1], str(meta_label[0]))
         except Exception:
             pass
 
@@ -141,13 +145,16 @@ def read(data, path, prog_cb):
                 if column.measure_type == MeasureType.CONTINUOUS:
                     for i in range(row_count):
                         byts = data_file.read(8)
-                        value = struct.unpack('<d', byts)
-                        column[i] = value[0]
+                        value = struct.unpack('<d', byts)[0]
+                        column.set_value(i, value)
                 else:
                     for i in range(row_count):
                         byts = data_file.read(4)
-                        value = struct.unpack('<i', byts)
-                        column[i] = value[0]
+                        value = struct.unpack('<i', byts)[0]
+                        if column.data_type == DataType.TEXT:
+                            column.set_value(i, value-1)
+                        else:
+                            column.set_value(i, value)
             data_file.close()
 
         for column in data.dataset:

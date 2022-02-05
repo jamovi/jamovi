@@ -9,16 +9,13 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-
-#include <nanomsg/nn.h>
-#include <nanomsg/pair.h>
+#include <cstdlib>
+#include <cstring>
 
 #include <boost/bind.hpp>
 
 #include "host.h"
-
 #include "enginer.h"
-
 #include "jamovi.pb.h"
 
 using namespace std;
@@ -27,25 +24,27 @@ using namespace jamovi::coms;
 
 Engine::Engine()
 {
-    _slave = false;
     _exiting = false;
+    _headless = false;
+
+    char *headless = std::getenv("JAMOVI_ENGINE_HEADLESS");
+    if (headless != NULL && strcmp(headless, "1") == 0)
+        _headless = true;
+
+    char *heartbeatPath = std::getenv("JAMOVI_ENGINE_HEARTBEAT_PATH");
+    if (heartbeatPath != NULL)
+        _heartbeatPath = string(heartbeatPath);
+
     _reflection = _runningRequest.GetReflection();
 
+    _coms = NULL;
     _R = new EngineR();
-
-    _coms.analysisRequested.connect(bind(&Engine::analysisRequested, this, _1, _2));
-    _coms.restartRequested.connect(bind(&Engine::terminate, this));
     _R->resultsReceived.connect(bind(&Engine::resultsReceived, this, _1, _2));
-}
-
-void Engine::setSlave(bool slave)
-{
-    _slave = slave;
 }
 
 void Engine::setConnection(const string &con)
 {
-    _conString = con;
+    _connPath = con;
 }
 
 void Engine::setPath(const string &path)
@@ -56,21 +55,17 @@ void Engine::setPath(const string &path)
 
 void Engine::start()
 {
-    _socket = nn_socket(AF_SP, NN_PAIR);
-    if (_socket < 0)
-        throw runtime_error("Unable to connect : could not create socket");
 
-    int timeout;
+#ifdef JAMOVI_ENGINE_SUPPORT_LOCAL_SOCKETS
+    if (_connPath.rfind("ipc://", 0) == 0)
+        _coms = new ComsNN(); // nanomsg
+    else
+        _coms = new ComsDS();  // domain sockets
+#else
+    _coms = new ComsNN();
+#endif
 
-    timeout = 1500;
-    nn_setsockopt(_socket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(timeout));
-
-    timeout = 500;
-    nn_setsockopt(_socket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(timeout));
-
-    _conId = nn_connect(_socket, _conString.c_str());
-    if (_conId < 0)
-        throw runtime_error("Unable to connect : could not connect to endpoint");
+    _coms->connect(_connPath);
 
     // start the message loop thread
     thread t(&Engine::messageLoop, this);
@@ -81,7 +76,14 @@ void Engine::start()
     // use to end the engine processes when the server finishes.
     // semPlot won't run correctly with this thread running, on windows
     // hence the #ifndef ... who knows why.
-    thread u(&Engine::monitorStdinLoop, this);
+    thread u;
+    if ( ! _headless)
+        u = thread(&Engine::monitorStdinLoop, this);
+
+    // we don't worry about the heartbeat on windows
+    thread v;
+    if (_heartbeatPath != "")
+        v = thread(&Engine::heartbeat, this, _heartbeatPath);
 #endif
 
     // locks for sharing between threads
@@ -100,7 +102,8 @@ void Engine::start()
             // wait for notification from message loop
             cv_status res;
             res = _condition.wait_for(lock, chrono::milliseconds(250));
-            periodicChecks();
+            if ( ! _headless)
+                periodicChecks();
             if (res == cv_status::timeout)
                 continue;
         }
@@ -127,7 +130,7 @@ void Engine::periodicChecks()
 void Engine::terminate()
 {
     _exiting = true;
-    nn_term();
+    _coms->close();
     std::exit(0);
 }
 
@@ -138,31 +141,9 @@ bool Engine::isNewAnalysisWaiting()
     return _waitingRequest.analysisid() != 0;
 }
 
-void Engine::analysisRequested(int messageId, AnalysisRequest& request)
-{
-    // this is called from the message loop thread
-
-    lock_guard<mutex> lock(_mutex);
-    _condition.notify_all();
-
-    _currentMessageId = messageId;
-    _waitingRequest.CopyFrom(request);
-}
-
 void Engine::resultsReceived(const string &results, bool complete)
 {
-    // this is called from the main thread
-
-    ComsMessage message;
-
-    message.set_id(_currentMessageId);
-    message.set_payload(results);
-    message.set_payloadtype("AnalysisResponse");
-    message.set_status(complete ? Status::COMPLETE : Status::IN_PROGRESS);
-
-    string data;
-    message.SerializeToString(&data);
-    nn_send(_socket, data.data(), data.size(), 0);
+    _coms->send(results, complete);
 }
 
 void Engine::messageLoop()
@@ -171,17 +152,17 @@ void Engine::messageLoop()
 
     while (_exiting == false)
     {
-        char *buf = NULL;
-        int nbytes = nn_recv (_socket, &buf, NN_MSG, 0);
+        AnalysisRequest request = _coms->read();
 
-        if (nbytes >= 0)
+        if (request.restartengines())
         {
-            _coms.parse(buf, nbytes);
-            nn_freemsg(buf);
+            terminate();
         }
         else
         {
-
+            lock_guard<mutex> lock(_mutex);
+            _condition.notify_all();
+            _waitingRequest.CopyFrom(request);
         }
     }
 }
@@ -196,4 +177,26 @@ void Engine::monitorStdinLoop()
             break;
     }
     terminate();
+}
+
+#ifndef _WIN32
+#include <chrono>
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
+
+void Engine::heartbeat(const std::string &path)
+{
+#ifndef _WIN32
+    chrono::milliseconds duration(1000);
+    int fd = open(path.c_str(),
+                  O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK,
+                  0666);
+
+    while (true)
+    {
+        futimens(fd, nullptr);
+        this_thread::sleep_for(duration);
+    }
+#endif
 }

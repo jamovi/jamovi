@@ -9,9 +9,8 @@ from jamovi.core import Dirs
 from jamovi.core import MemoryMap
 from jamovi.core import DataSet
 
-from .settings import Settings
-
 from . import jamovi_pb2 as jcoms
+from .jamovi_pb2 import Notification
 
 from .utils import conf
 from .utils import FileEntry
@@ -41,6 +40,7 @@ from itertools import islice
 from urllib import parse
 from aiohttp import ClientSession
 from asyncio import ensure_future as create_task
+from collections import namedtuple
 
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
@@ -50,16 +50,10 @@ from .utils import fs
 from .utils import is_int32
 from .utils import is_url
 from .utils import latexify
+from .i18n import _
 
 
 log = logging.getLogger(__name__)
-
-
-# until we deploy the windows updater and are happy with it,
-# we'll default autoUpdate to off -- macOS works well though.
-is_windows = platform.uname().system == 'Windows'
-def4ult = False if is_windows else True
-Settings.retrieve('main').specify_default('autoUpdate', def4ult)
 
 
 class ForbiddenOp(PermissionError):
@@ -68,13 +62,19 @@ class ForbiddenOp(PermissionError):
         self.operation = operation
 
 
+ConnectionStatus = namedtuple('ConnectionStatus',
+    ('connected', 'inactive_since', 'unclean', 'virgin'),
+    defaults=(True, None, False, False))
+
+
 class Instance:
 
-    def __init__(self, session, instance_path, instance_id):
+    def __init__(self, session, instance_path, instance_id, settings):
 
         self._session = session
         self._instance_path = instance_path
         self._instance_id = instance_id
+        self._settings = settings
 
         os.makedirs(instance_path, exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
@@ -83,17 +83,17 @@ class Instance:
         self._data = InstanceModel(self)
         self._coms = None
         self._perms = Permissions.retrieve()
-
         self._mod_tracker = ModTracker(self._data)
 
-        self._inactive_since = None
-        self._inactive_clean = True
+        now = monotonic()
+
+        self._virgin = True
+        self._idle_since = now
+        self._no_connection_since = now
+        self._no_connection_unclean_disconnect = False
 
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
-
-        settings = Settings.retrieve()
-        settings.sync()
 
         Modules.instance().add_listener(self._module_event)
 
@@ -130,28 +130,29 @@ class Instance:
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
         elif path.startswith('{{Examples}}'):
-            examples_path = conf.get('examples_path')
+            modules = Modules.instance()
             if path == '{{Examples}}':
-                nor_path = examples_path
-            elif os.path.dirname(path) == '{{Examples}}':
-                # {{Examples}}/file_name.ext
-                nor_path = path.replace('{{Examples}}', examples_path)
+                module = modules['jmv']
+                nor_path = posixpath.join(module.path, 'data')
             else:
+                if os.path.dirname(path) == '{{Examples}}':
+                    module_name = 'jmv'
+                else:
+                    module_name = os.path.basename(os.path.dirname(path))
                 # {{Examples}}/module_name/[file_name.ext]
                 file_name = os.path.basename(path)
-                module_name = os.path.basename(os.path.dirname(path))
-                modules = Modules.instance()
                 try:
                     module = modules[module_name]
                     nor_path = posixpath.join(module.path, 'data', file_name)
                 except KeyError:
                     # return something default-y, let somewhere else error
-                    nor_path = path.replace('{{Examples}}', examples_path)
+                    module = modules['jmv']
+                    nor_path = posixpath.join(module.path, 'data')
 
         return nor_path
 
     def temp_path(self):
-        return posixpath.join(self._instance_path, 'temp')
+        return posixpath.join(self._instance_path, 'dl')
 
     def _virtualise_path(self, path):
 
@@ -209,7 +210,8 @@ class Instance:
             self._coms.remove_close_listener(self._close)
         self._coms = coms
         self._coms.add_close_listener(self._close)
-        self._inactive_since = None
+        self._no_connection_since = None
+        self._virgin = False
 
     def close(self):
         Modules.instance().remove_listener(self._module_event)
@@ -219,23 +221,54 @@ class Instance:
     def _close(self, clean=True):
         self._coms.remove_close_listener(self._close)
         self._coms = None
-        self._inactive_clean = clean
-        self._inactive_since = monotonic()
+        self._no_connection_unclean_disconnect = not clean
+        self._no_connection_since = monotonic()
 
     @property
     def is_active(self):
         return self._coms is not None
 
-    @property
-    def inactive_for(self):
-        if self._inactive_since is None:
-            return 0
+    def connection_status(self):
+        if self._no_connection_since is None:
+            return ConnectionStatus()
         else:
-            return monotonic() - self._inactive_since
+            return ConnectionStatus(
+                    False,
+                    self._no_connection_since,
+                    self._no_connection_unclean_disconnect,
+                    self._virgin)
 
-    @property
-    def inactive_clean(self):
-        return self._inactive_clean
+    def idle_for(self):
+        return monotonic() - self._idle_since
+
+    def idle_since(self):
+        return self._idle_since
+
+    def notify_idle(self, id, shutdown_in):
+
+        if self._coms is None:
+            return
+
+        n = Notification()
+        n.id = id
+
+        if shutdown_in is not None:
+            nearest_30secs = int(round(shutdown_in / 30) * 30)
+            if nearest_30secs >= 120:
+                description = _('This session will end in around {} minutes').format(str(nearest_30secs // 60))
+            elif nearest_30secs >= 60:
+                description = _('This session will end in around 1 minute')
+            else:
+                description = _('This session will end any moment now')
+
+            n.title = _('Idle session')
+            n.message = description
+            n.status = 2  # indefinite
+        else:
+            n.status = 1  # dismiss
+
+        self._coms.send(n)
+
 
     @property
     def analyses(self):
@@ -245,6 +278,9 @@ class Instance:
         return posixpath.join(self._instance_path, resourceId)
 
     async def on_request(self, request):
+
+        self._idle_since = monotonic()
+
         if type(request) == jcoms.DataSetRR:
             self._on_dataset(request)
         elif type(request) == jcoms.OpenRequest:
@@ -331,6 +367,7 @@ class Instance:
                         column.output_name = output.name
                         column.output_assigned_column_name = name
                         column.output_desired_column_name = desired_name
+                        column.output_assigned_column_description = output.description
                     else:
                         column = columns_by_output_name[output.name]
                         if column.name == column.output_assigned_column_name:  # user hasn't changed the name
@@ -340,6 +377,12 @@ class Instance:
                                 column.description = output.description
                                 column.output_assigned_column_name = name
                                 column.output_desired_column_name = desired_name
+                                column.output_assigned_column_description = output.description
+
+                        if (column.description == column.output_assigned_column_description
+                                and column.description != output.description):
+                            column.description = output.description
+                            column.output_assigned_column_description = output.description
 
                     if output.values is None:
                         if output.measure_type != column.measure_type:
@@ -433,7 +476,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.documents_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Documents'
+                        entry.name = _('Documents')
                         entry.path = '{{Documents}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -442,7 +485,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.downloads_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Downloads'
+                        entry.name = _('Downloads')
                         entry.path = '{{Downloads}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -451,7 +494,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.desktop_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Desktop'
+                        entry.name = _('Desktop')
                         entry.path = '{{Desktop}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -460,7 +503,7 @@ class Instance:
                 try:
                     if os.path.exists(Dirs.home_dir()):
                         entry = response.contents.add()
-                        entry.name = 'Home'
+                        entry.name = _('Home')
                         entry.path = '{{Home}}'
                         entry.type = jcoms.FSEntry.Type.Value('SPECIAL_FOLDER')
                 except BaseException:
@@ -488,26 +531,24 @@ class Instance:
                     raise PermissionError()
 
                 if path == '{{Examples}}' or path == '{{Examples}}/':
-
-                    index_path = posixpath.join(conf.get('examples_path'), 'index.yaml')
-                    with open(index_path, encoding='utf-8') as index:
-                        for dataset in yaml.safe_load(index):
-                            entry = response.contents.add()
-                            entry.name = dataset['name']
-                            entry.path = posixpath.join('{{Examples}}', dataset['path'])
-                            entry.type = jcoms.FSEntry.Type.Value('FILE')
-                            entry.description = dataset['description']
-                            entry.isExample = True
-
                     for module in Modules.instance():
                         if module.datasets:
-                            entry = response.contents.add()
-                            entry.name = module.title
-                            entry.path = posixpath.join('{{Examples}}', module.name)
-                            entry.type = jcoms.FSEntry.Type.Value('FOLDER')
-                            if module.datasets_license:
-                                entry.license = module.datasets_license.name
-                                entry.licenseUrl = module.datasets_license.url
+                            if module.name == 'jmv':
+                                for dataset in module.datasets:
+                                    entry = response.contents.add()
+                                    entry.name = dataset.name
+                                    entry.path = posixpath.join('{{Examples}}', 'jmv', dataset.path)
+                                    entry.description = dataset.description
+                                    entry.tags[:] = dataset.tags
+                                    entry.isExample = True
+                            else:
+                                entry = response.contents.add()
+                                entry.name = module.title
+                                entry.path = posixpath.join('{{Examples}}', module.name)
+                                entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                                if module.datasets_license:
+                                    entry.license = module.datasets_license.name
+                                    entry.licenseUrl = module.datasets_license.url
                 else:
                     module_name = os.path.basename(path)
                     modules = Modules.instance()
@@ -578,19 +619,19 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
         except OSError as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
         except BaseException as e:
             base    = os.path.basename(abs_path)
-            message = 'Unable to browse {}'.format(base)
+            message = _('Unable to browse {}').format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -643,23 +684,23 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except BaseException as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to save {}'.format(base)
+            message = _('Unable to save {}').format(base)
             cause = str(e)
             if not cause:
                 cause = type(e).__name__
@@ -754,7 +795,7 @@ class Instance:
             try:
                 await analysis.save(path, address)
             except Exception as e:
-                self._coms.send_error('Unable to save', str(e), self._instance_id, request)
+                self._coms.send_error(_('Unable to save'), str(e), self._instance_id, request)
             else:
                 path = self._virtualise_path(path)
                 response = jcoms.SaveProgress()
@@ -762,9 +803,9 @@ class Instance:
                 response.success = True
                 self._coms.send(response, self._instance_id, request)
         else:
-            self._coms.send_error('Error', 'Unable to access analysis', self._instance_id, request)
+            self._coms.send_error(_('Error'), _('Unable to access analysis'), self._instance_id, request)
 
-    def open(self, path, title=None, is_temp=False):
+    def open(self, path, title=None, is_temp=False, ext=None):
 
         is_example = path.startswith('{{Examples}}')
         if is_example:
@@ -772,16 +813,26 @@ class Instance:
 
         if is_example and self._perms.open.examples is False:
             raise PermissionError()
-        if path != '' and not is_example and self._perms.open.local is False:
-            raise PermissionError()
         if is_url(path) and self._perms.open.remote is False:
             raise PermissionError()
+        if path != '' and not is_example:
+            if self._perms.open.temp is False:
+                raise PermissionError()
+            if self._perms.open.local is False:
+                temp_dir = conf.get('upload_path', None)
+                # prevent directory traversal attacks
+                path = os.path.join(temp_dir, path)
+                if temp_dir and os.path.commonpath([ temp_dir, path ]) == temp_dir:
+                    pass
+                else:
+                    raise PermissionError()
 
         stream = ProgressStream()
 
         async def read_file(path, is_temp, stream):
 
             nonlocal title
+            nonlocal ext
 
             old_mm = None
             temp_file = None
@@ -817,11 +868,14 @@ class Instance:
                                 filename = response.content_disposition.filename
 
                             if not formatio.is_supported(filename):
-                                raise RuntimeError('Unrecognised file format')
+                                raise RuntimeError(_('Unrecognised file format'))
 
-                            title, ext = os.path.splitext(filename)
-                            fd, temp_file_path = mkstemp(suffix=ext)
+                            title, dotext = os.path.splitext(filename)
+                            fd, temp_file_path = mkstemp(suffix=dotext)
                             temp_file = os.fdopen(fd, 'wb')
+
+                            if dotext != '':
+                                ext = dotext[1:].lower()
 
                             progress = [0, 1]
                             if content_length:
@@ -857,7 +911,9 @@ class Instance:
                         functools.partial(
                             stream.write, progress))
 
-                result = await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_temp, title)
+                main_settings = self._settings.group('main')
+                func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
+                result = await ioloop.run_in_executor(None, func)
 
                 if integ_handler is not None:
                     self._data.integration = integ_handler
@@ -868,7 +924,7 @@ class Instance:
                 if self._data.analyses.count() == 0 or self._data.analyses._analyses[0].name != 'empty':
                     annotation = self._data.analyses.create_annotation(0)
                     annotation.results.index = 1
-                    annotation.results.title = 'Results'
+                    annotation.results.title = _('Results')
 
                 i = 1
                 while i < self._data.analyses.count():
@@ -968,7 +1024,7 @@ class Instance:
                             filename = response.content_disposition.filename
 
                         if not formatio.is_supported(filename):
-                            raise RuntimeError('Unrecognised file format')
+                            raise RuntimeError(_('Unrecognised file format'))
 
                         title, ext = os.path.splitext(filename)
                         fd, temp_file_path = mkstemp(suffix=ext)
@@ -1021,7 +1077,9 @@ class Instance:
                         coms.send, None, self._instance_id, request,
                         complete=False, progress=progress))
 
-            await ioloop.run_in_executor(None, formatio.read, self._data, norm_path, prog_cb, is_example, title)
+            main_settings = self._settings.group('main')
+            func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title)
+            await ioloop.run_in_executor(None, func)
 
             if integ_handler is not None:
                 self._data.integration = integ_handler
@@ -1038,23 +1096,23 @@ class Instance:
         except PermissionError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
             log.exception(e)
             base    = os.path.basename(path)
-            message = 'Unable to open {}'.format(base)
+            message = _('Unable to open {}').format(base)
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -1144,7 +1202,9 @@ class Instance:
                             coms.send, None, instance_id, request,
                             complete=False, progress=(1000 * (self._i + p) / n_files, 1000)))
 
-                await ioloop.run_in_executor(None, formatio.read, model, norm_path, prog_cb, False)
+                main_settings = self._settings.group('main')
+                func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp)
+                await ioloop.run_in_executor(None, func)
 
                 self._i += 1
                 return (name, model)
@@ -1165,10 +1225,10 @@ class Instance:
             base = ''
             if e.filename is not None:
                 base = os.path.basename(e.filename)
-            message = 'Unable to import {}'.format(base)
+            message = _('Unable to import {}').format(base)
             cause = str(e)
             if cause == '':
-                cause = 'Access is denied. You may not have the appropriate permissions to access this resource.'
+                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except OSError as e:
@@ -1176,13 +1236,13 @@ class Instance:
             base = ''
             if e.filename is not None:
                 base = os.path.basename(e.filename)
-            message = 'Unable to import {}'.format(base)
+            message = _('Unable to import {}').format(base)
             cause = e.strerror
             self._coms.send_error(message, cause, self._instance_id, request)
 
         except Exception as e:
             log.exception(e)
-            message = 'Unable to perform import'
+            message = _('Unable to perform import')
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
@@ -1211,7 +1271,7 @@ class Instance:
 
             header = self._data.analyses.create_annotation(0)
             header.results.index = 1
-            header.results.title = 'Results'
+            header.results.title = _('Results')
 
             # find all output columns
             columns_to_delete = [ ]
@@ -1293,7 +1353,7 @@ class Instance:
                 if self._data.analyses.has_header_annotation() is False:
                     header = self._data.analyses.create_annotation(0)
                     header.results.index = 1
-                    header.results.title = 'Results'
+                    header.results.title = _('Results')
                     if request.name == 'empty':
                         self._coms.send(header.results, self._instance_id, request, complete=True)
                     else:
@@ -1324,6 +1384,7 @@ class Instance:
                         response = jcoms.AnalysisResponse()
                         response.name = request.name
                         response.ns = request.ns
+                        response.instanceId = self.id
                         response.analysisId = analysis.id
                         response.options.ParseFromString(analysis.options.as_bytes())
                         response.index = request.index
@@ -1341,6 +1402,7 @@ class Instance:
                 log.error('Could not create analysis: ' + str(e))
 
                 response = jcoms.AnalysisResponse()
+                response.instanceId = self.id
                 response.analysisId = analysis.id
                 response.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
                 response.error.message = 'Could not create analysis: ' + str(e)
@@ -1448,13 +1510,12 @@ class Instance:
             self._coms.send(response, self._instance_id, request)
 
         except ForbiddenOp as e:
-            message = 'Could not {}'.format(e.operation)
-            self._coms.send_error(message, str(e), self._instance_id, request)
+            self._coms.send_error(e.operation, str(e), self._instance_id, request)
         except TypeError as e:
-            self._coms.send_error('Could not assign data', str(e), self._instance_id, request)
+            self._coms.send_error(_('Could not assign data'), str(e), self._instance_id, request)
         except Exception as e:
             log.exception(e)
-            self._coms.send_error('Could not perform operation', str(e), self._instance_id, request)
+            self._coms.send_error(_('Could not perform operation'), str(e), self._instance_id, request)
 
     async def _on_module(self, request):
 
@@ -1468,20 +1529,19 @@ class Instance:
                 try:
                     stream = modules.install(request.path)
                     async for progress in stream:
-                        if not stream.is_complete:
-                            self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
-                        else:
-                            self._coms.send(None, self._instance_id, request)
-                            self._session.notify_global_changes()
+                        self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+
+                    self._coms.send(None, self._instance_id, request)
+                    self._session.notify_global_changes()
                 except Exception as e:
                     log.exception(e)
-                    self._coms.send_error('Unable to install module', str(e), self._instance_id, request)
+                    self._coms.send_error(_('Unable to install module'), str(e), self._instance_id, request)
 
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
                 if self._perms.library.addRemove is False:
                     raise PermissionError()
                 try:
-                    modules.uninstall(request.name)
+                    await modules.uninstall(request.name)
                     self._coms.send(None, self._instance_id, request)
                     self._session.notify_global_changes()
                 except Exception as e:
@@ -1501,41 +1561,41 @@ class Instance:
                 self._session.notify_global_changes()
 
         except PermissionError as e:
-            self._coms.send_error('Unable to perform request', str(e), self._instance_id, request)
+            self._coms.send_error(_('Unable to perform request'), str(e), self._instance_id, request)
 
     def _set_module_visibility(self, name, value):
         modules = Modules.instance()
         if modules.set_visibility(name, value):
-            settings = Settings.retrieve('modules')
-            hidden_mods = settings.get('hidden', [ ])
+            module_settings = self._settings.group('modules')
+            hidden_mods = module_settings.get('hidden', [ ])
             if value:
                 hidden_mods = [ mod for mod in hidden_mods if mod != name ]
             else:
                 hidden_mods.append(name)
-            settings.set('hidden', hidden_mods)
-            settings.sync()
+            module_settings.set('hidden', hidden_mods)
+            module_settings.write()
 
     async def _on_store(self, request):
         if self._perms.library.browseable is False:
-            self._coms.send_error('Unable to access library', 'The library is disabled', self._instance_id, request)
+            self._coms.send_error(_('Unable to access library'), _('The library is disabled'), self._instance_id, request)
         else:
             modules = Modules.instance()
             stream = modules.read_library()
 
             try:
                 async for result in stream:
-                    if not stream.is_complete:
-                        self._coms.send(None, self._instance_id, request, complete=False, progress=result)
-                    else:
-                        response = jcoms.StoreResponse()
-                        if result.message is not None:
-                            response.message = result.message
-                        for module in result.modules:
-                            module_pb = response.modules.add()
-                            self._module_to_pb(module, module_pb)
-                        self._coms.send(response, self._instance_id, request)
+                    self._coms.send(None, self._instance_id, request, complete=False, progress=result)
+
+                result = stream.result()
+                response = jcoms.StoreResponse()
+                if result.message is not None:
+                    response.message = result.message
+                for module in result.modules:
+                    module_pb = response.modules.add()
+                    self._module_to_pb(module, module_pb)
+                self._coms.send(response, self._instance_id, request)
             except Exception as e:
-                self._coms.send_error('Unable to access library', str(e), self._instance_id, request)
+                self._coms.send_error(_('Unable to access library'), str(e), self._instance_id, request)
 
     def _on_dataset_set_checks(self, request):
 
@@ -1557,14 +1617,14 @@ class Instance:
 
         if n_columns > self._perms.dataset.maxColumns:
             raise ForbiddenOp(
-                'insert columns',
-                'This session is limited to {} columns'.format(
+                _('Could not insert columns'),
+                _('This session is limited to {} columns').format(
                     self._perms.dataset.maxColumns))
 
         if n_rows > self._perms.dataset.maxRows:
             raise ForbiddenOp(
-                'insert rows',
-                'This session is limited to {} rows'.format(
+                _('Could not insert rows'),
+                _('This session is limited to {} rows').format(
                     self._perms.dataset.maxRows))
 
     def _on_dataset_set(self, request, response):
@@ -1633,8 +1693,8 @@ class Instance:
         if insertions:
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
-                    'insert rows',
-                    'You cannot insert rows while filtered rows are hidden')
+                    _('Could not insert rows'),
+                    _('You cannot insert rows while filtered rows are hidden'))
 
         insert_offsets = [0] * len(insertions)
         for i in range(0, len(insertions)):
@@ -1656,6 +1716,7 @@ class Instance:
             # this is done so that the cell changes are sent back
             for column in self._data:
                 changes['columns'].add(column)
+                changes['data_changed'].add(column)
 
     def _on_dataset_ins_cols(self, request, response, changes):
 
@@ -1771,8 +1832,8 @@ class Instance:
 
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
-                    'delete rows',
-                    'You cannot delete rows while filtered rows are hidden')
+                    _('Could not delete rows'),
+                    _('You cannot delete rows while filtered rows are hidden'))
 
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
                 self._mod_tracker.log_row_deletion(row_data)
@@ -1794,6 +1855,7 @@ class Instance:
         if rows_removed:
             for column in self._data:  # the column info needs sending back because the cell edit ranges have changed
                 changes['columns'].add(column)
+                changes['data_changed'].add(column)
 
     def _on_dataset_del_cols(self, request, response, changes):
 
@@ -1984,8 +2046,8 @@ class Instance:
                     transform = self._data.get_transform_by_id(trans_pb.id)
                     if any(dep.is_filter for dep in transform.dependents):
                         raise ForbiddenOp(
-                            'modify transform',
-                            'You cannot modify transforms that affect filters when filtered rows are hidden')
+                            _('Could not modify transform'),
+                            _('You cannot modify transforms that affect filters when filtered rows are hidden'))
 
             for column_pb in request.schema.columns:
                 if column_pb.action == jcoms.DataSetSchema.ColumnSchema.Action.Value('MODIFY'):
@@ -1993,8 +2055,8 @@ class Instance:
                         column = self._data.get_column_by_id(column_pb.id)
                         if not column.is_filter and any(dep.is_filter for dep in column.dependents):
                             raise ForbiddenOp(
-                                'modify columns',
-                                'You cannot modify columns that affect filters when filtered rows are hidden')
+                                _('Could not modify columns'),
+                                _('You cannot modify columns that affect filters when filtered rows are hidden'))
 
         # columns that need to be reparsed, and/or recalced
         reparse = set()
@@ -2135,7 +2197,8 @@ class Instance:
                         levels.append((
                             level.value,
                             level.label,
-                            level.importValue))
+                            level.importValue,
+                            level.pinned))
 
                 if column.column_type is ColumnType.NONE:
                     column.column_type = ColumnType(column_pb.columnType)
@@ -2443,8 +2506,8 @@ class Instance:
                 for column in islice(self._data.columns_ex_hidden, column_start, column_end):
                     if any(dep.is_filter for dep in column.dependents):
                         raise ForbiddenOp(
-                            'modify columns',
-                            'You cannot modify columns that affect filters when filtered rows are hidden')
+                            _('Could not modify columns'),
+                            _('You cannot modify columns that affect filters when filtered rows are hidden'))
 
         data_list = []
 
@@ -2517,11 +2580,11 @@ class Instance:
 
                 if col_count == 1:
                     if column.column_type == ColumnType.COMPUTED:
-                        raise TypeError("Cannot assign to computed column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to computed column '{}'").format(column.name))
                     elif column.column_type == ColumnType.RECODED:
-                        raise TypeError("Cannot assign to recoded column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to recoded column '{}'").format(column.name))
                     elif column.column_type == ColumnType.FILTER:
-                        raise TypeError("Cannot assign to filter column '{}'".format(column.name))
+                        raise TypeError(_("Cannot assign to filter column '{}'").format(column.name))
 
                 if column.auto_measure:
                     continue  # skip checks
@@ -2531,15 +2594,15 @@ class Instance:
                 if column.data_type == DataType.DECIMAL:
                     for value in values:
                         if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
-                            raise TypeError("Cannot assign non-numeric value to column '{}'".format(column.name))
+                            raise TypeError(_("Cannot assign non-numeric value to column '{}'").format(column.name))
 
                 elif column.data_type == DataType.INTEGER:
                     for value in values:
                         if isinstance(value, int) and not is_int32(value):
-                            raise TypeError("Value is too large for column '{}' of type integer".format(column.name))
+                            raise TypeError(_("Value is too large for column '{}' of type integer").format(column.name))
 
             if col_count > 0 and data_col_count == 0:
-                raise TypeError("Cannot assign to these columns.")
+                raise TypeError(_("Cannot assign to these columns."))
 
         if bottom_most_row_index >= self._data.row_count:
             self._mod_tracker.log_rows_appended(self._data.row_count, bottom_most_row_index)
@@ -2602,7 +2665,7 @@ class Instance:
                     elif isinstance(value, int):
                         column.set_value(row_no, float(value))
                     else:
-                        raise TypeError("Cannot assign non-numeric value to column '{}'", column.name)
+                        raise TypeError(_("Cannot assign non-numeric value to column '{}'"), column.name)
 
             elif column.data_type == DataType.TEXT:
                 for j in range(row_count):
@@ -2916,6 +2979,7 @@ class Instance:
                 level_pb.value = level[0]
                 level_pb.label = level[1]
                 level_pb.importValue = level[2]
+                level_pb.pinned = level[3]
 
         if column.cell_tracker.is_edited:
             for range in column.cell_tracker.edited_cell_ranges:
@@ -2925,8 +2989,8 @@ class Instance:
 
     def _add_to_recents(self, path, title=None):
 
-        settings = Settings.retrieve('backstage')
-        recents  = settings.get('recents', [ ])
+        bs_settings = self._settings.group('backstage')
+        recents  = bs_settings.get('recents', [ ])
 
         for recent in recents:
             if path == recent['path']:
@@ -2945,14 +3009,14 @@ class Instance:
         recents.insert(0, { 'name': title, 'path': path, 'location': location })
         recents = recents[0:5]
 
-        settings.set('recents', recents)
-        settings.sync()
+        bs_settings.set('recents', recents)
+        bs_settings.write()
 
         self._session.notify_global_changes()
 
     def _on_settings(self, request=None):
 
-        settings = Settings.retrieve('main')
+        main_settings = self._settings.group('main')
 
         if request and request.settings:
 
@@ -2974,9 +3038,9 @@ class Instance:
                 if name == 'updateStatus':
                     self._session.request_update(value)
                 else:
-                    settings.set(name, value)
+                    main_settings.set(name, value)
 
-            settings.sync()
+            main_settings.write()
 
             self._session.notify_global_changes()
 
@@ -2986,8 +3050,8 @@ class Instance:
         setting_pb.name = 'updateStatus'
         setting_pb.s = self._session.update_status
 
-        for name in settings:
-            value = settings.get(name)
+        for name in main_settings:
+            value = main_settings.get(name)
             if isinstance(value, str):
                 setting_pb = response.settings.add()
                 setting_pb.name = name
@@ -3005,8 +3069,8 @@ class Instance:
                 setting_pb.name = name
                 setting_pb.d = value
 
-        settings = Settings.retrieve('backstage')
-        recents = settings.get('recents', [ ])
+        bs_settings = self._settings.group('backstage')
+        recents = bs_settings.get('recents', [ ])
 
         for recent in recents:
             recent_pb = response.recents.add()
@@ -3014,19 +3078,8 @@ class Instance:
             recent_pb.path = recent['path']
             recent_pb.location = recent['location']
 
-        try:
-            path = posixpath.join(conf.get('examples_path'), 'index.yaml')
-            with open(path, encoding='utf-8') as index:
-                for example in yaml.safe_load(index):
-                    example_pb = response.examples.add()
-                    example_pb.name = example['name']
-                    example_pb.path = '{{Examples}}/' + example['path']
-                    example_pb.description = example['description']
-        except Exception as e:
-            log.exception(e)
-
-        settings = Settings.retrieve('modules')
-        hidden_mods = settings.get('hidden', [ ])
+        module_settings = self._settings.group('modules')
+        hidden_mods = module_settings.get('hidden', [ ])
         modules = Modules.instance()
         missing_mods = [ ]
         for hidden_mod in hidden_mods:
@@ -3037,8 +3090,9 @@ class Instance:
             for missing_mod in missing_mods:
                 while missing_mod in hidden_mods:
                     hidden_mods.remove(missing_mod)
-            settings.set('hidden', hidden_mods)
-            settings.sync()
+            module_settings.set('hidden', hidden_mods)
+
+        self._settings.write()
 
         for module in modules:
             module_pb = response.modules.add()

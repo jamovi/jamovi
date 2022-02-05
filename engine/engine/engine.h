@@ -12,17 +12,13 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <nanomsg/nn.h>
-#include <nanomsg/pipeline.h>
-
-#include "enginecoms.h"
+#include "coms.h"
 #include "enginer.h"
 
 class Engine
 {
 public:
     Engine();
-    void setSlave(bool slave);
     void setConnection(const std::string &conn);
     void setPath(const std::string &path);
     void start();
@@ -30,24 +26,21 @@ public:
 private:
     void messageLoop();
     void monitorStdinLoop();
-    void analysisRequested(int messageId, jamovi::coms::AnalysisRequest &request);
+    void heartbeat(const std::string &path);
     void resultsReceived(const std::string &results, bool complete);
     void periodicChecks();
     void terminate();
     bool isNewAnalysisWaiting();
 
-    EngineComs _coms;
-
+    Coms *_coms;
     EngineR *_R;
 
-    bool _slave;
-    std::string _conString;
+    std::string _connPath;
     std::string _path;
-    int _socket;
-    int _conId;
     bool _exiting;
+    bool _headless;
+    std::string _heartbeatPath;
 
-    int _currentMessageId;
     jamovi::coms::AnalysisRequest _waitingRequest;
     jamovi::coms::AnalysisRequest _runningRequest;
     const google::protobuf::Reflection *_reflection;

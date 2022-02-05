@@ -19,11 +19,10 @@ class Option:
 class Options:
 
     @staticmethod
-    def create(options_defn, results_defn):
+    def create(options_defn):
 
         options = Options()
         options._pb.hasNames = True
-        options._results = Results(options, results_defn)
 
         for opt_defn in options_defn:
 
@@ -104,7 +103,6 @@ class Options:
 
     def __init__(self):
         self._options = { }
-        self._results = None
         self._pb = AnalysisOptions()
 
     def reset(self):
@@ -189,8 +187,7 @@ class Options:
 
             if changed:
                 if name.startswith('results/'):
-                    if not self._results.is_passive(name):
-                        changes = True
+                    pass
                 elif name not in self._options or not self._options[name].passive:
                     changes = True
 
@@ -232,13 +229,3 @@ class Options:
             if pb.names[i] == name:
                 return pb.options[i]
         return None
-
-
-class Results:
-
-    def __init__(self, options, defn):
-        self._options = options
-        self._defn = defn
-
-    def is_passive(self, option_name):
-        return True

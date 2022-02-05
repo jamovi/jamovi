@@ -1,7 +1,6 @@
 'use strict';
 
 const $ = require('jquery');
-const _ = require('underscore');
 const SelectableLayoutGrid = require('./selectablelayoutgrid');
 const OptionControl = require('./optioncontrol');
 const TitledGridControl = require('./titledgridcontrol');
@@ -124,7 +123,7 @@ const OptionListControl = function(params) {
 
                 let columnInfo = { selectable: true, stretchFactor: 1, label: columns[i].name };
 
-                _.extend(columnInfo, columns[i]);
+                Object.assign(columnInfo, columns[i]);
 
                 columnInfo.index = i;
                 columnInfo.type = columnInfo.template.type;
@@ -158,7 +157,7 @@ const OptionListControl = function(params) {
 
                 let row = 0;
                 if (this.showHeaders) {
-                    let hCell = this.addCell(i, row,  $('<div style="white-space: nowrap;" class="silky-option-list-header">' + columnInfo.label + '</div>'));
+                    let hCell = this.addCell(i, row,  $('<div style="white-space: nowrap;" class="silky-option-list-header" data-index="' + columnInfo.index + '">' + this.translate(columnInfo.label) + '</div>'));
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.makeSticky();
                     hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
@@ -173,7 +172,7 @@ const OptionListControl = function(params) {
                 if (i === 0) {
                     let ghostText = this.getPropertyValue("ghostText");
                     if (ghostText !== null) {
-                        this.$ghostTextLabel = $('<div class="column-ghost-label">' + ghostText + '</div>');
+                        this.$ghostTextLabel = $('<div class="column-ghost-label">' + this.translate(ghostText) + '</div>');
                         $filler.append(this.$ghostTextLabel);
                         fillerInUse = true;
                         fillerZindex = '10';
@@ -181,7 +180,7 @@ const OptionListControl = function(params) {
 
 
                     if (addButton !== null) {
-                        this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + addButton + '</div>');
+                        this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + this.translate(addButton) + '</div>');
                         this.$addButton.click(addButtonClick);
                         $filler.append(this.$addButton);
                         fillerInUse = true;
@@ -262,7 +261,7 @@ const OptionListControl = function(params) {
                 params._templateInfo.templateName = columnInfo.templateName;
 
             if (columnInfo.template !== undefined)
-                _.extend(params, this.cloneObject(columnInfo.template));
+                Object.assign(params, this.cloneObject(columnInfo.template));
 
             let offsetKey = [this.displayRowToRowIndex(dispRow)];
             if (this.maxItemCount === 1)
@@ -349,11 +348,12 @@ const OptionListControl = function(params) {
                 }
             }
             else {
-                _.each(value, (value, key, list) => {
+                for (let key in value) {
+                    let v = value[key];
                     columnInfo = this._columnInfo[key];
                     if (columnInfo !== undefined && (!onlyVirtual || columnInfo.isVirtual))
-                        this.updateValueCell(columnInfo, dispRow, value);
-                });
+                        this.updateValueCell(columnInfo, dispRow, v);
+                }
             }
         }
     };
@@ -974,6 +974,21 @@ const OptionListControl = function(params) {
 
     this.clone = function(object) {
         return JSON.parse(JSON.stringify(object));
+    };
+
+    this.onI18nChanged = function() {
+        let ghostText = this.getPropertyValue("ghostText");
+        if (ghostText !== null && this.$ghostTextLabel)
+            this.$ghostTextLabel.text(this.translate(ghostText));
+
+
+        let addButton = this.getPropertyValue("addButton");
+        if (addButton !== null && this.$addButton)
+            this.$addButton.text(this.translate(addButton));
+
+
+        for (let columnInfo of this._columnInfo._list)
+            this.$el.find(`.silky-option-list-header[data-index=${columnInfo.index }]`).text(this.translate(columnInfo.label));
     };
 
     this.initialize();

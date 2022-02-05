@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
@@ -73,15 +72,15 @@ const TableView = SilkyView.extend({
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
-        this.statusbar.addInfoLabel('editedCells', { label: 'Cells edited ', value: 0 });
-        this.statusbar.addInfoLabel('addedRows', { label: 'Added', value: 0 });
-        this.statusbar.addInfoLabel('deletedRows', { label: 'Deleted', value: 0 });
-        this.statusbar.addInfoLabel('filteredRows', { label: 'Filtered', value: 0 });
-        this.statusbar.addInfoLabel('rowCount', { label: 'Row count', value: 0 });
-        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
+        this.statusbar.addInfoLabel('editedCells', { label: _('Cells edited '), value: 0 });
+        this.statusbar.addInfoLabel('addedRows', { label: _('Added'), value: 0 });
+        this.statusbar.addInfoLabel('deletedRows', { label: _('Deleted'), value: 0 });
+        this.statusbar.addInfoLabel('filteredRows', { label: _('Filtered'), value: 0 });
+        this.statusbar.addInfoLabel('rowCount', { label: _('Row count'), value: 0 });
+        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
-        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
+        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
 
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
@@ -103,16 +102,17 @@ const TableView = SilkyView.extend({
 
         this.$container.on('scroll', event => this._scrollHandler(event));
 
-        let $measureOne = this._createRHCell(0, 0, '', 0)
-            .css('width', 'auto')
-            .appendTo(this.$rhColumn);
-        let $measureTwo = this._createRHCell(0, 0, '0', 1)
-            .css('width', 'auto')
-            .appendTo(this.$rhColumn);
+        let measureOne = this._createRHCell(0, 0, '', 0);
+        measureOne.style.width = 'auto';
+        this.$rhColumn[0].append(measureOne);
+
+        let measureTwo = this._createRHCell(0, 0, '0', 1);
+        measureTwo.style.width = 'auto';
+        this.$rhColumn[0].append(measureTwo);
 
         this._rowHeaderDigits = 2;
-        this._rowHeaderWidthB = $measureOne[0].offsetWidth;
-        this._rowHeaderWidthM = $measureTwo[0].offsetWidth - this._rowHeaderWidthB;
+        this._rowHeaderWidthB = measureOne.offsetWidth;
+        this._rowHeaderWidthM = measureTwo.offsetWidth - this._rowHeaderWidthB;
         this._rowHeaderWidth = this._rowHeaderDigits * this._rowHeaderWidthM + this._rowHeaderWidthB;
 
         // read and store the row height
@@ -148,6 +148,13 @@ const TableView = SilkyView.extend({
             setTimeout(() => this.$selection.removeClass('copying'), 200);
         });
 
+<<<<<<< HEAD
+=======
+        this.selection.on('resolved', () => {
+            this.$selection.removeClass('negative');
+        });
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         this.selection.on('selectionTypeChanged', (type) => {
             if (type === 'multi') {
                 if (this.$selection) {
@@ -264,18 +271,18 @@ const TableView = SilkyView.extend({
             if (transform) {
                 $colour.removeClass('no-transform');
                 $colour.css('background-color', ColourPalette.get(transform.colourIndex));
-                $colour.attr('title', 'Transform: ' + transform.name);
+                $colour.attr('title', _('Transform: {name}', {name: transform.name}));
             }
             else {
                 $colour.addClass('no-transform');
                 $colour.css('background-color', '#acacac');
-                $colour.attr('title', 'Transform: None');
+                $colour.attr('title', _('Transform: None'));
             }
         }
         else if (column.columnType === 'computed') {
             let $colour = $header.find('.jmv-column-header-colour');
             $colour.css('background-color', '#515151');
-            $colour.attr('title', 'Computed variable');
+            $colour.attr('title', _('Computed variable'));
         }
     },
     _addColumnToView(column) {
@@ -490,7 +497,7 @@ const TableView = SilkyView.extend({
                 $header.attr('data-fmlaok', ok ? '1' : '0');
                 let $icon = $header.find('.jmv-column-header-icon');
                 if ( ! ok)
-                    $icon.attr('title', 'Issue with formula');
+                    $icon.attr('title', _('Issue with formula'));
                 else
                     $icon.removeAttr('title');
             }
@@ -513,8 +520,8 @@ const TableView = SilkyView.extend({
 
             let $cells  = $column.children();
             for (let rowNo = viewport.top; rowNo <= viewport.bottom; rowNo++) {
-                let $cell = $($cells[rowNo - viewport.top]);
-                this.refreshCellColour($cell, column, rowNo);
+                let cell = $cells[rowNo - viewport.top];
+                this.refreshCellColour(cell, column, rowNo);
             }
 
             $header.attr('data-measuretype', column.measureType);
@@ -529,7 +536,7 @@ const TableView = SilkyView.extend({
             $header.attr('data-fmlaok', ok ? '1' : '0');
             let $icon = $header.find('.jmv-column-header-icon');
             if ( ! ok)
-                $icon.attr('title', 'Issue with formula');
+                $icon.attr('title', _('Issue with formula'));
             else
                 $icon.removeAttr('title');
 
@@ -563,8 +570,8 @@ const TableView = SilkyView.extend({
             let viewport = this.viewport;
             let $cells  = $column.children();
             for (let rowNo = viewport.top; rowNo <= viewport.bottom; rowNo++) {
-                let $cell = $($cells[rowNo - viewport.top]);
-                this.refreshCellColour($cell, column, rowNo);
+                let cell = $cells[rowNo - viewport.top];
+                this.refreshCellColour(cell, column, rowNo);
             }
 
             if (changes.levelsChanged || changes.measureTypeChanged || changes.dataTypeChanged || changes.columnTypeChanged) {
@@ -584,7 +591,7 @@ const TableView = SilkyView.extend({
             $header.attr('data-fmlaok', ok ? '1' : '0');
             let $icon = $header.find('.jmv-column-header-icon');
             if ( ! ok)
-                $icon.attr('title', 'Issue with formula');
+                $icon.attr('title', _('Issue with formula'));
             else
                 $icon.removeAttr('title');
 
@@ -773,7 +780,10 @@ const TableView = SilkyView.extend({
         }
 
         if (this.selection.resolveSelectionList(this.$body)) {
+<<<<<<< HEAD
             this.$selection.removeClass('negative');
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             this._isClicking = false;
             this._isDragging = false;
             return;
@@ -1028,6 +1038,40 @@ const TableView = SilkyView.extend({
             this._applyHeaderHighlight(range, true);
         }
     },
+<<<<<<< HEAD
+=======
+    _pasteEventHandler(event) {
+        const text = event.clipboardData.getData('text/plain');
+        const html = event.clipboardData.getData('text/html');
+        let content = { text: text, html: html };
+        this.controller.pasteClipboardToSelection(content);
+        event.preventDefault();
+    },
+    _inputEventHandler(event) {
+        this._focusCell.innerHTML = '';
+    },
+    _setFocusCell(cell) {
+        let pasteEventHandle = this._pasteEventHandler.bind(this);
+        let inputEventHandle = this._inputEventHandler.bind(this);
+        cell.addEventListener('blur', (event) => {
+            cell.removeAttribute('contenteditable');
+            cell.removeEventListener('paste', pasteEventHandle);
+            cell.removeEventListener('input', inputEventHandle);
+            this._focusCell = null;
+        }, { once: true });
+        cell.addEventListener('paste', pasteEventHandle);
+        cell.addEventListener('input', inputEventHandle);
+        cell.setAttribute('contenteditable', true);
+        cell.focus();
+        this._focusCell = cell;
+        let selection = window.getSelection();
+        let select = document.createRange();
+        select.setStart(cell, 0);
+        select.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(select);
+    },
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     _setSelectedRange(range, oldSel, ignoreTabStart) {
 
         if (this._loaded === false)
@@ -1042,6 +1086,12 @@ const TableView = SilkyView.extend({
         //this.controller.enableDisableActions();
 
         this.currentColumn = this.model.getColumn(colNo, true);
+
+        let $column = $(this.$columns[this.currentColumn.dIndex]);
+        let $cells  = $column.children();
+        let cell = $cells[rowNo - this.viewport.top];
+        if (cell)
+            this._setFocusCell(cell);
 
         this._updateHeaderHighlight();
 
@@ -1119,11 +1169,9 @@ const TableView = SilkyView.extend({
 
         if ( ! this._isColumnEditable(column)) {
 
-            let columnType = column.columnType;
-            columnType = columnType[0].toUpperCase() + columnType.substring(1);
             let err = {
-                title: 'Column is not editable',
-                message: columnType + ' columns may not be edited.',
+                title: _('Column is not editable'),
+                message: _('{columnType} columns may not be edited.', { columnType: this.model.columnTypeLabel(column.columnType) }),
                 type: 'error' };
             this._notifyEditProblem(err);
 
@@ -1132,7 +1180,7 @@ const TableView = SilkyView.extend({
 
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
-        this.statusbar.updateInfoLabel('editStatus', 'Edit');
+        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
 
         this.$selection.addClass('editing');
         this.$selection.attr('data-measuretype', column.measureType);
@@ -1177,8 +1225,8 @@ const TableView = SilkyView.extend({
                         value = number;
                     else if ( ! this.currentColumn.autoMeasure)
                         throw {
-                            message: 'Could not assign data',
-                            cause: 'Cannot assign non-numeric value to column \'' + this.currentColumn.name + '\'',
+                            message: _('Could not assign data'),
+                            cause: _('Cannot assign non-numeric value to column \'{columnName}\'', {columnName:this.currentColumn.name}),
                             type: 'error',
                         };
                 }
@@ -1209,7 +1257,7 @@ const TableView = SilkyView.extend({
 
         let finaliseEdit = () => {
             this._editing = false;
-            this.statusbar.updateInfoLabel('editStatus', 'Ready');
+            this.statusbar.updateInfoLabel('editStatus', _('Ready'));
             this._edited = false;
             this._modifyingCellContents = false;
             keyboardJS.setContext('controller');
@@ -1242,7 +1290,7 @@ const TableView = SilkyView.extend({
             return;
 
         this._editing = false;
-        this.statusbar.updateInfoLabel('editStatus', 'Edit');
+        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
         this._modifyingCellContents = false;
         keyboardJS.setContext('controller');
         this._edited = false;
@@ -1319,10 +1367,13 @@ const TableView = SilkyView.extend({
         if (event.ctrlKey || event.metaKey) {
             if (event.key.toLowerCase() === 'c') {
                 this.controller.copySelectionToClipboard();
+<<<<<<< HEAD
                 event.preventDefault();
             }
             else if (event.key.toLowerCase() === 'v') {
                 this.controller.pasteClipboardToSelection();
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 event.preventDefault();
             }
             else if (event.key.toLowerCase() === 'x') {
@@ -1607,8 +1658,11 @@ const TableView = SilkyView.extend({
                     this._bodyWidth += widthIncrease;
                     this.$body.css('width', this._bodyWidth);
 
+<<<<<<< HEAD
                     this.selection.refreshSelection();
 
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                     let insertedAt = dIndex;
                     let nWereVisible = this.viewport.right - this.viewport.left + 1;
                     let wereVisible = new Array(nWereVisible);
@@ -1644,9 +1698,9 @@ const TableView = SilkyView.extend({
                         let $column = this.$columns[i];
                         for (let rowNo = this.viewport.top; rowNo <= this.viewport.bottom; rowNo++) {
                             let top   = rowNo * this._rowHeight;
-                            let $cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
-                            this.refreshCellColour($cell, column, rowNo);
-                            $column.append($cell);
+                            let cell = this._createCell(top, this._rowHeight, rowNo, column.dIndex);
+                            this.refreshCellColour(cell, column, rowNo);
+                            $column.append(cell);
                         }
                         this.$header.append($header);
                         this.$body.append($column);
@@ -1657,6 +1711,8 @@ const TableView = SilkyView.extend({
                         $column.detach();
                         $column.empty();
                     }
+
+                    this.selection.refreshSelection();
 
                     this.viewport.left = nowVisible[0];
                     this.viewport.right = nowVisible[nowVisible.length - 1];
@@ -1978,6 +2034,17 @@ const TableView = SilkyView.extend({
         let left = this.$container.scrollLeft();
         this.$header.css('left', -left);
         this.$header.css('width', this.$el.width() + left);
+<<<<<<< HEAD
+=======
+    },
+    sortedIndex(array, value) {
+        let i = 0;
+        for (i = 0; i < array.length; i++) {
+            if (array[i] >= value)
+                return i;
+        }
+        return array.length;
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     },
     _updateViewRange() {
 
@@ -1990,8 +2057,8 @@ const TableView = SilkyView.extend({
         let columnCount = this.model.get('vColumnCount');
 
 
-        let leftColumn  = _.sortedIndex(this._lefts, v.left) - 1;
-        let rightColumn = _.sortedIndex(this._lefts, v.right) - 1;
+        let leftColumn  = this.sortedIndex(this._lefts, v.left) - 1;
+        let rightColumn = this.sortedIndex(this._lefts, v.right) - 1;
 
         if (leftColumn > columnCount - 1)
             leftColumn = columnCount - 1;
@@ -2063,19 +2130,15 @@ const TableView = SilkyView.extend({
     },
     _createCell(top, height, rowNo, colNo) {
 
-        let $cell = $(`
-            <div
-                class="jmv-column-cell"
-                data-row="${ rowNo }"
-                style="
-                    top: ${ top }px ;
-                    height: ${ height + 1 }px ;
-                    line-height: ${ height-3 }px ;
-                "
-            >
-            </div>`);
+        let cell = document.createElement('div');
+        cell.setAttribute('tabindex', -1);
+        cell.classList.add('jmv-column-cell');
+        cell.dataset.row = rowNo;
+        cell.style.top = `${ top }px`;
+        cell.style.height = `${ height + 1 }px`;
+        cell.style.lineHeight = `${ height - 3}px`;
 
-        return $cell;
+        return cell;
     },
     _createRHCell(top, height, content, rowNo) {
 
@@ -2083,27 +2146,29 @@ const TableView = SilkyView.extend({
         if (this.selection && this.selection.rowNo === rowNo)
             highlighted = ' highlighted';
 
-        return $(`
-            <div
-                class="
-                    jmv-row-header-cell
-                    ${ highlighted }
-                "
-                style="
-                    top: ${ top }px ;
-                    height: ${ height + 1 }px ;
-                    line-height: ${ height-3 }px ;
-                "
-            >
-                ${ s6e(content) }
-                <div class="sub-selection-bar"></div>
-            </div>`);
+        let cell = document.createElement('div');
+        cell.classList.add('jmv-row-header-cell');
+        if (highlighted != '')
+            cell.classList.add('highlighted');
+        cell.style.top = `${ top }px`;
+        cell.style.height = `${ height + 1}px`;
+        cell.style.lineHeight = `${ height - 3 }px`;
+
+        let bar = document.createElement('div');
+        bar.classList.add('sub-selection-bar');
+
+        cell.innerText = content;
+        cell.appendChild(bar);
+
+        return cell;
     },
-    refreshCellColour($cell, columnInfo, rowNo) {
+    refreshCellColour(cell, columnInfo, rowNo) {
+        if ( ! cell)
+            return;
         if (this._isCellEdited(columnInfo, rowNo))
-            $cell.addClass('cell-edited');
+            cell.classList.add('cell-edited');
         else
-            $cell.removeClass('cell-edited');
+            cell.classList.remove('cell-edited');
     },
     refreshCells(oldViewport, newViewport) {
 
@@ -2129,8 +2194,8 @@ const TableView = SilkyView.extend({
             for (let j = 0; j < nRows; j++) {
                 let rowNo = n.top + j;
                 let top   = rowNo * this._rowHeight;
-                let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                this.$rhColumn.append($cell);
+                let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                this.$rhColumn.append(cell);
             }
 
             for (let i = n.left; i <= n.right; i++) {
@@ -2142,9 +2207,9 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = n.top + j;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                    this.refreshCellColour($cell, column, rowNo);
-                    $column.append($cell);
+                    let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                    this.refreshCellColour(cell, column, rowNo);
+                    $column.append(cell);
                 }
 
                 this.$header.append($header);
@@ -2171,9 +2236,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
 
                     this.$header.append($header);
@@ -2208,9 +2273,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = n.top + j;
                         let top = this._rowHeight * rowNo;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, colNo);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, colNo);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
 
                     this.$header.append($header);
@@ -2239,8 +2304,8 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = o.bottom + j + 1;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                    this.$rhColumn.append($cell);
+                    let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.append(cell);
                 }
 
                 for (let i = left; i <= right; i++) {
@@ -2251,9 +2316,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.bottom + j + 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.append($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.append(cell);
                     }
                 }
             }
@@ -2291,8 +2356,8 @@ const TableView = SilkyView.extend({
                 for (let j = 0; j < nRows; j++) {
                     let rowNo = o.top - j - 1;
                     let top   = rowNo * this._rowHeight;
-                    let $cell = this._createRHCell(top, this._rowHeight, '', rowNo);
-                    this.$rhColumn.prepend($cell);
+                    let cell = this._createRHCell(top, this._rowHeight, '', rowNo);
+                    this.$rhColumn.prepend(cell);
                 }
 
                 for (let i = left; i <= right; i++) {
@@ -2303,9 +2368,9 @@ const TableView = SilkyView.extend({
                     for (let j = 0; j < nRows; j++) {
                         let rowNo = o.top - j - 1;
                         let top   = rowNo * this._rowHeight;
-                        let $cell = this._createCell(top, this._rowHeight, rowNo, i);
-                        this.refreshCellColour($cell, column, rowNo);
-                        $column.prepend($cell);
+                        let cell = this._createCell(top, this._rowHeight, rowNo, i);
+                        this.refreshCellColour(cell, column, rowNo);
+                        $column.prepend(cell);
                     }
                 }
             }

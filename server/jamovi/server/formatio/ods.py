@@ -10,7 +10,7 @@ def get_readers():
     return [ ( 'ods', read ) ]
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, **kwargs):
 
     reader = ODSReader()
     reader.read_into(data, path, prog_cb)

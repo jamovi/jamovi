@@ -102,6 +102,21 @@
     flex-grow: 1;
     margin-left: 15px;
     transition: box-shadow 0.15s;
+    position: relative;
+}
+
+.jmv-variable-editor-levels-control .add-level {
+    width: 21px;
+    height: 21px;
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    font-size: 15px;
+    color: #BBBBBB;
+    text-align: center;
+    margin: 0px 5px 5px 5px;
+    z-index: 400;
+    border-radius: 3px;
 }
 
 .jmv-variable-editor-widget-move-up,
@@ -111,17 +126,20 @@
 }
 
 .jmv-variable-editor-widget-move-up.disabled,
-.jmv-variable-editor-widget-move-down.disabled {
+.jmv-variable-editor-widget-move-down.disabled,
+.add-level.disabled {
     opacity: 0.4 ;
 }
 
 .jmv-variable-editor-widget-move-up:not(.disabled):hover,
-.jmv-variable-editor-widget-move-down:not(.disabled):hover {
+.jmv-variable-editor-widget-move-down:not(.disabled):hover,
+.add-level:not(.disabled):hover {
     color: #999999 ;
 }
 
 .jmv-variable-editor-level {
-    padding: 5px 0px 5px 12px;
+    position: relative;
+    padding: 5px 0px 5px 25px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column-reverse;
@@ -262,4 +280,33 @@
 
 .jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='ordinal'] {
     background-image: url('../assets/variable-ordinal.svg');
+}
+
+.jmv-variable-editor-level .pin {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 15px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: 3px;
+    filter: opacity(0.5);
+}
+
+.jmv-variable-editor-level:not(.pinned):hover .pin {
+    opacity: 1;
+    background-image: url('assets/levels-pin-2.svg');
+}
+
+.jmv-variable-editor-level .pin:hover {
+    background-color: #eeeeee
+}
+
+.jmv-variable-editor-level.pinned .pin {
+    opacity: 1;
+    background-image: url('assets/levels-pin-1.svg');
 }

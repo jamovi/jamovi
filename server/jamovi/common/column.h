@@ -46,6 +46,7 @@ typedef struct
     char *label;
     char *importValue;
     bool treatAsMissing;
+    bool pinned;
 
 } Level;
 
@@ -78,7 +79,7 @@ typedef struct
 
     int blocksUsed;
     int blockCapacity;
-    Block **blocks;
+    Block ** volatile blocks;
 
     int levelsUsed;
     int levelsCapacity;
@@ -135,6 +136,7 @@ public:
     DataType::Type dataType() const;
     bool autoMeasure() const;
     int levelCount() const;
+    int levelCountExTreatAsMissings(bool requiresMissings = false) const;
     int levelCountExFiltered(bool requiresMissings = false) const;
     const std::vector<LevelData> levels() const;
     const std::vector<MissingValue> missingValues() const;

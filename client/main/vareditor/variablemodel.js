@@ -1,7 +1,7 @@
 
 'use strict';
 
-const _ = require('underscore');
+const underscore = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -17,7 +17,7 @@ const VariableModel = Backbone.Model.extend({
         this.on('change', event => {
             let changes = false;
             for (let name in this.original) {
-                if ( ! _.isEqual(this.attributes[name], this.original[name])) {
+                if ( ! underscore.isEqual(this.attributes[name], this.original[name])) {
                     changes = true;
                     this._hasChanged[name] = true;
                 }
@@ -84,40 +84,85 @@ const VariableModel = Backbone.Model.extend({
         missingValues: [],
         parentId: 0
     },
-    editLevelLabel(index, label) {
+    editLevelPinned(index, pinned) {
+
+        let levels = this.get('levels');
+        let level = levels[index];
+        let slevels = [level, ...level.others];
+        levels = levels.slice();
+
+        level = Object.assign({}, level);  // clones
+        level.pinned = pinned;
+        level.pinnedChanged = true;
+        levels[index] = level;
+
+        level.modified = true;
+
+        this.set({ levels: levels, changes: true, autoMeasure: false });
+        this.dataset.set('varEdited', true);
+
+        return level;
+    },
+    editLevelLabel(index, label, value) {
 
         label = label.trim();
         let levels = this.get('levels');
         let level = levels[index];
-        if (level.label === label)
+        let newLevel = false;
+        let slevels = [level, ...level.others];
+        let labels = [...new Set(slevels.map(level => level.label))];
+        let imports = [...new Set(slevels.map(level => level.importValue))];
+        let clash = labels.length > 1;
+        let multiImportNames = imports.length > 1;
+        let multiSelect = slevels.length > 1;
+
+        if (level.label === label && ! clash)
             return level;
-        if (label === '' && level.label === null)
+
+        if (label === '' && clash)
             return level;
 
         level = Object.assign({}, level);  // clones
         levels = levels.slice();
 
         let valueAsString = level.importValue;
+        if (multiImportNames)
+            valueAsString = null;
 
         if (label === '') {
             // if empty, set back to the original
             label = valueAsString;
         }
-        else if (label !== valueAsString) {
-            // check that the label isn't already in use
-            let existing = levels.map(level => level.label);
 
-            if (Number.isFinite(Number(label)))
-                label = '"' + label + '"';
+        if (label !== null) {
+            // check that the label isn't already in use
+            let existing = new Set();
+            let getLabels = (levels) => {
+                for (let alevel of levels) {
+                    if (this._compareLevels(alevel, level))
+                        continue;
+                    existing.add(alevel.label);
+                    getLabels(alevel.others);
+                }
+            };
+
+            getLabels(levels);
+
 
             let newLabel = label; // modify label if already in use
             let c = 2;
-            while (existing.includes(newLabel))
+            while (existing.has(newLabel))
                 newLabel = label + ' (' + c++ + ')';
             label = newLabel;
         }
 
+        level.modified = true;
+
         level.label = label;
+        for (let olevel of level.others) {
+            olevel.label = label;
+        }
+
         levels[index] = level;
 
         this.set({ levels: levels, changes: true, autoMeasure: false });
@@ -162,8 +207,17 @@ const VariableModel = Backbone.Model.extend({
         };
 
         let first = true;
+        this._compareWithValue = false;
         for (let id of ids) {
             let column = this.dataset.getColumnById(id);
+            if (column.dataType !== 'text')
+                this._compareWithValue = true;
+            for (let level of column.levels) {
+                level.others = [];
+                level.modified = false;
+                level.pinnedChanged = false;
+            }
+
             if (column.columnType === typeFilter) {
                 this.columns.push(column);
                 for (let prop in this.original) {
@@ -195,23 +249,40 @@ const VariableModel = Backbone.Model.extend({
         if (this.columns.length > 0)
             this.set('formulaMessage', this.columns[0].formulaMessage);
     },
+    _compareLevels(l1, l2) {
+        if (this._compareWithValue === false)
+            return l1.importValue === l2.importValue;
+
+        return l1.value === l2.value;
+    },
     _filterLevels(column) {
         if (this.original.levels === null)
             return;
 
-        this.original.levels = this.original.levels.filter(a => {
-            return column.levels.some(b => {
-                return b.importValue === a.importValue;
-            });
-        });
-        if (this.original.levels.length === 0)
-            this.original.levels = null;
-        else {
-            let level = null;
-            let compare = a => { return a.importValue === level.importValue && a.label === level.label; };
-            for (level of this.original.levels) {
-                if (column.levels.some(compare) === false)
-                    level.label = null;
+        let level = null;
+        let compare = a => {
+            return this._compareLevels(a, level);
+        };
+        for (level of column.levels) {
+            let found = this.original.levels.find(compare);
+            if (found)
+                found.others.push(level);
+            else {
+                let inserted = false;
+                for (let i = this.original.levels.length - 1; i >= 0; i--) {
+                    if (this.original.levels[i].value <= level.value) {
+                        this.original.levels.splice(i+1, 0, level);
+                        inserted = true;
+                        break;
+                    }
+                    else if (i === 0) {
+                        this.original.levels.splice(i, 0, level);
+                        inserted = true;
+                    }
+                }
+                if ( ! inserted) {
+                    this.original.levels.push(level);
+                }
             }
         }
     },
@@ -228,19 +299,64 @@ const VariableModel = Backbone.Model.extend({
             this.original.missingValues = null;
     },
     _constructAppyValues(column, values) {
-        let level = null;
         let findLevel = (levels, level) => {
-            return levels.find(a => { return a.importValue === level.importValue; });
+            return levels.find(a => { return this._compareLevels(a, level); });
         };
 
         let newValues = $.extend(true, {}, values);
         if (newValues.levels && this.attributes.ids.length > 1) {
-            for (level of column.levels) {
-                let editLevel = findLevel(newValues.levels, level);
-                if (editLevel && editLevel.label !== null)
-                    level.label = editLevel.label;
+            let newLevels = [];
+            for (let editLevel of newValues.levels) {
+                let oldLevel = findLevel(column.levels, editLevel);
+                if (oldLevel || editLevel.label !== null) {
+                    let modified = editLevel.modified;
+                    if (modified) {
+                        let label = null;
+                        if (editLevel.label === null)
+                            label = oldLevel.importValue;
+                        else
+                            label = editLevel.label;
+
+                        let existing = new Set();
+                        for (let alevel of column.levels) {
+                            if (this._compareLevels(alevel, editLevel))
+                                continue;
+                            existing.add(alevel.label);
+                        }
+
+                        let newLabel = label; // modify label if already in use
+                        let c = 2;
+                        while (existing.has(newLabel))
+                            newLabel = label + ' (' + c++ + ')';
+                        label = newLabel;
+
+                        if (oldLevel) {
+                            oldLevel.label = label;
+                            if (editLevel.pinnedChanged)
+                                oldLevel.pinned = editLevel.pinned;
+                            else
+                                oldLevel.pinned = true;
+                            newLevels.push(oldLevel);
+                        }
+                        else {
+                            let newLevel = $.extend(true, {}, editLevel);
+                            newLevel.label = label;
+                            newLevel.pinned = true;
+                            newLevels.push(newLevel);
+                        }
+                    }
+                    else {
+                        if (oldLevel)
+                            newLevels.push(oldLevel);
+                        else if (this.levelsReordered) {
+                            let newLevel = $.extend(true, {}, editLevel);
+                            newLevel.pinned = true;
+                            newLevels.push(newLevel);
+                        }
+                    }
+                }
             }
-            newValues.levels = column.levels;
+            newValues.levels = newLevels;
         }
         return newValues;
     },
@@ -275,6 +391,8 @@ const VariableModel = Backbone.Model.extend({
             let newValues = this._constructAppyValues(column, values);
             pairs.push({ id: column.id, values: newValues });
         }
+
+        this.levelsReordered = false;
 
         return this.dataset.changeColumns(pairs)
             .then(() => {

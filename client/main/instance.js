@@ -4,7 +4,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -17,6 +16,7 @@ const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
 const Modules = require('./modules');
+const I18n = require('../common/i18n');
 
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
@@ -113,7 +113,7 @@ const Instance = Backbone.Model.extend({
         let coms = this.attributes.coms;
 
         let progress = new Notify({
-            title: 'Importing',
+            title: _('Importing'),
             duration: 0,
         });
 
@@ -130,8 +130,8 @@ const Instance = Backbone.Model.extend({
             progress.dismiss();
             this._readDataset(false);
             this._notify({
-                message: 'File imported',
-                cause: 'Import successful',
+                message: _('File imported'),
+                cause:  _('Import successful'),
             });
         }, (error) => {
             progress.dismiss();
@@ -153,87 +153,123 @@ const Instance = Backbone.Model.extend({
         return new ProgressStream(async (setProgress) => {
 
             let response;
+            let welcomeUrl;
 
-            if (file instanceof File) {
+            let headers = new Headers();
+            headers.append('Accept-Language', I18n.language);
 
-                setProgress({ title: 'Uploading', progress: [0, 0] });
+            while (true) {
 
-                let url = `${ host.baseUrl }open`;
-                let payload = new FormData();
-                payload.append('file', file);
-                response = await fetch(url, {
-                    method: 'POST',
-                    body: payload,
-                    credentials: 'include',
-                    cache: 'no-store',
-                });
-            }
-            else {
+                if (file instanceof File) {
 
-                let url;
-                if (options.existing)
-                    url = 'open';
-                else
-                    url = `${ host.baseUrl }open`;
+                    setProgress({ title: _('Uploading'), p: 0, n: 0 });
 
-                if (file)
-                    url += `?url=${ encodeURIComponent(file) }`;
+                    let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
+                    if (options.title)
+                        url += `&title=${ encodeURIComponent(options.title) }`;
 
-                response = await fetch(url, {
-                    method: 'GET',
-                    credentials: 'include',
-                    cache: 'no-store',
-                });
-            }
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: file,
+                        credentials: 'include',
+                        cache: 'no-store',
+                        headers: headers
+                    });
+                }
+                else {
 
-            if (response.status === 204)
-                return { 'status': 'OK' };
+                    let url;
 
-            if (response.status !== 200)
-                throw new JError('Unable to open', { cause: response.statusText });
-
-            const reader = response.body.getReader();
-            const utf8Decoder = new TextDecoder('utf-8');
-
-            let message;
-            for (;;) {
-                let { done, value } = await reader.read();
-                let chunk = value ? utf8Decoder.decode(value) : '';
-                let pieces = chunk.split('\n');
-
-                while (pieces.length > 0) {
-                    let piece = pieces.pop();
-                    if (piece) {
-                        try {
-                            message = JSON.parse(piece);
-                            break;
-                        }
-                        catch (e) {
-                            // do nothing
-                        }
+                    if (file) {
+                        url = `${ host.baseUrl }open?p&url=${ encodeURIComponent(file) }`;
+                        if (options.title)
+                            url += `&title=${ encodeURIComponent(options.title) }`;
                     }
+                    else if (options.existing) {
+                        url = 'open?';
+                    }
+                    else {
+                        url = `${ host.baseUrl }open?p`;
+                    }
+
+                    response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'include',
+                        cache: 'no-store',
+                        headers: headers
+                    });
                 }
 
-                if (message && message.status === 'in-progress')
-                    setProgress({ title: 'Opening', progress: [ message.p, message.n ] });
+                if (response.status === 204)
+                    return { 'status': 'OK' };
 
-                if (done)
-                    break;
-            }
+                if (response.status === 413)
+                    throw new JError(_('Unable to open'), { cause: 'File size exceeds session limits' });
 
-            if ( ! message || message.status !== 'OK') {
-                let title = (message && message.title) ? message.title : 'Unable to open';
-                let cause = (message && message.message) ? message.message : 'Unexpected error';
-                let status = (message && message.status) ? message.status : 'error';
-                let messageSrc = (message && message['message-src']) ? message['message-src'] : undefined;
-                let error = new JError(title, {
-                    cause,
-                    status,
-                    messageSrc });
-                throw error;
-            }
-            else {
-                return message;
+                if (response.status !== 200)
+                    throw new JError(_('Unable to open'), { cause: response.statusText });
+
+                const reader = response.body.getReader();
+                const utf8Decoder = new TextDecoder('utf-8');
+
+                let message;
+                for (;;) {
+                    let { done, value } = await reader.read();
+                    let chunk = value ? utf8Decoder.decode(value) : '';
+                    let pieces = chunk.split('\n');
+
+                    while (pieces.length > 0) {
+                        let piece = pieces.pop();
+                        if (piece) {
+                            try {
+                                message = JSON.parse(piece);
+                                break;
+                            }
+                            catch (e) {
+                                // do nothing
+                            }
+                        }
+                    }
+
+                    if (message && message.status === 'in-progress') {
+                        if ( ! message.title)
+                            message.title = _('Opening');
+                        setProgress(message);
+                    }
+
+                    if (done)
+                        break;
+                }
+
+                if (message && message['set-cookie'])
+                    document.cookie = message['set-cookie'];
+
+                if ( ! message) {
+                    throw new JError(_('Unable to open'), {
+                        cause: _('Unexpected error'),
+                        status: 'error',
+                    });
+                }
+                else if (message.status !== 'OK' && message.status !== 'requires-auth') {
+                    let title = message.title || _('Unable to open');
+                    throw new JError(title, {
+                        cause: message.message || _('Unexpected error'),
+                        status: message.status || 'error',
+                        messageSrc: message['message-src'],
+                    });
+                }
+                else if (message.url === '/open') {
+                    // open is performed in two steps, so we store the welcome
+                    // message from the first step
+                    welcomeUrl = message['message-src'];
+                    continue;
+                }
+                else {
+                    // and apply the welcome message to the second
+                    if ( ! ('message-src' in message) && welcomeUrl !== undefined)
+                        message['message-src'] = welcomeUrl;
+                    return message;
+                }
             }
         });
     },
@@ -320,7 +356,7 @@ const Instance = Backbone.Model.extend({
             request.instanceId = this._instanceId;
 
             let progress = new Notify({
-                title: 'Saving',
+                title: _('Saving'),
                 duration: 0
             });
 
@@ -353,8 +389,8 @@ const Instance = Backbone.Model.extend({
                 if (options.export) {
 
                     if (host.isElectron) {
-                        status.message = 'Exported';
-                        status.cause = `Exported to '${ filename }'`;
+                        status.message = _('Exported');
+                        status.cause = _(`Exported to '{filename}'`, {filename: filename});
                     }
                     else {
                         // don't display a notification when in the browser
@@ -367,8 +403,8 @@ const Instance = Backbone.Model.extend({
                     this.set('title', info.title);
                     this.set('saveFormat', info.saveFormat);
                     this._dataSetModel.set('edited', false);
-                    status.message = 'File Saved';
-                    status.cause = `Saved to '${ filename }'`;
+                    status.message = _('File Saved');
+                    status.cause = _(`Saved to '{filename}'`, {filename: filename});
                 }
 
                 if (response.error) {
@@ -382,14 +418,14 @@ const Instance = Backbone.Model.extend({
             }
             else {
                 if (options.overwrite === false && info.fileExists) {
-                    let response = window.confirm(`The file '${ path.basename(filePath) }' already exists. Overwrite this file?`, 'Confirm overwite');
+                    let response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, {filename: path.basename(filePath)}), _('Confirm overwite'));
                     if (response)
                         return this.save(filePath, Object.assign({}, options, { overwrite: true }), true);
                     else
                         return Promise.reject();  // cancelled
                 }
                 else {
-                    Promise.reject('File save failed.');
+                    Promise.reject(_('File save failed.'));
                 }
             }
 
@@ -399,7 +435,7 @@ const Instance = Backbone.Model.extend({
             return status;
         }).catch(error => {
             if ( ! recursed && error) // if not cancelled
-                this._notify({ message: 'Save failed', cause: error, type: 'error' });
+                this._notify({ message: _('Save failed'), cause: error, type: 'error' });
             throw error;
         });
     },
@@ -574,7 +610,7 @@ const Instance = Backbone.Model.extend({
             for (let analysisPB of info.analyses) {
 
                 let options = OptionsPB.fromPB(analysisPB.options, coms.Messages);
-                let analysis = this._analyses.create({
+                let analysis = await this._analyses.create({
                     name: analysisPB.name,
                     ns: analysisPB.ns,
                     id: analysisPB.analysisId,
@@ -583,7 +619,7 @@ const Instance = Backbone.Model.extend({
                     incAsText: analysisPB.incAsText,
                     references: analysisPB.references,
                     enabled: false,
-                    dependsOn: analysisPB.dependsOn
+                    dependsOn: analysisPB.dependsOn,
                 });
                 if (analysis.results.status !== 3)
                     this._runAnalysis(analysis);
@@ -607,23 +643,23 @@ const Instance = Backbone.Model.extend({
 
         return response;
     },
-    createAnalysis(name, ns, title) {
-        let analysis = this._analyses.create({ name, ns, title, enabled: true });
+    async createAnalysis(name, ns, title) {
+        let analysis = await this._analyses.create({ name, ns, title, enabled: true });
         this._sendAnalysis(analysis);
         this.set('selectedAnalysis', analysis);
     },
-    duplicateAnalysis(dupliceeId) {
+    async duplicateAnalysis(dupliceeId) {
 
         let duplicee = this._analyses.get(dupliceeId);
         let index = duplicee.index + 2; //insert after proceeding annotation
-        let analysis = this._analyses.create({
+        let analysis = await this._analyses.create({
             name: duplicee.name,
             ns: duplicee.ns,
             index: index,
             options: duplicee.options.getValues(),
             results: duplicee.results,
             incAsText: duplicee.incAsText,
-            references: duplicee.references
+            references: duplicee.references,
         });
         this._sendAnalysis(analysis, duplicee);
 
@@ -636,7 +672,7 @@ const Instance = Backbone.Model.extend({
 
         return { '.ppi': ppi, theme: theme, palette: palette };
     },
-    _constructAnalysisRequest(analysis, options) {
+    async _constructAnalysisRequest(analysis, options) {
 
         let coms = this.attributes.coms;
 
@@ -647,6 +683,7 @@ const Instance = Backbone.Model.extend({
         request.revision = analysis.revision;
         request.enabled = analysis.enabled;
         request.index = analysis.index + 1;
+        request.i18n = await analysis.getCurrentI18nCode();
 
         if (options === undefined) {
             if (analysis.isReady)
@@ -656,8 +693,10 @@ const Instance = Backbone.Model.extend({
         }
 
         let extras = {};
-        if (analysis.ns !== 'jmv' || analysis.name !== 'empty')
+        if (analysis.ns !== 'jmv' || analysis.name !== 'empty') {
             extras = this._optionsExtras();
+            extras['.lang'] = await analysis.getCurrentI18nCode();
+        }
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
         return request;
@@ -673,11 +712,12 @@ const Instance = Backbone.Model.extend({
 
         return coms.sendP(message);
     },
-    _runAnalysis(analysis, changed) {
+    async _runAnalysis(analysis, changed) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
-        let request = this._constructAnalysisRequest(analysis);
+        analysis.revision++;
+        let request = await this._constructAnalysisRequest(analysis);
         request.perform = 0; // INIT
 
         if (changed)
@@ -685,26 +725,26 @@ const Instance = Backbone.Model.extend({
 
         this._sendAnalysisRequest(request, analysis);
     },
-    _sendAnalysis(analysis, duplicee) {
+    async _sendAnalysis(analysis, duplicee) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
         let request = null;
         if (duplicee !== undefined) {
-            request = this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
+            request = await this._constructAnalysisRequest(analysis, { duplicate: duplicee.id });
             request.perform = 7; // DUPLICATE
         }
         else {
-            request = this._constructAnalysisRequest(analysis);
+            request = await this._constructAnalysisRequest(analysis);
             request.perform = 0; // INIT
         }
 
         this._sendAnalysisRequest(request, analysis);
     },
-    deleteAnalysis(analysis) {
+    async deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
-        let request = this._constructAnalysisRequest(analysis);
+        let request = await this._constructAnalysisRequest(analysis);
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request, analysis);
     },
@@ -716,7 +756,7 @@ const Instance = Backbone.Model.extend({
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
     },
-    _onReceive(payloadType, response) {
+    async _onReceive(payloadType, response) {
 
         let coms = this.attributes.coms;
 
@@ -750,7 +790,7 @@ const Instance = Backbone.Model.extend({
                     throw `Analysis with id ${ response.analysisId } does not exist.`;
 
                 let options = OptionsPB.fromPB(response.options, coms.Messages);
-                analysis = this._analyses.create({
+                analysis = await this._analyses.create({
                     name: response.name,
                     title: response.hasTitle ? response.title : undefined,
                     ns: response.ns,
@@ -761,14 +801,8 @@ const Instance = Backbone.Model.extend({
                     references: response.references,
                     enabled: response.enabled,
                     index: response.index - 1,
-                    dependsOn: response.dependsOn
+                    dependsOn: response.dependsOn,
                 });
-
-                /*for (let current of this._analyses) {
-                    if (current.waitingFor === analysis.id) {
-                        analysis.addDependent(current);
-                    }
-                }*/
 
                 if (response.name !== 'empty')
                     this.set('selectedAnalysis', analysis);

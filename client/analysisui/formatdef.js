@@ -1,7 +1,6 @@
 
 'use strict';
 
-const _ = require('underscore');
 const Format = require('./format.js');
 
 const FormatDef = {
@@ -15,12 +14,13 @@ const FormatDef = {
             case 'boolean':
                 return FormatDef.bool;
             case 'object':
-                _.each(this, function(value, key, list) {
+                for (let key in this) {
+                    let value = this[key];
                     if (value.isValid) {
                         if (value.isValid(raw))
                             return value;
                     }
-                });
+                }
                 break;
         }
         return null;
@@ -405,7 +405,7 @@ FormatDef.number = new Format ({
     },
 
     isValid: function(raw) {
-        return typeof(raw) === 'number';
+        return ! (isNaN(raw) || typeof(raw) !== 'number');
     },
 
     isEmpty: function(raw) {
@@ -500,7 +500,7 @@ FormatDef.output = new Format ({
     isEqual: function(raw1, raw2) {
         if (raw1 === null && raw2 === null)
             return true;
-            
+
         if (raw1.value === raw2.value) {
             if (raw1.vars.length === raw2.vars.length) {
                 for (let i = 0; i < raw1.vars.length; i++) {

@@ -17,17 +17,19 @@ let baseUrl;
 let analysisUIUrl;
 let resultsViewUrl;
 
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+let hostname = window.location.hostname;
+
+if (/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/.test(hostname)) {
     let port = parseInt(window.location.port || '80');
-    baseUrl = `${ window.location.protocol }//${ window.location.hostname }:${ port }/`;
-    analysisUIUrl  = `${ window.location.protocol }//${ window.location.hostname }:${ port + 1 }/`;
-    resultsViewUrl = `${ window.location.protocol }//${ window.location.hostname }:${ port + 2 }/`;
+    baseUrl = `${ window.location.protocol }//${ hostname }:${ port }/`;
+    analysisUIUrl  = `${ window.location.protocol }//${ hostname }:${ port + 1 }/`;
+    resultsViewUrl = `${ window.location.protocol }//${ hostname }:${ port + 2 }/`;
 }
 else {
     let port = (window.location.port ? ':' + window.location.port : '');
-    baseUrl = `${ window.location.protocol }//${ window.location.hostname }${ port }/`;
-    analysisUIUrl  = `${ window.location.protocol }//a.${ window.location.hostname }${ port }/`;
-    resultsViewUrl = `${ window.location.protocol }//r.${ window.location.hostname }${ port }/`;
+    baseUrl = `${ window.location.protocol }//${ hostname }${ port }/`;
+    analysisUIUrl  = `${ window.location.protocol }//a.${ hostname }${ port }/`;
+    resultsViewUrl = `${ window.location.protocol }//r.${ hostname }${ port }/`;
 }
 
 

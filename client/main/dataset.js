@@ -67,7 +67,11 @@ const DataSetModel = Backbone.Model.extend({
         let columns = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
+<<<<<<< HEAD
             if (column && !(column.hidden && displayOnly)) 
+=======
+            if (column && !(column.hidden && displayOnly))
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 columns.push(column);
         }
         return columns;
@@ -540,11 +544,13 @@ const DataSetModel = Backbone.Model.extend({
                         levelPB.value = i;
                         levelPB.label = level.label;
                         levelPB.importValue = level.importValue;
+                        levelPB.pinned = level.pinned;
                     }
                     else {
                         levelPB.value = level.value;
                         levelPB.label = level.label;
                         levelPB.importValue = level.importValue;
+                        levelPB.pinned = level.pinned;
                     }
                     columnPB.levels.push(levelPB);
                 }
@@ -1123,6 +1129,7 @@ const DataSetModel = Backbone.Model.extend({
                         label: levelPB.label,
                         value: i,
                         importValue: levelPB.importValue,
+                        pinned: levelPB.pinned
                     };
                 }
                 else {
@@ -1130,6 +1137,7 @@ const DataSetModel = Backbone.Model.extend({
                         label: levelPB.label,
                         value: levelPB.value,
                         importValue: levelPB.value.toString(),
+                        pinned: levelPB.pinned
                     };
                 }
             }
@@ -1301,8 +1309,34 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
+    },
+    columnTypeLabel(type) {
+        switch (type) {
+            case 'data':
+            case 1:
+                return _('Data');
+            case 'computed':
+            case 2:
+                return _('Computed');
+            case 'recoded':
+            case 3:
+                return _('Transformed');
+            case 'filter':
+            case 4:
+                return _('Filter');
+            case 'output':
+            case 5:
+                return _('Output');
+            case 'none':
+            case 0:
+                return _('None');
+            default:
+                return _('None');
+        }
     }
 });
+
+
 
 DataSetModel.stringifyMeasureType = function(type) {
     switch (type) {
@@ -1735,7 +1769,7 @@ const DataSetViewModel = DataSetModel.extend({
                 return { blockRowStart: 0, viewRowStart: block.rowStart - viewTop, rowCount: block.rowCount };
 
             if (block.rowStart <= viewTop && blockRowEnd >= viewBottom)
-                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewTop - viewBottom + 1 };
+                return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: viewBottom - viewTop + 1 };
 
             if (block.rowStart < viewTop)
                 return { blockRowStart: viewTop - block.rowStart, viewRowStart: 0, rowCount: blockRowEnd - viewTop + 1 };

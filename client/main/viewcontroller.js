@@ -269,6 +269,7 @@ class ViewController {
                             reject();
                     };
 
+<<<<<<< HEAD
                     if (columns.length === 1) {
                         let column = columns[0];
                         dialogs.confirm(`Delete column '${ column.name }'?`, cb);
@@ -276,6 +277,11 @@ class ViewController {
                     else {
                         dialogs.confirm(`Delete ${ columns.length } columns?`, cb);
                     }
+=======
+                    let column = columns[0];
+                    dialogs.confirm(n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length }), cb);
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 });
 
             let ids = columns.map(column => column.id);
@@ -323,10 +329,14 @@ class ViewController {
                         reject();
                 };
 
+<<<<<<< HEAD
                 if (rowCount === 1)
                     dialogs.confirm('Delete row ' + (selections[0].top+1) + '?', cb);
                 else
                     dialogs.confirm('Delete ' + rowCount + ' rows?', cb);
+=======
+                dialogs.confirm(n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount }), cb);
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             });
             await this.model.deleteRows(rowRanges);
             await this.selection.setSelections(oldSelection, oldSubSelections);
@@ -347,8 +357,15 @@ class ViewController {
         this.trigger('copying');
     }
 
+<<<<<<< HEAD
     async pasteClipboardToSelection() {
         let content = host.pasteFromClipboard();
+=======
+    async pasteClipboardToSelection(content) {
+
+        if (content === undefined)
+            content = host.pasteFromClipboard();
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
 
         let text = content.text;
         let html = content.html;
@@ -358,8 +375,13 @@ class ViewController {
 
         if ((text.length + html.length) > (9 * 1024 * 1024)) {
             let notification = new Notify({
+<<<<<<< HEAD
                 title: 'Unable to paste',
                 message: 'Too much data, use import instead',
+=======
+                title: _('Unable to paste'),
+                message: _('Too much data, use import instead'),
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 duration: 4000,
             });
             this.trigger('notification', notification);
@@ -575,18 +597,29 @@ class ViewController {
                     resolve(-1);
                 else {
                     keyboardJS.setContext('');
+<<<<<<< HEAD
                     dialogs.prompt('Insert how many rows?', this.selection.bottom - this.selection.top + 1, (result) => {
+=======
+                    dialogs.prompt(_('Insert how many rows?'), this.selection.bottom - this.selection.top + 1, (result) => {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                         keyboardJS.setContext('controller');
                         if (result === undefined)
                             reject('cancelled by user');
                         let n = parseInt(result);
                         if (isNaN(n) || n <= 0)
+<<<<<<< HEAD
                             reject('' + result + ' is not a positive integer');
+=======
+                            reject(_('{n} is not a positive integer', {n: result}));
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                         else
                             resolve(n);
                     });
                 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             });
 
             let ranges = [{ rowStart: this.selection.top, rowCount: n }];
@@ -614,13 +647,21 @@ class ViewController {
         try {
             let n = await new Promise((resolve, reject) => {
                 keyboardJS.setContext('');
+<<<<<<< HEAD
                 dialogs.prompt('Append how many rows?', '1', (result) => {
+=======
+                dialogs.prompt(_('Append how many rows?'), '1', (result) => {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                     keyboardJS.setContext('controller');
                     if (result === undefined)
                         reject('cancelled by user');
                     let n = parseInt(result);
                     if (isNaN(n) || n <= 0)
+<<<<<<< HEAD
                         reject('' + result + ' is not a positive integer');
+=======
+                        reject(_('{n} is not a positive integer', {n:result}));
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                     else
                         resolve(n);
                 });

@@ -32,6 +32,15 @@ from asyncio import current_task
 from .utils import req_str
 
 
+ANALYSIS_INITED = AnalysisStatus.Value('ANALYSIS_INITED')
+ANALYSIS_COMPLETE = AnalysisStatus.Value('ANALYSIS_COMPLETE')
+ANALYSIS_ERROR = AnalysisStatus.Value('ANALYSIS_ERROR')
+
+PERFORM_INIT = AnalysisRequest.Perform.Value('INIT')
+PERFORM_RUN = AnalysisRequest.Perform.Value('RUN')
+PERFORM_SAVE = AnalysisRequest.Perform.Value('SAVE')
+
+
 log = logging.getLogger(__name__)
 
 
@@ -74,7 +83,7 @@ class Engine:
 
         dur_limit = self._config.get('analysis_duration_limit', None)
         if dur_limit:
-            dur_limit = int(dur_limit)
+            dur_limit = float(dur_limit)
         self._analysis_duration_limit = dur_limit
 
     async def start(self):
@@ -268,8 +277,8 @@ class Engine:
 
         results_received = create_task(self._results_queue.get())
         engine_stopped = create_task(self._stopped.wait())
-        stream_cancelled = create_task(results_stream.completed())
-        pending = { results_received, engine_stopped, stream_cancelled }
+
+        pending = { results_received, engine_stopped, results_stream }
 
         timeout = None
         if self._analysis_duration_limit is not None:
@@ -289,19 +298,21 @@ class Engine:
                             and request.analysisId == results.analysisId
                             and request.revision == results.revision):
 
-                        if results.incAsText and results.status == AnalysisStatus.Value('ANALYSIS_COMPLETE'):
+                        if request.perform == PERFORM_SAVE:
                             complete = True
-                        elif results.incAsText and results.status == AnalysisStatus.Value('ANALYSIS_ERROR'):
+                        if results.incAsText and results.status == ANALYSIS_COMPLETE:
                             complete = True
-                        elif request.perform == AnalysisRequest.Perform.Value('INIT') and results.status == AnalysisStatus.Value('ANALYSIS_INITED'):
+                        elif results.incAsText and results.status == ANALYSIS_ERROR:
                             complete = True
-
-                        results_stream.write(results, complete)
+                        elif request.perform == PERFORM_INIT and results.status == ANALYSIS_INITED:
+                            complete = True
 
                     if not complete:
+                        results_stream.write(results)
                         results_received = create_task(self._results_queue.get())
                         pending.add(results_received)
                     else:
+                        results_stream.set_result(results)
                         break
 
                 elif timeout in done:
@@ -314,7 +325,7 @@ class Engine:
                         This analysis has exceeded the current time limits and has been terminated.
                         ''')
                     await self.stop()
-                    results_stream.write(error, True)
+                    results_stream.set_result(error)
                     await self.restart()
                     break
 
@@ -327,11 +338,11 @@ class Engine:
                         '''
                         This analysis has terminated, likely due to hitting a resource limit.
                         ''')
-                    results_stream.write(error, True)
+                    results_stream.set_result(error)
                     await self.restart()
                     break
 
-                elif stream_cancelled in done:
+                elif results_stream in done:
                     break
 
         except CancelledError:
@@ -341,7 +352,6 @@ class Engine:
         finally:
             results_received.cancel()
             engine_stopped.cancel()
-            stream_cancelled.cancel()
             if timeout is not None:
                 timeout.cancel()
 
@@ -425,17 +435,14 @@ class Engine:
         results.name = request.name
         results.ns = request.ns
         results.options.CopyFrom(request.options)
-        results.status = AnalysisStatus.Value('ANALYSIS_ERROR')
+        results.status = ANALYSIS_ERROR
         results.revision = request.revision
         results.version = 0
 
         results.results.name = request.name
         results.results.title = request.name
-        results.results.status = AnalysisStatus.Value('ANALYSIS_ERROR')
+        results.results.status = ANALYSIS_ERROR
         results.results.error.message = message
-
-        item = results.results.group.elements.add()
-        item.preformatted = ''
 
         return results
 

@@ -26,11 +26,12 @@ const Settings = Backbone.Model.extend({
     defaults: {
         coms: null,
         recents: [ ],
-        examples: [ ],
+        //examples: [ ],
         modules: [ ],
         theme: 'default',
         devMode: false,
         syntaxMode: false,
+        selectedLanguage: '',
         zoom: 100,
         updateStatus: 'na',
         format: '{"t":"sf","n":3,"p":3}',
@@ -59,7 +60,7 @@ const Settings = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let settingsPB = coms.Messages.SettingsResponse.decode(message.payload);
         this.set('recents',  settingsPB.recents);
-        this.set('examples', settingsPB.examples);
+        //this.set('examples', settingsPB.examples);
         this.set('modules', settingsPB.modules);
 
         for (let settingPB of settingsPB.settings) {

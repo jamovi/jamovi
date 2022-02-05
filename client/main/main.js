@@ -22,11 +22,50 @@ const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
 const VariableEditor = require('./variableeditor');
 const ActionHub = require('./actionhub');
+const I18n = require('../common/i18n');
 
 
 const Instance = require('./instance');
 const Notify = require('./notification');
 const JError = require('./errors').JError;
+
+window._ = I18n._;
+window.n_ = I18n._n;
+
+
+(async function() {
+
+try {
+    let baseUrl = '../i18n/'
+
+    let response = await fetch(baseUrl);
+    if ( ! response.ok)
+        throw new Error('Unable to fetch i18n manifest');
+
+    let languages = await response.json();
+    I18n.setAvailableLanguages(languages.available);
+    let current = languages.current;
+    if ( ! current)
+        current = I18n.findBestMatchingLanguage(I18n.systemLanguage(), languages.available);
+    if ( ! current)
+        current = 'en';
+
+    response = await fetch(`${ baseUrl }${ current }.json`);
+    if ( ! response.ok)
+        throw new Error(`Unable to fetch json for language '${ current }'`);
+
+    try {
+        let def = await response.json();
+        I18n.initialise(current, def);
+    }
+    catch (e) {
+        throw new Error(`Unable to load json for language '${ current }'`);
+    }
+}
+catch (e) {
+    console.log(e);
+}
+
 
 require('./infobox');
 
@@ -87,15 +126,15 @@ infoBox.style.display = 'none';
 coms.on('failure', (event) => {
     if (host.isElectron) {
         infoBox.setup({
-            title: 'Connection lost',
-            message: 'An unexpected error has occured, and jamovi must now close.',
+            title: _('Connection lost'),
+            message: _('An unexpected error has occured, and jamovi must now close.'),
             status: 'terminated',
         });
     }
     else {
         infoBox.setup({
-            title: 'Connection lost',
-            message: 'Your connection has been lost. Please refresh the page to continue.',
+            title: _('Connection lost'),
+            message: _('Your connection has been lost. Please refresh the page to continue.'),
             status: 'disconnected',
         });
     }
@@ -129,13 +168,13 @@ if (window.navigator.platform === 'MacIntel') {
             ]
         },
         {
-            label: 'File',
+            label: _('File'),
             submenu: [
                 { role: 'close' },
             ]
         },
         {
-            label: 'Edit',
+            label: _('Edit'),
             submenu: [
                 { role: 'cut' },
                 { role: 'copy' },
@@ -205,8 +244,9 @@ $(document).ready(async() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
-    ribbon.on('analysisSelected', function(analysis) {
-        instance.createAnalysis(analysis.name, analysis.ns, analysis.title);
+    ribbon.on('analysisSelected', async function(analysis) {
+        let translate = await instance.modules().getTranslator(analysis.ns);
+        instance.createAnalysis(analysis.name, analysis.ns, translate(analysis.title));
     });
 
     let mainTableMode = 'spreadsheet';
@@ -317,14 +357,14 @@ $(document).ready(async() => {
         if ( ! instance.attributes.arbitraryCodePresent)
             return;
         let notif = ribbon.notify({
-            text:  `One or more analyses in this data set have been disabled
+            text:  _(`One or more analyses in this data set have been disabled
                     because they allow the execution of arbitrary code. You
                     should only enable them if you trust this data set's
-                    source.`,
+                    source.`),
             options: [
-                { name: 'more-info', text: 'More info ...', dismiss: false },
-                { name: 'dismiss',   text: "Don't enable" },
-                { name: 'enable-code', text: 'Enable' } ]
+                { name: 'more-info', text: _('More info ...'), dismiss: false },
+                { name: 'dismiss',   text: _("Don't enable") },
+                { name: 'enable-code', text: _('Enable') } ]
         });
 
         notif.on('click', (event) => {
@@ -410,22 +450,23 @@ $(document).ready(async() => {
 
     let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
 
+    let _annotationReturnTab = null;
     resultsView.$el.on('annotationFocus', (event) => {
-        if (this._annotationReturnTab === undefined)
-            this._annotationReturnTab = null;
+        if (_annotationReturnTab === undefined)
+            _annotationReturnTab = null;
 
-        if (this._annotationReturnTab === null) {
+        if (_annotationReturnTab === null) {
             let tab = ribbonModel.get('selectedTab');
             if (tab !== 'annotation')
-                this._annotationReturnTab = tab;
+                _annotationReturnTab = tab;
         }
         ribbonModel.set('selectedTab', 'annotation');
     });
 
     resultsView.$el.on('annotationLostFocus', (event) => {
-        if (this._annotationReturnTab !== null) {
-            ribbonModel.set('selectedTab', this._annotationReturnTab);
-            this._annotationReturnTab = null;
+        if (_annotationReturnTab !== null) {
+            ribbonModel.set('selectedTab', _annotationReturnTab);
+            _annotationReturnTab = null;
         }
     });
 
@@ -594,9 +635,9 @@ $(document).ready(async() => {
         if (dataSetModel.attributes.edited) {
             let response = host.showMessageBox({
                 type: 'question',
-                buttons: [ 'Save', 'Cancel', "Don't Save" ],
+                buttons: [ _('Save'), _('Cancel'), _("Don't Save") ],
                 defaultId: 1,
-                message: "Save changes to '" + instance.attributes.title + "'?",
+                message: _("Save changes to '{title}'?", {title: instance.attributes.title}),
             });
             if (response === 1) {  // Cancel
                 return false;
@@ -614,7 +655,7 @@ $(document).ready(async() => {
     let toOpen = '';  // '' denotes blank data set
 
     let progNotif = new Notify({
-        title: 'Opening',
+        title: _('Opening'),
         duration: 0
     });
 
@@ -636,30 +677,40 @@ $(document).ready(async() => {
         }
 
         const notify = (progress) => {
-            progNotif.set({
-                title: progress.title,
-                progress: progress.progress,
-            });
-            notifications.notify(progNotif);
+            if (progress.p !== undefined) {
+                progNotif.set({
+                    title: progress.title,
+                    progress: [ progress.p, progress.n ],
+                });
+                notifications.notify(progNotif);
+            }
+
+            if (progress.status !== undefined) {
+                infoBox.setup(progress);
+            }
         };
 
         let status;
 
         try {
-            let stream = instance.open(toOpen, { existing: !!instanceId });
-            if (toOpen !== '') {
-                // only display progress if opening a file
+            while (true) {
+                let stream = instance.open(toOpen, { existing: !!instanceId });
                 for await (let progress of stream)
                     notify(progress);
+                status = await stream;
+
+                if (status.status === 'requires-auth')
+                    await infoBox.setup(status);
+                else
+                    break;
             }
-            status = await stream;
         }
         catch (e) {
             if (host.isElectron && toOpen !== '') {
                 // if opening fails, open a blank data set
                 status = await instance.open('', { existing: !!instanceId });
                 notifications.notify(new Notify({
-                    title: 'Unable to open',
+                    title: _('Unable to open'),
                     message: e.cause || e.message,
                     type: 'error',
                     duration: 3000,
@@ -675,6 +726,8 @@ $(document).ready(async() => {
 
         if (status.message || status.title || status['message-src'])
             infoBox.setup(status);
+        else
+            infoBox.hide();
 
         instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
         await instance.connect(instanceId);
@@ -697,8 +750,8 @@ $(document).ready(async() => {
             console.log(e);
 
             infoBox.setup({
-                title: 'Connection failed',
-                message: 'Unable to connect to the server',
+                title: _('Connection failed'),
+                message: _('Unable to connect to the server'),
                 status: 'disconnected',
             });
         }
@@ -719,3 +772,5 @@ $(document).ready(async() => {
     }
 
 });
+
+})();

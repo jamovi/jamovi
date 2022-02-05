@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('underscore');
 var OptionControlBase = require('./optioncontrolbase');
 var EnumPropertyFilter = require('./enumpropertyfilter');
 var SuperClass = require('../common/superclass');
@@ -28,6 +27,7 @@ var OptionControl = function(params) {
     this.registerSimpleProperty('optionName', null);
     this.registerSimpleProperty('enable', true);
     this.registerOptionProperty('title', 'label');
+    this.registerOptionProperty('default', 'defaultValue');
     this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(['list', 'inline', 'list-inline', 'inline-list'], 'list'));
 
     this.registerSimpleProperty('optionPart', null);

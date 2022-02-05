@@ -6,18 +6,17 @@
     "url": "https://github.com/jamovi/jamovi.git"
   },
   "scripts": {
-    "prepublish": "echo BUILDING CLIENT && npm run build:main && npm run build:analysisui && npm run build:resultsview && npm run build:recorder && echo DONE && npm run beep",
-    "build:main": "browserify --debug main/main.js        --outfile main.js        && lessc main/main.less        main.css",
-    "build:analysisui": "browserify --debug analysisui/main.js  --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
+    "prepublish": "echo BUILDING CLIENT && npm run build:main && npm run build:analysisui && npm run build:resultsview && npm run build:coms && echo DONE && npm run beep",
+    "build:coms": "node -e \"require('fs').copyFileSync('../server/jamovi/server/jamovi.proto', 'assets/coms.proto')\"",
+    "build:main":        "browserify --debug main/main.js        --outfile main.js        && lessc main/main.less        main.css",
+    "build:analysisui":  "browserify --debug analysisui/main.js  --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
     "build:resultsview": "browserify --debug resultsview/main.js --outfile resultsview.js && lessc resultsview/main.less resultsview.css",
-    "build:recorder": "browserify --debug recorder/main.js --outfile recorder.js && lessc recorder/main.less recorder.css",
-    "watch": "npm run prepublish && onchange main/* analysisui/* resultsview/* recorder/* common/* -- npm run prepublish",
+    "watch": "npm run prepublish && onchange main/* analysisui/* resultsview/* common/* -- npm run prepublish",
     "beep": "node -e \"require('beepbeep')()\"",
     "build:main:release": "browserify -t uglifyify main/main.js --outfile main.js && lessc main/main.less main.css",
     "build:analysisui:release": "browserify -t uglifyify analysisui/main.js --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
     "build:resultsview:release": "browserify -t uglifyify resultsview/main.js --outfile resultsview.js && lessc resultsview/main.less resultsview.css",
-    "build:recorder:release": "browserify -t uglifyify recorder/main.js --outfile recorder.js && lessc recorder/main.less recorder.css",
-    "build:release": "npm run build:main:release && npm run build:analysisui:release && npm run build:resultsview:release && npm run build:recorder:release && bash release.sh",
+    "build:release": "npm run build:main:release && npm run build:analysisui:release && npm run build:resultsview:release && npm run build:coms && bash release.sh",
     "": ""
   },
   "devDependencies": {
@@ -46,6 +45,7 @@
     "quill": "^1.3.7",
     "quill-delta-to-html": "^0.12.0",
     "uglifyify": "^5.0.2",
-    "underscore": "^1.11.0"
+    "underscore": "^1.11.0",
+    "jed": "1.1.1"
   }
 }

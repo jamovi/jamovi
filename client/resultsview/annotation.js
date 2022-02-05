@@ -135,7 +135,7 @@ const Annotation = function(address, suffix) {
             event.preventDefault();
         });
 
-        let $formulaHelp = $(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-left: 20px;">Help</a>`);
+        let $formulaHelp = $(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-left: 20px;">${_('Help')}</a>`);
         $formulaHelp.on('click', (event) => {
             window.openUrl('https://katex.org/docs/supported.html');
             event.stopPropagation();
@@ -145,7 +145,7 @@ const Annotation = function(address, suffix) {
         this.editor.theme.tooltip.root.append($formulaHelp[0]);
 
         this.editor.theme.tooltip.textbox.addEventListener('focus', (event) => this.cancelBlur());
-        $(this.editor.theme.tooltip.textbox).attr('placeholder', 'Enter your URL here');
+        $(this.editor.theme.tooltip.textbox).attr('placeholder', _('Enter your URL here'));
 
         this._host = this.$el[0];
         this._body = this.$el[0];

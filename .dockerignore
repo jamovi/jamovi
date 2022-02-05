@@ -1,7 +1,9 @@
 
 # build stuff
-client/node_modules
+**/node_modules
 server/build
+
+jmv/build
 
 # built files
 client/*.js
@@ -14,3 +16,6 @@ readstat/jamovi/libs/zlib-win
 # build artifacts
 **/*.o
 **/*.so
+
+# git
+.git

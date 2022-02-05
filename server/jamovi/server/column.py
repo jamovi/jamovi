@@ -57,6 +57,7 @@ class Column:
         self.output_name = None
         self.output_desired_column_name = None
         self.output_assigned_column_name = None
+        self.output_assigned_column_description = None
 
     def _create_child(self):
         if self._child is None:
@@ -376,10 +377,10 @@ class Column:
             self._create_child()
         self._child.append(value)
 
-    def insert_level(self, raw, label, importValue=None):
+    def insert_level(self, raw, label, importValue=None, pinned=False):
         if self._child is None:
             self._create_child()
-        self._child.insert_level(raw, label, importValue)
+        self._child.insert_level(raw, label, importValue, pinned)
 
     def get_label(self, value):
         if self._child is None:
@@ -450,9 +451,9 @@ class Column:
             return self._child.levels
         return []
 
-    def append_level(self, raw, label, import_value=None):
+    def append_level(self, raw, label, import_value=None, pinned=False):
         if self._child is not None:
-            return self._child.append_level(raw, label, import_value)
+            return self._child.append_level(raw, label, import_value, pinned)
         return False
 
     @property
@@ -654,7 +655,7 @@ class Column:
             node = Parser.parse(self.formula)
 
             if trans_error:
-                self.formula_message = "'%s' is in error" % (trans_name)
+                self.formula_message = _("'{}' is in error").format(trans_name)
             else:
                 self.formula_message = ''
 

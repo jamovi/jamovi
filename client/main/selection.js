@@ -139,11 +139,33 @@ class Selection {
         return selection.columnPos;
     }
 
+<<<<<<< HEAD
+=======
+    singleColumnSelected() {
+        let col = this.left;
+        if (col !== this.right)
+            return false;
+
+        for (let selection of this.subSelections) {
+            if (selection.left !== col || selection.right !== col)
+                return false;
+        }
+
+        return true;
+    }
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     createRange(start, end, pos, focus) {
         let startColumn = this.model.getColumn(start);
         let endColumn = this.model.getColumn(end);
         let posColumn = this.model.getColumn(pos);
 
+<<<<<<< HEAD
+=======
+        if ( !startColumn || !endColumn || !posColumn)
+           return null;
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         let left = startColumn.dIndex;
         if (left === -1) {
             let column = null;
@@ -218,6 +240,12 @@ class Selection {
             columnFocus: focus
         };
 
+<<<<<<< HEAD
+=======
+        if (newSelection.bottom < 0)
+            newSelection.bottom = 0;
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         newSelection._calcKey = this.compileKey(newSelection, false);
 
         if (focus) {
@@ -647,6 +675,22 @@ class Selection {
         return verticalOverlap && horizontalOverlap;
     }
 
+<<<<<<< HEAD
+=======
+    rangeOverlaps(range) {
+        let overlap = this._rangesOverlap(this, range);
+        if (overlap === false) {
+            for (let i = 0; i < this.subSelections.length; i++) {
+                overlap = this._rangesOverlap(this.subSelections[i], range);
+                if (overlap)
+                    break;
+            }
+        }
+
+        return overlap;
+    }
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     resolveSelectionList($el) {
         if ( ! this._selectionNegative)
             return false;
@@ -739,6 +783,11 @@ class Selection {
         else
             this.setSelection(this.rowNo, this.colNo);
 
+<<<<<<< HEAD
+=======
+        this.trigger('resolved');
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         return true;
     }
 

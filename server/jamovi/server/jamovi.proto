@@ -60,6 +60,7 @@ message AnalysisRequest {
     string part = 17;
     string format = 18;
     bool enabled = 19;
+    string i18n = 20;
 }
 
 enum AnalysisStatus {
@@ -416,7 +417,7 @@ message Notification {
 
 message SettingsResponse {
     repeated DataSetEntry recents = 1;
-    repeated DataSetEntry examples = 2;
+    /*repeated DataSetEntry examples = 2;*/
     repeated ModuleMeta modules = 3;
     repeated SettingValue settings = 4;
     repeated SettingValue config = 5;
@@ -434,6 +435,7 @@ message VariableLevel {
     string label = 1;
     int32 value = 2;
     string importValue = 3;
+    bool pinned = 4;
 }
 
 message ColumnCellRange {

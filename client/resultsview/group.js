@@ -69,6 +69,9 @@ const GroupView = Elem.View.extend({
     type: function() {
         return 'Group';
     },
+    label: function() {
+        return _('Group');
+    },
     get: function(address) {
         if (address.length === 0)
             return this;
@@ -207,9 +210,9 @@ const GroupView = Elem.View.extend({
     },
     _menuOptions(event) {
         if (this.isEmptyAnalysis)
-            return [ { label: 'Copy' } ];
+            return [ { name: 'copy', label: _('Copy') } ];
         else if (this.isRoot())
-            return [ { label: 'Copy' }, { label: 'Duplicate' }, { label: 'Export' } ];
+            return [ { name: 'copy', label: _('Copy') }, { name: 'duplicate', label: _('Duplicate') }, { name: 'export', label: `${_('Export')}...` } ];
         else
             return Elem.View.prototype._menuOptions.call(this);
     }

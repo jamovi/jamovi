@@ -12,12 +12,12 @@ const TransformList = function() {
     this.$el = $('<div class="jmv-transform-list"></div>');
 
     this.$top = $('<div class="top"></div>').appendTo(this.$el);
-    this.$none =$('<div class="transform-none-item">None</div>').appendTo(this.$top);
+    this.$none =$(`<div class="transform-none-item">${_('None')}</div>`).appendTo(this.$top);
 
     this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
 
     this.$bottom = $('<div class="bottom"></div>').appendTo(this.$el);
-    this.$createNew = $('<div class="transform-create">Create New Transform...</div>').appendTo(this.$bottom);
+    this.$createNew = $(`<div class="transform-create">${_('Create New Transform...')}</div>`).appendTo(this.$bottom);
 
     this.$createNew.on('click', (event) => {
         this.$el.trigger('create-transform');

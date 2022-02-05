@@ -53,11 +53,17 @@ const TermLabel = function(params) {
         }
     });
 
+    this._updateCount = 0;
+
     this.updateView = function(columnNames) {
         let promises = [];
         let count = 0;
         let columnFound = true;
+        this._updateCount += 1;
         let process = rData => {
+            if (rData.requestData.requestId !== this._updateCount)
+                return;
+
             if (columnFound && rData.columnFound === false)
                columnFound = false;
 
@@ -71,7 +77,7 @@ const TermLabel = function(params) {
         };
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
-            let promise = this.requestData('column', { columnName: columnName, properties: [ 'measureType' ] });
+            let promise = this.requestData('column', { columnName: columnName, properties: [ 'measureType' ], requestId: this._updateCount });
             promise.then(process);
         }
     };

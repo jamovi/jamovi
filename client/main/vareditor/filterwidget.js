@@ -38,7 +38,7 @@ const FilterWidget = Backbone.View.extend({
         this.$filterListButtons = $('<div class="jmv-filter-list-buttons"></div>').appendTo(this.$el);
         this.$filterList = $('<div class="jmv-filter-list-box"></div>').appendTo(this.$el);
 
-        this.$addFilter = $('<div class="filter-button filter-button-tooltip add-filter" title="Add new filter"></div>').appendTo(this.$filterListButtons);
+        this.$addFilter = $(`<div class="filter-button filter-button-tooltip add-filter" title="${_('Add new filter')}"></div>`).appendTo(this.$filterListButtons);
         this.$addFilter.on('click', (event) => {
             this._internalCreate = true;
             this._addFilter();
@@ -56,7 +56,7 @@ const FilterWidget = Backbone.View.extend({
 
         let filtersVisible = this.dataset.get('filtersVisible');
 
-        this.$showFilter = $('<div class="filter-button filter-button-tooltip ' + (filtersVisible ? 'show-filter-columns' : 'hide-filter-columns') + '" title="Show filter columns"></div>').appendTo(this.$filterListButtons);
+        this.$showFilter = $(`<div class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" title="${_('Show filter columns')}"></div>`).appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
             this.dataset.toggleFilterVisibility();
         });
@@ -68,31 +68,34 @@ const FilterWidget = Backbone.View.extend({
         if (this.dataset.get('filtersVisible')) {
             this.$showFilter.removeClass('show-filter-columns');
             this.$showFilter.addClass('hide-filter-columns');
-            this.$showFilter.attr('title', 'Hide filter columns');
+            this.$showFilter.attr('title', _('Hide filter columns'));
         }
         else {
             this.$showFilter.removeClass('hide-filter-columns');
             this.$showFilter.addClass('show-filter-columns');
-            this.$showFilter.attr('title', 'Show filter columns');
+            this.$showFilter.attr('title', _('Show filter columns'));
         }
     },
-    _addFilter() {
+    async _addFilter() {
         let i = -1;
         let column = null;
         do {
             i += 1;
             column = this.dataset.getColumn(i);
         } while(column.columnType === 'filter');
-        this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false }).then(() => {
+
+        try {
+            await this.dataset.insertColumn({ index: i, columnType: 'filter', hidden: this.dataset.get('filtersVisible') === false });
             column = this.dataset.getColumn(i);
             this.setColumnForEdit(column.id);
-        }).catch((error) => {
+        }
+        catch(error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     },
     _notifyEditProblem(details) {
         this._editNote.set(details);
@@ -259,7 +262,7 @@ const FilterWidget = Backbone.View.extend({
         this.addNestedEvents($removeButton, columnId);
         $removeButton.removeClass('remove-nested');
         $removeButton.addClass('add-nested');
-        $removeButton.attr('title', 'Add another nested filter');
+        $removeButton.attr('title', _('Add another nested filter'));
         $removeButton.find('span').removeClass('mif-cross').addClass('mif-plus');
     },
     _columnsInserted(event) {
@@ -374,14 +377,14 @@ const FilterWidget = Backbone.View.extend({
         let $status = $filter.find('.status');
         let $active = $filter.find('.active');
         if (active) {
-            $status[0].textContent = 'active';
+            $status[0].textContent = _('active');
             $active.removeClass('filter-disabled');
-            $active.attr('title', 'Filter is active');
+            $active.attr('title', _('Filter is active'));
         }
         else {
-            $status[0].textContent = 'inactive';
+            $status[0].textContent = _('inactive');
             $active.addClass('filter-disabled');
-            $active.attr('title', 'Filter is inactive');
+            $active.attr('title', _('Filter is inactive'));
         }
 
 
@@ -397,17 +400,17 @@ const FilterWidget = Backbone.View.extend({
             $formulaBox.insertBefore($($list[rIndex]));
 
         if (rIndex > 0) {
-            $('<div class="equal">and</div>').appendTo($formulaBox);
+            $(`<div class="equal">${_('and')}</div>`).appendTo($formulaBox);
             let $removeNested = $('<div class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></div>').appendTo($formulaBox);
             this.removeNestedEvents($removeNested, relatedColumn.id);
         }
         else {
             $('<div class="equal">=</div>').appendTo($formulaBox);
-            let $addNested = $('<div class="add-nested" title="Add another nested filter"><span class="mif-plus"></span></div>').appendTo($formulaBox);
+            let $addNested = $(`<div class="add-nested" title="${_('Add another nested filter')}"><span class="mif-plus"></span></div>`).appendTo($formulaBox);
             this.addNestedEvents($addNested, rootColumn.id);
         }
 
-        let $showEditor = $('<div class="show-editor" title="Show formula editor"><div class="down-arrow"></div></div>').appendTo($formulaBox);
+        let $showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
 
         $showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== $formula) {
@@ -488,30 +491,29 @@ const FilterWidget = Backbone.View.extend({
         }
 
         let $titleBox = $('<div class="title-box"></div>').appendTo($filter);
-        $('<div class="label-parent"><div class="label">Filter ' + (index + 1) + '</div></div>').appendTo($titleBox);
+        $(`<div class="label-parent"><div class="label">${_('Filter {i}', {i: (index + 1)} )}</div></div>`).appendTo($titleBox);
         let $middle = $('<div class="middle-box"></div>').appendTo($titleBox);
         let $statusBox = $('<div class="status-box"></div>').appendTo($middle);
-        let $active = $('<div class="active" title="Filter is active"><div class="switch"></div></div>').appendTo($statusBox);
-        let $status = $('<div class="status">active</div>').appendTo($statusBox);
+        let $active = $(`<div class="active" title="${_('Filter is active')}"><div class="switch"></div></div>`).appendTo($statusBox);
+        let $status = $(`<div class="status">${_('active')}</div>`).appendTo($statusBox);
         $('<div class="header-splitter"></div>').appendTo($titleBox);
 
 
-        let $removeButton = $('<div class="remove-filter-btn" title="Remove filter"><span class="mif-cross"></span></div>');
+        let $removeButton = $(`<div class="remove-filter-btn" title="${_('Remove filter')}"><span class="mif-cross"></span></div>`);
         $removeButton.appendTo($titleBox);
 
 
         let $formulaList = $('<div class="formula-list"></div>').appendTo($filter);
-        let $description = $('<div class="description" type="text" placeholder="Description"></div>').appendTo($filter);
+        let $description = $(`<div class="description" type="text" placeholder="${_('Description')}"></div>`).appendTo($filter);
 
-        $removeButton.on('click', (event) => {
+        $removeButton.on('click', async (event) => {
             if (this._removingFilter)
                 return;
 
             let columnId = parseInt($filter.attr('data-columnid'));
             this._removingFilter = true;
-            this._removeFilter(columnId).then(() => {
-                this._removingFilter = false;
-            });
+            await this._removeFilter(columnId);
+            this._removingFilter = false;
 
             event.stopPropagation();
             event.preventDefault();
@@ -530,7 +532,7 @@ const FilterWidget = Backbone.View.extend({
             this._createFormulaBox(column, relatedColumns[i].column, i, $filter, $formulaList);
 
         $active.removeClass('filter-disabled');
-        $status[0].textContent = column.active ? 'active' : 'inactive';
+        $status[0].textContent = column.active ? _('active') : _('inactive');
         if ( ! column.active)
             $active.addClass('filter-disabled');
 
@@ -622,7 +624,7 @@ const FilterWidget = Backbone.View.extend({
             $element.focus();
         }, 0);
     },
-    setColumnProperties($filter, pairs) {
+    async setColumnProperties($filter, pairs) {
         if (pairs.length === 0)
             return;
 
@@ -630,55 +632,63 @@ const FilterWidget = Backbone.View.extend({
         let timeoutId = setTimeout(function () {
             $title.addClass('think');
         }, 400);
-        return this.dataset.changeColumns(pairs).then(() => {
+
+        try {
+            await this.dataset.changeColumns(pairs);
             clearTimeout(timeoutId);
             $title.removeClass("think");
-        }).catch((error) => {
+        }
+        catch (error) {
             this._notifyEditProblem({
                 title: error.message,
                 message: error.cause,
                 type: 'error',
             });
-        });
+        }
     },
     addNestedEvents($element, id) {
-        $element.on('click.addnested', (event) => {
+        $element.on('click.addnested', async (event) => {
             let relatedColumns = this.columnsOf(id);
             let parentInfo = relatedColumns[relatedColumns.length - 1];
             let index = parentInfo.index + 1;
             let filterNo = parentInfo.column.filterNo;
             this._internalCreate = true;
-            this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active }).then(() => {
+
+            try {
+                await this.dataset.insertColumn({ index: index, columnType: 'filter', filterNo: filterNo, hidden: this.dataset.get('filtersVisible') === false, active: relatedColumns[0].column.active });
                 let column = this.dataset.getColumn(index);
                 this.setColumnForEdit(column.id);
-            }).catch((error) => {
+            }
+            catch(error) {
                 this._notifyEditProblem({
                     title: error.message,
                     message: error.cause,
                     type: 'error',
                 });
-            });
+            }
             event.stopPropagation();
             event.preventDefault();
         });
     },
     removeNestedEvents($element, id) {
-        $element.on('click.removenested', (event) => {
+        $element.on('click.removenested', async (event) => {
 
             if (this._removingFilter)
                 return;
 
             this._removingFilter = true;
 
-            this.dataset.deleteColumn(id).then(() => {
+            try {
+                await this.dataset.deleteColumn(id);
                 this._removingFilter = false;
-            }).catch((error) => {
+            }
+            catch(error) {
                 this._notifyEditProblem({
                     title: error.message,
                     message: error.cause,
                     type: 'error',
                 });
-            });
+            }
 
             event.stopPropagation();
             event.preventDefault();
@@ -815,6 +825,7 @@ const FilterWidget = Backbone.View.extend({
         let $filters = this.$filterList.find('.jmv-filter-options:not(.remove)');
 
         let edittingIds = this.dataset.get('editingVar');
+        let $scrollTo = null;
         for (let i = 0; i < $filters.length; i++) {
             let $filter = $($filters[i]);
 
@@ -824,13 +835,17 @@ const FilterWidget = Backbone.View.extend({
             let relatedColumns = this.columnsOf(columnId);
             for (let rc = 0; rc < relatedColumns.length; rc++) {
                 let relatedColumn = relatedColumns[rc];
-                if (relatedColumn.id === edittingIds[0]) {
+                if (edittingIds.includes(relatedColumn.id)) {
                     $filter.addClass('selected');
                     let $formula = $($filter.find('.formula')[rc]);
                     $formula.addClass('selected');
+                    if ($scrollTo === null)
+                        $scrollTo = $filter;
                 }
             }
         }
+        if ($scrollTo)
+            $scrollTo[0].scrollIntoView();
     }
 });
 

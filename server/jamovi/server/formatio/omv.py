@@ -18,6 +18,8 @@ from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
 
+from ..i18n import _
+
 
 def write(data, path, prog_cb, html=None, is_template=False):
 
@@ -26,15 +28,7 @@ def write(data, path, prog_cb, html=None, is_template=False):
         content = io.StringIO()
         content.write('Manifest-Version: 1.0\n')
         content.write('Data-Archive-Version: 1.0.2\n')
-
-        for column in data:
-            if column.column_type is ColumnType.OUTPUT:
-                content.write('jamovi-Archive-Version: 10.0\n')
-                break
-        else:
-            # if there are no output columns, this can be opened by earlier versions
-            content.write('jamovi-Archive-Version: 9.0\n')
-
+        content.write('jamovi-Archive-Version: 11.0\n')
         content.write('Created-By: ' + str(app_info) + '\n')
 
         byts = bytes(content.getvalue(), 'utf-8')
@@ -287,7 +281,7 @@ def replace_single_equals(formula):
     return formula
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, **kwargs):
 
     with ZipFile(path, 'r') as zip:
 
@@ -299,17 +293,17 @@ def read(data, path, prog_cb):
                 manifest = zip.read('META-INF/MANIFEST.MF')
                 manifest = manifest.decode('utf-8')
             except Exception:
-                raise FileCorruptError('File is corrupt (manifest is corrupt or missing)')
+                raise FileCorruptError(_('File is corrupt (manifest is corrupt or missing)'))
 
         regex = r'^jamovi-Archive-Version: ?([0-9]+)\.([0-9]+) ?$'
         jav   = re.search(regex, manifest, re.MULTILINE)
 
         if not jav:
-            raise FileCorruptError('File is corrupt (manifest is corrupt)')
+            raise FileCorruptError(_('File is corrupt (manifest is corrupt)'))
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 10:
-            raise FileFormatNotSupportedError('A newer version of jamovi is required')
+        if jav[0] > 11:
+            raise FileFormatNotSupportedError(_('A newer version of jamovi is required'))
 
         meta_content = zip.read('metadata.json').decode('utf-8')
         metadata = json.loads(meta_content)
@@ -428,7 +422,11 @@ def read(data, path, prog_cb):
                                 import_value = meta_label[1]
                                 if len(meta_label) > 2:
                                     import_value = meta_label[2]
-                                column.append_level(meta_label[0], meta_label[1],  import_value)
+                                if len(meta_label) > 3:
+                                    pinned = meta_label[3]
+                                else:
+                                    pinned = column.trim_levels == False
+                                column.append_level(meta_label[0], meta_label[1],  import_value, pinned)
                         else:
                             columns_w_bad_levels.append(column.id)
                     except Exception:

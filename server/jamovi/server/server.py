@@ -14,7 +14,9 @@ from .session import Session
 from .session import SessionEvent
 from .modules import Modules
 from .utils import conf
+from .appinfo import app_info
 from jamovi.core import Dirs
+from .i18n import _
 
 import sys
 import os
@@ -26,11 +28,13 @@ import json
 
 from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
+from shutil import rmtree
 
 import logging
 import pkg_resources
 import threading
 import asyncio
+from asyncio import create_task
 
 log = logging.getLogger(__name__)
 
@@ -89,18 +93,22 @@ class ResourceHandler(RequestHandler):
             self.write('instance ' + instance_id + ' could not be found')
             return
 
-        resource_path = instance.get_path_to_resource(resource_id)
-
         mt = mimetypes.guess_type(resource_id)
+        if mt[0] is not None:
+            self.set_header('Content-Type', mt[0])
+        if mt[1] is not None:
+            self.set_header('Content-Encoding', mt[1])
 
-        with open(resource_path, 'rb') as file:
-            if mt[0] is not None:
-                self.set_header('Content-Type', mt[0])
-            if mt[1] is not None:
-                self.set_header('Content-Encoding', mt[1])
-            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
-            content = file.read()
-            self.write(content)
+        if conf.get('xaccel_use', '0') != '0':
+            xaccel_root = conf.get('xaccel_root')
+            resource_path = f'/{ xaccel_root }/{ instance_id }/{ resource_id }'
+            self.set_header('X-Accel-Redirect', resource_path)
+        else:
+            resource_path = instance.get_path_to_resource(resource_id)
+            with open(resource_path, 'rb') as file:
+                self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
+                content = file.read()
+                self.write(content)
 
 
 class ModuleAssetHandler(RequestHandler):
@@ -135,6 +143,28 @@ class ModuleAssetHandler(RequestHandler):
             self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             self.write(content)
 
+class ModuleI18nDescriptor(RequestHandler):
+
+    def get(self, module_name, code):
+        content = None
+        try:
+            try:
+                module_path = Modules.instance().get(module_name).path
+                defn_path = os.path.join(module_path, 'R', module_name, 'i18n', f'{ code }.json')
+                with open(defn_path, 'rb') as file:
+                    content = file.read()
+            except (KeyError, FileNotFoundError):
+                raise
+            except Exception as e:
+                log.exception(e)
+        except Exception as e:
+            self.set_status(404)
+            self.write('<h1>404</h1>')
+            self.write(str(e))
+        else:
+            self.set_header('Content-Type', 'application/json')
+            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
+            self.write(content)
 
 class ModuleDescriptor(RequestHandler):
 
@@ -196,8 +226,8 @@ class EntryHandler(RequestHandler):
     def initialize(self, session):
         self._session = session
 
-    def get(self):
-        instance = self._session.create()
+    async def get(self):
+        instance = await self._session.create()
         query = self.get_argument('open', '')
         if query:
             query = '?open=' + query
@@ -214,22 +244,35 @@ class OpenHandler(RequestHandler):
         instance = None
         url = self.get_query_argument('url', '')
 
+        lang_code = self.request.headers.get('Accept-Language', 'en')
+
+        self._session.set_language(lang_code)
+
         if instance_id:
             instance = self._session.get(instance_id)
             if instance is None:
-                self.write('{"status":"terminated","message":"This data set is no longer available"}')
+                self.write(f'{{"status":"terminated","message":"{ _("This data set is no longer available") }"}}')
                 return
             elif url == '' and instance._data.has_dataset:
                 self.set_status(204)
                 return
 
         title = self.get_query_argument('title', None)
-        temp = self.get_query_argument('temp', '0')
+        is_temp = self.get_query_argument('temp', '0') == '1'
+        ext = None
+
+        filename = self.get_query_argument('filename', None)
+        if filename:
+            name, ext = os.path.splitext(filename)
+            if ext != '':
+                ext = ext[1:].lower()  # trim leading dot
+            if title is None:
+                title = name
 
         try:
             if instance is None:
-                instance = self._session.create()
-            async for progress in instance.open(url, title, temp == '1'):
+                instance = await self._session.create()
+            async for progress in instance.open(url, title, is_temp, ext):
                 self._write('progress', progress)
         except Exception as e:
             log.exception(e)
@@ -238,20 +281,20 @@ class OpenHandler(RequestHandler):
             self._write('OK', redirect=instance.id)
 
     async def post(self, instance_id=None):
-        try:
-            file = self.request.files['file'][-1]
-        except KeyError:
-            self.set_status(400)
-            self.write('400: Bad Request')
-            return
+
+        filename = self.get_query_argument('filename')
+
+        lang_code = self.request.headers.get('Accept-Language', 'en')
+
+        self._session.set_language(lang_code)
 
         try:
-            base, ext = os.path.splitext(file.filename)
+            base, ext = os.path.splitext(os.path.basename(filename))
             temp_file = NamedTemporaryFile(suffix=ext)
             with open(temp_file.name, 'wb') as writer:
-                writer.write(file.body)
-            instance = self._session.create()
-            async for progress in instance.open(temp_file.name, base, True):
+                writer.write(self.request.body)
+            instance = await self._session.create()
+            async for progress in instance.open(temp_file.name, title=base, is_temp=True):
                 self._write('progress', progress)
         except Exception as e:
             log.exception(e)
@@ -336,6 +379,63 @@ class DatasetsList(RequestHandler):
         self.write(json.dumps(datasets))
 
 
+class AuthTokenHandler(RequestHandler):
+
+    def initialize(self, session):
+        self._session = session
+
+    def post(self):
+        authorization = self.request.headers.get('authorization')
+        if authorization is None:
+            self.set_status(401)
+            self.write('requires authorization')
+        elif not authorization.strip().startswith('Bearer '):
+            self.set_status(400)
+            self.write('unsupported authorization scheme')
+        else:
+            token = authorization.strip()[7:].strip()
+            self._session.set_auth(token)
+
+
+class VersionHandler(RequestHandler):
+    def get(self):
+        self.write(app_info.version)
+
+
+class I18nManifestHandler(RequestHandler):
+
+    manifest = None
+
+    def initialize(self, session, path):
+        self._session = session
+        self._path = path
+
+    def get(self):
+        if I18nManifestHandler.manifest is None:
+            with open(self._path) as file:
+                I18nManifestHandler.manifest = json.load(file)
+
+        self.set_header('Content-Type', 'application/json')
+
+        current = self._session.get_language()
+        if current:
+            manifest = { }
+            manifest.update(I18nManifestHandler.manifest)
+            manifest['current'] = current
+            self.write(json.dumps(manifest))
+        else:
+            self.write(json.dumps(I18nManifestHandler.manifest))
+
+
+class DownloadFileHandler(TornadosStaticFileHandler):
+    def set_extra_headers(self, path):
+        filename = self.get_argument('filename', None)
+        if filename:
+            self.set_header(
+                'Content-Disposition',
+                f'attachment; filename="{ filename }"')
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -345,9 +445,21 @@ class Server:
                  port,
                  host='127.0.0.1',
                  session_id=None,
-                 slave=False,
                  stdin_slave=False,
                  debug=False):
+
+        # these are mostly not necessary, however the mimetypes library relies
+        # on OS level config, and this can be bad/wrong. so we override these
+        # here to prevent a badly configured system from serving up bad mime
+        # types. we found some windows machines serving up application/x-css
+        # for .css files ...
+        mimetypes.add_type('text/html', '.html')
+        mimetypes.add_type('application/javascript', '.js')
+        mimetypes.add_type('text/css', '.css')
+        mimetypes.add_type('image/svg+xml', '.svg')
+        mimetypes.add_type('text/protobuf', '.proto')
+        mimetypes.add_type('application/json', '.json')
+        mimetypes.add_type('font/woff', '.woff')
 
         self._session = None
 
@@ -364,15 +476,15 @@ class Server:
         self._ioloop = asyncio.get_event_loop()
 
         self._host = host
-        self._slave = slave and not stdin_slave
         self._stdin_slave = stdin_slave
         self._debug = debug
-        self._ports_opened_listeners = [ ]
 
-        self._spool_dir = conf.get('spool-dir')
-        if self._spool_dir is None:
+        self.ports_opened = self._ioloop.create_future()
+
+        self._spool_path = conf.get('spool_path')
+        if self._spool_path is None:
             self._spool = TemporaryDirectory()
-            self._spool_dir = self._spool.name
+            self._spool_path = self._spool.name
 
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
@@ -398,9 +510,6 @@ class Server:
             request['args'][0])
         sys.stdout.write(cmd)
         sys.stdout.flush()
-
-    def add_ports_opened_listener(self, listener):
-        self._ports_opened_listeners.append(listener)
 
     def _read_stdin(self):
         try:
@@ -445,7 +554,7 @@ class Server:
 
             try:
                 await self._session.restart_engines()
-                Modules.instance().install_from_file(path)
+                await Modules.instance().install_from_file(path)
                 self._session.notify_global_changes()
                 self._session.rerun_analyses()
             except Exception:
@@ -458,36 +567,34 @@ class Server:
             sys.stderr.write(line)
             sys.stderr.flush()
 
-    def _lonely_suicide(self):
-        if len(self._session) == 0:
-            self.stop()
-
     def stop(self):
-        self._ioloop.stop()
-        try:
-            os.remove(self._port_file)
-        except Exception:
-            pass
+        if self._session is not None:
+            self._session.stop()
 
     def start(self):
-        asyncio.ensure_future(self._run())
-        try:
-            self._ioloop.run_forever()
-        except KeyboardInterrupt:
-            pass
+        t = create_task(self._run())
+        t.add_done_callback(lambda t: t.result())
+
+    async def wait_ended(self):
+        if self._session is not None:
+            await self._session.wait_ended()
 
     async def _run(self):
 
-        client_path = conf.get('client_path')
-        version_path = conf.get('version_path', False)
-        if not version_path:
-            version_path = os.path.join(conf.get('home'), 'Resources', 'jamovi', 'version')
-        coms_path   = 'jamovi.proto'
+        await Modules.instance().read()
 
-        session_path = os.path.join(self._spool_dir, self._session_id)
+        client_path = conf.get('client_path')
+
+        i18n_path = conf.get('i18n_path', None)
+        if i18n_path is None:
+            i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
+
+        coms_path = 'jamovi.proto'
+
+        session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
 
-        self._session = Session(self._spool_dir, self._session_id)
+        self._session = Session(self._spool_path, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
         self._session.add_session_listener(self._session_event)
         await self._session.start()
@@ -499,8 +606,8 @@ class Server:
         else:
             cache_headers = { 'Cache-Control': 'private, max-age=60' }
 
-        ping_interval = conf.get('websocket_ping_interval')
-        ping_timeout = conf.get('websocket_ping_timeout')
+        ping_interval = conf.get('timeout_no_websocket_ping_interval')
+        ping_timeout = conf.get('timeout_no_websocket_ping')
         if ping_interval:
             ping_interval = int(ping_interval)
         if ping_timeout:
@@ -509,19 +616,25 @@ class Server:
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
-            (r'/version', SingleFileHandler, {
-                'path': version_path }),
+            (r'/auth', AuthTokenHandler, { 'session': self._session }),
+            (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
+            (r'/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
             (r'/proto/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
             (r'/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
+            (r'/modules/([0-9a-zA-Z]+)/i18n/([a-z]{2}(?:-[a-z]{2})?)', ModuleI18nDescriptor),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
             (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (r'/api/datasets', DatasetsList, { 'session': self._session }),
+            (r'/i18n/', I18nManifestHandler, {
+                'session': self._session,
+                'path': f'{ i18n_path }/manifest.json' }),
+            (r'/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
             (r'/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
             (r'/[a-f0-9-]+/()', StaticFileHandler, {
@@ -580,26 +693,22 @@ class Server:
         server.add_sockets(sockets)
         self._ports[2] = sockets[0].getsockname()[1]
 
+        hostname = conf.get('hostname', '127.0.0.1')
+        if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', hostname):
+            hosts = f'{ hostname }:{ self._ports[0] } { hostname }:{ self._ports[1] } { hostname }:{ self._ports[2] }'
+        else:
+            hosts = f'{ hostname } a.{ hostname } r.{ hostname }'
+
         # now we have the port numbers, we can add CSP
         cache_headers[ 'Content-Security-Policy' ] = f'''
             default-src 'self';
             img-src 'self' data:;
             script-src  'self' 'unsafe-eval' 'unsafe-inline';
             style-src 'self' 'unsafe-inline';
-            frame-src 'self'
-                127.0.0.1:{ self._ports[1] }
-                localhost:{ self._ports[1] }
-                127.0.0.1:{ self._ports[2] }
-                localhost:{ self._ports[2] }
-                https://www.jamovi.org;
+            frame-src 'self' { hosts } https://www.jamovi.org;
         '''.replace('\n', '')
 
-        for listener in self._ports_opened_listeners:
-            listener(self._ports)
-
-        if self._slave:
-            check = tornado.ioloop.PeriodicCallback(self._lonely_suicide, 1000)
-            self._ioloop.call_later(3, check.start)
+        self.ports_opened.set_result(self._ports)
 
         # write the port no. to a file, so external software can
         # find out what port jamovi is running on
@@ -614,6 +723,16 @@ class Server:
                 continue
             if entry.name.endswith('.port') and entry.is_file():
                 os.remove(entry.path)
+
+        try:
+            await self._session.wait_ended()
+        finally:
+            try:
+                os.remove(self._port_file)
+            except Exception:
+                pass
+
+            rmtree(session_path, ignore_errors=True)
 
     def _session_event(self, event):
         if event.type == SessionEvent.Type.INSTANCE_STARTED:

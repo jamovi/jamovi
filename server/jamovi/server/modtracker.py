@@ -570,6 +570,8 @@ class ModTracker:
                 level_pb.value = level[0]
                 level_pb.label = level[1]
                 level_pb.importValue = level[2]
+                if len(level) >= 4:
+                    level_pb.pinned = level[3]
 
         if column.cell_tracker.is_edited:
             for range in column.cell_tracker.edited_cell_ranges:

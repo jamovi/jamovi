@@ -44,5 +44,9 @@
 
 
 .jmv-status-bar .jmv-status-bar-info-item[data-id=editStatus] {
+<<<<<<< HEAD
     max-width: 30px;
+=======
+    /*max-width: 30px;*/
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
 }

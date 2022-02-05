@@ -4,6 +4,7 @@ import os.path
 import logging
 import yaml
 import shutil
+import json
 from zipfile import ZipFile
 from asyncio import ensure_future as create_task
 from collections import namedtuple
@@ -13,9 +14,10 @@ from ..core import PlatformInfo
 
 from .utils import conf
 from .downloader import Downloader
-from .utils.stream import Stream
+from .utils.stream import ProgressStream
 from .appinfo import determine_r_version
 from .appinfo import app_info
+from functools import lru_cache
 
 
 log = logging.getLogger('jamovi')
@@ -53,6 +55,8 @@ class ModuleMeta:
         self.datasets_license = None
         self.visible = True
         self.incompatible = False
+        self.i18n_msgs = None
+        self._code = None
 
     def get(self, name):
         for analysis in self.analyses:
@@ -68,6 +72,46 @@ class ModuleMeta:
         else:
             raise KeyError
 
+    @property
+    def language(self):
+        return self._code
+
+    def set_language(self, code):
+        if code != self._code:
+            self.i18n_msgs = None
+            self._code = code
+
+    def load_translations(self, code):
+        self.set_language(code)
+        self.i18n_msgs = self._load_translations(code)
+        return bool(self.i18n_msgs)
+
+    @lru_cache(None)
+    def _load_translations(self, code):
+        if code:
+            i18n_root = os.path.join(self.path, 'R', self.name, 'i18n', code + '.json')
+            if os.path.exists(i18n_root):
+                with open(i18n_root, 'r', encoding='utf-8') as stream:
+                    i18n_def = json.load(stream)
+                    return i18n_def['locale_data']['messages']
+
+        return { }
+
+    def translate(self, value):
+        if self.i18n_msgs is None and self._code:
+            self.i18n_msgs = self._load_translations(self._code)
+
+        translation = value
+
+        if self.i18n_msgs:
+            trans = self.i18n_msgs.get(value)
+            if trans is not None:
+                translation = trans[0].strip()
+                if translation == '':
+                    translation = value
+
+        return translation
+
 
 class AnalysisMeta:
     def __init__(self):
@@ -81,6 +125,46 @@ class AnalysisMeta:
         self.addon_for = None
         self.addons = [ ]
         self.in_menu = True
+        self.defn = ''
+        self.translated = ''
+
+    def translate_defaults(self, module_meta, code):
+        if self.translated == code:
+            return
+
+        if module_meta.load_translations(code) == False:
+            return
+
+        options_defn = self.defn['options']
+        for opt_defn in options_defn:
+            if 'name' not in opt_defn or 'type' not in opt_defn:
+                continue
+            self.tag_translatable_defaults(module_meta, opt_defn)
+        self.translated = code
+
+    def tag_translatable_defaults(self, module_meta, opt_defn, _default_value=None):
+        if _default_value is None:
+            if 'default' in opt_defn and opt_defn['default'] is not None:
+                translated = self.tag_translatable_defaults(module_meta, opt_defn, opt_defn['default'])
+                if translated is not None:
+                    opt_defn['default'] = translated
+                return None
+        else:
+            typ  = opt_defn['type']
+            if typ == 'String':
+                return  module_meta.translate(_default_value)
+            elif typ == 'Group':
+                for element in opt_defn['elements']:
+                    translated = self.tag_translatable_defaults(module_meta, element, _default_value[element['name']])
+                    if translated is not None:
+                        _default_value[element['name']] = translated
+            elif typ == 'Array':
+                for i, value in enumerate(_default_value):
+                    translated = self.tag_translatable_defaults(module_meta, opt_defn['template'], value)
+                    if translated is not None:
+                        _default_value[i] = translated
+
+        return _default_value;
 
 
 class Modules:
@@ -94,7 +178,6 @@ class Modules:
     def instance(cls):
         if cls._instance is None:
             cls._instance = Modules()
-            cls._instance.read()
         return cls._instance
 
     def __init__(self):
@@ -126,9 +209,9 @@ class Modules:
         for listener in self._listeners:
             listener(event)
 
-    def read(self):
+    async def read(self):
         if self._read is False:
-            self.reread()
+            await self.reread()
             self._original = list(map(lambda x: x.name, self._modules))
 
     def read_library(self):
@@ -137,20 +220,18 @@ class Modules:
             self._read_task.cancel()
 
         url = '{}{}'.format(Modules.LIBRARY_ROOT, Modules.LIBRARY_INDEX)
-        out_stream = Stream()
+        out_stream = ProgressStream()
         in_stream = Downloader.download(url)
 
         async def transform():
             try:
                 async for progress in in_stream:
-                    if in_stream.is_complete:
-                        modules = self.parse_modules(progress)
-                        out_stream.write(modules, last=True)
-                    else:
-                        out_stream.write(progress, last=False)
+                    out_stream.write(progress)
+                modules = self.parse_modules(in_stream.result())
+                out_stream.set_result(modules)
             except Exception as e:
                 in_stream.cancel()
-                out_stream.abort(e)
+                out_stream.set_exception(e)
 
         self._read_task = create_task(transform())
         return out_stream
@@ -177,23 +258,27 @@ class Modules:
             log.exception(e)
             raise ValueError('Unable to parse module list. Please try again later.')
 
-    def reread(self):
+    async def reread(self):
 
-        sys_module_path = conf.get('modules_path')
-        user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
+        module_path = conf.get('modules_path')
+        user_module_path = None
 
-        if os.name != 'nt':
-            sys_module_paths = sys_module_path.split(':')
+        if module_path.startswith('http://') or module_path.startswith('https://'):
+            remote_modules = True
         else:
-            sys_module_paths = sys_module_path.split(';')
+            if os.name != 'nt':
+                module_paths = module_path.split(':')
+            else:
+                module_paths = module_path.split(';')
 
-        for pth in sys_module_paths:
-            os.makedirs(pth, exist_ok=True)
-        os.makedirs(user_module_path, exist_ok=True)
+            remote_modules = False
+            user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
+            os.makedirs(user_module_path, exist_ok=True)
+
 
         self._modules = [ ]
 
-        def scan_for_modules(pth, is_system):
+        def read_modules(pth, is_system):
             for entry in os.scandir(pth):
                 if entry.name == 'base':
                     continue
@@ -212,10 +297,33 @@ class Modules:
                     log.exception(e)
 
         try:
-            for pth in sys_module_paths:
-                scan_for_modules(pth, is_system=True)
+            if remote_modules:
+                try:
+                    temp_file = await Downloader.download(module_path)
+                    defns = yaml.safe_load_all(temp_file)
+                    try:
+                        for defn in defns:
+                            module = Modules.parse(defn)
+                            if module.name == 'jmv':
+                                self._modules.insert(0, module)
+                            else:
+                                self._modules.append(module)
+                    except Exception as e:
+                        log.exception(e)
+                except Exception as e:
+                    log.exception(e)
+            else:
+                for pth in module_paths:
+                    try:
+                        read_modules(pth, is_system=True)
+                    except Exception as e:
+                        log.exception(e)
 
-            scan_for_modules(user_module_path, is_system=False)
+                try:
+                    read_modules(user_module_path, is_system=False)
+                except Exception as e:
+                    log.exception(e)
+
 
             # fill in addons
             modules_by_name = dict(map(lambda m: (m.name, m), self._modules))
@@ -240,13 +348,13 @@ class Modules:
                 return True
         return False
 
-    def uninstall(self, name):
+    async def uninstall(self, name):
         module_dir = os.path.join(Dirs.app_data_dir(), 'modules', name)
         shutil.rmtree(module_dir)
-        self.reread()
+        await self.reread()
         self._notify_listeners({ 'type': 'modulesChanged' })
 
-    def install_from_file(self, path):
+    async def install_from_file(self, path):
 
         with ZipFile(path) as zip:
 
@@ -259,13 +367,13 @@ class Modules:
 
         meta = self._read_module(module_path)
 
-        self.reread()
+        await self.reread()
         self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
         self._notify_listeners({ 'type': 'modulesChanged' })
 
     def install(self, path):
 
-        out_stream = Stream()
+        out_stream = ProgressStream()
 
         async def download_and_install(path):
 
@@ -274,27 +382,33 @@ class Modules:
                 if path.startswith(Modules.LIBRARY_ROOT):
                     in_stream = Downloader.download(path)
                     async for progress in in_stream:
-                        if in_stream.is_complete:
-                            path = progress
-                        else:
-                            out_stream.write(progress, last=False)
+                        out_stream.write(progress)
+                    path = in_stream.result()
 
-                self.install_from_file(path)
-                out_stream.write((1, 1), last=True)
+                await self.install_from_file(path)
+                out_stream.set_result((1, 1))
 
             except Exception as e:
                 if in_stream:
                     in_stream.cancel()
-                out_stream.abort(e)
+                out_stream.set_exception(e)
 
-        self._install_task = create_task(download_and_install(path))
+        t = create_task(download_and_install(path))
+        t.add_done_callback(lambda f: f.result())
+
         return out_stream
 
     def _read_module(self, path, is_sys=False):
-        meta_path = os.path.join(path, 'jamovi.yaml')
-        with open(meta_path, encoding='utf-8') as stream:
-            defn = yaml.safe_load(stream)
-            return Modules.parse(defn, path, is_sys)
+        defn = None
+        try:
+            meta_path = os.path.join(path, 'jamovi-full.yaml')
+            with open(meta_path, encoding='utf-8') as stream:
+                defn = yaml.safe_load(stream)
+        except FileNotFoundError:
+            meta_path = os.path.join(path, 'jamovi.yaml')
+            with open(meta_path, encoding='utf-8') as stream:
+                defn = yaml.safe_load(stream)
+        return Modules.parse(defn, path, is_sys)
 
     def __iter__(self):
         return self._modules.__iter__()
@@ -314,7 +428,7 @@ class Modules:
         if path != '':
             module.path = path
         else:
-            for arch in defn['architectures']:
+            for arch in defn.get('architectures', [ ]):
                 if arch['name'] == '*' or arch['name'] in PlatformInfo.platform():
                     module.path = Modules.LIBRARY_ROOT + arch['path']
                     break
@@ -362,6 +476,7 @@ class Modules:
                 analysis.name = analysis_defn['name']
                 analysis.ns = analysis_defn['ns']
                 analysis.title = analysis_defn['title']
+                analysis.defn = analysis_defn
 
                 analysis.menuGroup = analysis_defn['menuGroup']
                 analysis.menuTitle = analysis_defn['menuTitle']

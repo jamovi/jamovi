@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -49,8 +48,7 @@ const ElementView = Backbone.View.extend({
 
         this.ready = Promise.resolve();
     },
-    render() {
-        let error = this.model.get('error');
+    setError(error) {
         if (error !== null) {
             if (this.$el.hasClass('jmv-results-error'))
                 this.$errorPlacement.find('.jmv-results-error-message').text(error.message);
@@ -63,6 +61,9 @@ const ElementView = Backbone.View.extend({
             this.$el.removeClass('jmv-results-error');
             this.$errorPlacement.empty();
         }
+    },
+    render() {
+        this.setError(this.model.get('error'));
     },
 
     _collapseSection() {
@@ -119,6 +120,8 @@ const ElementView = Backbone.View.extend({
             let options = this._menuOptions();
             let entry = {
                 type: this.type(),
+                label: this.label(),
+                name: this.type().toLowerCase(),
                 address: this.address(),
                 title: this.model.attributes.title,
                 options: options,
@@ -128,7 +131,7 @@ const ElementView = Backbone.View.extend({
         }
     },
     _menuOptions(event) {
-        return [ { label: 'Copy' }, { label: 'Export' }, { label: 'Add Note'} ];
+        return [ { name: 'copy', label: _('Copy') }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
     },
     address() {
         let addr;

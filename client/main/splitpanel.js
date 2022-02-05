@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -60,6 +59,10 @@ const SplitPanel = SilkyView.extend({
         this._sections[section.name] = section;
 
         $panel.on("splitpanel-hide", (event) => {
+<<<<<<< HEAD
+=======
+            console.log('point 3');
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             this.setVisibility(section, false);
         });
 
@@ -84,6 +87,7 @@ const SplitPanel = SilkyView.extend({
 
     async setVisibility(i, value) {
 
+<<<<<<< HEAD
         if (this._optionsVisible === value)
             return;
 
@@ -100,6 +104,31 @@ const SplitPanel = SilkyView.extend({
                     return;
                 }
 
+=======
+        let callId = Math.floor(Math.random() * 1000);
+
+        console.log(`point 4: ${ callId }`);
+        if (this._optionsVisible === value)
+            return;
+
+        this._optionsVisible = value;
+
+        console.log(`point 5:  ${ callId } ${ value }`);
+
+
+        this._transition = this._transition.then(() => {
+            console.log(`point 6:  ${ callId } ${ value }`);
+            return new Promise(async (resolve) => {
+
+                console.log(`point 7:  ${ callId } ${ value }`);
+                let optionsSection = this.getSection(1);
+                if (optionsSection.getVisibility() === value) {
+                    resolve();
+                    return;
+                }
+
+                console.log(`point 8:  ${ callId } ${ value }`);
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 optionsSection.$panel.addClass('initialised');
 
                 this.optionsChanging = value ? 'opening' : 'closing';
@@ -117,7 +146,14 @@ const SplitPanel = SilkyView.extend({
                 optionsSection.setVisibility(value);
                 this.onTransitioning();
 
+<<<<<<< HEAD
                 optionsSection.$panel.one('transitionend', async () => {
+=======
+                console.log(`point 9:  ${ callId } ${ value }`);
+
+                optionsSection.$panel.one('transitionend', async () => {
+                    console.log(`point 10:  ${ callId } ${ value }`);
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                     await this.checkDockConditions(false);
                     if (value === false) {
                         this.suspendDocking('left');

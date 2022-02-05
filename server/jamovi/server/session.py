@@ -1,22 +1,32 @@
 
-import asyncio
+from asyncio import create_task
+from asyncio import sleep
+from asyncio import Event
+
 import os
 import uuid
+import platform
 
 from itertools import chain
-import platform
 from enum import Enum
+from time import monotonic
 
 from .instance import Instance
 from .analyses import AnalysisIterator
 from .enginemanager import EngineManager
 from .scheduler import Scheduler
+from . import i18n
 
 if platform.uname().system != 'Windows':
     from .remotepool import RemotePool
 
+from jamovi.core import Dirs
+
 from .settings import Settings
 from .utils import conf
+
+from .backend import NoBackend
+from .backend import FileSystemBackend
 
 from logging import getLogger
 
@@ -49,21 +59,44 @@ class Session(dict):
         self._analyses = SessionAnalyses(self)
         self._analysis_listeners = [ ]
         self._session_listeners = [ ]
-        self._running = True
+        self._running = False
+        self._ended = Event()
 
-        task_queue_url = conf.get('task-queue-url')
+        self._settings = None
+
+        language = ''
+
+        backend_mode = conf.get('backend', 'file')
+        if backend_mode == 'file':
+            settings_path = os.path.join(Dirs.app_data_dir(), 'settings.json')
+            self._backend = FileSystemBackend(settings_path=settings_path)
+
+            # with a file backend, we need to read the settings straight away
+            # to get the language
+            settings = self.get_settings_nowait()
+            language = settings.group('main').get('selectedLanguage', '')
+        else:
+            self._backend = NoBackend()
+
+        if language == '':
+            language = conf.get('lang', '')
+        if language != '':
+            i18n.set_language(language)
+
+        task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:
             self._scheduler = Scheduler(1, 3, self._analyses)
             self._runner = RemotePool(task_queue_url, self._scheduler.queue)
         else:
             self._scheduler = Scheduler(1, 3, self._analyses)
             self._runner = EngineManager(self._path, self._scheduler.queue, conf)
-            self._runner.add_engine_listener(self._on_engine_event)
 
-        self._start_gc()
+        self._runner.add_engine_listener(self._on_engine_event)
 
     async def start(self):
         await self._runner.start()
+        t = create_task(self._run_loop())
+        t.add_done_callback(lambda t: t.result())
 
     def __getitem__(self, id):
         try:
@@ -75,12 +108,46 @@ class Session(dict):
     def id(self):
         return self._id
 
-    def create(self, instance_id=None):
+    def set_language(self, lang):
+        if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
+            i18n.set_language(lang)
+
+    def get_language(self):
+        return i18n.get_language()
+
+    def set_auth(self, auth_token):
+        self._backend.set_auth(auth_token)
+
+    def get_settings_nowait(self):
+        if self._settings is None:
+            self._settings = Settings(backend=self._backend)
+            self._specify_defaults(self._settings)
+            self._settings.read_nowait()
+        return self._settings
+
+    async def get_settings(self):
+        if self._settings is None:
+            self._settings = Settings(backend=self._backend)
+            self._specify_defaults(self._settings)
+            await self._settings.read()
+        return self._settings
+
+    def _specify_defaults(self, settings):
+        # until we deploy the windows updater and are happy with it,
+        # we'll default autoUpdate to off -- macOS works well though.
+        is_windows = platform.uname().system == 'Windows'
+        def4ult = False if is_windows else True
+        settings.group('main').specify_default('autoUpdate', def4ult)
+        settings.group('main').specify_default('missings', 'NA')
+        settings.group('main').specify_default('selectedLanguage', '')
+
+    async def create(self, instance_id=None):
         if instance_id is None:
             instance_id = str(uuid.uuid4())
         log.info('%s %s', 'creating instance:', instance_id)
         instance_path = os.path.join(self._session_path, instance_id)
-        instance = Instance(self, instance_path, instance_id)
+        settings = await self.get_settings()
+        instance = Instance(self, instance_path, instance_id, settings)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
         self[instance_id] = instance
         self._notify_session_event(SessionEvent.Type.INSTANCE_STARTED, instance_id)
@@ -100,6 +167,7 @@ class Session(dict):
             cause = event.get('cause', '')
             for instance in self.values():
                 instance.terminate(message, cause)
+            self.stop()
 
     def add_options_changed_listener(self, listener):
         self._analysis_listeners.append(listener)
@@ -143,51 +211,169 @@ class Session(dict):
         self.notify_global_changes()
 
         if status == 'available':
-            settings = Settings.retrieve('main')
-            settings.sync()
-            if settings.get('autoUpdate', False):
+            main_settings = self._settings.group('main')
+            if main_settings.get('autoUpdate', False):
                 self.request_update('downloading')
 
     def set_update_request_handler(self, request_fun):
         self.request_update = request_fun
 
-    def _start_gc(self):
+    def stop(self):
+        # at present, this is only called when there are zero instances
+        # which is why this doesn't bother cleaning anything up
+        self._running = False
 
-        async def gc(self):
+    async def _run_loop(self):
+
+        try:
+            TIMEOUT_NC = conf.get('timeout_no_connection', '')
+            TIMEOUT_NC = int(TIMEOUT_NC)
+        except Exception:
+            TIMEOUT_NC = 3
+            # if no timeout, default session expiry to off
+            SESSION_EXPIRES = conf.get('session_expires', '0')
+        else:
+            # if timeout, default session expiry to on
+            SESSION_EXPIRES = conf.get('session_expires', '1')
+
+        SESSION_EXPIRES = (SESSION_EXPIRES != '0')
+
+        SESSION_EXPIRES_PREVENT_PATH = conf.get('session_expires_prevent_path', None)
+
+        def prevent_session_expiry(path):
             try:
-                timeout = conf.get('instance_timeout', '')
-                timeout = float(timeout)
-            except Exception:
-                timeout = 3.0
+                status = os.stat(path)
+                if status.st_size != 0:
+                    return True
+            except FileNotFoundError:
+                pass
+            return False
 
-            try:
-                timeout_unclean = conf.get('instance_timeout_unclean', '')
-                timeout_unclean = float(timeout_unclean)
-            except Exception:
-                # we use inf with electron, because it disconnects uncleanly
-                # when the computer goes to sleep. this lets it resume the
-                # connection when it awakes without it being gc'ed
-                timeout_unclean = float('inf')
+        try:
+            TIMEOUT_NC_UNCLEAN = conf.get('timeout_no_connection_unclean_disconnect', '')
+            TIMEOUT_NC_UNCLEAN = int(TIMEOUT_NC_UNCLEAN)
+        except Exception:
+            # we use inf with electron, because it disconnects uncleanly
+            # when the computer goes to sleep. this lets it resume the
+            # connection when it awakes without it being gc'ed
+            TIMEOUT_NC_UNCLEAN = float('inf')
 
-            if timeout_unclean < timeout:
-                timeout_unclean = timeout
+        try:
+            TIMEOUT_NC_VIRGIN = conf.get('timeout_no_connection_virgin', '')
+            TIMEOUT_NC_VIRGIN = int(TIMEOUT_NC_VIRGIN)
+        except Exception:
+            TIMEOUT_NC_VIRGIN = TIMEOUT_NC_UNCLEAN
 
+        if TIMEOUT_NC_UNCLEAN < TIMEOUT_NC:
+            TIMEOUT_NC_UNCLEAN = TIMEOUT_NC
+
+        try:
+            TIMEOUT_IDLE = conf.get('timeout_idle', '')
+            TIMEOUT_IDLE = float(TIMEOUT_IDLE)
+        except Exception:
+            TIMEOUT_IDLE = 0
+
+        try:
+            TIMEOUT_IDLE_NOTICE = conf.get('timeout_idle_notice', '')
+            TIMEOUT_IDLE_NOTICE = float(TIMEOUT_IDLE_NOTICE)
+        except Exception:
+            TIMEOUT_IDLE_NOTICE = 0
+
+        now = monotonic()
+        session_no_connection_since = now
+        session_no_connection_unclean = False
+        session_idle_since = now
+        idle_warning_since = None
+        last_idle_warning = None
+
+        self._running = True
+
+        try:
             while self._running:
-                await asyncio.sleep(.3)
+                await sleep(1)
 
-                for id, instance in self.items():
-                    inactive_for = instance.inactive_for
-                    if inactive_for == 0:
-                        continue
-                    if ((instance.inactive_clean is False and inactive_for > timeout_unclean)
-                            or (instance.inactive_clean is True and inactive_for > timeout)):
-                        log.info('%s %s', 'destroying instance:', id)
-                        self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
-                        instance.close()
-                        del self[id]
-                        break
+                now = monotonic()
 
-        asyncio.get_event_loop().create_task(gc(self))
+                for id, instance in dict(self).items():  # make a copy, so we can delete items while iterating
+
+                    # determine idleness
+                    idle_since = instance.idle_since()
+                    if idle_since > session_idle_since:
+                        session_idle_since = idle_since
+
+                    status = instance.connection_status()
+                    if not status.connected:
+
+                        # determine time of most recent connection for session
+                        if status.inactive_since > session_no_connection_since:
+                            session_no_connection_since = status.inactive_since
+                            session_no_connection_unclean = status.unclean
+
+                        # close instances without connections
+                        no_conn_for = now - status.inactive_since
+
+                        if ((status.unclean and no_conn_for > TIMEOUT_NC_UNCLEAN)
+                                or (status.virgin is True and no_conn_for > TIMEOUT_NC_VIRGIN)
+                                or (status.virgin is False and status.unclean is False and no_conn_for > TIMEOUT_NC)):
+                            log.info('%s %s', 'destroying instance:', id)
+                            self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
+                            instance.close()
+                            del self[id]
+                    else:
+                        # we've got a connection
+                        session_no_connection_since = now
+                        session_no_connection_unclean = False
+
+                if SESSION_EXPIRES_PREVENT_PATH:
+                    if prevent_session_expiry(SESSION_EXPIRES_PREVENT_PATH):
+                        session_no_connection_since = now
+                        session_idle_since = now
+
+                if SESSION_EXPIRES and len(self) == 0:
+                    # if there are no instances
+                    no_conn_for = now - session_no_connection_since
+                    # and no connections for a while, end the session
+                    if ((session_no_connection_unclean and no_conn_for > TIMEOUT_NC_UNCLEAN)
+                            or (session_no_connection_unclean is False and no_conn_for > TIMEOUT_NC)):
+                        log.info('%s %s', 'ending session:', self._id)
+                        self.stop()
+
+                # now determine, notify, or end the session if the idle
+                # criteria has been met
+                idle_for = now - session_idle_since
+
+                if TIMEOUT_IDLE == 0:
+                    # do nothing
+                    pass
+                elif idle_for > TIMEOUT_IDLE:
+                    self.stop()
+                elif idle_for > (TIMEOUT_IDLE - TIMEOUT_IDLE_NOTICE):
+                    # notify session is idle
+                    if idle_warning_since is None:
+                        idle_warning_since = now
+                        id = int(idle_warning_since % (1 << 32))
+                        self._notify_idle(id, TIMEOUT_IDLE - idle_for)
+                        last_idle_warning = now
+                    elif now - last_idle_warning > 30:
+                        id = int(idle_warning_since % (1 << 32))
+                        self._notify_idle(id, TIMEOUT_IDLE - idle_for)
+                        last_idle_warning += 30
+                else:
+                    if idle_warning_since is not None:
+                        # clear notification
+                        id = int(idle_warning_since % (1 << 32))
+                        self._notify_idle(id, None)
+                        idle_warning_since = None
+                        last_idle_warning = None
+        finally:
+            self._ended.set()
+
+    async def wait_ended(self):
+        await self._ended.wait()
+
+    def _notify_idle(self, id, shutdown_in):
+        for instance in self.values():
+            instance.notify_idle(id, shutdown_in)
 
 
 class SessionAnalyses:

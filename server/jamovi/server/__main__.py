@@ -2,6 +2,7 @@
 import sys
 import signal
 from http.client import HTTPConnection
+from asyncio import get_event_loop
 
 from .server import Server
 from .utils import conf
@@ -38,35 +39,18 @@ if mem_limit:
 # handler = logging.FileHandler(logpath)
 # log.addHandler(logpath)
 
-start_wb = False  # start web browser
-
-
-def _ports_opened(ports):
-
-    global start_wb
-
-    sys.stdout.write('ports: ' + str(ports[0]) + ', ' + str(ports[1]) + ', ' + str(ports[2]) + '\n')
-    sys.stdout.flush()
-
-    if start_wb:
-        print('starting web browser')
-        webbrowser.open('http://localhost:' + str(ports[0]))
-
-
-def start():  # run down below()
-
-    global start_wb
+async def main():  # run down below()
 
     try:
         port = int(sys.argv[1])
     except Exception:
         port = 1337
 
+    session_id = conf.get('session_id', None)
+
     debug = '--debug' in sys.argv
-    slave = '--slave' in sys.argv
     stdin_slave = '--stdin-slave' in sys.argv
     start_wb = '--start-wb' in sys.argv
-    session_id = None
 
     conf.set('devel', '--devel' in sys.argv)
     conf.set('debug', '--debug' in sys.argv)
@@ -79,10 +63,10 @@ def start():  # run down below()
     for arg in sys.argv:
         if arg.startswith('--task-queue-url='):
             task_queue_url = arg.split('=')[1]
-            conf.set('task-queue-url', task_queue_url)
+            conf.set('task_queue_url', task_queue_url)
         elif arg.startswith('--spool='):
-            spool_dir = arg.split('=')[1]
-            conf.set('spool-dir', spool_dir)
+            spool_path = arg.split('=')[1]
+            conf.set('spool_path', spool_path)
         elif arg.startswith('--session-id='):
             session_id = arg.split('=')[1]
 
@@ -106,18 +90,28 @@ def start():  # run down below()
             port,
             host=host,
             session_id=session_id,
-            slave=slave,
             stdin_slave=stdin_slave,
             debug=debug)
 
-        signal.signal(signal.SIGTERM, server.stop)
-
-        server.add_ports_opened_listener(_ports_opened)
         server.start()
+        signal.signal(signal.SIGTERM, lambda _, __: server.stop())
+
+        ports = await server.ports_opened
     else:
         sys.stdout.write('server already running\n')
-        _ports_opened([port, port + 1, port + 2])
+        ports = (port, port + 1, port + 2)
+
+    sys.stdout.write(f'ports: { ports[0] }, { ports[1] }, { ports[2] }\n')
+    sys.stdout.flush()
+
+    if start_wb:
+        print('starting web browser')
+        webbrowser.open('http://127.0.0.1:' + str(ports[0]))
+
+    if not already_running:
+        await server.wait_ended()
 
 
 if __name__ == '__main__':
-    start()
+    loop = get_event_loop()
+    loop.run_until_complete(main())

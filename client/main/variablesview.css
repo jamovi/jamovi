@@ -28,6 +28,10 @@
     position: relative;
     height: 100%;
     width: 100%;
+<<<<<<< HEAD
+=======
+    margin-left: 3px;
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
 }
 
 .jmv-variablesview .measure-box .dot {
@@ -131,9 +135,15 @@
 }
 
 .measure-type-icon {
+<<<<<<< HEAD
     width: 20px;
     height: 100%;
     background-position: center top;
+=======
+    width: 16px;
+    height: 100%;
+    background-position: center 4px;
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-repeat: no-repeat;
     background-size: contain;
 }
@@ -141,12 +151,18 @@
 
 
 .cell > .select {
+<<<<<<< HEAD
     width: 100%;
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     margin-right: 0px;
 }
 
 .cell > .select-header-checkbox {
+<<<<<<< HEAD
     width: 100%;
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     margin-right: 0px;
 }
 
@@ -156,37 +172,67 @@
 
 .cell[data-columntype="data"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="integer"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-nominal.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="text"][data-measuretype="nominal"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-nominal-text.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="integer"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-ordinal.svg');
 }
 
 .cell[data-columntype="data"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-datatype="text"][data-measuretype="ordinal"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-ordinal-text.svg');
 }
 
 .cell[data-columntype="data"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-measuretype="continuous"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-continuous.svg');
 }
 
 .cell[data-columntype="data"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
 .cell[data-columntype="recoded"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
+<<<<<<< HEAD
 .cell[data-columntype="computed"][data-measuretype="id"] > .measure-box  > .measure-type-icon {
+=======
+.cell[data-columntype="computed"][data-measuretype="id"] > .measure-box  > .measure-type-icon,
+.cell[data-columntype="output"][data-measuretype="id"] > .measure-box  > .measure-type-icon {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
     background-image: url('../assets/variable-id.svg');
 }
 

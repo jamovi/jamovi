@@ -6,7 +6,7 @@ from asyncio import QueueFull
 from asyncio import Event
 
 from .utils import req_str
-from .utils.stream import Stream
+from .utils.stream import ProgressStream
 
 from logging import getLogger
 
@@ -52,23 +52,31 @@ class Pool:
         if existing is not None:
             ex_request, ex_stream = existing
             log.debug('%s %s', 'cancelling', req_str(ex_request))
+            # we need _stream_complete to be called synchronously
+            # so that's why we call it explicitly here
+            ex_stream.remove_done_callback(self._stream_complete)
             ex_stream.cancel()
+            self._stream_complete(ex_stream)
         else:
             existing = self._wait_rx.get(key)
             if existing is not None:
                 ex_request, ex_stream = existing
                 log.debug('%s %s', 'cancelling', req_str(ex_request))
+                # we need _stream_complete to be called synchronously
+                # so that's why we call it explicitly here
+                ex_stream.remove_done_callback(self._stream_complete)
                 ex_stream.cancel()
+                self._stream_complete(ex_stream)
 
         if self.full():
             raise QueueFull
 
-        stream = Stream()
+        stream = ProgressStream()
         log.debug('%s %s', 'queueing', req_str(request))
         self._wait_tx[key] = (request, stream)
         if self._wait_tx_sem.locked():
             self._wait_tx_sem.release()
-        stream.add_complete_listener(self._stream_complete)
+        stream.add_done_callback(self._stream_complete)
         if self.is_full:
             self._not_full.clear()
         return stream
@@ -100,16 +108,16 @@ class Pool:
             return value
         return None
 
-    def _stream_complete(self):
+    def _stream_complete(self, _):
         # iterate through a copied list so we can delete from the original
         for key, value in list(self._wait_rx.items()):
             request, stream = value
-            if stream.is_complete:
+            if stream.done():
                 del self._wait_rx[key]
                 log.debug('%s %s', 'removing', req_str(request))
         for key, value in list(self._wait_tx.items()):
             request, stream = value
-            if stream.is_complete:
+            if stream.done():
                 del self._wait_tx[key]
                 log.debug('%s %s', 'removing', req_str(request))
         if not self.is_full:

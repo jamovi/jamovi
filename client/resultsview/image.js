@@ -1,6 +1,5 @@
 'use strict';
 
-const _ = require('underscore');
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
@@ -50,6 +49,9 @@ const ImageView = Elem.View.extend({
     },
     type: function() {
         return 'Image';
+    },
+    label: function() {
+        return _('Image');
     },
     render: function() {
 

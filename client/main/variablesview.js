@@ -4,7 +4,10 @@
 
 'use strict';
 
+<<<<<<< HEAD
 const _ = require('underscore');
+=======
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
 const $ = require('jquery');
 const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
@@ -46,7 +49,11 @@ const VariablesView = SilkyView.extend({
         this.$el.html(`
             <div class="jmv-variables-searchbox">
                 <div class="image"></div>
+<<<<<<< HEAD
                 <input class="search" placeholder="Search variables"></input>
+=======
+                <input class="search" placeholder="${_('Search variables')}"></input>
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             </div>
             <div class="jmv-variables-container">
                 <div class="jmv-variables-body">
@@ -56,12 +63,21 @@ const VariablesView = SilkyView.extend({
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
+<<<<<<< HEAD
         this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: 'Ready' });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
         this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: 'Filters', value: 0 });
         this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: 'Variables', value: 0 });
         this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: 'Selected', value: 0 });
+=======
+        this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
+        this.statusbar.addActionButton('editFilters', { dock: 'left' });
+        this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
+        this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
+        this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: _('Variables'), value: 0 });
+        this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: _('Selected'), value: 0 });
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
 
         this.$body      = this.$el.find('.jmv-variables-body');
         this.$container = this.$el.find('.jmv-variables-container');
@@ -126,12 +142,22 @@ const VariablesView = SilkyView.extend({
         $row.addClass('selected');
         row.$select.prop('checked', true);
 
+<<<<<<< HEAD
         if (editable) {
             setTimeout(function () {
                 row.$editableTexts.attr('contenteditable', true);
                 if (row.nameReadOnly === false)
                     row.$name.attr('placeholder', 'Enter name');
                 row.$description.attr('placeholder', 'Enter description');
+=======
+        if (editable && ! row.editableTimer) {
+            row.editableTimer = setTimeout(function () {
+                row.$editableTexts.attr('contenteditable', true);
+                if (row.nameReadOnly === false)
+                    row.$name.attr('placeholder', _('Enter name'));
+                row.$description.attr('placeholder', _('Enter description'));
+                row.editableTimer = null;
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             }, 10);
         }
     },
@@ -143,6 +169,13 @@ const VariablesView = SilkyView.extend({
             row.$description.removeAttr('placeholder');
             row.$select.prop('checked', false);
             $row.removeClass('selected');
+<<<<<<< HEAD
+=======
+            if (row.editableTimer) {
+                clearTimeout(row.editableTimer);
+                row.editableTimer = null;
+            }
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         }
         this.selectedRows = [];
     },
@@ -156,9 +189,17 @@ const VariablesView = SilkyView.extend({
         let editable = range.start === range.end && this.selection.subSelections.length == 0;
         for (let i = range.start; i <= range.end; i++) {
             let row = this._getRowByIndex(i);
+<<<<<<< HEAD
             this._selectRow(row, editable);
             selectLog[i] = 1;
             selectedCount += 1;
+=======
+            if (row) {
+                this._selectRow(row, editable);
+                selectLog[i] = 1;
+                selectedCount += 1;
+            }
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         }
 
         for (let subsection of this.selection.subSelections) {
@@ -166,9 +207,17 @@ const VariablesView = SilkyView.extend({
             for (let i = subRange.start; i <= subRange.end; i++) {
                 if (selectLog[i] === undefined) {
                     let row = this._getRowByIndex(i);
+<<<<<<< HEAD
                     this._selectRow(row);
                     selectLog[i] = 1;
                     selectedCount += 1;
+=======
+                    if (row) {
+                        this._selectRow(row);
+                        selectLog[i] = 1;
+                        selectedCount += 1;
+                    }
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 }
                 else
                     selectLog[i] += 1;
@@ -301,14 +350,24 @@ const VariablesView = SilkyView.extend({
     },
 
     _updateList() {
+<<<<<<< HEAD
+=======
+        this._clearRowSelections();
+
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         let columnCount = this.model.get('columnCount');
         this.$body.empty();
 
         this.rows = [];
 
         let $measureTypeHeader = $('<div style="width:10px;"></div>');
+<<<<<<< HEAD
         let $nameHeader = $('<div>Name</div>');
         let $descHeader = $('<div>Description</div>');
+=======
+        let $nameHeader = $(`<div>${_('Name')}</div>`);
+        let $descHeader = $(`<div>${_('Description')}</div>`);
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         let $selectHeader =$('<input type="checkbox" class="select-header-checkbox"></input>');
 
         $selectHeader.on('change', (event) => {
@@ -344,7 +403,11 @@ const VariablesView = SilkyView.extend({
         }
 
         if (row === 2) {
+<<<<<<< HEAD
             this.$body.append($('<div class="msg">No variables match your query.</div>'));
+=======
+            this.$body.append($(`<div class="msg">${_('No variables match your query.')}</div>`));
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
@@ -547,6 +610,7 @@ const VariablesView = SilkyView.extend({
         let noChange = false;
         this._delayClear = false;
 
+<<<<<<< HEAD
         if (event.button === 0) {
             if (event.ctrlKey || event.metaKey) {
                 let range = this.selection.createRange(colNo, colNo, colNo);
@@ -557,6 +621,26 @@ const VariablesView = SilkyView.extend({
                 added = true;
             }
             else if (this.selection.cellInSelection(0, colNo, true)) {
+=======
+        let range = this.selection.createRange(colNo, colNo, colNo);
+        if (range === null)
+            return;
+
+        if (event.button === 0) {
+            if (event.ctrlKey || event.metaKey) {
+                if (this.selection.rangeOverlaps(range)) {
+                    if (this.selection.singleColumnSelected() === false) {
+                        this.selection.addNewSelectionToList(range, 'negative');
+                        added = true;
+                    }
+                }
+                else {
+                    this.selection.addNewSelectionToList(range);
+                    added = true;
+                }
+            }
+            else if (this.selection.rangeOverlaps(range)) {
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 if (this.selection.getColumnStart() !== this.selection.getColumnEnd() || this.selection.subSelections.length > 0)
                     this._delayClear = true;
                 else
@@ -566,7 +650,11 @@ const VariablesView = SilkyView.extend({
                 this.selection.clearSelectionList();
         }
         else {
+<<<<<<< HEAD
             if (! this.selection.cellInSelection(0, colNo, true))
+=======
+            if (! this.selection.rangeOverlaps(range))
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
                 this.selection.clearSelectionList();
             else
                 added = true;  // leave selection unchanged
@@ -644,12 +732,25 @@ const VariablesView = SilkyView.extend({
         this._dragging = false;
 
         if (event.button === 2) {
+<<<<<<< HEAD
             let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
             let column = this.model.getColumn(colNo);
             if (column !== null && column.columnType === 'filter')
                 ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
             else
                 ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+=======
+            let element = document.elementFromPoint(event.clientX, event.clientY);
+            let $view = $(element).closest('.jmv-variables-container');
+            if ($view.length > 0) {
+                let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
+                let column = this.model.getColumn(colNo);
+                if (column !== null && column.columnType === 'filter')
+                    ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
+                else
+                    ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+            }
+>>>>>>> f1498aae3c8ad9411410abbe714638854f0ca782
         }
         this._mouseDownClicked = false;
     },
