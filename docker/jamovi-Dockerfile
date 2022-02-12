@@ -24,16 +24,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libnanomsg-dev
 
 ARG JAMOVI_ROOT=.
+ARG MODS_ROOT=$JAMOVI_ROOT/docker/mods
 
-RUN echo jamovi root is $JAMOVI_ROOT
-COPY $JAMOVI_ROOT/docker/requirements.txt .
-RUN python3 -m pip install --trusted-host pypi.python.org -r requirements.txt
+COPY $JAMOVI_ROOT/docker/requirements.txt $MODS_ROOT/server/requirements.tx[t] /tmp/source/
+RUN python3 -m pip install --trusted-host pypi.python.org -r /tmp/source/requirements.txt
 
 COPY $JAMOVI_ROOT/readstat /tmp/source/readstat
 WORKDIR /tmp/source/readstat
 RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
 
-COPY $JAMOVI_ROOT/server/ /tmp/source/server/
+COPY $JAMOVI_ROOT/server/ $MODS_ROOT/server/ /tmp/source/server/
 WORKDIR /tmp/source/server
 RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
 

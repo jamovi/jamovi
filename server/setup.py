@@ -130,7 +130,7 @@ setup(
     # },
 
     package_data={
-        'jamovi.server': [ 'jamovi.proto' ]
+        'jamovi.server': [ 'jamovi.proto', 'resources/chain.pem' ]
     },
 
     # data_files=[
