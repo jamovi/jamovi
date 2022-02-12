@@ -26,6 +26,13 @@ class NoBackend(Backend):
         pass
 
 
+try:
+    from .backend2 import FirestoreBackend
+except ModuleNotFoundError:
+    class FirestoreBackend(NoBackend):
+        pass
+
+
 class FileSystemBackend(Backend):
 
     def __init__(self, *, settings_path):

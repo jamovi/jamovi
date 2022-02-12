@@ -3,6 +3,7 @@
 const $ = require('jquery');
 
 const host = require('./host');
+const auth = require('./auth/auth');
 
 let Coms = require('./coms');
 let coms = new Coms();
@@ -693,15 +694,21 @@ $(document).ready(async() => {
 
         try {
             while (true) {
-                let stream = instance.open(toOpen, { existing: !!instanceId });
+
+                let authToken = await auth.getAuthToken();
+                
+                let stream = instance.open(toOpen, { existing: !!instanceId, authToken });
                 for await (let progress of stream)
                     notify(progress);
                 status = await stream;
 
-                if (status.status === 'requires-auth')
+                if (status.status === 'requires-auth') {
                     await infoBox.setup(status);
-                else
+                    await auth.waitForSignIn();
+                }
+                else {
                     break;
+                }
             }
         }
         catch (e) {

@@ -26,6 +26,7 @@ from .settings import Settings
 from .utils import conf
 
 from .backend import NoBackend
+from .backend import FirestoreBackend
 from .backend import FileSystemBackend
 
 from logging import getLogger
@@ -75,6 +76,9 @@ class Session(dict):
             # to get the language
             settings = self.get_settings_nowait()
             language = settings.group('main').get('selectedLanguage', '')
+        elif backend_mode == 'firestore':
+            backend_url = conf.get('backend_url')
+            self._backend = FirestoreBackend(firestore_url=backend_url)
         else:
             self._backend = NoBackend()
 

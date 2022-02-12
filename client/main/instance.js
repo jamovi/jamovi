@@ -158,6 +158,9 @@ const Instance = Backbone.Model.extend({
             let headers = new Headers();
             headers.append('Accept-Language', I18n.language);
 
+            if (options.authToken)
+                headers.append('Authorization', `Bearer ${ options.authToken }`);
+
             while (true) {
 
                 if (file instanceof File) {

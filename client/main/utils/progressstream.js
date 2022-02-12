@@ -23,14 +23,25 @@ class ProgressStream {
             self._resolve_progress();
         };
 
-        let thing = fun(this.setProgress)
-            .then((result) => {
-                this._reject_progress();
-                this._resolve_result(result);
-            }, (error) => {
-                this._reject_progress(error);
-                this._reject_result(error);
-            });
+        if (fun !== undefined) {
+            fun(this.setProgress)
+                .then((result) => {
+                    this.resolve(result);
+                }, (error) => {
+                    this.reject(error);
+                });
+        }
+    }
+
+    resolve(result) {
+        this._progress_prom.catch(() => {});
+        this._reject_progress();
+        this._resolve_result(result);
+    }
+
+    reject(error) {
+        this._reject_progress(error);
+        this._reject_result(error);
     }
 
     then(onSuccess, onError) {
