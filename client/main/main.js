@@ -650,6 +650,8 @@ $(document).ready(async() => {
         }
     });
 
+    auth.init();
+
     document.body.appendChild(infoBox);
 
     let toOpen = '';  // '' denotes blank data set
@@ -696,7 +698,7 @@ $(document).ready(async() => {
             while (true) {
 
                 let authToken = await auth.getAuthToken();
-                
+
                 let stream = instance.open(toOpen, { existing: !!instanceId, authToken });
                 for await (let progress of stream)
                     notify(progress);
@@ -775,6 +777,11 @@ $(document).ready(async() => {
             // ... then show the welcome screen
             resultsView.showWelcome();
         }
+    }
+
+    for await (let event of auth.events()) {
+        if (event.type === 'request-auth')
+            infoBox.setup({ 'message-src': event.url });
     }
 
 });

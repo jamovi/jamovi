@@ -119,6 +119,7 @@ const RibbonView = Backbone.View.extend({
 
         this.$el.append(`
             <div class="jmv-ribbon-header">
+                <div id="jmv-user-widget"></div>
                 <div class="jmv-ribbon-fullscreen"></div>
                 <div class="jmv-ribbon-appmenu"></div>
             </div>

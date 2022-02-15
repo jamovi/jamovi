@@ -29,4 +29,8 @@ async function waitForSignIn() {
 
 }
 
-module.exports = { currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn }
+function init() {
+    
+}
+
+module.exports = { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn }
