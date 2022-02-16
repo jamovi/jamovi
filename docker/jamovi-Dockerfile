@@ -43,7 +43,7 @@ COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
 
 FROM base AS client
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     nodejs \
     npm
 
@@ -102,7 +102,7 @@ COPY $JAMOVI_ROOT/server/jamovi/server/jamovi.proto /tmp/source/server/jamovi/se
 
 WORKDIR /tmp/source/engine
 
-RUN ./configure --rhome=/usr/local/lib/R \
+RUN bash configure --rhome=/usr/local/lib/R \
     --base-module-path=/usr/local/lib/R/library \
     --rpath=/usr/local/lib/R/library/RInside/lib \
     --rpath=/usr/local/lib/R/lib \
@@ -115,7 +115,7 @@ RUN DESTDIR=/usr/lib/jamovi make install
 
 FROM jamovi/jamovi-deps AS jmv
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     nodejs \
     npm
 
@@ -160,7 +160,7 @@ RUN node /tmp/source/jamovi-compiler/index.js --install . --to /usr/lib/jamovi/m
 
 FROM base AS i18n
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     nodejs \
     npm
 
