@@ -1,0 +1,9 @@
+
+* text=auto
+
+
+# shell scripts that barf on cr
+
+*.sh text eol=lf
+engine/configure text eol=lf
+platform/jamovi  text eol=lf
