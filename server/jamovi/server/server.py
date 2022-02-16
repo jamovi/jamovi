@@ -436,6 +436,14 @@ class DownloadFileHandler(TornadosStaticFileHandler):
                 f'attachment; filename="{ filename }"')
 
 
+class EndHandler(RequestHandler):
+    def initialize(self, session):
+        self._session = session
+
+    def post(self):
+        self._session.stop()
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -617,6 +625,7 @@ class Server:
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
             (r'/auth', AuthTokenHandler, { 'session': self._session }),
+            (r'/end', EndHandler, { 'session': self._session }),
             (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
