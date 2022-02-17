@@ -1202,8 +1202,8 @@ class Instance:
                             coms.send, None, instance_id, request,
                             complete=False, progress=(1000 * (self._i + p) / n_files, 1000)))
 
-                main_settings = self._settings.group('main')
-                func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp)
+                main_settings = instance._settings.group('main')
+                func = functools.partial(formatio.read, model, norm_path, prog_cb, main_settings, is_temp=True)
                 await ioloop.run_in_executor(None, func)
 
                 self._i += 1
