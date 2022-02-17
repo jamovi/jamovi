@@ -100,7 +100,7 @@ def FLOOR(index, value: num):
 def CEIL(index, value: num):
     if is_missing(value):
         return(value)
-    return math.ceil(value, digits)
+    return math.ceil(value)
 
 @row_wise
 def EXP(index, value: float):
