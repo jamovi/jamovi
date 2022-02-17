@@ -1274,7 +1274,7 @@ const BackstageModel = Backbone.Model.extend({
                 },
                 {
                     name: 'import',
-                    title: _('Import'),
+                    title: _('Special Import'),
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
