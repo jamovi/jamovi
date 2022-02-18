@@ -97,7 +97,7 @@ def FLOOR(index, value: num):
 
 @row_wise
 @returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
-def CEIL(index, value: num):
+def CEILING(index, value: num):
     if is_missing(value):
         return(value)
     return math.ceil(value)
