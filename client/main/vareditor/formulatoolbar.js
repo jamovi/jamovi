@@ -1,4 +1,3 @@
-Perfect. I was trying to consistent with Python, but Excel definitely makes more sense.
 'use strict';
 
 const $ = require('jquery');
