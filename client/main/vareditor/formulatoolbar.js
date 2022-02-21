@@ -80,6 +80,10 @@ function allFunctions($functionsContent) {
     descriptions.RANK = { label: 'RANK( <i>variable</i> )', content: _('Ranks each value') };
     $functionsContent.append($('<div class="item" data-name="ROUND">ROUND</div>'));
     descriptions.ROUND = { label: 'ROUND( <i>variable</i>, digits=0 )', content: _('Rounds each value') };
+    $functionsContent.append($('<div class="item" data-name="FLOOR">FLOOR</div>'));
+    descriptions.FLOOR = { label: 'FLOOR( <i>variable</i> )', content: _('Rounds each value to the integer below') };
+    $functionsContent.append($('<div class="item" data-name="CEILING">CEILING</div>'));
+    descriptions.CEILING = { label: 'CEILING( <i>variable</i> )', content: _('Rounds each value to the integer above') };
     $functionsContent.append($('<div class="item" data-name="SCALE">SCALE</div>'));
     descriptions.SCALE = { label: 'SCALE( <i>variable</i>, group_by=0 )', content: _('Returns the normalized values of a set of numbers.') };
     $functionsContent.append($('<div class="item" data-name="STDEV">STDEV</div>'));
