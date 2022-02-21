@@ -89,18 +89,18 @@ def ROUND(index, value: num, digits: int = 0):
 
 
 @row_wise
-@returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
+@returns(DataType.INTEGER, MeasureType.CONTINUOUS)
 def FLOOR(index, value: num):
     if is_missing(value):
         return(value)
-    return math.floor(value)
+    return int(value // 1)
 
 @row_wise
-@returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
+@returns(DataType.INTEGER, MeasureType.CONTINUOUS)
 def CEILING(index, value: num):
     if is_missing(value):
         return(value)
-    return math.ceil(value)
+    return int(math.ceil(value))
 
 @row_wise
 def EXP(index, value: float):
