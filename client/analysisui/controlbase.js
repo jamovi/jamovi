@@ -47,7 +47,7 @@ const ControlBase = function(params) {
 
     this.getTranslatedProperty = function(property) {
         let value = this.getPropertyValue(property);
-        if (typeof value != 'string') {
+        if (value !== null && value !== undefined && typeof value != 'string') {
             throw 'Not a valid property to translate';
         }
         value = this.translate(value);
