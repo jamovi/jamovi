@@ -109,7 +109,7 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
 
     this.i18n = i18nDef;
     this.translate = (key) => {
-        if (key === null || key === undefined|| key.trim() === '' || ! this.i18n)
+        if (key === null || key === undefined || key.trim() === '' || ! this.i18n)
             return key;
 
         let value = this.i18n.locale_data.messages[key.trim()];
