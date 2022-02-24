@@ -220,7 +220,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
     window.jamoviVersion = jamoviVersion;
 
     let $hide = $('.silky-sp-back-button');
-    $hide.attr('title', s_('Hide options'))
+    $hide.attr('title', s_('Hide options'));
     $hide.on('click', function(event) {
         closeOptions();
     });

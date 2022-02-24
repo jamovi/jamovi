@@ -36,7 +36,7 @@ window.n_ = I18n._n;
 (async function() {
 
 try {
-    let baseUrl = '../i18n/'
+    let baseUrl = '../i18n/';
 
     let response = await fetch(baseUrl);
     if ( ! response.ok)
