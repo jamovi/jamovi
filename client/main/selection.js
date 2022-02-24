@@ -89,8 +89,12 @@ class Selection {
                     selection.right = range.right;
                     selection.colNo = range.left;
                     key = range._calcKey;
+                    if (this._clipSelection(selection))
+                        key = this.compileKey(selection, syncHidden);
                 }
                 else {
+                    let clipped = this._clipSelection(selection);
+
                     let leftColumn = this.model.getColumn(selection.left, true);
                     let rightColumn = this.model.getColumn(selection.right, true);
                     let posColumn = this.model.getColumn(selection.colNo, true);
@@ -103,13 +107,16 @@ class Selection {
                         let focusColumn = this.model.getColumn(selection.colFocus, true);
                         selection.columnFocus = focusColumn.index;
                     }
+
+                    if (clipped)
+                        key = this.compileKey(selection, syncHidden);
                 }
             }
 
             selection._calcKey = key;
         }
-
-        this._clipSelection(selection);
+        else
+            this._clipSelection(selection);
     }
 
     getColumnStart(selection) {
@@ -324,37 +331,65 @@ class Selection {
     }
 
     _clipSelection(selection) {
+        let changed = false;
         for (let prop in selection) {
-            if (selection[prop] < 0)
+            if (selection[prop] < 0) {
                 selection[prop] = 0;
+                changed = true;
+            }
         }
 
-        if (selection.colNo >= this.model.attributes.vColumnCount - 1)
+        if (selection.colNo > this.model.attributes.vColumnCount - 1) {
             selection.colNo = this.model.attributes.vColumnCount - 1;
-        if (selection.left >= this.model.attributes.vColumnCount - 1)
+            changed = true;
+        }
+        if (selection.left > this.model.attributes.vColumnCount - 1) {
             selection.left = this.model.attributes.vColumnCount - 1;
-        if (selection.right >= this.model.attributes.vColumnCount - 1)
+            changed = true;
+        }
+        if (selection.right > this.model.attributes.vColumnCount - 1) {
             selection.right = this.model.attributes.vColumnCount - 1;
-        if (selection.colFocus >= this.model.attributes.vColumnCount - 1)
+            changed = true;
+        }
+        if (selection.colFocus > this.model.attributes.vColumnCount - 1) {
             selection.colFocus = this.model.attributes.vColumnCount - 1;
+            changed = true;
+        }
 
-        if (selection.columnStart >= this.model.attributes.columnCount - 1)
+        if (selection.columnStart > this.model.attributes.columnCount - 1) {
             selection.columnStart = this.model.attributes.columnCount - 1;
-        if (selection.columnEnd >= this.model.attributes.columnCount - 1)
+            changed = true;
+        }
+        if (selection.columnEnd > this.model.attributes.columnCount - 1) {
             selection.columnEnd = this.model.attributes.columnCount - 1;
-        if (selection.columnFocus >= this.model.attributes.columnCount - 1)
+            changed = true;
+        }
+        if (selection.columnFocus > this.model.attributes.columnCount - 1) {
             selection.columnFocus = this.model.attributes.columnCount - 1;
-        if (selection.columnPos >= this.model.attributes.columnCount - 1)
+            changed = true;
+        }
+        if (selection.columnPos > this.model.attributes.columnCount - 1) {
             selection.columnPos = this.model.attributes.columnCount - 1;
+            changed = true;
+        }
 
-        if (selection.rowNo >= this.model.attributes.vRowCount - 1)
+        if (selection.rowNo > this.model.attributes.vRowCount - 1) {
             selection.rowNo = this.model.attributes.vRowCount - 1;
-        if (selection.top >= this.model.attributes.vRowCount - 1)
+            changed = true;
+        }
+        if (selection.top > this.model.attributes.vRowCount - 1) {
             selection.top = this.model.attributes.vRowCount - 1;
-        if (selection.bottom >= this.model.attributes.vRowCount - 1)
+            changed = true;
+        }
+        if (selection.bottom > this.model.attributes.vRowCount - 1) {
             selection.bottom = this.model.attributes.vRowCount - 1;
-        if (selection.rowFocus >= this.model.attributes.vRowCount - 1)
+            changed = true;
+        }
+        if (selection.rowFocus > this.model.attributes.vRowCount - 1) {
             selection.rowFocus = this.model.attributes.vRowCount - 1;
+            changed = true;
+        }
+        return changed;
     }
 
     registerChangeEventHandler(handler) {

@@ -1919,7 +1919,7 @@ const TableView = SilkyView.extend({
 
         for (let changed of changedCells) {
             let cellList = cells[changed.colIndex];
-            if (cellList.length < changed.rowIndex + 1)
+            if (! cellList || cellList.length < changed.rowIndex + 1)
                 continue;
 
             let dIndex = viewportLeft + changed.colIndex;
@@ -1931,13 +1931,14 @@ const TableView = SilkyView.extend({
 
             let $column = $(this.$columns[dIndex]);
             let cell = $column[0].children[changed.rowIndex];
-
             let cellInfo = cellList[changed.rowIndex];
-            let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
-            let filt = filtered[changed.rowIndex];
-            let missing = cellInfo.missing;
+            if (cell && cellInfo) {
+                let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
+                let filt = filtered[changed.rowIndex];
+                let missing = cellInfo.missing;
 
-            this._updateCell(cell, content, dps, filt, missing, isFC);
+                this._updateCell(cell, content, dps, filt, missing, isFC);
+            }
         }
     },
     _rawValueToDisplay(raw, columnInfo) {
