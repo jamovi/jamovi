@@ -30,7 +30,7 @@ async function waitForSignIn() {
 }
 
 function init() {
-    
+
 }
 
-module.exports = { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn }
+module.exports = { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn };
