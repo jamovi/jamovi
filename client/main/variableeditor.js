@@ -271,7 +271,7 @@ const VariableEditor = Backbone.View.extend({
             this._previousKeyboardContext = keyboardJS.getContext();
             keyboardJS.setContext('controller');
 
-            if (prevIds !== null && nowIds !== null) {
+            if (prevIds !== null && nowIds !== null && this.commonColumn) {
                 if ((this.editorModel.get('columnType') === 'filter' && this.commonColumn.columnType === 'filter') ||
                     (this.editorModel.get('columnType') === this.commonColumn.columnType &&
                      (nowIds.length > 1 || (nowIds.length === 1 && prevIds.length > 1)) &&
