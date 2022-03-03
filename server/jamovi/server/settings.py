@@ -20,10 +20,14 @@ class Settings(dict):
             group.update(group_values)
 
     def read_nowait(self):
-        data = self._backend.read_settings_nowait()
-        for group_name, group_values in data.items():
+        settings = self._backend.read_settings_nowait()
+        self.apply(settings)
+
+    def apply(self, settings: dict):
+        for group_name, group_values in settings.items():
             group = self.group(group_name)
             group.update(group_values)
+        self.write()
 
     def write(self):
         if self._parent is not None:
