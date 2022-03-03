@@ -3092,8 +3092,6 @@ class Instance:
                     hidden_mods.remove(missing_mod)
             module_settings.set('hidden', hidden_mods)
 
-        self._settings.write()
-
         for module in modules:
             module_pb = response.modules.add()
             self._module_to_pb(module, module_pb)

@@ -6,6 +6,7 @@ const ProtoBuf = require('protobufjs');
 const Q = require('q');
 
 const host = require('./host');
+const auth = require('./auth/auth');
 
 class Coms {
 
@@ -175,6 +176,19 @@ class Coms {
             if (listener.eventName === eventName)
                 listener.callback(event);
         }
+    }
+
+    async post(url, init) {
+        let headers = init.headers || { };
+        let token = await auth.getAuthToken();
+        if (token)
+            headers['Authorization'] = `Bearer ${ token }`;
+        init.headers = headers;
+        init.method = 'POST';
+        let response = await fetch(url, init);
+        if ( ! response.ok)
+            throw Error(`HTTP error code ${ response.status }`);
+        return response;
     }
 
 }

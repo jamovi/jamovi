@@ -6,6 +6,9 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 
 const host = require('./host');
+const auth = require('./auth/auth');
+const { Event } = require('./utils/sync');
+
 
 const Settings = Backbone.Model.extend({
 
@@ -16,6 +19,10 @@ const Settings = Backbone.Model.extend({
 
         this._localSettings = [ 'syntaxMode' ];  // not stored
         this._configSettings = [ 'mode' ];
+
+        this._toSend = { };
+        this._sendEvent = new Event();
+        this._sendLoop();
     },
 
     destroy() {
@@ -60,13 +67,12 @@ const Settings = Backbone.Model.extend({
         let coms = this.attributes.coms;
         let settingsPB = coms.Messages.SettingsResponse.decode(message.payload);
         this.set('recents',  settingsPB.recents);
-        //this.set('examples', settingsPB.examples);
         this.set('modules', settingsPB.modules);
 
         for (let settingPB of settingsPB.settings) {
             let name = settingPB.name;
             if (this._configSettings.includes(name))
-              continue;
+                continue;
             let value = settingPB[settingPB.value];
             this.set(name, value);
         }
@@ -94,6 +100,9 @@ const Settings = Backbone.Model.extend({
     },
 
     setSetting(name, value) {
+
+        if (this.get(name) === value)
+            return;
 
         this.set(name, value);
 
@@ -136,9 +145,37 @@ const Settings = Backbone.Model.extend({
             request.payloadType = 'SettingsRequest';
             request.instanceId = this._instanceId;
 
-            return coms.send(request).then(response => {
-                this._onSettingsReceived(response);
-            });
+            this._toSend[name] = value;
+            this._sendEvent.set();
+        }
+    },
+
+    async _sendLoop() {
+        while (true) {
+            await this._sendEvent.wait();
+            // debounce
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            this._sendEvent.clear();
+            await this._send();
+        }
+    },
+
+    async _send() {
+        if (Object.keys(this._toSend).length === 0)
+            return;
+        let sending = this._toSend;
+        this._toSend = { };
+
+        let coms = this.attributes.coms;
+        let headers = { 'Content-Type': 'application/json' };
+        let body = JSON.stringify(sending);
+
+        try {
+            await coms.post('/settings', { body, headers });
+        }
+        catch (e) {
+            this._toSend = Object.assign(sending, this._toSend);
+            throw e;
         }
     },
 
