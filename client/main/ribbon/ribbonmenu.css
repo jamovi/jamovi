@@ -18,7 +18,7 @@
     visibility: visible;
 }
 
-.jmv-ribbon[mode=demo] .display-in-menu {
+.jmv-ribbon[mode=cloud] .display-in-menu {
     color: #CCCCCC;
 }
 

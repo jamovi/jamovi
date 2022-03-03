@@ -106,7 +106,7 @@ const PageModules = Backbone.View.extend({
                         <div class="authors"></div>
                         <div class="description"></div>`;
 
-            if (this.settings.getSetting('mode', 'normal') !== 'demo') {
+            if (this.settings.getSetting('mode', 'normal') !== 'cloud') {
                 for (let op of module.ops) {
                     let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
                     let label = '';

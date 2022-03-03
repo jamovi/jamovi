@@ -79,7 +79,7 @@ const RibbonView = Backbone.View.extend({
             let mode = this.model.settings().getSetting('mode', 'normal');
             this.$el.attr('mode', mode);
             let $checkboxes = this.$el.find('.display-in-menu > input');
-            if (mode === 'demo')
+            if (mode === 'cloud')
                 $checkboxes.attr("disabled", true);
             else
                 $checkboxes.removeAttr("disabled");
