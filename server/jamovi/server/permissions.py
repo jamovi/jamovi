@@ -34,7 +34,7 @@ class Permissions:
             self.open.examples = True
             self.save.local = True
             self.save.temp = True
-        elif app_mode == 'demo':
+        elif app_mode == 'cloud':
             self.library.browseable = False
             self.library.addRemove = False
             self.library.showHide = False

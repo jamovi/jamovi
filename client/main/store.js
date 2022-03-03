@@ -60,9 +60,9 @@ const Store = Backbone.View.extend({
                 this.pageInst.on('notification', note => this.trigger('notification', note));
 
                 let mode = settings.getSetting('mode', 'normal');
-                if (mode === 'demo') {
-                    this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not avaliable in this demo.')}</div>`));
-                    this.$pageSideload.append($(`<div class="mode-msg">${_('Side loading modules is not avaliable in this demo.')}</div>`));
+                if (mode === 'cloud') {
+                    this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not avaliable on this plan.')}</div>`));
+                    this.$pageSideload.append($(`<div class="mode-msg">${_('Side loading modules is not avaliable on this plan.')}</div>`));
                 }
                 else {
                     this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );
