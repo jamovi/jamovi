@@ -136,6 +136,10 @@ class Session(dict):
             await self._settings.read()
         return self._settings
 
+    def apply_settings(self, settings: dict):
+        self._settings.apply({ 'main': settings })
+        self.notify_global_changes()
+
     def _specify_defaults(self, settings):
         # until we deploy the windows updater and are happy with it,
         # we'll default autoUpdate to off -- macOS works well though.

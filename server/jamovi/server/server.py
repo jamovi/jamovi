@@ -397,6 +397,15 @@ class AuthTokenHandler(RequestHandler):
             self._session.set_auth(token)
 
 
+class SettingsHandler(AuthTokenHandler):
+    def post(self):
+        super().post()
+        if self.get_status() < 400:
+            content = self.request.body.decode('utf-8')
+            settings = json.loads(content)
+            self._session.apply_settings(settings)
+
+
 class VersionHandler(RequestHandler):
     def get(self):
         self.write(app_info.version)
@@ -625,6 +634,7 @@ class Server:
             (r'/', EntryHandler, { 'session': self._session }),
             (r'/open', OpenHandler, { 'session': self._session }),
             (r'/auth', AuthTokenHandler, { 'session': self._session }),
+            (r'/settings', SettingsHandler, { 'session': self._session }),
             (r'/end', EndHandler, { 'session': self._session }),
             (r'/version', VersionHandler),
             (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
