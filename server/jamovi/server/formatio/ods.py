@@ -10,9 +10,9 @@ def get_readers():
     return [ ( 'ods', read ) ]
 
 
-def read(data, path, prog_cb, **kwargs):
+def read(data, path, prog_cb, *, settings, **kwargs):
 
-    reader = ODSReader()
+    reader = ODSReader(settings)
     reader.read_into(data, path, prog_cb)
 
 
@@ -26,8 +26,8 @@ def to_string(cell):
 
 class ODSReader(Reader):
 
-    def __init__(self):
-        Reader.__init__(self)
+    def __init__(self, settings):
+        super().__init__(settings)
         self._sheet = None
         self._sheet_iter = None
         self._row_no = 0
