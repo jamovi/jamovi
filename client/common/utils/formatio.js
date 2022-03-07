@@ -381,10 +381,8 @@ function _htmlify(el, options) {
             styles = [
                 'text-align',
                 'padding',
-                'border-left',
-                'border-right',
-                'border-top',
-                'border-bottom' ];
+                'border',
+            ];
             break;
         case 'style':
             include = false;
@@ -406,8 +404,9 @@ function _htmlify(el, options) {
             include = false;
             includeChildren = false;
         }
-        else if (tag === 'div' && html !== '')
+        else if (tag === 'div' && html !== '') {
             includeChildren = false;
+        }
 
         html += prepend;
 
@@ -420,20 +419,48 @@ function _htmlify(el, options) {
             if (styles.length > 0) {
                 let cs = getComputedStyle(el);
                 html += ' style="';
+
                 for (let style of styles) {
-                    let value = cs.getPropertyValue(style);
-                    if ( ! value) {
-                        if (style === 'padding') {
-                            value = `${ cs.getPropertyValue('padding-top') } ${ cs.getPropertyValue('padding-right')} ${ cs.getPropertyValue('padding-bottom') } ${ cs.getPropertyValue('padding-left') }`;
+                    if (style === 'padding') {
+                        let value = `${ cs.getPropertyValue('padding-top') } ${ cs.getPropertyValue('padding-right')} ${ cs.getPropertyValue('padding-bottom') } ${ cs.getPropertyValue('padding-left') }`;
+                        html += `${ style }:${ value };`;
+                    }
+                    else if (style === 'border') {
+
+                        let top = cs.getPropertyValue('border-top-width');
+                        let right = cs.getPropertyValue('border-right-width');
+                        let bottom = cs.getPropertyValue('border-bottom-width');
+                        let left = cs.getPropertyValue('border-left-width');
+
+                        function genBorderCSS(side) {
+                            let w = cs.getPropertyValue(`border-${ side }-width`);
+                            if (w === '0px')
+                                return `border-${ side }:0px;`;
+                            let s = cs.getPropertyValue(`border-${ side }-style`);
+                            let c = cs.getPropertyValue(`border-${ side }-color`);
+                            return `border-${ side }:${ w } ${ s } ${ c };`;
                         }
-                        else if (['border-top', 'border-right', 'border-bottom', 'border-top'].includes(style)) {
-                            let w = cs.getPropertyValue(`${ style }-width`);
-                            let s = cs.getPropertyValue(`${ style }-style`);
-                            let c = cs.getPropertyValue(`${ style }-color`);
-                            value = `${ w } ${ s } ${ c }`;
+
+                        if (top === '0px' && right === '0px' && bottom === '0px' && left === '0px') {
+                            html += 'border:0px;' // '0px' is less chars than 'none'
+                        }
+                        else {
+                            html += genBorderCSS('top');
+                            html += genBorderCSS('right');
+                            html += genBorderCSS('bottom');
+                            html += genBorderCSS('left');
                         }
                     }
-                    html += `${ style }:${ value };`;
+                    else if (style === 'text-align') {
+                        let value = cs.getPropertyValue(style);
+                        if (value !== 'start')
+                            html += `${ style }:${ value };`;
+                    }
+                    else {
+                        let value = cs.getPropertyValue(style);
+                        if (value)
+                            html += `${ style }:${ value };`;
+                    }
                 }
                 html += '"';
             }
