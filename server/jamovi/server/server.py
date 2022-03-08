@@ -387,8 +387,7 @@ class AuthTokenHandler(RequestHandler):
     def post(self):
         authorization = self.request.headers.get('authorization')
         if authorization is None:
-            self.set_status(401)
-            self.write('requires authorization')
+            pass
         elif not authorization.strip().startswith('Bearer '):
             self.set_status(400)
             self.write('unsupported authorization scheme')
