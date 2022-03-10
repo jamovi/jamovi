@@ -79,10 +79,18 @@ RUN cp favicon.ico     /usr/lib/jamovi/client
 # RUN cp -r assets   /usr/lib/jamovi/client
 # RUN cp favicon.ico /usr/lib/jamovi/client
 
+##### jamovi-deps-updated
+
+FROM jamovi/jamovi-deps AS jamovi-deps-updated
+
+# in case jamovi-deps was built a long time ago
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
+# without this, the apt index will point to packages that have been long retired
+# and you'll get a heap of 404s
 
 ##### ENGINE #####
 
-FROM jamovi/jamovi-deps AS engine
+FROM jamovi-deps-updated AS engine
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
@@ -113,7 +121,7 @@ RUN DESTDIR=/usr/lib/jamovi make install
 
 ##### JMV #####
 
-FROM jamovi/jamovi-deps AS jmv
+FROM jamovi-deps-updated AS jmv
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     nodejs \
