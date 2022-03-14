@@ -452,6 +452,13 @@ class EndHandler(RequestHandler):
         self._session.stop()
 
 
+class ConfigJSHandler(RequestHandler):
+    def get(self):
+        self.set_header('Content-Type', 'application/javascript')
+        self.set_header('Cache-Control', 'public, max-age=86400')
+        self.write('window.config = {}')
+
+
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
@@ -631,6 +638,7 @@ class Server:
 
         self._main_app = tornado.web.Application([
             (r'/', EntryHandler, { 'session': self._session }),
+            (r'/config.js', ConfigJSHandler),
             (r'/open', OpenHandler, { 'session': self._session }),
             (r'/auth', AuthTokenHandler, { 'session': self._session }),
             (r'/settings', SettingsHandler, { 'session': self._session }),
