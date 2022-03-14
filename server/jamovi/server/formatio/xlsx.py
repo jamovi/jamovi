@@ -33,12 +33,15 @@ class XLSXReader(Reader):
 
     def __init__(self, settings):
         Reader.__init__(self, settings)
+        self._file = None
         self._ws = None
         self._ws_iter = None
         self._row_no = 0
 
     def open(self, path):
-        wb = load_workbook(filename=path, read_only=True, data_only=True)
+
+        self._file = open(path, 'rb')
+        wb = load_workbook(self._file, read_only=True, data_only=True)
         self._ws = wb.active
 
         if self._ws is None:
@@ -81,6 +84,8 @@ class XLSXReader(Reader):
         self._col_count = self._last_col - self._first_col + 1
 
     def close(self):
+        if self._file is not None:
+            self._file.close()
         self._ws = None
         self._ws_iter = None
 
