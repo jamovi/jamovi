@@ -19,9 +19,14 @@ class Settings(dict):
             group = self.group(group_name)
             group.update(group_values)
 
+    async def flush(self):
+        await self._backend.flush()
+
     def read_nowait(self):
         settings = self._backend.read_settings_nowait()
-        self.apply(settings)
+        for group_name, group_values in settings.items():
+            group = self.group(group_name)
+            group.update(group_values)
 
     def apply(self, settings: dict):
         for group_name, group_values in settings.items():
@@ -34,7 +39,7 @@ class Settings(dict):
             self._parent.write()
         else:
             data = self.vanilla_dict()
-            self._backend.write_settings(data)
+            self._backend.set_settings(data)
 
     def group(self, name):
         if name not in self._children:

@@ -374,6 +374,8 @@ class Session(dict):
                         idle_warning_since = None
                         last_idle_warning = None
         finally:
+            if self._settings is not None:
+                await self._settings.flush()
             self._ended.set()
 
     async def wait_ended(self):
