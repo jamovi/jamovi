@@ -338,7 +338,6 @@ const spawn = new Promise((resolve, reject) => {
 
 }).then(ports => {
 
-    app.on('quit', () => server.stdin.end())  // closing stdin terminates the server
     server.on('close', (code) => { if (code === 0) app.quit(); });
 
     global.mainPort = ports[0];
@@ -366,7 +365,24 @@ const spawn = new Promise((resolve, reject) => {
     app.quit();
 });
 
-app.on('window-all-closed', () => app.quit());
+async function close() {
+    if (server && server.exitCode === null) {
+        server.stdin.end();  // closing stdin terminates the server
+        let exit = new Promise((resolve) => {
+            server.on('exit', resolve);
+        });
+        let timeout = new Promise((resolve) => setTimeout(resolve, 5000));
+        await Promise.race([ exit, timeout ]);
+        app.quit();
+    }
+    else {
+        app.quit()
+    }
+}
+
+app.on('window-all-closed', close);
+app.on('will-quit', close);
+app.on('quit', close);
 
 app.on('will-finish-launching', () => {
     // macOS file open events
