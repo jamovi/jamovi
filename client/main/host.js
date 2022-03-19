@@ -41,7 +41,17 @@ let on = (name, args) => emitter.on(name, args);
 let _notify = (name, args) => emitter.emit(name, args);
 
 let os;
-if (navigator.platform === 'Win32')
+if (['iPad Simulator',
+        'iPhone Simulator',
+        'iPod Simulator',
+        'iPad',
+        'iPhone',
+        'iPod',
+        ].includes(navigator.platform)
+        // iPad on iOS 13 detection
+        || (navigator.userAgent.includes('Mac') && 'ontouchend' in document))
+    os = 'ios';
+else if (navigator.platform === 'Win32')
     os = 'win64';
 else if (navigator.platform === 'MacIntel')
     os = 'macos';
@@ -138,22 +148,17 @@ async function showOpenDialog(options) {
     if (showOpenDialog.cancelPrevious)
         showOpenDialog.cancelPrevious();
 
-    let ua = window.navigator.userAgent;
-    let iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
     let exts;
-
-    if (options.filters) {
+    // iOS safari and iOS chrome don't support the extension format
+    // https://caniuse.com/input-file-accept
+    if (options.filters && os !== 'ios') {
         exts = options.filters;
         exts = exts.map(format => format.extensions);
         exts = exts.reduce((a, v) => a.concat(v), []);
         exts = exts.map((ext) => '.' + ext);
-
-        // iOS safari and iOS chrome don't support the extension format
-        // https://caniuse.com/input-file-accept
-        if ( ! iOS)
-            showOpenDialog.browser.setAttribute('accept', exts.join(','));
-
-    } else {
+        showOpenDialog.browser.setAttribute('accept', exts.join(','));
+    }
+    else {
         showOpenDialog.browser.removeAttribute('accept');
     }
 
