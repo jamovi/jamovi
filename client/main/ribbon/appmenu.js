@@ -197,11 +197,17 @@ const AppMenuButton = Backbone.View.extend({
         this.model.settings().on('change:selectedLanguage', () => this._updateUI());
 
         let available = i18n.availableLanguages().map((code) => {
+            if (code === '---')
+                return `</optgroup><optgroup label="${ _('In development') }">`;
             let ownName = new Intl.DisplayNames([code], { type: 'language' }).of(code);
             ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
             return `<option value="${ code }">${ ownName }</option>`;
         });
-        available.unshift(`<option value="">${ 'System default' }</option>`);
+        available.unshift(`<optgroup label="${ _('Available') }">`)
+        available.push('</optgroup>')
+
+        available.unshift(`<option value="">${ _('System default') }</option>`);
+
 
         this.$languageList[0].innerHTML = available.join('');
 

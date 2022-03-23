@@ -1,6 +1,6 @@
 'use strict';
 
-const Jed = require("jed");
+const Jed = require('jed');
 
 class I18n {
 
@@ -114,6 +114,9 @@ class I18n {
     }
 
     systemLanguage() {
+
+        return 'es';
+
         let languages = navigator.languages;
 
         if ( ! languages) {
@@ -185,7 +188,19 @@ class I18n {
         return parts;
     }
 
-    findBestMatchingLanguage(code, codes) {
+    findBestMatchingLanguage(code, codes, options) {
+
+        options = options || {};
+
+        if (options.excludeDev) {
+            let inDevSeparatorIndex = codes.indexOf('---');
+            if (inDevSeparatorIndex !== -1)
+                codes = codes.slice(0, inDevSeparatorIndex);
+        }
+        else {
+            codes = codes.filter(code => code !== '---');
+        }
+
         if (codes.includes(code))
             return code;
 
