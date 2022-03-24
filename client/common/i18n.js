@@ -115,8 +115,6 @@ class I18n {
 
     systemLanguage() {
 
-        return 'es';
-
         let languages = navigator.languages;
 
         if ( ! languages) {
