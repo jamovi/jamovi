@@ -45,8 +45,13 @@ try {
     let languages = await response.json();
     I18n.setAvailableLanguages(languages.available);
     let current = languages.current;
-    if ( ! current)
-        current = I18n.findBestMatchingLanguage(I18n.systemLanguage(), languages.available);
+    if ( ! current) {
+        let options = {};
+        if (host.isElectron)
+            // prevent the use of in-dev languages as 'system default' in electron
+            options.excludeDev = true;
+        current = I18n.findBestMatchingLanguage(I18n.systemLanguage(), languages.available, options);
+    }
     if ( ! current)
         current = 'en';
 
