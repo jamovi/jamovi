@@ -846,20 +846,8 @@ const Instance = Backbone.Model.extend({
         }
         else if (payloadType === 'Notification') {
 
-            this._notifs = this._notifs || { };
-            let notif = this._notifs[response.id] || new Notify();
-            this._notifs[response.id] = notif;
-
-            if (response.status !== 1) {
-                notif.set({
-                    title: response.title,
-                    message: response.message });
-                this.trigger('notification', notif);
-            }
-            else {
-                notif.dismiss();
-                delete this._notifs[response.id];
-            }
+            let n10n = Notify.createFromPB(response);
+            this.trigger('notification', n10n);
         }
         else if (payloadType === 'LogRR') {
             console.log(response.content);

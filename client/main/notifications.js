@@ -5,6 +5,9 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
+const Notification = require('./notification');
+
+
 const NotificationView = Backbone.View.extend({
     className: "notification",
     events : {
@@ -78,16 +81,23 @@ const Notifications = function($el) {
 Notifications.prototype.notify = function(notification) {
 
     let found = false;
+    let dismiss = notification.attributes.dismissed;
 
     for (let item of this.list) {
-        if (item.model === notification) {
+        if (item.model === notification || item.model.attributes.id === notification.id) {
             found = true;
-            item.$view.reshow();
+            if ( ! dismiss) {
+                item.model.set(notification.attributes);
+                item.$view.reshow();
+            }
+            else {
+                item.model.dismiss();
+            }
             break;
         }
     }
 
-    if (found === false) {
+    if (found === false && dismiss === false) {
         let $el = $('<div></div>').appendTo(this.$el);
         let $view = new NotificationView({ el : $el, model : notification });
         let item = { model: notification, $view: $view };

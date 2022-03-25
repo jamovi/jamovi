@@ -4,10 +4,12 @@ import platform
 import tempfile
 from uuid import uuid4
 
-from asyncio import QueueFull
-from asyncio import ensure_future as create_task
-from asyncio import CancelledError
 from asyncio import wait
+from asyncio import ensure_future as create_task
+from asyncio import Queue
+from asyncio import QueueFull
+from asyncio import CancelledError
+
 
 from .utils import req_str
 from .engine import Engine
@@ -32,6 +34,7 @@ class EngineManager:
 
         self._message_id = 1
         self._listeners = [ ]
+        self._notifications = Queue(maxsize=0)
 
         if platform.uname().system == 'Windows':
             self._conn_root = "ipc://{}".format(str(uuid4()))
@@ -53,6 +56,9 @@ class EngineManager:
         mem_limit = self._config.get('memory_limit_engine', None)
         if mem_limit and platform.uname().system == 'Linux':
             log.info('Applying engine memory limit %s Mb', mem_limit)
+
+    def notifications(self):
+        return self._notifications
 
     async def _run_loop(self):
         tasks = set()
