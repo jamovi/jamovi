@@ -1,4 +1,5 @@
 
+from asyncio import wait
 from asyncio import create_task
 from asyncio import sleep
 from asyncio import Event
@@ -17,13 +18,11 @@ from .enginemanager import EngineManager
 from .scheduler import Scheduler
 from . import i18n
 
-if platform.uname().system != 'Windows':
-    from .remotepool import RemotePool
-
 from jamovi.core import Dirs
 
 from .settings import Settings
 from .utils import conf
+from .notifications import SessionShutdownIdleNotification
 
 from .backend import NoBackend
 from .backend import FirestoreBackend
@@ -87,12 +86,13 @@ class Session(dict):
         if language != '':
             i18n.set_language(language)
 
+        self._scheduler = Scheduler(1, 3, self._analyses)
+
         task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:
-            self._scheduler = Scheduler(1, 3, self._analyses)
+            from .remotepool import RemotePool
             self._runner = RemotePool(task_queue_url, self._scheduler.queue)
         else:
-            self._scheduler = Scheduler(1, 3, self._analyses)
             self._runner = EngineManager(self._path, self._scheduler.queue, conf)
 
         self._runner.add_engine_listener(self._on_engine_event)
@@ -296,9 +296,18 @@ class Session(dict):
 
         self._running = True
 
+        get_notif_task = create_task(self._runner.notifications().get())
+
         try:
             while self._running:
-                await sleep(1)
+
+                done, _ = await wait({ get_notif_task }, timeout=1)
+                if not self._running:
+                    break
+                if get_notif_task in done:
+                    notif = get_notif_task.result()
+                    self._notify(notif)
+                    get_notif_task = create_task(self._runner.notifications().get())
 
                 now = monotonic()
 
@@ -359,18 +368,18 @@ class Session(dict):
                     # notify session is idle
                     if idle_warning_since is None:
                         idle_warning_since = now
-                        id = int(idle_warning_since % (1 << 32))
-                        self._notify_idle(id, TIMEOUT_IDLE - idle_for)
+                        notif = SessionShutdownIdleNotification(shutdown_in=TIMEOUT_IDLE - idle_for)
+                        self._notify(notif)
                         last_idle_warning = now
                     elif now - last_idle_warning > 30:
-                        id = int(idle_warning_since % (1 << 32))
-                        self._notify_idle(id, TIMEOUT_IDLE - idle_for)
+                        notif = SessionShutdownIdleNotification(shutdown_in=TIMEOUT_IDLE - idle_for)
+                        self._notify(notif)
                         last_idle_warning += 30
                 else:
                     if idle_warning_since is not None:
                         # clear notification
-                        id = int(idle_warning_since % (1 << 32))
-                        self._notify_idle(id, None)
+                        notif = SessionShutdownIdleNotification().dismiss()
+                        self._notify(notif)
                         idle_warning_since = None
                         last_idle_warning = None
         finally:
@@ -381,9 +390,9 @@ class Session(dict):
     async def wait_ended(self):
         await self._ended.wait()
 
-    def _notify_idle(self, id, shutdown_in):
+    def _notify(self, notification):
         for instance in self.values():
-            instance.notify_idle(id, shutdown_in)
+            instance.notify(notification)
 
 
 class SessionAnalyses:

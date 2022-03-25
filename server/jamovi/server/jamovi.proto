@@ -413,6 +413,8 @@ message Notification {
     uint32 status = 2; // 0 = transient, 1 = dismiss, 2 = indefinite
     string title = 3;
     string message = 4;
+    // 1 = session shutdown
+    repeated SettingValue values = 5;
 }
 
 message SettingsResponse {

@@ -10,7 +10,6 @@ from jamovi.core import MemoryMap
 from jamovi.core import DataSet
 
 from . import jamovi_pb2 as jcoms
-from .jamovi_pb2 import Notification
 
 from .utils import conf
 from .utils import FileEntry
@@ -244,31 +243,9 @@ class Instance:
     def idle_since(self):
         return self._idle_since
 
-    def notify_idle(self, id, shutdown_in):
-
-        if self._coms is None:
-            return
-
-        n = Notification()
-        n.id = id
-
-        if shutdown_in is not None:
-            nearest_30secs = int(round(shutdown_in / 30) * 30)
-            if nearest_30secs >= 120:
-                description = _('This session will end in around {} minutes').format(str(nearest_30secs // 60))
-            elif nearest_30secs >= 60:
-                description = _('This session will end in around 1 minute')
-            else:
-                description = _('This session will end any moment now')
-
-            n.title = _('Idle session')
-            n.message = description
-            n.status = 2  # indefinite
-        else:
-            n.status = 1  # dismiss
-
-        self._coms.send(n)
-
+    def notify(self, notification):
+        if self._coms is not None:
+            self._coms.send(notification.as_pb())
 
     @property
     def analyses(self):
