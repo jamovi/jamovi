@@ -18,6 +18,7 @@ const Notify = require('./notification');
 const host = require('./host');
 const ActionHub = require('./actionhub');
 const { s6e } = require('../common/utils');
+const JError = require('./errors').JError;
 
 
 
@@ -1740,7 +1741,11 @@ const BackstageModel = Backbone.Model.extend({
         catch (e) {
             if (deactivated)
                 this.set('activated', true);
-            this._notify({ message: _('Unable to open'), cause: e.cause || e.message, type: 'error' });
+
+            if (e instanceof JError)
+                this._notify(e);
+            else
+                this._notify({ message: _('Unable to open'), cause: e.message, type: 'error' });
         }
         finally {
             progNotif.dismiss();
@@ -1888,7 +1893,7 @@ const BackstageModel = Backbone.Model.extend({
             title: error.message,
             message: error.cause,
             duration: 3000,
-            type: error.type ? error.type : 'info',
+            type: 'error',
         });
         this.trigger('notification', notification);
     },

@@ -722,12 +722,12 @@ $(document).ready(async() => {
             if (host.isElectron && toOpen !== '') {
                 // if opening fails, open a blank data set
                 status = await instance.open('', { existing: !!instanceId });
-                notifications.notify(new Notify({
-                    title: _('Unable to open'),
-                    message: e.cause || e.message,
-                    type: 'error',
-                    duration: 3000,
-                }));
+                let notif;
+                if (e instanceof JError)
+                    notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };
+                else
+                    notif = { title: _('Unable to open'), message: e.message, type: 'error', duration: 3000 };
+                notifications.notify(new Notify(notif));
             }
             else {
                 throw e;
