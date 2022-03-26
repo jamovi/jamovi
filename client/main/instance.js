@@ -171,13 +171,69 @@ const Instance = Backbone.Model.extend({
                     if (options.title)
                         url += `&title=${ encodeURIComponent(options.title) }`;
 
-                    response = await fetch(url, {
-                        method: 'POST',
-                        body: file,
-                        credentials: 'include',
-                        cache: 'no-store',
-                        headers: headers
+                    // fetch doesn't support upload progress, so we need to use xhr
+                    const xhr = new XMLHttpRequest();
+                    xhr.responseType = 'text';  // json lines
+
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable)
+                            setProgress({ title: _('Uploading'), p: event.loaded, n: event.total });
                     });
+
+                    // create a body stream that's kinda like what the fetch api produces
+                    let stream = new ReadableStream({
+                        async start(controller) {
+                            await new Promise((resolve) => {
+                                xhr.addEventListener('progress', (event) => {
+                                    let jsonlines = xhr.responseText;
+                                    if (jsonlines) {
+                                        let pieces = jsonlines.split('\n');
+                                        // if the last piece is empty (in jsonlines this will often be the case)
+                                        // use the second last piece instead
+                                        let lastPiece = pieces[pieces.length - 1] || pieces[pieces.length - 2];
+                                        if (lastPiece)
+                                            controller.enqueue(lastPiece);
+                                    }
+                                });
+                                xhr.addEventListener('loadend', () => {
+                                    controller.enqueue(xhr.responseText);
+                                    if (xhr.readyState === 4 && xhr.status === 200)
+                                        controller.close();
+                                    else
+                                        controller.error(new JError(_('Upload failed'), { cause: xhr.statusText }));
+                                    resolve()
+                                }, { once: true });
+                            });
+                        }
+                    });
+
+                    xhr.open('POST', url, true);
+                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+                    for (let header of headers.entries())
+                        xhr.setRequestHeader(header[0], header[1]);
+                    xhr.send(file);
+
+                    // wait till upload completes
+                    await new Promise((resolve) => {
+                        xhr.addEventListener('readystatechange', (event) => {
+                            if (xhr.readyState >= 2)
+                                resolve();
+                        });
+                    })
+
+                    if (xhr.status === 204)
+                        return { 'status': 'OK' };
+
+                    if (xhr.status === 413)
+                        throw new JError(_('Upload failed'), { cause: 'File size exceeds session limits' });
+
+                    if (xhr.status !== 200)
+                        throw new JError(_('Upload failed'), { cause: xhr.statusText });
+
+                    // if we're here, the upload succeeded, and the opening
+                    // process comes next (which may yet fail)
+                    // we create something like what the fetch() api returns
+                    response = { status: xhr.status, statusText: xhr.statusText, body: stream };
                 }
                 else {
 
@@ -201,16 +257,16 @@ const Instance = Backbone.Model.extend({
                         cache: 'no-store',
                         headers: headers
                     });
+
+                    if (response.status === 204)
+                        return { 'status': 'OK' };
+
+                    if (response.status === 413)
+                        throw new JError(_('Unable to open'), { cause: 'File size exceeds session limits' });
+
+                    if (response.status !== 200)
+                        throw new JError(_('Unable to open'), { cause: response.statusText });
                 }
-
-                if (response.status === 204)
-                    return { 'status': 'OK' };
-
-                if (response.status === 413)
-                    throw new JError(_('Unable to open'), { cause: 'File size exceeds session limits' });
-
-                if (response.status !== 200)
-                    throw new JError(_('Unable to open'), { cause: response.statusText });
 
                 const reader = response.body.getReader();
                 const utf8Decoder = new TextDecoder('utf-8');
@@ -218,21 +274,20 @@ const Instance = Backbone.Model.extend({
                 let message;
                 for (;;) {
                     let { done, value } = await reader.read();
-                    let chunk = value ? utf8Decoder.decode(value) : '';
-                    let pieces = chunk.split('\n');
 
-                    while (pieces.length > 0) {
-                        let piece = pieces.pop();
-                        if (piece) {
-                            try {
-                                message = JSON.parse(piece);
-                                break;
-                            }
-                            catch (e) {
-                                // do nothing
-                            }
-                        }
-                    }
+                    let pieces;
+                    if (typeof(value) === 'string')
+                        pieces = value.split('\n');
+                    else if ( ! value)
+                        pieces = [ ];
+                    else
+                        pieces = utf8Decoder.decode(value).split('\n');
+
+                    // if the last piece is empty (in jsonlines this will often be the case)
+                    // use the second last piece instead
+                    let lastPiece = pieces[pieces.length - 1] || pieces[pieces.length - 2];
+                    if (lastPiece)
+                        message = JSON.parse(lastPiece);
 
                     if (message && message.status === 'in-progress') {
                         if ( ! message.title)
