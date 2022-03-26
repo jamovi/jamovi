@@ -84,7 +84,9 @@ Notifications.prototype.notify = function(notification) {
     let dismiss = notification.attributes.dismissed;
 
     for (let item of this.list) {
-        if (item.model === notification || item.model.attributes.id === notification.id) {
+        if (item.model === notification
+                || (notification.id !== undefined
+                    && notification.id === item.model.attributes.id)) {
             found = true;
             if ( ! dismiss) {
                 item.model.set(notification.attributes);
