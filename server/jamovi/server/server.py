@@ -251,7 +251,7 @@ class OpenHandler(RequestHandler):
         if instance_id:
             instance = self._session.get(instance_id)
             if instance is None:
-                self.write(f'{{"status":"terminated","message":"{ _("This data set is no longer available") }"}}')
+                self.write(f'{{"status":"terminated","message":{ json.dumps(_("This data set is no longer available")) }}}')
                 return
             elif url == '' and instance._data.has_dataset:
                 self.set_status(204)
@@ -312,7 +312,7 @@ class OpenHandler(RequestHandler):
             message = str(status)
             if not message:
                 message = type(status).__name__
-            self.write(f'{{"status":"error","message":"{ message }"}}\n')
+            self.write(f'{{"status":"error","message":{ json.dumps(message) }}}\n')
         else:
             p, n = progress
             self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
