@@ -83,15 +83,21 @@
 }
 
 .jmv-notification-content {
+    display: flex ;
+    width: 100% ;
 }
 
 .jmv-notification-content > * {
     margin: .6em 0 0 ;
 }
 
+.jmv-notification-message {
+    flex: auto ;
+}
+
 .jmv-notification-progressbar {
     height: 24px ;
-    width: 280px ;
+    flex: auto ;
 }
 
 .jmv-notification-progressbarbar {
@@ -104,12 +110,11 @@
 .jmv-notification-buttons > * {
     display: inline-block ;
     padding: 6px ;
-    border: 1px solid transparent ;
-    width: 30px ;
+    border: 1px solid #ACACAC ;
     text-align: center ;
+    margin-left: 8px ;
 }
 
 .jmv-notification-buttons > :hover {
     background-color: white ;
-    border: 1px solid #ACACAC ;
 }
