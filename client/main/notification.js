@@ -17,9 +17,15 @@ const Notify = Backbone.Model.extend({
         type: 'info',
         progress: [0, 0],
         dismissed: false,
+        cancel: null,
     },
     dismiss() {
         this.set('dismissed', true);
+    },
+    cancel() {
+        if (this.attributes.cancel)
+            this.attributes.cancel();
+        this.dismiss();
     },
 });
 

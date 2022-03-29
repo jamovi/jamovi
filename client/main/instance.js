@@ -20,8 +20,11 @@ const I18n = require('../common/i18n');
 
 const Settings = require('./settings');
 const ProgressStream = require('./utils/progressstream');
-const JError = require('./errors').JError;
+
 const { flatten, unflatten } = require('../common/utils/addresses');
+
+const JError = require('./errors').JError;
+const CancelledError = require('./errors').CancelledError;
 
 
 const Instance = Backbone.Model.extend({
@@ -165,20 +168,9 @@ const Instance = Backbone.Model.extend({
 
                 if (file instanceof File) {
 
-                    setProgress({ title: _('Uploading'), p: 0, n: 0 });
-
-                    let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
-                    if (options.title)
-                        url += `&title=${ encodeURIComponent(options.title) }`;
-
                     // fetch doesn't support upload progress, so we need to use xhr
-                    const xhr = new XMLHttpRequest();
+                    let xhr = new XMLHttpRequest();
                     xhr.responseType = 'text';  // json lines
-
-                    xhr.upload.addEventListener('progress', (event) => {
-                        if (event.lengthComputable)
-                            setProgress({ title: _('Uploading'), p: event.loaded, n: event.total });
-                    });
 
                     // create a body stream that's kinda like what the fetch api produces
                     let stream = new ReadableStream({
@@ -196,16 +188,31 @@ const Instance = Backbone.Model.extend({
                                     }
                                 });
                                 xhr.addEventListener('loadend', () => {
-                                    controller.enqueue(xhr.responseText);
-                                    if (xhr.readyState === 4 && xhr.status === 200)
+                                    if (xhr.readyState === 0)
+                                        // aborted
+                                        controller.close();
+                                    else if (xhr.readyState === 4 && xhr.status === 200)
+                                        // great success!
                                         controller.close();
                                     else
+                                        // fail
                                         controller.error(new JError(_('Upload failed'), { cause: xhr.statusText }));
                                     resolve()
                                 }, { once: true });
                             });
                         }
                     });
+
+                    setProgress({ title: _('Uploading'), p: 0, n: 0, cancel: () => xhr.abort() });
+
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable)
+                            setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel: () => xhr.abort() });
+                    });
+
+                    let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
+                    if (options.title)
+                        url += `&title=${ encodeURIComponent(options.title) }`;
 
                     xhr.open('POST', url, true);
                     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
@@ -216,10 +223,13 @@ const Instance = Backbone.Model.extend({
                     // wait till upload completes
                     await new Promise((resolve) => {
                         xhr.addEventListener('readystatechange', (event) => {
-                            if (xhr.readyState >= 2)
+                            if (xhr.readyState !== XMLHttpRequest.OPENED)
                                 resolve();
                         });
                     })
+
+                    if (xhr.status === 0) // aborted
+                        throw new CancelledError();
 
                     if (xhr.status === 204)
                         return { 'status': 'OK' };
@@ -232,7 +242,7 @@ const Instance = Backbone.Model.extend({
 
                     // if we're here, the upload succeeded, and the opening
                     // process comes next (which may yet fail)
-                    // we create something like what the fetch() api returns
+                    // we construct a response something like what the fetch() api returns
                     response = { status: xhr.status, statusText: xhr.statusText, body: stream };
                 }
                 else {

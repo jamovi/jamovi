@@ -10,9 +10,6 @@ const Notification = require('./notification');
 
 const NotificationView = Backbone.View.extend({
     className: "notification",
-    events : {
-        'click .jmv-notification-button-ok': 'dismiss'
-    },
     initialize: function() {
 
         this.$el.addClass('jmv-notification hidden');
@@ -35,16 +32,20 @@ const NotificationView = Backbone.View.extend({
 
         this.$message = $('<div class="jmv-notification-message"></div>').appendTo(this.$content);
 
-        // this.$buttons = $('<div class="jmv-notification-buttons"></div>').appendTo(this.$body);
-        //
-        // this.$ok = $('<div class="jmv-notification-button-ok">OK</div>').appendTo(this.$buttons);
+        this.$buttons = $('<div class="jmv-notification-buttons"></div>').appendTo(this.$content);
+        this.$cancel = $(`<div class="jmv-notification-button-cancel">${ _('Cancel') }</div>`).appendTo(this.$buttons);
+
+        this.$cancel[0].addEventListener('click', (event) => {
+            this.model.cancel();
+            this.model.dismiss();
+        });
 
         this._finished = () => {
             this.trigger('finished');
         };
         this.dismiss = () => {
             this.$el.one('transitionend', this._finished);
-            this.model.set('visible' , false);
+            this.model.set('visible', false);
         };
         this.reshow = () => {
             this.$el.off('transitionend', this._finished);
@@ -63,12 +64,16 @@ const NotificationView = Backbone.View.extend({
         this.$title.text(this.model.attributes.title);
 
         if (this.model.attributes.progress[1] > 0) {
-            this.$progressBarBar.css('width', '' + (100 * this.model.attributes.progress[0] / this.model.attributes.progress[1]) + '%');
+            this.$progressBarBar.css('width', `${ 100 * this.model.attributes.progress[0] / this.model.attributes.progress[1] }%`);
             this.$progressBar.show();
+            this.$message.hide();
         }
         else {
             this.$progressBar.hide();
+            this.$message.show();
         }
+
+        this.$buttons[0].style.display = (this.model.attributes.cancel ? null : 'none');
     }
 });
 
