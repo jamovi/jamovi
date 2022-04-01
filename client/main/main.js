@@ -700,9 +700,9 @@ $(document).ready(async() => {
         let status;
 
         try {
-            while (true) {
+            let authToken = null;
 
-                let authToken = await auth.getAuthToken();
+            while (true) {
 
                 let stream = instance.open(toOpen, { existing: !!instanceId, authToken });
                 for await (let progress of stream)
@@ -712,6 +712,7 @@ $(document).ready(async() => {
                 if (status.status === 'requires-auth') {
                     await infoBox.setup(status);
                     await auth.waitForSignIn();
+                    authToken = await auth.getAuthToken();
                 }
                 else {
                     break;
