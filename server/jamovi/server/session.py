@@ -384,7 +384,10 @@ class Session(dict):
                         last_idle_warning = None
         finally:
             if self._settings is not None:
-                await self._settings.flush()
+                try:
+                    await self._settings.flush()
+                except Exception as e:
+                    log.exception(e)
             self._ended.set()
 
     async def wait_ended(self):
