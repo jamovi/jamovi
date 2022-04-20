@@ -15,18 +15,23 @@
     background-color: white ;
 }
 
-.silky-welcome-panel {
+.jmv-welcome-panel {
+    width: 100% ;
+    height: 100% ;
+    background-color: white ;
+    position: relative ; /* this is necessary, but not sure why */
+}
+
+.jmv-welcome-iframe {
+    box-sizing: border-box;
     border: none;
     width: 100% ;
     height: 100% ;
-    box-sizing: border-box;
-    position: relative ;
-    top: 0 ;
     overflow: scroll ;
     background-color: white ;
 }
 
-.jmv-results-panel.jmv-results-panel-hidden, .silky-welcome-panel.silky-welcome-panel-hidden {
+.jmv-results-panel.jmv-results-panel-hidden, .jmv-welcome-panel.jmv-welcome-panel-hidden {
     width: 0 ;
     overflow: hidden ;
     padding-right: 0 ;

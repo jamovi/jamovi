@@ -88,25 +88,41 @@ const ResultsView = Backbone.View.extend({
     },
     showWelcome() {
 
-        this.$welcome = $('<iframe id="main_welcome" \
-                name="welcome" \
-                sandbox="allow-scripts allow-same-origin" \
-                class="silky-welcome-panel" \
-                style="overflow: hidden; box-sizing: border-box;" \
-                ></iframe>');
-        this.$welcome.appendTo(this.$el);
+        const iframe = document.createElement('iframe');
+        iframe.classList.add('jmv-welcome-iframe');
+        iframe.sandbox = 'allow-scripts allow-same-origin';
+        // hidden to begin with, only show if successful
+        iframe.style.display = 'none';
+
+        this.welcome = document.createElement('div');
+        this.welcome.classList.add('jmv-welcome-panel');
+
+        this.welcome.appendChild(iframe);
+        this.$el[0].appendChild(this.welcome);
 
         host.version.then((version) => {
-            this.$welcome.attr('src', 'https://www.jamovi.org/welcome/?v=' + version + '&p=' + host.os);
+            iframe.src = `https://www.jamovi.org/welcome/?v=${ version }&p=${ host.os }`;
         });
+
+        const messageHandler = (event) => {
+            // wait for a ready message from the iframe's content
+            // only a successful load of the page will lead to this
+            // anything else, i.e. a 500 will not be made visible
+            if (event.source === iframe.contentWindow
+                    && event.data.status === 'ready') {
+                iframe.style.display = null;
+                window.removeEventListener('message', messageHandler);
+            }
+        };
+        window.addEventListener('message', messageHandler);
 
         this.model.analyses().once('analysisCreated', (event) => {
             this.hideWelcome();
         });
     },
     hideWelcome() {
-        if (this.$welcome)
-            this.$welcome.addClass('silky-welcome-panel-hidden');
+        if (this.welcome)
+            this.welcome.classList.add('jmv-welcome-panel-hidden');
     },
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);
