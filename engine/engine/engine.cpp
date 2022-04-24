@@ -193,10 +193,12 @@ void Engine::heartbeat(const std::string &path)
                   O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK,
                   0666);
 
-    while (true)
+    while (_exiting == false)
     {
         futimens(fd, nullptr);
         this_thread::sleep_for(duration);
     }
+
+    close(fd);
 #endif
 }
