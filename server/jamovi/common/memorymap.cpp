@@ -3,13 +3,20 @@
 //
 
 #include "memorymap.h"
+#include "boost/nowide/convert.hpp"
 
 using namespace std;
 using namespace boost;
 
 MemoryMap *MemoryMap::attach(const std::string &path)
 {
-    interprocess::file_mapping  *file   = new interprocess::file_mapping(path.c_str(), interprocess::read_only);
+    interprocess::file_mapping *file;
+#ifdef _WIN32
+    file = new interprocess::file_mapping(nowide::widen(path).c_str(), interprocess::read_only);
+#else
+    file = new interprocess::file_mapping(path.c_str(), interprocess::read_only);
+#endif
+
     interprocess::mapped_region *region = new interprocess::mapped_region(*file,       interprocess::read_only);
 
     MemoryMap *mm = new MemoryMap(path, file, region);
