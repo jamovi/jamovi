@@ -71,9 +71,9 @@ else
 				-L$(SRCDIR)/../../lib/libgcc \
 				-L$(R_HOME)/bin/x64 \
 				-L$(BASE_MODULE_PATH)/RInside/lib/x64 \
-				-lboost_filesystem-mgw8-mt-x64-1_74 \
-				-lboost_system-mgw8-mt-x64-1_74 \
-				-lboost_nowide-mgw8-mt-x64-1_74
+				-lboost_filesystem-mgw8-mt-x64-1_79 \
+				-lboost_system-mgw8-mt-x64-1_79 \
+				-lboost_nowide-mgw8-mt-x64-1_79
 
 	# _WIN32_WINNT is for SHGetKnownFolderPath
 
