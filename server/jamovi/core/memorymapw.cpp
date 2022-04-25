@@ -34,7 +34,14 @@ MemoryMapW *MemoryMapW::create(const string &path, unsigned long long size)
     stream.put('\0');
     stream.close();
 
-    interprocess::file_mapping  *file   = new interprocess::file_mapping(path.c_str(), interprocess::read_write);
+    interprocess::file_mapping *file;
+
+#ifdef _WIN32
+    file = new interprocess::file_mapping(nowide::widen(path).c_str(), interprocess::read_write);
+#else
+    file = new interprocess::file_mapping(path.c_str(), interprocess::read_write);
+#endif
+
     interprocess::mapped_region *region = new interprocess::mapped_region(*file,       interprocess::read_write, 0, size);
 
     MemoryMapW *mm = new MemoryMapW(path, file, region);
@@ -63,7 +70,12 @@ void MemoryMapW::enlarge(int percent)
     stream.put('\0');
     stream.close();
 
-    _file   = new interprocess::file_mapping(_path.c_str(), interprocess::read_write);
+#ifdef _WIN32
+    _file = new interprocess::file_mapping(nowide::widen(_path).c_str(), interprocess::read_write);
+#else
+    _file = new interprocess::file_mapping(_path.c_str(), interprocess::read_write);
+#endif
+
     _region = new interprocess::mapped_region(*_file,       interprocess::read_write, 0, newSize);
 
     char *cursorOffset = base<char>(_cursor);

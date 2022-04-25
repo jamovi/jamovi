@@ -18,6 +18,7 @@
 #include "xdg-user-dir-lookup.c"
 #endif
 
+#include <algorithm>
 #include <sstream>
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
