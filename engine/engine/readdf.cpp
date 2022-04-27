@@ -111,7 +111,7 @@ DataFrame readDF(
         columnNames[colNo] = String(columnName);
 
         SEXP desc = R_NilValue;
-        string description = column.description();
+        String description = column.description();
         if (description != "")
             desc = Rcpp::wrap(description);
 
