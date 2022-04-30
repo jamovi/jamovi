@@ -24,28 +24,6 @@ const ResultsView = Backbone.View.extend({
 
         this.selectedView = this.richView;
 
-        this.$textView = $('<div></div>');
-        this.$textView.appendTo(this.$el);
-        this.$textView.addClass('jmv-results-panel-hidden');
-        this.textView = new ResultsPanel({
-            el: this.$textView,
-            iframeUrl: args.iframeUrl,
-            model: this.model,
-            mode: 'text' });
-
-        this.model.settings().on('change:syntaxMode', event => {
-            if (event.changed.syntaxMode) {
-                this.selectedView = this.textView;
-                this.$textView.removeClass('jmv-results-panel-hidden');
-                this.$richView.addClass('jmv-results-panel-hidden');
-            }
-            else {
-                this.selectedView = this.richView;
-                this.$textView.addClass('jmv-results-panel-hidden');
-                this.$richView.removeClass('jmv-results-panel-hidden');
-            }
-        });
-
         this.model.set('resultsSupplier', this);
 
         ActionHub.get('textUndo').on('request', (source) => this.selectedView.annotationAction({ type: 'undo', name: '', value: '' }));

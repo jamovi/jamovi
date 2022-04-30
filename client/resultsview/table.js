@@ -143,39 +143,26 @@ const TableView = Elem.View.extend({
         this._descButtons = $();
         this._trs = $();
 
-        if (data.mode === 'rich') {
+        let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
-            let rowSelectable = table.rowSelect ? ' row-selectable' : '';
+        this.$table = $('<table class="jmv-results-table-table' + rowSelectable + '"></table>');
+        this.addContent(this.$table);
 
-            this.$table = $('<table class="jmv-results-table-table' + rowSelectable + '"></table>');
-            this.addContent(this.$table);
+        this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
+        this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
+        this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
+        this.$titleText = $('<span class="jmv-results-table-title-text"></span>').appendTo(this.$titleCell);
+        this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
-            this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
-            this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
-            this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
-            this.$titleText = $('<span class="jmv-results-table-title-text"></span>').appendTo(this.$titleCell);
-            this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
+        this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
+        this.$columnHeaderRow      = $('<tr class="jmv-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
 
-            this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
-            this.$columnHeaderRow      = $('<tr class="jmv-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
+        this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
+        this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
 
-            this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
-            this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
+        this.model.on('change:sortedCells', () => this.render());
 
-            this.model.on('change:sortedCells', () => this.render());
-
-            this.render();
-        }
-        else if (table.asText !== null) {
-
-            let text = '#' + table.asText.split('\n').join('\n# ');
-            if (navigator.platform === "Win32")
-                text = text.replace(/\u273B/g, '*');
-
-            let $pre = $('<pre class="jmv-results-text jmv-results-item"></pre>');
-            this.addContent($pre);
-            $pre.text(text);
-        }
+        this.render();
     },
     type() {
         return 'Table';
@@ -188,18 +175,6 @@ const TableView = Elem.View.extend({
         Elem.View.prototype.render.call(this);
 
         let table = this.model.attributes.element;
-
-        if (this.mode && this.mode !== 'rich') {
-            if (table.asText !== null) {
-                let $pre = this.$el.find('.jmv-results-text.jmv-results-item');
-                let text = '#' + table.asText.split('\n').join('\n# ');
-                if (navigator.platform === "Win32")
-                    text = text.replace(/\u273B/g, '*');
-                $pre.text(text);
-            }
-            return;
-        }
-
         let columns = table.columns;
         let sortedCells = this.model.attributes.sortedCells;
         let html;

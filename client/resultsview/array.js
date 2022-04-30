@@ -93,13 +93,12 @@ const ArrayView = Elem.View.extend({
         return this.model.attributes.title !== '' && ( ! this.model.attributes.element.hideHeadingOnlyChild || this.model.attributes.element.elements.length > 1);
     },
     updateSelect: function() {
-        if (this.mode !== 'text' && this.model.attributes.element.layout === 1) // list select
+        if (this.model.attributes.element.layout === 1) // list select
             this.$el.addClass('jmv-results-array-listselect');
         else
             this.$el.removeClass('jmv-results-array-listselect');
 
-        if (this.mode !== 'text' &&
-            this.model.attributes.element.hideHeadingOnlyChild &&
+        if (this.model.attributes.element.hideHeadingOnlyChild &&
             this.model.attributes.element.elements.length < 2)
                 this.$el.addClass('jmv-results-array-hideheading');
         else
@@ -108,29 +107,21 @@ const ArrayView = Elem.View.extend({
         let lastHasSelect = this.hasSelect;
         this.hasSelect = false;
 
-        if (this.mode !== 'text') {
-            if (this.$select)
-                this.$select.detach();
+        if (this.$select)
+            this.$select.detach();
 
-            if ( ! this.$title)
-                this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
-            else
-                this.$title.text(this.model.attributes.title);
-            if (this.model.attributes.element.layout === 1) {
-                this.hasSelect = true;
-                if ( ! this.$select) {
-                    this.$select = $('<select></select>');
-                    this.$select.on('change', (event) => {
-                        this._selectEvent(event);
-                    });
-                }
+        if ( ! this.$title)
+            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+        else
+            this.$title.text(this.model.attributes.title);
+        if (this.model.attributes.element.layout === 1) {
+            this.hasSelect = true;
+            if ( ! this.$select) {
+                this.$select = $('<select></select>');
+                this.$select.on('change', (event) => {
+                    this._selectEvent(event);
+                });
             }
-        }
-        else {
-            if ( ! this.$title)
-                this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
-            else
-                this.$title.text('# ' + this.model.attributes.title);
         }
 
         if (this.hasSelect)

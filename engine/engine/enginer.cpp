@@ -236,8 +236,7 @@ void EngineR::run(AnalysisRequest &analysis)
 
         sendResults(ana, NO_SYNTAX, IN_PROGRESS);
         Rcpp::as<Rcpp::Function>(ana[".createImages"])(Rcpp::Named("noThrow", true));
-        sendResults(ana, NO_SYNTAX, IN_PROGRESS);
-        sendResults(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, NO_SYNTAX, COMPLETE);
         Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
 

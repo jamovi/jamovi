@@ -49,10 +49,7 @@ const GroupView = Elem.View.extend({
                 annotation.$el.prependTo(this.$el);
             }
             else {
-                if (this.mode === 'text')
-                    this.$title = $(this.hoTag + '# ' + this.model.attributes.title + this.hcTag).prependTo(this.$el);
-                else
-                    this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+                this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
                 this.$title.prependTo(this.$el);
             }
 
