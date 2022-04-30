@@ -104,6 +104,7 @@ const ResultsPanel = Backbone.View.extend({
 
         this.model.settings().on('change:format',  () => this._updateAll());
         this.model.settings().on('change:devMode', () => this._updateAll());
+        this.model.settings().on('change:syntaxMode', () => this._updateAll());
         this.model.settings().on('change:refsMode', () => this._updateRefsMode());
         this.model.on('change:editState', () => this._updateEditState());
     },
@@ -347,7 +348,7 @@ const ResultsPanel = Backbone.View.extend({
                 data: {
                     results: analysis.results,
                     options: analysis.options ? analysis.options.getValues() : {},
-                    mode: this.mode,
+                    mode: this.model.settings().get('syntaxMode') ? 'text' : 'rich',
                     devMode: this.model.settings().get('devMode'),
                     format: format,
                     refs: this._refsTable.getNumbers(analysis.ns),
