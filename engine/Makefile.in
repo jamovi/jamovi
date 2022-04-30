@@ -50,7 +50,8 @@ ifeq ($(os),OSX)
 				-lboost_filesystem \
 				-lboost_system \
 				-framework Foundation
-	CXXFLAGS += -mmacosx-version-min=10.13
+	MFLAGS = -mmacosx-version-min=10.13
+	CXXFLAGS += $(MFLAGS)
 else
 ifeq ($(os),Linux)
 	BINDIR ?= bin
@@ -128,7 +129,7 @@ jamovi.pb.cc.o: jamovi.pb.cc
 
 ../server/jamovi/common/%.m.o: $(SRCDIR)/../server/jamovi/common/%.m
 	mkdir -p $(@D)
-	$(CXX) -c -o $@ $^ $(INCLUDES)
+	$(CXX) -c -o $@ $^ $(MFLAGS) $(INCLUDES)
 
 engine/%.cpp.o: $(SRCDIR)/engine/%.cpp
 	mkdir -p $(@D)
