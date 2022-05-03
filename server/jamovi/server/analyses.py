@@ -120,6 +120,24 @@ class Analysis:
 
     def set_results(self, results, complete=True, silent=False):
 
+        if results.results.error.message != '':
+            use_previous_results = False
+            if len(results.results.group.elements) == 0:
+                use_previous_results = True
+            elif len(results.results.group.elements) == 1:
+                # i'm not sure why we have to do this
+                first_elem = results.results.group.elements[0]
+                if (first_elem.WhichOneof('type') == 'preformatted'
+                        and first_elem.preformatted == ''):
+                    use_previous_results = True
+
+            if use_previous_results:
+                new_results = self.results
+                new_results.results.error.message = results.results.error.message
+                self._change_status_to_complete(new_results.results)
+                results = new_results
+                complete = True
+
         self.results = results
         self.complete = complete
         if len(results.options.names) > 0:  # if not empty
@@ -247,7 +265,7 @@ class Analysis:
         self._change_status_to_complete(clone.results, strip_content)
         return clone.SerializeToString()
 
-    def _change_status_to_complete(self, pb, strip_content):
+    def _change_status_to_complete(self, pb, strip_content=False):
         if (pb.status != Analysis.Status.COMPLETE.value
                 and pb.status != Analysis.Status.ERROR.value):
             pb.status = Analysis.Status.COMPLETE.value
