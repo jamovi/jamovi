@@ -83,7 +83,7 @@ class Engine:
 
         dur_limit = self._config.get('analysis_duration_limit', None)
         if dur_limit:
-            dur_limit = float(dur_limit)
+            dur_limit = int(dur_limit)
         self._analysis_duration_limit = dur_limit
 
     async def start(self):
@@ -443,6 +443,9 @@ class Engine:
         results.results.title = request.name
         results.results.status = ANALYSIS_ERROR
         results.results.error.message = message
+
+        item = results.results.group.elements.add()
+        item.preformatted = ''
 
         return results
 

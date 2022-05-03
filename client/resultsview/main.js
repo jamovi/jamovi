@@ -291,20 +291,7 @@ class Main {  // this is constructed at the bottom
         }
     }
 
-    _resultsFailed() {
-        let results = this.resultsDefn.results;
-        return results.error && results.group === null && results.array === null && results.html === null && results.image === null;
-    }
-
     _render() {
-        if (this._resultsFailed()) {
-            let root = this.layout.getItem('root');
-            if (root) {
-                root.item.setError(this.resultsDefn.results.error);
-                return;
-            }
-        }
-
         this.layout.begin();
 
         let current = this.layout.include('root', () => {

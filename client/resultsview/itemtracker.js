@@ -84,10 +84,6 @@ const ItemTracker = function() {
 
     this._items = { };
 
-    this.getItem = function(name) {
-        return this._items[name];
-    };
-
     this.include = function(address, activate, update, deactivate) {
 
         let current = this._items[address];
