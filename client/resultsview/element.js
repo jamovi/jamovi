@@ -48,7 +48,8 @@ const ElementView = Backbone.View.extend({
 
         this.ready = Promise.resolve();
     },
-    setError(error) {
+    render() {
+        let error = this.model.get('error');
         if (error !== null) {
             if (this.$el.hasClass('jmv-results-error'))
                 this.$errorPlacement.find('.jmv-results-error-message').text(error.message);
@@ -61,9 +62,6 @@ const ElementView = Backbone.View.extend({
             this.$el.removeClass('jmv-results-error');
             this.$errorPlacement.empty();
         }
-    },
-    render() {
-        this.setError(this.model.get('error'));
     },
 
     _collapseSection() {
