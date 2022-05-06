@@ -35,7 +35,7 @@ const View = Backbone.View.extend({
                         <%=get('text')%>
                     </div>
                     <div class="options">
-                        <% underscore.each(get('options'), (option) => { %>
+                        <% _.each(get('options'), (option) => { %>
                             <button
                                 data-id="<%= get('id') %>"
                                 data-name="<%= option.name %>"
