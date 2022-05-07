@@ -9,6 +9,7 @@ from asyncio import ensure_future as create_task
 from asyncio import Queue
 from asyncio import QueueFull
 from asyncio import CancelledError
+from asyncio import FIRST_EXCEPTION
 
 
 from .utils import req_str
@@ -116,13 +117,13 @@ class EngineManager:
                 self._requests[index] = None
 
     async def start(self):
-        await wait(map(lambda e: e.start(), self._engines))
+        await wait(map(lambda e: e.start(), self._engines), return_when=FIRST_EXCEPTION)
 
     async def stop(self):
-        await wait(map(lambda e: e.stop(), self._engines))
+        await wait(map(lambda e: e.stop(), self._engines), return_when=FIRST_EXCEPTION)
 
     async def restart_engines(self):
-        await wait(map(lambda e: e.restart(), self._engines))
+        await wait(map(lambda e: e.restart(), self._engines), return_when=FIRST_EXCEPTION)
 
     def add_engine_listener(self, listener):
         self._listeners.append(('engine-event', listener))
