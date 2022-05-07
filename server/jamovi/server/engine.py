@@ -14,6 +14,7 @@ from .jamovi_pb2 import ComsMessage
 from .jamovi_pb2 import AnalysisStatus
 from .jamovi_pb2 import AnalysisRequest
 from .jamovi_pb2 import AnalysisResponse
+from .jamovi_pb2 import Status as MessageStatus
 
 import logging
 from asyncio import get_event_loop
@@ -31,6 +32,10 @@ from asyncio import current_task
 
 from .utils import req_str
 
+
+MESSAGE_COMPLETE = MessageStatus.Value('COMPLETE')
+MESSAGE_ERROR = MessageStatus.Value('ERROR')
+MESSAGE_IN_PROGRESS = MessageStatus.Value('IN_PROGRESS')
 
 ANALYSIS_INITED = AnalysisStatus.Value('ANALYSIS_INITED')
 ANALYSIS_COMPLETE = AnalysisStatus.Value('ANALYSIS_COMPLETE')
@@ -187,7 +192,7 @@ class Engine:
 
     async def stop(self):
 
-        log.debug('Stopping engine')
+        log.debug('Stopping engine (2)')
 
         self._message_id += 1
 
@@ -286,34 +291,29 @@ class Engine:
             pending.add(timeout)
 
         try:
-            while True:
+            complete = False
+
+            while not complete:
                 done, pending = await wait(pending, return_when=FIRST_COMPLETED)
 
                 if results_received in done:
 
-                    complete = False
-                    results = results_received.result()
+                    results, complete = results_received.result()
 
                     if (request.instanceId == results.instanceId
                             and request.analysisId == results.analysisId
                             and request.revision == results.revision):
 
-                        if request.perform == PERFORM_SAVE:
-                            complete = True
-                        if results.incAsText and results.status == ANALYSIS_COMPLETE:
-                            complete = True
-                        elif results.incAsText and results.status == ANALYSIS_ERROR:
-                            complete = True
-                        elif request.perform == PERFORM_INIT and results.status == ANALYSIS_INITED:
-                            complete = True
+                        if complete:
+                            results_stream.set_result(results)
+                        else:
+                            results_stream.write(results)
+                    else:
+                        complete = False
 
                     if not complete:
-                        results_stream.write(results)
                         results_received = create_task(self._results_queue.get())
                         pending.add(results_received)
-                    else:
-                        results_stream.set_result(results)
-                        break
 
                 elif timeout in done:
 
@@ -376,11 +376,12 @@ class Engine:
 
                     message = ComsMessage()
                     message.ParseFromString(bytes)
+                    complete = (message.status != MESSAGE_IN_PROGRESS)
 
                     results = AnalysisResponse()
                     results.ParseFromString(message.payload)
 
-                    self._ioloop.call_soon_threadsafe(self._results_queue.put_nowait, results)
+                    self._ioloop.call_soon_threadsafe(self._results_queue.put_nowait, (results, complete))
 
                 except nanomsg.NanoMsgAPIError as e:
                     if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
