@@ -401,7 +401,11 @@ class Analyses:
             analysis_meta.translate_defaults(module_meta, i18n.get_language())
 
             if enabled is None:
-                enabled = not analysis_meta.defn.get('arbitraryCode', False)
+                if (analysis_meta.defn.get('arbitraryCode', False)
+                        or analysis_meta.defn.get('arbitraryCode2', False)):
+                    enabled = False
+                else:
+                    enabled = True
 
             options = Options.create(option_defs)
             if options_pb is not None:
