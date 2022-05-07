@@ -77,7 +77,7 @@ Analysis.prototype.reload = async function() {
         try {
             await Promise.all([ waitForDefn, waitForSetup ]);
             let defn = await waitForDefn;
-            this.arbitraryCode = (defn.arbitraryCode === true);
+            this.arbitraryCode = (defn.arbitraryCode || defn.arbitraryCode2);
             this.missingModule = false;
             this.options.setValues(this.values);
             this.isReady = true;
