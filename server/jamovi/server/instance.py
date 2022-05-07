@@ -1238,8 +1238,7 @@ class Instance:
 
         if request.restartEngines:
             await self.session.restart_engines()
-            for analysis in self._data.analyses:
-                analysis.rerun()
+            self._data.analyses.rerun()
             return
 
         elif request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE') and request.analysisId == 0:  # request to delete all analyses

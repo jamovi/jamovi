@@ -579,7 +579,6 @@ class Server:
                 await self._session.restart_engines()
                 await Modules.instance().install_from_file(path)
                 self._session.notify_global_changes()
-                self._session.rerun_analyses()
             except Exception:
                 import traceback
                 print(traceback.format_exc())

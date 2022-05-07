@@ -554,7 +554,8 @@ class Analyses:
 
     def rerun(self):
         for analysis in self:
-            analysis.rerun()
+            if analysis.enabled:
+                analysis.rerun()
 
     @property
     def needs_init(self):

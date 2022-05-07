@@ -167,7 +167,8 @@ class Session(dict):
 
     def rerun_analyses(self):
         for analysis in self._analyses:
-            analysis.rerun()
+            if analysis.enabled:
+                analysis.rerun()
 
     def _on_engine_event(self, event):
         if event['type'] == 'error':
