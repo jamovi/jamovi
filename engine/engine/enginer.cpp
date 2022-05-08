@@ -86,14 +86,12 @@ void EngineR::run(AnalysisRequest &analysis)
 
     setLibPaths(analysis.ns());
 
-    bool INC_SYNTAX = true;
-    bool NO_SYNTAX = false;
     bool COMPLETE = true;
     bool IN_PROGRESS = false;
 
     if (Rcpp::as<bool>(ana["errored"]))
     {
-        sendResults(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, COMPLETE);
         return;
     }
 
@@ -168,7 +166,7 @@ void EngineR::run(AnalysisRequest &analysis)
 
     if (Rcpp::as<bool>(ana["errored"]))
     {
-        sendResults(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, COMPLETE);
         setOptions(optionsValues);
         return;
     }
@@ -215,12 +213,12 @@ void EngineR::run(AnalysisRequest &analysis)
     }
     else if (Rcpp::as<bool>(ana["errored"]) || Rcpp::as<bool>(ana["complete"]))
     {
-        sendResults(ana, INC_SYNTAX, COMPLETE);
+        sendResults(ana, COMPLETE);
         Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
     else if (analysis.perform() == 0)   // INIT
     {
-        sendResults(ana, NO_SYNTAX, COMPLETE);
+        sendResults(ana, COMPLETE);
         Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
     else
@@ -234,19 +232,19 @@ void EngineR::run(AnalysisRequest &analysis)
             return;
         }
 
-        sendResults(ana, NO_SYNTAX, IN_PROGRESS);
+        sendResults(ana, IN_PROGRESS);
         Rcpp::as<Rcpp::Function>(ana[".createImages"])(Rcpp::Named("noThrow", true));
-        sendResults(ana, NO_SYNTAX, COMPLETE);
+        sendResults(ana, COMPLETE);
         Rcpp::as<Rcpp::Function>(ana[".save"])();
     }
 
     setOptions(optionsValues); // restore options
 }
 
-void EngineR::sendResults(Rcpp::Environment &ana, bool incAsText, bool complete)
+void EngineR::sendResults(Rcpp::Environment &ana, bool complete)
 {
     Rcpp::Function serialize = ana["serialize"];
-    Rcpp::RawVector results = serialize(incAsText);
+    Rcpp::RawVector results = serialize(complete);
     string raw(results.begin(), results.end());
     resultsReceived(raw, complete);
 }
