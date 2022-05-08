@@ -83,7 +83,7 @@ message AnalysisResponse {
     ResultsElement results = 7;
     AnalysisStatus status = 8;
     Error error = 9;
-    bool incAsText = 10;
+    bool final = 10;
     int32 revision = 11;
     bool restartEngines = 12;
     string stacktrace = 13;

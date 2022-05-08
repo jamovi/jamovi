@@ -684,7 +684,6 @@ const Instance = Backbone.Model.extend({
                     id: analysisPB.analysisId,
                     options: options,
                     results: analysisPB.results,
-                    incAsText: analysisPB.incAsText,
                     references: analysisPB.references,
                     enabled: false,
                     dependsOn: analysisPB.dependsOn,
@@ -726,7 +725,6 @@ const Instance = Backbone.Model.extend({
             index: index,
             options: duplicee.options.getValues(),
             results: duplicee.results,
-            incAsText: duplicee.incAsText,
             references: duplicee.references,
         });
         this._sendAnalysis(analysis, duplicee);
@@ -865,7 +863,6 @@ const Instance = Backbone.Model.extend({
                     id: response.analysisId,
                     options: options,
                     results: response.results,
-                    incAsText: response.incAsText,
                     references: response.references,
                     enabled: response.enabled,
                     index: response.index - 1,
@@ -890,7 +887,6 @@ const Instance = Backbone.Model.extend({
                     analysis.setResults({
                         results: response.results,
                         options: options,
-                        incAsText: response.incAsText,
                         references: response.references,
                     });
             }

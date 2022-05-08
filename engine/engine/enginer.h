@@ -64,7 +64,7 @@ private:
 
     Rcpp::Environment create(const jamovi::coms::AnalysisRequest &analysis);
 
-    void sendResults(Rcpp::Environment &ana, bool incAsText, bool complete);
+    void sendResults(Rcpp::Environment &ana, bool complete);
 
     static void createDirectories(const std::string &path);
     static void setLibPaths(const std::string &moduleName);

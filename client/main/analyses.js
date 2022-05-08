@@ -19,7 +19,6 @@ const Analysis = function(id, name, ns, modules) {
     this.results = null;
     this.options = null;
     this.isReady = false;
-    this.incAsText = false;
     this.references = [ ];
     this.index = -1;
     this.uijs = undefined;
@@ -107,7 +106,6 @@ Analysis.prototype.setup = function(values) {
 
 Analysis.prototype.setResults = async function(res) {
     this.results = res.results;
-    this.incAsText = res.incAsText;
     this.references = res.references;
     if (this.options)
         this.options.setValues(res.options);
@@ -284,7 +282,6 @@ const Analyses = Backbone.Model.extend({
 
         await analysis.setResults({
             options: options.options,
-            incAsText: options.incAsText || '',
             references: options.references || [ ],
             results: results,
         });
