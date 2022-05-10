@@ -47,9 +47,6 @@ const Instance = Backbone.Model.extend({
 
         this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
 
-        this._settings.on('change:theme', event => this._themeChanged());
-        this._settings.on('change:palette', event => this._paletteChanged());
-
         this._instanceId = null;
 
         this._onBC = (bc => this._onReceive(bc));
@@ -608,19 +605,9 @@ const Instance = Backbone.Model.extend({
     },
     trustArbitraryCode() {
         for (let analysis of this.analyses()) {
-            if ( ! analysis.enabled) {
-                analysis.enabled = true;
-                this._runAnalysis(analysis, []);
-            }
+            if ( ! analysis.enabled)
+                analysis.enable();
         }
-    },
-    _themeChanged() {
-        for (let analysis of this.analyses())
-            this._runAnalysis(analysis, 'theme');
-    },
-    _paletteChanged() {
-        for (let analysis of this.analyses())
-            this._runAnalysis(analysis, 'palette');
     },
     _notify(error) {
         let notification = new Notify({
@@ -688,8 +675,6 @@ const Instance = Backbone.Model.extend({
                     enabled: false,
                     dependsOn: analysisPB.dependsOn,
                 });
-                if (analysis.results.status !== 3)
-                    this._runAnalysis(analysis);
 
                 allAnalysesReady.push(analysis.ready);
 
@@ -931,7 +916,6 @@ const Instance = Backbone.Model.extend({
             let columnRenames = [];
             let levelRenames = [];
             let columnDeletes = [];
-            let rerunAnalysis = false;
 
             for (let changes of event.changes) {
 
@@ -939,8 +923,6 @@ const Instance = Backbone.Model.extend({
                     if (using.includes(changes.name)) {
                         columnDeleted = true;
                         columnDeletes.push(changes.name);
-                        if (changes.columnType !== 'output')
-                            rerunAnalysis = true;
                     }
                 }
                 else {
@@ -958,11 +940,9 @@ const Instance = Backbone.Model.extend({
                             changes.missingValuesChanged ||
                             changes.descriptionChanged)
                         columnDataChanged = true;
-                        rerunAnalysis = true;
                     }
                     if (changes.nameChanged && using.includes(changes.oldName)) {
                         columnRenamed = true;
-                        rerunAnalysis = true;
                         columnRenames.push({ oldName: changes.oldName, newName: column.name });
                     }
                     if (changes.levelsChanged) {
@@ -983,8 +963,6 @@ const Instance = Backbone.Model.extend({
                 let selectedAnalysis = this.get('selectedAnalysis');
                 if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
                     this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
-                if (rerunAnalysis)
-                    this._runAnalysis(analysis, event.changed);
             }
         }
     },

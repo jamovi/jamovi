@@ -2,6 +2,9 @@
 import json
 import os.path
 
+from .utils.event import Event
+from .utils.event import EventHook
+
 
 class Settings(dict):
 
@@ -12,6 +15,7 @@ class Settings(dict):
 
         self._children = { }
         self._defaults = { }
+        self.changed = EventHook()
 
     async def read(self):
         data = await self._backend.read_settings()
@@ -50,10 +54,30 @@ class Settings(dict):
         self._defaults[name] = value
 
     def set(self, name, value):
+        try:
+            if self[name] == value:
+                return
+        except KeyError:
+            pass
         self[name] = value
+        event = Event(self, 'changed', [ name ])
+        self.changed(event)
 
     def get(self, name, default=None):
         return super().get(name, self._defaults.get(name, default))
+
+    def update(self, values):
+        changed = [ ]
+        for key, value in values.items():
+            try:
+                if self[key] != value:
+                    changed.append(key)
+            except KeyError:
+                changed.append(key)
+        if changed:
+            super().update(values)
+            event = Event(self, 'changed', changed)
+            self.changed(event)
 
     def __iter__(self):
         keys = set()
