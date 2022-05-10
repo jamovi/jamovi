@@ -141,6 +141,14 @@ Analysis.prototype.setOptions = function(values) {
     }
 };
 
+Analysis.prototype.enable = function() {
+    if (this.enabled)
+        return;
+    this.enabled = true;
+    if (this._parent !== null)
+        this._parent._notifyOptionsChanged(this);
+}
+
 Analysis.prototype.notifyColumnsRenamed = function(columnRenames) {
     for (let i = 0; i < columnRenames.length; i++)
         this.options.renameColumn(columnRenames[i].oldName, columnRenames[i].newName);

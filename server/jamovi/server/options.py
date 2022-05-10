@@ -8,12 +8,236 @@ TRUE = AnalysisOption.Other.Value('TRUE')
 FALSE = AnalysisOption.Other.Value('FALSE')
 
 
+def substitute(values, changes):
+    for index, old_value in enumerate(values):
+        try:
+            values[index] = changes[old_value]
+        except KeyError:
+            pass
+    return values
+
+
+def write_value_to_pb(value, pb):
+    if value is True:
+        pb.o = TRUE
+    elif value is False:
+        pb.o = FALSE
+    elif type(value) == str:
+        pb.s = value
+    elif type(value) == int:
+        pb.i = value
+    elif type(value) == float:
+        pb.d = value
+    elif type(value) == list:
+        pb.ClearField('c')
+        pb.c.hasNames = False
+        for v in value:
+            child_pb = pb.c.options.add()
+            write_value_to_pb(v, child_pb)
+    elif type(value) == dict:
+        pb.ClearField('c')
+        pb.c.hasNames = True
+        for k, v in value.items():
+            pb.c.names.append(k)
+            child_pb = pb.c.options.add()
+            write_value_to_pb(v, child_pb)
+    else:
+        pb.o = NONE
+
+
+def read_value_from_pb(pb):
+    if pb.HasField('s'):
+        return pb.s
+    elif pb.HasField('c'):
+        values = map(read_value_from_pb, pb.c.options)
+        if pb.c.hasNames:
+            return dict(zip(pb.c.names, values))
+        else:
+            return list(values)
+    elif pb.HasField('o'):
+        if pb.o == TRUE:
+            return True
+        elif pb.o == FALSE:
+            return False
+        else:
+            return None
+    elif pb.HasField('i'):
+        return pb.i
+    elif pb.HasField('d'):
+        return pb.d
+    else:
+        return None
+
+
 class Option:
-    def __init__(self):
-        self.name = None
-        self.type = None
-        self.passive = False
-        self.default = None
+    def __init__(self, defn):
+        self.defn = defn
+        self.type = defn['type']
+        self.name = defn.get('name')
+        self.passive = defn.get('passive', False)
+        self.default = self.gen_default()
+        self.pb = None
+
+    def attach(self, pb):
+        self.pb = pb
+
+    def set_value(self, value):
+        write_value_to_pb(value, self.pb)
+
+    def get_value(self):
+        return read_value_from_pb(self.pb)
+
+    def get_using(self):
+        return set()
+
+    def rename_using(self, changes):
+        pass
+
+    def gen_default(self):
+        if 'default' in self.defn:
+            return self.defn['default']
+        elif self.type == 'Bool':
+            return False
+        elif self.type == 'Variables':
+            return [ ]
+        elif self.type == 'Integer':
+            return 0
+        elif self.type == 'Number':
+            return 0.0
+        elif self.type == 'List':
+            first_option = self.defn['options'][0]
+            if isinstance(first_option, dict):
+                return first_option['name']
+            else:
+                return first_option
+        elif self.type == 'NMXList':
+            return [ ]
+        elif self.type == 'Output':
+            return { 'value': False, 'vars': [ ], 'synced': [ ] }
+        else:
+            return None
+
+
+class OptionVariable(Option):
+    def get_using(self):
+        value = self.get_value()
+        if value is not None:
+            return set([ value ])
+        else:
+            return set()
+
+    def rename_using(self, changes):
+        old_value = self.get_value()
+        if old_value in changes:
+            new_value = changes[old_value]
+            self.set_value(new_value)
+
+
+class OptionVariables(Option):
+    def get_using(self):
+        values = self.get_value()
+        if values is not None:
+            return set(values)
+        else:
+            return set()
+
+    def rename_using(self, changes):
+        values = self.get_value()
+        if not values:
+            return
+        substitute(values, changes)
+        self.set_value(values)
+
+
+class OptionTerms(Option):
+    def get_using(self):
+        valuess = self.get_value()
+        using = set()
+        if not valuess:
+            return using
+        for values in valuess:
+            for value in values:
+                using.add(value)
+        return using
+
+    def rename_using(self, changes):
+        valuess = self.get_value()
+        if not valuess:
+            return
+        for values in valuess:
+            substitute(values, changes)
+        self.set_value(valuess)
+
+
+class OptionPairs(OptionTerms):
+    def get_using(self):
+        valuess = self.get_value()
+        using = set()
+        if not valuess:
+            return using
+        for values in valuess:
+            for value in values.values():
+                using.add(value)
+        return using
+
+    def rename_using(self, changes):
+        valuess = self.get_value()
+        if not valuess:
+            return
+        for values in valuess:
+            for key, value in values.items():
+                try:
+                    values[key] = changes[value]
+                except KeyError:
+                    pass
+        self.set_value(valuess)
+
+
+class OptionArray(Option):
+    def __iter__(self):
+        template = self.defn['template']
+        option = create_option(template)
+        for child_pb in self.pb.c.options:
+            option.attach(child_pb)
+            yield option
+
+    def get_using(self):
+        using = set()
+        for option in self:
+            using.update(option.get_using())
+        return using
+
+    def rename_using(self, changes):
+        for option in self:
+            option.rename_using(changes)
+
+
+class OptionGroup(OptionArray):
+    def __iter__(self):
+        elems = self.defn['elements']
+        names = list(self.pb.c.names)
+        for elem_defn in elems:
+            option = create_option(elem_defn)
+            index = names.index(option.name)
+            elem_pb = self.pb.c.options[index]
+            option.attach(elem_pb)
+            yield option
+
+
+OptionTypes = {
+    'Variable': OptionVariable,
+    'Variables': OptionVariables,
+    'Terms': OptionTerms,
+    'Pairs': OptionPairs,
+    'Array': OptionArray,
+    'Group': OptionGroup,
+}
+
+
+def create_option(defn):
+    Type = OptionTypes.get(defn['type'], Option)
+    option = Type(defn)
+    return option
 
 
 class Options:
@@ -35,71 +259,16 @@ class Options:
             if typ == 'Data':
                 continue
 
-            option = Option()
-            option.name = name
-            option.type = typ
-            option.passive = 'passive' in opt_defn and opt_defn['passive']
-            options._options[name] = option
+            option = create_option(opt_defn)
 
+            options._options[name] = option
             options._pb.names.append(name)
             opt_pb = options._pb.options.add()
 
-            if 'default' in opt_defn:
-                default = opt_defn['default']
-            elif typ == 'Bool':
-                default = False
-            elif typ == 'Variables':
-                default = [ ]
-            elif typ == 'Integer':
-                default = 0
-            elif typ == 'Number':
-                default = 0.0
-            elif typ == 'List':
-                first_option = opt_defn['options'][0]
-                if isinstance(first_option, dict):
-                    default = first_option['name']
-                else:
-                    default = first_option
-            elif typ == 'NMXList':
-                default = [ ]
-            elif typ == 'Output':
-                default = { 'value': False, 'vars': [ ], 'synced': [ ] }
-            else:
-                default = None
-
-            option.default = default
-
-            Options._populate_pb(opt_pb, default)
+            option.attach(opt_pb)
+            option.set_value(option.default)
 
         return options
-
-    @staticmethod
-    def _populate_pb(dest_pb, value):
-        if value is True:
-            dest_pb.o = TRUE
-        elif value is False:
-            dest_pb.o = FALSE
-        elif type(value) == str:
-            dest_pb.s = value
-        elif type(value) == int:
-            dest_pb.i = value
-        elif type(value) == float:
-            dest_pb.d = value
-        elif type(value) == list:
-            dest_pb.ClearField('c')
-            dest_pb.c.hasNames = False
-            for v in value:
-                child_pb = dest_pb.c.options.add()
-                Options._populate_pb(child_pb, v)
-        elif type(value) == dict:
-            dest_pb.ClearField('c')
-            dest_pb.c.hasNames = True
-            for k, v in value.items():
-                dest_pb.c.names.append(k)
-                child_pb = dest_pb.c.options.add()
-                Options._populate_pb(child_pb, v)
-        else:
-            dest_pb.o = NONE
 
     def __init__(self):
         self._options = { }
@@ -112,8 +281,7 @@ class Options:
             default = None
             if name in self._options:
                 default = self._options[name].default
-
-            self._populate_pb(opt_pb, default)
+            write_value_to_pb(default, opt_pb)
 
     def get(self, name):
         return self.get_value(name)
@@ -126,30 +294,7 @@ class Options:
         else:
             return otherwise
 
-        return self._read_value(pb)
-
-    def _read_value(self, pb):
-        if pb.HasField('s'):
-            return pb.s
-        elif pb.HasField('c'):
-            values = map(self._read_value, pb.c.options)
-            if pb.c.hasNames:
-                return dict(zip(pb.c.names, values))
-            else:
-                return list(values)
-        elif pb.HasField('o'):
-            if pb.o == TRUE:
-                return True
-            elif pb.o == FALSE:
-                return False
-            else:
-                return None
-        elif pb.HasField('i'):
-            return pb.i
-        elif pb.HasField('d'):
-            return pb.d
-        else:
-            return None
+        return read_value_from_pb(pb)
 
     def set_value(self, name, value):
 
@@ -161,7 +306,7 @@ class Options:
             option_pb = self._pb.options.add()
             self._pb.names.append(name)
 
-        Options._populate_pb(option_pb, value)
+        write_value_to_pb(value, option_pb)
 
     def set(self, pb):
         changes = False
@@ -201,6 +346,28 @@ class Options:
 
         return changes
 
+    def get_using(self):
+        using = set()
+        for i, name in enumerate(self._pb.names):
+            try:
+                option = self._options[name]
+            except KeyError:
+                continue
+            pb = self._pb.options[i]
+            option.attach(pb)
+            using.update(option.get_using())
+        return set(using)
+
+    def rename_using(self, changes):
+        for i, name in enumerate(self._pb.names):
+            try:
+                option = self._options[name]
+            except KeyError:
+                continue
+            pb = self._pb.options[i]
+            option.attach(pb)
+            option.rename_using(changes)
+
     def read(self, bin):
         self._pb.ParseFromString(bin)
 
@@ -222,10 +389,3 @@ class Options:
                 del self._pb.options[i]
             else:
                 i += 1
-
-    @staticmethod
-    def _get_option_pb(pb, name):
-        for i in range(len(pb.names)):
-            if pb.names[i] == name:
-                return pb.options[i]
-        return None

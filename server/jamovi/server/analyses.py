@@ -232,6 +232,19 @@ class Analysis:
         if not silent:
             self.parent._notify_results_changed(self)
 
+    def get_using(self):
+        return self.options.get_using()
+
+    def notify_changes(self, changes, renamed=None):
+        if renamed:
+            self.options.rename_using(renamed)
+        if changes:
+            self.changes |= set(changes)
+        self.complete = False
+        self.status = Analysis.Status.NONE
+        if self.enabled:
+            self.parent._notify_options_changed(self)
+
     def copy_from(self, analysis):
         self.revision = analysis.revision
         self.status = analysis.status
@@ -250,10 +263,12 @@ class Analysis:
             child.results.dependsOn = self.id
 
     def run(self):
+        self.complete = False
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
     def rerun(self):
+        self.complete = False
         self.status = Analysis.Status.NONE
         self.clear_state = True
         self.parent._notify_options_changed(self)
