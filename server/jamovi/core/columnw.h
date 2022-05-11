@@ -87,6 +87,20 @@ private:
         ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
         int blocksRequired = count * sizeof(T) / VALUES_SPACE + 1;
 
+        if (blocksRequired > cs->blockCapacity)
+        {
+            int newCapacity = 2 * cs->blockCapacity;
+            while (newCapacity < blocksRequired)
+                newCapacity *= 2;
+
+            Block** newBlocks = _mm->allocate<Block*>(newCapacity);
+            cs = _mm->resolve<ColumnStruct>(_rel);
+            Block** oldBlocks = _mm->resolve<Block*>(cs->blocks);
+            memcpy(newBlocks, oldBlocks, cs->blocksUsed * sizeof(Block*));
+            cs->blocks = _mm->base(newBlocks);
+            cs->blockCapacity = newCapacity;
+        }
+
         for (int i = cs->blocksUsed; i < blocksRequired; i++)
         {
             Block *block = _mm->allocateSize<Block>(BLOCK_SIZE);
