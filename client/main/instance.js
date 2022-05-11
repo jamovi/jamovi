@@ -293,8 +293,14 @@ const Instance = Backbone.Model.extend({
                     // if the last piece is empty (in jsonlines this will often be the case)
                     // use the second last piece instead
                     let lastPiece = pieces[pieces.length - 1] || pieces[pieces.length - 2];
-                    if (lastPiece)
-                        message = JSON.parse(lastPiece);
+                    if (lastPiece) {
+                        try {
+                            message = JSON.parse(lastPiece);
+                        }
+                        catch(e) {
+                            message = null;
+                        }
+                    }
 
                     if (message && message.status === 'in-progress') {
                         if ( ! message.title)
