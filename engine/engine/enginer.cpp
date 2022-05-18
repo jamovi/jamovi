@@ -244,9 +244,20 @@ void EngineR::run(AnalysisRequest &analysis)
 void EngineR::sendResults(Rcpp::Environment &ana, bool complete)
 {
     Rcpp::Function serialize = ana["serialize"];
-    Rcpp::RawVector results = serialize(complete);
-    string raw(results.begin(), results.end());
-    resultsReceived(raw, complete);
+    SEXP results = serialize(complete);
+
+    if (Rf_isNull(results))
+    {
+        std::cerr << "Results could not be serialized ... terminating\n";
+        std::cerr.flush();
+        std::exit(1);
+    }
+    else
+    {
+        Rcpp::RawVector vec = results;
+        string raw(vec.begin(), vec.end());
+        resultsReceived(raw, complete);
+    }
 }
 
 void EngineR::setLibPaths(const std::string &moduleName)

@@ -131,7 +131,7 @@ class Analysis:
                         and first_elem.preformatted == ''):
                     use_previous_results = True
 
-            if use_previous_results:
+            if use_previous_results and self.results is not None:
                 new_results = self.results
                 new_results.results.error.message = results.results.error.message
                 self._change_status_to_complete(new_results.results)
