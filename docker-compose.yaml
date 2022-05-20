@@ -21,7 +21,23 @@ services:
     command: ["/usr/bin/python3 -m jamovi.server 41337 --if=*"]
     stdin_open: true
     environment:
-        JAMOVI_HOSTNAME: '127.0.0.1'
+
+        # for security, jamovi runs across 3 origins
+        #
+        # # separate by port
+        JAMOVI_HOST_A: '127.0.0.1:41337'
+        JAMOVI_HOST_B: '127.0.0.1:41338'
+        JAMOVI_HOST_C: '127.0.0.1:41339'
+
+        # separate by host (RECOMMENDED)
+        # JAMOVI_HOST_A: 'jamovi.127.0.0.1.nip.io:41337'
+        # JAMOVI_HOST_B: 'a.jamovi.127.0.0.1.nip.io:41337'
+        # JAMOVI_HOST_C: 'r.jamovi.127.0.0.1.nip.io:41337'
+
+        # separate by path (NOT RECOMMENDED! REDUCES SECURITY!)
+        # JAMOVI_HOST_A: 'jamovi.127.0.0.1.nip.io:41337'
+        # JAMOVI_HOST_B: 'jamovi.127.0.0.1.nip.io:41337/analyses'
+        # JAMOVI_HOST_C: 'jamovi.127.0.0.1.nip.io:41337/results'
 
     volumes:
       - $HOME/Documents:/root/Documents
