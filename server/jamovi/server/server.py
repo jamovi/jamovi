@@ -26,6 +26,7 @@ import mimetypes
 import re
 import json
 
+from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile
 from tempfile import TemporaryDirectory
 from shutil import rmtree
@@ -453,10 +454,12 @@ class EndHandler(RequestHandler):
 
 
 class ConfigJSHandler(RequestHandler):
+    def initialize(self, roots):
+        self._roots = roots
+
     def get(self):
         self.set_header('Content-Type', 'application/javascript')
-        self.set_header('Cache-Control', 'public, max-age=86400')
-        self.write('window.config = {}')
+        self.write(f'window.config = {{"client":{{"roots":["{ self._roots[0] }","{ self._roots[1] }","{ self._roots[2] }"]}}}}')
 
 
 class Server:
@@ -490,11 +493,6 @@ class Server:
             self._session_id = session_id
         else:
             self._session_id = str(uuid.uuid4())
-
-        if port == 0:
-            self._ports = [ 0, 0, 0 ]
-        else:
-            self._ports = [int(port), int(port) + 1, int(port) + 2]
 
         self._ioloop = asyncio.get_event_loop()
 
@@ -635,94 +633,155 @@ class Server:
         if ping_timeout:
             ping_timeout = int(ping_timeout)
 
-        self._main_app = tornado.web.Application([
-            (r'/', EntryHandler, { 'session': self._session }),
-            (r'/config.js', ConfigJSHandler),
-            (r'/open', OpenHandler, { 'session': self._session }),
-            (r'/auth', AuthTokenHandler, { 'session': self._session }),
-            (r'/settings', SettingsHandler, { 'session': self._session }),
-            (r'/end', EndHandler, { 'session': self._session }),
-            (r'/version', VersionHandler),
-            (r'/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
-            (r'/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
-            (r'/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
-            (r'/proto/coms.proto', SingleFileHandler, {
+        host = conf.get('hostname', '127.0.0.1')
+        host_a = conf.get('host_a', host)
+        host_b = conf.get('host_b', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'a.{ host_a }')
+        host_c = conf.get('host_c', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'r.{ host_a }')
+
+        host_a = urlparse(f'//{ host_a }')
+        host_b = urlparse(f'//{ host_b }')
+        host_c = urlparse(f'//{ host_c }')
+
+        path_a = host_a.path.rstrip('/')
+        path_b = host_b.path.rstrip('/')
+        path_c = host_c.path.rstrip('/')
+
+        port_a = host_a.port
+        port_b = host_b.port
+        port_c = host_c.port
+
+        host_a = host_a.hostname
+        host_b = host_b.hostname
+        host_c = host_c.hostname
+
+        roots = [ ]
+
+        if host_a != host_b and host_b != host_c:
+            separate_by = 'host'
+        elif path_a != path_b and path_b != path_c:
+            separate_by = 'path'
+            if port_a is None:
+                port_a = 80
+        elif port_a is None and port_b is None and port_c is None:
+            separate_by = 'port'
+            port_a = port_b = port_c = 0
+        elif port_a != port_b and port_b != port_c:
+            separate_by = 'port'
+        else:
+            raise ValueError
+
+        self._main_app = tornado.web.Application(
+            websocket_ping_interval = ping_interval,
+            websocket_ping_timeout = ping_timeout)
+
+        if separate_by == 'port':
+            self._analysisui_app = tornado.web.Application()
+            self._resultsview_app = tornado.web.Application()
+        else:
+            self._analysisui_app = self._main_app
+            self._resultsview_app = self._main_app
+
+        self._main_app.add_handlers(re.escape(host_a), [
+            (fr'{ path_a }/', EntryHandler, { 'session': self._session }),
+            (fr'{ path_a }/config.js', ConfigJSHandler, { 'roots': roots }),
+            (fr'{ path_a }/open', OpenHandler, { 'session': self._session }),
+            (fr'{ path_a }/auth', AuthTokenHandler, { 'session': self._session }),
+            (fr'{ path_a }/settings', SettingsHandler, { 'session': self._session }),
+            (fr'{ path_a }/end', EndHandler, { 'session': self._session }),
+            (fr'{ path_a }/version', VersionHandler),
+            (fr'{ path_a }/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
+            (fr'{ path_a }/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
+            (fr'{ path_a }/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
+            (fr'{ path_a }/assets/coms.proto', SingleFileHandler, {
                 'path': coms_path,
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
-            (r'/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
-            (r'/modules/([0-9a-zA-Z]+)/i18n/([a-z]{2}(?:-[a-z]{2})?)', ModuleI18nDescriptor),
-            (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
-            (r'/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
-            (r'/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
-            (r'/api/datasets', DatasetsList, { 'session': self._session }),
-            (r'/i18n/', I18nManifestHandler, {
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{2}(?:-[a-z]{2})?)', ModuleI18nDescriptor),
+            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
+            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
+            (fr'{ path_a }/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
+            (fr'{ path_a }/api/datasets', DatasetsList, { 'session': self._session }),
+            (fr'{ path_a }/i18n/', I18nManifestHandler, {
                 'session': self._session,
                 'path': f'{ i18n_path }/manifest.json' }),
-            (r'/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
-            (r'/assets/(.*)', StaticFileHandler, {
+            (fr'{ path_a }/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
+            (fr'{ path_a }/assets/(.*)', StaticFileHandler, {
                 'path': assets_path }),
-            (r'/[a-f0-9-]+/()', StaticFileHandler, {
+            (fr'{ path_a }/[a-f0-9-]+/()', StaticFileHandler, {
                 'path': client_path,
                 'default_filename': 'index.html',
                 'extra_headers': cache_headers }),
-            (r'/([-0-9a-z.]*)', StaticFileHandler, {
+            (fr'{ path_a }/([-0-9a-z.]*)', StaticFileHandler, {
                 'path': client_path,
                 'extra_headers': cache_headers })
-        ],
-        websocket_ping_interval = ping_interval,
-        websocket_ping_timeout = ping_timeout)
+        ])
 
         analysisui_path = os.path.join(client_path, 'analysisui.html')
 
-        self._analysisui_app = tornado.web.Application([
-            (r'/[-0-9a-f]+/', SingleFileHandler, {
+        self._analysisui_app.add_handlers(re.escape(host_b), [
+            (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
                 'path': analysisui_path,
                 'extra_headers': cache_headers }),
-            (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+            (fr'{ path_b }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': assets_path }),
-            (r'/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+            (fr'{ path_b }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': client_path,
                 'extra_headers': cache_headers }),
         ])
 
         resultsview_path = os.path.join(client_path, 'resultsview.html')
 
-        self._resultsview_app = tornado.web.Application([
-            (r'/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
+        self._resultsview_app.add_handlers(re.escape(host_c), [
+            (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
                 'path': resultsview_path,
                 'extra_headers': cache_headers }),
-            (r'/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+            (fr'{ path_c }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': assets_path }),
-            (r'/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+            (fr'{ path_c }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                 'path': client_path,
                 'extra_headers': cache_headers }),
-            (r'/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
+            (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
                 'session': self._session }),
-            (r'/([-0-9a-z]+)/([0-9]+)/module/(.+)',
+            (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
                 ModuleAssetHandler),
         ])
 
-        sockets = tornado.netutil.bind_sockets(self._ports[0], self._host)
+        sockets = tornado.netutil.bind_sockets(port_a, self._host)
         server = tornado.httpserver.HTTPServer(self._main_app)
         server.add_sockets(sockets)
-        self._ports[0] = sockets[0].getsockname()[1]
+        port_a = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._ports[1], self._host)
-        server = tornado.httpserver.HTTPServer(self._analysisui_app)
-        server.add_sockets(sockets)
-        self._ports[1] = sockets[0].getsockname()[1]
+        if separate_by == 'port':
+            sockets = tornado.netutil.bind_sockets(port_b, self._host)
+            server = tornado.httpserver.HTTPServer(self._analysisui_app)
+            server.add_sockets(sockets)
+            port_b = sockets[0].getsockname()[1]
 
-        sockets = tornado.netutil.bind_sockets(self._ports[2], self._host)
-        server = tornado.httpserver.HTTPServer(self._resultsview_app)
-        server.add_sockets(sockets)
-        self._ports[2] = sockets[0].getsockname()[1]
-
-        hostname = conf.get('hostname', '127.0.0.1')
-        if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', hostname):
-            hosts = f'{ hostname }:{ self._ports[0] } { hostname }:{ self._ports[1] } { hostname }:{ self._ports[2] }'
+            sockets = tornado.netutil.bind_sockets(port_c, self._host)
+            server = tornado.httpserver.HTTPServer(self._resultsview_app)
+            server.add_sockets(sockets)
+            port_c = sockets[0].getsockname()[1]
         else:
-            hosts = f'{ hostname } a.{ hostname } r.{ hostname }'
+            port_c = port_b = port_a
+
+        if separate_by == 'port':
+            hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
+            roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+        elif separate_by == 'path':
+            if port_a != 80:
+                hosts = f'{ host_a }:{ port_a }'
+                roots[:] = (f'{ host_a }:{ port_a }{ path_a }', f'{ host_b }:{ port_b }{ path_b }', f'{ host_c }:{ port_c }{ path_c }')
+            else:
+                hosts = f'{ host_a }'
+                roots[:] = (f'{ host_a }{ path_a }', f'{ host_b }{ path_b }', f'{ host_c }{ path_c }')
+        else:  # separate_by == 'host':
+            if port_a != 80:
+                hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
+                roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+            else:
+                hosts = f'{ host_a } { host_b } { host_c }'
+                roots[:] = (host_a, host_b, host_c)
 
         # now we have the port numbers, we can add CSP
         cache_headers[ 'Content-Security-Policy' ] = f'''
@@ -733,12 +792,14 @@ class Server:
             frame-src 'self' { hosts } https://www.jamovi.org;
         '''.replace('\n', '')
 
-        self.ports_opened.set_result(self._ports)
+        self.ports_opened.set_result((port_a, port_b, port_c))
+
+        log.info(f'listening across origin(s): { hosts }')
 
         # write the port no. to a file, so external software can
         # find out what port jamovi is running on
         app_data = Dirs.app_data_dir()
-        port_name = str(self._ports[0]) + '.port'
+        port_name = f'{ port_a }.port'
         self._port_file = os.path.join(app_data, port_name)
         with open(self._port_file, 'w'):
             pass
