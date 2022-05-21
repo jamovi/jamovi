@@ -25,7 +25,7 @@ const Analysis = function(id, name, ns, modules) {
 
     this.revision = 0;
     this.missingModule = false;
-    this.arbitaryCode = false;
+    this.arbitraryCode = false;
     this.enabled = false;
 
     this._parent = null;
@@ -107,6 +107,8 @@ Analysis.prototype.setup = function(values) {
 Analysis.prototype.setResults = async function(res) {
     this.results = res.results;
     this.references = res.references;
+    this.arbitraryCode = res.arbitraryCode;
+    this.enabled = (res.enabled === undefined ? true : res.enabled);
     if (this.options)
         this.options.setValues(res.options);
     if (this._parent !== null)
@@ -249,8 +251,6 @@ const Analyses = Backbone.Model.extend({
             }
         }
 
-        analysis.enabled = (options.enabled === undefined ? true : options.enabled);
-
         let index = options.index !== undefined ? options.index : this._analyses.length;
         analysis.index = index;
         this._analyses.splice(index, 0, analysis);
@@ -292,6 +292,8 @@ const Analyses = Backbone.Model.extend({
             options: options.options,
             references: options.references || [ ],
             results: results,
+            enabled: options.enabled,
+            arbitraryCode: options.arbitraryCode,
         });
 
         analysis._parent = this;
