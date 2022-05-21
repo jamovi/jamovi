@@ -154,6 +154,7 @@ class Scheduler:
         request_pb.analysisId = analysis.id
         request_pb.name = analysis.name
         request_pb.ns = analysis.ns
+        request_pb.arbitraryCode = analysis.arbitrary_code
 
         for addon in analysis.addons:
             addon_pb = request_pb.addons.add()

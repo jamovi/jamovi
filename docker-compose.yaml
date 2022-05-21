@@ -22,6 +22,9 @@ services:
     stdin_open: true
     environment:
 
+        # block Rj - don't enable unless you understand the risks!
+        JAMOVI_ALLOW_ARBITRARY_CODE: 'false'
+
         # for security, jamovi runs across 3 origins
         #
         # # separate by port
@@ -41,4 +44,3 @@ services:
 
     volumes:
       - $HOME/Documents:/root/Documents
-      #- ./:/tmp/source  # mount the source as a volume for development
