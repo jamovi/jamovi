@@ -611,7 +611,7 @@ const Instance = Backbone.Model.extend({
     },
     trustArbitraryCode() {
         for (let analysis of this.analyses()) {
-            if ( ! analysis.enabled)
+            if (analysis.arbitraryCode && ! analysis.enabled)
                 analysis.enable();
         }
     },
@@ -678,7 +678,8 @@ const Instance = Backbone.Model.extend({
                     options: options,
                     results: analysisPB.results,
                     references: analysisPB.references,
-                    enabled: false,
+                    enabled: analysisPB.enabled,
+                    arbitraryCode: analysisPB.arbitraryCode,
                     dependsOn: analysisPB.dependsOn,
                 });
 
@@ -716,6 +717,8 @@ const Instance = Backbone.Model.extend({
             index: index,
             options: duplicee.options.getValues(),
             results: duplicee.results,
+            enabled: duplicee.enabled,
+            arbitraryCode: duplicee.arbitraryCode,
             references: duplicee.references,
         });
         this._sendAnalysis(analysis, duplicee);
@@ -879,6 +882,8 @@ const Instance = Backbone.Model.extend({
                         results: response.results,
                         options: options,
                         references: response.references,
+                        enabled: response.enabled,
+                        arbitraryCode: response.arbitraryCode,
                     });
             }
         }

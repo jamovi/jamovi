@@ -1444,6 +1444,10 @@ class Instance:
             if analysis.has_results:
                 analysis_pb = response.analyses.add()
                 analysis_pb.CopyFrom(analysis.results)
+                # ensure the following are set correctly
+                # analysis.results is read from a file, and can't be trusted
+                analysis_pb.enabled = analysis.enabled
+                analysis_pb.arbitraryCode = analysis.arbitrary_code
 
         self._coms.send(response, self._instance_id, request)
 

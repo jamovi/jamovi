@@ -55,7 +55,19 @@ class Analysis:
             self.parent._ops.remove(self)
             self.future.set_exception(exception)
 
-    def __init__(self, dataset, id, name, ns, options, parent, enabled, addons=None, load_error=False):
+    def __init__(self,
+            dataset,
+            id,
+            name,
+            ns,
+            options,
+            parent,
+            enabled,
+            *,
+            addons=None,
+            load_error=False,
+            arbitrary_code=False):
+
         self.dataset = dataset
         self.id = id
         self.name = name
@@ -68,6 +80,7 @@ class Analysis:
         self.status = Analysis.Status.NONE
         self.clear_state = False
         self.enabled = enabled
+        self.arbitrary_code = arbitrary_code
         self.complete = False
         if addons is None:
             addons = [ ]
@@ -404,7 +417,7 @@ class Analyses:
     def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
         if name == 'empty' and ns == 'jmv':
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled)
+            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
 
         try:
             module_meta = Modules.instance().get(ns)
@@ -415,12 +428,11 @@ class Analyses:
 
             analysis_meta.translate_defaults(module_meta, i18n.get_language())
 
+            arbitrary_code = (analysis_meta.defn.get('arbitraryCode', False)
+                    or analysis_meta.defn.get('arbitraryCode2', False))
+
             if enabled is None:
-                if (analysis_meta.defn.get('arbitraryCode', False)
-                        or analysis_meta.defn.get('arbitraryCode2', False)):
-                    enabled = False
-                else:
-                    enabled = True
+                enabled = not arbitrary_code
 
             options = Options.create(option_defs)
             if options_pb is not None:
@@ -428,11 +440,12 @@ class Analyses:
 
             addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
 
-            return Analysis(self._dataset, id, analysis_name, ns, options, self, enabled, addons=addons)
+            return Analysis(self._dataset, id, analysis_name, ns, options, self,
+                    enabled, addons=addons, arbitrary_code=arbitrary_code)
 
         except Exception as e:
             log.exception(e)
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled, load_error=True)
+            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False, load_error=True)
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:

@@ -93,6 +93,8 @@ message AnalysisResponse {
     int32 dependsOn = 17;
     string title = 18;
     bool hasTitle = 19;
+    bool arbitraryCode = 20;
+    bool enabled = 21;
 }
 
 message Reference {
