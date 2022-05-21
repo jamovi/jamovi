@@ -59,8 +59,9 @@ message AnalysisRequest {
     string path = 16;
     string part = 17;
     string format = 18;
-    bool enabled = 19;
-    string i18n = 20;
+    string i18n = 19;
+    bool arbitraryCode = 20;
+    bool enabled = 21;
 }
 
 enum AnalysisStatus {
