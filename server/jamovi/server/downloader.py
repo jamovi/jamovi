@@ -2,6 +2,7 @@
 import re
 import os.path as path
 from tempfile import TemporaryFile
+import pkg_resources
 
 from tornado.httpclient import AsyncHTTPClient
 
@@ -17,12 +18,8 @@ class Download:
         self._file = file
         self._stream = ProgressStream()
 
-        server_path = conf.get('server_path')
-        if server_path is not None:
-            chain_path = path.join(server_path, 'resources', 'chain.pem')
-            if not path.isfile(chain_path):
-                chain_path = None
-        else:
+        chain_path = pkg_resources.resource_filename(__name__, 'resources/chain.pem')
+        if not path.isfile(chain_path):
             chain_path = None
 
         client = AsyncHTTPClient(max_body_size=512 * 1024 * 1024)
