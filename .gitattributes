@@ -7,3 +7,6 @@
 *.sh text eol=lf
 engine/configure text eol=lf
 platform/jamovi  text eol=lf
+
+# no need to diff this
+server/jamovi/server/resources/chain.pem binary
