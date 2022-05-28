@@ -681,11 +681,17 @@ cdef class Column:
         cdef int ivalue
         cdef CMissingValue m_value
 
-        for missing_value in missing_values:
+        # we have to keep all the missing values bytes in play
+        # i.e. we can't let them get replaced on the stack
+        # so we keep them in a list, rather than just assigning to a
+        # temp variable ... kinda surprising this is necessary
+        utf8_bytes = [None] * len(missing_values)
+
+        for index, missing_value in enumerate(missing_values):
             pmv = self.parse_missing_value(missing_value)
             if pmv['type'] is 0:
-                utf8_bytes = pmv['value'].encode('utf-8')
-                m_value.value.s = utf8_bytes
+                utf8_bytes[index] = pmv['value'].encode('utf-8')
+                m_value.value.s = utf8_bytes[index]
             elif pmv['type'] is 1:
                 m_value.value.d = pmv['value']
             elif pmv['type'] is 2:
