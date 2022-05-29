@@ -95,7 +95,11 @@ class Option:
 
     def gen_default(self):
         if 'default' in self.defn:
-            return self.defn['default']
+            def4ult = self.defn['default']
+            if self.type == 'Output':
+                return { 'value': def4ult, 'vars': [ ], 'synced': [ ] }
+            else:
+                return def4ult
         elif self.type == 'Bool':
             return False
         elif self.type == 'Variables':
