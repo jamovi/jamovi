@@ -183,6 +183,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-instal
     python3-minimal \
     python3-pkg-resources \
     python3-six \
+    python3-protobuf \
     libnanomsg5 \
     libboost-filesystem1.71.0 \
     libprotobuf17 \

@@ -8,6 +8,7 @@ jmv/build
 # built files
 client/*.js
 client/*.css
+server/jamovi/server/jamovi_pb2.py
 
 # only needed on windows
 readstat/jamovi/libs/libiconv-win

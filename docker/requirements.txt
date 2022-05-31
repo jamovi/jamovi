@@ -1,6 +1,5 @@
 tornado
 Cython
-protobuf
 PyYAML
 numpy==1.21.5
 scipy
