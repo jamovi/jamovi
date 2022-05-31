@@ -697,7 +697,7 @@ class Server:
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
             (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{2}(?:-[a-z]{2})?)', ModuleI18nDescriptor),
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{{2}}(?:-[a-z]{{2}})?)', ModuleI18nDescriptor),
             (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
             (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
             (fr'{ path_a }/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
