@@ -1,7 +1,7 @@
 version: '3'
 services:
   jamovi-deps:
-    image: jamovi/jamovi-deps
+    image: jamovi/jamovi-deps:2.3
     build:
       context: .
       dockerfile: docker/deps-Dockerfile
