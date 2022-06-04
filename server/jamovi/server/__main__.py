@@ -2,11 +2,11 @@
 import sys
 import signal
 from http.client import HTTPConnection
-from asyncio import get_event_loop
 
 from .server import Server
 from .utils import conf
 
+import asyncio
 import logging
 import webbrowser
 import platform
@@ -113,5 +113,4 @@ async def main():  # run down below()
 
 
 if __name__ == '__main__':
-    loop = get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
