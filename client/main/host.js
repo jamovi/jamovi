@@ -14,6 +14,15 @@ const $ = require('jquery');
 const APP_NAME = 'jamovi';
 
 let port = (window.location.port ? `:${ window.location.port }` : '');
+
+// temp workaround because i set the cache on config.js too long
+// will remove once the new config.js has propagated
+if ( ! window.config.client) {
+    window.config.client = {
+        roots: ['cloud.jamovi.org', 'a.cloud.jamovi.org', 'r.cloud.jamovi.org']
+    };
+}
+
 let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }${ port }/`;
 let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }${ port }/`;
 let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }${ port }/`;
