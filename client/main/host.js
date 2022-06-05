@@ -13,9 +13,10 @@ const $ = require('jquery');
 
 const APP_NAME = 'jamovi';
 
-let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }/`;
-let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }/`;
-let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }/`;
+let port = (window.location.port ? `:${ window.location.port }` : '');
+let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }${ port }/`;
+let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }${ port }/`;
+let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }${ port }/`;
 
 let dialogProvider;
 
