@@ -681,7 +681,11 @@ class Server:
             self._analysisui_app = self._main_app
             self._resultsview_app = self._main_app
 
-        self._main_app.add_handlers(re.escape(host_a), [
+        match_a = re.escape(host_a) if host_a else '.*'
+        match_b = re.escape(host_b) if host_b else '.*'
+        match_c = re.escape(host_c) if host_c else '.*'
+
+        self._main_app.add_handlers(match_a, [
             (fr'{ path_a }/', EntryHandler, { 'session': self._session }),
             (fr'{ path_a }/config.js', ConfigJSHandler, { 'roots': roots }),
             (fr'{ path_a }/open', OpenHandler, { 'session': self._session }),
@@ -719,7 +723,7 @@ class Server:
 
         analysisui_path = os.path.join(client_path, 'analysisui.html')
 
-        self._analysisui_app.add_handlers(re.escape(host_b), [
+        self._analysisui_app.add_handlers(match_b, [
             (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
                 'path': analysisui_path,
                 'extra_headers': cache_headers }),
@@ -732,7 +736,7 @@ class Server:
 
         resultsview_path = os.path.join(client_path, 'resultsview.html')
 
-        self._resultsview_app.add_handlers(re.escape(host_c), [
+        self._resultsview_app.add_handlers(match_c, [
             (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
                 'path': resultsview_path,
                 'extra_headers': cache_headers }),
@@ -765,36 +769,37 @@ class Server:
         else:
             port_c = port_b = port_a
 
-        if separate_by == 'port':
-            hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
-            roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
-        elif separate_by == 'path':
-            if port_a != 80:
-                hosts = f'{ host_a }:{ port_a }'
-                roots[:] = (f'{ host_a }:{ port_a }{ path_a }', f'{ host_b }:{ port_b }{ path_b }', f'{ host_c }:{ port_c }{ path_c }')
-            else:
-                hosts = f'{ host_a }'
-                roots[:] = (f'{ host_a }{ path_a }', f'{ host_b }{ path_b }', f'{ host_c }{ path_c }')
-        else:  # separate_by == 'host':
-            if port_a != 80:
+        if host_a is not None:
+            if separate_by == 'port':
                 hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
                 roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
-            else:
-                hosts = f'{ host_a } { host_b } { host_c }'
-                roots[:] = (host_a, host_b, host_c)
+            elif separate_by == 'path':
+                if port_a != 80:
+                    hosts = f'{ host_a }:{ port_a }'
+                    roots[:] = (f'{ host_a }:{ port_a }{ path_a }', f'{ host_b }:{ port_b }{ path_b }', f'{ host_c }:{ port_c }{ path_c }')
+                else:
+                    hosts = f'{ host_a }'
+                    roots[:] = (f'{ host_a }{ path_a }', f'{ host_b }{ path_b }', f'{ host_c }{ path_c }')
+            else:  # separate_by == 'host':
+                if port_a != 80:
+                    hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
+                    roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+                else:
+                    hosts = f'{ host_a } { host_b } { host_c }'
+                    roots[:] = (host_a, host_b, host_c)
 
-        # now we have the port numbers, we can add CSP
-        cache_headers[ 'Content-Security-Policy' ] = f'''
-            default-src 'self';
-            img-src 'self' data:;
-            script-src  'self' 'unsafe-eval' 'unsafe-inline';
-            style-src 'self' 'unsafe-inline';
-            frame-src 'self' { hosts } https://www.jamovi.org;
-        '''.replace('\n', '')
+            # now we have the port numbers, we can add CSP
+            cache_headers[ 'Content-Security-Policy' ] = f'''
+                default-src 'self';
+                img-src 'self' data:;
+                script-src  'self' 'unsafe-eval' 'unsafe-inline';
+                style-src 'self' 'unsafe-inline';
+                frame-src 'self' { hosts } https://www.jamovi.org;
+            '''.replace('\n', '')
+
+            log.info(f'listening across origin(s): { hosts }')
 
         self.ports_opened.set_result((port_a, port_b, port_c))
-
-        log.info(f'listening across origin(s): { hosts }')
 
         # write the port no. to a file, so external software can
         # find out what port jamovi is running on
