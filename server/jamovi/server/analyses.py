@@ -238,7 +238,7 @@ class Analysis:
 
             if analysis_outputs:
                 outputs = AnalysisOutputs(self.id, analysis_outputs)
-                self.parent._notify_output_received(outputs)
+                self.parent._notify_output_received(self, outputs)
 
         self.changes.clear()
         self.clear_state = False
@@ -247,6 +247,9 @@ class Analysis:
 
     def get_using(self):
         return self.options.get_using()
+
+    def get_producing(self):
+        return self.options.get_producing()
 
     def notify_changes(self, changes, renamed=None):
         if renamed:
@@ -626,9 +629,9 @@ class Analyses:
         for listener in self._results_changed_listeners:
             listener(analysis)
 
-    def _notify_output_received(self, output):
+    def _notify_output_received(self, analysis, output):
         for listener in self._output_received_listeners:
-            listener(output)
+            listener(analysis, output)
 
     def get(self, id, instance_id=None):
         for analysis in self._analyses:

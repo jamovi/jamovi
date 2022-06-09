@@ -350,6 +350,15 @@ class Options:
 
         return changes
 
+    def get_producing(self):
+        producing = set()
+        for option in self._options.values():
+            if option.type == 'Output':
+                value = option.get_value()
+                if value is not None and 'vars' in value:
+                    producing.update(value['vars'])
+        return producing
+
     def get_using(self):
         using = set()
         for i, name in enumerate(self._pb.names):
