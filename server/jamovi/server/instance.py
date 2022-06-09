@@ -288,7 +288,7 @@ class Instance:
         if self._coms is not None:
             self._coms.send(analysis.results, self._instance_id, complete=analysis.complete)
 
-    def _on_output_received(self, outputs):
+    def _on_output_received(self, analysis, outputs):
 
         def gen_output_column_name(desired_name):
             name = desired_name
@@ -332,6 +332,8 @@ class Instance:
 
                 # add new columns
 
+                final_names = [ ]
+
                 for output in option_outputs.outputs:
 
                     desired_name = output.title
@@ -365,6 +367,8 @@ class Instance:
                             column.description = output.description
                             column.output_assigned_column_description = output.description
 
+                    final_names.append(column.name)
+
                     if output.values is None:
                         if output.measure_type != column.measure_type:
                             column.clear()
@@ -387,6 +391,9 @@ class Instance:
                     if output.values:
                         index = 0
                         n_values = len(output.values)
+                        if n_values > self._data.row_count:
+                            self._data.set_row_count(n_values)
+                            self._data.refresh_filter_state()
                         for row_no in range(column.row_count):
                             if index < n_values:
                                 value = output.values[index]
@@ -404,6 +411,11 @@ class Instance:
                     column_pb = response.schema.columns.add()
                     self._populate_column_schema(column, column_pb, True)
                     column_pb.dataChanged = True
+
+                option_value = analysis.options.get_value(option_name)
+                if option_value is not None:
+                    option_value['vars'] = final_names
+                analysis.options.set_value(option_name, option_value)
 
                 # delete columns
 
@@ -1636,6 +1648,7 @@ class Instance:
             'deleted_transforms': set(),
             'filters_changed': False,
             'columns_renamed': { },
+            'rows_added_removed': False,
         }
 
         self._on_dataset_del_cols(request, response, changes)
@@ -1685,6 +1698,11 @@ class Instance:
                 analysis.notify_changes(using_and_changed, renamed)
             elif using_and_changed:
                 analysis.notify_changes(using_and_changed)
+            else:
+                # analysis uses no columns, but does create some
+                # so we should rerun it so it can recreate
+                if changes['rows_added_removed'] and analysis.get_producing():
+                    analysis.notify_changes([])
 
     def _on_dataset_get(self, request, response):
         if request.incSchema:
@@ -1722,6 +1740,7 @@ class Instance:
             self._mod_tracker.log_row_insertion(row_data_pb)
 
         if len(insertions) > 0:
+            changes['rows_added_removed'] = True
             # this is done so that the cell changes are sent back
             for column in self._data:
                 changes['columns'].add(column)
@@ -1862,6 +1881,7 @@ class Instance:
                 rows_removed = True
 
         if rows_removed:
+            changes['rows_added_removed'] = True
             for column in self._data:  # the column info needs sending back because the cell edit ranges have changed
                 changes['columns'].add(column)
                 changes['data_changed'].add(column)
