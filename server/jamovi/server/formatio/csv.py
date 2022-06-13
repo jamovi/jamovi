@@ -10,6 +10,7 @@ import chardet
 import logging
 
 from .reader import Reader
+from .jsonlines import JSONLinesReader
 
 
 log = logging.getLogger('jamovi')
@@ -25,7 +26,10 @@ def get_writers():
 
 def read(data, path, prog_cb, *, settings, **kwargs):
 
-    reader = CSVReader(settings)
+    if JSONLinesReader.is_this_json(path):
+        reader = JSONLinesReader(settings)
+    else:
+        reader = CSVReader(settings)
     reader.read_into(data, path, prog_cb)
 
 
