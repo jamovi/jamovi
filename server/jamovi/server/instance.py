@@ -305,6 +305,10 @@ class Instance:
                     break
             return name
 
+        changed = set()
+        renamed = dict()
+        rows_added_removed = False
+
         try:
             response = None
             analysis_id = outputs.analysis_id
@@ -356,6 +360,7 @@ class Instance:
                         if column.name == column.output_assigned_column_name:  # user hasn't changed the name
                             if column.output_desired_column_name != desired_name:  # but analysis has changed the name
                                 name = gen_output_column_name(desired_name)
+                                renamed[column.name] = name
                                 column.name = name
                                 column.description = output.description
                                 column.output_assigned_column_name = name
@@ -373,17 +378,22 @@ class Instance:
                         if output.measure_type != column.measure_type:
                             column.clear()
                             column.change(measure_type=output.measure_type)
+                            changed.add(column.name)
                     elif len(output.values) == 0:
                         column.clear()
                         column.change(measure_type=output.measure_type)
+                        changed.add(column.name)
                     elif isinstance(output.values[0], int):
                         column.clear()
                         column.change(data_type=DataType.INTEGER, measure_type=output.measure_type)
                         if output.measure_type is not MeasureType.CONTINUOUS:
                             for level in output.levels:
                                 column.append_level(level.value, level.label)
+                        changed.add(column.name)
                     elif isinstance(output.values[0], float):
-                        column.change(data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS)
+                        if column.data_type is not DataType.DECIMAL or column.measure_type is not MeasureType.CONTINUOUS:
+                            column.change(data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS)
+                            changed.add(column.name)
                     else:
                         # shouldn't get here
                         continue
@@ -394,6 +404,7 @@ class Instance:
                         if n_values > self._data.row_count:
                             self._data.set_row_count(n_values)
                             self._data.refresh_filter_state()
+                            rows_added_removed = True
                         for row_no in range(column.row_count):
                             if index < n_values:
                                 value = output.values[index]
@@ -404,6 +415,8 @@ class Instance:
 
                         if column.data_type == DataType.DECIMAL:
                             column.determine_dps()
+
+                        changed.add(column.name)
 
                     if response is None:
                         response = jcoms.DataSetRR()
@@ -420,6 +433,8 @@ class Instance:
                 # delete columns
 
                 for column in to_delete:
+                    changed.add(column.name)
+
                     if response is None:
                         response = jcoms.DataSetRR()
 
@@ -431,6 +446,8 @@ class Instance:
             if self._coms is not None and response is not None:
                 self._populate_schema_info(None, response)
                 self._coms.send(response, self._instance_id)
+
+            self._update_analyses(changed, renamed, rows_added_removed)
 
         except Exception as e:
             log.exception(e)
@@ -1691,6 +1708,13 @@ class Instance:
         changed |= set(map(lambda x: x.name, changes['deleted_columns']))
         changed |= set(map(lambda x: x.name, changes['data_changed']))
 
+        self._update_analyses(changed, renamed, changes['rows_added_removed'])
+
+    def _update_analyses(self, changed, renamed, rows_added_removed):
+
+        if rows_added_removed:
+            changed = set(map(lambda x: x.name, self._data))
+
         for analysis in self._data.analyses:
             using = analysis.get_using()
             using_and_changed = using & changed
@@ -1701,7 +1725,7 @@ class Instance:
             else:
                 # analysis uses no columns, but does create some
                 # so we should rerun it so it can recreate
-                if changes['rows_added_removed'] and analysis.get_producing():
+                if rows_added_removed and analysis.get_producing():
                     analysis.notify_changes([])
 
     def _on_dataset_get(self, request, response):
