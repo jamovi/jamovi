@@ -668,15 +668,8 @@ class Column:
                 else:
                     node = ast.Call(
                         # if missing, treat as 0 (false)
-                        func=ast.Name(id='IFMISS', ctx=ast.Load()),
-                        args=[
-                            node,
-                            ast.Num(0),
-                            ast.Call(
-                                # convert value to int
-                                func=ast.Name(id='INT', ctx=ast.Load()),
-                                args=[ node ],
-                                keywords=[ ]) ],
+                        func=ast.Name(id='_FILTER', ctx=ast.Load()),
+                        args=[ node ],
                         keywords=[ ])
 
                 # here we determine the parent filters

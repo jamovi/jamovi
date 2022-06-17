@@ -346,6 +346,13 @@ def IFMISS(index, cond, x=1, y=-2147483648):
 
 
 @row_wise
+@returns(DataType.INTEGER, MeasureType.NOMINAL)
+def _FILTER(index, cond: int):
+    # this is used by filters
+    return 0 if is_missing(cond, empty_str_is_missing=True) else cond
+
+
+@row_wise
 @returns(DataType.INTEGER, MeasureType.NOMINAL, 0)
 def NOT(index, x):
     if is_missing(x):
