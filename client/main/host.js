@@ -13,8 +13,6 @@ const $ = require('jquery');
 
 const APP_NAME = 'jamovi';
 
-let port = (window.location.port ? `:${ window.location.port }` : '');
-
 // temp workaround because i set the cache on config.js too long
 // will remove once the new config.js has propagated
 if ( ! window.config.client) {
@@ -23,9 +21,23 @@ if ( ! window.config.client) {
     };
 }
 
-let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }${ port }/`;
-let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }${ port }/`;
-let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }${ port }/`;
+let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }`;
+let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }`;
+let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }`;
+
+// add ports if necessary
+if (new URL(baseUrl).port === '' && window.location.port !== '')
+    baseUrl += `:${ window.location.port }`;
+if (new URL(analysisUIUrl).port === '' && window.location.port !== '')
+    analysisUIUrl += `:${ window.location.port }`;
+if (new URL(resultsViewUrl).port === '' && window.location.port !== '')
+    resultsViewUrl += `:${ window.location.port }`;
+
+// add trailing slashes
+baseUrl += '/';
+analysisUIUrl += '/';
+resultsViewUrl += '/';
+
 
 let dialogProvider;
 
