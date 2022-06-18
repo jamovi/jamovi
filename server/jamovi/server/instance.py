@@ -1558,7 +1558,8 @@ class Instance:
                     self._session.notify_global_changes()
                 except Exception as e:
                     log.exception(e)
-                    self._coms.send_error(_('Unable to install module'), str(e), self._instance_id, request)
+                    if self._coms is not None:
+                        self._coms.send_error(_('Unable to install module'), str(e), self._instance_id, request)
 
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('UNINSTALL'):
                 if self._perms.library.addRemove is False:
@@ -1569,22 +1570,26 @@ class Instance:
                     self._session.notify_global_changes()
                 except Exception as e:
                     log.exception(e)
-                    self._coms.send_error(str(e), None, self._instance_id, request)
+                    if self._coms is not None:
+                        self._coms.send_error(str(e), None, self._instance_id, request)
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('SHOW'):
                 if self._perms.library.showHide is False:
                     raise PermissionError()
                 self._set_module_visibility(request.name, True)
-                self._coms.send(None, self._instance_id, request)
+                if self._coms is not None:
+                    self._coms.send(None, self._instance_id, request)
                 self._session.notify_global_changes()
             elif request.command == jcoms.ModuleRR.ModuleCommand.Value('HIDE'):
                 if self._perms.library.showHide is False:
                     raise PermissionError()
                 self._set_module_visibility(request.name, False)
-                self._coms.send(None, self._instance_id, request)
+                if self._coms is not None:
+                    self._coms.send(None, self._instance_id, request)
                 self._session.notify_global_changes()
 
         except PermissionError as e:
-            self._coms.send_error(_('Unable to perform request'), str(e), self._instance_id, request)
+            if self._coms is not None:
+                self._coms.send_error(_('Unable to perform request'), str(e), self._instance_id, request)
 
     def _set_module_visibility(self, name, value):
         modules = Modules.instance()
