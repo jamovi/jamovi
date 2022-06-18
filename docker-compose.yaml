@@ -42,5 +42,12 @@ services:
         # JAMOVI_HOST_B: 'jamovi.127.0.0.1.nip.io:41337/analyses'
         # JAMOVI_HOST_C: 'jamovi.127.0.0.1.nip.io:41337/results'
 
+        # prevent unauthorized access
+        # JAMOVI_ACCESS_KEY: 'yourpasswordhere'
+        # then access jamovi with ?access_key=yourpasswordhere added to the url
+        # i.e. 127.0.0.1:41337/?access_key=yourpasswordhere
+        # or alternatively, remove the password requirement:
+        # JAMOVI_ACCESS_KEY: ''
+
     volumes:
       - $HOME/Documents:/root/Documents
