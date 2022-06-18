@@ -44,6 +44,15 @@ if tornado_major < 5:
     raise RuntimeError('tornado 5+ is required')
 
 
+access_key = conf.get('access_key', None)
+access_key_generated = False
+
+if access_key == None:
+    access_key = uuid.uuid4().hex
+    access_key_generated = True
+    conf.set('access_key', access_key)
+
+
 class SingleFileHandler(RequestHandler):
 
     def initialize(self, path, is_pkg_resource=False, mime_type=None, extra_headers={}):
@@ -144,6 +153,7 @@ class ModuleAssetHandler(RequestHandler):
             self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
             self.write(content)
 
+
 class ModuleI18nDescriptor(RequestHandler):
 
     def get(self, module_name, code):
@@ -166,6 +176,7 @@ class ModuleI18nDescriptor(RequestHandler):
             self.set_header('Content-Type', 'application/json')
             self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
             self.write(content)
+
 
 class ModuleDescriptor(RequestHandler):
 
@@ -228,6 +239,23 @@ class EntryHandler(RequestHandler):
         self._session = session
 
     async def get(self):
+
+        required_key = conf.get('access_key', '')
+        if required_key != '':
+            provided_key = self.get_argument('access_key', None)
+            if provided_key is None:
+                self.set_status(401)
+                self.write('<h1>access key required</h1>')
+                self.write('<p>You must append ?access_key=... onto your URL</p>')
+                return
+            elif provided_key != required_key:
+                self.set_status(401)
+                self.write('<h1>auth failed</h1>')
+                self.write('<p>provided access key is not correct</p>')
+                return
+            else:
+                self.set_cookie('access_key', provided_key)
+
         instance = await self._session.create()
         query = self.get_argument('open', '')
         if query:
@@ -239,6 +267,17 @@ class OpenHandler(RequestHandler):
 
     def initialize(self, session):
         self._session = session
+        self._access_key = conf.get('access_key', '')
+
+    def prepare(self, instance_id=None):
+        if self._access_key != '':
+            key_provided = self.get_cookie('access_key', None)
+            if key_provided is None:
+                self.write(f'{{"status":"error","message":{ json.dumps(_("Authentication required")) }}}\n')
+                self.finish()
+            elif self._access_key != key_provided:
+                self.write(f'{{"status":"error","message":{ json.dumps(_("Authentication failure")) }}}\n')
+                self.finish()
 
     async def get(self, instance_id=None):
 
@@ -798,8 +837,10 @@ class Server:
             '''.replace('\n', '')
 
             log.info(f'listening across origin(s): { hosts }')
+            if access_key_generated:
+                log.info(f'jamovi accessible from: { roots[0] }/?access_key={ access_key }')
 
-        self.ports_opened.set_result((port_a, port_b, port_c))
+        self.ports_opened.set_result((port_a, port_b, port_c, access_key))
 
         # write the port no. to a file, so external software can
         # find out what port jamovi is running on

@@ -252,7 +252,7 @@ const Instance = Backbone.Model.extend({
                             url += `&title=${ encodeURIComponent(options.title) }`;
                     }
                     else if (options.existing) {
-                        url = 'open?';
+                        url = 'open';
                     }
                     else {
                         url = `${ host.baseUrl }open?p`;

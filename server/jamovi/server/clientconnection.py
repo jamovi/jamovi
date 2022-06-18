@@ -12,6 +12,8 @@ from .jamovi_pb2 import Status as MessageStatus
 from .jamovi_pb2 import InstanceRequest
 from .jamovi_pb2 import InstanceResponse
 
+from jamovi.server.utils import conf
+
 import asyncio
 import logging
 
@@ -33,6 +35,11 @@ class ClientConnection(WebSocketHandler):
         return True
 
     def open(self, instance_id):
+        key_required = conf.get('access_key', '')
+        if key_required != '':
+            if key_required != self.get_cookie('access_key', None):
+                self.close()
+
         log.debug('%s', 'Websocket opened')
         self._instance_id = instance_id
         ClientConnection.number_of_connections += 1

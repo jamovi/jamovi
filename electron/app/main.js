@@ -268,6 +268,7 @@ let server;
 let ports = null;
 let windows = [ ];
 let rootUrl;
+let accessKey;
 let updateUrl;
 // let recorderWindow = null;
 
@@ -288,11 +289,12 @@ const spawn = new Promise((resolve, reject) => {
 
         if (ports === null) {
             // the server sends back the ports it has opened through stdout
-            ports = /ports: ([0-9]*), ([0-9]*), ([0-9]*)/.exec(chunk);
+            ports = /ports: ([0-9]+), ([0-9]+), ([0-9]+), access_key: (.+)\n/.exec(chunk);
             if (ports !== null) {
+                let accessKey = ports[4];
                 ports = ports.slice(1, 4);
                 ports = ports.map(x => parseInt(x));
-                resolve(ports);
+                resolve({ ports, accessKey });
             }
         }
 
@@ -336,15 +338,16 @@ const spawn = new Promise((resolve, reject) => {
     server.stderr.on('data', dataListener);
     server.on('close', (code) => reject(`Failed to start (${code})`));
 
-}).then(ports => {
+}).then(info => {
 
     server.on('close', (code) => { if (code === 0) app.quit(); });
 
-    global.mainPort = ports[0];
-    global.analysisUIPort = ports[1];
-    global.resultsViewPort = ports[2];
+    global.mainPort = info.ports[0];
+    global.analysisUIPort = info.ports[1];
+    global.resultsViewPort = info.ports[2];
 
-    rootUrl = `http://127.0.0.1:${ ports[0] }/`
+    rootUrl = `http://127.0.0.1:${ info.ports[0] }/`;
+    accessKey = info.accessKey;
 
     let platform;
     if (process.platform === 'darwin')
@@ -467,7 +470,6 @@ ipc.on('request', (event, arg) => {
             createWindow({ id: eventData });
             break;
         case 'navigate':
-            // wind.loadURL(`${ rootUrl }${ eventData }/`);
             createWindow({ id: eventData, bounds: wind.getBounds() });
             wind.close();
             break;
@@ -569,6 +571,7 @@ const createWindow = function(open) {
     let url = rootUrl;
     if (open.id)
         url += open.id + '/';
+
     if (open.open) {
         let filePath = open.open;
         if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
@@ -578,6 +581,13 @@ const createWindow = function(open) {
             filePath = path.resolve(filePath);
             url = `${ url }?open=${ encodeURIComponent(filePath) }`;
         }
+    }
+
+    if (accessKey) {
+        if (url.endsWith('/'))
+            url += `?access_key=${ accessKey }`;
+        else
+            url += `&access_key=${ accessKey }`;
     }
 
     wind.loadURL(url);
