@@ -101,7 +101,7 @@ async def main():  # run down below()
         sys.stdout.write('server already running\n')
         ports = (port, port + 1, port + 2)
 
-    sys.stdout.write(f'ports: { ports[0] }, { ports[1] }, { ports[2] }\n')
+    sys.stdout.write(f'ports: { ports[0] }, { ports[1] }, { ports[2] }, access_key: { ports[3] }\n')
     sys.stdout.flush()
 
     if start_wb:
