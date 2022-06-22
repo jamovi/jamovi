@@ -1,7 +1,7 @@
 tornado
 Cython
 PyYAML
-numpy==1.21.5
+numpy==1.22.0
 scipy
 chardet
 nanomsg
