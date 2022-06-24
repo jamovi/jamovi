@@ -11,6 +11,7 @@ from .stream import ProgressStream
 
 import os.path
 import ssl
+import pkg_resources
 
 
 def int32(value):
@@ -53,11 +54,13 @@ def req_str(request):
         request.name,
         perform)
 
+
+context = None
+
 def ssl_context():
-    context = None
-    server_path = conf.get('server_path')
-    if server_path is not None:
-        chain_path = os.path.join(server_path, 'resources', 'chain.pem')
+    global context
+    if context is None:
+        chain_path = pkg_resources.resource_filename(__name__, '../resources/chain.pem')
         if os.path.isfile(chain_path):
             context = ssl.create_default_context(cafile=chain_path)
     return context
