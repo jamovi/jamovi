@@ -51,14 +51,18 @@ class ColumnInfo:
         self.dps = 0
 
     def examine(self, value):
-        if value == '' or value == ' ' or value is None:
+        if value is None or (isinstance(value, str) and value.strip() == ''):
             return
         self.is_empty = False
         if isinstance(value, list) or isinstance(value, dict) or isinstance(value, bool):
             value = json.dumps(value)
         if not self.many_uniques:
-            if value not in self.unique_values:
-                self.unique_values.add(value)
+            try:
+                v = int(value)
+            except ValueError:
+                v = value
+            if v not in self.unique_values:
+                self.unique_values.add(v)
                 self.n_uniques += 1
                 if self.n_uniques > 49:
                     self.many_uniques = True
@@ -80,6 +84,8 @@ class ColumnInfo:
                 self.data_type = DataType.INTEGER
                 self.measure_type = MeasureType.NOMINAL
                 if self.unique_values is not None:
+                    if any(map(lambda x: isinstance(x, str), self.unique_values)):
+                        uniques = set(map(lambda x: str(x), self.unique_values))
                     uniques = list(self.unique_values)
                     uniques.sort()
                     self.levels = list(map(lambda v: (v, str(v), str(v), True), uniques))
@@ -120,17 +126,18 @@ class JSONLinesReader(Reader):
             if encoding == 'ascii':
                 encoding = 'utf-8-sig'
             text_stream = TextIOWrapper(file, encoding=encoding, errors='replace')
-            line = text_stream.readline()
-            while line != '':
+            while True:
                 line = text_stream.readline()
+                if line == '':  # EOF
+                    break
                 sline = line.strip()
                 if sline != '':  # skip empty lines
                     try:
                         v = json.loads(sline)
-                        if isinstance(v, str):
-                            return False
-                        else:
+                        if isinstance(v, list) or isinstance(v, dict):
                             return True
+                        else:
+                            return False
                     except JSONDecodeError:
                         return False
             return False
@@ -156,39 +163,53 @@ class JSONLinesReader(Reader):
                 self._file.close()
             raise e
 
-    def rows(self):
+    def lines(self):
         while True:
             line = self._text_stream.readline()
             if line == '':
                 break
-            line = line.strip()
-            if line == '':
-                continue
+            yield line
 
-            entry = json.loads(line)
-
-            if isinstance(entry, dict):
-                yield entry
-            elif isinstance(entry, list):
-                for row in entry:
-                    yield row
-            else:
-                raise ValueError
+    def rows(self, line):
+        entry = json.loads(line)
+        if isinstance(entry, dict):
+            yield entry
+        elif isinstance(entry, list):
+            for row in entry:
+                yield row
+        else:
+            raise ValueError
 
     def read_into(self, data, path, prog_cb):
 
         self.open(path)
         infos = {}
         row_count = 0
+        line_count = 0
 
-        for row in self.rows():
-            for column_name, value in row.items():
-                info = infos.get(column_name)
-                if info is None:
-                    infos[column_name] = info = ColumnInfo()
-                info.examine(value)
-            else:
+        for line in self.lines():
+            for row in self.rows(line):
+                for column_name, value in row.items():
+                    try:
+                        info = infos[column_name]
+                    except KeyError:
+                        infos[column_name] = info = ColumnInfo()
+                    info.examine(value)
+
                 row_count += 1
+                if row_count % 100 == 0:
+                    prog_cb(0.33333 * self.progress() / self._total)
+            line_count += 1
+
+        source_column = None
+        if line_count > 1:
+            source_column = data.append_column('source', 'source')
+            source_column.column_type = ColumnType.DATA
+            source_column.set_data_type(DataType.INTEGER)
+            if line_count > 50:
+                source_column.set_measure_type(MeasureType.ID)
+            else:
+                source_column.set_measure_type(MeasureType.NOMINAL)
 
         for column_name, info in infos.items():
             info.ruminate()
@@ -206,26 +227,37 @@ class JSONLinesReader(Reader):
         self.close()
         self.open(path)
 
+        row_no = 0
         columns_by_name = dict(map(lambda c: (c.name, c), data))
 
-        for row_no, row in enumerate(self.rows()):
-            for column_name, value in row.items():
-                column = columns_by_name[column_name]
+        for line_no, line in enumerate(self.lines()):
+            for row in self.rows(line):
 
-                if value is None:
-                    column.clear_at(row_no)
-                elif column.data_type == DataType.INTEGER:
-                    column.set_value(row_no, value)
-                elif column.data_type == DataType.DECIMAL:
-                    column.set_value(row_no, value)
-                elif type(value) in (dict, list, bool):
-                    column.set_value(row_no, json.dumps(value))
-                else:
-                    value = str(value).strip()
-                    if value == '':
+                if source_column:
+                    source_column.set_value(row_no, line_no+1)
+
+                for column_name, value in row.items():
+
+                    column = columns_by_name[column_name]
+
+                    if value is None or (isinstance(value, str) and value.strip() == ''):
                         column.clear_at(row_no)
+                    elif column.data_type == DataType.INTEGER:
+                        column.set_value(row_no, value)
+                    elif column.data_type == DataType.DECIMAL:
+                        column.set_value(row_no, value)
+                    elif type(value) in (dict, list, bool):
+                        column.set_value(row_no, json.dumps(value))
                     else:
-                        column.set_value(row_no, str(value))
+                        value = str(value).strip()
+                        if value == '':
+                            column.clear_at(row_no)
+                        else:
+                            column.set_value(row_no, str(value))
+
+                row_no += 1
+                if row_no % 100 == 0:
+                    prog_cb(.33333 + .66666 * row_no / row_count)
 
 
     def progress(self):
