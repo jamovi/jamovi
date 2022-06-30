@@ -289,7 +289,7 @@ const spawn = new Promise((resolve, reject) => {
 
         if (ports === null) {
             // the server sends back the ports it has opened through stdout
-            ports = /ports: ([0-9]+), ([0-9]+), ([0-9]+), access_key: (.+)\n/.exec(chunk);
+            ports = /ports: ([0-9]+), ([0-9]+), ([0-9]+), access_key: (.+)\r?\n/.exec(chunk);
             if (ports !== null) {
                 let accessKey = ports[4];
                 ports = ports.slice(1, 4);
