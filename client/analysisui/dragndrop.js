@@ -43,8 +43,8 @@ const DragNDrop = function() {
         }
         self.setOverTarget(self, event.pageX, event.pageY);
 
-        if(event.preventDefault && items.length > 0)
-            event.preventDefault();
+        //if(event.preventDefault && items.length > 0)
+        //    event.preventDefault();
 
         $(document).one('mouseup', null, self, self._ddMouseUp);
         $(document).on('mousemove', null, self, self._ddMouseMove);
