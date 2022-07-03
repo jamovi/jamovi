@@ -400,6 +400,8 @@ class InstanceModel:
         if name_column is None and add_name_column:
             name_column = self.insert_column(n_filters, 'source', 'source')
             name_column.column_type = ColumnType.DATA
+
+        if name_column is not None:
             name_column.change(
                 data_type=DataType.TEXT,
                 measure_type=MeasureType.NOMINAL)
