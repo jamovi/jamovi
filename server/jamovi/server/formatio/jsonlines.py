@@ -85,8 +85,9 @@ class ColumnInfo:
                 self.measure_type = MeasureType.NOMINAL
                 if self.unique_values is not None:
                     if any(map(lambda x: isinstance(x, str), self.unique_values)):
-                        uniques = set(map(lambda x: str(x), self.unique_values))
-                    uniques = list(self.unique_values)
+                        uniques = list(set(map(lambda x: str(x), self.unique_values)))
+                    else:
+                        uniques = list(self.unique_values)
                     uniques.sort()
                     self.levels = list(map(lambda v: (v, str(v), str(v), True), uniques))
             else:
@@ -101,7 +102,10 @@ class ColumnInfo:
                     self.data_type = DataType.TEXT
                     self.measure_type = MeasureType.NOMINAL
                     if self.unique_values is not None:
-                        uniques = list(self.unique_values)
+                        if any(map(lambda x: isinstance(x, str), self.unique_values)):
+                            uniques = list(set(map(lambda x: str(x), self.unique_values)))
+                        else:
+                            uniques = list(self.unique_values)
                         uniques.sort()
                         self.levels = list(map(lambda v: (v[0], str(v[1]), str(v[1]), False), enumerate(uniques)))
                 else:
@@ -203,7 +207,7 @@ class JSONLinesReader(Reader):
 
         source_column = None
         if line_count > 1:
-            source_column = data.append_column('source', 'source')
+            source_column = data.append_column('entry', 'entry')
             source_column.column_type = ColumnType.DATA
             source_column.set_data_type(DataType.INTEGER)
             if line_count > 50:
