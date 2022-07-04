@@ -75,7 +75,7 @@ const Annotation = function(address, suffix) {
         this.lastSelection = null;
 
         this.$el = $(`<div class="jmv-annotation body">
-            <div class="editor-box">
+            <div class="editor-box" tabindex="0">
                 <div class="editor jmv-note-theme"></div>
             </div>
         </div>`);
@@ -151,6 +151,7 @@ const Annotation = function(address, suffix) {
         this._body = this.$el[0];
 
         this.ql_editor = this._body.querySelector('.ql-editor');
+        this.ql_editor.setAttribute('tabindex', '-1');
 
         this._backgroundClicked = this._backgroundClicked.bind(this);
         this._event = this._event.bind(this);

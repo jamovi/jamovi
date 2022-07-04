@@ -4,18 +4,25 @@
 const $ = require('jquery');
 
 const RibbonMenu = require('./ribbonmenu');
+const RibbonTab = require('./ribbontab');
 
-const AnalyseTab = function(modules) {
-    this.name = 'analyses';
+const Store = require('../store');
 
-    this.title = _('Analyses');
+class AnalyseTab extends RibbonTab {
+    constructor(modules, model) {
+        super('analyses', 'A', _('Analyses'));
+        this.modules = modules;
+        this._analysesList = { };
+        this._moduleCount = 0;
 
-    this.modules = modules;
+        this.$store = $(`<div class="jmv-store"></div>`).appendTo(document.body);
+        this.store = new Store({ el : this.$store, model : model });
+        this.store.on('notification', note => this.trigger('notification', note));
 
-    this._analysesList = { };
-    this._moduleCount = 0;
+        this.populate();
+    }
 
-    this.needsRefresh = function() {
+    needsRefresh() {
         let modules = this.modules.get('modules');
         let count = 0;
         for (let module of modules) {
@@ -34,10 +41,12 @@ const AnalyseTab = function(modules) {
             return true;
 
         return false;
-    };
+    }
 
-    this.getRibbonItems = async function(ribbon) {
+    async getRibbonItems(ribbon) {
         let buttons = [ ];
+        if ( ! this.modules)
+            return buttons;
 
         let moduleList = [];
         this._analysesList = { };
@@ -73,8 +82,8 @@ const AnalyseTab = function(modules) {
             }
         }
 
-        let $button = $('<div class="modules-menu-item"></div>');
-        let  button = new RibbonMenu($button, _('Modules'), 'modules', [
+        let $button = $('<button class="modules-menu-item"></button>');
+        let  button = new RibbonMenu($button, _('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
             { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
@@ -90,7 +99,10 @@ const AnalyseTab = function(modules) {
             for (let analysis of module.analyses) {
                 let groupName = analysis.menuGroup;
                 let subgroup = analysis.menuSubgroup;
-                let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup)  };
+                let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup) };
+                if (analysis.ns === 'jmv' || menu.ns !== 'jmv')
+                    menu.ns = analysis.ns;
+
                 menu._new = isNew;
                 let submenu = { name };
                 if (subgroup in menu)
@@ -113,12 +125,13 @@ const AnalyseTab = function(modules) {
             }
         }
 
+        let shortcutIndex = 1;
         for (let groupName in menus) {
             let menu = menus[groupName];
             let flattened = [ ];
             let containsNew = menu._new;
             for (let subgroup in menu) {
-                if (subgroup === '_new' || subgroup === '_title')
+                if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
                     continue;
                 flattened.push({
                     name: subgroup,
@@ -132,13 +145,26 @@ const AnalyseTab = function(modules) {
                 flattened = items.concat(flattened);
             }
 
-            let $button = $('<div></div>');
-            let  button = new RibbonMenu($button, menu._title, groupName, flattened, false, containsNew);
+            let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
+            let $button = $('<button></button>');
+            let  button = new RibbonMenu($button, menu._title, groupName, shortcutKey, flattened, false, containsNew);
+
             buttons.push(button);
         }
 
         return buttons;
-    };
-};
+    }
+
+    _analysisSelected(analysis) {
+        if (analysis.name === 'modules' && analysis.ns === 'app')
+            this.store.show(1);
+        else if (analysis.name === 'manageMods' && analysis.ns === 'app')
+            this.store.show(0);
+        else if (analysis.ns === 'installed')
+            this.modules.setModuleVisibility(analysis.name, analysis.checked);
+        else
+            this.emit('analysisSelected', analysis);
+    }
+}
 
 module.exports = AnalyseTab;

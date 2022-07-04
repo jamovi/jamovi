@@ -28,6 +28,7 @@
     background-color: #f8f8f8;
     position: absolute;
     box-shadow: 0px 0px 5px #c1c1c1;
+    z-index: 100;
 }
 
 .jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-medium > .jmv-toolbar-button-menu {
@@ -39,6 +40,20 @@
 
 .jmv-toolbar-button .jmv-toolbar-button {
     font-size: 90%;
+    border: none;
+    background-color: transparent;
+}
+
+[keyboardfocus="true"] .jmv-toolbar-button:focus {
+    background-color: #3e6da93b !important;
+}
+
+[focusmode="default"] .jmv-toolbar-button:not([disabled]):hover {
+    background-color: #3e6da93b;
+}
+
+[focusmode="hover"] .jmv-toolbar-button:not([disabled]):hover {
+    background-color: #3e6da93b;
 }
 
 .jmv-toolbar-menu-arrow {
@@ -83,12 +98,26 @@
     height: 25px;
 }
 
+.jmv-toolbar-button-menu {
+    position: absolute;
+    background-color: white;
+    padding: 1px 1px 4px;
+    background-color: white;
+    border: 1px solid rgb(193, 193, 193);
+    box-shadow: rgb(193, 193, 193) 0px 0px 5px;
+    box-sizing: border-box;
+    z-index: 200;
+}
+
 /*medium button*/
 .jmv-toolbar-group-body .jmv-toolbar-button.jmv-toolbar-button-size-medium {
     width: auto;
     flex-direction: row;
     align-items: center;
     padding-left: 10px;
+    background-color: inherit;
+    border: none;
+    font: inherit;
 }
 
 .jmv-toolbar-button-size-medium .jmv-toolbar-button-icon {

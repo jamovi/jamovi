@@ -2,7 +2,6 @@
 'use strict';
 
 const $ = require('jquery');
-const keyboardJS = require('keyboardjs');
 
 const DataVarLevelWidget = function(level, model, i, readOnly) {
 
@@ -16,7 +15,7 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     if (level.pinned)
         this.$el.addClass('pinned');
 
-    this.$pin = $(`<div class="pin" title="${ _('Pin level') }"></div>`).appendTo(this.$el);
+    this.$pin = $(`<button class="pin" title="${ _('Pin level') }"></button>`).appendTo(this.$el);
     this.$pin.on('click', () => {
         setTimeout(() => { // delay so that the parent control click can suspend applying the settings
             let level = null;
@@ -56,7 +55,6 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     };
 
     this._focus = event => {
-        keyboardJS.pause('level');
         this.$label.select();
     };
 
@@ -64,7 +62,6 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
         let label = this.$label.val();
         let level = this.model.editLevelLabel(this.index, label);
         this.updateLevel(level);
-        keyboardJS.resume('level');
         this.$el.removeClass('selected');
     };
 

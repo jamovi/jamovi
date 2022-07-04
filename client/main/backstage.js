@@ -5,7 +5,6 @@
 'use strict';
 
 const SilkyView = require('./view');
-const keyboardJS = require('keyboardjs');
 const $ = require('jquery');
 const Backbone = require('backbone');
 const path = require('path');
@@ -18,6 +17,8 @@ const Notify = require('./notification');
 const host = require('./host');
 const ActionHub = require('./actionhub');
 const { s6e } = require('../common/utils');
+const focusLoop = require('../common/focusloop');
+const selectionLoop = require('../common/selectionLoop');
 
 const JError = require('./errors').JError;
 const CancelledError = require('./errors').CancelledError;
@@ -82,9 +83,6 @@ const FSEntryListView = SilkyView.extend({
         this.model.on('change:directory', this._render, this);
         this._render();
     },
-    events : {
-        'click .silky-bs-fslist-entry' : '_itemClicked'
-    },
     _render : function() {
 
         this.$el.addClass('silky-bs-fslist');
@@ -108,7 +106,7 @@ const FSEntryListView = SilkyView.extend({
                 location = item.description;
             }
 
-            html += '<div class="silky-bs-fslist-entry" data-path="' + s6e(filePath) + '">';
+            html = `<div class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
             else if (name.endsWith('.omt'))
@@ -120,16 +118,24 @@ const FSEntryListView = SilkyView.extend({
             html += '       <div class="silky-bs-fslist-entry-meta">' + s6e(location) + '</div>';
             html += '   </div>';
             html += '</div>';
+
+            let $item = $(html);
+            focusLoop.applyShortcutOptions($item[0], {
+                key: `${i + 1}`,
+                path: `F`,
+                position: { x: '13%', y: '27%' },
+                action: (event) => {
+                    let target = event.currentTarget;
+                    let filePath = $(target).attr('data-path');
+                    let fileName = $(target).attr('data-name');
+                    this.model.requestOpen(filePath, fileName, FSItemType.File);
+                }
+            });
+
+            this.$el.append($item);
         }
 
-        this.$el.html(html);
         this.$items = this.$el.find('.silky-bs-fslist-entry');
-    },
-    _itemClicked : function(event) {
-        let target = event.currentTarget;
-        let filePath = $(target).attr('data-path');
-        let fileName = $(target).attr('data-name');
-        this.model.requestOpen(filePath, fileName, FSItemType.File);
     }
 });
 
@@ -153,7 +159,6 @@ const FSEntryBrowserView = SilkyView.extend({
         this.model.on('change:items change:dirInfo change:status', this._render, this);
 
         this.$el.addClass('silky-bs-fslist');
-        this.$el.attr('tabindex', 0);
         this._createHeader();
         this._render();
     },
@@ -171,7 +176,8 @@ const FSEntryBrowserView = SilkyView.extend({
         'focus .silky-bs-fslist-browser-save-name' : '_nameGotFocus',
         'focus .silky-bs-fslist-browser-save-filetype' : '_focusChanged',
         'click .silky-bs-fslist-browse-button' : '_manualBrowse',
-        'keydown' : '_keyPressHandle',
+        'keydown .silky-bs-fslist-items' : '_keyPressHandle',
+        'focus .silky-bs-fslist-items' : '_listFocus',
         'keydown .silky-bs-fslist-browser-import-name' : '_importNameKeypressHandle',
         'click .silky-bs-fslist-browser-import-button' : '_importClicked',
         'change .silky-bs-fslist-browser-import-name' : '_importNameChanged',
@@ -181,6 +187,21 @@ const FSEntryBrowserView = SilkyView.extend({
         'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
         'input .search' : '_searchChanged',
         'keydown .search' : '_searchKeyDown'
+    },
+    _listFocus: function(event) {
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
+        if (selectedIndex >= 0 && selectedIndex < this.$items.length){
+            this.clearSelection();
+            this._selectedIndices = [selectedIndex];
+            this._baseSelectionIndex = -1;
+            this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
+            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+            this._selected = true;
+
+            let offset = this.$items[selectedIndex].position();
+            if (offset.top < 0)
+                this.$itemsList.animate({scrollTop: this.$itemsList.scrollTop() + offset.top}, 100);
+        }
     },
     _setSelection: function($target) {
         if (this._selectedIndices.length > 0)
@@ -231,6 +252,17 @@ const FSEntryBrowserView = SilkyView.extend({
                         i -= 2;
                 }
             }
+        }
+    },
+    setShortcutPath: function(path) {
+        if (this.shortcutPath !== path) {
+            this.shortcutPath = path;
+            let $shortcutKeyElements = this.$el.find('[shortcut-key]');
+            for (let i = 0; i < $shortcutKeyElements.length; i++) {
+                let element = $shortcutKeyElements[i];
+                focusLoop.applyShortcutOptions(element, { path: this.shortcutPath });
+            }
+            focusLoop.updateShortcuts({ silent: true});
         }
     },
     _manualBrowse: function(event) {
@@ -311,7 +343,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 insert = ' value="' + s6e(path.basename(filePath, extension)) + '"';
             }
 
-            html += `           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="${_('Enter file name here')}"' + insert + ' />`;
+            html += `           <input class="silky-bs-fslist-browser-save-name" type="text" placeholder="${_('Enter file name here')}" ${insert} />`;
 
             html += this._createFileTypeSelector();
             html += '       </div>';
@@ -330,16 +362,16 @@ const FSEntryBrowserView = SilkyView.extend({
         if ( ! this.model.writeOnly) {
             html += '   <div class="silky-bs-fslist-path-browser">';
             if (this.model.get('multiselect'))
-                html += '       <div class="silky-bs-fslist-browser-check-button"></div>';
-            html += '       <div class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></div>';
+                html += '       <button class="silky-bs-fslist-browser-check-button"></button>';
+            html += '       <button class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></button>';
             html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
 
             if (this.model.attributes.browseable) {
 
-                html += '       <div class="silky-bs-fslist-browse-button">';
+                html += '       <button class="silky-bs-fslist-browse-button">';
                 html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
                 html += `           <span>${_('Browse')}</span>`;
-                html += '       </div>';
+                html += '       </button>';
             }
 
             html += '   </div>';
@@ -347,7 +379,25 @@ const FSEntryBrowserView = SilkyView.extend({
 
         html += '</div>';
         this.$header = $(html);
-        this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
+
+        let $multiMode = this.$header.find('.silky-bs-fslist-browser-check-button');
+        if ($multiMode.length > 0)
+            focusLoop.applyShortcutOptions($multiMode[0], { key: 'C', action: this._toggleMultiMode.bind(this) });
+
+        let $back = this.$header.find('.silky-bs-fslist-browser-back-button');
+        if ($back.length > 0)
+            focusLoop.applyShortcutOptions($back[0], { key: 'B', position: { x: '20%', y: '25%' }, action: this._backClicked.bind(this), blocking: true });
+
+        let $browse = this.$header.find('.silky-bs-fslist-browse-button');
+        if ($browse.length > 0)
+            focusLoop.applyShortcutOptions($browse[0], { key: 'E', action: this._manualBrowse.bind(this) });
+
+        let $saveName = this.$header.find('.silky-bs-fslist-browser-save-name');
+        if ($saveName.length > 0)
+            focusLoop.applyShortcutOptions($saveName[0], { key: 'F' });
+
+        if (focusLoop.inAccessibilityMode() === false)
+            this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
 
         this.$el.append(this.$header);
 
@@ -357,12 +407,16 @@ const FSEntryBrowserView = SilkyView.extend({
                             <input class="search" type="text"></input>
                         </div>`;
             this.$el.append(searchHtml);
+
+            let $search = this.$el.find('.searchbox > .search');
+            if ($search.length > 0)
+                focusLoop.applyShortcutOptions($search[0], { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
-        this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; height:100%"></div>');
+        this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>');
         this.$el.append(this.$itemsList);
 
-        if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
+        if (focusLoop.inAccessibilityMode() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
             setTimeout(() => {
                 this.$header.find('.silky-bs-fslist-browser-save-name').focus();
             }, 400);
@@ -402,6 +456,22 @@ const FSEntryBrowserView = SilkyView.extend({
                 break;
         }
     },
+    createAlphaNumericTag: function(prefix, id) {
+        if (id <= 9) {
+            return prefix + id;
+        }
+
+        id -= 9;
+
+        let s = '', t;
+        while (id > 0) {
+            t = (id - 1) % 26;
+            s = String.fromCharCode(65 + t) + s;
+            id = (id - t)/26 | 0;
+        }
+        return prefix + s;
+
+    },
     _render : function() {
 
         if (this.model.writeOnly) {
@@ -424,9 +494,11 @@ const FSEntryBrowserView = SilkyView.extend({
         let $search = this.$el.find('.searchbox > input');
         if ($search.length > 0) {
             searchValue = $search.val().trim();
-            setTimeout(() => {
-                $search.focus();
-            }, 250);
+            if (focusLoop.inAccessibilityMode() === false) {
+                setTimeout(() => {
+                    $search.focus();
+                }, 250);
+            }
         }
 
         let html = '';
@@ -471,6 +543,8 @@ const FSEntryBrowserView = SilkyView.extend({
                     }
                 }
             }
+
+            let itemIndex = 0;
             for (let i = 0; i < items.length; i++) {
                 html = '';
                 let item = items[i];
@@ -502,7 +576,8 @@ const FSEntryBrowserView = SilkyView.extend({
                         && ! (item.skipExtensionCheck || this._hasValidExtension(name)))
                     continue;
 
-                html += '<div class="silky-bs-fslist-item">';
+
+                html += `<div class="silky-bs-fslist-item">`;
                 if (itemType === FSItemType.File)
                     html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox">';
                 html += '   <div class="silky-bs-flist-item-icon">';
@@ -556,6 +631,15 @@ const FSEntryBrowserView = SilkyView.extend({
                 html += '</div>';
 
                 let $item = $(html);
+                let sct = this.createAlphaNumericTag('Q', ++itemIndex);
+                focusLoop.applyShortcutOptions($item[0], {
+                    key: sct,
+                    path: this.shortcutPath,
+                    action: this._itemClicked.bind(this),
+                    blocking: itemType !== FSItemType.File,
+                    position: { x: '0%', y: '0%', internal: true }
+                });
+
                 $item.data('name', name);
                 $item.data('path', itemPath);
                 $item.data('type', itemType);
@@ -571,6 +655,7 @@ const FSEntryBrowserView = SilkyView.extend({
             else
                 this._setSelection(this.$items[0]);
         }
+        focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath, silent: true});
     },
     _getSelectedPaths : function() {
         let paths = [];
@@ -611,6 +696,7 @@ const FSEntryBrowserView = SilkyView.extend({
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
             this.clearSelection();
             this.model.requestOpen(itemPath, itemTitle, itemType);
+            focusLoop.updateShortcuts({shortcutPath: this.shortcutPath});
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
             if (multiSelect && this._selectedIndices.length > 0 && modifier) {
@@ -707,10 +793,12 @@ const FSEntryBrowserView = SilkyView.extend({
             case 'ArrowUp':
                 this.decrementSelection();
                 event.preventDefault();
+                event.stopPropagation();
                 break;
             case 'ArrowDown':
                 this.incrementSelection();
                 event.preventDefault();
+                event.stopPropagation();
                 break;
             case 'Enter':
                 if (this._selectedIndices.length > 0) {
@@ -728,6 +816,7 @@ const FSEntryBrowserView = SilkyView.extend({
                         this.model.requestExport(itemPath, itemType);
                 }
                 event.preventDefault();
+                event.stopPropagation();
                 break;
         }
     },
@@ -744,8 +833,9 @@ const FSEntryBrowserView = SilkyView.extend({
             this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
         this._selected = false;
     },
+
     incrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : -1;
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
         if (selectedIndex !== -1 && selectedIndex !== this.$items.length - 1){
             this.clearSelection();
             selectedIndex += 1;
@@ -764,7 +854,7 @@ const FSEntryBrowserView = SilkyView.extend({
         }
     },
     decrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : -1;
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
         if (selectedIndex > 0){
             this.clearSelection();
             selectedIndex -= 1;
@@ -867,6 +957,7 @@ const FSEntryBrowserView = SilkyView.extend({
             this._goToFolder(filePath);
             this.clearSelection();
         }
+        focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
     },
     _goToFolder: function(dirPath) {
         this.model.requestOpen(dirPath, null, FSItemType.Folder);
@@ -1093,6 +1184,11 @@ const BackstageModel = Backbone.Model.extend({
             }
         });
 
+        ActionHub.get('open').on('request', async () => {
+            this.set('activated', true);
+            this.set('operation', 'open');
+        });
+
         this.attributes.ops = [
 
         ];
@@ -1111,6 +1207,7 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: type,
                     title: options.title,
+                    shortcutKey: '1',
                     places: [
                         /*{
                             name: 'thispc', title: 'jamovi Cloud', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
@@ -1119,7 +1216,7 @@ const BackstageModel = Backbone.Model.extend({
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: _('Download'), model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._dialogExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1133,9 +1230,10 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: type,
                     title: options.title,
+                    shortcutKey: '1',
                     places: [
                         {
-                            name: 'thispc', title: _('This PC'), model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'),  shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._dialogExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1176,11 +1274,13 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: 'new',
                     title: _('New'),
+                    shortcutKey: 'n',
                     action: () => { this.requestOpen(''); }
                 },
                 {
                     name: 'open',
                     title: _('Open'),
+                    shortcutKey: 'o',
                     action: () => {
                         /*let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1194,8 +1294,8 @@ const BackstageModel = Backbone.Model.extend({
                     },
                     places: [
                         /*{ name: 'thispc', title: _('jamovi Cloud'), model: this._pcListModel, view: FSEntryBrowserView },*/
-                        { name: 'examples', title: _('Data Library'), model: this._examplesListModel, view: FSEntryBrowserView },
-                        { name: 'thisdevice', title: _('This Device'), action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
+                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
+                        { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
                     ]
                 },
                 // {
@@ -1209,6 +1309,7 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: 'saveAs',
                     title: _('Save As'),
+                    shortcutKey: 'a',
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1221,7 +1322,7 @@ const BackstageModel = Backbone.Model.extend({
                     places: [
                         /*{ name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
                         {
-                            name: 'thisdevice', title: _('Download'), model: this._deviceSaveListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceSaveListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1231,6 +1332,7 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: 'export',
                     title: _('Export'),
+                    shortcutKey: 'e',
                     places: [
                         /*{
                             name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
@@ -1239,7 +1341,7 @@ const BackstageModel = Backbone.Model.extend({
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: _('Download'), model: this._deviceExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1253,11 +1355,13 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: 'new',
                     title: _('New'),
+                    shortcutKey: 'n',
                     action: () => { this.requestOpen(''); }
                 },
                 {
                     name: 'open',
                     title: _('Open'),
+                    shortcutKey: 'o',
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1270,13 +1374,14 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), model: this._pcListModel, view: FSEntryBrowserView },
-                        { name: 'examples', title: _('Data Library'), model: this._examplesListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcListModel, view: FSEntryBrowserView },
+                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'import',
                     title: _('Special Import'),
+                    shortcutKey: 'i',
                     action: () => {
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
@@ -1289,12 +1394,13 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), model: this._pcImportListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcImportListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'save',
                     title: _('Save'),
+                    shortcutKey: 's',
                     action: async () => {
                         try {
                             await this.requestSave();
@@ -1310,6 +1416,7 @@ const BackstageModel = Backbone.Model.extend({
                 {
                     name: 'saveAs',
                     title: _('Save As'),
+                    shortcutKey: 'a',
                     action: () => {
                         let filePath = this._determineSavePath('main');
                         return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
@@ -1317,15 +1424,16 @@ const BackstageModel = Backbone.Model.extend({
                         });
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
                     ]
                 },
                 {
                     name: 'export',
                     title: _('Export'),
+                    shortcutKey: 'e',
                     places: [
                         {
-                            name: 'thispc', title: _('This PC'), separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._pcExportListModel.suggestedPath = this.instance.get('title');
                             }
@@ -1406,6 +1514,17 @@ const BackstageModel = Backbone.Model.extend({
                     }
                 });
             }
+        }
+    },
+    getOp: function(opName) {
+        return this.attributes.ops.find(o => o.name === opName);
+    },
+    getPlace: function(opName, placeName) {
+        let op = this.getOp(opName);
+        if (op) {
+            let place = op.places.find(p => p.name === placeName);
+            if (place)
+                return { op, place };
         }
     },
     getCurrentOp: function() {
@@ -1906,7 +2025,13 @@ const BackstageModel = Backbone.Model.extend({
 const BackstageView = SilkyView.extend({
     className: 'backstage',
     initialize: function() {
-        this.$el.attr('tabindex', 0);
+        let focusToken = focusLoop.addFocusLoop(this.$el[0], { level: 1, modal: true } );
+        focusToken.on('focusleave', (event) => {
+            if (focusLoop.focusMode === 'shortcuts' && focusLoop.shortcutPath.startsWith('F'))
+                event.cancel = true;
+            else
+                this.deactivate();
+        });
         this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
@@ -1921,7 +2046,7 @@ const BackstageView = SilkyView.extend({
             $recents.show();
     },
     events: {
-        'click .silky-bs-back-button div' : 'deactivate',
+        //'click .silky-bs-back-button' : 'deactivate',
         'keydown' : '_keypressHandle'
     },
     _keypressHandle: function(event) {
@@ -1930,9 +2055,40 @@ const BackstageView = SilkyView.extend({
 
         switch(event.key) {
             case 'Escape':
-                this.deactivate();
+                //this.deactivate(true);
                 break;
         }
+    },
+    setPlace: function(op, place) {
+        this.model.set('op', op.name);
+
+        if ('action' in place)
+            place.action();
+
+        if ('view' in place) {
+            this.model.set('lastSelectedPlace', place.name);
+            this.model.set('place', place.name);
+        }
+    },
+    clickOp: function(event) {
+        this.model.set('operation', event.target.getAttribute('data-op'));
+    },
+    clickPlace: function(event) {
+        let opName = event.target.getAttribute('data-op');
+        let placeName = event.target.getAttribute('data-place');
+        let placeInfo = this.model.getPlace(opName, placeName);
+
+        this.setPlace(placeInfo.op, placeInfo.place);
+        setTimeout(function () {
+            event.target.focus();
+        }, 250);
+
+    },
+    clickRecent: function(event) {
+        let filePath = event.target.getAttribute('data-path');
+        let fileName = event.target.getAttribute('data-name');
+        let recentsModel = this.model.recentsModel();
+        recentsModel.requestOpen(filePath, fileName, FSItemType.File);
     },
     render: function() {
         this.$el.empty();
@@ -1941,10 +2097,10 @@ const BackstageView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div class="silky-bs-op silky-bs-op-panel">';
+        html += '<div class="silky-bs-op silky-bs-op-panel" role="menu">';
         html += '    <div class="silky-bs-header">';
         html += '        <div class="silky-bs-back">';
-        html += '            <div class="silky-bs-back-button"><div></div></div>';
+        html += '            <div class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
         html += '        </div>';
         html += '        <div class="silky-bs-logo"></div>';
         html += '    </div>';
@@ -1953,23 +2109,24 @@ const BackstageView = SilkyView.extend({
         this.$opPanel = $(html);
         this.$opPanel.appendTo(this.$el);
 
+        this.menuSelection = new selectionLoop('bs-menu', this.$opPanel[0]);
+        this.menuSelection.on('selected-index-changed', (data) => {
+
+            if (data.target.hasAttribute('data-path'))
+                this.clickRecent(data);
+            if (data.target.classList.contains('silky-bs-back-button'))
+                this.deactivate(data.withMouse);
+                //focusLoop.leaveFocusLoop(this.$el[0], data.withMouse);
+            else if (data.target.hasAttribute('data-place'))
+                this.clickPlace(data);
+            else if (data.target.hasAttribute('data-op'))
+                this.clickOp(data);
+        });
+
         $('<div class="silky-bs-main"></div>').appendTo(this.$el);
 
-        let createCallback = (place, op) => {
-            return (event) => {
-                this.model.set('op', op.name);
-
-                if ('action' in place)
-                    place.action();
-
-                if ('view' in place) {
-                    this.model.set('lastSelectedPlace', place.name);
-                    this.model.set('place', place.name);
-                }
-            };
-        };
-
         let $opList = $('<div class="silky-bs-op-list"></div>');
+
         let currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
             let op = this.model.attributes.ops[i];
@@ -1978,21 +2135,36 @@ const BackstageView = SilkyView.extend({
                 currentOp = op;
 
             let $op = $(`<div class="silky-bs-menu-item" data-op="${ s6e(op.name) }-item"></div>`);
-            let $opTitle = $(`<div class="silky-bs-op-button" data-op="' + op.name + '">${ s6e(op.title) }</div>`).appendTo($op);
+            let $opTitle = $(`<div class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            if (op.shortcutKey) {
+                focusLoop.applyShortcutOptions($opTitle[0], {
+                    key: op.shortcutKey.toUpperCase(),
+                    path: 'F',
+                    action: this.clickOp.bind(this),
+                    position: { x: '9%', y: '27%' }
+                });
+            }
+            if (i === 0)
+                this.menuSelection.highlightElement($opTitle[0]);
 
             if ('places' in op) {
                 let $opPlaces = $('<div class="silky-bs-op-places"></div>');
                 for (let place of op.places) {
-                    let $opPlace = $(`<div class="silky-bs-op-place" data-op="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
-                    $opPlace.on('click', createCallback(place, op));
+                    let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
+                    if (place.shortcutKey) {
+                        focusLoop.applyShortcutOptions($opPlace[0], {
+                            key: place.shortcutKey.toUpperCase(),
+                            path: `F${op.shortcutKey.split('-')[0].toUpperCase()}`,
+                            action: this.clickPlace.bind(this),
+                            position: { x: '12%', y: '25%' }
+                        });
+                    }
                     $opPlaces.append($opPlace);
-
                 }
                 $opPlaces.appendTo($op);
             }
 
             op.$el = $op;
-            $op.on('click', op, this._opClicked.bind(this));
             $opList.append($op);
         }
         this.$opPanel.append($opList);
@@ -2012,6 +2184,8 @@ const BackstageView = SilkyView.extend({
         let recentsModel = this.model.recentsModel();
         let recentsView = new FSEntryListView({el: $recentsBody, model: recentsModel});
 
+        $recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
+
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
         this.$ops = this.$el.find('.silky-bs-menu-item');
 
@@ -2022,26 +2196,28 @@ const BackstageView = SilkyView.extend({
 
         this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
     },
-    activate : function() {
-
-        keyboardJS.pause('backstage');
+    activate : function(fromMouse) {
+        this.activeStateChanging = true;
         this.$el.addClass('activated');
 
         tarp.show('backstage', true, 0.3).then(
             undefined,
-            () => this.deactivate());
+            () => this.deactivate(true));
 
         this.model.set('activated', true);
 
         $('body').find('.app-dragable').addClass('ignore');
+        $('#main').attr('aria-hidden', true);
+        $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', true);
 
         setTimeout(() => {
-            this.$el.focus();
-        }, 0);
+            focusLoop.enterFocusLoop(this.$el[0], { withMouse: fromMouse });
+        }, 200);
+        this.activeStateChanging = false;
     },
-    deactivate : function() {
+    deactivate : function(fromMouse) {
 
-        keyboardJS.resume('backstage');
+        this.activeStateChanging = true;
         tarp.hide('backstage');
         this.$el.removeClass('activated');
         this.$el.removeClass('activated-sub');
@@ -2054,19 +2230,23 @@ const BackstageView = SilkyView.extend({
         this.model.set('place', '');
 
         $('body').find('.app-dragable').removeClass('ignore');
+        $('#main').attr('aria-hidden', false);
+        $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', false);
+
+        focusLoop.leaveFocusLoop(this.$el[0], fromMouse);
+        this.activeStateChanging = false;
     },
     _activationChanged : function() {
-        if (this.model.get('activated'))
-            this.activate();
-        else
-            this.deactivate();
-    },
-    _opClicked : function(event) {
-        let op = event.data;
-        this.model.set('operation', op.name);
+        if ( ! this.activeStateChanging) {
+            if (this.model.get('activated'))
+                this.activate(true);
+            else
+                this.deactivate(true);
+        }
     },
     _hideSubMenus : function() {
         if (this.$ops) {
+            let $opsButton = this.$ops.find('.silky-bs-op-button').attr('tabindex', '0');//removeClass('bs-menu-item-ignore');
             let $subOps = this.$ops.find('.silky-bs-op-places');
             for (let i = 0; i < $subOps.length; i++) {
                 $($subOps[i]).css('height', '');
@@ -2078,15 +2258,18 @@ const BackstageView = SilkyView.extend({
     _placeChanged : function() {
         let $places = this.$ops.find('.silky-bs-op-place');
 
+        let op = this.model.getCurrentOp();
         let place = this.model.getCurrentPlace();
         if (place === null)
             $places.removeClass('selected-place');
         else if ('view' in place) {
             $places.removeClass('selected-place');
 
-            let $place = this.$ops.find(`[data-op="${ s6e(place.name) }"]`);
+            let $place = this.$ops.find(`[data-place="${ s6e(place.name) }"][data-op="${ s6e(op.name) }"]`);
 
             $place.addClass('selected-place');
+
+            this.menuSelection.selectElement($place[0], 'internal', true);
         }
     },
     _opChanged : function() {
@@ -2118,6 +2301,7 @@ const BackstageView = SilkyView.extend({
         }
 
         let $op = this.$ops.filter('[data-op="' + operation + '-item"]');
+        let $opsButton = $op.find('.silky-bs-op-button').attr('tabindex', null);//.addClass('bs-menu-item-ignore');
         let $subOps = $op.find('.silky-bs-op-places');
         let $contents = $subOps.contents();
         let height = 0;
@@ -2137,6 +2321,10 @@ const BackstageView = SilkyView.extend({
             this.$el.addClass('activated-sub');
         else
             this.$el.removeClass('activated-sub');
+
+        setTimeout(() => {
+            focusLoop.updateShortcuts({ silent: true });
+        }, 200);
     }
 });
 
@@ -2191,6 +2379,16 @@ const BackstageChoices = SilkyView.extend({
 
             place.model.set('title', place.title);
             this.current = new place.view({ el: this.$current, model: place.model });
+
+            if (this.current.setShortcutPath) {
+                let op = this.model.getCurrentOp();
+                let shortcutPath = 'F' + op.shortcutKey.toUpperCase();
+                if (place.shortcutKey)
+                    shortcutPath += place.shortcutKey.toUpperCase();
+                this.current.setShortcutPath(shortcutPath);
+                if (op.places.length === 1)
+                    focusLoop.updateShortcuts( { shortcutPath: shortcutPath });
+            }
 
             setTimeout(() => {
                 this.$current.addClass('fade-in');

@@ -30,6 +30,14 @@ const LayoutCollapseView = function(params) {
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.$header = $('<div class="silky-options-collapse-button silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + t + groupText + '</div>');
 
+        this.$header.attr('tabindex', 0);
+
+        this.$header.keydown((event) => {
+            if (event.keyCode == 13 || event.keyCode == 32) {
+                this.toggleColapsedState();
+            }
+        });
+
         if (this._collapsed) {
             this.$el.addClass('view-colapsed');
             this.$header.addClass('silky-gridlayout-collapsed');
@@ -78,7 +86,6 @@ const LayoutCollapseView = function(params) {
         this.$el.removeClass('view-colapsed');
 
         this.setContentVisibility(true);
-
         this._collapsed = false;
 
     };

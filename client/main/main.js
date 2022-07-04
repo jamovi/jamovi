@@ -28,6 +28,7 @@ const I18n = require('../common/i18n');
 const Instance = require('./instance');
 const Notify = require('./notification');
 const JError = require('./errors').JError;
+const focusLoop = require('../common/focusloop');
 
 window._ = I18n._;
 window.n_ = I18n._n;
@@ -111,6 +112,9 @@ keyboardJS.Keyboard.prototype.resume = function(key) {
 
     if (count === false && this._paused === true) {
         this._paused = false;
+        if (keyboardJS.onUnpaused) {
+            keyboardJS.onUnpaused();
+        }
     }
 };
 
@@ -219,11 +223,56 @@ $(document).ready(async() => {
         else if (event.ctrlKey || event.metaKey) {
             if (event.key === 's')
                 ActionHub.get('save').do();
+            else if (event.key === 'o')
+                ActionHub.get('open').do();
+            else if (event.key === 'F4' && host.isElectron)
+                host.closeWindow();
         }
         else if (event.key === 'Escape') {
-            optionspanel.hideOptions();
+            if (focusLoop.focusMode === 'default')
+                optionspanel.hideOptions();
         }
     });
+
+    focusLoop.on('focus', (event) => {
+        if (focusLoop.inAccessibilityMode())
+            ribbonModel.getSelectedTab().$el[0].focus();
+    });
+
+    focusLoop.on('focusModeChanged', (options) => {
+        if (focusLoop.inAccessibilityMode()) {
+            keyboardJS.pause('accessibility');
+            if (focusLoop.focusMode === 'shortcuts') {
+                if (backstageModel.get('activated')) {
+                    focusLoop.updateShortcuts({ shortcutPath: 'F' });
+                    setTimeout(() => {
+                        focusLoop.enterFocusLoop(backstage.el, { withMouse: true });
+                    }, 100);
+                }
+                else
+                    ribbonModel.getSelectedTab().$el[0].focus();
+            }
+        }
+        else if (focusLoop.focusMode === 'default') {
+
+            if (backstageModel.get('activated')) {
+                setTimeout(() => {
+                    focusLoop.enterFocusLoop(backstage.el, { withMouse: false });
+                }, 100);
+
+            }
+            else {
+                keyboardJS.resume('accessibility');
+                let element = document.getElementsByClassName('temp-focus-cell');
+                if (element && element.length > 0)
+                    element[0].focus();
+            }
+        }
+        else if (focusLoop.focusMode === 'keyboard' || focusLoop.focusMode === 'hover')
+            keyboardJS.pause('accessibility');
+
+    });
+
 
     if (host.isElectron && navigator.platform === 'Win32') {
 
@@ -249,7 +298,7 @@ $(document).ready(async() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
-    ribbon.on('analysisSelected', async function(analysis) {
+    ribbon.model.getTab('analyses').on('analysisSelected', async function(analysis) {
         let translate = await instance.modules().getTranslator(analysis.ns);
         instance.createAnalysis(analysis.name, analysis.ns, translate(analysis.title));
     });
@@ -262,9 +311,9 @@ $(document).ready(async() => {
         viewController.focusView(mode);
     };
 
-    ribbon.on('tabSelected', function(tabName) {
+    ribbon.on('tabSelected', function(tabName, withMouse) {
         if (tabName === 'file')
-            backstage.activate();
+            backstage.activate(withMouse);
         else if (tabName === 'data') {
             setMainTableMode('spreadsheet');
             if (splitPanel.mode === 'results')
@@ -287,6 +336,8 @@ $(document).ready(async() => {
             if (splitPanel.mode === 'data')
                 splitPanel.setMode('results', true);
         }
+        if (instance.get('editState') && tabName !== 'annotation')
+            _annotationReturnTab = null;
 
         instance.set('editState', tabName === 'annotation');
     });
@@ -338,12 +389,35 @@ $(document).ready(async() => {
     splitPanel.addPanel('main-options', { adjustable: false, fixed: true, anchor: 'right', visible: false });
     splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
 
+    let $mainOptions = $('#main-options');
+    focusLoop.applyShortcutOptions($mainOptions[0], {
+        key: 'O',
+        maintainAccessibility: true,
+        action: (event) => {
+            if (optionspanel._currentResources)
+                optionspanel._currentResources.$frame.focus();
+        },
+        position: { x: '15px', y: '15px' }
+        }
+    );
+
+    let $mainTable = $('#main-table');
+    $mainTable.attr('role', 'region');
+    $mainTable.attr('aria-label', 'Spreadsheet');
+    $mainTable.attr('aria-live', 'polite');
+
+    let $results = $('#results');
+    $results.attr('role', 'region');
+    $results.attr('aria-label', 'Analyses Results');
+    $results.attr('aria-live', 'polite');
+
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
             if (analysis !== null && typeof(analysis) !== 'string') {
                 dataSetModel.set('editingVar', null);
                 if (analysis.hasUserOptions()) {
+                    _annotationReturnTab = 'analyses';
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
                     if (ribbonModel.get('selectedTab') === 'data' || ribbonModel.get('selectedTab') === 'variables')
@@ -426,13 +500,9 @@ $(document).ready(async() => {
     });
 
     let section = splitPanel.getSection('main-options');
-    splitPanel.getSection('results').$panel.find('.hideOptions').click(function() {
-        splitPanel.setVisibility('main-options', false);
-    });
 
     splitPanel.render();
 
-    let $mainTable = $('#main-table');
     let $spreadsheet = $('<div id="spreadsheet"></div>');
     let $variablesList = $('<div id="variablelist"></div>');
     $mainTable.append($spreadsheet);
@@ -445,8 +515,13 @@ $(document).ready(async() => {
     viewController.focusView('spreadsheet');
 
     backstageModel.on('change:activated', function(event) {
-        if ('activated' in event.changed)
+        if ('activated' in event.changed) {
             mainTable.setActive( ! event.changed.activated);
+            if (! event.changed.activated) {
+                if (focusLoop.inAccessibilityMode())
+                    ribbonModel.getSelectedTab().$el[0].focus();
+            }
+        }
     });
 
     splitPanel.on('form-changed', () => {
@@ -469,10 +544,12 @@ $(document).ready(async() => {
     });
 
     resultsView.$el.on('annotationLostFocus', (event) => {
-        if (_annotationReturnTab !== null) {
-            ribbonModel.set('selectedTab', _annotationReturnTab);
-            _annotationReturnTab = null;
-        }
+        setTimeout(() => {
+            if (_annotationReturnTab !== null) {
+                ribbonModel.set('selectedTab', _annotationReturnTab);
+                _annotationReturnTab = null;
+            }
+        }, 10);
     });
 
     resultsView.$el.on('analysisLostFocus', (event) => {

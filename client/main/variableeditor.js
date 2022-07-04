@@ -13,6 +13,7 @@ const VariableModel = require('./vareditor/variablemodel');
 const EditorWidget = require('./vareditor/editorwidget');
 const EditorPanel = require('./editorpanel');
 const TransformEditor = require('./editors/transformeditor');
+const focusLoop = require('../common/focusloop');
 
 
 const VariableEditor = Backbone.View.extend({
@@ -20,8 +21,23 @@ const VariableEditor = Backbone.View.extend({
     initialize(options) {
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor');
+        focusLoop.applyShortcutOptions(this.$el[0], {
+            key: 'Z',
+            action: (event) => {
+                setTimeout(() => {
+                    focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+                }, 0);
+            },
+            position: { x: '25%', y: '25%' }
+        });
+
+        let focusToken = focusLoop.addFocusLoop(this.$el[0]);
+        focusToken.on('focusleave', () => {
+            this.model.set('editingVar', null);
+        });
 
         this._showId = null;
+        this.nowIds = null;
 
         this.controller = options.controller;
         this.selection = this.controller.selection;
@@ -46,10 +62,9 @@ const VariableEditor = Backbone.View.extend({
         this.editorPanel.on('notification', note => this.trigger('notification', note));
         this.transformEditor = new TransformEditor(this.model);
 
-        this.$ok = $(`<div class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide')}"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></div>`).appendTo(this.$main);
-        this.$revert = $(`<div class="jmv-variable-editor-revert jmv-tooltip" title="${_('Revert changes')}"><span class="mif-undo"></span></div>`).appendTo(this.$main);
-        this.$left = $(`<div class="jmv-variable-editor-button-left  jmv-tooltip" title="${_('Previous variable')}"><span class="mif-chevron-left"></span></div>`).appendTo(this.$main);
-        this.$right = $(`<div class="jmv-variable-editor-button-right  jmv-tooltip" title="${_('Next variable')}"><span class="mif-chevron-right"></span></div>`).appendTo(this.$main);
+        this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide')}"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></button>`).appendTo(this.$main);
+        this.$right = $(`<button aria-label="${_('Next variable')}" tabindex="0" class="jmv-variable-editor-button-right  jmv-tooltip" title="${_('Next variable')}"><span class="mif-chevron-right"></span></button>`).appendTo(this.$main);
+        this.$left = $(`<button aria-label="${_('Previous variable')}" tabindex="0" class="jmv-variable-editor-button-left  jmv-tooltip" title="${_('Previous variable')}"><span class="mif-chevron-left"></span></button>`).appendTo(this.$main);
 
         this.$hoverHeader = $('<div class="hover-header"></div>').appendTo(this.$el);
         this.$hoverHeader.on('mouseout', event => {
@@ -87,11 +102,6 @@ const VariableEditor = Backbone.View.extend({
         keyboardJS.bind('', event => this._keyboardListener(event));
         keyboardJS.setContext(this._previousKeyboardContext);
 
-
-        this.model.on('change:editingVar', event => {
-            this._hideEditor();
-        });
-
         this.model.on('columnsChanged', event => {
             if (this.model.attributes.editingVar === null)
                 return;
@@ -100,6 +110,7 @@ const VariableEditor = Backbone.View.extend({
                 if (ids.includes(changes.id)) {
                     if (changes.deleted) {
                         this.model.set('editingVar', [-1], { silent: true });
+                        this.nowIds = [-1];
                         let newColumn = this.model.getColumn(changes.dIndex, true);
                         let index = ids.indexOf(changes.id);
                         ids.splice(index, 1);
@@ -110,6 +121,7 @@ const VariableEditor = Backbone.View.extend({
                     }
                     else if (changes.columnTypeChanged) {
                         this.model.set('editingVar', [-1], { silent: true });
+                        this.nowIds = [-1];
                         this.model.set('editingVar', ids);
                         this._update();
                     }
@@ -128,12 +140,7 @@ const VariableEditor = Backbone.View.extend({
                 this.model.set('editingVar', null);
         });
 
-        this.$revert.on('click', event => {
-            if (this.editorModel.get('changes'))
-                this.editorModel.revert();
-        });
-
-        this._moveLeft = function() {
+        this._moveLeft = function(withMouse) {
             let colId = this.model.attributes.editingVar[0];
             let column = this.model.getColumnById(colId);
 
@@ -145,13 +152,19 @@ const VariableEditor = Backbone.View.extend({
             let newColumn = this.model.getColumn(colNo, ! this.selection.hiddenIncluded);
             if (newColumn)
                 this.model.set('editingVar', [newColumn.id]);
+
+            if ( ! withMouse) {
+                setTimeout(() => {
+                    this.$left[0].focus();
+                }, 10);
+            }
         };
 
         this.$left.on('click', event => {
-            this._moveLeft();
+            this._moveLeft(event.detail > 0);
         });
 
-        this._moveRight = function() {
+        this._moveRight = function(withMouse) {
             let colId = this.model.attributes.editingVar[0];
             let column = this.model.getColumnById(colId);
             let colNo = column.dIndex;
@@ -162,10 +175,16 @@ const VariableEditor = Backbone.View.extend({
             let newColumn = this.model.getColumn(colNo, ! this.selection.hiddenIncluded);
             if (newColumn)
                 this.model.set('editingVar', [newColumn.id]);
+
+            if ( ! withMouse) {
+                setTimeout(() => {
+                    this.$right[0].focus();
+                }, 10);
+            }
         };
 
         this.$right.on('click', event => {
-            this._moveRight();
+            this._moveRight(event.detail > 0);
         });
 
         this.editorModel.on('change:changes', event => {
@@ -178,8 +197,8 @@ const VariableEditor = Backbone.View.extend({
         this.editorModel.on('notification', note => this.trigger('notification', note));
 
         this.$$editors = [
-            $('<div style="left: 0;    opacity: 1;"></div>').prependTo(this.$main),
-            $('<div style="left: 100%; opacity: 0;"></div>').prependTo(this.$main)
+            $('<div style="left: 0;    opacity: 1; visibility: visible"></div>').prependTo(this.$main),
+            $('<div style="left: 100%; opacity: 0; visibility: hidden"></div>').prependTo(this.$main)
         ];
 
         this.editors = [
@@ -199,7 +218,15 @@ const VariableEditor = Backbone.View.extend({
             });
         }
 
-        this.model.on('change:editingVar', event => this._editingVarChanged(event));
+        this.model.on('change:editingVar', event => {
+            setTimeout(() => {
+                this.prevIds = this.nowIds;
+                this.nowIds = this.model.get('editingVar');
+                this._hideEditor();
+                this._editingVarChanged(event);
+            }, 0);
+        });
+
     },
     _showTransformEditor(transformId) {
         if (this.transformEditor.transformId() !== transformId) {
@@ -224,8 +251,8 @@ const VariableEditor = Backbone.View.extend({
     },
     _editingVarChanged(event) {
 
-        let prevIds = this.model.previous('editingVar');
-        let nowIds  = this.model.get('editingVar');
+        let prevIds = this.prevIds;
+        let nowIds  = this.nowIds;
 
         if ((prevIds === null || nowIds === null) && prevIds !== nowIds)
             this.trigger('visibility-changing', prevIds === null && nowIds !== null);
@@ -263,7 +290,13 @@ const VariableEditor = Backbone.View.extend({
             keyboardJS.setContext(this._previousKeyboardContext);
         }
         else {
-            this.$el.removeClass('hidden');
+            if (this.$el.hasClass('hidden')) {
+                this.$el.removeClass('hidden');
+                setTimeout(() => {
+                    focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+                }, 100);
+            }
+
             this.$left.toggleClass('hidden', now <= 0);
 
             this.$right.toggleClass('hidden', now >= this.model.attributes.vColumnCount - 1);
@@ -318,12 +351,14 @@ const VariableEditor = Backbone.View.extend({
                     $editor.css('left', '-100%');
                     $old.css('left', '100%');
                     $old.css('opacity', 0);
+                    $old.css('visibility', 'hidden');
                 }
                 else {
                     $editor.addClass('inactive');
                     $editor.css('left', '100%');
                     $old.css('left', '-100%');
                     $old.css('opacity', 0);
+                    $old.css('visibility', 'hidden');
                 }
                 if (this._showId !== null)
                     clearTimeout(this._showId);
@@ -332,6 +367,7 @@ const VariableEditor = Backbone.View.extend({
                     $editor.removeClass('inactive');
                     $editor.css('left', '0');
                     $editor.css('opacity', 1);
+                    $editor.css('visibility', 'visible');
                     this._showId = null;
                 }, 10);
             }

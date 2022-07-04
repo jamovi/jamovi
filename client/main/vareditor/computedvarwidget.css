@@ -60,6 +60,8 @@
     flex: none;
     margin-right: 3px;
     background-color: white;
+    box-sizing: content-box;
+    padding: 0px;
 }
 
 .jmv-variable-computed-options > .formula-box .show-editor:hover, .jmv-variable-computed-options > .formula-box .show-editor.is-active {

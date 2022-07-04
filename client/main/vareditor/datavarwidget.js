@@ -8,9 +8,9 @@ const DataVarLevelWidget = require('./datavarlevelwidget');
 const tarp = require('../utils/tarp');
 const dropdown = require('./dropdown');
 const MissingValueEditor = require('../editors/missingvalueeditor');
-const keyboardJS = require('keyboardjs');
 const MeasureList = require('./measurelist');
 const dialogs = require('dialogs')({cancel:false});
+const focusLoop = require('../../common/focusloop');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -28,22 +28,20 @@ const DataVarWidget = Backbone.View.extend({
 
         this._createMeasureTypeListBox();
 
-        this.$dataType = $(`<div class="jmv-vareditor-datatype"><label for="data-type">${_('Data type')}</label></div>`).appendTo(this.$left);
-        this.$dataTypeList = $(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`).appendTo(this.$dataType);
+        this.$dataType = $(`<div class="jmv-vareditor-datatype"></div>`).appendTo(this.$left);
+        this.$dataLabel = $(`<label for="data-type">${_('Data type')}</label>`).appendTo(this.$dataType);
+        this.$dataTypeList = $(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`).appendTo(this.$dataLabel);
         this.$autoType = $(`<div class="jmv-variable-editor-autotype">${_('(auto)')}</div>`).appendTo(this.$dataType);
 
-        this.$dataTypeList.focus(() => {
-            keyboardJS.pause('');
-        } );
-
-        this.$dataTypeList.blur(() => {
-            keyboardJS.resume('');
-        } );
 
         this._createMissingValuesCtrl();
 
-        this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
-        this.$addLevelButton = $(`<div class="add-level" title="${_('Add new level')}"><span class="mif-plus"></span></div>`).appendTo(this.$levelsCrtl);
+        this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control" tabindex="0"></div>').appendTo(this.$body);
+        let focusToken = focusLoop.addFocusLoop(this.$levelsCrtl[0], {level: 1, exitSelector: this.$levelsCrtl[0], keyToEnter: true });
+        focusToken.on('focusleave', () => {
+            this._focusLeaving = true;
+        });
+        this.$addLevelButton = $(`<button class="add-level" title="${_('Add new level')}"><span class="mif-plus"></span></button>`).appendTo(this.$levelsCrtl);
         this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
         this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
         this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
@@ -51,20 +49,28 @@ const DataVarWidget = Backbone.View.extend({
         this.levelCtrls = [];
 
         this.$move = $('<div class="jmv-variable-editor-widget-move"></div>').appendTo(this.$levelsCrtl);
-        this.$moveUp = $('<div class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></div>').appendTo(this.$move);
-        this.$moveDown = $('<div class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></div>').appendTo(this.$move);
+        this.$moveUp = $('<button class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></button>').appendTo(this.$move);
+        this.$moveDown = $('<button class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></button>').appendTo(this.$move);
 
-        $(window).on('keydown', event => {
-            if (event.key === 'Escape' || event.key === 'Enter') {
+
+        this.$levelsCrtl.on('focusin', (event) => {
+            if (this._focusLeaving) {
+                this._focusLeaving = false;
                 tarp.hide('levels');
             }
+            else if (this.$levelsCrtl[0].contains(event.relatedTarget))
+                this._focusLevelControls();
+
         });
+
+        this.$levelsCrtl[0].addEventListener('focusout', (event) => {
+            if ( !this._addingLevel && ! this.$levelsCrtl[0].contains(event.relatedTarget))
+                tarp.hide('levels');
+        } );
 
         this.$addLevelButton.on('click', async event => {
             if (this.model.attributes.measureType === 'continuous' || this.model.attributes.measureType === 'id')
                 return;
-
-            this._focusLevelControls();
 
             try {
                 this.selectedLevelIndex = this.levelCtrls.length;
@@ -75,10 +81,9 @@ const DataVarWidget = Backbone.View.extend({
                 let recordValue = this.model.get('dataType') !== 'text';
 
                 let levels = this.model.get('levels');
+                this._addingLevel = true;
                 let response = await new Promise((resolve, reject) => {
-                    keyboardJS.setContext('');
                     dialogs.prompt(_('Enter level value'), '', (result) => {
-                        keyboardJS.setContext('controller');
                         if (result === undefined)
                             reject('');
                         else {
@@ -187,7 +192,11 @@ const DataVarWidget = Backbone.View.extend({
                     });
                 }
             }
+            this._addingLevel = false;
             this.$levelItems = this.$levels.find('.jmv-variable-editor-level');
+            setTimeout(() => {
+                this.$addLevelButton.focus();
+            }, 10);
         });
 
         this.$moveUp.on('click', event => this._moveUp());
@@ -241,22 +250,20 @@ const DataVarWidget = Backbone.View.extend({
         this.missingValueEditor = new MissingValueEditor(this.model);
         this.$missingValueButton = $(`
             <div class="missing-values">
-                <div class="label">${_('Missing values')}</div>
-                <div class="list" tabindex="0"></div>
+                <label class="label">${_('Missing values')}<button class="list" tabindex="0"></button></label>
             </div>`).appendTo(this.$left);
         let $list = this.$missingValueButton.find('.list');
         $list.on('click', () => {
             this.$el.trigger('edit:missing', this.missingValueEditor);
-            keyboardJS.resume('');
         });
-
-        $list.focus(() => {
-            keyboardJS.pause('');
-        } );
-
-        $list.blur(() => {
-            keyboardJS.resume('');
-        } );
+        $list.on('keyup', (event) => {
+            if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                // Trigger the button element with a click
+                this.$el.trigger('edit:missing', this.missingValueEditor);
+              }
+        });
 
         $list.on('keypress', (event) => {
             if (event.key === 'Enter') {
@@ -268,14 +275,14 @@ const DataVarWidget = Backbone.View.extend({
     },
     _createMeasureTypeListBox() {
         this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$left);
-        $(`<div class="label">${_('Measure type')}</div>`).appendTo(this.$measureBox);
+        this.$measureLabel = $(`<label class="label">${_('Measure type')}</label>`).appendTo(this.$measureBox);
         this.$measureIcon = $('<div class="icon"></div>').appendTo(this.$measureBox);
         this.$measureList = $(`<select id="type">
                                     <option value="nominal">${_('Nominal')}</option>
                                     <option value="ordinal">${_('Ordinal')}</option>
                                     <option value="continuous">${_('Continuous')}</option>
                                     <option value="id">${_('ID')}</option>
-                                </select>`).appendTo(this.$measureBox);
+                                </select>`).appendTo(this.$measureLabel);
         this.$measureList.val('nominal');
 
 
@@ -293,21 +300,14 @@ const DataVarWidget = Backbone.View.extend({
         });
 
         this.measureList.$el.on('selected-measure-type', (event, measureType) => {
-            this.model.set('measureType', measureType);
+            this.model.set({ measureType: measureType, autoMeasure: false });
             dropdown.hide();
         });
         this.$measureIcon.attr('measure-type', this.model.get('measureType'));
 
-        this.$measureList.focus(() => {
-            keyboardJS.pause('');
-        } );
-
-        this.$measureList.blur(() => {
-            keyboardJS.resume('');
-        } );
-
         this.$measureList.on('change', event => {
-            this.model.set('measureType', this.$measureList.val());
+            let mt = this.$measureList.val();
+            this.model.set({ measureType: mt, autoMeasure: false });
         });
 
         this.$measureList.on('keydown', event => {
@@ -349,8 +349,7 @@ const DataVarWidget = Backbone.View.extend({
             return;
         if (this.model.attributes.measureType === 'continuous')
             return;
-        //if (this.model.attributes.ids !== null && this.model.attributes.ids.length > 1)
-        //    return;
+
         let index = this.selectedLevelIndex;
         let levels = this.model.get('levels');
         if (index === -1 || index >= levels.length - 1)
@@ -386,17 +385,14 @@ const DataVarWidget = Backbone.View.extend({
         if (this.$levelsCrtl.hasClass('super-focus'))
             return;
 
-        keyboardJS.pause();
         this.model.suspendAutoApply();
         this.$levelsCrtl.addClass('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
-            keyboardJS.resume();
             let $ctrl = this.$levelsCrtl;
             $ctrl.find('.selected').removeClass('selected');
             $ctrl.removeClass('super-focus');
             this.model.apply();
         }, () => {
-            keyboardJS.resume();
             let $ctrl = this.$levelsCrtl;
             $ctrl.find('.selected').removeClass('selected');
             $ctrl.removeClass('super-focus');

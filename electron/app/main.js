@@ -536,6 +536,8 @@ const createWindow = function(open) {
         },
     });
 
+    wind.toggleDevTools();
+
     // as of electron 1.7.9 on linux, drag and drop from the fs to electron
     // doesn't seem to work, the drop event is never fired. so we handle the
     // navigate event here to achieve the same thing

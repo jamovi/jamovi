@@ -8,8 +8,6 @@ Backbone.$ = $;
 const formulaToolbar = require('./formulatoolbar');
 const dropdown = require('./dropdown');
 
-const keyboardJS = require('keyboardjs');
-
 function insertText(el, newText, cursorOffset = 0) {
 
     let sel = window.getSelection();
@@ -89,11 +87,7 @@ const ComputedVarWidget = Backbone.View.extend({
                 this.$formula.blur();
         });
 
-        this.$formula.focus(() => {
-            keyboardJS.pause('computed');
-        });
         this.$formula.blur((event) => {
-            keyboardJS.resume('computed');
             if ( ! dropdown.clicked() && ! this._editorClicked) {
                 this.model.set('formula', this.$formula[0].textContent);
                 window.clearTextSelection();
@@ -125,7 +119,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        this.$showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
+        this.$showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
@@ -146,7 +140,7 @@ const ComputedVarWidget = Backbone.View.extend({
         let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
+        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" aria-label="formula" tabindex="0"></div>').appendTo($formulaPair);
 
         this.$formula.on('input', (event) => {
             dropdown.updatePosition();

@@ -30,6 +30,18 @@ body {
     font-style: normal;
 }
 
+:focus {
+    outline-color: #4e5966;
+}
+
+[focusmode="default"] :focus {
+  outline: none
+}
+
+[focusmode="hover"] :focus {
+    outline: none;
+}
+
 h1 {
     font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
 }
@@ -112,6 +124,8 @@ h1 {
     margin-right: 6px ;
     color: #555555 ;
     display: inline-block;
+    background-color: transparent;
+    padding: 0;
 }
 
 .silky-sp-back-button:hover {
@@ -444,6 +458,8 @@ input[type=text].silky-option-listitem:focus {
 @import (inline) "../common/toolbar/toolbarbutton.css";
 @import (inline) "../common/toolbar/toolbargroup.css";
 @import (inline) "../common/toolbar/toolbarseparator.css";
+@import (inline) "../common/focusLoop.css";
+@import (inline) "../common/menu.css";
 @import (inline) "iconsupport.css";
 @import (inline) "controlcontainer.css";
 @import (inline) "optionlistcontrol.css";

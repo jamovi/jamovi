@@ -4,6 +4,8 @@
 const $ = require('jquery');
 const RibbonGroup = require('./toolbargroup');
 const Backbone = require('backbone');
+const focusLoop = require('../focusloop');
+const Menu = require('../menu');
 
 const ToolbarButton = function(params) {
 
@@ -27,7 +29,7 @@ const ToolbarButton = function(params) {
         let name = params.name;
         let size = params.size === undefined ? 'medium' : params.size;
         let right = params.right === undefined ? false : params.right;
-        let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let $el = params.$el === undefined ? $('<button></button>') : params.$el;
         let classes = params.classes === undefined ? '' : params.classes;
         let hasIcon = params.hasIcon === undefined ? true : params.hasIcon;
         let hasMenuArrow = params.hasMenuArrow === undefined ? true : params.hasMenuArrow;
@@ -51,7 +53,18 @@ const ToolbarButton = function(params) {
         if (right)
             this.$el.addClass('right');
 
-        this.$el.on('click', event => this._clicked(event));
+        this.$el.on('mousedown', event => {
+            if (this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('mouseup', event => {
+            if ( ! this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('keydown', (event) => {
+            if (event.code === 'Enter' || event.code === 'Space')
+                this._clicked(event, false);
+        });
 
         this._render();
 
@@ -105,23 +118,39 @@ const ToolbarButton = function(params) {
 
         if (this._menuGroup !== undefined) {
             if (menuWasVisible === false)
-                this._toggleMenu();
+                this.showMenu(event.detail > 0);
         }
 
-        event.stopPropagation();
+        event.preventDefault();
     };
 
     this.addItem = function(item) {
         if (this._menuGroup === undefined) {
+            this.menu = new Menu(this.$el[0], 1);
+
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
-            this.$menu.append(this._menuGroup.$el);
+            this.menu.$el.append(this._menuGroup.$el);
             if (this.hasMenuArrow)
-                $('<div class="jmv-toolbar-menu-arrow"></div>').insertBefore(this.$menu);
+                $('<div class="jmv-toolbar-menu-arrow"></div>').appendTo(this.$el);
             this.$el.addClass("jmv-toolbar-dropdown");
         }
 
         this._menuGroup.addItem(item);
+
+        if (item.getMenus) {
+            let subMenus = item.getMenus();
+            for (let subMenu of subMenus){
+                if (!subMenu.connected)
+                    subMenu.connect(this.menu);
+            }
+        }
+    };
+
+    this.getMenus = function() {
+        if (this.menu)
+            return [ this.menu ];
+        return [];
     };
 
     this._render = function() {
@@ -131,32 +160,40 @@ const ToolbarButton = function(params) {
         if (this.size === 'medium' || this.size === 'large')
             html += '   <div class="jmv-toolbar-button-label">' + this.title + '</div>';
 
-        html += '   <div class="jmv-toolbar-button-menu" style="display: none ;">';
-        html += '   </div>';
-
         this.$el.html(html);
-
-        this.$menu   = this.$el.find('.jmv-toolbar-button-menu');
     };
 
-    this.hideMenu = function() {
-        this.$menu.hide();
-        this.menuVisible = false;
+    this.hideMenu = function(fromMouse) {
+        if ( ! this.menu)
+            return;
+
+        this.menu.hide(fromMouse);
     };
 
-    this.showMenu = function(zIndex) {
-        this.trigger('shown', this);
-        this.$el.removeClass('contains-new');
-        //this.$menu.css('z-index', 100);
-        this.$menu.show();
-        this.menuVisible = true;
+    this.showMenu = function(fromMouse) {
+        if ( ! this.menu)
+            return;
+
+        this.positionMenu(fromMouse);
     };
 
-    this._toggleMenu = function() {
-        if (this.menuVisible)
-            this.hideMenu();
+    this._toggleMenu = function(fromMouse) {
+        if (this.menu.isVisible())
+            this.hideMenu(fromMouse);
         else
-            this.showMenu();
+            this.showMenu(fromMouse);
+    };
+
+    this.positionMenu = function(fromMouse) {
+        let anchor = 'left';
+        let x = this.$el.offset().left + 5;
+        let y = this.$el.offset().top + this.$el.outerHeight(false);
+        if (this.inMenu) {
+            x += this.menu.$el.outerWidth(true) - 10;
+            y -= this.$el.outerHeight() + 10;
+        }
+
+        this.menu.show(x, y, { withMouse: fromMouse });
     };
 
     this.initialize(params);

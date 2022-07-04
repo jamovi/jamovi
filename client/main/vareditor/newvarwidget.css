@@ -18,6 +18,9 @@
     text-align: center;
     margin: 7px;
     color: #214067;
+    border: none;
+    padding: 0px;
+    align-items: stretch;
 }
 
 .jmv-variable-new-container > .button > .icon {

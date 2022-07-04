@@ -119,6 +119,12 @@ const OptionListControl = function(params) {
                 }, 0);
             };
 
+            let addButtonKeyDown = (event) => {
+                if (event.keyCode == 13 || event.keyCode == 32) {
+                    addButtonClick();
+                }
+            };
+
             for (let i = 0; i < columns.length; i++) {
 
                 let columnInfo = { selectable: true, stretchFactor: 1, label: columns[i].name };
@@ -180,8 +186,9 @@ const OptionListControl = function(params) {
 
 
                     if (addButton !== null) {
-                        this.$addButton = $('<div class="column-add-button"><div class="list-add-button"><span class="mif-plus"></span></div>' + this.translate(addButton) + '</div>');
+                        this.$addButton = $('<div class="column-add-button" tabindex="0"><div class="list-add-button"><span class="mif-plus"></span></div>' + this.translate(addButton) + '</div>');
                         this.$addButton.click(addButtonClick);
+                        this.$addButton.keydown(addButtonKeyDown);
                         $filler.append(this.$addButton);
                         fillerInUse = true;
                     }
@@ -289,7 +296,7 @@ const OptionListControl = function(params) {
             let hadAddButton = this.getPropertyValue("addButton") !== null;
             if (hadAddButton) {
                 if (columnInfo === this._columnInfo._list[this._columnInfo._list.length - 1]) {
-                    let $closeButton = $('<div class="list-item-delete-button"><span class="mif-cross"></span></div>');
+                    let $closeButton = $('<button class="list-item-delete-button"><span class="mif-cross"></span></button>');
                     $closeButton.click((event) => {
                         let selectedIndices = this.getSelectedRowIndices();
                         this.getOption().removeAt(ctrl.getItemKey());

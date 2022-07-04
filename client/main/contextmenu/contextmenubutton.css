@@ -1,13 +1,15 @@
 
 
 .jmv-context-menu-arrow {
-    width: 5.5px;
-    height: 5.5px;
-    background-image: url('../assets/context-menu-arrow.svg');
+    width: 10px;
+    height: 10px;
+    transform: rotate(180deg);
+    background-image: url(assets/context-menu-arrow.svg);
     background-position: center;
-    background-repeat: no-repeat ;
+    background-repeat: no-repeat;
     background-size: contain;
-    margin: 0 2px 0 6px;
+    margin: 0 0px 0 20px;
+    justify-self: auto;
 }
 
 .jmv-ribbon-button-menu.context-menu {
@@ -38,12 +40,4 @@
 .jmv-ribbon-button-menu.context-menu.down {
     top: 0;
     bottom: auto;
-}
-
-.jmv-context-menu-button.active:not([disabled]) {
-    background-color: #cccccc ;
-}
-
-.jmv-context-menu-button:not([disabled]):active {
-    background-color: #cccccc ;
 }

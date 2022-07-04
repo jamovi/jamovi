@@ -8,17 +8,21 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const util = require('util');
-const keyboardJS = require('keyboardjs');
 
 const PageModules = require('./store/pagemodules');
 const PageSideload  = require('./store/pagesideload');
 const tarp = require('./utils/tarp');
+const focusLoop = require('../common/focusloop');
+const selectionLoop = require('../common/selectionLoop');
 
 const Store = Backbone.View.extend({
     className: 'Store',
     initialize: function() {
 
         this.$el.addClass('jmv-store');
+        this.$el.attr('tabindex', '-1');
+
+        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this) });
 
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
@@ -29,14 +33,25 @@ const Store = Backbone.View.extend({
         });
 
         this.$tabContainer = $('<div class="jmv-store-tab-container"></div>').appendTo(this.$el);
-        this.$tabContainer.on('click', event => this._tabClicked(event));
+        //this.$tabContainer.on('click', event => this._tabClicked(event));
+
+        this.tabSelection = new selectionLoop('store-tabs', this.$tabContainer[0], true);
+
+        this.tabSelection.on('selected-index-changed', (data) => {
+            let $target = $(data.target);
+            let $tab = $target.closest(this.$tabs);
+            if ($tab.length === 0)
+                return;
+            let index = this.$tabs.index($tab);
+            this._setSelected(index);
+        });
 
         for (let tab of [
             { name: 'installed', title: _('Installed') },
             { name: 'store', title: _('Available') },
             { name: 'sideload', title: _('Sideload')} ]) {
 
-            let $tab = $(util.format('<div class="jmv-store-tab" data-tab="%s"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
+            let $tab = $(util.format('<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="%s" tabindex="-1"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
             $tab.appendTo(this.$tabContainer);
         }
 
@@ -85,6 +100,7 @@ const Store = Backbone.View.extend({
         this.$tabs.removeClass('selected');
         let $selected = $(this.$tabs[index]);
         $selected.addClass('selected');
+        $selected.focus();
 
         let css = $selected.position();
         css.width = $selected.width();
@@ -98,31 +114,25 @@ const Store = Backbone.View.extend({
             if (i < index) {
                 $page.removeClass('right');
                 $page.addClass('left');
+                $page.css('visibility', 'hidden');
             }
             else if (i > index) {
                 $page.removeClass('left');
                 $page.addClass('right');
+                $page.css('visibility', 'hidden');
             }
             else {
                 $page.removeClass('right');
                 $page.removeClass('left');
+                $page.css('visibility', 'visible');
             }
         }
     },
-    _tabClicked: function(event) {
 
-        let $target = $(event.target);
-        let $tab = $target.closest(this.$tabs);
-        if ($tab.length === 0)
-            return;
-        let index = this.$tabs.index($tab);
-        this._setSelected(index);
-    },
     visible: function() {
         return this.$el.hasClass('visible');
     },
     show: function(tab) {
-        keyboardJS.pause('store');
         this.$el.addClass('visible');
         if (tab !== undefined)
             setTimeout(() => this._setSelected(tab), 100);
@@ -131,9 +141,13 @@ const Store = Backbone.View.extend({
         tarp.show('store', false, 0.3);
         let modules = this.model.modules();
         modules.available().retrieve();
+
+        setTimeout(() => {
+            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+        }, 200);
+
     },
     hide: function() {
-        keyboardJS.resume('store');
         this.$el.removeClass('visible');
         tarp.hide('store');
     }

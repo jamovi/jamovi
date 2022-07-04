@@ -23,6 +23,7 @@ const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
 const GridOptionListControl = require('./gridoptionlistcontrol');
 const ApplyMagicEvents = require('./applymagicevents');
+const focusLoop = require('../common/focusloop');
 
 const I18n = require("../common/i18n");
 
@@ -49,9 +50,9 @@ const frameCommsApi = {
     setTitle: setTitle
 };
 
-var parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
+let parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
 
-var requestData = function(requestType, requestData, getRemote) {
+let requestData = function(requestType, requestData, getRemote) {
     let data = { requestType: requestType, requestData: requestData };
     if (getRemote)
         return parentFrame.send("requestData", data);
@@ -75,7 +76,7 @@ let requestAction = function(requestType, requestData) {
     return parentFrame.send("requestAction", data);
 };
 
-var requestLocalColumnData = function(data) {
+let requestLocalColumnData = function(data) {
     var columns = dataResources.columns.concat(analysis.viewTemplate.customVariables);
     let found = false;
     let foundAll = true;
@@ -100,7 +101,7 @@ var requestLocalColumnData = function(data) {
     return found && foundAll;
 };
 
-var dataResources = { columns: [] };
+let dataResources = { columns: [] };
 
 
 const Analysis = function(def, i18nDef, jamoviVersion, id) {
@@ -212,7 +213,7 @@ $(document).ready(function() {
 });
 
 
-function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
+function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
 
     if (appI18nDef)
         I18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);
@@ -224,6 +225,17 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id) {
     $hide.on('click', function(event) {
         closeOptions();
     });
+
+    let focusToken = focusLoop.addFocusLoop(document.body);
+    focusToken.on('focusleave', closeOptions);
+    focusLoop.on('focus', (event) => {
+        if (focusLoop.inAccessibilityMode()) {
+            focusLoop.enterFocusLoop(document.body, false);
+        }
+    });
+    focusLoop.setFocusMode(focusMode);
+    if (focusLoop.inAccessibilityMode())
+        focusLoop.enterFocusLoop(document.body, false);
 
     let $title = $('.silky-options-title');
     if (def.error) {
@@ -349,7 +361,8 @@ function mouseUp(event) {
         eventName: "mouseup",
         which: event.which,
         pageX: event.pageX,
-        pageY: event.pageY
+        pageY: event.pageY,
+        detail: event.detail
     };
 
     parentFrame.send("onFrameMouseEvent", data);
@@ -360,7 +373,8 @@ function mouseMove(event) {
         eventName: "mousemove",
         which: event.which,
         pageX: event.pageX,
-        pageY: event.pageY
+        pageY: event.pageY,
+        detail: event.detail
     };
 
     parentFrame.send("onFrameMouseEvent", data);
@@ -371,13 +385,14 @@ function mouseDown(event) {
         eventName: "mousedown",
         which: event.which,
         pageX: event.pageX,
-        pageY: event.pageY
+        pageY: event.pageY,
+        detail: event.detail
     };
 
     parentFrame.send("onFrameMouseEvent", data);
 }
 
-
 function closeOptions() {
+    focusLoop.setFocusMode('default');
     parentFrame.send("hideOptions", null);
 }
