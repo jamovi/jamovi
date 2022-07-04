@@ -691,10 +691,6 @@ $(document).ready(async() => {
                 });
                 notifications.notify(progNotif);
             }
-
-            if (progress.status !== undefined) {
-                infoBox.setup(progress);
-            }
         };
 
         let status;
