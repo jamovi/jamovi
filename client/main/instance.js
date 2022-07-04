@@ -312,8 +312,10 @@ const Instance = Backbone.Model.extend({
                         break;
                 }
 
-                if (message && message['set-cookie'])
-                    document.cookie = message['set-cookie'];
+                if (message && message['set-cookies']) {
+                    for (let cookie of message['set-cookies'])
+                        document.cookie = cookie;
+                }
 
                 if ( ! message) {
                     throw new JError(_('Unable to open'), {
