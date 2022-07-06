@@ -691,6 +691,9 @@ $(document).ready(async() => {
                 });
                 notifications.notify(progNotif);
             }
+
+            if (progress['message-src'])
+                infoBox.setup(progress);
         };
 
         let status;
