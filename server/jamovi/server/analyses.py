@@ -144,8 +144,16 @@ class Analysis:
                         and first_elem.preformatted == ''):
                     use_previous_results = True
 
-            if use_previous_results and self.results is not None:
-                new_results = self.results
+            if use_previous_results:
+                if self.results is None:
+                    # the client requires there to be at least one
+                    # results element
+                    elem = results.results.group.elements.add()
+                    elem.preformatted = ''
+                    new_results = results
+                else:
+                    new_results = self.results
+
                 new_results.results.error.message = results.results.error.message
                 self._change_status_to_complete(new_results.results)
                 results = new_results
