@@ -141,7 +141,7 @@ const ToolbarButton = function(params) {
         if (item.getMenus) {
             let subMenus = item.getMenus();
             for (let subMenu of subMenus){
-                if (!subMenu.connected)
+                if ( ! subMenu.connected)
                     subMenu.connect(this.menu);
             }
         }

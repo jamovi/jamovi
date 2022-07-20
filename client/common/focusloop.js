@@ -10,6 +10,8 @@ class FocusLoopToken extends EventEmitter {
     }
 }
 
+// the FocusLoop is a static class that manages which control has focus (not selection/highlight)
+// and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
     constructor() {
@@ -35,7 +37,29 @@ class FocusLoop extends EventEmitter {
         this._bluringTimeout = null;
         this._broadcastTimeout = null;
 
-        window.addEventListener('message', event => this._messageEvent(event));
+        window.addEventListener('message', event => {
+            if (event.source === window)
+                return;
+
+            let data = event.data;
+
+            if (data.type !== 'focusLoop')
+                return;
+
+            this._fromBroadcast = false;
+            switch (data.id) {
+                case 'setFocusMode':
+                    this._fromBroadcast = true;
+                    break;
+                case 'setFocusDefault':
+                    this._fromBroadcast = true;
+                    break;
+            }
+            if (this._fromBroadcast) {
+                this[data.id].apply(this, data.args);
+                this._fromBroadcast = false;
+            }
+        });
 
         window.addEventListener('keydown', (event) => {
             if (event.altKey) {
@@ -337,30 +361,6 @@ class FocusLoop extends EventEmitter {
             if (this._mainWindow.frames[i] !== window)
                 this._mainWindow.frames[i].postMessage(data, '*');
         }
-    }
-
-    _messageEvent(event) {
-        if (event.source === window)
-            return;
-
-        let data = event.data;
-
-        if (data.type !== 'focusLoop')
-            return;
-
-        this._fromBroadcast = false;
-        switch (data.id) {
-            case 'setFocusMode':
-                this._fromBroadcast = true;
-                break;
-            case 'setFocusDefault':
-                this._fromBroadcast = true;
-                break;
-            }
-            if (this._fromBroadcast) {
-                this[data.id].apply(this, data.args);
-                this._fromBroadcast = false;
-            }
     }
 
     getNextFocusId() {

@@ -11,7 +11,6 @@ const MeasureList = require('../vareditor/measurelist');
 const ColourPalette = require('./colourpalette');
 const Notify = require('../notification');
 const Backbone = require('backbone');
-const focusLoop = require('../../common/focusloop');
 
 const TransformEditor = function(dataset) {
 
@@ -21,10 +20,6 @@ const TransformEditor = function(dataset) {
     this._editNote = new Notify({ duration: 3000 });
 
     this.$el = $('<div class="jmv-transform-editor"></div>');
-    //let focusToken = focusLoop.addFocusLoop(this.$el[0], {level: 2 });
-    //focusToken.on('focusleave', () => {
-    //    this._focusLeaving = true;
-    //});
 
     this.title = _('Transform');
     this.$icon = $('<div class="transform-colour"></div>');

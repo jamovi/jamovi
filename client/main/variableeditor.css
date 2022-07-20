@@ -84,7 +84,6 @@
     width: 100% ;
     line-height: 32px;
     vertical-align: top;
-    /*margin-top: 4px ;*/
     transition: opacity .4s ;
 }
 
@@ -186,7 +185,6 @@
     box-sizing: content-box;
     overflow: hidden;
     height: 36px;
-    /*margin-top: 3px;*/
 }
 
 .jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list {
@@ -332,8 +330,6 @@
     margin-left: 3px;
 }
 
-
-
 .jmv-variable-editor-widget-footer > .status-box {
     display: flex;
     flex-direction: row-reverse;
@@ -348,13 +344,11 @@
     height: 18px;
     line-height: 18px;
     text-align: right;
-
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     position: relative;
     gap: 1ch;
-
 }
 
 
@@ -366,53 +360,53 @@
 }
 
 .jmv-variable-editor-widget-footer .switch {
-  --offset: 2px;
-  --diameter: 10px;
+    --offset: 2px;
+    --diameter: 10px;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-around;
-  box-sizing: content-box;
-  width: calc(var(--diameter) * 2 + var(--offset) * 2);
-  height: calc(var(--diameter) + var(--offset) * 2);
-  position: relative;
-  border-radius: 100vw;
-  background-color: #cccccc;
-  transition: background-color 0.1s ease-out, transform 0.1s ease-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-around;
+    box-sizing: content-box;
+    width: calc(var(--diameter) * 2 + var(--offset) * 2);
+    height: calc(var(--diameter) + var(--offset) * 2);
+    position: relative;
+    border-radius: 100vw;
+    background-color: #cccccc;
+    transition: background-color 0.1s ease-out, transform 0.1s ease-out;
 }
 
 .jmv-variable-editor-widget-footer .active.retain-levels + .switch {
-  background-color: #8cc18c;
+    background-color: #8cc18c;
 }
 
 .jmv-variable-editor-widget-footer .active.retain-levels + .switch::before {
-  transform: translate(100%, -50%);
+    transform: translate(100%, -50%);
 }
 
 .jmv-variable-editor-widget-footer .active:focus + .switch {
-  outline: 1px dotted #212121;
-  outline: 1px auto -webkit-focus-ring-color;
-  outline-offset: 2px;
+    outline: 1px dotted #212121;
+    outline: 1px auto -webkit-focus-ring-color;
+    outline-offset: 2px;
 }
 
 .jmv-variable-editor-widget-footer .active:focus:not(:focus-visible) + .switch {
-  outline: 0;
+    outline: 0;
 }
 
 .jmv-variable-editor-widget-footer .switch::before {
-  content: "";
-  z-index: 2;
-  position: absolute;
-  top: calc(var(--diameter) / 2 + var(--offset) / 2 + 0.5px);
-  left: var(--offset);
-  box-sizing: border-box;
-  width: var(--diameter);
-  height: var(--diameter);
-  border-radius: 50%;
-  background-color: white;
-  transform: translate(0, -50%);
-  will-change: transform;
-  transition: inherit;
+    content: "";
+    z-index: 2;
+    position: absolute;
+    top: calc(var(--diameter) / 2 + var(--offset) / 2 + 0.5px);
+    left: var(--offset);
+    box-sizing: border-box;
+    width: var(--diameter);
+    height: var(--diameter);
+    border-radius: 50%;
+    background-color: white;
+    transform: translate(0, -50%);
+    will-change: transform;
+    transition: inherit;
 }
 
 .jmv-variable-editor-widget-footer .active + .switch:hover {

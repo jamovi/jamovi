@@ -33,7 +33,7 @@ const LayoutCollapseView = function(params) {
         this.$header.attr('tabindex', 0);
 
         this.$header.keydown((event) => {
-            if (event.keyCode == 13 || event.keyCode == 32) {
+            if (event.keyCode == 13 || event.keyCode == 32) {  // 13=enter, 32=space
                 this.toggleColapsedState();
             }
         });

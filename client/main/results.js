@@ -15,12 +15,12 @@ const ResultsView = Backbone.View.extend({
 
         this.$el.addClass('jmv-results');
         focusLoop.applyShortcutOptions(this.$el[0], {
-            key: 'R',
-            maintainAccessibility: true,
-            action: (event) => {
+                key: 'R',
+                maintainAccessibility: true,
+                action: (event) => {
                     focusLoop.enterFocusLoop(this.selectedView.$el[0], { withMouse: false });
-            },
-            position: { x: '15px', y: '15px' }
+                },
+                position: { x: '15px', y: '15px' }
             }
         );
 

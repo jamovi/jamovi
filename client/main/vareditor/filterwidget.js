@@ -844,7 +844,7 @@ const FilterWidget = Backbone.View.extend({
                 }
             }
         }
-        if ($scrollTo && this.$filterList[0].scrollHeight > this.$filterList[0].clientHeight) {
+        if ($scrollTo && this.$filterList[0].scrollHeight > this.$filterList[0].clientHeight) {  // don't call scrollIntoView timer if there is no scrollbar
             setTimeout(() => {
                 $scrollTo[0].scrollIntoView(false);
             }, 250);

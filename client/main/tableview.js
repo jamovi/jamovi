@@ -750,11 +750,6 @@ const TableView = SilkyView.extend({
         if (this.controller.focusedOn !== this)
             return;
 
-        /*setTimeout(() => {
-            if (keyboardJS._paused === false)
-                this._setFocusCell(true);
-        }, 10);*/
-
         if (this._resizingColumn) {
             let column = this._resizingColumn.column;
             if (column.name !== '')  // not virtual
@@ -1079,14 +1074,6 @@ const TableView = SilkyView.extend({
 
         let sel = this.selection;
 
-        /*let rowCount = this.model.get('vRowCount');
-        let columnCount = this.model.get('vColumnCount');
-        this._focusGrid.setAttribute('aria-colcount', columnCount);
-        this._focusGrid.setAttribute('aria-rowcount', rowCount);
-        this._focusRow.setAttribute('aria-rowindex', sel.rowNo + 1);
-        this._focusCell.setAttribute('aria-colindex', sel.colNo + 1);
-        this._focusCell.setAttribute('aria-rowindex', sel.rowNo + 1);
-*/
         let selColumn = this.model.getColumn(sel.colNo, true);
         this._focusCell.setAttribute('aria-describedby', `column-${ selColumn.id } row-${ sel.rowNo }`);
         this._focusRow.setAttribute('aria-owns', `row-${ sel.rowNo } focusCell`);

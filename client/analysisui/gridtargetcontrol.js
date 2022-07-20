@@ -455,7 +455,7 @@ const GridTargetContainer = function(params) {
             this._targetDoubleClickDetectObj = null;
             listbox.$el.on('click', null, this, (event) => {
                 this.targetGrid = listbox;
-                if (this._targetDoubleClickDetectObj != event.target)
+                if (this._targetDoubleClickDetectObj !== event.target)
                     this._targetDoubleClickDetect = 0;
                 this._targetDoubleClickDetect += 1;
                 this._targetDoubleClickDetectObj = event.target;
@@ -922,7 +922,7 @@ const GridTargetContainer = function(params) {
         if (self._supplier.isMultiTarget())
             return;
 
-        if (self._supplierDoubleClickDetectObj != event.target)
+        if (self._supplierDoubleClickDetectObj !== event.target)
             self._supplierDoubleClickDetect = 0;
         self._supplierDoubleClickDetect += 1;
         self._supplierDoubleClickDetectObj = event.target;

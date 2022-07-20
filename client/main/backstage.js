@@ -89,8 +89,6 @@ const FSEntryListView = SilkyView.extend({
 
         let items = this.model.get('items');
 
-        let html = '';
-
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
 
@@ -106,7 +104,7 @@ const FSEntryListView = SilkyView.extend({
                 location = item.description;
             }
 
-            html = `<div class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
+            let html = `<div class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
             else if (name.endsWith('.omt'))

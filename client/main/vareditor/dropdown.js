@@ -20,7 +20,7 @@ const dropdown = function() {
 
     this.$el = $('<div class="jmv-dropdown-widget dropdown-hidden dropdown-remove" tabindex="-1"></div>');
     let options = { hoverFocus: true };
-    let focusToken = focusLoop.addFocusLoop(this.$el[0], options);
+    focusLoop.addFocusLoop(this.$el[0], options);
 
     this.$contents = $('<div class="jmv-dropdown-contents"></div>').appendTo(this.$el);
 

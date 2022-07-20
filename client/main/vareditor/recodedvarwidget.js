@@ -20,6 +20,8 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this._editNote = new Notify({ duration: 3000 });
 
+        instanceID += 1;
+        
         dropdown.init();
         this.$el.empty();
         this.$el.addClass('jmv-variable-recoded-widget');

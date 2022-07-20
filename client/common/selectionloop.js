@@ -3,6 +3,8 @@
 const $ = require('jquery');
 const EventEmitter = require('events');
 
+// the SelectionLoop is a class that manages which child control has selection (not focus)
+// and the movement and behaviour of that selection between and within other child controls
 class SelectionLoop extends EventEmitter {
 
     constructor(name, element) {

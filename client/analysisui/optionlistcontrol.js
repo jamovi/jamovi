@@ -120,7 +120,7 @@ const OptionListControl = function(params) {
             };
 
             let addButtonKeyDown = (event) => {
-                if (event.keyCode == 13 || event.keyCode == 32) {
+                if (event.keyCode == 13 || event.keyCode == 32) { // 13=enter, 32=space
                     addButtonClick();
                 }
             };
