@@ -128,7 +128,10 @@
     margin-top: 60px ;
     text-align: center ;
     font-size: 180px ;
-    color: #BBBBBB ;
+    width: 100%;
+    color: #BBBBBB;
+    border: none;
+    background: none;
 }
 
 .jmv-store-page-installed-drop > span:hover {

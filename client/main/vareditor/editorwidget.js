@@ -5,8 +5,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const keyboardJS = require('keyboardjs');
-
 const NewVarWidget = require('./newvarwidget');
 const DataVarWidget = require('./datavarwidget');
 const OutputVarWidget = require('./outputvarwidget');
@@ -31,10 +29,11 @@ const EditorWidget = Backbone.View.extend({
     className: 'EditorWidget',
     initialize(args) {
 
-        this.attached = true;
+        this.attached = false;
 
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor-widget');
+        this.$el.attr('aria-hidden', true);
 
         this.$labelBox = $('<div class="label-box"></div>').appendTo(this.$el);
         this.$label = $('<div class="jmv-variable-editor-widget-label"></div>').appendTo(this.$labelBox);
@@ -51,7 +50,7 @@ const EditorWidget = Backbone.View.extend({
 
         this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$el);
 
-        this.$title = $('<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63">').appendTo(this.$descBox);
+        this.$title = $(`<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63" aria-label="${_('Name')}">`).appendTo(this.$descBox);
         this._addTextEvents(this.$title, 'name');
         this.model.on('change:name', event => {
             if ( ! this.attached)
@@ -65,7 +64,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('name', this.$title.val());
         } );
 
-        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" contenteditable="true">`).appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" aria-label="${_('Description')}"  contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
             if ( ! this.attached)
@@ -97,8 +96,10 @@ const EditorWidget = Backbone.View.extend({
 
 
         let $statusBox = $('<div class="status-box"></div>').appendTo(this.$footer);
-        this.$active = $('<div class="active"><div class="switch"></div></div>').appendTo($statusBox);
-        let $status = $(`<div class="status">${_('Retain unused levels in analyses')}</div>`).appendTo($statusBox);
+        let $status = $(`<label class="status">${_('Retain unused levels in analyses')}</label>`).appendTo($statusBox);
+        this.$active = $(`<input class="active" type="checkbox"/>`).appendTo($status);
+        let $switch = $(`<span class="switch"></span>`).appendTo($status);
+
 
         if (this.model.get('trimLevels') === false)
             this.$active.addClass('retain-levels');
@@ -115,7 +116,12 @@ const EditorWidget = Backbone.View.extend({
         };
 
         this.$active.on('click', activeChanged);
-        $status.on('click', activeChanged);
+        this.$active.on('keyup', (event) => {
+            if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                activeChanged(event);
+              }
+        });
 
         this.model.on('change:trimLevels', event => {
             if (this.model.get('trimLevels') === false)
@@ -187,12 +193,10 @@ const EditorWidget = Backbone.View.extend({
     },
     _addTextEvents($element, propertyName) {
         $element.focus(() => {
-            keyboardJS.pause('editor-' + propertyName);
             $element.select();
         } );
 
         $element.blur(() => {
-            keyboardJS.resume('editor-' + propertyName);
             window.clearTextSelection();
         } );
 
@@ -229,6 +233,8 @@ const EditorWidget = Backbone.View.extend({
         this.recodedVarWidget.detach();
         this.filterWidget.detach();
         this.outputWidget.detach();
+
+        this.$el.attr('aria-hidden', true);
     },
     _updateHeading() {
         let type = this.model.get('columnType');
@@ -322,6 +328,8 @@ const EditorWidget = Backbone.View.extend({
             this._show(this.$newVarWidget);
             this.newVarWidget.attach();
         }
+
+        this.$el.attr('aria-hidden', false);
     },
     update() {
         let type = this.model.get('columnType');

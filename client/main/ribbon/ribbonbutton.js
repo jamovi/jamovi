@@ -6,6 +6,8 @@ const Backbone = require('backbone');
 const RibbonGroup = require('./ribbongroup');
 
 const ActionHub = require('../actionhub');
+const focusLoop = require('../../common/focusloop');
+const Menu = require('../../common/menu');
 
 const RibbonButton = Backbone.View.extend({
 
@@ -32,12 +34,26 @@ const RibbonButton = Backbone.View.extend({
         let right = params.right === undefined ? false : params.right;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let classes =  params.class === undefined ? null : params.class;
-        let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let $el = params.$el === undefined ? $('<button></button>') : params.$el;
+        let level = params.level === undefined ? 0 : params.level;
+        let shortcutKey = params.shortcutKey === undefined ? null : params.shortcutKey.toUpperCase();
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button');
         this.$el.addClass('jmv-ribbon-button-size-' + size);
         this.$el.addClass('jmv-ribbon-button-margin-' + margin);
+        this.$el.attr('tabindex', '0');
+
+        this.labelId = focusLoop.getNextAriaElementId('label');
+
+        if (shortcutKey) {
+            this.shortcutKey = shortcutKey.toUpperCase();
+            let stcOptions = { key: this.shortcutKey, action: event => this._clicked(event, false) };
+            if (params.shortcutPosition)
+                stcOptions.position = params.shortcutPosition;
+            focusLoop.applyShortcutOptions(this.$el[0], stcOptions);
+        }
+
         if (classes !== null)
             this.$el.addClass(classes);
 
@@ -53,16 +69,32 @@ const RibbonButton = Backbone.View.extend({
         this.title = title;
         this.name = name;
         this.dock = right ? 'right' : 'left';
+        this.level = level;
 
         if (icon !== null)
             this.$el.addClass('has-icon');
 
         this.$el.attr('data-name', this.name.toLowerCase());
+        this.focusId = focusLoop.getNextFocusId();
+        this.$el.attr('data-focus-id', this.focusId);
         this.$el.attr('disabled');
         if (right)
             this.$el.addClass('right');
 
-        this.$el.on('click', event => this._clicked(event));
+        this.$el.on('mousedown', event => {
+            if (this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('mouseup', event => {
+            if ( ! this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('keydown', (event) => {
+            if (event.code === 'Enter' || event.code === 'Space')
+                this._clicked(event, false);
+            else if (event.code == 'ArrowDown' && this._menuGroup !== undefined)
+                this._clicked(event, false);
+        });
 
         this._refresh();
 
@@ -96,11 +128,27 @@ const RibbonButton = Backbone.View.extend({
         else
             this.$el.removeClass('checked');
     },
-    setParent(parent) {
+    setParent(parent, parentShortcutPath, inMenu) {
         this.parent = parent;
 
+        let shortcutPath = parentShortcutPath;
+        if (this.shortcutKey)
+            focusLoop.applyShortcutOptions(this.$el[0], { path: parentShortcutPath });
+
+        if (inMenu) {
+            this.$el.attr('role', 'menuitem');
+            this.inMenu = inMenu;
+
+            focusLoop.createHoverItem(this, () => {
+                if (this.menu)
+                    this.showMenu(true);
+                else
+                    this.$el[0].focus({preventScroll:true});
+            });
+        }
+
         if (this._menuGroup !== undefined)
-            this._menuGroup.setParent(parent);
+            this._menuGroup.setParent(parent, shortcutPath + this.shortcutKey, true);
     },
     setTabName(name) {
         if (this._definedTabName === false)
@@ -115,10 +163,10 @@ const RibbonButton = Backbone.View.extend({
         else
             this.$el.attr('disabled', '');
     },
-    _clicked(event) {
+    _clicked(event, fromMouse) {
 
         let $target = $(event.target);
-        if ($target.closest(this.$menu).length !== 0)
+        if (this.menu && $target.closest(this.menu.$el).length !== 0)
             return;
 
         let action = ActionHub.get(this.name);
@@ -126,7 +174,7 @@ const RibbonButton = Backbone.View.extend({
         if ( ! action.attributes.enabled)
             ; // do nothing
         else if (this._menuGroup !== undefined) {
-            this._toggleMenu();
+            this._toggleMenu(fromMouse);
             action.do(this);
         }
         else {
@@ -134,16 +182,19 @@ const RibbonButton = Backbone.View.extend({
             this.$el.trigger('menuActioned', this);
         }
 
-        event.stopPropagation();
+        event.preventDefault();
     },
 
     addItem(item) {
         if (this._menuGroup === undefined) {
+            this.menu = new Menu(this.$el[0], this.level + 1);
+
             this.$el.addClass('has-children');
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
-            this.$menu.append(this._menuGroup.$el);
-            $('<div class="jmv-ribbon-menu-arrow"></div>').insertBefore(this.$menu);
+
+            this.menu.$el.append(this._menuGroup.$el);
+            $('<div class="jmv-ribbon-menu-arrow"></div>').appendTo(this.$el);
 
             this.$el.on('menuActioned', (event, item) => {
                 let action = ActionHub.get(this.name);
@@ -152,39 +203,65 @@ const RibbonButton = Backbone.View.extend({
         }
 
         this._menuGroup.addItem(item);
+
+        if (item.getMenus) {
+            let subMenus = item.getMenus();
+            for (let subMenu of subMenus){
+                if (!subMenu.connected)
+                    subMenu.connect(this.menu);
+            }
+        }
+    },
+
+    getMenus() {
+        if (this.menu)
+            return [ this.menu ];
+        return [];
     },
 
     _refresh() {
         let html = '';
-        html += '   <div class="jmv-ribbon-button-icon">' + (this.icon === null ? '' : this.icon) + '</div>';
-        if (this.size === 'medium' || this.size === 'large')
-            html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
-
-        html += '   <div class="jmv-ribbon-button-menu" style="display: none ;">';
-        html += '   </div>';
+        html += '   <div class="jmv-ribbon-button-icon" role="none">' + (this.icon === null ? '' : this.icon) + '</div>';
+        if (this.size === 'medium' || this.size === 'large') {
+            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${this.title}</div>`;
+            this.$el.attr('aria-labelledby', this.labelId);
+        }
+        else
+            this.$el.attr('aria-label', this.title);
 
         this.$el.html(html);
-
-        this.$menu   = this.$el.find('.jmv-ribbon-button-menu');
     },
 
+    hideMenu(fromMouse) {
+        if ( ! this.menu)
+            return;
 
-    hideMenu() {
-        this.$menu.hide();
-        this.menuVisible = false;
+        this.menu.hide(fromMouse);
     },
-    showMenu() {
-        this.trigger('shown', this);
-        this.$el.removeClass('contains-new');
-        this.$menu.show();
-        this.menuVisible = true;
+    showMenu(fromMouse) {
+        if ( ! this.menu || this.menu.isVisible())
+            return;
+
+        this.positionMenu(fromMouse);
+        //focusLoop.updateShortcuts();
     },
-    _toggleMenu() {
-        if (this.menuVisible)
-            this.hideMenu();
+    _toggleMenu(fromMouse) {
+        if (this.menu.isVisible())
+            this.hideMenu(fromMouse);
         else
-            this.showMenu();
+            this.showMenu(fromMouse);
     },
+    positionMenu(fromMouse) {
+        let anchor = 'left';
+        let x = this.$el.offset().left + 5;
+        let y = this.$el.offset().top + this.$el.outerHeight(false);
+        if (this.inMenu) {
+            x += this.menu.$el.outerWidth(true) - 10;
+            y -= this.$el.outerHeight() + 10;
+        }
+
+        this.menu.show(x, y, { withMouse: fromMouse });
+    }
 });
 
 module.exports = RibbonButton;

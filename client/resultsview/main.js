@@ -13,6 +13,7 @@ const b64 = require('../common/utils/b64');
 const Annotations = require('./annotations');
 const Tracker = require('./itemtracker');
 const I18n = require("../common/i18n");
+const focusLoop = require('../common/focusloop');
 
 window._ = I18n._;
 
@@ -74,6 +75,14 @@ class Main {  // this is constructed at the bottom
         // the location of the script should be inside the body
         // so we don't need document.ready()
         this.$body = $('body');
+
+        focusLoop.addFocusLoop(document.body);
+        focusLoop.on('focus', (event) => {
+            if (focusLoop.inAccessibilityMode()) {
+                focusLoop.enterFocusLoop(document.body, { withMouse: false });
+            }
+        });
+        document.body.setAttribute('tabindex', '-1');
 
         $(document).mousedown(this, (event) => this._mouseDown(event));
         $(document).mouseup(this, (event) => this._mouseUp(event));

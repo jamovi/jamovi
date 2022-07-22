@@ -70,7 +70,7 @@ const SplitPanelSection = function(index, $panel, initData, parent) {
             return null;
 
         if (this._splitter === undefined) {
-            this._splitter = $('<div class="silky-splitpanel-splitter"><div style="font-size: 21px; color: #b0b0b0a6;"><span class="mif-more-vert"></span></div><div class="click-panel"></div></div>');
+            this._splitter = $('<div class="silky-splitpanel-splitter" role="separator" aria-label="Window Splitter"><div style="font-size: 21px; color: #b0b0b0a6;"><span class="mif-more-vert"></span></div><div class="click-panel"></div></div>');
             this._splitter.css('width', SplitPanelSection.sepWidth);
             this._splitter.css('grid-area',`2 / ${ this.listIndex * 2 } / -1 / span 1`);
         }

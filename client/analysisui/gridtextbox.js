@@ -40,10 +40,12 @@ const GridTextbox = function(params) {
             label = '';
 
         label = this.translate(label);
+        let id = `${ this.getPropertyValue('name') }-option-textbox`;
+
 
         let cell = null;
         let startClass = label === '' ? '' : 'silky-option-text-start';
-        this.$label = $('<div class="silky-option-text-label silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+        this.$label = $('<label for="'+id+'" class="silky-option-text-label silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</label>');
         cell = grid.addCell(column, row, this.$label);
         cell.blockInsert('right');
         cell.setAlignment('left', 'center');
@@ -83,7 +85,8 @@ const GridTextbox = function(params) {
         }
         this.$suggestValues = $(dd);
 
-        let t = '<input class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
+
+        let t = '<input id="'+id+'" class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
 
         // this code block has been commented out because of a bug in electron 3.X that caused a crash if
         // the validation failed.

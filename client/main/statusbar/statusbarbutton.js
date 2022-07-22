@@ -6,7 +6,7 @@ const ActionHub = require('../actionhub');
 
 const StatusbarButton = function(name) {
 
-    this.$el =  $('<div class="jmv-statusbar-button"></div>');
+    this.$el =  $('<div class="jmv-statusbar-button" tabindex="0"></div>');
 
     this.name = name;
 
@@ -14,6 +14,11 @@ const StatusbarButton = function(name) {
     this.$el.attr('disabled');
 
     this.$el.on('click', event => this._clicked(event));
+    this.$el.keydown((event) => {
+        if (event.keyCode == 13 || event.keyCode == 32) {
+            this._clicked(event);
+        }
+    });
 
     this.setEnabled = function(enabled) {
         if (enabled)

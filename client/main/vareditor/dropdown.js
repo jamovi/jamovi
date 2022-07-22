@@ -2,6 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
+const focusLoop = require('../../common/focusloop');
 
 const dropdown = function() {
     this._inTools = false;
@@ -17,7 +18,9 @@ const dropdown = function() {
         }
     }, true);
 
-    this.$el = $('<div class="jmv-dropdown-widget dropdown-hidden dropdown-remove"></div>');
+    this.$el = $('<div class="jmv-dropdown-widget dropdown-hidden dropdown-remove" tabindex="-1"></div>');
+    let options = { hoverFocus: true };
+    focusLoop.addFocusLoop(this.$el[0], options);
 
     this.$contents = $('<div class="jmv-dropdown-contents"></div>').appendTo(this.$el);
 
@@ -52,7 +55,7 @@ const dropdown = function() {
         if (( ! event.data.check || self._inTools === false) && self._shown) {
             self.$el.addClass('dropdown-hidden dropdown-remove');
             self.$content.off('hide-dropdown', null, this.hide);
-            self.$formula.off('blur.dropdown', null, this.hide);
+            //self.$formula.off('blur.dropdown', null, this.hide);
             self.$formula.trigger('editor:closing');
             self.$formula = null;
             self._shown = false;
@@ -117,18 +120,23 @@ const dropdown = function() {
             });
         }
 
+        setTimeout(() => {
+            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+        }, 200);
+
+
         if (this._shown && $formula === this.$formula)
             return this._promise;
 
         this._shown = true;
         this._waiting = wait;
 
-        if (this.$formula)
-            this.$formula.off('blur.dropdown', null, this.hide);
+        //if (this.$formula)
+        //    this.$formula.off('blur.dropdown', null, this.hide);
 
         this.$formula = $formula;
 
-        this.$formula.on('blur.dropdown', null, { dropdown: this, check: true }, this.hide);
+        //this.$formula.on('blur.dropdown', null, { dropdown: this, check: true }, this.hide);
 
         if ( ! wait)
             this._findPosition();

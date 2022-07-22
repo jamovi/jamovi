@@ -4,12 +4,13 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const keyboardJS = require('keyboardjs');
 const dropdown = require('./dropdown');
 const TransformList = require('./transformlist');
 const VariableList = require('./variablelist');
 const ColourPalette = require('../editors/colourpalette');
 const Notify = require('../notification');
+
+let instanceID = 0;
 
 const RecodedVarWidget = Backbone.View.extend({
     className: 'RecodedVarWidget',
@@ -19,18 +20,22 @@ const RecodedVarWidget = Backbone.View.extend({
 
         this._editNote = new Notify({ duration: 3000 });
 
+        instanceID += 1;
+        
         dropdown.init();
         this.$el.empty();
         this.$el.addClass('jmv-variable-recoded-widget');
-
+        let id1 = `transform-var-list-${instanceID}`;
         this.$top = $('<div class="jmv-variable-recoded-top"></div>').appendTo(this.$el);
-        $(`<div class="variable-list-label single-variable-support">${_('Source variable')}</div>`).appendTo(this.$top);
+        $(`<label for="${id1}" class="variable-list-label single-variable-support">${_('Source variable')}</label>`).appendTo(this.$top);
         this.$variableIcon = $('<div class="variable-type-icon single-variable-support"></div>').appendTo(this.$top);
-        this.$variableList = $('<select class="recoded-from single-variable-support"></select>').appendTo(this.$top);
-        $(`<div class="transform-label">${_('using transform')}</div>`).appendTo(this.$top);
+        this.$variableList = $(`<select id="${id1}" class="recoded-from single-variable-support"></select>`).appendTo(this.$top);
+
+        let id2 = `transform-list-${instanceID}`;
+        $(`<label for="${id2}" class="transform-label">${_('using transform')}</label>`).appendTo(this.$top);
         this.$transformIcon = $('<div class="transform-icon"></div>').appendTo(this.$top);
-        this.$transformList = $(`<select id="transform-type"><option value="None">${_('None')}</option></select>`).appendTo(this.$top);
-        this.$editTransform = $(`<div class="edit-button">${_('Edit...')}</div>`).appendTo(this.$top);
+        this.$transformList = $(`<select id="${id2}" id="transform-type"><option value="None">${_('None')}</option></select>`).appendTo(this.$top);
+        this.$editTransform = $(`<button class="edit-button">${_('Edit...')}</button>`).appendTo(this.$top);
         this.$errorMessage = $(`<div class="error-msg">${_('This transform is in error and should be edited.')}</div>`).appendTo(this.$top);
         this.$editTransform.on('click', (event) => {
             let transformId = this.model.get('transform');
@@ -47,23 +52,12 @@ const RecodedVarWidget = Backbone.View.extend({
             else
             {
                 this.variableList.setParent(this.$variableList);
-                keyboardJS.pause('variable-list');
-                dropdown.show(this.$variableList, this.variableList).then(() => {
-                    keyboardJS.resume('variable-list');
-                });
+                dropdown.show(this.$variableList, this.variableList);
             }
             event.preventDefault();
             event.stopPropagation();
             this.$variableList.focus();
         });
-
-        this.$variableList.focus(() => {
-            keyboardJS.pause('');
-        } );
-
-        this.$variableList.blur(() => {
-            keyboardJS.resume();
-        } );
 
         this.$variableList.on('change', event => {
             this.model.set('parentId', parseInt(this.$variableList.val()));
@@ -76,10 +70,7 @@ const RecodedVarWidget = Backbone.View.extend({
                 else
                 {
                     this.variableList.setParent(this.$variableList);
-                    keyboardJS.pause('variable-list');
-                    dropdown.show(this.$variableList, this.variableList).then(() => {
-                        keyboardJS.resume('variable-list');
-                    });
+                    dropdown.show(this.$variableList, this.variableList);
                 }
                 event.stopPropagation();
                 event.preventDefault();
@@ -102,6 +93,19 @@ const RecodedVarWidget = Backbone.View.extend({
             event.stopPropagation();
             this.$transformList.focus();
         });
+
+        this.$transformList.on('keydown', event => {
+            if (event.key === 'Enter') {
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$transformList)
+                    dropdown.hide();
+                else
+                    dropdown.show(this.$transformList, this.transformList);
+                event.stopPropagation();
+                event.preventDefault();
+                this.$transformList.focus();
+            }
+        });
+
 
         this.transformList.$el.on('selected-transform', (event, transform) => {
             this.model.set('transform', transform.id);

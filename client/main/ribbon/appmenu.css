@@ -6,17 +6,19 @@
 }
 
 .jmv-ribbon-appmenu-menu-panel {
-    position: fixed ;
+    position: fixed;
     display: flex;
-    right: -1px ;
-    top: 0px ;
+    right: -1px;
+    top: 0px;
     width: 0px;
+    visibility: hidden;
     bottom: 0px;
-    background-color: #F4F4F4 ;
-    color: #555555 ;
-    margin: 0 ;
-    transition: .15s width ease-out;
+    background-color: #F4F4F4;
+    color: #555555;
+    margin: 0;
+    transition: .15s width ease-out, .15s visibility ease-out;
     border-left: 1px solid #D0D0D0;
+    filter: drop-shadow(0px 0px 5px #00000066);
 }
 
 body.windows.electron .jmv-ribbon-appmenu-menu-panel {
@@ -25,6 +27,7 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
 
 .jmv-ribbon-appmenu-menu-panel.activated {
     width: 250px;
+    visibility: visible;
 }
 
 .jmv-ribbon-appmenu-menu {
@@ -67,6 +70,8 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
     height: 30px;
     width: 30px;
     box-sizing: border-box;
+    padding: 0;
+    border: none;
 }
 
 .jmv-ribbon-appmenu-back-button:hover > div {
@@ -150,6 +155,8 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
     width: 30px ;
     border-radius: 1px ;
     text-align: center ;
+    padding: 0;
+    box-sizing: content-box;
 }
 
 .jmv-ribbon-appmenu-zoomin:hover,

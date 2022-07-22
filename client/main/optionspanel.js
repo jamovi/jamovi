@@ -8,6 +8,7 @@ const host = require('./host');
 const I18n = require('../common/i18n');
 
 const SilkyView = require('./view');
+const focusLoop = require('../common/focusloop');
 
 
 const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
@@ -167,7 +168,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             this.jamoviVersion = version;
         })
     ]).then(() => {
-        return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id);
+        return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
     });
 
     this.abort = function() {
@@ -259,6 +260,8 @@ let OptionsPanel = SilkyView.extend({
         if (this._currentResources !== null) {
             this._currentResources.$frame.css("height", '');
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
+            if (focusLoop.inAccessibilityMode())
+                focusLoop.transferFocus(this._currentResources.$frame[0].contentWindow);
         }
     },
 
@@ -293,16 +296,15 @@ let OptionsPanel = SilkyView.extend({
                     data.countChanged = true;
             }
 
-                if (data.measureTypeChanged || data.dataTypeChanged || data.nameChanged || data.levelsChanged || data.countChanged) {
-                    for (let analysesKey in this._analysesResources)
-                        this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', data);
-                }
+            if (data.measureTypeChanged || data.dataTypeChanged || data.nameChanged || data.levelsChanged || data.countChanged) {
+                for (let analysesKey in this._analysesResources)
+                    this.notifyOfDataChange(this._analysesResources[analysesKey], 'columns', data);
+            }
 
         });
     },
 
     render: function() {
-
         this.$el.empty();
     },
 
@@ -323,6 +325,7 @@ let OptionsPanel = SilkyView.extend({
 
     addMsgListeners: function(resource) {
         resource.on("hideOptions", () => {
+            console.log('close button clicked');
             this.model.set('selectedAnalysis', null);
         });
 

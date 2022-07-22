@@ -1,14 +1,14 @@
 
-.jmv-ribbon-group-body-horizontal > .jmv-ribbon-separator {
+.jmv-ribbon-separator {
     border-left-style: solid;
     border-left-color: #E0E0E0;
     border-left-width: 1px;
-    margin: 0 5px;
+    margin: 3px 3px;
 }
 
 .jmv-ribbon-group-body-vertical > .jmv-ribbon-separator {
     border-top-style: solid;
     border-top-color: #E0E0E0;
     border-top-width: 1px;
-    margin: 3px 0;
+    margin: 3px 10px;
 }

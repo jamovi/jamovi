@@ -3,32 +3,25 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-const tarp = require('./utils/tarp');
 const ContextMenus = require('./contextmenu/contextmenus');
+const focusLoop = require('../common/focusloop');
+const Menu = require('../common/menu');
 
 const ContextMenu = function() { // this is constructed at the bottom
 
     Object.assign(this, Backbone.Events);
 
-    this.$el = $('<div class="jmv-context-menu jmv-ribbon-group-body-vertical jmv-context-menu-hidden"></div>');
+    this.menu = new Menu();
+    this.$el = this.menu.$el;
 
-    this.$el.on('menuActioned', () => { this._menuClosed(); });
-
-    this.owner = null;
+    this.menu.on('menu-hidden', (event) => { this.trigger('menu-hidden', event); } );
+    this.$el.on('menuActioned', () => { this.menu.hide(true); });
 
     this.show = function(menuItems, x, y, anchor, openPath, owner) {
         anchor = anchor === undefined ? 'left' : anchor;
         openPath = openPath === undefined ? [] : openPath;
-        this.owner = owner;
-        if ( ! this._visible) {
-            tarp.show('context-menu', true, 0, 40)
-                .then(() => this._menuClosed(), (event) => this._menuClosed(event));
-            this.$el.css('z-index', '50');
-            this._visible = true;
-        }
 
         this.buttons = [ ];
-        let menuShown = (menu) => this._menuShown(menu);
 
         this.$el.empty();
         this.$separator = $('<div class="jmv-click-menu-separator"></div>').appendTo(this.$el);
@@ -38,11 +31,19 @@ const ContextMenu = function() { // this is constructed at the bottom
         for (let i = 0; i < menuItems.length; i++) {
             let button = menuItems[i];
 
+            if (button.getMenus) {
+                let subMenus = button.getMenus();
+                for (let subMenu of subMenus) {
+                    if (!subMenu.connected)
+                        subMenu.connect(this.menu);
+                }
+            }
+
             if (button.dock === 'right')
                 button.$el.insertAfter(this.$separator);
             else
                 button.$el.insertBefore(this.$separator);
-            button.on('shown', menuShown);
+
             this.buttons.push(button);
 
             if (openButton === null && button.getEntryButton)
@@ -50,21 +51,17 @@ const ContextMenu = function() { // this is constructed at the bottom
         }
 
         setTimeout(() => {
-            this.$el.removeClass('jmv-context-menu-hidden');
             if (openButton !== null) {
                 x -= this.$el.outerWidth(true) - 10;
                 y -= openButton.$el.position().top + 10;
             }
-            if (y + this.$el.outerHeight(true) > window.innerHeight)
-                y = y - this.$el.outerHeight(true);
 
-            if (anchor === 'right' || x + this.$el.outerWidth(true) > window.innerWidth)
-                x = x - this.$el.outerWidth(true);
-
-            this.$el.css({ top: y, left: x });
+            this.menu.show(x, y, { withMouse: true });
 
             if (openButton !== null)
-                openButton.getEntryButton(openPath, true);
+                openButton.getEntryButton(openPath, true, true);
+            else
+                focusLoop.enterFocusLoop(this.$el[0], { withMouse: true });
         }, 0);
     };
 
@@ -98,36 +95,13 @@ const ContextMenu = function() { // this is constructed at the bottom
     };
 
     this.isVisible = function() {
-        return this._visible;
-    };
-
-    this._menuShown = function(source) {
-        for (let button of this.buttons) {
-            if (button !== source && button.hideMenu)
-                button.hideMenu();
-        }
-    };
-
-    this._menuClosed = function(event) {
-        if (this._visible === false)
-            return;
-        this.$el.css('z-index', '');
-        this._visible = false;
-        for (let button of this.buttons) {
-            if (button.hideMenu)
-                button.hideMenu();
-        }
-
-        tarp.hide('context-menu');
-        this.owner = null;
-        this.$el.addClass('jmv-context-menu-hidden');
-        this.trigger('menu-closed', event);
+        return this.menu.isVisible();
     };
 };
 
 let _menu = new ContextMenu();
 $(document).ready(() => {
-    _menu.$el.appendTo($('body'));
+    _menu.menu.connect();
 });
 
 module.exports = _menu;

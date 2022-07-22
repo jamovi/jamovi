@@ -77,8 +77,6 @@ const ToolbarGroup = function(params) {
             item.$el.insertAfter(this.$separator);
         else
             item.$el.insertBefore(this.$separator);
-
-        item.on('shown', (menu) => this._menuShown(menu));
     };
 
     this.hideMenu = function() {
@@ -88,12 +86,17 @@ const ToolbarGroup = function(params) {
         }
     };
 
-    this._menuShown = function(source) {
-        this.trigger('shown', source);
-    };
-
     this.setEnabled = function(enabled) {
         this.$el.prop('disabled', ! enabled);
+    };
+
+    this.getMenus = function() {
+        let menus = [];
+        for (let item of this.items) {
+            if (item.getMenus)
+                menus = menus.concat(item.getMenus());
+        }
+        return menus;
     };
 
     this._render(params);

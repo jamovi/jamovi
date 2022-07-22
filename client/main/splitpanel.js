@@ -52,7 +52,7 @@ const SplitPanel = SilkyView.extend({
     },
 
     addPanel(name, properties) {
-        let $panel = $('<div id="' + name + '"></div>');
+        let $panel = $(`<div id="${name}"></div>`);
 
         let section = new SplitPanelSection(this._sections._list.length, $panel, {}, this);
         this._sections._list[section.listIndex] = section;

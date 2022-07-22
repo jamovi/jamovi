@@ -4,6 +4,7 @@
     flex-direction: row;
     align-items: center;
     min-width: 200px;
+    width: 100%;
 }
 
 .jmv-transform-list-item > .icon {
@@ -15,13 +16,15 @@
     width: 8px;
     height: 8px;
     border-radius: 4px;
-    margin-right: 5px;
-    margin-top: 2px;
 }
 
 .jmv-transform-list-item > .label {
     flex-grow: 1;
-    margin-right: 15px;
+    /*margin-right: 15px;*/
+    padding: 6px 5px 6px 15px;
+    text-align: left;
+    background-color: inherit;
+    border: none;
 }
 
 .jmv-transform-list-item .hidden {

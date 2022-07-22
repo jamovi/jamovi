@@ -10,6 +10,7 @@ const Notify = require('./notification');
 const dialogs = require('dialogs')({cancel:false});
 const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
 const ActionHub = require('./actionhub');
+const focusLoop = require('../common/focusloop');
 
 class ViewController {
     constructor(model, selection) {
@@ -259,10 +260,9 @@ class ViewController {
             await this.selection.setSelections(selection, selections);
             await new Promise((resolve, reject) => {
 
-                    keyboardJS.setContext('');
-
                     let cb = (result) => {
-                        keyboardJS.setContext('controller');
+                        let widget = document.body.querySelector('.dialog-widget.confirm');
+                        focusLoop.leaveFocusLoop(widget, false);
                         if (result)
                             resolve();
                         else
@@ -271,7 +271,9 @@ class ViewController {
 
                     let column = columns[0];
                     dialogs.confirm(n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length }), cb);
-
+                    let widget = document.body.querySelector('.dialog-widget.confirm');
+                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
+                    focusLoop.enterFocusLoop(widget, { withMouse: false });
                 });
 
             let ids = columns.map(column => column.id);
@@ -309,10 +311,9 @@ class ViewController {
             await this.selection.setSelections(selections[0], selections.slice(1));
             await new Promise((resolve, reject) => {
 
-                keyboardJS.setContext('');
-
                 let cb = (result) => {
-                    keyboardJS.setContext('controller');
+                    let widget = document.body.querySelector('.dialog-widget.confirm');
+                    focusLoop.leaveFocusLoop(widget, false);
                     if (result)
                         resolve();
                     else
@@ -320,6 +321,9 @@ class ViewController {
                 };
 
                 dialogs.confirm(n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount }), cb);
+                let widget = document.body.querySelector('.dialog-widget.confirm');
+                focusLoop.addFocusLoop(widget, { level: 2, modal: true });
+                focusLoop.enterFocusLoop(widget, { withMouse: false });
             });
             await this.model.deleteRows(rowRanges);
             await this.selection.setSelections(oldSelection, oldSubSelections);
@@ -340,7 +344,7 @@ class ViewController {
         this.trigger('copying');
     }
 
-    async pasteClipboardToSelection(content) {
+    async pasteClipboardToSelection(source, content) {
 
         if (content === undefined)
             content = host.pasteFromClipboard();
@@ -569,9 +573,9 @@ class ViewController {
                 if (this.selection.subSelections.length > 0)
                     resolve(-1);
                 else {
-                    keyboardJS.setContext('');
                     dialogs.prompt(_('Insert how many rows?'), this.selection.bottom - this.selection.top + 1, (result) => {
-                        keyboardJS.setContext('controller');
+                        let widget = document.body.querySelector('.dialog-widget.prompt');
+                        focusLoop.leaveFocusLoop(widget, false);
                         if (result === undefined)
                             reject('cancelled by user');
                         let n = parseInt(result);
@@ -580,6 +584,9 @@ class ViewController {
                         else
                             resolve(n);
                     });
+                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
+                    focusLoop.enterFocusLoop(widget, { withMouse: false });
                 }
             });
 
@@ -607,9 +614,9 @@ class ViewController {
     async _appendRows() {
         try {
             let n = await new Promise((resolve, reject) => {
-                keyboardJS.setContext('');
                 dialogs.prompt(_('Append how many rows?'), '1', (result) => {
-                    keyboardJS.setContext('controller');
+                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    focusLoop.leaveFocusLoop(widget, false);
                     if (result === undefined)
                         reject('cancelled by user');
                     let n = parseInt(result);
@@ -617,8 +624,11 @@ class ViewController {
                         reject(_('{n} is not a positive integer', {n:result}));
                     else
                         resolve(n);
-                });
 
+                });
+                let widget = document.body.querySelector('.dialog-widget.prompt');
+                focusLoop.addFocusLoop(widget, { level: 2, modal: true });
+                focusLoop.enterFocusLoop(widget, { withMouse: false });
             });
 
             let rowStart = this.model.visibleRowCount();

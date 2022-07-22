@@ -24,29 +24,31 @@
 
 </head>
 
-<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed">
-    <div id="backstage"></div>
+<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default">
+    <div id="backstage" tabindex="-1"></div>
 
-    <div id="header">
-        <div id="header-text" class="app-dragable">jamovi<span class="header-file-name"></span></div>
-        <div id="header-buttons">
-            <div id="min-button" class="header-button">
-                <div class="header-button-icon"></div>
-            </div>
-            <div id="max-button" class="header-button">
-                <div class="header-button-icon"></div>
-            </div>
-            <div id="close-button" class="header-button">
-                <div class="header-button-icon"></div>
+    <div id="main">
+        <div id="header" aria-hidden="true">
+            <div id="header-text" class="app-dragable">jamovi<span class="header-file-name"></span></div>
+            <div id="header-buttons">
+                <div id="min-button" class="header-button">
+                    <div class="header-button-icon"></div>
+                </div>
+                <div id="max-button" class="header-button">
+                    <div class="header-button-icon"></div>
+                </div>
+                <div id="close-button" class="header-button">
+                    <div class="header-button-icon"></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="silky-ribbon">
-    </div>
+        <div class="silky-ribbon">
+        </div>
 
-    <div id="main-view">
-        <div id="variable-editor" class="hidden">
+        <div id="main-view">
+            <div id="variable-editor" class="hidden">
+            </div>
         </div>
     </div>
 

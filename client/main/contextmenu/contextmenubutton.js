@@ -4,6 +4,8 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 const RibbonGroup = require('../ribbon/ribbongroup');
+const focusLoop = require('../../common/focusloop');
+const Menu = require('../../common/menu');
 
 const ActionHub = require('../actionhub');
 
@@ -30,7 +32,8 @@ const ContextMenuButton = Backbone.View.extend({
         let name = options.name;
         let size = 'medium';
         let right = options.right === undefined ? false : options.right;
-        let $el = options.$el === undefined ? $('<div></div>') : options.$el;
+        let level = options.level === undefined ? 0 : options.level;
+        let $el = options.$el === undefined ? $('<button></button>') : options.$el;
 
         this.eventData = options.eventData  === undefined ? null : options.eventData;
         this.useActionHub = options.useActionHub  === undefined ? true : options.useActionHub;
@@ -40,6 +43,8 @@ const ContextMenuButton = Backbone.View.extend({
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-button jmv-context-menu-button');
         this.$el.addClass('jmv-ribbon-button-size-' + size);
+        this.$el.attr('tabindex', '0');
+        this.$el.attr('role', 'menuitem');
 
         this.tabName = null;
         this._definedTabName = false;
@@ -51,6 +56,7 @@ const ContextMenuButton = Backbone.View.extend({
         this.size = size;
         this.title = title;
         this.name = name;
+        this.level = level;
         this.dock = right ? 'right' : 'left';
 
         this.$el.attr('data-name', this.name.toLowerCase());
@@ -60,9 +66,28 @@ const ContextMenuButton = Backbone.View.extend({
         if (right)
             this.$el.addClass('right');
 
-        this.$el.on('click', event => {
-            this._clicked(event);
+        focusLoop.createHoverItem(this, () => {
+            if (this.menu)
+                this.showMenu(true);
+            else
+                this.$el[0].focus({preventScroll:true});
         });
+
+        this.$el.on('mousedown', event => {
+            if (this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('mouseup', event => {
+            if ( ! this.menu)
+                this._clicked(event, event.detail > 0);
+        });
+        this.$el.on('keydown', (event) => {
+            if (event.code === 'Enter' || event.code === 'Space')
+                this._clicked(event, false);
+            else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
+                this._clicked(event, false);
+        });
+
 
         this._refresh();
 
@@ -100,10 +125,10 @@ const ContextMenuButton = Backbone.View.extend({
         else
             this.$el.attr('disabled', '');
     },
-    _clicked(event) {
+    _clicked(event, fromMouse) {
 
         let $target = $(event.target);
-        if ($target.closest(this.$menu).length !== 0)
+        if (this.menu && $target.closest(this.menu.$el).length !== 0)
             return;
 
         this.$el.trigger('menuClicked', this);
@@ -114,7 +139,7 @@ const ContextMenuButton = Backbone.View.extend({
 
         if (this._enabled) {
             if (this._menuGroup !== undefined)
-                this._toggleMenu();
+                this.showMenu(fromMouse);
             else {
                 if (action !== null)
                     action.do();
@@ -122,71 +147,69 @@ const ContextMenuButton = Backbone.View.extend({
             }
         }
 
-        event.stopPropagation();
         event.preventDefault();
     },
 
     addItem(item) {
         if (this._menuGroup === undefined) {
+            this.menu = new Menu(this.$el[0], this.level + 1);
+
+            $('<div class="jmv-context-menu-arrow"></div>').appendTo(this.$el);
+
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
-            this.$menu.append(this._menuGroup.$el);
-            $('<div class="jmv-context-menu-arrow"></div>').insertBefore(this.$menu);
+            this.menu.$el.append(this._menuGroup.$el);
         }
 
         this._menuGroup.addItem(item);
+
+        if (item.getMenus) {
+            let subMenus = item.getMenus();
+            for (let subMenu of subMenus){
+                if (!subMenu.connected)
+                    subMenu.connect(this.menu);
+            }
+        }
+    },
+
+    getMenus() {
+        if (this.menu)
+            return [ this.menu ];
+        return [];
     },
 
     _refresh() {
         let html = '';
         html += '   <div class="jmv-ribbon-button-icon"></div>';
         html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
-        html += '   <div class="jmv-ribbon-button-menu context-menu jmv-context-menu-hidden">';
-        html += '   </div>';
 
         this.$el.html(html);
-
-        this.$menu   = this.$el.find('.jmv-ribbon-button-menu');
     },
 
+    hideMenu(fromMouse) {
+        if ( ! this.menu)
+            return;
 
-    hideMenu() {
-        this.menuVisible = false;
-        this.$el.removeClass('active');
-        this.$menu.addClass('jmv-context-menu-hidden');
+        this.menu.hide(fromMouse);
     },
-    showMenu() {
-        this.trigger('shown', this);
-        this.$el.removeClass('contains-new');
-        this.$el.addClass('active');
-        this.menuVisible = true;
 
-        this.$menu.removeClass('jmv-context-menu-hidden');
+    showMenu(fromMouse) {
+        if ( ! this.menu)
+            return;
+
         let x = this.$el.offset().left + this.$el.outerWidth(true);
         let y = this.$el.offset().top;
 
-        this.$menu.removeClass('up');
-        this.$menu.removeClass('down');
-        if (y + this.$menu.outerHeight(true) > window.innerHeight)
-            this.$menu.addClass('up');
-        else
-            this.$menu.addClass('down');
-
-        this.$menu.removeClass('left');
-        this.$menu.removeClass('right');
-        if (x + this.$menu.outerWidth(true) > window.innerWidth)
-            this.$menu.addClass('left');
-        else
-            this.$menu.addClass('right');
+        this.menu.show(x, y, { withMouse: fromMouse });
     },
-    getEntryButton(openPath, open) {
+    getEntryButton(openPath, open, fromMouse) {
         if (this.name === openPath[0]) {
             if (open)
-                this.showMenu();
+                this.showMenu(fromMouse);
             openPath = openPath.slice(1);
             if (openPath.length > 0) {
                 for (let item of this._menuGroup.items) {
-                    if (item.getEntryButton && item.getEntryButton(openPath, open) !== null)
+                    if (item.getEntryButton && item.getEntryButton(openPath, open, fromMouse) !== null)
                         break;
                 }
             }
@@ -194,11 +217,11 @@ const ContextMenuButton = Backbone.View.extend({
         }
         return null;
     },
-    _toggleMenu() {
-        if (this.menuVisible)
-            this.hideMenu();
+    _toggleMenu(fromMouse) {
+        if (this.menu.isVisible())
+            this.hideMenu(fromMouse);
         else
-            this.showMenu();
+            this.showMenu(fromMouse);
     },
 });
 

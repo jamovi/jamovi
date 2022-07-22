@@ -9,7 +9,9 @@
     z-index: 100 ;
     width: 0px;
     height: 100% ;
-    transition: .2s width ease-out;
+    transition: .2s width ease-out, 0.2s visibility ease-out;
+    visibility: hidden;
+    filter: drop-shadow(0px 0px 5px #00000066);
 }
 
 .ops-title{
@@ -42,6 +44,15 @@
     align-items: center;
 }
 
+.bs-menu-list-item:focus {
+    background-color: #f4f4f4;
+    outline: none;
+}
+
+[keyboardfocus="true"] .bs-menu-list-item:focus {
+    border: 2px solid #7b7b7b;
+}
+
 .searchbox > .image {
     width: 20px;
     height: 20px;
@@ -61,6 +72,7 @@
 
 .silky-bs.activated {
     width: 250px;
+    visibility: visible;
 }
 
 .silky-bs.activated-sub {
@@ -116,6 +128,9 @@
     height: 35px;
     width: 35px;
     box-sizing: border-box;
+    background-color: transparent;
+    border: none;
+    overflow: hidden;
 }
 
 .silky-bs-back-button > div {
@@ -156,6 +171,11 @@
     font-weight: 400;
 }
 
+.silky-bs-op-button {
+    border: 2px solid transparent;
+    position: relative;
+}
+
 .silky-bs-op-button:hover {
     background-color: #f3f6fb ;
 }
@@ -163,7 +183,6 @@
 .selected > .silky-bs-op-button {
     background-color: #F0F0F0 ;
     font-weight: 500;
-    /*color: #cf901b;*/
 }
 
 .silky-bs-menu-item.selected {
@@ -177,7 +196,7 @@
 .silky-bs-op-places {
     height: 0;
     opacity: 0;
-    overflow: hidden;
+    overflow: visible;
     padding: 0px 0px 0px 0px;
     transition: .2s height ease-out, .2s opacity ease-out, 0.2s visibility ease-out;
     visibility: hidden;
@@ -196,15 +215,46 @@
 .silky-bs-op-place {
     padding: 8px 0px 8px 28px;
     transition: .2s padding ease-out;
+    border: 2px solid transparent;
+    position: relative;
 }
 
 .silky-bs-op-place:not(.selected-place):hover {
     background-color: #f6f9fd ;
 }
 
+.silky-bs-op-place .shortcut-key-tag {
+    left: 3em;
+}
+
+.silky-bs-fslist-entry .shortcut-key-tag {
+    left: 3em;
+}
+
+.silky-bs-op-button .shortcut-key-tag {
+    left: 2em;
+    font-size: 80%;
+}
+
 .silky-bs-op-recents-main {
     margin-bottom: 20px;
-    overflow: hidden;
+    overflow: visible;
+}
+
+.silky-bs-back-button:focus {
+    background-color: #f4f4f447;
+}
+
+[keyboardfocus="true"] .silky-bs-op-panel:focus-within .silky-bs-back-button.bs-menu-highlighted-item {
+    border: 2px solid #ffffff;
+}
+
+/*.bs-menu-highlighted-item {
+    background-color: #f4f4f4;
+}*/
+
+[keyboardfocus="true"] .silky-bs-op-panel:focus-within .bs-menu-highlighted-item {
+    border: 2px solid #7b7b7b;
 }
 
 .silky-bs-fslist:focus, #backstage:focus {
@@ -213,6 +263,7 @@
 
 .silky-bs-op-recents.silky-bs-fslist {
     padding-left: 0px;
+    overflow: visible;
 }
 
 .silky-bs-op-recents .silky-bs-fslist-item {
@@ -222,6 +273,9 @@
 .silky-bs-op-recents .silky-bs-fslist-entry {
     padding-left: 25px;
     width: auto;
+    border: 2px solid transparent;
+    background-color: inherit;
+    text-align: left;
 }
 
 .silky-bs-op-recents .silky-bs-fslist-entry:hover {
@@ -357,6 +411,7 @@
     padding: 6px ;
     width: 310px ;
     white-space: nowrap ;
+    position: relative;
 }
 
 .silky-bs-fslist-entry:hover, .silky-bs-fslist-item:hover {
@@ -374,6 +429,11 @@
     margin-right: 2px ;
 }
 
+.silky-bs-fslist-item > .shortcut-key-tag {
+    left: 0px;
+    top: 0px;
+}
+
 .silky-bs-fslist-item {
     box-sizing: border-box;
     height: 48px ;
@@ -382,7 +442,8 @@
     box-sizing: border-box;
     align-items: center;
     padding-right: 4px ;
-    border: 1px solid transparent;
+    border: 2px solid transparent;
+    position: relative;
 }
 
 .silky-bs-fslist-item > * {
@@ -481,6 +542,7 @@
 
 .silky-bs-fslist-items {
     position: relative;
+    outline: none;
 }
 
 .silky-bs-fslist-entry-group {
@@ -678,7 +740,11 @@
 .silky-bs-fslist-selected-item {
     background-color: #BACDE6 ;
     border-style: solid;
-    border-width: 1px;
+    border-width: 2px;
+}
+
+[keyboardfocus="true"] .silky-bs-fslist-items:focus-within .silky-bs-fslist-selected-item {
+    border: 2px solid #7b7b7b;
 }
 
 .silky-bs-fslist-browser-save-button > *, .silky-bs-fslist-browser-import-button > * {
@@ -709,17 +775,11 @@
     height: 30px;
     font-size: 15px;
     margin-left: 10px;
-    /*border-style: solid;*/
-    /*border-width: 1px;*/
-    /*border-color: #AAAAAA;*/
-    /*background-color: #FFFFFF;*/
     box-sizing: border-box;
     padding: 3px 12px 3px 10px;
-    /*font-weight: 300;
-    font-size: 120%;
-    height: 19px;
-    padding: 3px 10px;*/
-    /*border-left: #e1e1e1 solid 1px;*/
+    border: none;
+    font-family: inherit;
+    position: relative;
 }
 
 .silky-bs-fslist-browse-button:hover {
@@ -755,6 +815,8 @@
     margin-left: 0px ;
     color: #3E6DA9 ;
     flex: 0 1 auto;
+    padding: 0px;
+    position: relative;
 }
 
 .silky-bs-fslist-browser-check-button {
@@ -771,6 +833,7 @@
     background-repeat: no-repeat;
     background-position: center;
     background-size: 77% ;
+    position: relative;
 }
 
 .silky-bs-fslist-browser-back-button:hover {

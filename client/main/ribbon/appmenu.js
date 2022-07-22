@@ -4,9 +4,8 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const keyboardjs = require('keyboardjs');
 const i18n = require('../../common/i18n');
-
+const focusLoop = require('../../common/focusloop');
 const host = require('../host');
 
 const AppMenuButton = Backbone.View.extend({
@@ -21,26 +20,34 @@ const AppMenuButton = Backbone.View.extend({
         let $decoration = $('<span class="mif-more-vert"></span>').appendTo(this.$el);
         let $positioner = $('<div class="jmv-ribbon-appmenu-positioner"></div>').appendTo(this.$el);
 
-        this.$menuPanel = $('<div class="jmv-ribbon-appmenu-menu-panel"></div>').appendTo($positioner);
+        this.$menuPanel = $('<div class="jmv-ribbon-appmenu-menu-panel" tabindex="-1"></div>').appendTo($positioner);
         this.$menu = $('<div class="jmv-ribbon-appmenu-menu"></div>').appendTo(this.$menuPanel);
+
+        focusLoop.addFocusLoop(this.$menuPanel[0], { level: 1, closeHandler: this.hide.bind(this), exitSelector: '.jmv-ribbon-appmenu' } );
 
         this.menuVisible = false;
         this.$el.on('click', event => {
-            this.toggleMenu();
+            this.toggleMenu(event.detail > 0);
             event.stopPropagation();
         });
+
         this.$menuPanel.on('click', event => {
             event.stopPropagation();
+        });
+
+        this.$menuPanel.on('focusout', (event) => {
+            if ( ! this.$menuPanel[0].contains(event.relatedTarget))
+                this.hide();
         });
 
         this.$header = $('<div class="jmv-ribbon-appmenu-header"></div>').appendTo(this.$menu);
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
-        this.$back = $(`<div class="jmv-ribbon-appmenu-back-button" title="${_('Hide settings')}"></div>`).appendTo(this.$backOuter);
+        this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" title="${_('Hide settings')}"></button>`).appendTo(this.$backOuter);
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {
-            this.toggleMenu();
+            focusLoop.leaveFocusLoop(this.$menuPanel[0], event.detail > 0);
             event.stopPropagation();
         });
 
@@ -49,9 +56,9 @@ const AppMenuButton = Backbone.View.extend({
         this.$zoom = $('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>').appendTo(this.$content);
         this.$zoom.append($(`<div>${_('Zoom')}</div>`));
         this.$zoomButtons = $('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>').appendTo(this.$zoom);
-        this.$zoomOut = $('<div class="jmv-ribbon-appmenu-zoomout">&minus;</div>').appendTo(this.$zoomButtons);
+        this.$zoomOut = $('<button class="jmv-ribbon-appmenu-zoomout">&minus;</button>').appendTo(this.$zoomButtons);
         this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoomButtons);
-        this.$zoomIn = $('<div class="jmv-ribbon-appmenu-zoomin">+</div>').appendTo(this.$zoomButtons);
+        this.$zoomIn = $('<button class="jmv-ribbon-appmenu-zoomin">+</button>').appendTo(this.$zoomButtons);
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
@@ -114,8 +121,7 @@ const AppMenuButton = Backbone.View.extend({
             if (event.keyCode === 13)
                 setTimeout(() => this.$missingsInput.blur());
         });
-        this.$missingsInput.on('focus', () => keyboardjs.pause('missings'));
-        this.$missingsInput.on('blur', () => { keyboardjs.resume('missings'); this._changeMissings(); });
+        this.$missingsInput.on('blur', () => { this._changeMissings(); });
 
         // this.$embed = $('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo(this.$import);
         // this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
@@ -203,8 +209,8 @@ const AppMenuButton = Backbone.View.extend({
             ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
             return `<option value="${ code }">${ ownName }</option>`;
         });
-        available.unshift(`<optgroup label="${ _('Available') }">`)
-        available.push('</optgroup>')
+        available.unshift(`<optgroup label="${ _('Available') }">`);
+        available.push('</optgroup>');
 
         available.unshift(`<option value="">${ _('System default') }</option>`);
 
@@ -323,23 +329,28 @@ const AppMenuButton = Backbone.View.extend({
                 $item.hide();
         }
     },
-    toggleMenu() {
+    toggleMenu(fromMouse) {
         if (this.menuVisible)
-            this.hide();
+            this.hide(fromMouse);
         else
-            this.show();
+            this.show(fromMouse);
     },
-    show() {
+    show(fromMouse) {
         if (this.menuVisible)
             return;
         this.menuVisible = true;
-        this.trigger('shown', this);
         this.$menuPanel.addClass('activated');
+        this.$el.attr('aria-expanded', 'true');
+        setTimeout(() => {
+            focusLoop.enterFocusLoop(this.$menuPanel[0], { withMouse: fromMouse });
+        }, 200);
+
     },
-    hide() {
+    hide(fromMouse) {
         if ( ! this.menuVisible)
             return;
         this.menuVisible = false;
+        this.$el.attr('aria-expanded', 'false');
         this.$menuPanel.removeClass('activated');
         this.trigger('hidden');
     }

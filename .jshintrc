@@ -2,13 +2,14 @@
     "globalstrict": true,
     "browserify": true,
     "laxbreak": true,
-    "esversion" : 9,
+    "esversion" : 11,
     "multistr": true,
     "mocha": true,
     "globals": {
         "console" : true
     },
     "predef": [
+        "WeakRef",
         "customElements",
         "DataTransfer",
         "ResizeObserver",

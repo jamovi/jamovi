@@ -17,7 +17,7 @@ const PageSideload = Backbone.View.extend({
 
         this.$el.addClass('jmv-store-page-sideload');
         this.$body = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
-        this.$drop = $('<div class="jmv-store-page-installed-drop"><span class="mif-file-upload"></span></div>')
+        this.$drop = $('<button class="jmv-store-page-installed-drop" tabindex="-1"><span class="mif-file-upload"></span></button>')
             .appendTo(this.$body)
             .on('click', event => this._dropClicked());
     },
@@ -37,6 +37,8 @@ const PageSideload = Backbone.View.extend({
                     this._installFailure(e);
                 }
             }
+
+            this.$drop.focus();
         }
     },
     _installSuccess() {

@@ -38,11 +38,12 @@ const GridCombobox = function(params) {
             label = '';
 
         label = this.translate(label);
+        let id = `${ this.getPropertyValue('name') }-option-listbox`;
 
         let columnUsed = 0;
         let cell = null;
         if (label !== "") {
-            this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+            this.$label = $('<label for="'+id+'" class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue("margin") + '" style="display: inline; white-space: nowrap;" >' + label + '</label>');
             cell = grid.addCell(column, row, this.$label);
             cell.setAlignment("left", "center");
             columnUsed += 1;
@@ -50,7 +51,7 @@ const GridCombobox = function(params) {
 
         let options = this.getOptionsProperty();
 
-        let t = '<select class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
+        let t = '<select id="'+id+'" class="silky-option-input silky-option-combo-input silky-control-margin-' + this.getPropertyValue("margin") + '">';
         for (let i = 0; i < options.length; i++)
             t += '<option>' + this.translate(options[i].title) + '</option>';
         t += '</select>';
