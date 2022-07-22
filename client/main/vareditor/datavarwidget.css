@@ -18,10 +18,6 @@
     margin: 0px 0 0px 4px;
 }
 
-.jmv-variable-editor-widget span {
-    line-height: 20px ;
-}
-
 .jmv-variable-editor-widget input {
     vertical-align: middle ;
 }
@@ -37,12 +33,9 @@
     align-items: baseline;
 }
 
-.jmv-vareditor-datatype label {
-    margin-right: 10px;
-}
-
 .jmv-vareditor-datatype select{
     flex-grow: 1;
+    margin-left: 5px;
 }
 
 .jmv-variable-editor-levels-control .container {
@@ -97,6 +90,10 @@
     background: #f8f8f8;
 }
 
+.jmv-variable-editor-levels-control.menu-level:focus {
+    outline: auto;
+}
+
 .jmv-variable-editor-levels-control {
     display: flex;
     flex-grow: 1;
@@ -106,11 +103,14 @@
 }
 
 .jmv-variable-editor-levels-control .add-level {
-    width: 21px;
-    height: 21px;
+    width: 25px;
+    height: 25px;
+    padding: 0px;
     position: absolute;
     bottom: 0px;
     right: 0px;
+    background: inherit;
+    border: none;
     font-size: 15px;
     color: #BBBBBB;
     text-align: center;
@@ -121,8 +121,16 @@
 
 .jmv-variable-editor-widget-move-up,
 .jmv-variable-editor-widget-move-down {
-    margin-bottom: 4px ;
-    transition: opacity .2s ;
+    width: 25px;
+    margin-bottom: 4px;
+    background-color: inherit;
+    border: none;
+    padding: 0px;
+    display: block;
+    text-align: center;
+    font: inherit;
+    transition: opacity .2s;
+    height: 25px;
 }
 
 .jmv-variable-editor-widget-move-up.disabled,
@@ -169,7 +177,7 @@
     border-color: #e6e6e6;
     height: 100%;
     outline: none;
-    margin-right: 5px;
+    margin-right: 0 5px;
     border: 1px solid transparent;
     transition: .2s background-color, .2s border-color, .2s border-radius;
     height: 1.4em;
@@ -208,7 +216,8 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-
+    vertical-align: baseline;
+    margin-left: 5px;
 }
 
 .missing-values .list:empty {
@@ -216,6 +225,7 @@
     border: 1px solid rgb(219, 219, 219);
     min-width: 100px;
     flex-grow: 1;
+    vertical-align: middle;
 }
 
 .missing-values .list:hover {
@@ -294,12 +304,16 @@
     opacity: 0;
     transition: opacity 0.3s;
     border-radius: 3px;
+    background-color: inherit;
+    border: none;
     filter: opacity(0.5);
+    visibility: hidden;
 }
 
-.jmv-variable-editor-level:not(.pinned):hover .pin {
+.jmv-variable-editor-level:not(.pinned):hover .pin, .jmv-variable-editor-level:not(.pinned).selected .pin {
     opacity: 1;
     background-image: url('assets/levels-pin-2.svg');
+    visibility: visible;
 }
 
 .jmv-variable-editor-level .pin:hover {
@@ -309,4 +323,5 @@
 .jmv-variable-editor-level.pinned .pin {
     opacity: 1;
     background-image: url('assets/levels-pin-1.svg');
+    visibility: visible;
 }

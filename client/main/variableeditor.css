@@ -2,6 +2,10 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
+.jmv-variable-editor > .shortcut-key-tag {
+    top: 50px;
+    left: 20%;
+}
 
 .jmv-variable-editor .hover-header {
     width: 100%;
@@ -13,13 +17,14 @@
     background-color: #F8F8F8 ;
     width: 100% ;
     height: 300px ;
-    transition: height .2s, width .2s, border-top .2s, background-color .2s, opacity .2s, margin .2s;
+    transition: height .2s, width .2s, border-top .2s, background-color .2s, opacity .2s, margin .2s, visibility .2s;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC ;
     position: relative;
     grid-area: 1 / 1 / span 1 / span 5;
     border-bottom: 1px solid #CCCCCC;
     margin-bottom: 6px;
+    visibility: visible;
 }
 
 .jmv-variable-editor.sub-editor-open {
@@ -36,6 +41,7 @@
     border-top: 1px solid #F0F0F0 ;
     opacity: 0;
     margin-bottom: 0px;
+    visibility: hidden;
 }
 
 .jmv-variable-editor-main {
@@ -62,34 +68,6 @@
     transition: color .2s, border-color .2s ;
 }
 
-.jmv-variable-editor-revert {
-    position: absolute ;
-    right: 16px ;
-    top: 58px ;
-    width: 26px ;
-    height: 26px ;
-    color: #BBBBBB ;
-    border: 3px solid #BBBBBB ;
-    border-radius: 13px ;
-    box-sizing: border-box;
-    font-size: 13px ;
-    text-align: center;
-    font-weight: bold ;
-    transition: opacity .4s ;
-    opacity: 0 ;
-}
-
-.jmv-variable-editor-revert span {
-    line-height: 20px;
-    vertical-align: top;
-}
-
-.jmv-variable-editor-revert.apply {
-    opacity: 1 ;
-    color: #AAAAAA ;
-    border-color: #AAAAAA;
-}
-
 .jmv-variable-editor-ok span.mif-checkmark {
     color: #AAAAAA ;
     border-color: #AAAAAA;
@@ -102,10 +80,10 @@
 .jmv-variable-editor-ok span {
     position: absolute ;
     left: 0 ;
+    top: 0;
     width: 100% ;
     line-height: 32px;
     vertical-align: top;
-    /*margin-top: 4px ;*/
     transition: opacity .4s ;
 }
 
@@ -119,13 +97,16 @@
 
 .jmv-variable-editor-button-left,
 .jmv-variable-editor-button-right {
-    position: absolute ;
-    width: 40px ;
-    height: 40px ;
-    top: 130px ;
-    font-size: 40px ;
-    color: #BBBBBB ;
-    transition: opacity .2s ;
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    top: 130px;
+    font-size: 40px;
+    color: #BBBBBB;
+    border: none;
+    background-color: inherit;
+    padding: 0px;
+    transition: opacity .2s;
 }
 
 .jmv-variable-editor-button-left span,
@@ -140,7 +121,6 @@
 }
 
 .jmv-variable-editor-ok:hover,
-.jmv-variable-editor-revert:hover,
 .jmv-variable-editor-button-left:hover,
 .jmv-variable-editor-button-right:hover {
     color: #999999 ;
@@ -205,7 +185,6 @@
     box-sizing: content-box;
     overflow: hidden;
     height: 36px;
-    /*margin-top: 3px;*/
 }
 
 .jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list {
@@ -351,8 +330,6 @@
     margin-left: 3px;
 }
 
-
-
 .jmv-variable-editor-widget-footer > .status-box {
     display: flex;
     flex-direction: row-reverse;
@@ -367,40 +344,75 @@
     height: 18px;
     line-height: 18px;
     text-align: right;
-
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    position: relative;
+    gap: 1ch;
 }
 
-.jmv-variable-editor-widget-footer .status-box:hover .active {
-    background-color: #bcbcbc;
+
+.jmv-variable-editor-widget-footer .active {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
 }
 
-.jmv-variable-editor-widget-footer .active.retain-levels {
+.jmv-variable-editor-widget-footer .switch {
+    --offset: 2px;
+    --diameter: 10px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-around;
+    box-sizing: content-box;
+    width: calc(var(--diameter) * 2 + var(--offset) * 2);
+    height: calc(var(--diameter) + var(--offset) * 2);
+    position: relative;
+    border-radius: 100vw;
+    background-color: #cccccc;
+    transition: background-color 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.jmv-variable-editor-widget-footer .active.retain-levels + .switch {
     background-color: #8cc18c;
 }
 
-.jmv-variable-editor-widget-footer .status-box:hover .active.retain-levels {
+.jmv-variable-editor-widget-footer .active.retain-levels + .switch::before {
+    transform: translate(100%, -50%);
+}
+
+.jmv-variable-editor-widget-footer .active:focus + .switch {
+    outline: 1px dotted #212121;
+    outline: 1px auto -webkit-focus-ring-color;
+    outline-offset: 2px;
+}
+
+.jmv-variable-editor-widget-footer .active:focus:not(:focus-visible) + .switch {
+    outline: 0;
+}
+
+.jmv-variable-editor-widget-footer .switch::before {
+    content: "";
+    z-index: 2;
+    position: absolute;
+    top: calc(var(--diameter) / 2 + var(--offset) / 2 + 0.5px);
+    left: var(--offset);
+    box-sizing: border-box;
+    width: var(--diameter);
+    height: var(--diameter);
+    border-radius: 50%;
+    background-color: white;
+    transform: translate(0, -50%);
+    will-change: transform;
+    transition: inherit;
+}
+
+.jmv-variable-editor-widget-footer .active + .switch:hover {
+    background-color: #bcbcbc;
+}
+
+.jmv-variable-editor-widget-footer .active.retain-levels + .switch:hover {
     background-color: #659c65;
-}
-
-.jmv-variable-editor-widget-footer .active.retain-levels .switch {
-    left: 9px;
-}
-
-.jmv-variable-editor-widget-footer .active {
-    width: 25px;
-    height: 14px;
-    background-color: #cccccc;
-    border-radius: 9px;
-    margin: 0px 0px 0px 2px;
-}
-
-.jmv-variable-editor-widget-footer .active .switch {
-    position: relative;
-    width: 12px;
-    height: 10px;
-    left: 0px;
-    background-color: #ffffff;
-    border-radius: inherit;
-    margin: 2px 2px 2px 2px;
-    transition: .1s left ease-out;
 }

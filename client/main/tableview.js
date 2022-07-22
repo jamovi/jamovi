@@ -63,9 +63,9 @@ const TableView = SilkyView.extend({
             </div>
             <div class="jmv-table-container">
                 <div class="jmv-table-body">
-                    <div class="jmv-column-row-header" style="left: 0 ;"></div>
+                    <div class="jmv-column-row-header" style="left: 0 ;" aria-hidden="true");></div>
                     <div class="jmv-sub-selections"></div>
-                    <input class="jmv-table-cell-selected" contenteditable>
+                    <div class="jmv-table-cell-selected"></div>
                     <div class="jmv-table-row-highlight-wrapper"><div class="jmv-table-row-highlight"></div></div>
                 </div>
             </div>`);
@@ -214,16 +214,6 @@ const TableView = SilkyView.extend({
         this._editNote = new Notify({ duration: 3000 });
 
         this.selection.clearSelectionList();
-
-        this.$selection.on('focus', event => this._beginEditing());
-        this.$selection.on('blur', event => {
-            if (this._editing)
-                this._endEditing();
-        });
-        this.$selection.on('click', event => {
-            if (this._editing)
-                this._modifyingCellContents = true;
-        });
     },
     onEditingVarChanged(editingColumns) {
         if (this.selection !== null) {
@@ -641,7 +631,6 @@ const TableView = SilkyView.extend({
         return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader  };
     },
     _mouseDown(event) {
-
         let pos = this._getPos(event.clientX, event.clientY);
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
@@ -1035,32 +1024,96 @@ const TableView = SilkyView.extend({
         const text = event.clipboardData.getData('text/plain');
         const html = event.clipboardData.getData('text/html');
         let content = { text: text, html: html };
-        this.controller.pasteClipboardToSelection(content);
+        this.controller.pasteClipboardToSelection(this, content);
         event.preventDefault();
     },
     _inputEventHandler(event) {
-        this._focusCell.innerHTML = '';
+        if (this._editing)
+            this._edited = true;
     },
-    _setFocusCell(cell) {
-        let pasteEventHandle = this._pasteEventHandler.bind(this);
-        let inputEventHandle = this._inputEventHandler.bind(this);
-        cell.addEventListener('blur', (event) => {
-            cell.removeAttribute('contenteditable');
-            cell.removeEventListener('paste', pasteEventHandle);
-            cell.removeEventListener('input', inputEventHandle);
-            this._focusCell = null;
-        }, { once: true });
-        cell.addEventListener('paste', pasteEventHandle);
-        cell.addEventListener('input', inputEventHandle);
-        cell.setAttribute('contenteditable', true);
-        cell.focus();
-        this._focusCell = cell;
-        let selection = window.getSelection();
-        let select = document.createRange();
-        select.setStart(cell, 0);
-        select.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(select);
+    _keypressHandler(event) {
+        if (event.which === 13)
+            event.preventDefault();
+    },
+    _setFocusCell(select, populate) {
+
+        if (this._editing)
+            return false;
+
+        if ( ! this._focusCell) {
+            this._focusCell = this._createCell(0, 0, -1, -1);
+            this._focusCell.setAttribute('role', 'gridcell');
+            this._focusCell.id = 'focusCell';
+            this._focusCell.classList.add('temp-focus-cell');
+            let pasteEventHandle = this._pasteEventHandler.bind(this);
+            let inputEventHandle = this._inputEventHandler.bind(this);
+            let keypressEventHandle = this._keypressHandler.bind(this);
+            this._focusCell.addEventListener('paste', pasteEventHandle);
+            this._focusCell.addEventListener('input', inputEventHandle);
+            this._focusCell.addEventListener('keypress', keypressEventHandle);
+            this._focusCell.setAttribute('contenteditable', true);
+            this._focusCell.addEventListener('blur', async (event) => {
+                if (this._editing) {
+                    this._focusValue = this._focusCell.innerText;
+                    await this._endEditing();
+                }
+                this._focusCell.classList.remove('editing');
+                this._focusCell.innerText = '';
+            });
+
+            /*this._focusGrid = document.createElement('div');
+            this._focusGrid.setAttribute('role', 'grid');*/
+
+            this._focusRow = document.createElement('div');
+            this._focusRow.setAttribute('role', 'row');
+
+            this._focusRow.append(this._focusCell);
+
+            this.$body.append(this._focusRow);
+        }
+
+        let sel = this.selection;
+
+        let selColumn = this.model.getColumn(sel.colNo, true);
+        this._focusCell.setAttribute('aria-describedby', `column-${ selColumn.id } row-${ sel.rowNo }`);
+        this._focusRow.setAttribute('aria-owns', `row-${ sel.rowNo } focusCell`);
+
+        let x = this._lefts[sel.colNo];
+        let y = sel.rowNo * this._rowHeight;
+        let width = this._widths[sel.colNo];
+        let height = this._rowHeight;
+
+        this._focusCell.style.top = `${y+1}px`;
+        this._focusCell.style.left = `${x}px`;
+        this._focusCell.style.width = `${width-1}px`;
+        this._focusCell.style.height = `${height-2}px`;
+        this._focusCell.style.lineHeight = `${height-3}px`;
+
+        let value = this.model.valueAt(sel.rowNo, sel.colNo);
+        if (value) {
+            for (let levelInfo of this.currentColumn.levels) {
+                if (value === levelInfo.value) {
+                    value = levelInfo.label;
+                    break;
+                }
+            }
+        }
+        else
+            value = '';
+
+        this._updateCell(this._focusCell, value, populate, null, false, false, false);
+
+        this._focusCell.focus({preventScroll: true});
+
+        if (select) {
+            setTimeout(() => {
+                let selection = window.getSelection();
+                let range = document.createRange();
+                range.selectNodeContents(this._focusCell);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }, 0);
+        }
     },
     _setSelectedRange(range, oldSel, ignoreTabStart) {
 
@@ -1073,15 +1126,9 @@ const TableView = SilkyView.extend({
         if ( ! ignoreTabStart)
             this._tabStart = { row: range.rowNo, col: range.colNo };
 
-        //this.controller.enableDisableActions();
-
         this.currentColumn = this.model.getColumn(colNo, true);
 
-        let $column = $(this.$columns[this.currentColumn.dIndex]);
-        let $cells  = $column.children();
-        let cell = $cells[rowNo - this.viewport.top];
-        if (cell)
-            this._setFocusCell(cell);
+        this._setFocusCell(true, true);
 
         this._updateHeaderHighlight();
 
@@ -1092,7 +1139,7 @@ const TableView = SilkyView.extend({
         let width = this._lefts[range.right] + this._widths[range.right] - x;
         let height = this._rowHeight * nRows;
 
-        this.$selection.css({ left: x, top: y, width: width, height: height});
+        this.$selection.css({ left: x, top: y, width: width - 1, height: height });
 
         this._abortEditing();
 
@@ -1168,10 +1215,13 @@ const TableView = SilkyView.extend({
             return;  // you can't edit computed columns
         }
 
+        this._setFocusCell(ch === undefined, ch === undefined);
+
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
         this.statusbar.updateInfoLabel('editStatus', _('Edit'));
 
+        this._focusCell.classList.add('editing');
         this.$selection.addClass('editing');
         this.$selection.attr('data-measuretype', column.measureType);
 
@@ -1183,19 +1233,14 @@ const TableView = SilkyView.extend({
                     break;
                 }
             }
-            if (value)
-                this._modifyingCellContents = true;
 
-            this.$selection.val(value);
+            this._focusCell.innerText = value;
         }
 
-        setTimeout(() => {
-            this.$selection.select();
-            if (ch !== undefined) {
-                this.$selection.val(ch);
-                this._edited = true;
-            }
-        }, 50);
+        this._modifyingCellContents = true;
+
+        if (ch !== undefined)
+            this._edited = true;
     },
     _applyEdit() {
         if ( ! this._edited)
@@ -1203,7 +1248,11 @@ const TableView = SilkyView.extend({
 
         return Promise.resolve().then(() => {
 
-            let value = this.$selection.val().trim();
+            let value = '';
+            if (this._focusCell)
+                value = this._focusCell.innerText.trim();
+            else
+                value = this._focusValue.trim();
 
             if (value === '') {
                 value = null; // missing value
@@ -1251,9 +1300,9 @@ const TableView = SilkyView.extend({
             this._edited = false;
             this._modifyingCellContents = false;
             keyboardJS.setContext('controller');
-            this.$selection.val('');
-            this.$selection.blur();
             this.$selection.removeClass('editing');
+            if (this._focusCell)
+                this._focusCell.classList.remove('editing');
         };
 
         return Promise.resolve().then(() => {
@@ -1266,7 +1315,14 @@ const TableView = SilkyView.extend({
                 message: err.cause,
                 type: 'error',
             });
-            this.$selection.select();
+
+            if (this._focusCell) {
+                let selection = window.getSelection();
+                let range = document.createRange();
+                range.selectNodeContents(this._focusCell);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
             throw 'cancelled';
         });
     },
@@ -1284,10 +1340,9 @@ const TableView = SilkyView.extend({
         this._modifyingCellContents = false;
         keyboardJS.setContext('controller');
         this._edited = false;
-
-        this.$selection.blur();
-        this.$selection.val('');
         this.$selection.removeClass('editing');
+        if (this._focusCell)
+            this._focusCell.classList.remove('editing');
     },
     _editingKeyPress(event) {
 
@@ -1346,7 +1401,7 @@ const TableView = SilkyView.extend({
                 this._edited = true;
                 break;
             default:
-                if (event.key.length === 1)
+                if (event.metaKey === false && event.altKey === false && event.ctrlKey === false && event.key.length === 1)
                     this._edited = true;
                 break;
         }
@@ -1542,7 +1597,7 @@ const TableView = SilkyView.extend({
             event.preventDefault();
             break;
         default:
-            if (event.key.length === 1)
+            if (event.key.length === 1 || event.key === 'Process')
                 this._beginEditing(event.key);
             break;
         }
@@ -1800,7 +1855,7 @@ const TableView = SilkyView.extend({
                 let filt = filtered[rowNo];
                 let missing = cellInfo.missing;
 
-                this._updateCell(cell, content, dps, filt, missing, isFC);
+                this._updateCell(cell, content, true, dps, filt, missing, isFC);
             }
         }
 
@@ -1937,7 +1992,7 @@ const TableView = SilkyView.extend({
                 let filt = filtered[changed.rowIndex];
                 let missing = cellInfo.missing;
 
-                this._updateCell(cell, content, dps, filt, missing, isFC);
+                this._updateCell(cell, content, true, dps, filt, missing, isFC);
             }
         }
     },
@@ -1952,7 +2007,7 @@ const TableView = SilkyView.extend({
 
         return raw;
     },
-    _updateCell(cell, content, dps, filtered, missing, isFC = false) {
+    _updateCell(cell, content, populate, dps, filtered, missing, isFC = false) {
 
         let type;
         let asNumber = Number(content);
@@ -1969,7 +2024,8 @@ const TableView = SilkyView.extend({
             type = 'bool';
         }
         else if (typeof(content) === 'number') {
-            content = asNumber.toFixed(dps);
+            if (dps !== null)
+                content = asNumber.toFixed(dps);
             type = 'number';
         }
         else if (Number.isNaN(asNumber)) {
@@ -1981,8 +2037,11 @@ const TableView = SilkyView.extend({
 
         if (type === 'bool')
             cell.innerHTML = content;
-        else
+        else {
+            if ( ! populate)
+                content = '';
             cell.textContent = content;
+        }
 
         cell.dataset.type = type;
         cell.dataset.filtered = (filtered ? '1' : '0');
@@ -2098,7 +2157,7 @@ const TableView = SilkyView.extend({
                 "
             >
                 <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label">${ s6e(column.name) }</div>
+                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader">${ s6e(column.name) }</div>
                 <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>
@@ -2107,12 +2166,17 @@ const TableView = SilkyView.extend({
     _createCell(top, height, rowNo, colNo) {
 
         let cell = document.createElement('div');
-        cell.setAttribute('tabindex', -1);
+        //cell.setAttribute('tabindex', -1);
+        /*if (rowNo !== -1) {
+            this._focusCell.setAttribute('role', 'gridcell');
+            this._focusCell.setAttribute('aria-colindex', colNo + 1);
+            this._focusCell.setAttribute('aria-rowindex', rowNo + 1);
+        }*/
         cell.classList.add('jmv-column-cell');
         cell.dataset.row = rowNo;
         cell.style.top = `${ top }px`;
-        cell.style.height = `${ height + 1 }px`;
-        cell.style.lineHeight = `${ height - 3}px`;
+        cell.style.height = `${ height }px`;
+        cell.style.lineHeight = `${ height-3 }px`;
 
         return cell;
     },
@@ -2124,6 +2188,8 @@ const TableView = SilkyView.extend({
 
         let cell = document.createElement('div');
         cell.classList.add('jmv-row-header-cell');
+        cell.setAttribute('role', 'rowheader');
+        cell.id = 'row-' + rowNo;
         if (highlighted != '')
             cell.classList.add('highlighted');
         cell.style.top = `${ top }px`;

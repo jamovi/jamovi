@@ -11,7 +11,8 @@
 }
 
 .jmv-ribbon-group-label {
-    width: 100%;
+    /*width: 100%;*/
+    white-space: nowrap;
 }
 
 .jmv-ribbon-group {
@@ -25,21 +26,21 @@
 }
 
 .jmv-ribbon-group-body-vertical > .jmv-ribbon-group[data-position="top"] {
-    margin: 5px;
+    /*margin: 5px;*/
 }
 
 .jmv-ribbon-group[data-position="top"] > .jmv-ribbon-group-label {
     order: 0;
-
-    font-size: 80%;
+    height: 28px;
+    line-height: 28px;
     text-align: left;
-    font-weight: bold;
-    padding: 0px 0px 2px 0px;
+    font-weight: 600;
+    padding: 0px 12px 0px 12px;
 }
 
 .jmv-ribbon-group[data-position="bottom"] > .jmv-ribbon-group-label {
     order: 1;
-    font-size: 70%;
+    font-size: 10px;
     text-align: center;
 }
 
@@ -50,6 +51,7 @@
 .jmv-ribbon-group-body-horizontal {
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
 }
 
 .jmv-ribbon-group-body-vertical {

@@ -5,6 +5,7 @@ const underscore = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const I18n = require('../common/i18n');
+const focusLoop = require('../common/focusloop');
 
 const formatIO = require('../common/utils/formatio');
 
@@ -31,13 +32,15 @@ const ResultsPanel = Backbone.View.extend({
         this.el.dataset.mode = args.mode;
         this.annotationFocus = 0;
 
+        focusLoop.addFocusLoop(this.el);
+
         this._menuId = null;
         ContextMenu.$el.on('menuClicked', (event, button) => {
             if (this._menuId !== null)
                 this._menuEvent(button.eventData);
         });
 
-        ContextMenu.on('menu-closed', (event) => {
+        ContextMenu.on('menu-hidden', (event) => {
             if (this._menuId !== null) {
                 if (this._menuId === 0)
                     this._refsTable.deactivate();
@@ -150,7 +153,12 @@ const ResultsPanel = Backbone.View.extend({
         if (isEmptyAnalysis)
             classes = 'empty-analysis';
 
-        let $container = $('<div class="jmv-results-container ' + classes + '"></div>');
+        let $container = $('<div class="jmv-results-container ' + classes + '" tabindex="0"></div>');
+        $container.on('keydown', (event) => {
+            if (event.keyCode === 13) { //enter
+                this.model.set('selectedAnalysis', analysis);
+            }
+        });
 
         let $after = $(this._refsTable);
         if (analysis.results.index > 0) {
@@ -504,7 +512,7 @@ const ResultsPanel = Backbone.View.extend({
                         $iframe.width(width);
 
                     let selected = this.model.get('selectedAnalysis');
-                    if (eventData.scrollIntoView && selected !== null && selected.id.toString() === id)
+                    if (eventData.scrollIntoView && selected !== null && selected.id !== undefined && selected.id.toString() === id)
                         this._scrollIntoView($container, height);
                     $iframe.width(width);
                     $iframe.height(height);
@@ -703,7 +711,7 @@ const ResultsPanel = Backbone.View.extend({
                 export: true,
                 part: part,
                 partType: 'image',
-                overwrite: true,
+                overwrite: host.isElectron === false,
             };
 
             if (event.target.type === 'Image') {
@@ -731,7 +739,7 @@ const ResultsPanel = Backbone.View.extend({
                     name: 'Image',
                     export: true,
                     part: part,
-                    overwrite: true,
+                    overwrite: host.isElectron === false,
                 };
 
                 let options = {

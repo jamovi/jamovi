@@ -7,22 +7,36 @@
 }
 
 .jmv-ribbon-header {
-    display: flex ;
-    flex-direction: row ;
+    display: flex;
+    /* flex-direction: row; */
+    align-items: center;
+    padding-right: 5px;
+}
+
+.jmv-ribbon-menu {
+    display: flex;
+    flex-grow: 1;
+    background-color: inherit;
+}
+
+.ribbon-tabs {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
 }
 
 .jmv-ribbon-tab {
+    position: relative;
     background-color : inherit ;
     color: white ;
     padding: 8px 20px ;
     -webkit-app-region: no-drag;
+    font: inherit;
     line-height: 100%;
+    border: none;
 }
 
 .jmv-ribbon-appmenu {
-    position: absolute ;
-    right: 6px ;
-    /*top: 8px ;*/
     font-size: 150% ;
     text-align: center ;
     width: 24px ;
@@ -31,12 +45,11 @@
     border-radius: 1px ;
     padding: 0 ;
     -webkit-app-region: no-drag;
+    border: none;
+    background-color: transparent;
 }
 
 .jmv-ribbon-fullscreen {
-    position: absolute ;
-    right: 30px ;
-    /*top: 8px ;*/
     font-size: 150% ;
     text-align: center ;
     width: 24px ;
@@ -48,7 +61,9 @@
     background-image: url("../assets/fullscreen-hide-data.svg");
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 60% 60%
+    background-size: 60% 60%;
+    border: none;
+    background-color: transparent;
 }
 
 body[data-splitpanel-mode='results'] .jmv-ribbon-fullscreen {
@@ -80,12 +95,20 @@ body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='data'] {
     vertical-align: top;
 }
 
+body.windows.electron .jmv-ribbon-fullscreen .shortcut-key-tag {
+    font-size: 70%;
+}
+
+body.windows.electron .jmv-ribbon-appmenu .shortcut-key-tag {
+    font-size: 70%;
+}
+
 body.windows.electron .jmv-ribbon-fullscreen {
-    top: 36px ;
+    position: relative;
 }
 
 body.windows.electron .jmv-ribbon-appmenu {
-    top: 36px ;
+    position: relative;
 }
 
 .jmv-ribbon-appmenu:hover {
@@ -110,19 +133,19 @@ body.windows.electron .jmv-ribbon-appmenu {
 
 .jmv-ribbon-tab[data-tabname="file"] {
     padding: 7px 20px;
-    width: 20px;
 }
 
 .jmv-ribbon-body {
     background-color : #F0F0F0 ;
-    height: 58px ;
-    padding: 6px ;
+    height: 67px;
+    padding: 3px 0px 3px 6px;
     -webkit-app-region: no-drag;
     display: flex ;
     /*overflow-x: overlay;
     overflow-y: visible;*/
     -ms-overflow-style: none;
     scrollbar-width: none;
+    overflow: scroll;
 }
 
 .jmv-ribbon-body::-webkit-scrollbar {

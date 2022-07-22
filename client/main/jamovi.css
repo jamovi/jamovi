@@ -29,8 +29,25 @@ body {
     background-color: #3E6DA9 ;
     padding: 0 ;
     cursor: default ;
-    display: flex ;
-    flex-flow: column ;
+}
+
+:focus {
+    outline-color: #4e5966;
+}
+
+[focusmode="default"] :focus {
+  outline: none
+}
+
+[focusmode="hover"] :focus {
+    outline: none;
+}
+
+#main {
+    display: grid;
+    height: 100%;
+    grid-template-rows: auto min-content 1fr;
+    grid-template-columns: 100%;
 }
 
 body.windows.electron {
@@ -56,6 +73,7 @@ hr {
     color: white ;
     text-align: center ;
     min-height: 6px ;
+    height: 0px;
 }
 
 body.windows.electron #header {
@@ -201,7 +219,7 @@ body.windows.electron #header-buttons {
 #main-view {
     padding-top: 6px ;
     border-top: 1px solid #D0D0D0 ;
-    background-color: #E6E6E6 ;
+    background: linear-gradient(#d8d8d8, #E6E6E6 5px);
     flex-grow: 1;
     display: grid;
     grid-template-rows: minmax(0px, min-content) 1fr;
@@ -229,8 +247,13 @@ body.windows.electron #header-buttons {
     width: 0px !important;
     opacity: 0 !important;
     min-width: 0px !important;
+    visibility: hidden;
 }
 
+#results > .shortcut-key-tag, #main-options > .shortcut-key-tag {
+    top: 3px;
+    left: 3px;
+}
 
 #results {
     font-style: sans-serif ;

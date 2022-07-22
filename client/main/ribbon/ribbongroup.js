@@ -4,6 +4,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 const ActionHub = require('../actionhub');
+const focusLoop = require('../../common/focusloop');
 
 const RibbonGroup = Backbone.View.extend({
 
@@ -29,14 +30,21 @@ const RibbonGroup = Backbone.View.extend({
         let $el = params.$el === undefined ? $('<div></div>') : params.$el;
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
-        let align = params.alignContents === undefined ? 'stretch' : params.alignContents;
+        let align = params.alignContents === undefined ? (orientation === 'horizontal' ? 'center' : 'stretch') : params.alignContents;
         let name = params.name === undefined ? null : params.name;
+
+        let labelId = focusLoop.getNextAriaElementId('label');
 
         this.$el = $el;
         this.$el.addClass('jmv-ribbon-group');
         this.$el.addClass('jmv-ribbon-group-margin-' + margin);
-        if (title !== null)
+        if (title !== null) {
             this.$el.attr('data-position', titlePosition);
+            this.$el.attr('aria-labelledby', labelId);
+            this.$el.attr('role', 'group');
+        }
+        else
+            this.$el.attr('role', 'none');
 
         if (name !== null)
             this.$el.attr('data-name', this.name.toLowerCase());
@@ -52,10 +60,10 @@ const RibbonGroup = Backbone.View.extend({
         this.items = [];
 
         let html = '';
-        html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '" style="align-items: ' + align + '">';
+        html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '" style="align-items: ' + align + '" role="none">';
         html += '</div>';
         if (title !== null)
-            html += '<div class="jmv-ribbon-group-label">' + title + '</div>';
+            html += `<div id="${labelId}" class="jmv-ribbon-group-label">${title}</div>`;
 
         this.$el.append(html);
 
@@ -69,18 +77,16 @@ const RibbonGroup = Backbone.View.extend({
             });
         }
 
-        //this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
-
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
                 this.addItem(params.items[i]);
         }
     },
-    setParent(parent) {
+    setParent(parent, parentShortcutPath, inMenu) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setParent)
-                item.setParent(parent);
+                item.setParent(parent, parentShortcutPath, inMenu);
         }
     },
     setTabName(name) {
@@ -90,11 +96,11 @@ const RibbonGroup = Backbone.View.extend({
                 item.setTabName(name);
         }
     },
-    getEntryButton(openPath, open) {
+    getEntryButton(openPath, open, fromMouse) {
         if (openPath.length > 0) {
             for (let item of this.items) {
                 if (item.getEntryButton) {
-                    let openedItem = item.getEntryButton(openPath, open);
+                    let openedItem = item.getEntryButton(openPath, open, fromMouse);
                     if (openedItem !== null)
                         return openedItem;
                 }
@@ -116,8 +122,6 @@ const RibbonGroup = Backbone.View.extend({
             else
                 item.$el.insertBefore(this.$separator);
         }
-
-        item.on('shown', (menu) => this._menuShown(menu));
     },
     hideMenu() {
         for (let item of this.items) {
@@ -125,12 +129,16 @@ const RibbonGroup = Backbone.View.extend({
                 item.hideMenu();
         }
     },
-    _menuShown(source) {
-        this.trigger('shown', source);
-    },
-
     setEnabled(enabled) {
         this.$el.prop('disabled', ! enabled);
+    },
+    getMenus() {
+        let menus = [];
+        for (let item of this.items) {
+            if (item.getMenus)
+                menus = menus.concat(item.getMenus());
+        }
+        return menus;
     }
 });
 

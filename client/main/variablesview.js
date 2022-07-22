@@ -713,17 +713,19 @@ const VariablesView = SilkyView.extend({
             let id = change.id;
             let row = this._getRowById(id);
 
-            if (change.nameChanged)
-                row.$name.text(change.name);
+            if (row) {
+                if (change.nameChanged)
+                    row.$name.text(change.name);
 
-            if (change.descriptionChanged)
-                row.$description.text(row.column.description);
+                if (change.descriptionChanged)
+                    row.$description.text(row.column.description);
 
-            if (change.measureTypeChanged)
-                row.$elements.attr('data-measuretype', row.column.measureType);
+                if (change.measureTypeChanged)
+                    row.$elements.attr('data-measuretype', row.column.measureType);
 
-            if (change.transformChanged)
-                this._updateColumnColour(row.column, row.$dot);
+                if (change.transformChanged)
+                    this._updateColumnColour(row.column, row.$dot);
+            }
         }
     },
 

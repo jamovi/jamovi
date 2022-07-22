@@ -4,6 +4,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const focusLoop = require('../common/focusloop');
 
 
 const EditorPanel = Backbone.View.extend({
@@ -11,23 +12,24 @@ const EditorPanel = Backbone.View.extend({
     initialize() {
         this.$el.empty();
         this.$el.addClass('jmv-editor-panel');
+        focusLoop.addFocusLoop(this.$el[0], { level: 1, closeHandler: this.close.bind(this) });
 
         this.$main = $('<div class="jmv-editor-panel-main"></div>').appendTo(this.$el);
 
-        this.$ok = $('<div class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></div>').appendTo(this.$main);
+        this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></button>`).appendTo(this.$main);
 
         this.$titleBox = $('<div class="title-box"></div>').appendTo(this.$main);
         this.$title = $('<div class="title"></div>').appendTo(this.$titleBox);
         this.$contents = $('<div class="content"></div>').appendTo(this.$main);
 
-        this.$ok.on('click', event => {
-            let backCall = this.onBack;
-            this.attach(null);
-            if (backCall)
-                backCall();
-        });
+        this.$ok.on('click', this.close.bind(this));
     },
-
+    close(event) {
+        let backCall = this.onBack;
+        this.attach(null);
+        if (backCall)
+            backCall();
+    },
     attach(item, onBack) {
 
         this.onBack = onBack;
@@ -64,12 +66,22 @@ const EditorPanel = Backbone.View.extend({
         }
 
         if (hide) {
-            this.$el.addClass('hidden');
-            this.$el.trigger('editor:hidden');
+            if (this.visible) {
+                this.$el.addClass('hidden');
+                this.$el.trigger('editor:hidden');
+                //focusLoop.leaveFocusLoop(this.$el[0]);
+                this.visible = false;
+            }
         }
         else {
-            this.$el.removeClass('hidden');
-            this.$el.trigger('editor:visible');
+            if ( ! this.visible) {
+                this.$el.removeClass('hidden');
+                this.$el.trigger('editor:visible');
+                setTimeout(() => {
+                    focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+                }, 200);
+                this.visible = true;
+            }
         }
 
     },

@@ -4,7 +4,7 @@
     height: 270px;
     bottom: 0px;
     width: 100%;
-    transition: height .2s, border-top .2s, opacity .2s;
+    transition: height .2s, border-top .2s, opacity .2s, visibility .2s;
     box-sizing: border-box;
     border-top: 1px solid #CCCCCC;
     position: absolute;
@@ -16,6 +16,7 @@
     transition-timing-function: ease, step-end ;
     border-top: 1px solid #F0F0F0 ;
     opacity: 0;
+    visibility: hidden;
 }
 
 .jmv-editor-panel-main {
@@ -66,6 +67,7 @@
 .jmv-editor-panel-ok span {
     position: absolute ;
     left: 0 ;
+    top: 0;
     width: 100% ;
     line-height: 32px;
     vertical-align: top;
