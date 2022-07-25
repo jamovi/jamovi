@@ -62,7 +62,6 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         },
 
         hideOptions: data => {
-            this.$frame.addClass('silky-hidden-options-control');
             this.trigger("hideOptions");
         },
 
@@ -225,8 +224,8 @@ let OptionsPanel = SilkyView.extend({
     },
 
     setAnalysis: function(analysis) {
-
         let analysesKey = analysis.ns + "-" + analysis.name;
+
         let resources = this._analysesResources[analysesKey];
         let createdNew = false;
 
@@ -325,7 +324,6 @@ let OptionsPanel = SilkyView.extend({
 
     addMsgListeners: function(resource) {
         resource.on("hideOptions", () => {
-            console.log('close button clicked');
             this.model.set('selectedAnalysis', null);
         });
 
@@ -340,9 +338,6 @@ let OptionsPanel = SilkyView.extend({
     },
 
     hideOptions: function(clearSelected) {
-
-        console.log('point 1');
-
         if (clearSelected === undefined)
             clearSelected = true;
         if (clearSelected) {
@@ -350,8 +345,6 @@ let OptionsPanel = SilkyView.extend({
             if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')
                 this.model.set('selectedAnalysis', null);
         }
-
-        console.log('point 2');
 
         this.$el.trigger("splitpanel-hide");
     },
