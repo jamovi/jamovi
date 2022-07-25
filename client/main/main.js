@@ -426,9 +426,8 @@ $(document).ready(async() => {
                 else
                     optionspanel.hideOptions(false);
             }
-            else {
+            else
                 optionspanel.hideOptions();
-            }
         }
     });
 
@@ -705,12 +704,13 @@ $(document).ready(async() => {
     });
 
     dataSetModel.on('change:editingVar', event => {
-        optionspanel.hideOptions();
         if (dataSetModel.get('editingVar') === null) {
             setTimeout(() => {
                 splitPanel.onTransitioning();
             }, 200);
         }
+        else
+            optionspanel.hideOptions();
     });
 
     host.on('close', (event) => {

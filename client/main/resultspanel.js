@@ -851,7 +851,6 @@ const ResultsPanel = Backbone.View.extend({
         }
     },
     _selectedChanged(event) {
-
         let oldSelected = this.model.previous('selectedAnalysis');
         let newSelected = this.model.get('selectedAnalysis');
 
