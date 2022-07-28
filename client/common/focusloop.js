@@ -257,7 +257,7 @@ class FocusLoop extends EventEmitter {
 
     containsFocusableMenuLevel(elementPath) {
         for (let element of elementPath) {
-            if (element.classList.contains('menu-level') && element.hasAttribute('tabindex'))
+            if (element.classList && element.classList.contains('menu-level') && element.hasAttribute('tabindex'))
                 return true;
             if (element === document.body)
                 return false;
