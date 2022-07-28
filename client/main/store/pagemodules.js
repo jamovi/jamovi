@@ -21,6 +21,8 @@ const PageModules = Backbone.View.extend({
         this.$el.addClass('jmv-store-page-installed');
         this.$message    = $('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>').appendTo(this.$el);
 
+        let $searchBox = $('<div class="store-page-searchbox"><div class="search-icon"></div></div>').appendTo(this.$el);
+        this.$search    = $(`<input class="search-text" type="textbox" placeholder="${_('Search')}"></input>`).appendTo($searchBox);
         this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$content = $('<div class="jmv-store-content"></div>').appendTo(this.$body);
         this.$loading = $('<div class="jmv-store-loading"></div>').appendTo(this.$body);
@@ -40,6 +42,20 @@ const PageModules = Backbone.View.extend({
         this.$uninstall = $();
         this.$install = $();
         this.$visibility = $();
+
+        this.$search.on('input', (event) => {
+            if ( ! this.searchTimer) {
+                this.searchTimer = setTimeout(() => {
+                    this.searchTimer = null;
+                    this._refresh();
+                }, 1000);
+                console.log('search');
+            }
+        });
+
+        this.$search.on('focus', (event) => {
+            this.$search.select();
+        });
 
         this.modules.on('change:status', () => {
             this.$el.attr('data-status', this.modules.attributes.status);
@@ -71,6 +87,68 @@ const PageModules = Backbone.View.extend({
         else
             this.$message.removeClass('show');
     },
+
+    markText(text, innerHTML) {
+
+        if (text === '')
+            return innerHTML;
+
+        let lInnerHTML = innerHTML.toLowerCase();
+
+        let result = '';
+
+        let prevIndex = 0;
+        let index = lInnerHTML.indexOf(text);
+        if (index === -1)
+            return null;
+
+        while (index >= 0) {
+            result += innerHTML.substring(prevIndex, index) + "<mark>" + innerHTML.substring(index, index + text.length) + "</mark>";
+            prevIndex = index + text.length;
+            index = lInnerHTML.indexOf(text, index + text.length);
+        }
+        result += innerHTML.substring(prevIndex, innerHTML.length);
+        return result ;
+    },
+
+    filter(translator, module, value) {
+        let results = { found: false, values: { } };
+
+        results.authors = [];
+        for (let author of module.authors) {
+            let text = this.markText(value, author);
+            if (text) {
+                results.found = true;
+                results.authors.push(text);
+            }
+            else
+                results.authors.push(author);
+        }
+
+        results.description = translator(module.description);
+        let text = this.markText(value, results.description);
+        if (text || results.found) {
+            results.found = true;
+            results.description = text;
+        }
+
+        results.title = translator(module.title);
+        // This regex is used to trim off any leading shortname (as well as seperators) from the title
+        // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
+        let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
+        results.title = results.title.replace(re, '');
+        if (module.name !== module.title)
+            results.title = `${ module.name } - ${ results.title }`;
+
+        text = this.markText(value, results.title);
+        if (text) {
+            results.found = true;
+            results.title = text;
+        }
+
+        return results;
+    },
+
     async _refresh() {
 
         this.$modules.off();
@@ -85,16 +163,19 @@ const PageModules = Backbone.View.extend({
 
             let translator = await module.getTranslator();
 
+            let values = null;
+            let searchValue = this.$search.val().toLowerCase().trim();
+            //if (searchValue !== '') {
+                values = this.filter(translator, module, searchValue);
+                if (values.found === false)
+                    continue;
+            //}
+
             let version = Version.stringify(module.version, 3);
 
-            let subtitle = translator(module.title);
-            // This regex is used to trim off any leading shortname (as well as seperators) from the title
-            // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
-            let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
-            subtitle = subtitle.replace(re, '');
-            let label = module.name;
-            if (module.name !== subtitle)
-                label = `${ module.name } - ${ subtitle }`;
+            let label = values.title;
+            //if (module.name !== values.title)
+            //    label = `${ module.name } - ${ values.title }`;
 
             let html = `
                 <div class="jmv-store-module" data-name="${ module.name }">
@@ -160,8 +241,8 @@ const PageModules = Backbone.View.extend({
             let $module = $(html);
 
 
-            $module.find('.description').html(translator(module.description));
-            $module.find('.authors').html(module.authors.join(', '));
+            $module.find('.description').html(values.description);
+            $module.find('.authors').html(values.authors.join(', '));
 
             $module.appendTo(this.$content);
             $module.on('click', event => this._moduleClicked(event));
