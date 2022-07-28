@@ -5,6 +5,7 @@
 'use strict';
 
 const $ = require('jquery');
+const Markjs = require('mark.js');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
@@ -19,8 +20,13 @@ const PageModules = Backbone.View.extend({
         this.settings = this.model.settings;
 
         this.$el.addClass('jmv-store-page-installed');
+
+        this.marker = new Markjs(this.$el[0]);
+
         this.$message    = $('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>').appendTo(this.$el);
 
+        let $searchBox = $('<div class="store-page-searchbox"><div class="search-icon"></div></div>').appendTo(this.$el);
+        this.$search    = $(`<input class="search-text" type="textbox" placeholder="${_('Search')}"></input>`).appendTo($searchBox);
         this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$content = $('<div class="jmv-store-content"></div>').appendTo(this.$body);
         this.$loading = $('<div class="jmv-store-loading"></div>').appendTo(this.$body);
@@ -40,6 +46,20 @@ const PageModules = Backbone.View.extend({
         this.$uninstall = $();
         this.$install = $();
         this.$visibility = $();
+
+        this.$search.on('input', (event) => {
+            if ( ! this.searchTimer) {
+                clearTimeout(this.searchTimer);
+                this.searchTimer = setTimeout(() => {
+                    this.searchTimer = null;
+                    this.markHTML();
+                }, 1000);
+            }
+        });
+
+        this.$search.on('focus', (event) => {
+            this.$search.select();
+        });
 
         this.modules.on('change:status', () => {
             this.$el.attr('data-status', this.modules.attributes.status);
@@ -71,6 +91,29 @@ const PageModules = Backbone.View.extend({
         else
             this.$message.removeClass('show');
     },
+
+    markHTML() {
+        let searchValue = this.$search.val().toLowerCase().trim();
+        this.marker.unmark({
+            done: () => {
+                if (searchValue != '') {
+                    this.$el.find('.jmv-store-module').addClass('hide-module');
+                    let regex = new RegExp(`\\b${searchValue}`, 'gi');
+                    this.marker.markRegExp(regex, {
+                        each: (element) => {
+                            let parent = element.closest('.jmv-store-module');
+                            if (parent)
+                                parent.classList.remove('hide-module');
+                        },
+                        exclude: ['.jmv-store-module-button']
+                    });
+                }
+                else
+                    this.$el.find('.jmv-store-module').removeClass('hide-module');
+            }
+        });
+    },
+
     async _refresh() {
 
         this.$modules.off();
@@ -87,14 +130,13 @@ const PageModules = Backbone.View.extend({
 
             let version = Version.stringify(module.version, 3);
 
-            let subtitle = translator(module.title);
+            let label = translator(module.title);
             // This regex is used to trim off any leading shortname (as well as seperators) from the title
             // E.G The module title 'GAMLj - General Analyses for Linear Models' will be trimmed to 'General Analyses for Linear Models'.
             let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
-            subtitle = subtitle.replace(re, '');
-            let label = module.name;
-            if (module.name !== subtitle)
-                label = `${ module.name } - ${ subtitle }`;
+            label = label.replace(re, '');
+            if (module.name !== module.title)
+                label = `${ module.name } - ${ label }`;
 
             let html = `
                 <div class="jmv-store-module" data-name="${ module.name }">
@@ -102,7 +144,7 @@ const PageModules = Backbone.View.extend({
                         <div class="jmv-store-module-icon"></div>
                     </div>
                     <div class="jmv-store-module-rhs">
-                        <h2>${ label }<span class="version">${ version }</span></h2>
+                        <h2 class="mark-search">${ label }<span class="version">${ version }</span></h2>
                         <div class="authors"></div>
                         <div class="description"></div>`;
 
@@ -159,13 +201,15 @@ const PageModules = Backbone.View.extend({
 
             let $module = $(html);
 
-
-            $module.find('.description').html(translator(module.description));
+            $module.find('.description').html(module.description);
             $module.find('.authors').html(module.authors.join(', '));
 
             $module.appendTo(this.$content);
             $module.on('click', event => this._moduleClicked(event));
         }
+
+        this.markHTML();
+
         this.$uninstall = this.$content.find('.jmv-store-module-button[data-op="remove"]');
         this.$install = this.$content.find('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
         this.$visibility = this.$content.find('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');

@@ -8,6 +8,39 @@
     overflow-y: scroll ;
 }
 
+.store-page-searchbox {
+    border: 1px solid #ACACAC;
+    border-bottom: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: white;
+}
+
+.store-page-searchbox > .search-icon {
+    width: 12px;
+    margin-left: 4px;
+    margin-right: 3px;
+    height: 12px;
+    background-image: url(../assets/variable-search.svg);
+    background-repeat: no-repeat;
+    background-size: contain;
+    filter: opacity(0.5);
+}
+
+.jmv-store-module.hide-module {
+    display: none;
+}
+
+.store-page-searchbox >.search-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    background-color: transparent;
+    border: none;
+    z-index: 100;
+    line-height: 1.5em;
+}
+
 .jmv-store-module {
     padding: 20px 10px ;
     display: flex ;
