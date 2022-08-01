@@ -46,6 +46,7 @@
     "quill-delta-to-html": "^0.12.0",
     "uglifyify": "^5.0.2",
     "underscore": "^1.11.0",
-    "jed": "1.1.1"
+    "jed": "1.1.1",
+    "mark.js": "8.11.1"
   }
 }

@@ -28,6 +28,10 @@
     filter: opacity(0.5);
 }
 
+.jmv-store-module.hide-module {
+    display: none;
+}
+
 .store-page-searchbox >.search-text {
     flex-grow: 1;
     flex-shrink: 1;
