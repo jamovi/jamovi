@@ -101,6 +101,9 @@ const RibbonView = Backbone.View.extend({
             let changed = tab !== this.selectedTab;
             this.selectedTab = tab;
 
+            if (this.tabSelection.selectedElement != this.selectedTab.$el[0])
+                this.tabSelection.selectElement(this.selectedTab.$el[0], false, true);
+
             if (this.selectedTab) {
                 this.selectedTab.$el.addClass('selected');
                 this.selectedTab.$el.attr('aria-selected', true);
