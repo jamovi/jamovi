@@ -44,6 +44,10 @@
     padding: 6px 0;
 }
 
+.jmv-analysis-button:focus {
+    z-index: 100;
+}
+
 .jmv-ribbon-button-label {
     color: #555555 ;
 }
