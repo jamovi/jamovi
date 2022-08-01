@@ -85,6 +85,7 @@ const FSEntryListView = SilkyView.extend({
     },
     _render : function() {
 
+        this.$el.empty();
         this.$el.addClass('silky-bs-fslist');
 
         let items = this.model.get('items');
