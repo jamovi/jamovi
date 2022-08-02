@@ -270,7 +270,7 @@ const RibbonMenu = Backbone.View.extend({
         let $label = $('<div class="jmv-ribbon-button-label">' + this.title + '</div>');
 
         if ( ! this.menu) {
-            this.menu = new Menu(this.$el[0], 1);
+            this.menu = new Menu(this.$el[0], 1, 'analysis-menu');
             this.menu.on('menu-hidden', (event) => {
                 this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
             });
