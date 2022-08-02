@@ -11,6 +11,7 @@ const MeasureList = require('../vareditor/measurelist');
 const ColourPalette = require('./colourpalette');
 const Notify = require('../notification');
 const Backbone = require('backbone');
+const focusLoop = require('../../common/focusloop');
 
 const TransformEditor = function(dataset) {
 
@@ -58,8 +59,8 @@ const TransformEditor = function(dataset) {
         this.$top = $('<div class="jmv-transform-editor-top"></div>').appendTo(this.$el);
         this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" maxlength="63">').appendTo(this.$top);
         this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$top);
-        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" placeholder="${_('Description')}" contenteditable="true">`).appendTo(this.$descBox);
-        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="${_('Variable suffix')}" contenteditable="true">`).appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
 
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
@@ -116,13 +117,33 @@ const TransformEditor = function(dataset) {
         this.setInputEvents(this.$description, true, 'description');
         this.setInputEvents(this.$shortname, true, 'suffix');
 
-        this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
+        this.$contents = $('<div class="contents" tabindex="0"></div>').appendTo(this.$el);
 
-        this.$insertBox = $('<div class="insert-box" tabindex="0"></div>').appendTo(this.$contents);
+        let focusToken = focusLoop.addFocusLoop(this.$contents[0], {level: 2, exitSelector: this.$contents[0], keyToEnter: true });
+        focusToken.on('focusleave', () => {
+            this._focusLeaving = true;
+        });
+
+        this.$contents.on('focusin', (event) => {
+            if (this._focusLeaving) {
+                this._focusLeaving = false;
+                tarp.hide('recode-formula');
+            }
+            else if (this.$contents[0].contains(event.relatedTarget))
+                this._focusFormulaControls();
+
+        });
+
+        this.$contents[0].addEventListener('focusout', (event) => {
+            if ( !this._addingLevel && ! this.$contents[0].contains(event.relatedTarget))
+                tarp.hide('recode-formula');
+        } );
+
+        this.$insertBox = $('<button class="insert-box"></button>').appendTo(this.$contents);
         this.$insert = $('<div class="insert"></div>').appendTo(this.$insertBox);
         $(`<div>${_('Add recode condition')}</div>`).appendTo(this.$insertBox);
 
-        this.$insertBox.on('keydown', (event) => {
+        /*this.$insertBox.on('keydown', (event) => {
             if ( event.keyCode === 9 ) { //tab
                 if (event.shiftKey === false && this._nextFocus) {
                     this._nextFocus.focus();
@@ -146,7 +167,7 @@ const TransformEditor = function(dataset) {
                 event.preventDefault();
                 event.stopPropagation();
             }
-        });
+        });*/
 
         this._createRecodeConditionUI = function() {
             this._focusFormulaControls();
@@ -631,7 +652,7 @@ const TransformEditor = function(dataset) {
         else
             $parent.append($formulaBox);
 
-        let $showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
+        let $showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
 
@@ -695,7 +716,7 @@ const TransformEditor = function(dataset) {
         if (elements.$formulas === undefined)
             elements.$formulas = [ ];
 
-        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
+        let $formula = $('<div class="formula" tabindex="0" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {
@@ -812,7 +833,7 @@ const TransformEditor = function(dataset) {
                 event.stopPropagation();
             }
 
-            if ( event.keyCode === 9) { //tab
+            /*if ( event.keyCode === 9) { //tab
                 let $formulas = this.$options.find('.formula');
                 if ((event.shiftKey === false && $formulas[$formulas.length - 2] === $formula[0]) ||
                     (event.shiftKey === true && $formulas[$formulas.length - 1] === $formula[0])) {
@@ -829,7 +850,7 @@ const TransformEditor = function(dataset) {
                     event.preventDefault();
                     event.stopPropagation();
                 }
-            }
+            }*/
         });
 
         let $formulaMessageBox = $('<div class="formula-message-box  item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 2;"></div>').appendTo($formulaGrid);

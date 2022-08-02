@@ -915,6 +915,8 @@ class FocusLoop extends EventEmitter {
     }
 
     async _handleKeyPress(event) {
+        this._mouseClicked = false;
+
         if (this.focusMode === 'default')
             return;
 

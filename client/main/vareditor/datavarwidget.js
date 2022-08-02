@@ -84,6 +84,8 @@ const DataVarWidget = Backbone.View.extend({
                 this._addingLevel = true;
                 let response = await new Promise((resolve, reject) => {
                     dialogs.prompt(_('Enter level value'), '', (result) => {
+                        let widget = document.body.querySelector('.dialog-widget.prompt');
+                        focusLoop.leaveFocusLoop(widget, false);
                         if (result === undefined)
                             reject('');
                         else {
@@ -136,6 +138,9 @@ const DataVarWidget = Backbone.View.extend({
                             }
                         }
                     });
+                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
+                    focusLoop.enterFocusLoop(widget, { withMouse: false });
                 });
 
                 let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };

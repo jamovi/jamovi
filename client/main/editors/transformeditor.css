@@ -17,6 +17,10 @@
     overflow: auto;
 }
 
+.jmv-transform-editor .contents:focus {
+    outline: auto;
+}
+
 .jmv-transform-editor > .contents > .content-list {
     display: flex;
     flex-direction: row;
@@ -281,7 +285,7 @@
 
 .jmv-transform-editor-options > .formula-box .show-editor {
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
-    width: 23px;
+    width: 28px;
     align-self: stretch;
     margin-right: 4px;
     border: 1px solid #dadada;
