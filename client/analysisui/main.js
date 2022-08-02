@@ -230,12 +230,12 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
     focusToken.on('focusleave', closeOptions);
     focusLoop.on('focus', (event) => {
         if (focusLoop.inAccessibilityMode()) {
-            focusLoop.enterFocusLoop(document.body, false);
+            focusLoop.enterFocusLoop(document.body, { withMouse: false });
         }
     });
     focusLoop.setFocusMode(focusMode);
     if (focusLoop.inAccessibilityMode())
-        focusLoop.enterFocusLoop(document.body, false);
+        focusLoop.enterFocusLoop(document.body, { withMouse: false });
 
     let $title = $('.silky-options-title');
     if (def.error) {
