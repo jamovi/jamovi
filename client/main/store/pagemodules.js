@@ -20,6 +20,9 @@ const PageModules = Backbone.View.extend({
         this.settings = this.model.settings;
 
         this.$el.addClass('jmv-store-page-installed');
+
+        this.marker = new Markjs(this.$el[0]);
+
         this.$message    = $('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>').appendTo(this.$el);
 
         let $searchBox = $('<div class="store-page-searchbox"><div class="search-icon"></div></div>').appendTo(this.$el);
@@ -95,12 +98,14 @@ const PageModules = Backbone.View.extend({
             done: () => {
                 if (searchValue != '') {
                     this.$el.find('.jmv-store-module').addClass('hide-module');
-                    this.marker.mark(searchValue, {
+                    let regex = new RegExp(`\\b${searchValue}`, 'gi');
+                    this.marker.markRegExp(regex, {
                         each: (element) => {
                             let parent = element.closest('.jmv-store-module');
                             if (parent)
                                 parent.classList.remove('hide-module');
-                        }
+                        },
+                        exclude: ['.jmv-store-module-button']
                     });
                 }
                 else
@@ -140,8 +145,8 @@ const PageModules = Backbone.View.extend({
                     </div>
                     <div class="jmv-store-module-rhs">
                         <h2 class="mark-search">${ label }<span class="version">${ version }</span></h2>
-                        <div class="authors mark-search"></div>
-                        <div class="description mark-search"></div>`;
+                        <div class="authors"></div>
+                        <div class="description"></div>`;
 
             if (this.settings.getSetting('mode', 'normal') !== 'cloud') {
                 for (let op of module.ops) {
@@ -203,7 +208,6 @@ const PageModules = Backbone.View.extend({
             $module.on('click', event => this._moduleClicked(event));
         }
 
-        this.marker = new Markjs(this.$el[0].querySelectorAll('.mark-search'));
         this.markHTML();
 
         this.$uninstall = this.$content.find('.jmv-store-module-button[data-op="remove"]');
