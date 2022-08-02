@@ -6,7 +6,7 @@ const $ = require('jquery');
 
 class Menu extends EventEmitter {
 
-    constructor(owner, level) {
+    constructor(owner, level, className) {
         super();
 
         this.connected = false;
@@ -24,6 +24,8 @@ class Menu extends EventEmitter {
         }
 
         this.$el = $(`<div id="${menuId}" class="jmv-menu jmv-ribbon-group-body-vertical jmv-menu-hidden" tabindex="-1" role="menu"></div>`);
+        if (className)
+            this.$el.addClass(className);
 
         this.$el.on('focusout', (event) => {
             if ( ! this.$el[0].contains(event.relatedTarget))

@@ -34,6 +34,10 @@
     margin-top: 0px ;
 }
 
+.jmv-menu.analysis-menu {
+    padding-top: 6px ;
+}
+
 .jmv-group-items {
     overflow: auto;
     max-height: 500px;

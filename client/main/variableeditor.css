@@ -150,7 +150,7 @@
 }
 
 .jmv-variable-editor-widget:not(.inactive) {
-    transition: left .3s, opacity .3s ;
+    transition: left .3s, opacity .3s, visibility .3s ;
 }
 
 .jmv-variable-editor-widget .desc-box {
