@@ -39,13 +39,16 @@
 }
 
 .jmv-group-items {
-    overflow: auto;
     max-height: 500px;
     padding-top: 6px;
 }
 
 .jmv-analyses-button {
     padding: 6px 0;
+}
+
+.jmv-analyses-button:focus {
+  z-index: 100;
 }
 
 .jmv-analysis-button:focus {

@@ -188,7 +188,7 @@ const FSEntryBrowserView = SilkyView.extend({
         'keydown .search' : '_searchKeyDown'
     },
     _listFocus: function(event) {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : ((this.$items && this.$items.length > 0) ? 0 : -1);
         if (selectedIndex >= 0 && selectedIndex < this.$items.length){
             this.clearSelection();
             this._selectedIndices = [selectedIndex];
