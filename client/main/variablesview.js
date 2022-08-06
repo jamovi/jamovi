@@ -369,7 +369,8 @@ const VariablesView = SilkyView.extend({
         return this.rows[index];
     },
     _getRowById(id) {
-        for (let row of this.rows) {
+        for (let rowIndex in this.rows) {
+            let row = this.rows[rowIndex];
             if (row.column.id === id)
                 return row;
         }

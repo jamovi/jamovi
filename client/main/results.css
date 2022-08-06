@@ -13,6 +13,7 @@
     overflow: scroll ;
     transition: all .2s ;
     background-color: white ;
+    padding: 2px 0px 0 2px;
 }
 
 .jmv-welcome-panel {
@@ -70,7 +71,6 @@
 
 .jmv-results-container {
     position: relative ;
-    overflow: hidden ;
 }
 
 .jmv-results-container:not([data-analysis-name='empty']) {

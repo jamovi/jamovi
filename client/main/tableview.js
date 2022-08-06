@@ -14,6 +14,7 @@ const SilkyView = require('./view');
 const Notify = require('./notification');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
+const focusLoop = require('../common/focusloop');
 
 const { s6e } = require('../common/utils');
 
@@ -1103,16 +1104,18 @@ const TableView = SilkyView.extend({
 
         this._updateCell(this._focusCell, value, populate, null, false, false, false);
 
-        this._focusCell.focus({preventScroll: true});
+        if (focusLoop.focusMode === 'default') {
+            this._focusCell.focus({preventScroll: true});
 
-        if (select) {
-            setTimeout(() => {
-                let selection = window.getSelection();
-                let range = document.createRange();
-                range.selectNodeContents(this._focusCell);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }, 0);
+            if (select) {
+                setTimeout(() => {
+                    let selection = window.getSelection();
+                    let range = document.createRange();
+                    range.selectNodeContents(this._focusCell);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }, 0);
+            }
         }
     },
     _setSelectedRange(range, oldSel, ignoreTabStart) {

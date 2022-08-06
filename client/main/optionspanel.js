@@ -260,7 +260,7 @@ let OptionsPanel = SilkyView.extend({
             this._currentResources.$frame.css("height", '');
             this._currentResources.$frame.removeClass('silky-hidden-options-control');
             if (focusLoop.inAccessibilityMode())
-                focusLoop.transferFocus(this._currentResources.$frame[0].contentWindow);
+                focusLoop.transferFocus(this._currentResources.$frame[0]);
         }
     },
 

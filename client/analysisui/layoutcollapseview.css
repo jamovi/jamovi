@@ -1,6 +1,3 @@
-.jmv-collapse-view {
-    overflow: hidden;
-}
 
 .jmv-collapse-view:not(.view-colapsed) {
     overflow: visible;
