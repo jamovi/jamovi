@@ -394,8 +394,12 @@ $(document).ready(async() => {
         key: 'O',
         maintainAccessibility: true,
         action: (event) => {
-            if (optionspanel._currentResources)
-                optionspanel._currentResources.$frame.focus();
+            if (optionspanel._currentResources) {
+                optionspanel._currentResources.$frame[0].focus();
+                setTimeout(function() { // needed for firefox cross iframe focus
+                  optionspanel._currentResources.$frame[0].contentWindow.focus();
+                }, 100);
+            }
         },
         position: { x: '15px', y: '15px' }
         }

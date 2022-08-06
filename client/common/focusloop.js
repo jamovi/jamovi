@@ -215,7 +215,8 @@ class FocusLoop extends EventEmitter {
         };
         value.containsShortcutKeys = element.querySelectorAll('[shortcut-key]') || value.shortcutKey;
         if (element.tagName === 'INPUT') {
-            if (element.getAttribute('type') === 'text') {
+            let elementType = element.getAttribute('type');
+            if ( elementType === null || elementType === '' || elementType === 'text') {
                 value.isFocusController = false;
                 value.requires = { ArrowLeft: true, ArrowRight: true, ArrowUp: false, ArrowDown: false, Escape: false, Tab: false };
                 value.usesKeyboard = true;
@@ -253,6 +254,13 @@ class FocusLoop extends EventEmitter {
     transferFocus(otherWindow) {
         this.isBluring = true;
         otherWindow.focus();
+        if (otherWindow !== this._mainWindow) {
+            if (otherWindow.contentWindow) {
+                setTimeout(() => { // needed for firefox cross iframe focus
+                    otherWindow.contentWindow.focus();
+                }, 100);
+            }
+        }
     }
 
     containsFocusableMenuLevel(elementPath) {
