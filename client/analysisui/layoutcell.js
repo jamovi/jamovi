@@ -157,8 +157,14 @@ const LayoutCell = function(parent, properties) {
 
     this.collapse = function(immediately) {
 
-        if (this._expandingTimer)
+        if (this._expandingTimer) {
             clearTimeout(this._expandingTimer);
+            this._expandingTimer = null;
+        }
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
 
         let element = this.$el[0];
         if (immediately)
@@ -169,12 +175,12 @@ const LayoutCell = function(parent, properties) {
             let elementTransition = element.style.transition;
             element.style.transition = '';
 
-            requestAnimationFrame(function() {
+            this.animationFrame = requestAnimationFrame(() => {
                 element.style.height = sectionHeight + 'px';
                 element.style.transition = elementTransition;
-
-                requestAnimationFrame(function() {
+                this.animationFrame = requestAnimationFrame(() => {
                     element.style.height = 0 + 'px';
+                    this.animationFrame = null;
                 });
             });
         }
@@ -183,6 +189,15 @@ const LayoutCell = function(parent, properties) {
     };
 
     this.expand = function(immediately) {
+
+        if (this._expandingTimer) {
+            clearTimeout(this._expandingTimer);
+            this._expandingTimer = null;
+        }
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
 
         let element = this.$el[0];
         if (immediately)
@@ -193,6 +208,7 @@ const LayoutCell = function(parent, properties) {
 
             this._expandingTimer = setTimeout(() => {
                 element.style.height = null;
+                this._expandingTimer = null;
             }, 200);
         }
 
