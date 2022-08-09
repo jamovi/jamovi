@@ -60,7 +60,7 @@ class SplitValues:
             self._cache = { }
 
             if self._split_by.has_levels:
-                levels = self._split_by.get_levels(row_count)
+                levels = self._split_by.get_levels(row_count, filt)
             else:
                 levels = set(self._split_by.fvalues(row_count, filt))
 
@@ -203,7 +203,7 @@ class Str(ast.Str, Node):
     def has_levels(self):
         return True
 
-    def get_levels(self, row_count):
+    def get_levels(self, row_count, filt):
         return [ (0, self.s) ]
 
     @property
@@ -557,7 +557,7 @@ class Call(ast.Call, Node):
     def has_levels(self):
         return True
 
-    def get_levels(self, row_count):
+    def get_levels(self, row_count, filt):
 
         func_meta = self._function.meta
         arg_level_indices = func_meta.arg_level_indices
@@ -588,10 +588,10 @@ class Call(ast.Call, Node):
                 arg = self.args[arg_i]
                 if not arg.has_levels:
                     continue
-                for level in arg.get_levels(row_count):
+                for level in arg.get_levels(row_count, filt):
                     level_use[level[1]] = 0
 
-        for value in self.fvalues(row_count, False):
+        for value in self.fvalues(row_count, filt):
             if is_missing(value):
                 continue
             value = convert(value, str)
@@ -824,7 +824,7 @@ class Compare(ast.Compare, Node):
     def has_levels(self):
         return True
 
-    def get_levels(self, row_count):
+    def get_levels(self, row_count, filt):
         return ((1, 'true'), (0, 'false'))
 
     @property
@@ -856,8 +856,8 @@ class keyword(ast.keyword, Node):
     def is_atomic_node(self):
         return self.value.is_atomic_node()
 
-    def get_levels(self, row_count):
-        return self.value.get_levels(row_count)
+    def get_levels(self, row_count, filt):
+        return self.value.get_levels(row_count, filt)
 
     @property
     def data_type(self):
@@ -899,5 +899,5 @@ class Tuple(ast.Tuple, Node):
     def has_levels(self):
         return True
 
-    def get_levels(self, row_count):
+    def get_levels(self, row_count, filt):
         return ((self.elts[0].n, self.elts[1].s),)

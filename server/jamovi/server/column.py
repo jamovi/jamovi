@@ -427,7 +427,7 @@ class Column:
             return self._child.has_level(index_or_name)
         return False
 
-    def get_levels(self, row_count):
+    def get_levels(self, row_count, filt=False):
         return self.levels
 
     @property
@@ -581,7 +581,7 @@ class Column:
         self._child.clear_levels()
 
         if self._node is not None and self._node.has_levels:
-            for level in self._node.get_levels(self.row_count):
+            for level in self._node.get_levels(self.row_count, self.uses_column_formula):
                 self._child.append_level(level[0], level[1])
 
         if self.data_type is DataType.DECIMAL:
