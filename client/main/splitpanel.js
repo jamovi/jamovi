@@ -5,7 +5,6 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const SilkyView = require('./view');
 const SplitPanelSection = require('./splitpanelsection');
-const tarp = require('./utils/tarp');
 
 const SplitPanel = SilkyView.extend({
     className: "splitpanel",
@@ -27,9 +26,6 @@ const SplitPanel = SilkyView.extend({
         this._allowDocking = { left: false, right: false, both: false };
 
         this._sections = { _list: [] };
-
-        $(document).mouseup(this, this._mouseUpGeneral);
-        $(document).mousemove(this, this._mouseMoveGeneral);
 
         this._transition = Promise.resolve();
 
@@ -198,30 +194,62 @@ const SplitPanel = SilkyView.extend({
                 currentSection.$panel.before(splitter);
 
                 let data = { left: currentSection.getNext("left"), right: currentSection, self: this};
-                splitter.on("mousedown", null, data, this.onMouseDown);
+
+                splitter.on("pointerdown", (event) => {
+                    if (this._resizing === true)
+                        return;
+
+                    let button = event.button;
+
+                    splitter[0].setPointerCapture(event.pointerId);
+
+                    this._resizing = true;
+                    this._startPosX = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
+                    this._startPosY = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
+
+                    this._allResults = false;
+                    this._allData = false;
+
+                    this.allowDocking('both');
+
+                    splitter.one("pointerup pointercancel", async (event) => {
+                        if (this._resizing === false)
+                            return;
+
+                        splitter[0].releasePointerCapture(event.pointerId);
+
+                        this._saveWidths();
+
+                        this._resizing = false;
+                        this.suspendDocking('both');
+
+                        await this.checkDockConditions(true);
+
+                        this.normalise();
+                    });
+                });
+
+                splitter.on("pointermove", async (event) => {
+                    if (this._resizing === false)
+                        return;
+
+                    this._resultsWidth = null;
+
+                    let xpos = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
+                    let ypos = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
+
+                    let diffX = xpos - this._startPosX;
+                    let diffY = ypos - this._startPosY;
+
+                    this._startPosX = xpos;
+                    this._startPosY = ypos;
+
+                    await this.modifyLayout(data, diffX);
+
+                    this._splittersMoved = true;
+                });
             }
-
         });
-    },
-
-    onMouseDown(event) {
-        let data = event.data;
-        let self = data.self;
-
-        if (self._resizing === true || event.data === null)
-            return;
-
-        tarp.show('splitPanel');
-
-        self._resizing = true;
-        self._sizingData = data;
-        self._startPosX = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
-        self._startPosY = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
-
-        self._allResults = false;
-        self._allData = false;
-
-        self.allowDocking('both');
     },
 
     allowDocking(type) {
@@ -238,25 +266,6 @@ const SplitPanel = SilkyView.extend({
         this._allowDocking[type] = false;
         if ( ! silent)
             this.normalise();
-    },
-
-    async _mouseUpGeneral(event) {
-
-        let self = event.data;
-        if (self === null || self._resizing === false)
-            return;
-
-        self._sizingData = null;
-        tarp.hide('splitPanel');
-
-        self._saveWidths();
-
-        self._resizing = false;
-        self.suspendDocking('both');
-
-        await self.checkDockConditions(true);
-
-        self.normalise();
     },
 
     _saveWidths() {
@@ -318,30 +327,6 @@ const SplitPanel = SilkyView.extend({
             if (i != 0)
                 columnTemplates[i*2 - 1] = 'min-content';
         }
-    },
-
-    async _mouseMoveGeneral(event) {
-
-        let self = event.data;
-        if (self === null || self._resizing === false)
-            return;
-
-        self._resultsWidth = null;
-
-        let data = self._sizingData;
-
-        let xpos = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
-        let ypos = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
-
-        let diffX = xpos - self._startPosX;
-        let diffY = ypos - self._startPosY;
-
-        self._startPosX = xpos;
-        self._startPosY = ypos;
-
-        await self.modifyLayout(data, diffX);
-
-        self._splittersMoved = true;
     },
 
     resetState() {
@@ -410,7 +395,6 @@ const SplitPanel = SilkyView.extend({
                         $dataPanel.css('width', '0px');
                         setTimeout(() => {  //Normalises the columnTemplate after transition
                             this.onTransitioning();  // this is here so that the resize event happens after transition to make it less jittery
-                            //this.allowDocking('left');
                             if (this.resetState())
                                this.normalise(true);
                             $dataPanel.css('width', '');
