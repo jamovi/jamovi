@@ -206,6 +206,9 @@ const RibbonView = Backbone.View.extend({
         let tabs = this.model.get('tabs');
         for (let i = 0; i < tabs.length; i++) {
             let tab = tabs[i];
+            tab.on('notification', note => {
+                this.trigger('notification', note);
+            });
             let isSelected = tab.name === currentTabName;
             let classes = 'jmv-ribbon-tab focus-loop-ignore ribbon-tabs-list-item ribbon-tabs-auto-select';
             if (isSelected) {
@@ -243,9 +246,6 @@ const RibbonView = Backbone.View.extend({
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
 
         this._refresh();
-
-        //this.store = new Store({ el : this.$store, model : this.model });
-        //this.store.on('notification', note => this.trigger('notification', note));
     },
     notify(options) {
         return this.notifs.notify(options);

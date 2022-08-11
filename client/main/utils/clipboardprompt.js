@@ -34,8 +34,10 @@ class ClipboardPrompt extends HTMLElement {
     _css() {
         return `
             .text {
-                height: 0 ;
+                height: 1px ;
+                background-color: transparent;
                 overflow: hidden ;
+                outline: none !important;
             }
 
             .content {

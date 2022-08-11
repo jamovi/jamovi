@@ -196,9 +196,6 @@ const SplitPanel = SilkyView.extend({
                 let data = { left: currentSection.getNext("left"), right: currentSection, self: this};
 
                 splitter.on("pointerdown", (event) => {
-                    if (this._resizing === true)
-                        return;
-
                     let button = event.button;
 
                     splitter[0].setPointerCapture(event.pointerId);
