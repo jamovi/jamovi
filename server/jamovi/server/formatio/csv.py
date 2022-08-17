@@ -17,7 +17,7 @@ log = logging.getLogger('jamovi')
 
 
 def get_readers():
-    return [ ( 'csv', read ), ( 'tsv', read ), ( 'txt', read ) ]
+    return [ ( 'csv', read ), ( 'tsv', read ), ( 'txt', read ), ( 'json', read ) ]
 
 
 def get_writers():
