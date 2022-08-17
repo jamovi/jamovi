@@ -24,6 +24,11 @@ const TableView = SilkyView.extend({
     initialize(options) {
         this._loaded = false;
 
+        this.updateTouchMode();
+        this._mouseUp = this._mouseUp.bind(this);
+        this._resizeMoveHandler = this._resizeMoveHandler.bind(this);
+        this._resizeUpHandler = this._resizeUpHandler.bind(this);
+
         $(window).on('resize', event => this._resizeHandler(event));
         this.$el.on('resized', event => this._resizeHandler(event));
 
@@ -66,10 +71,24 @@ const TableView = SilkyView.extend({
                 <div class="jmv-table-body">
                     <div class="jmv-column-row-header" style="left: 0 ;" aria-hidden="true");></div>
                     <div class="jmv-sub-selections"></div>
-                    <div class="jmv-table-cell-selected"></div>
+                    <div class="jmv-table-cell-selected">
+                        <div class="selection-sizer top-left-sizer"></div>
+                        <div class="selection-sizer bottom-right-sizer"></div>
+                    </div>
                     <div class="jmv-table-row-highlight-wrapper"><div class="jmv-table-row-highlight"></div></div>
                 </div>
             </div>`);
+
+        this.$sizers = this.$el.find('.selection-sizer');
+        this.$sizers.on('pointerdown', (event) => {
+            if (event.target.classList.contains('bottom-right-sizer'))
+                this._clickCoords = { rowNo: this.selection.top, colNo: this.selection.left };
+            else
+                this._clickCoords = { rowNo: this.selection.bottom, colNo: this.selection.right };
+
+            this._isDragging = true;
+            event.preventDefault();
+        });
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
@@ -89,7 +108,9 @@ const TableView = SilkyView.extend({
         this.$rhColumn  = this.$body.find('.jmv-column-row-header');
 
         this.$topLeftCell = this.$el.find('.select-all');
-        this.$topLeftCell.on('click', event => this.selection.selectAll());
+        this.$topLeftCell.on('pointerdown', event => {
+            this.selection.selectAll()
+        });
 
         this.$selection = this.$body.find('.jmv-table-cell-selected');
         this.$selectionRowHighlight = this.$body.find('.jmv-table-row-highlight');
@@ -197,10 +218,19 @@ const TableView = SilkyView.extend({
             this._createSecondarySelections(prevSel, 0);
         });
 
-        this.$body.on('mousedown', event => this._mouseDown(event));
-        this.$header.on('mousedown', event => this._mouseDown(event));
-        $(document).on('mousemove', event => this._mouseMove(event));
-        $(document).on('mouseup', event => this._mouseUp(event));
+        this.$body.on('contextmenu', event => {
+            this._contextMenuPreparation();
+            return this._bodyMenu(event);
+        });
+        this.$header.on('contextmenu', event => {
+            this._contextMenuPreparation();
+            return this._headerMenu(event)
+        });
+
+        this.$body.on('pointerdown', event => this._mouseDown(event));
+        this.$header.on('pointerdown', event => this._mouseDown(event));
+        this.$body.on('pointermove', event => this._mouseMove(event));
+
         this.$el.on('dblclick', event => this._dblClickHandler(event));
 
         this._active = true;
@@ -354,13 +384,33 @@ const TableView = SilkyView.extend({
         this._updateEyeButton();
     },
     _addResizeListeners($element) {
-        let $resizers = $element.find('.jmv-column-header-resizer');
-        $resizers.on('mousedown', event => {
+        this.$resizers = $element.find('.jmv-column-header-resizer');
+        this.$resizers.on('pointerdown', event => {
+            event.target.setPointerCapture(event.pointerId);
+
+            event.target.addEventListener('pointerup', this._resizeUpHandler);
+            event.target.addEventListener('pointercancel', this._resizeUpHandler);
+            event.target.addEventListener('pointermove', this._resizeMoveHandler);
+
             let columnId = parseInt(event.target.parentNode.dataset.id);
             let column = this.model.getColumnById(columnId);
             this._resizingColumn = { $resizer: $(event.target), startPageX: event.pageX, column: column };
             event.stopPropagation();
         });
+
+    },
+    _resizeMoveHandler(event) {
+        this._columnResizeHandler(event, this._resizingColumn);
+    },
+    _resizeUpHandler(event) {
+        let column = this._resizingColumn.column;
+        if (column.name !== '')  // not virtual
+            this.model.changeColumn(column.id, { width: column.width });
+        this._resizingColumn = null;
+
+        event.target.removeEventListener('pointerup', this._resizeUpHandler);
+        event.target.removeEventListener('pointercancel', this._resizeUpHandler);
+        event.target.removeEventListener('pointermove', this._resizeMoveHandler);
     },
     _updateHeight() {
         let vRowCount = this.model.get('vRowCount');
@@ -597,7 +647,7 @@ const TableView = SilkyView.extend({
     },
     _getPos(x, y) {
 
-        let rowNo, colNo, vx, vy;
+        let rowNo, colNo, vx, vy, tiltX, tiltY;
         let rowHeader = false;
         let colHeader = false;
 
@@ -608,6 +658,7 @@ const TableView = SilkyView.extend({
             colHeader = true;
         vy = y - bodyBounds.top;
         rowNo = Math.floor(vy / this._rowHeight);
+        tiltY = (vy / this._rowHeight) - rowNo < 0.5 ? 'top' : 'bottom';
         rowNo = rowNo < 0 ? 0 : rowNo;
         rowNo = rowNo > this.model.attributes.vRowCount - 1 ? this.model.attributes.vRowCount - 1 : rowNo;
 
@@ -615,8 +666,10 @@ const TableView = SilkyView.extend({
             rowHeader = true;
         vx = x - bodyBounds.left;
         for (colNo = 0; colNo < this._lefts.length; colNo++) {
-            if (vx < this._lefts[colNo])
+            if (vx < this._lefts[colNo]) {
+                tiltX = (vx - this._lefts[colNo - 1] < this._lefts[colNo] - vx) ? 'left' : 'right';
                 break;
+            }
         }
         colNo -= 1;
         colNo = colNo < 0 ? 0 : colNo;
@@ -629,46 +682,102 @@ const TableView = SilkyView.extend({
         else if (colHeader)
             onHeader = 'columns';
 
-        return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader  };
+        return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader, tiltX: tiltX, tiltY: tiltY };
     },
-    _mouseDown(event) {
+    _contextMenuPreparation() {
         let pos = this._getPos(event.clientX, event.clientY);
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
 
-        if (event.button === 0) {
-            if (event.ctrlKey || event.metaKey) {
-                let range = {
-                    rowNo: rowNo,
-                    colNo: colNo,
-                    left: colNo,
-                    right: colNo,
-                    top: rowNo,
-                    bottom: rowNo,
-                    colFocus: colNo,
-                    rowFocus: rowNo };
-                if (this.selection.cellInSelection(rowNo, colNo))
-                    this.selection.addNewSelectionToList(range, 'negative');
-                else
-                    this.selection.addNewSelectionToList(range);
+        if (! this.selection.cellInSelection(rowNo, colNo))
+            this.selection.clearSelectionList();
+    },
+    _headerMenu(event) {
+        let colNo = this.selection === null ? 0 : this.selection.colNo;
+        let column = this.model.getColumn(colNo, true);
+        if (column.columnType === 'filter')
+            ContextMenu.showFilterMenu(event.clientX, event.clientY);
+        else
+            ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+        event.stopPropagation();
+        return false;
+    },
+    _bodyMenu(event) {
+        let colNo = this.selection === null ? 0 : this.selection.colNo;
+        let column = this.model.getColumn(colNo, true);
+        if (column.columnType === 'filter')
+            ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
+        else {
+            if (this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1)
+                ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
+            else
+                ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
+        }
+    },
+
+    updateTouchMode() {
+        let pointerType = window.matchMedia('(pointer: coarse)');
+        this.touchMode = pointerType.matches;
+        pointerType.addEventListener("change", this.updateTouchMode.bind(this), { once: true })
+    },
+
+    _mouseDown(event) {
+
+        this.$body[0].setPointerCapture(event.pointerId);
+
+        this.$body[0].addEventListener('pointerup', this._mouseUp);
+        this.$body[0].addEventListener('pointercancel', this._mouseUp);
+
+        if (this.touchMode) {
+            if ( ! this.dblTapTimer) {
+                this.tapCount = 1;
+                this.dblTapTimer = setTimeout(async () => {
+                    this.dblTapTimer = null;
+                }, 300);
             }
             else
-                this.selection.clearSelectionList();
+                this.tapCount += 1;
+
+            return Promise.resolve();
         }
-        else if (! this.selection.cellInSelection(rowNo, colNo))
-            this.selection.clearSelectionList();
-
-
-        this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
         if (event.button === 2) {
-            if (pos.onHeader === 'none' && this.selection.cellInSelection(rowNo, colNo))
-                return Promise.resolve();
-            else if (pos.onHeader === 'columns' && this.selection.isFullColumnSelectionClick(colNo))
-                return Promise.resolve();
-            else if (pos.onHeader === 'rows' && this.selection.isFullRowSelectionClick(rowNo))
-                return Promise.resolve();
+            let pos = this._getPos(event.clientX, event.clientY);
+            let rowNo = pos.rowNo;
+            let colNo = pos.colNo;
+            if ((pos.onHeader === 'none' && this.selection.cellInSelection(rowNo, colNo)) ||
+                 (pos.onHeader === 'columns' && this.selection.isFullColumnSelectionClick(colNo)) ||
+                 (pos.onHeader === 'rows' && this.selection.isFullRowSelectionClick(rowNo))) {
+                     return Promise.resolve();
+                 }
         }
+
+        return this._selectionMade(event);
+    },
+    async _selectionMade(event) {
+        let pos = this._getPos(event.clientX, event.clientY);
+        let rowNo = pos.rowNo;
+        let colNo = pos.colNo;
+
+        if (event.ctrlKey || event.metaKey) {
+            let range = {
+                rowNo: rowNo,
+                colNo: colNo,
+                left: colNo,
+                right: colNo,
+                top: rowNo,
+                bottom: rowNo,
+                colFocus: colNo,
+                rowFocus: rowNo };
+            if (this.selection.cellInSelection(rowNo, colNo))
+                this.selection.addNewSelectionToList(range, 'negative');
+            else
+                this.selection.addNewSelectionToList(range);
+        }
+        else
+            this.selection.clearSelectionList();
+
+        this._draggingType = pos.onHeader === 'none' ? 'both' : pos.onHeader;
 
         if (this._editing &&
             rowNo === this.selection.rowNo &&
@@ -677,16 +786,17 @@ const TableView = SilkyView.extend({
 
         return this._endEditing().then(() => {
 
+            let _isClicking = false;
             if (pos.onHeader === 'none') {
 
                 this._isDragging = true;
-                this._isClicking = true;
 
                 if (event.shiftKey) {
                     this._clickCoords = this.selection.clone();
                     this._mouseMove(event);
                 }
                 else {
+                    _isClicking = true;
                     this._clickCoords = pos;
                 }
 
@@ -696,7 +806,7 @@ const TableView = SilkyView.extend({
                 let left = colNo;
                 let right = colNo;
                 this._isDragging = true;
-                this._isClicking = true;
+                _isClicking = true;
                 this._clickCoords = pos;
 
                 if (event.shiftKey) {
@@ -722,7 +832,7 @@ const TableView = SilkyView.extend({
                 let top = rowNo;
                 let bot = rowNo;
                 this._isDragging = true;
-                this._isClicking = true;
+                _isClicking = true;
                 this._clickCoords = pos;
 
                 if (event.shiftKey) {
@@ -744,116 +854,53 @@ const TableView = SilkyView.extend({
                     rowFocus: pos.rowNo  };
             }
 
+            if (_isClicking) {
+                if (this._draggingType === 'both') {
+                    this.selection.setSelection(this._clickCoords.rowNo, this._clickCoords.colNo, false);
+                }
+                else if (this._draggingType === 'rows' || this._draggingType === 'columns') {
+                    this.selection.setSelections(this._clickRange, null);
+                }
+            }
+
+            this.selection.resolveSelectionList(this.$body);
+
         }, () => {});
     },
-    _mouseUp(event) {
+    async _mouseUp(event) {
+        this.$body[0].removeEventListener('pointerup', this._mouseUp);
+        this.$body[0].removeEventListener('pointercancel', this._mouseUp);
 
+        this.$body[0].releasePointerCapture(event.pointerId);
         if (this.controller.focusedOn !== this)
             return;
 
-        if (this._resizingColumn) {
-            let column = this._resizingColumn.column;
-            if (column.name !== '')  // not virtual
-                this.model.changeColumn(column.id, { width: column.width });
-            this._resizingColumn = null;
-            return;
+        this.$selection.removeClass('dragging');
+
+        if (this._applySelectionOnUp) {
+            this._applyDragToSelection(event);
+            this._applySelectionOnUp = false;
         }
 
-        if (this._isClicking && this._draggingType === 'both') {
-            this.selection.setSelection(this._clickCoords.rowNo, this._clickCoords.colNo, false);
-        }
-        else if (this._isClicking && (this._draggingType === 'rows' || this._draggingType === 'columns')) {
-            this.selection.setSelections(this._clickRange, null);
-        }
-
-        if (this.selection.resolveSelectionList(this.$body)) {
-            this._isClicking = false;
-            this._isDragging = false;
-            return;
-        }
-
-        if (event.button === 2) {
-            let element = document.elementFromPoint(event.clientX, event.clientY);
-            let $element = $(element);
-            let $header = $element.closest('.jmv-column-header');
-            if ($header.length > 0) {
-                if (this._isClicking === false) {
-                    this._mouseDown(event).then(() => {
-                        if (this._isClicking)
-                            this._mouseUp(event);
-                        else {
-                            let colNo = this.selection === null ? 0 : this.selection.colNo;
-                            let column = this.model.getColumn(colNo, true);
-                            if (column.columnType === 'filter')
-                                ContextMenu.showFilterMenu(event.clientX, event.clientY);
-                            else
-                                ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
-                        }
-                    }, 0);
-                    return;
-                }
-                else {
-                    let colNo = this.selection === null ? 0 : this.selection.colNo;
-                    let column = this.model.getColumn(colNo, true);
-                    if (column.columnType === 'filter')
-                        ContextMenu.showFilterMenu(event.clientX, event.clientY);
-                    else
-                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
-                }
-            }
-            else {
-                let $table = $element.closest('.jmv-tableview');
-                if ($table.length > 0) {
-                    if (this._isClicking === false) {
-                        this._mouseDown(event).then(() => {
-                            if (this._isClicking)
-                                this._mouseUp(event);
-                            else {
-                                let colNo = this.selection === null ? 0 : this.selection.colNo;
-                                let column = this.model.getColumn(colNo, true);
-                                if (column.columnType === 'filter')
-                                    ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                                else {
-                                    if (this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1)
-                                        ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
-                                    else
-                                        ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
-                                }
-                            }
-                        }, () => {});
-                        return;
-                    }
-                    let colNo = this.selection === null ? 0 : this.selection.colNo;
-                    let column = this.model.getColumn(colNo, true);
-                    if (column.columnType === 'filter')
-                        ContextMenu.showFilterRowMenu(event.clientX, event.clientY);
-                    else {
-                        if (this.selection.top === 0 && this.selection.bottom === this.model.visibleRowCount() - 1)
-                            ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.left !== this.selection.right);
-                        else
-                            ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
-                    }
+        if (event.type !== 'pointercancel') {
+            if (this.touchMode && ! this._isDragging) {
+                switch(this.tapCount) {
+                    case 1:
+                        await this._selectionMade(event);
+                        break;
+                    case 2:
+                        this._dblClickHandler(event);
+                        event.preventDefault();
+                        break;
                 }
             }
         }
+        else
+            this.tapCount = 0;
 
-        this._isClicking = false;
         this._isDragging = false;
     },
-    _mouseMove(event) {
-
-        if (this.controller.focusedOn !== this)
-            return;
-
-        if (this._resizingColumn) {
-            this._columnResizeHandler(event, this._resizingColumn);
-            return;
-        }
-
-        if ( ! this._isDragging)
-            return;
-        this._isClicking = false; // mouse moved, no longer a click
-
+    _applyDragToSelection(event) {
         let pos = this._getPos(event.clientX, event.clientY);
 
         let dragBoth = this._draggingType === 'both';
@@ -861,7 +908,7 @@ const TableView = SilkyView.extend({
         let dragCols = dragBoth || this._draggingType === 'columns';
 
 
-        if (this._lastPos) {
+        if ( ! this._applySelectionOnUp && this._lastPos) {
             if (dragRows && pos.rowNo === this._lastPos.rowNo && dragCols && pos.colNo === this._lastPos.colNo)
                 return;
             else if (dragRows && pos.rowNo === this._lastPos.rowNo && dragCols === false)
@@ -874,6 +921,17 @@ const TableView = SilkyView.extend({
 
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
+        if (this._applySelectionOnUp) {
+            if (this._clickCoords.colNo < colNo && pos.tiltX === 'left')
+                colNo -= 1;
+            else if (this._clickCoords.colNo > colNo && pos.tiltX === 'right')
+                colNo += 1;
+
+            if (this._clickCoords.rowNo < rowNo && pos.tiltY === 'top')
+                rowNo -= 1;
+            else if (this._clickCoords.rowNo > rowNo && pos.tiltY === 'bottom')
+                rowNo += 1;
+        }
 
         let left  = (!dragBoth && dragRows) ? this._clickRange.left : Math.min(colNo, this._clickCoords.colNo);
         let right = (!dragBoth && dragRows) ? this._clickRange.right : Math.max(colNo, this._clickCoords.colNo);
@@ -891,6 +949,63 @@ const TableView = SilkyView.extend({
             rowFocus: dragRows ? pos.rowNo : this.selection.rowFocus };
 
         this.selection.setSelections(range, this.selection.subSelections);
+    },
+
+    _mouseMove(event) {
+
+        if (this.controller.focusedOn !== this)
+            return;
+
+        if ( ! this._isDragging)
+            return;
+
+        this.$selection.addClass('dragging');
+
+        if (this.touchMode) {
+            this._applySelectionOnUp = true;
+            let rect = this.$selection[0].getBoundingClientRect();
+            let anchor = {
+                top: (this._clickCoords.rowNo ) * this._rowHeight,
+                left: this._lefts[this._clickCoords.colNo],
+                right: this._lefts[this._clickCoords.colNo] + this._widths[this._clickCoords.colNo],
+                bottom: (this._clickCoords.rowNo + 1) * this._rowHeight,
+                height: this._rowHeight,
+                width: this._widths[this._clickCoords.colNo]
+            };
+            let fixedX = 'right';
+            if (event.offsetX > anchor.left)
+                fixedX = 'left';
+
+            let fixedY = 'bottom';
+            if (event.offsetY > anchor.top)
+                fixedY = 'top';
+
+            let newRect = {
+                top:    fixedY == 'top' ? anchor.top : event.offsetY,
+                bottom: fixedY == 'bottom' ? anchor.bottom : event.offsetY,
+                left:   fixedX == 'left' ? anchor.left : event.offsetX,
+                right:  fixedX == 'right' ? anchor.right : event.offsetX,
+            }
+
+            if (fixedY == 'bottom' && newRect.bottom - newRect.top < anchor.height)
+                newRect.top = newRect.bottom - anchor.height;
+            if (fixedY == 'top' && newRect.bottom - newRect.top < anchor.height)
+                newRect.bottom = newRect.top + anchor.height;
+            if (fixedX == 'left' && newRect.right - newRect.left < anchor.width)
+                newRect.right = newRect.left + anchor.width;
+            if (fixedX == 'right' && newRect.right - newRect.left < anchor.width)
+                newRect.left = newRect.right - anchor.width;
+
+                if (this.selection.isFullRowSelection())
+                    this.$selection.css({ top: newRect.top, height: newRect.bottom - newRect.top });
+                else if (this.selection.isFullColumnSelection())
+                    this.$selection.css({ left: newRect.left, width: newRect.right - newRect.left });
+                else
+                    this.$selection.css({ top: newRect.top, height: newRect.bottom - newRect.top, left: newRect.left, width: newRect.right - newRect.left });
+
+        }
+        else
+            this._applyDragToSelection(event);
     },
     _dblClickHandler(event) {
         let element = document.elementFromPoint(event.clientX, event.clientY);
@@ -1118,10 +1233,57 @@ const TableView = SilkyView.extend({
             }
         }
     },
+    _updateSizers() {
+        let fullRow = this.$selection.hasClass('full-row');
+        let fullCol = this.$selection.hasClass('full-col');
+        this.$selection.removeClass('all-selected');
+        if (fullCol && fullRow) {
+            this.$selection.addClass('all-selected');
+            return;
+        }
+
+        let $sizerLeft = this.$selection.find('.top-left-sizer');
+        let $sizerRight= this.$selection.find('.bottom-right-sizer');
+        if (fullRow) {
+
+            let width = this.$container.width();
+            let leftScroll = this.$container.scrollLeft();
+            let selectionWidth = this.$selection.width() - leftScroll;
+            if (selectionWidth < width)
+                width = selectionWidth;
+            $sizerLeft.css('left', `${leftScroll + (width/2) - ($sizerLeft.width()/2)}px` );
+            $sizerRight.css('left', `${leftScroll + (width/2) - ($sizerRight.width()/2)}px` );
+        }
+        else {
+            $sizerLeft.css('left', '' );
+            $sizerRight.css('left', '' );
+        }
+
+        if (fullCol) {
+            let height = this.$container.height();
+            let topScroll = this.$container.scrollTop();
+            let selectionHeight = this.$selection.height() - topScroll;
+            if (selectionHeight < height)
+                height = selectionHeight;
+            $sizerLeft.css('top', `${topScroll + (height/2) - ($sizerLeft.height()/2)}px` );
+            $sizerRight.css('top', `${topScroll + (height/2) - ($sizerRight.height()/2)}px` );
+        }
+        else {
+            $sizerLeft.css('top', '' );
+            $sizerRight.css('top', '' );
+        }
+    },
     _setSelectedRange(range, oldSel, ignoreTabStart) {
 
         if (this._loaded === false)
             return Promise.resolve();
+
+        this.$selection.removeClass('full-row');
+        this.$selection.removeClass('full-col');
+        if (this.selection.isFullRowSelection())
+            this.$selection.addClass('full-row');
+        if (this.selection.isFullColumnSelection())
+            this.$selection.addClass('full-col');
 
         let rowNo = range.rowNo;
         let colNo = range.colNo;
@@ -1141,6 +1303,13 @@ const TableView = SilkyView.extend({
         let y = range.top * this._rowHeight;
         let width = this._lefts[range.right] + this._widths[range.right] - x;
         let height = this._rowHeight * nRows;
+
+        if (this.touchMode && (this.$selection[0].offsetWidth != width - 1 || this.$selection[0].offsetHeight != height)) {
+            this.$selection.addClass('resizing');
+            setTimeout(() => { //remove the class incase its not removed but the transitionend
+                this.$selection.removeClass('resizing');
+            }, 300);
+        }
 
         this.$selection.css({ left: x, top: y, width: width - 1, height: height });
 
@@ -1178,11 +1347,19 @@ const TableView = SilkyView.extend({
                 //When in multi-select mode there are no css transitions so the selection promise is immediately resolved.
                 if (this._selectionTransitionActive === false) {
                     this._selectionTransitioning = false;
+                    if (this.touchMode) {
+                        this.$selection.removeClass('resizing');
+                        this._updateSizers();
+                    }
                     resolve();
                 }
                 else {
                     this.$selection.one('transitionend', () => {
                         this._selectionTransitioning = false;
+                        if (this.touchMode) {
+                            this.$selection.removeClass('resizing');
+                            this._updateSizers();
+                        }
                         resolve();
                     });
                 }
@@ -1794,7 +1971,7 @@ const TableView = SilkyView.extend({
             x = newWidth - this._widths[colNo];
         }
 
-        column.width = newWidth;
+        column.width = Math.floor(newWidth);
 
         this.$el.addClass('resizing');
 
@@ -1817,15 +1994,14 @@ const TableView = SilkyView.extend({
             $column.css(css);
         }
 
-        if (colNo <= this.selection.left) {
-            let x = this._lefts[this.selection.colNo];
-            let y = this.selection.rowNo * this._rowHeight;
-            let width = this._widths[this.selection.colNo];
-            let height = this._rowHeight;
+        let range = this.selection;
+        let nRows = range.bottom - range.top + 1;
+        let left = this._lefts[range.left];
+        let top = range.top * this._rowHeight;
+        let width = this._lefts[range.right] + this._widths[range.right] - left;
+        let height = this._rowHeight * nRows;
 
-            this.$selection.css({ left: x, top: y, width: width, height: height });
-            this.$selectionColumnHighlight.css({ left: x, width: width, height: height });
-        }
+        this.$selection.css({ left: left, top: top, width: width - 1, height: height });
 
         this._bodyWidth += x;
         this.$body.css('width',  this._bodyWidth);
@@ -2051,6 +2227,17 @@ const TableView = SilkyView.extend({
         cell.dataset.missing = (missing ? '1' : '0');
     },
     _scrollHandler(event) {
+
+        if (this.scrollTimer)
+            clearTimeout(this.scrollTimer);
+        else
+            this.$selection.addClass('scrolling');
+
+        this.scrollTimer = setTimeout(() => {
+            this._updateSizers();
+            this.$selection.removeClass('scrolling');
+            this.scrollTimer = null;
+        }, 200);
 
         if (this.model.get('hasDataSet') === false)
             return;
