@@ -1060,12 +1060,13 @@ const BackstageModel = Backbone.Model.extend({
 
         let openExts = [
             { description: _('Data files'), extensions: [
-                'omv', 'omt', 'csv', 'tsv', 'txt', 'ods', 'xlsx', 'sav', 'zsav', 'por',
+                'omv', 'omt', 'csv', 'tsv', 'txt', 'json', 'ods', 'xlsx', 'sav', 'zsav', 'por',
                 'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
             ]},
             { description: _('jamovi files {ext}', { ext: '(.omv)' }), extensions: ['omv'] },
             { description: _('jamovi templates {ext}', { ext: '(.omt)' }), extensions: ['omt'] },
             { description: _('CSV (Comma delimited) {ext}', { ext: '(.csv, .txt)' }), extensions: ['csv', 'tsv', 'txt'] },
+            { description: _('JSON files {ext}', { ext: '(.json, .txt)' }), extensions: ['json', 'txt'] },
             { description: _('Open Document (LibreOffice) {ext}', { ext: '(.ods)' }), extensions: ['ods'] },
             { description: _('Excel {ext}', { ext: '(.xlsx)' }), extensions: ['xlsx'] },
             { description: _('SPSS files {ext}', { ext: '(.sav, .zsav, .por)' }), extensions: ['sav', 'zsav', 'por'] },
