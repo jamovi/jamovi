@@ -2,6 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
+const { s6e } = require('../utils');
 
 let _registeredNodeObjs = null;
 
@@ -79,7 +80,7 @@ function exportElem(el, format, options={ images:'absolute', margin: '24', docTy
         let html;
 
         if (typeof el === 'string') {
-            html = Promise.resolve(el);
+            html = Promise.resolve(s6e(el));
         }
         else {
             if (options.exclude === undefined)
@@ -273,6 +274,7 @@ function _htmlify(el, options) {
 
     if (el.nodeType === Node.TEXT_NODE) {
         let data = el.data.replace('\u2212', '-');
+        data = s6e(data);
         return Promise.resolve(data);
     }
 
@@ -334,7 +336,6 @@ function _htmlify(el, options) {
         case 'thead':
         case 'tbody':
         case 'tfoot':
-        case 'tr':
         case 'pre':
         case 'em':
         case 'a':
@@ -345,6 +346,9 @@ function _htmlify(el, options) {
         case 'sub':
         case 'sup':
             include = true;
+            break;
+        case 'tr':
+            include = (el.childElementCount > 0);
             break;
         case 'span':
             include = true;
