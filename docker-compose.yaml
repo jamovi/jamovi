@@ -14,6 +14,7 @@ services:
       context: .
       dockerfile: docker/jamovi-Dockerfile
     image: jamovi/jamovi
+    platform: linux/amd64
     ports:
       - '41337:41337'
       - '41338:41338'
