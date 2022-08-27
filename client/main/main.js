@@ -30,6 +30,9 @@ const Notify = require('./notification');
 const JError = require('./errors').JError;
 const focusLoop = require('../common/focusloop');
 
+require('./utils/headeralert');
+
+
 window._ = I18n._;
 window.n_ = I18n._n;
 
@@ -456,6 +459,14 @@ $(document).ready(async() => {
                 host.openUrl('https://www.jamovi.org/about-arbitrary-code.html');
         });
     });
+
+    if ( ! host.isElectron) {
+        let headerAlert = document.createElement('jmv-headeralert');
+        document.body.prepend(headerAlert);
+        host.on('window-open-failed', (event) => {
+            headerAlert.notify(event);
+        });
+    }
 
     instance.on('moduleInstalled', (event) => {
         optionspanel.reloadAnalyses(event.name);
