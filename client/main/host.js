@@ -67,7 +67,11 @@ else
     os = 'other';
 
 function openWindow(instanceId) {
-    window.open(`${ window.location.origin }/${ instanceId }/`, '_blank');
+    let url = `${ window.location.origin }/${ instanceId }/`;
+    let opened = window.open(url, '_blank');
+    // can fail under safari
+    if (opened === null)
+        _notify('window-open-failed', { url })
 }
 
 function closeWindow() {
