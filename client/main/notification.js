@@ -47,6 +47,7 @@ const NOTIFICATION_INDEFINITE = 2;
 
 const SESSION_SHUTDOWN_IDLE = 1;
 const SESSION_SHUTDOWN_MAINTENANCE = 2;
+const SESSION_SHUTDOWN_TIME_LIMIT = 3;
 
 Notify.createFromPB = function(pb) {
 
@@ -75,6 +76,10 @@ Notify.createFromPB = function(pb) {
             break;
         case SESSION_SHUTDOWN_MAINTENANCE:
             title = _('Scheduled maintenance');
+            message = sessionShutdownMessage(values['shutdownIn']);
+            break;
+        case SESSION_SHUTDOWN_TIME_LIMIT:
+            title = _('Approaching plan time limit');
             message = sessionShutdownMessage(values['shutdownIn']);
             break;
         default:
