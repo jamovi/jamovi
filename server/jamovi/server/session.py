@@ -23,6 +23,7 @@ from jamovi.core import Dirs
 from .settings import Settings
 from .utils import conf
 from .notifications import SessionShutdownIdleNotification
+from .notifications import SessionShutdownTimeLimitNotification
 
 from .backend import NoBackend
 from .backend import FirestoreBackend
@@ -235,6 +236,12 @@ class Session(dict):
     async def _run_loop(self):
 
         try:
+            TIME_LIMIT = conf.get('time_limit', '')
+            TIME_LIMIT = int(TIME_LIMIT)
+        except Exception:
+            TIME_LIMIT = None
+
+        try:
             TIMEOUT_NC = conf.get('timeout_no_connection', '')
             TIMEOUT_NC = int(TIMEOUT_NC)
         except Exception:
@@ -286,14 +293,17 @@ class Session(dict):
             TIMEOUT_IDLE_NOTICE = conf.get('timeout_idle_notice', '')
             TIMEOUT_IDLE_NOTICE = float(TIMEOUT_IDLE_NOTICE)
         except Exception:
-            TIMEOUT_IDLE_NOTICE = 0
+            TIMEOUT_IDLE_NOTICE = 300
 
         now = monotonic()
+
+        session_start_time = now
         session_no_connection_since = now
         session_no_connection_unclean = False
         session_idle_since = now
         idle_warning_since = None
         last_idle_warning = None
+        last_time_limit_warning = None
 
         self._running = True
 
@@ -383,6 +393,20 @@ class Session(dict):
                         self._notify(notif)
                         idle_warning_since = None
                         last_idle_warning = None
+                
+                if TIME_LIMIT and now - session_start_time > TIME_LIMIT - TIMEOUT_IDLE_NOTICE:
+                    if now - session_start_time > TIME_LIMIT:
+                        self.stop()
+                    elif last_time_limit_warning is None:
+                        shutdown_in = TIME_LIMIT - (now - session_start_time)
+                        notif = SessionShutdownTimeLimitNotification(shutdown_in=shutdown_in)
+                        self._notify(notif)
+                        last_time_limit_warning = now
+                    elif now - last_time_limit_warning > 30:
+                        shutdown_in = TIME_LIMIT - (now - session_start_time)
+                        notif = SessionShutdownTimeLimitNotification(shutdown_in=shutdown_in)
+                        self._notify(notif)
+                        last_time_limit_warning += 30
         finally:
             if self._settings is not None:
                 try:

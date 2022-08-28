@@ -10,6 +10,7 @@ BOOL = ValueType.Value('BOOL')
 
 SESSION_SHUTDOWN_IDLE = 1
 SESSION_SHUTDOWN_MAINTENANCE = 2
+SESSION_SHUTDOWN_TIME_LIMIT = 3
 
 
 class Notification:
@@ -73,3 +74,8 @@ class SessionShutdownIdleNotification(SessionShutdownNotification):
 class SessionShutdownMaintenanceNotification(SessionShutdownNotification):
     def __init__(self, shutdown_in=None):
         super().__init__(SESSION_SHUTDOWN_MAINTENANCE, shutdown_in)
+
+
+class SessionShutdownTimeLimitNotification(SessionShutdownNotification):
+    def __init__(self, shutdown_in=None):
+        super().__init__(SESSION_SHUTDOWN_TIME_LIMIT, shutdown_in)
