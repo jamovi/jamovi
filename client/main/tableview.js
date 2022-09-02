@@ -109,7 +109,7 @@ const TableView = SilkyView.extend({
 
         this.$topLeftCell = this.$el.find('.select-all');
         this.$topLeftCell.on('pointerdown', event => {
-            this.selection.selectAll()
+            this.selection.selectAll();
         });
 
         this.$selection = this.$body.find('.jmv-table-cell-selected');
@@ -219,12 +219,14 @@ const TableView = SilkyView.extend({
         });
 
         this.$body.on('contextmenu', event => {
+            if (this._editing)
+                return true;
             this._contextMenuPreparation();
             return this._bodyMenu(event);
         });
         this.$header.on('contextmenu', event => {
             this._contextMenuPreparation();
-            return this._headerMenu(event)
+            return this._headerMenu(event);
         });
 
         this.$body.on('pointerdown', event => this._mouseDown(event));
@@ -685,6 +687,8 @@ const TableView = SilkyView.extend({
         return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader, tiltX: tiltX, tiltY: tiltY };
     },
     _contextMenuPreparation() {
+        this._contextMenuOpened = true;
+
         let pos = this._getPos(event.clientX, event.clientY);
         let rowNo = pos.rowNo;
         let colNo = pos.colNo;
@@ -713,12 +717,14 @@ const TableView = SilkyView.extend({
             else
                 ContextMenu.showDataRowMenu(event.clientX, event.clientY, this.selection.top !== this.selection.bottom);
         }
+
+        return false;
     },
 
     updateTouchMode() {
         let pointerType = window.matchMedia('(pointer: coarse)');
         this.touchMode = pointerType.matches;
-        pointerType.addEventListener("change", this.updateTouchMode.bind(this), { once: true })
+        pointerType.addEventListener("change", this.updateTouchMode.bind(this), { once: true });
     },
 
     _mouseDown(event) {
@@ -876,13 +882,12 @@ const TableView = SilkyView.extend({
             return;
 
         this.$selection.removeClass('dragging');
-
         if (this._applySelectionOnUp) {
             this._applyDragToSelection(event);
             this._applySelectionOnUp = false;
         }
 
-        if (event.type !== 'pointercancel') {
+        if (event.type !== 'pointercancel' && ! this._contextMenuOpened) {
             if (this.touchMode && ! this._isDragging) {
                 switch(this.tapCount) {
                     case 1:
@@ -897,6 +902,8 @@ const TableView = SilkyView.extend({
         }
         else
             this.tapCount = 0;
+
+        this._contextMenuOpened = false;
 
         this._isDragging = false;
     },
@@ -985,7 +992,7 @@ const TableView = SilkyView.extend({
                 bottom: fixedY == 'bottom' ? anchor.bottom : event.offsetY,
                 left:   fixedX == 'left' ? anchor.left : event.offsetX,
                 right:  fixedX == 'right' ? anchor.right : event.offsetX,
-            }
+            };
 
             if (fixedY == 'bottom' && newRect.bottom - newRect.top < anchor.height)
                 newRect.top = newRect.bottom - anchor.height;
@@ -1157,7 +1164,7 @@ const TableView = SilkyView.extend({
             return false;
 
         if ( ! this._focusCell) {
-            this._focusCell = this._createCell(0, 0, -1, -1);
+            this._focusCell = this._createCell(0, 0, -1, -1, true);
             this._focusCell.setAttribute('role', 'gridcell');
             this._focusCell.id = 'focusCell';
             this._focusCell.classList.add('temp-focus-cell');
@@ -1167,14 +1174,27 @@ const TableView = SilkyView.extend({
             this._focusCell.addEventListener('paste', pasteEventHandle);
             this._focusCell.addEventListener('input', inputEventHandle);
             this._focusCell.addEventListener('keypress', keypressEventHandle);
-            this._focusCell.setAttribute('contenteditable', true);
+            this._focusCell.addEventListener('beforeinput', (event) => {
+                if (this._delayedEditing && this._editing === false) {
+                    if (event.data.length > 1) {
+                        let content = { text: event.data, html: '' };
+                        this.controller.pasteClipboardToSelection(this, content);
+                    }
+                    else
+                        this._beginEditing();
+                }
+                this._delayedEditing = false;
+            });
+            //this._focusCell.setAttribute('contenteditable', true);
             this._focusCell.addEventListener('blur', async (event) => {
                 if (this._editing) {
-                    this._focusValue = this._focusCell.innerText;
+                    this._focusValue = this._focusCell.value;
                     await this._endEditing();
                 }
-                this._focusCell.classList.remove('editing');
-                this._focusCell.innerText = '';
+            });
+
+            this._focusCell.addEventListener('focus', (event) => {
+                this._focusCell.select();
             });
 
             /*this._focusGrid = document.createElement('div');
@@ -1186,6 +1206,7 @@ const TableView = SilkyView.extend({
             this._focusRow.append(this._focusCell);
 
             this.$body.append(this._focusRow);
+            focusLoop.setDefaultFocusControl(this._focusCell);
         }
 
         let sel = this.selection;
@@ -1220,9 +1241,11 @@ const TableView = SilkyView.extend({
         this._updateCell(this._focusCell, value, populate, null, false, false, false);
 
         if (focusLoop.focusMode === 'default') {
-            this._focusCell.focus({preventScroll: true});
+            if (document.activeElement !== this._focusCell)
+                this._focusCell.focus({preventScroll: true});
 
-            if (select) {
+
+            /*if (select) {
                 setTimeout(() => {
                     let selection = window.getSelection();
                     let range = document.createRange();
@@ -1230,7 +1253,7 @@ const TableView = SilkyView.extend({
                     selection.removeAllRanges();
                     selection.addRange(range);
                 }, 0);
-            }
+            }*/
         }
     },
     _updateSizers() {
@@ -1414,7 +1437,13 @@ const TableView = SilkyView.extend({
                 }
             }
 
-            this._focusCell.innerText = value;
+            this._focusCell.value = value;
+            this._focusCell.select();
+            /*let selection = window.getSelection();
+            let range = document.createRange();
+            range.selectNodeContents(this._focusCell);
+            selection.removeAllRanges();
+            selection.addRange(range);*/
         }
 
         this._modifyingCellContents = true;
@@ -1430,7 +1459,7 @@ const TableView = SilkyView.extend({
 
             let value = '';
             if (this._focusCell)
-                value = this._focusCell.innerText.trim();
+                value = this._focusCell.value.trim();
             else
                 value = this._focusValue.trim();
 
@@ -1481,8 +1510,10 @@ const TableView = SilkyView.extend({
             this._modifyingCellContents = false;
             keyboardJS.setContext('controller');
             this.$selection.removeClass('editing');
-            if (this._focusCell)
+            if (this._focusCell) {
                 this._focusCell.classList.remove('editing');
+                this._focusCell.value = '';
+            }
         };
 
         return Promise.resolve().then(() => {
@@ -1497,11 +1528,12 @@ const TableView = SilkyView.extend({
             });
 
             if (this._focusCell) {
-                let selection = window.getSelection();
+                this._focusCell.select();
+                /*let selection = window.getSelection();
                 let range = document.createRange();
                 range.selectNodeContents(this._focusCell);
                 selection.removeAllRanges();
-                selection.addRange(range);
+                selection.addRange(range);*/
             }
             throw 'cancelled';
         });
@@ -1588,6 +1620,12 @@ const TableView = SilkyView.extend({
         event.stopPropagation();
     },
     _notEditingKeyPress(event) {
+
+        //touch screens don't have keycodes
+        if (event.keyCode === 0 || event.keyCode === 229) {
+            this._delayedEditing = true;
+            return;
+        }
 
         if (event.ctrlKey || event.metaKey) {
             if (event.key.toLowerCase() === 'c') {
@@ -1676,110 +1714,110 @@ const TableView = SilkyView.extend({
                 }
                 event.preventDefault();
                 break;
-        case 'ArrowLeft':
-            if (event.metaKey || event.ctrlKey) {
-                if (event.shiftKey) {
-                    let newSelection = this.selection.clone();
-                    newSelection.left = 0;
-                    if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
-                        newSelection.colFocus = 0;
-                    this.selection.setSelections(newSelection);
+            case 'ArrowLeft':
+                if (event.metaKey || event.ctrlKey) {
+                    if (event.shiftKey) {
+                        let newSelection = this.selection.clone();
+                        newSelection.left = 0;
+                        if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
+                            newSelection.colFocus = 0;
+                        this.selection.setSelections(newSelection);
+                    }
+                    else
+                        this.selection.setSelection(this.selection.rowNo, 0);
                 }
                 else
-                    this.selection.setSelection(this.selection.rowNo, 0);
-            }
-            else
-                this.selection.moveCursor('left', event.shiftKey);
-            event.preventDefault();
-            break;
-        case 'Tab':
-            if (event.shiftKey)
-                this.selection.moveCursor('left', false, true);
-            else
-                this.selection.moveCursor('right', false, true);
-            event.preventDefault();
-            break;
-        case 'ArrowRight':
-            if (event.metaKey || event.ctrlKey) {
-                if (event.shiftKey) {
-                    let newSelection = this.selection.clone();
-                    newSelection.right = this.model.visibleRealColumnCount() - 1;
-                    if (newSelection.left !== 0)
-                        newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
-                    this.selection.setSelections(newSelection);
-                }
-                else
-                    this.selection.setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
-            }
-            else
-                this.selection.moveCursor('right', event.shiftKey);
-            event.preventDefault();
-            break;
-        case 'ArrowUp':
-            if (event.metaKey || event.ctrlKey) {
-                if (event.shiftKey) {
-                    let newSelection = this.selection.clone();
-                    newSelection.top = 0;
-                    if (newSelection.bottom !== this.model.visibleRowCount()-1)
-                        newSelection.rowFocus = 0;
-                    this.selection.setSelections(newSelection);
-                }
-                else
-                    this.selection.setSelection(0, this.selection.colNo);
-            }
-            else
-                this.selection.moveCursor('up', event.shiftKey);
-            event.preventDefault();
-            break;
-        case 'ArrowDown':
-            if (event.metaKey || event.ctrlKey) {
-                if (event.shiftKey) {
-                    let newSelection = this.selection.clone();
-                    newSelection.bottom = this.model.visibleRowCount()-1;
-                    if (newSelection.top !== 0)
-                        newSelection.rowFocus = this.model.visibleRowCount()-1;
-                    this.selection.setSelections(newSelection);
-                }
-                else
-                    this.selection.setSelection(this.model.visibleRowCount()-1, this.selection.colNo);
-            }
-            else
-                this.selection.moveCursor('down', event.shiftKey);
-            event.preventDefault();
-            break;
-        case 'Enter':
-            let editingIds = this.model.get('editingVar');
-            if (editingIds !== null) {
-                let column = this.model.getColumnById(editingIds[0]);
-                if (column.hidden && column.columnType === 'filter') {
-                    event.preventDefault();
-                    break;
-                }
-            }
-
-            if (this.model.get('varEdited') === false) {
-                this.selection.setSelection(this._tabStart.row, this._tabStart.col);
+                    this.selection.moveCursor('left', event.shiftKey);
+                event.preventDefault();
+                break;
+            case 'Tab':
                 if (event.shiftKey)
-                    this.selection.moveCursor('up');
+                    this.selection.moveCursor('left', false, true);
                 else
-                    this.selection.moveCursor('down');
-            }
-            event.preventDefault();
-            break;
-        case 'Delete':
-        case 'Backspace':
-            this.selection.deleteCellContents();
-            break;
-        case 'F2':
-            this._beginEditing();
-            break;
-        case ' ':
-            event.preventDefault();
-            break;
-        default:
-            if (event.key.length === 1 || event.key === 'Process')
-                this._beginEditing(event.key);
-            break;
+                    this.selection.moveCursor('right', false, true);
+                event.preventDefault();
+                break;
+            case 'ArrowRight':
+                if (event.metaKey || event.ctrlKey) {
+                    if (event.shiftKey) {
+                        let newSelection = this.selection.clone();
+                        newSelection.right = this.model.visibleRealColumnCount() - 1;
+                        if (newSelection.left !== 0)
+                            newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                        this.selection.setSelections(newSelection);
+                    }
+                    else
+                        this.selection.setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
+                }
+                else
+                    this.selection.moveCursor('right', event.shiftKey);
+                event.preventDefault();
+                break;
+            case 'ArrowUp':
+                if (event.metaKey || event.ctrlKey) {
+                    if (event.shiftKey) {
+                        let newSelection = this.selection.clone();
+                        newSelection.top = 0;
+                        if (newSelection.bottom !== this.model.visibleRowCount()-1)
+                            newSelection.rowFocus = 0;
+                        this.selection.setSelections(newSelection);
+                    }
+                    else
+                        this.selection.setSelection(0, this.selection.colNo);
+                }
+                else
+                    this.selection.moveCursor('up', event.shiftKey);
+                event.preventDefault();
+                break;
+            case 'ArrowDown':
+                if (event.metaKey || event.ctrlKey) {
+                    if (event.shiftKey) {
+                        let newSelection = this.selection.clone();
+                        newSelection.bottom = this.model.visibleRowCount()-1;
+                        if (newSelection.top !== 0)
+                            newSelection.rowFocus = this.model.visibleRowCount()-1;
+                        this.selection.setSelections(newSelection);
+                    }
+                    else
+                        this.selection.setSelection(this.model.visibleRowCount()-1, this.selection.colNo);
+                }
+                else
+                    this.selection.moveCursor('down', event.shiftKey);
+                event.preventDefault();
+                break;
+            case 'Enter':
+                let editingIds = this.model.get('editingVar');
+                if (editingIds !== null) {
+                    let column = this.model.getColumnById(editingIds[0]);
+                    if (column.hidden && column.columnType === 'filter') {
+                        event.preventDefault();
+                        break;
+                    }
+                }
+
+                if (this.model.get('varEdited') === false) {
+                    this.selection.setSelection(this._tabStart.row, this._tabStart.col);
+                    if (event.shiftKey)
+                        this.selection.moveCursor('up');
+                    else
+                        this.selection.moveCursor('down');
+                }
+                event.preventDefault();
+                break;
+            case 'Delete':
+            case 'Backspace':
+                this.selection.deleteCellContents();
+                break;
+            case 'F2':
+                this._beginEditing();
+                break;
+            case ' ':
+                event.preventDefault();
+                break;
+            default:
+                if (event.key.length === 1 || event.key === 'Process')
+                    this._beginEditing(event.key);
+                break;
         }
     },
     _rowsDeleted(event) { },
@@ -2002,6 +2040,7 @@ const TableView = SilkyView.extend({
         let height = this._rowHeight * nRows;
 
         this.$selection.css({ left: left, top: top, width: width - 1, height: height });
+        this.$selectionColumnHighlight.css({ left: left, width: width/*, height: height*/ });
 
         this._bodyWidth += x;
         this.$body.css('width',  this._bodyWidth);
@@ -2214,7 +2253,12 @@ const TableView = SilkyView.extend({
             type = 'number';
         }
 
-        if (type === 'bool')
+        if (cell.type === 'textarea') {
+            if ( ! populate)
+                content = '';
+            cell.value = content;
+        }
+        else if (type === 'bool')
             cell.innerHTML = content;
         else {
             if ( ! populate)
@@ -2353,9 +2397,9 @@ const TableView = SilkyView.extend({
                 <div class="sub-selection-bar"></div>
             </div>`;
     },
-    _createCell(top, height, rowNo, colNo) {
+    _createCell(top, height, rowNo, colNo, isInput) {
 
-        let cell = document.createElement('div');
+        let cell = document.createElement(isInput ? 'textarea' : 'div');
         //cell.setAttribute('tabindex', -1);
         /*if (rowNo !== -1) {
             this._focusCell.setAttribute('role', 'gridcell');

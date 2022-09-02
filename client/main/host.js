@@ -100,24 +100,6 @@ let clipboardPrompt;
 
 async function copyToClipboard(data) {
 
-    /*if (navigator.clipboard && navigator.clipboard.write) {
-
-        let transfer = new DataTransfer();
-
-        return Promise.resolve().then(() => {
-            if (data.html)
-                transfer.items.add('text/html', data.html);
-            if (data.text)
-                transfer.items.add('text/plain', data.text);
-            if (data.image)
-                return fetch(data.image)
-                    .then(res => res.blob())
-                    .then(blob => transfer.items.add(blob));
-        }).then(() => {
-            return navigator.clipboard.write(transfer);
-        });
-    }
-    else*/ {
         if ( ! clipboardPromptBox) {
             clipboardPromptBox = document.createElement('jmv-infobox');
             document.body.appendChild(clipboardPromptBox);
@@ -136,11 +118,35 @@ async function copyToClipboard(data) {
             clipboardPromptBox.hide();
             throw e;
         }
-    }
 }
 
 function pasteFromClipboard() {
-    // should do something?
+    let readFnc = navigator.clipboard.read;
+    if (navigator.clipboard.read) {
+        return navigator.clipboard.read().then(async (clipboardContents) => {
+            let content  = {text:'', html:''};
+            for (const item of clipboardContents) {
+
+                if (item.types.includes('text/html')) {
+                    const blob = await item.getType('text/html');
+                    content.html =  await blob.text();
+                }
+                if (item.types.includes('text/plain')) {
+                    const blob = await item.getType('text/plain');
+                    content.text =  await blob.text();
+                }
+
+            }
+            return content;
+        });
+    }
+    else if (navigator.clipboard.readText) {
+        return navigator.clipboard.readText().then(async (text) => {
+            return {text: text, html:''};
+        });
+    }
+    else
+        return null;
 }
 
 async function showOpenDialog(options) {

@@ -559,6 +559,8 @@ input.jmv-table-cell-selected.copying {
     border: none;
     z-index: -1;
     text-overflow: clip;
+    resize: none;
+    font: inherit;
 }
 
 .jmv-column-cell.temp-focus-cell.editing {
@@ -606,7 +608,6 @@ input.jmv-table-cell-selected.copying {
 
 .jmv-column-cell:first-child {
     border-width: 0 1px 0 0 ;
-    padding-top: 1px;
 }
 
 .jmv-column-cell:last-child {

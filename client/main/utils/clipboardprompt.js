@@ -93,23 +93,36 @@ class ClipboardPrompt extends HTMLElement {
     }
 
     copy(content) {
-        if ('html' in content) {
-            this._textarea.innerHTML = content.html;
+        if (navigator.clipboard.write) {
+            this.list = { };
+            if (content.text)
+                this.list["text/plain"] = new Blob([content.text], { type: "text/plain" });
+            if (content.html)
+                this.list["text/html"] = new Blob([content.html], { type: "text/html" });
+            if (content.image)
+                this.list["image/png"] = new Blob([content.image], { type: "image/png" });
         }
-        else if ('text' in content) {
-            let pre = document.createElement('pre');
-            pre.innerText = content.text;
-            this._textarea.innerHTML = '';
-            this._textarea.appendChild(pre);
-        }
-        else if ('image' in content) {
-            let img = document.createElement('img');
-            img.src = content.image;
-            this._textarea.innerHTML = '';
-            this._textarea.appendChild(img);
+        else {
+            if ('html' in content) {
+                this._textarea.innerHTML = content.html;
+            }
+            else if ('text' in content) {
+                //this._textarea.innerText = content.text;
+                let pre = document.createElement('pre');
+                pre.innerText = content.text;
+                this._textarea.innerHTML = '';
+                this._textarea.appendChild(pre);
+            }
+            else if ('image' in content) {
+                let img = document.createElement('img');
+                img.src = content.image;
+                this._textarea.innerHTML = '';
+                this._textarea.appendChild(img);
+            }
+            this._selectContent();
         }
 
-        this._selectContent();
+
         return new Promise((resolve, reject) => {
             this._resolve = resolve;
         });
@@ -134,8 +147,12 @@ class ClipboardPrompt extends HTMLElement {
     }
 
     _copyClicked() {
-        this._selectContent();
-        let success = document.execCommand('copy');
+        if (navigator.clipboard.write)
+            navigator.clipboard.write([new ClipboardItem(this.list)]);
+        else {
+            this._selectContent();
+            document.execCommand('copy');
+        }
         this._resolve();
     }
 
