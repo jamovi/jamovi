@@ -561,6 +561,15 @@ class Selection {
         return check;
     }
 
+    isFullColumnSelection() {
+        return this.top === 0 && this.bottom === this.model.visibleRowCount() - 1;
+    }
+
+    isFullRowSelection() {
+        let range = this._getRange(this);
+        return range.start === 0 && range.end === this.model.attributes.columnCount - 1;
+    }
+
     isFullRowSelectionClick(rowNo) {
         let check = false;
         if (rowNo >= this.top && rowNo <= this.bottom) {

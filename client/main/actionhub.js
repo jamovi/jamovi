@@ -10,6 +10,11 @@ const Action = Backbone.Model.extend({
         enabled: true,
     },
     do(source) {
+        if (this._direct) {
+            for (let call of this._direct) {
+                call(source);
+            }
+        }
         this.trigger('request', source);
     },
     isEnabled() {
@@ -18,6 +23,11 @@ const Action = Backbone.Model.extend({
     isDisabled() {
         return ! this.attributes.enabled;
     },
+    direct(call, context) {
+        if (this._direct === undefined)
+            this._direct = [];
+        this._direct.push(call.bind(context));
+    }
 });
 
 class ActionHub {

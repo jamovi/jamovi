@@ -15,6 +15,7 @@
         "ResizeObserver",
         "_",
         "s_",
-        "n_"
+        "n_",
+        "ClipboardItem"
     ]
 }
