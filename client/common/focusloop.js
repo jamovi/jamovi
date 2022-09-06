@@ -121,7 +121,7 @@ class FocusLoop extends EventEmitter {
             }
         });
 
-        window.addEventListener('mousedown', (event) => {
+        window.addEventListener('pointerdown', (event) => {
             this._mouseClicked = true;
             if (this.inAccessibilityMode()) {
                 setTimeout(() => {
@@ -153,6 +153,11 @@ class FocusLoop extends EventEmitter {
         window.addEventListener('focusout', (event) => {
             if (this._focusPassing || this.isBluring)
                 return;
+
+            //If default focus control looses focus for some reason it gives it back.
+            if (event.target === this.defaultFocusControl && event.relatedTarget === null  && this._inDefaultMode) {
+                event.target.focus();
+            }
 
             if (event.relatedTarget === null && this.focusMode !== 'shortcuts') {
                 this._bluringTimeout = setTimeout(() => {
@@ -194,6 +199,12 @@ class FocusLoop extends EventEmitter {
 
             this._mouseClicked = false;
         });
+    }
+
+    setDefaultFocusControl(defaultFocusControl) {
+        this.defaultFocusControl = defaultFocusControl;
+        if (this.defaultFocusControl && this._inDefaultMode)
+            this.defaultFocusControl.focus();
     }
 
     getNextAriaElementId(prefix) {
@@ -323,6 +334,9 @@ class FocusLoop extends EventEmitter {
             let prevMode = this.focusMode;
 
             this.focusMode = value;
+
+            if (this.defaultFocusControl && this.focusMode === 'default')
+                this.defaultFocusControl.focus();
 
             if ((this.focusMode === 'shortcuts' || prevMode === 'shortcuts') && this.focusMode !== prevMode)
                 this.updateShortcuts();

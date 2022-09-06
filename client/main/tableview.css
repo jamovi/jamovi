@@ -2,6 +2,68 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
+ @media (any-pointer: coarse) {
+
+     .jmv-column-header.highlighted .jmv-column-header-resizer {
+         visibility: visible;
+         pointer-events: all;
+         opacity: 1;
+     }
+
+     .jmv-column-header .jmv-column-header-resizer {
+         visibility: : hidden;
+         pointer-events: none;
+         opacity: 0;
+         touch-action: none;
+         transition: 0.2s all;
+         position: absolute;
+         top: 2px;
+         bottom: 3px;
+         right: 1px;
+         width: 25px;
+         height: unset;
+         cursor: col-resize;
+         z-index: 30;
+         border-right-style: double;
+         border-width: 4px;
+         border-color: #3e6da9;
+         background-color: #ff000000;
+     }
+
+     .jmv-table-cell-selected > .selection-sizer {
+         visibility: hidden;
+         opacity: 0;
+         width: 16px;
+         height: 16px;
+         border: 2px solid #5E8BC4;
+         border-radius: 10px;
+         background-color: white;
+         box-shadow: 0 0 0 1px #FFF;
+         touch-action: none;
+         position: absolute;
+     }
+
+     .jmv-table-cell-selected.dragging {
+         transition: none ;
+     }
+
+     .jmv-table-cell-selected:not(.editing):not(.dragging):not(.scrolling):not(.resizing):not(.all-selected) > .selection-sizer {
+         visibility: visible;
+         opacity: 1;
+     }
+
+     .jmv-table-cell-selected > .bottom-right-sizer {
+         right: -13px;
+         bottom: -13px;
+     }
+
+     .jmv-table-cell-selected > .top-left-sizer {
+         left: -13px;
+         top: -13px;
+     }
+ }
+
+
 .dialog-widget.background {
     background-color: rgba(0, 0, 0, .2) !important;
 }
@@ -14,6 +76,7 @@
     border-radius: 2px !important;
     box-shadow: none !important;
 }
+
 
 .dialog-widget .divider {
     border-top: none !important;
@@ -403,7 +466,7 @@ input.jmv-table-cell-selected.copying {
 
 .jmv-table-cell-selected:not(.editing) {
     cursor: default ;
-    pointer-events: none ;
+    /*pointer-events: none ;*/
 }
 
 .jmv-table-cell-selected[data-measuretype="continuous"],
@@ -496,6 +559,8 @@ input.jmv-table-cell-selected.copying {
     border: none;
     z-index: -1;
     text-overflow: clip;
+    resize: none;
+    font: inherit;
 }
 
 .jmv-column-cell.temp-focus-cell.editing {
@@ -543,7 +608,6 @@ input.jmv-table-cell-selected.copying {
 
 .jmv-column-cell:first-child {
     border-width: 0 1px 0 0 ;
-    padding-top: 1px;
 }
 
 .jmv-column-cell:last-child {

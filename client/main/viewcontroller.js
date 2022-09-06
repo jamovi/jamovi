@@ -56,7 +56,7 @@ class ViewController {
 
         ActionHub.get('cut').on('request', this.cutSelectionToClipboard, this);
         ActionHub.get('copy').on('request', this.copySelectionToClipboard, this);
-        ActionHub.get('paste').on('request', this.pasteClipboardToSelection, this);
+        ActionHub.get('paste').direct(this.pasteClipboardToSelection, this);
         ActionHub.get('undo').on('request', () => {
             this._undo();
         }, this);
@@ -349,6 +349,19 @@ class ViewController {
         if (content === undefined)
             content = host.pasteFromClipboard();
 
+        if (content === null) {
+            let notification = new Notify({
+                title: _('Paste is unavailable using the menus'),
+                message: _('Please use ctrl-v to paste into the spreadsheet.'),
+                duration: 4000,
+            });
+            this.trigger('notification', notification);
+            return;
+        }
+
+        if ( ! (content.html || content.text))
+            content = await content;
+
         let text = content.text;
         let html = content.html;
 
@@ -430,10 +443,12 @@ class ViewController {
             let cells = await this.model.requestCells(this.selection);
             let values = cells.data[0].values;
             values = values.map(col => col.map(cell => cell.value));
-            await host.copyToClipboard({
-                    text: csvifyCells(values),
-                    html: htmlifyCells(values),
-                });
+            let data = { };
+
+            data.text = csvifyCells(values);
+            data.html = htmlifyCells(values);
+
+            await host.copyToClipboard(data);
             this._notifyCopying();
         }
         catch(error) {
