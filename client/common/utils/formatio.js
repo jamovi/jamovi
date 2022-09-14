@@ -80,7 +80,7 @@ function exportElem(el, format, options={ images:'absolute', margin: '24', docTy
         let html;
 
         if (typeof el === 'string') {
-            html = Promise.resolve(s6e(el));
+            html = Promise.resolve(el);
         }
         else {
             if (options.exclude === undefined)
