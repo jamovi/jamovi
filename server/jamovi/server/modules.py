@@ -2,7 +2,6 @@
 import os
 import os.path
 import logging
-import yaml
 import shutil
 import json
 from zipfile import ZipFile
@@ -18,6 +17,9 @@ from .utils.stream import ProgressStream
 from .appinfo import determine_r_version
 from .appinfo import app_info
 from functools import lru_cache
+
+import yaml
+from yaml import CSafeLoader as Loader
 
 
 log = logging.getLogger('jamovi')
@@ -240,7 +242,7 @@ class Modules:
         try:
             message = None
             modules = [ ]
-            module_data = yaml.safe_load(path)
+            module_data = yaml.load(path, Loader=Loader)
             if 'jds' not in module_data:
                 raise Exception('No jds')
             jds = float(module_data['jds'])
@@ -300,7 +302,7 @@ class Modules:
             if remote_modules:
                 try:
                     temp_file = await Downloader.download(module_path)
-                    defns = yaml.safe_load_all(temp_file)
+                    defns = yaml.load_all(temp_file, Loader=Loader)
                     try:
                         for defn in defns:
                             module = Modules.parse(defn)
@@ -400,14 +402,16 @@ class Modules:
 
     def _read_module(self, path, is_sys=False):
         defn = None
-        try:
-            meta_path = os.path.join(path, 'jamovi-full.yaml')
-            with open(meta_path, encoding='utf-8') as stream:
-                defn = yaml.safe_load(stream)
-        except FileNotFoundError:
-            meta_path = os.path.join(path, 'jamovi.yaml')
-            with open(meta_path, encoding='utf-8') as stream:
-                defn = yaml.safe_load(stream)
+        for leaf in ('jamovi-full.yaml', 'jamovi.yaml'):
+            try:
+                meta_path = os.path.join(path, leaf)
+                with open(meta_path, encoding='utf-8') as stream:
+                    defn = yaml.load(stream, Loader=Loader)
+            except FileNotFoundError:
+                continue
+            else:
+                break
+        
         return Modules.parse(defn, path, is_sys)
 
     def __iter__(self):
