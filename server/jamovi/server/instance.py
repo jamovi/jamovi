@@ -30,7 +30,6 @@ import platform
 import re
 import posixpath
 import math
-import yaml
 import logging
 import asyncio
 import functools
