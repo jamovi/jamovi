@@ -21,7 +21,7 @@ class InstanceModel:
     def __init__(self, instance):
         self._instance = instance
         self._dataset = None
-        self._analyses = Analyses(self)
+        self._analyses = Analyses(self, instance.session.modules)
         self._path = ''
         self._save_format = ''
         self._title = ''

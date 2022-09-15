@@ -2,6 +2,9 @@
 import json
 import os.path
 
+from asyncio import Future
+from asyncio import create_task
+
 from .utils.event import Event
 from .utils.event import EventHook
 
@@ -12,25 +15,37 @@ class Settings(dict):
         self._parent = parent
         self._name = name
         self._backend = backend
-
         self._children = { }
         self._defaults = { }
+        self._read_task = None
+
+        self.ready = Future()
         self.changed = EventHook()
 
-    async def read(self):
-        data = await self._backend.read_settings()
-        for group_name, group_values in data.items():
-            group = self.group(group_name)
-            group.update(group_values)
+    def read_nowait(self):
+        if self._backend.is_synchronous():
+            data = self._backend.read_settings_nowait()
+            for group_name, group_values in data.items():
+                group = self.group(group_name)
+                group.update(group_values)
+            self.ready.set_result(None)
+        else:
+            if self.ready.done() or self._read_task is not None:
+                return
+            self._read_task = create_task(self.read())
 
     async def flush(self):
         await self._backend.flush()
 
-    def read_nowait(self):
-        settings = self._backend.read_settings_nowait()
-        for group_name, group_values in settings.items():
-            group = self.group(group_name)
-            group.update(group_values)
+    async def read(self):
+        try:
+            settings = await self._backend.read_settings()
+            for group_name, group_values in settings.items():
+                group = self.group(group_name)
+                group.update(group_values)
+            self.ready.set_result(None)
+        except BaseException as e:
+            self.ready.set_exception(e)
 
     def apply(self, settings: dict):
         for group_name, group_values in settings.items():

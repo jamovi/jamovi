@@ -28,6 +28,7 @@ from .notifications import SessionShutdownTimeLimitNotification
 from .backend import NoBackend
 from .backend import FirestoreBackend
 from .backend import FileSystemBackend
+from .modules import Modules
 
 from logging import getLogger
 
@@ -62,6 +63,7 @@ class Session(dict):
         self._session_listeners = [ ]
         self._running = False
         self._ended = Event()
+        self._modules = Modules()
 
         self._settings = None
 
@@ -71,16 +73,19 @@ class Session(dict):
         if backend_mode == 'file':
             settings_path = os.path.join(Dirs.app_data_dir(), 'settings.json')
             self._backend = FileSystemBackend(settings_path=settings_path)
-
-            # with a file backend, we need to read the settings straight away
-            # to get the language
-            settings = self.get_settings_nowait()
-            language = settings.group('main').get('selectedLanguage', '')
         elif backend_mode == 'firestore':
             backend_url = conf.get('backend_url')
             self._backend = FirestoreBackend(firestore_url=backend_url)
         else:
             self._backend = NoBackend()
+
+        self._settings = Settings(backend=self._backend)
+        self._specify_defaults(self._settings)
+
+        self._settings.read_nowait()
+
+        if backend_mode == 'file':
+            language = self._settings.group('main').get('selectedLanguage', '')
 
         if language == '':
             language = conf.get('lang', '')
@@ -99,6 +104,7 @@ class Session(dict):
         self._runner.add_engine_listener(self._on_engine_event)
 
     async def start(self):
+        await self._modules.read()
         await self._runner.start()
         t = create_task(self._run_loop())
         t.add_done_callback(lambda t: t.result())
@@ -112,6 +118,10 @@ class Session(dict):
     @property
     def id(self):
         return self._id
+    
+    @property
+    def modules(self):
+        return self._modules
 
     def set_language(self, lang):
         if i18n.get_language() is None:  # if the language has already been set from conf then leave it alone
@@ -122,20 +132,6 @@ class Session(dict):
 
     def set_auth(self, auth_token):
         self._backend.set_auth(auth_token)
-
-    def get_settings_nowait(self):
-        if self._settings is None:
-            self._settings = Settings(backend=self._backend)
-            self._specify_defaults(self._settings)
-            self._settings.read_nowait()
-        return self._settings
-
-    async def get_settings(self):
-        if self._settings is None:
-            self._settings = Settings(backend=self._backend)
-            self._specify_defaults(self._settings)
-            await self._settings.read()
-        return self._settings
 
     def apply_settings(self, settings: dict):
         self._settings.apply({ 'main': settings })
@@ -151,12 +147,12 @@ class Session(dict):
         settings.group('main').specify_default('selectedLanguage', '')
 
     async def create(self, instance_id=None):
+        await self._settings.ready
         if instance_id is None:
             instance_id = str(uuid.uuid4())
         log.info('%s %s', 'creating instance:', instance_id)
         instance_path = os.path.join(self._session_path, instance_id)
-        settings = await self.get_settings()
-        instance = Instance(self, instance_path, instance_id, settings)
+        instance = Instance(self, instance_path, instance_id, self._settings)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
         self[instance_id] = instance
         self._notify_session_event(SessionEvent.Type.INSTANCE_STARTED, instance_id)
