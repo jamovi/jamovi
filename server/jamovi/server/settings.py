@@ -2,6 +2,9 @@
 import json
 import os.path
 
+from asyncio import Future
+from asyncio import create_task
+
 from .utils.event import Event
 from .utils.event import EventHook
 
@@ -12,25 +15,33 @@ class Settings(dict):
         self._parent = parent
         self._name = name
         self._backend = backend
-
         self._children = { }
         self._defaults = { }
+        self._read = False
         self.changed = EventHook()
 
-    async def read(self):
-        data = await self._backend.read_settings()
-        for group_name, group_values in data.items():
-            group = self.group(group_name)
-            group.update(group_values)
-
-    async def flush(self):
-        await self._backend.flush()
-
     def read_nowait(self):
+        if not self._backend.is_synchronous():
+            return
         settings = self._backend.read_settings_nowait()
         for group_name, group_values in settings.items():
             group = self.group(group_name)
             group.update(group_values)
+        self._read = True
+
+    async def flush(self):
+        await self._backend.flush()
+
+    async def read(self):
+        if self._read:
+            return
+        if self._backend.is_synchronous():
+            return
+        settings = await self._backend.read_settings()
+        for group_name, group_values in settings.items():
+            group = self.group(group_name)
+            group.update(group_values)
+        self._read = True
 
     def apply(self, settings: dict):
         for group_name, group_values in settings.items():

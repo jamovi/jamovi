@@ -90,10 +90,12 @@ class StaticFileHandler(TornadosStaticFileHandler):
             self.set_header(key, value)
 
 
-class ResourceHandler(RequestHandler):
+class SessHandler(RequestHandler):
 
     def initialize(self, session):
         self._session = session
+
+class ResourceHandler(SessHandler):
 
     def get(self, instance_id, resource_id):
         instance = self._session.get(instance_id)
@@ -121,7 +123,7 @@ class ResourceHandler(RequestHandler):
                 self.write(content)
 
 
-class ModuleAssetHandler(RequestHandler):
+class ModuleAssetHandler(SessHandler):
 
     def get(self, instance_id, analysis_id, path):
         instance = self._session.get(instance_id)
@@ -133,7 +135,7 @@ class ModuleAssetHandler(RequestHandler):
 
         analysis = instance.analyses.get(int(analysis_id))
         module_name = analysis.ns
-        module_path = Modules.instance().get(module_name).path
+        module_path = self._session.modules.get(module_name).path
         asset_path = os.path.join(module_path, 'R', analysis.ns, path)
 
         if asset_path.startswith(module_path) is False:
@@ -154,13 +156,13 @@ class ModuleAssetHandler(RequestHandler):
             self.write(content)
 
 
-class ModuleI18nDescriptor(RequestHandler):
+class ModuleI18nDescriptor(SessHandler):
 
     def get(self, module_name, code):
         content = None
         try:
             try:
-                module_path = Modules.instance().get(module_name).path
+                module_path = self._session.modules.get(module_name).path
                 defn_path = os.path.join(module_path, 'R', module_name, 'i18n', f'{ code }.json')
                 with open(defn_path, 'rb') as file:
                     content = file.read()
@@ -178,13 +180,13 @@ class ModuleI18nDescriptor(RequestHandler):
             self.write(content)
 
 
-class ModuleDescriptor(RequestHandler):
+class ModuleDescriptor(SessHandler):
 
     def get(self, module_name):
         content = None
         try:
             try:
-                module_path = Modules.instance().get(module_name).path
+                module_path = self._session.modules.get(module_name).path
                 defn_path = os.path.join(module_path, 'jamovi-full.yaml')
                 with open(defn_path, 'rb') as file:
                     content = file.read()
@@ -201,7 +203,7 @@ class ModuleDescriptor(RequestHandler):
             self.write(content)
 
 
-class AnalysisDescriptor(RequestHandler):
+class AnalysisDescriptor(SessHandler):
 
     def get(self, module_name, analysis_name, part):
         if part == '':
@@ -210,7 +212,7 @@ class AnalysisDescriptor(RequestHandler):
         content = None
         try:
             try:
-                module_path = Modules.instance().get(module_name).path
+                module_path = self._session.modules.get(module_name).path
 
                 if part == 'js':
                     analysis_path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
@@ -399,10 +401,7 @@ class PDFConverter(RequestHandler):
         return self._future
 
 
-class DatasetsList(RequestHandler):
-
-    def initialize(self, session):
-        self._session = session
+class DatasetsList(SessHandler):
 
     def get(self):
         datasets = [ ]
@@ -419,10 +418,7 @@ class DatasetsList(RequestHandler):
         self.write(json.dumps(datasets))
 
 
-class AuthTokenHandler(RequestHandler):
-
-    def initialize(self, session):
-        self._session = session
+class AuthTokenHandler(SessHandler):
 
     def post(self):
         authorization = self.request.headers.get('authorization')
@@ -484,10 +480,7 @@ class DownloadFileHandler(TornadosStaticFileHandler):
                 f'attachment; filename="{ filename }"')
 
 
-class EndHandler(RequestHandler):
-    def initialize(self, session):
-        self._session = session
-
+class EndHandler(SessHandler):
     def post(self):
         self._session.stop()
 
@@ -614,7 +607,7 @@ class Server:
 
             try:
                 await self._session.restart_engines()
-                await Modules.instance().install_from_file(path)
+                await self._session.modules.install_from_file(path)
                 self._session.notify_global_changes()
             except Exception:
                 import traceback
@@ -640,8 +633,6 @@ class Server:
 
     async def _run(self):
 
-        await Modules.instance().read()
-
         client_path = conf.get('client_path')
 
         i18n_path = conf.get('i18n_path', None)
@@ -656,6 +647,7 @@ class Server:
         self._session = Session(self._spool_path, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
         self._session.add_session_listener(self._session_event)
+
         await self._session.start()
 
         assets_path = os.path.join(client_path, 'assets')
@@ -739,10 +731,10 @@ class Server:
                 'path': coms_path,
                 'is_pkg_resource': True,
                 'mime_type': 'text/plain' }),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{{2}}(?:-[a-z]{{2}})?)', ModuleI18nDescriptor),
-            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor),
-            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor),
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor, { 'session': self._session }),
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{{2}}(?:-[a-z]{{2}})?)', ModuleI18nDescriptor, { 'session': self._session }),
+            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor, { 'session': self._session }),
+            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor, { 'session': self._session }),
             (fr'{ path_a }/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
             (fr'{ path_a }/api/datasets', DatasetsList, { 'session': self._session }),
             (fr'{ path_a }/i18n/', I18nManifestHandler, {
@@ -787,7 +779,7 @@ class Server:
             (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
                 'session': self._session }),
             (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
-                ModuleAssetHandler),
+                ModuleAssetHandler, { 'session': self._session }),
         ])
 
         sockets = tornado.netutil.bind_sockets(port_a, self._host)

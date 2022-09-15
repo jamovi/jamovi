@@ -93,7 +93,7 @@ class Instance:
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
 
-        Modules.instance().add_listener(self._module_event)
+        self._session.modules.add_listener(self._module_event)
 
         handler = Instance.LogHandler(self)
         handler.setLevel('DEBUG')
@@ -132,7 +132,7 @@ class Instance:
         elif path.startswith('{{Home}}'):
             nor_path = path.replace('{{Home}}', Dirs.home_dir())
         elif path.startswith('{{Examples}}'):
-            modules = Modules.instance()
+            modules = self._session.modules
             if path == '{{Examples}}':
                 module = modules['jmv']
                 nor_path = posixpath.join(module.path, 'data')
@@ -216,7 +216,7 @@ class Instance:
         self._virgin = False
 
     def close(self):
-        Modules.instance().remove_listener(self._module_event)
+        self._session.modules.remove_listener(self._module_event)
         if self._mm is not None:
             self._mm.close()
 
@@ -540,7 +540,7 @@ class Instance:
                     raise PermissionError()
 
                 if path == '{{Examples}}' or path == '{{Examples}}/':
-                    for module in Modules.instance():
+                    for module in self._session.modules:
                         if module.datasets:
                             if module.name == 'jmv':
                                 for dataset in module.datasets:
@@ -560,7 +560,7 @@ class Instance:
                                     entry.licenseUrl = module.datasets_license.url
                 else:
                     module_name = os.path.basename(path)
-                    modules = Modules.instance()
+                    modules = self._session.modules
                     try:
                         module = modules[module_name]
                         if module.datasets:
@@ -1541,7 +1541,7 @@ class Instance:
 
     async def _on_module(self, request):
 
-        modules = Modules.instance()
+        modules = self._session.modules
 
         try:
             if request.command == jcoms.ModuleRR.ModuleCommand.Value('INSTALL'):
@@ -1591,7 +1591,7 @@ class Instance:
                 self._coms.send_error(_('Unable to perform request'), str(e), self._instance_id, request)
 
     def _set_module_visibility(self, name, value):
-        modules = Modules.instance()
+        modules = self._session.modules
         if modules.set_visibility(name, value):
             module_settings = self._settings.group('modules')
             hidden_mods = module_settings.get('hidden', [ ])
@@ -1606,7 +1606,7 @@ class Instance:
         if self._perms.library.browseable is False:
             self._coms.send_error(_('Unable to access library'), _('The library is disabled'), self._instance_id, request)
         else:
-            modules = Modules.instance()
+            modules = self._session.modules
             stream = modules.read_library()
 
             try:
@@ -3142,7 +3142,7 @@ class Instance:
 
         module_settings = self._settings.group('modules')
         hidden_mods = module_settings.get('hidden', [ ])
-        modules = Modules.instance()
+        modules = self._session.modules
         missing_mods = [ ]
         for hidden_mod in hidden_mods:
             if modules.set_visibility(hidden_mod, False) is False:

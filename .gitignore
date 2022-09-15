@@ -8,19 +8,19 @@
 node_modules/
 npm-debug.log
 
-server/build/
-server/jamovi/core.cpp
-electron/default_app.asar
+/server/build/
+/server/jamovi/core.cpp
+/electron/default_app.asar
 
-Makefile
-engine/Makefile
+/Makefile
+/engine/Makefile
 
-**/__pycache__/
+__pycache__
 
-client/*.js
-client/*.css
-client/www
-client/assets/coms.proto
+/client/*.js
+/client/*.css
+/client/www
+/client/assets/coms.proto
 
 # protocol buffers
 *.pb.cc
@@ -28,6 +28,6 @@ client/assets/coms.proto
 *_pb2.py
 *_pb.js
 
-server/jamovi/hydra/
-modules/
-bin/
+/server/jamovi/hydra/
+/modules/
+/bin/

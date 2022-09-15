@@ -28,6 +28,9 @@ class Backend:
 
     def read_settings_nowait(self):
         raise NotImplementedError
+    
+    def is_synchronous(self):
+        return True
 
     def set_auth(self, auth):
         pass
