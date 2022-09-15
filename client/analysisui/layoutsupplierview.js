@@ -166,7 +166,7 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid.$el.append(this.$searchButton);
         this.$searchButton.hide();
 
-        let $search = $('<div class="supplier-search"><div class="outer-text"><input class="text" placeholder="Search"></input></div></div>');
+        let $search = $('<div class="supplier-search"><div class="outer-text"><input class="text" placeholder="${_('Search')}"></input></div></div>');
         this.$searchInput = $search.find('input');
 
         let searchCell = this.supplierGrid.addCell(0, 0, $search, { visible: false });
