@@ -401,15 +401,16 @@ class AnalysisIterator:
 
 
 class Analyses:
-    def __init__(self, dataset):
+    def __init__(self, dataset, modules):
         self._dataset = dataset
+        self._modules = modules
+        self._modules.add_listener(self._module_event)
+
         self._analyses = []
         self._options_changed_listeners = []
         self._results_changed_listeners = []
         self._output_received_listeners = []
         self._next_id = 1   # server side created analyses always have odd ids
-
-        Modules.instance().add_listener(self._module_event)
 
     def count(self):
         return len(self._analyses)
@@ -431,7 +432,7 @@ class Analyses:
             return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
 
         try:
-            module_meta = Modules.instance().get(ns)
+            module_meta = self._modules.get(ns)
             analysis_meta = module_meta.get(name)
 
             analysis_name = analysis_meta.name

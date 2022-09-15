@@ -8,21 +8,25 @@ from zipfile import ZipFile
 from asyncio import ensure_future as create_task
 from collections import namedtuple
 
-from ..core import Dirs
-from ..core import PlatformInfo
+from jamovi.core import Dirs
+from jamovi.core import PlatformInfo
 
-from .utils import conf
-from .downloader import Downloader
-from .utils.stream import ProgressStream
-from .appinfo import determine_r_version
-from .appinfo import app_info
+from jamovi.server.utils import conf
+from jamovi.server.downloader import Downloader
+from jamovi.server.utils.stream import ProgressStream
+from jamovi.server.appinfo import determine_r_version
+from jamovi.server.appinfo import app_info
 from functools import lru_cache
+
 
 import yaml
 from yaml import CSafeLoader as Loader
 
 
 log = logging.getLogger('jamovi')
+
+
+LibraryContent = namedtuple('Library', 'message modules')
 
 
 class DataSetMeta:
@@ -171,18 +175,11 @@ class AnalysisMeta:
 
 class Modules:
 
-    _instance = None
-
     LIBRARY_ROOT = 'https://library.jamovi.org/{}/R{}/'.format(app_info.os, app_info.r_version)
     LIBRARY_INDEX = 'index'
 
-    @classmethod
-    def instance(cls):
-        if cls._instance is None:
-            cls._instance = Modules()
-        return cls._instance
-
-    def __init__(self):
+    def __init__(self, settings):
+        self._settings = settings
         self._read = False
         self._modules = [ ]
         self._listeners = [ ]
@@ -213,7 +210,7 @@ class Modules:
 
     async def read(self):
         if self._read is False:
-            await self.reread()
+            await self._reread_installed()
             self._original = list(map(lambda x: x.name, self._modules))
 
     def read_library(self):
@@ -229,7 +226,7 @@ class Modules:
             try:
                 async for progress in in_stream:
                     out_stream.write(progress)
-                modules = self.parse_modules(in_stream.result())
+                modules = self._parse_index(in_stream.result())
                 out_stream.set_result(modules)
             except Exception as e:
                 in_stream.cancel()
@@ -238,7 +235,7 @@ class Modules:
         self._read_task = create_task(transform())
         return out_stream
 
-    def parse_modules(self, path):
+    def _parse_index(self, path):
         try:
             message = None
             modules = [ ]
@@ -250,81 +247,82 @@ class Modules:
                 raise ValueError('The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
             message = module_data.get('message')
             for defn in module_data['modules']:
-                module = Modules.parse(defn)
+                module = self._parse_module_defn(defn)
                 modules.append(module)
 
-            LibraryContent = namedtuple('Library', 'message modules')
             content = LibraryContent(message, modules)
             return content
         except Exception as e:
             log.exception(e)
             raise ValueError('Unable to parse module list. Please try again later.')
 
-    async def reread(self):
+    def _read_module(self, path, is_sys=False):
+        defn = None
+        for leaf in ('jamovi-full.yaml', 'jamovi.yaml'):
+            try:
+                meta_path = os.path.join(path, leaf)
+                with open(meta_path, encoding='utf-8') as stream:
+                    defn = yaml.load(stream, Loader=Loader)
+            except FileNotFoundError:
+                continue
+            else:
+                break
+        
+        return self._parse_module_defn(defn, path, is_sys)
+        
+
+    def _read_modules(self, pth, is_system):
+
+        modules = [ ]
+
+        for entry in os.scandir(pth):
+            if entry.name == 'base':
+                continue
+            if entry.is_dir() is False:
+                continue
+            try:
+                module = self._read_module(entry.path, is_system)
+                if not is_system:
+                    module.new = self._read and (module.name in self._original) is False
+
+                if module.name == 'jmv':
+                    modules.insert(0, module)
+                else:
+                    modules.append(module)
+            except Exception as e:
+                log.exception(e)
+        
+        return modules
+
+    async def _reread_installed(self):
 
         module_path = conf.get('modules_path')
         user_module_path = None
 
-        if module_path.startswith('http://') or module_path.startswith('https://'):
-            remote_modules = True
+        if os.name != 'nt':
+            module_paths = module_path.split(':')
         else:
-            if os.name != 'nt':
-                module_paths = module_path.split(':')
-            else:
-                module_paths = module_path.split(';')
+            module_paths = module_path.split(';')
 
-            remote_modules = False
-            user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
-            os.makedirs(user_module_path, exist_ok=True)
+        user_module_path = os.path.join(Dirs.app_data_dir(), 'modules')
+        os.makedirs(user_module_path, exist_ok=True)
 
 
-        self._modules = [ ]
-
-        def read_modules(pth, is_system):
-            for entry in os.scandir(pth):
-                if entry.name == 'base':
-                    continue
-                if entry.is_dir() is False:
-                    continue
-                try:
-                    module = self._read_module(entry.path, is_system)
-                    if not is_system:
-                        module.new = self._read and (module.name in self._original) is False
-
-                    if module.name == 'jmv':
-                        self._modules.insert(0, module)
-                    else:
-                        self._modules.append(module)
-                except Exception as e:
-                    log.exception(e)
+        modules = [ ]
 
         try:
-            if remote_modules:
+            for pth in module_paths:
                 try:
-                    temp_file = await Downloader.download(module_path)
-                    defns = yaml.load_all(temp_file, Loader=Loader)
-                    try:
-                        for defn in defns:
-                            module = Modules.parse(defn)
-                            if module.name == 'jmv':
-                                self._modules.insert(0, module)
-                            else:
-                                self._modules.append(module)
-                    except Exception as e:
-                        log.exception(e)
+                    modules_here = self._read_modules(pth, is_system=True)
+                    modules += modules_here
                 except Exception as e:
                     log.exception(e)
-            else:
-                for pth in module_paths:
-                    try:
-                        read_modules(pth, is_system=True)
-                    except Exception as e:
-                        log.exception(e)
 
-                try:
-                    read_modules(user_module_path, is_system=False)
-                except Exception as e:
-                    log.exception(e)
+            try:
+                modules_here = self._read_modules(user_module_path, is_system=False)
+                modules += modules_here
+            except Exception as e:
+                log.exception(e)
 
 
             # fill in addons
@@ -342,6 +340,8 @@ class Modules:
             self._read = True
         except Exception as e:
             log.exception(e)
+        
+        self._modules = modules
 
     def set_visibility(self, name, value):
         for module in self._modules:
@@ -353,7 +353,7 @@ class Modules:
     async def uninstall(self, name):
         module_dir = os.path.join(Dirs.app_data_dir(), 'modules', name)
         shutil.rmtree(module_dir)
-        await self.reread()
+        await self._reread_installed()
         self._notify_listeners({ 'type': 'modulesChanged' })
 
     async def install_from_file(self, path):
@@ -369,7 +369,7 @@ class Modules:
 
         meta = self._read_module(module_path)
 
-        await self.reread()
+        await self._reread_installed()
         self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
         self._notify_listeners({ 'type': 'modulesChanged' })
 
@@ -400,25 +400,10 @@ class Modules:
 
         return out_stream
 
-    def _read_module(self, path, is_sys=False):
-        defn = None
-        for leaf in ('jamovi-full.yaml', 'jamovi.yaml'):
-            try:
-                meta_path = os.path.join(path, leaf)
-                with open(meta_path, encoding='utf-8') as stream:
-                    defn = yaml.load(stream, Loader=Loader)
-            except FileNotFoundError:
-                continue
-            else:
-                break
-        
-        return Modules.parse(defn, path, is_sys)
-
     def __iter__(self):
         return self._modules.__iter__()
 
-    @staticmethod
-    def parse(defn, path='', is_sys=False):
+    def _parse_module_defn(self, defn, path='', is_sys=False):
         module = ModuleMeta()
         module.path = path
         module.is_sys = is_sys

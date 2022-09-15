@@ -112,6 +112,7 @@ setup(
         'jamovi.server.utils',
         'jamovi.server.compute',
         'jamovi.server.integrations',
+        'jamovi.server.modules',
     ] + hydra,
 
     ext_modules=cythonize(
