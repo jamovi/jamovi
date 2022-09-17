@@ -85,11 +85,21 @@ const PageModules = Backbone.View.extend({
         this._refresh();
     },
     _updateMessage() {
-        this.$message.find('.text').text(this.modules.attributes.message);
-        if (this.modules.attributes.message)
+        let message = this.modules.attributes.message;
+        if ( ! message) {
+            let addRemove = this.settings.getSetting('permissions_library_add_remove');
+            if (addRemove === false)
+                message = _('Installing modules is not available on your plan');
+        }
+
+        if (message) {
+            let $text = this.$message.find('.text');
+            $text.text(message);
             this.$message.addClass('show');
-        else
+        }
+        else {
             this.$message.removeClass('show');
+        }
     },
 
     markHTML() {
@@ -124,6 +134,9 @@ const PageModules = Backbone.View.extend({
 
         this._updateMessage();
 
+        let addRemove = this.settings.getSetting('permissions_library_add_remove', false);
+        let showHide = this.settings.getSetting('permissions_library_show_hide', false);
+
         for (let module of this.modules) {
 
             let translator = await module.getTranslator();
@@ -148,51 +161,59 @@ const PageModules = Backbone.View.extend({
                         <div class="authors"></div>
                         <div class="description"></div>`;
 
-            if (this.settings.getSetting('mode', 'normal') !== 'cloud') {
-                for (let op of module.ops) {
-                    let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
-                    let label = '';
-                    switch(op) {
-                        case 'remove':
-                            label = _('Remove');
-                        break;
-                        case 'install':
-                            label = _('Install');
-                        break;
-                        case 'installed':
-                            label = _('Installed');
-                        break;
-                        case 'unavailable':
-                            label = _('Unavailable');
-                        break;
-                        case 'update':
-                            label = _('Update');
-                        break;
-                        case 'old':
-                            label = _('Requires a newer version of jamovi');
-                        break;
-                        case 'incompatible':
-                            label = _('Installed version is incompatible');
-                        break;
-                        case 'show':
-                            label = _('Show');
-                        break;
-                        case 'hide':
-                            label = _('Hide');
-                        break;
-                    }
-
-                    html += `
-                        <button
-                            ${ disabled ? 'disabled' : '' }
-                            data-path="${ module.path }",
-                            data-name="${ module.name }"
-                            data-op="${ op }"
-                            class="jmv-store-module-button"
-                        >
-                            ${ label }
-                        </button>`;
+            for (let op of module.ops) {
+                let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
+                let label = '';
+                switch(op) {
+                    case 'remove':
+                        if ( ! addRemove)
+                            continue;
+                        label = _('Remove');
+                    break;
+                    case 'install':
+                        if ( ! addRemove)
+                            continue;
+                        label = _('Install');
+                    break;
+                    case 'installed':
+                        label = _('Installed');
+                    break;
+                    case 'unavailable':
+                        label = _('Unavailable');
+                    break;
+                    case 'update':
+                        if ( ! addRemove)
+                            continue;
+                        label = _('Update');
+                    break;
+                    case 'old':
+                        label = _('Requires a newer version of jamovi');
+                    break;
+                    case 'incompatible':
+                        label = _('Installed version is incompatible');
+                    break;
+                    case 'show':
+                        if ( ! showHide)
+                            continue;
+                        label = _('Show');
+                    break;
+                    case 'hide':
+                        if ( ! showHide)
+                            continue;
+                        label = _('Hide');
+                    break;
                 }
+
+                html += `
+                    <button
+                        ${ disabled ? 'disabled' : '' }
+                        data-path="${ module.path }",
+                        data-name="${ module.name }"
+                        data-op="${ op }"
+                        class="jmv-store-module-button"
+                    >
+                        ${ label }
+                    </button>`;
             }
 
             html += `

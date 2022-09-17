@@ -59,38 +59,41 @@ const Store = Backbone.View.extend({
 
         this.$highlight = $('<div class="jmv-store-tab-highlight"></div>').appendTo(this.$tabContainer);
 
-        let $pageContainer = $('<div class="jmv-store-page-container"></div>').appendTo(this.$el);
+        this.$pageContainer = $('<div class="jmv-store-page-container"></div>').appendTo(this.$el);
 
-        this.$pageInst  = $('<div class="jmv-store-page jmv-store-page-installed left"></div>').appendTo($pageContainer);
-        this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store"></div>').appendTo($pageContainer);
-        this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right"></div>').appendTo($pageContainer);
+        this.$pageInst  = $('<div class="jmv-store-page jmv-store-page-installed left"></div>').appendTo(this.$pageContainer);
+        this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store"></div>').appendTo(this.$pageContainer);
+        this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right"></div>').appendTo(this.$pageContainer);
 
         let settings = this.model.settings();
-        let mode = settings.getSetting('mode', 'normal');
 
-        settings.on('change:mode',
-            (event) => {
+        this.pageInst = new PageModules({ el: this.$pageInst, model: { settings: settings, modules: this.model.modules() } });
+        this.pageInst.on('notification', note => this.trigger('notification', note));
 
-                this.pageInst  = new PageModules({ el: this.$pageInst, model: { settings: settings, modules: this.model.modules() } });
-                this.pageInst.on('notification', note => this.trigger('notification', note));
+        settings.on('change:permissions_library_browseable', () => {
+            let browseable = settings.getSetting('permissions_library_browseable', true);
+            if (browseable) {
+                this.pageStore = new PageModules({ el: this.$pageStore, model: { settings: settings, modules: this.model.modules().available() } });
+                this.pageStore.on('notification', note => this.trigger('notification', note));
+            }
+            else {
+                this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not available to your session.')}</div>`));
+            }
+            this.$pages = this.$pageContainer.children();
+        });
 
-                let mode = settings.getSetting('mode', 'normal');
-                if (mode === 'cloud') {
-                    this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not avaliable on this plan.')}</div>`));
-                    this.$pageSideload.append($(`<div class="mode-msg">${_('Side loading modules is not avaliable on this plan.')}</div>`));
-                }
-                else {
-                    this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );
-                    this.pageSideload.on('notification', note => this.trigger('notification', note));
-                    this.pageSideload.on('close', () => this.hide());
-
-                    this.pageStore = new PageModules({ el: this.$pageStore, model: { settings: settings, modules: this.model.modules().available() } });
-                    this.pageStore.on('notification', note => this.trigger('notification', note));
-                }
-
-
-                this.$pages = $pageContainer.children();
-            });
+        settings.on('change:permissions_library_side_load', () => {
+            let sideLoad = settings.getSetting('permissions_library_side_load', false);
+            if (sideLoad) {
+                this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );
+                this.pageSideload.on('notification', note => this.trigger('notification', note));
+                this.pageSideload.on('close', () => this.hide());
+            }
+            else {
+                this.$pageSideload.append($(`<div class="mode-msg">${_('Side-loading modules is not available.')}</div>`));
+            }
+            this.$pages = this.$pageContainer.children();
+        });
 
         this._selectedIndex = null;
     },
