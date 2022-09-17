@@ -3163,6 +3163,22 @@ class Instance:
         conf_pb.name = 'mode'
         conf_pb.s = mode
 
+        conf_pb = response.config.add()
+        conf_pb.name = 'permissions_library_browseable'
+        conf_pb.b = self._perms.library.browseable
+
+        conf_pb = response.config.add()
+        conf_pb.name = 'permissions_library_add_remove'
+        conf_pb.b = self._perms.library.addRemove
+
+        conf_pb = response.config.add()
+        conf_pb.name = 'permissions_library_show_hide'
+        conf_pb.b = self._perms.library.showHide
+
+        conf_pb = response.config.add()
+        conf_pb.name = 'permissions_library_side_load'
+        conf_pb.b = self._perms.library.sideLoad
+
         self._coms.send(response, self._instance_id, request)
 
     def _module_to_pb(self, module, module_pb):
