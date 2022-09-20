@@ -2,7 +2,15 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
- @media (any-pointer: coarse) {
+ @media (pointer: coarse) {
+
+     .jmv-column-cell.temp-focus-cell {
+         visibility: hidden;
+     }
+
+     .jmv-column-cell.temp-focus-cell.editing {
+         visibility: visible;
+     }
 
      .jmv-column-header.highlighted .jmv-column-header-resizer {
          visibility: visible;
