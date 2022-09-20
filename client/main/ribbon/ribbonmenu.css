@@ -38,6 +38,10 @@
     padding-top: 6px ;
 }
 
+.jmv-menu.analysis-menu > .jmv-ribbon-menu-group > .jmv-group-items, .jmv-menu.analysis-menu .module-analysis-list {
+    overflow: auto ;
+}
+
 .jmv-group-items {
     max-height: 500px;
     padding-top: 6px;

@@ -1167,6 +1167,7 @@ const BackstageModel = Backbone.Model.extend({
         this._dialogExportListModel.suggestedPath = null;
         this._dialogExportListModel.fileExtensions = [ ];
         this._dialogExportListModel.on('dataSetExportRequested', this.dialogExport, this);
+        this._dialogExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._dialogExportListModel.on('browseRequested', this.dialogBrowse, this);
         this.addToWorkingDirData(this._dialogExportListModel);
 
