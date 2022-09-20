@@ -1173,7 +1173,7 @@ const TableView = SilkyView.extend({
             let keypressEventHandle = this._keypressHandler.bind(this);
             this._focusCell.addEventListener('paste', pasteEventHandle);
             this._focusCell.addEventListener('input', inputEventHandle);
-            this._focusCell.addEventListener('keypress', keypressEventHandle);
+            this._focusCell.addEventListener('keydown', keypressEventHandle);
             this._focusCell.addEventListener('beforeinput', (event) => {
                 if (this._delayedEditing && this._editing === false) {
                     if (event.data.length > 1) {
@@ -1185,7 +1185,6 @@ const TableView = SilkyView.extend({
                 }
                 this._delayedEditing = false;
             });
-            //this._focusCell.setAttribute('contenteditable', true);
             this._focusCell.addEventListener('blur', async (event) => {
                 if (this._editing) {
                     this._focusValue = this._focusCell.value;
@@ -1244,16 +1243,6 @@ const TableView = SilkyView.extend({
             if (document.activeElement !== this._focusCell)
                 this._focusCell.focus({preventScroll: true});
 
-
-            /*if (select) {
-                setTimeout(() => {
-                    let selection = window.getSelection();
-                    let range = document.createRange();
-                    range.selectNodeContents(this._focusCell);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                }, 0);
-            }*/
         }
     },
     _updateSizers() {

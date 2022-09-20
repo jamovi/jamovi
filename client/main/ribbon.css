@@ -23,17 +23,19 @@
     display: flex;
     flex-direction: row;
     flex-grow: 1;
+    align-self: stretch;
 }
 
 .jmv-ribbon-tab {
     position: relative;
-    background-color : inherit ;
-    color: white ;
-    padding: 8px 20px ;
+    background-color: inherit;
+    color: white;
+    padding: 10px 20px;
     -webkit-app-region: no-drag;
     font: inherit;
-    line-height: 100%;
+    line-height: 9px;
     border: none;
+    align-self: stretch;
 }
 
 .jmv-ribbon-appmenu {
