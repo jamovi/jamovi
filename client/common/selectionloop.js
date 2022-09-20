@@ -40,7 +40,10 @@ class SelectionLoop extends EventEmitter {
     }
 
 
-    highlightElement(element, highlightOnly) {
+    highlightElement(element, highlightOnly, applyFocus) {
+        if (applyFocus === undefined)
+            applyFocus = true;
+
         if (element && element.classList.contains(this.itemClass) && element != this.focusElement) {
             $(this.container).find(`.${this.highlightedItemClass}`).removeClass(this.highlightedItemClass);
 
@@ -52,7 +55,8 @@ class SelectionLoop extends EventEmitter {
         }
 
         if (this.focusElement && document.activeElement !== this.focusElement) {
-            this.focusElement.focus();
+            if (applyFocus)
+                this.focusElement.focus();
             this.emit('highlight-index-changed', { target: this.focusElement });
         }
 
@@ -62,7 +66,7 @@ class SelectionLoop extends EventEmitter {
 
 
     selectElement(element, withMouse, silent) {
-        this.highlightElement(element, true);
+        this.highlightElement(element, true, ! silent);
         this._selectElement(element, withMouse, silent);
     }
 
