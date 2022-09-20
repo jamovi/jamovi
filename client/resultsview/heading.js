@@ -22,12 +22,19 @@ const Heading = function(address, text) {
         this._host = this.$el[0];
         this.$heading = this.$el.find('h1');
 
-        this._focusEvent = (event) => this._focused(event);
-        this._blurEvent = (event) => this._blurred(event);
-        this._inputEvent = (event) => this._textChanged(event);
+
+        this._focusEvent = this._focused.bind(this);
+        this._blurEvent = this._blurred.bind(this);
+        this._inputEvent = this._textChanged.bind(this);
+        this._pointerDownEvent = this._pointerDown.bind(this);
 
         this.attach();
     };
+
+    this._pointerDown = function(event) {
+        if (event.button !== 0)
+            event.preventDefault();
+    }
 
     this.compareAddress = function(address, isTop) {
         let path = address.join('/') + ':' + isTop;
@@ -53,6 +60,7 @@ const Heading = function(address, text) {
             return;
 
         this.$heading[0].addEventListener('focus', this._focusEvent);
+        this.$heading[0].addEventListener('pointerdown', this._pointerDownEvent);
         this.$heading[0].addEventListener('blur', this._blurEvent);
         this.$heading[0].addEventListener('input', this._inputEvent);
         this.$heading[0].addEventListener('keydown', this._keyDownEvent);
@@ -65,6 +73,7 @@ const Heading = function(address, text) {
             return;
 
         this.$heading[0].removeEventListener('focus', this._focusEvent);
+        this.$heading[0].removeEventListener('pointerdown', this._pointerDownEvent);
         this.$heading[0].removeEventListener('blur', this._blurEvent);
         this.$heading[0].removeEventListener('input', this._inputEvent);
         this.$heading[0].removeEventListener('keydown', this._keyDownEvent);

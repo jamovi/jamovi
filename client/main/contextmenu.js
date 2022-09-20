@@ -14,7 +14,10 @@ const ContextMenu = function() { // this is constructed at the bottom
     this.menu = new Menu();
     this.$el = this.menu.$el;
 
-    this.menu.on('menu-hidden', (event) => { this.trigger('menu-hidden', event); } );
+    this.menu.on('menu-hidden', (event) => {
+        if (! this._showing)
+            this.trigger('menu-hidden', event);
+    } );
     this.$el.on('menuActioned', () => { this.menu.hide(true); });
 
     this.show = function(menuItems, x, y, anchor, openPath, owner) {
@@ -22,6 +25,8 @@ const ContextMenu = function() { // this is constructed at the bottom
         openPath = openPath === undefined ? [] : openPath;
 
         this.buttons = [ ];
+
+        this._showing = true;
 
         this.$el.empty();
         this.$separator = $('<div class="jmv-click-menu-separator"></div>').appendTo(this.$el);
@@ -57,6 +62,7 @@ const ContextMenu = function() { // this is constructed at the bottom
             }
 
             this.menu.show(x, y, { withMouse: true });
+            this._showing = false;
 
             if (openButton !== null)
                 openButton.getEntryButton(openPath, true, true);

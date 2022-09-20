@@ -156,8 +156,9 @@ const Annotation = function(address, suffix) {
         this._backgroundClicked = this._backgroundClicked.bind(this);
         this._event = this._event.bind(this);
 
-        this._focusEvent = (event) => this._focused(event);
-        this._blurEvent =(event) => this.editor.setSelection(null);
+        this._focusEvent = this._focused.bind(this);
+        this._pointerDownEvent = this._pointerDown.bind(this);
+        this._blurEvent = this._blur.bind(this);
 
         this.attach();
     };
@@ -167,11 +168,21 @@ const Annotation = function(address, suffix) {
         return this.path === path;
     };
 
+    this._pointerDown = function(event) {
+        if (event.button !== 0)
+            event.preventDefault();
+    }
+
+    this._blur = function(event) {
+        this.editor.setSelection(null);
+    }
+
     this.attach = function() {
         if (this.attached)
             return;
 
         this.ql_editor.addEventListener('focus', this._focusEvent);
+        this.ql_editor.addEventListener('pointerdown', this._pointerDownEvent);
         this._host.addEventListener('click', this._backgroundClicked);
 
         this.editor.on('editor-change', this._event);
@@ -185,6 +196,7 @@ const Annotation = function(address, suffix) {
             return;
 
         this.ql_editor.removeEventListener('focus', this._focusEvent);
+        this.ql_editor.removeEventListener('pointerdown', this._pointerDownEvent);
         this._host.removeEventListener('click', this._backgroundClicked);
 
         this.editor.off('editor-change', this._event);
