@@ -36,9 +36,9 @@ class Permissions:
             self.save.local = True
             self.save.temp = True
         elif app_mode == 'cloud':
-            self.library.browseable = conf.get('permissions_library_browseable', False)
-            self.library.addRemove = conf.get('permissions_library_add_remove', False)
-            self.library.showHide = conf.get('permsissions_library_show_hide', False)
+            self.library.browseable = conf.get('permissions_library_browseable', '0') == '1'
+            self.library.addRemove = conf.get('permissions_library_add_remove', '0') == '1'
+            self.library.showHide = conf.get('permsissions_library_show_hide', '0') == '1'
             self.library.sideLoad = False
             self.browse.local = False
             self.browse.examples = True
@@ -48,8 +48,8 @@ class Permissions:
             self.open.examples = True
             self.save.local = False
             self.save.temp = True
-            self.dataset.maxRows = conf.get('permissions_max_rows', 10000)
-            self.dataset.maxColumns = conf.get('permissions_max_columns', 100)
+            self.dataset.maxRows = int(conf.get('permissions_max_rows', '10000'))
+            self.dataset.maxColumns = int(conf.get('permissions_max_columns', '100'))
 
     def __init__(self):
         self.library = AttrDict({
