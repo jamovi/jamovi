@@ -63,6 +63,7 @@ class ModuleMeta:
         self.incompatible = False
         self.i18n_msgs = None
         self._code = None
+        self.index = 1
 
     def get(self, name):
         for analysis in self.analyses:
@@ -284,13 +285,11 @@ class Modules:
                 module = self._read_module(entry.path, is_system)
                 if not is_system:
                     module.new = self._read and (module.name in self._original) is False
-
-                if module.name == 'jmv':
-                    modules.insert(0, module)
-                else:
-                    modules.append(module)
+                modules.append(module)
             except Exception as e:
                 log.exception(e)
+        
+        modules = list(sorted(modules, key=lambda m: m.index))
         
         return modules
 
@@ -326,8 +325,8 @@ class Modules:
 
 
             # fill in addons
-            modules_by_name = dict(map(lambda m: (m.name, m), self._modules))
-            for module in self._modules:
+            modules_by_name = dict(map(lambda m: (m.name, m), modules))
+            for module in modules:
                 for analysis in module.analyses:
                     if analysis.addon_for is not None:
                         try:
@@ -413,6 +412,9 @@ class Modules:
             module.description = str(defn['description'])
         else:
             module.description = ''
+        
+        if 'index' in defn:
+            module.index = defn['index']
 
         if path != '':
             module.path = path
