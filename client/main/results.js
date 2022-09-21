@@ -78,7 +78,7 @@ const ResultsView = Backbone.View.extend({
 
         const iframe = document.createElement('iframe');
         iframe.classList.add('jmv-welcome-iframe');
-        iframe.sandbox = 'allow-scripts allow-same-origin';
+        iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox';
         // hidden to begin with, only show if successful
         iframe.style.display = 'none';
 
