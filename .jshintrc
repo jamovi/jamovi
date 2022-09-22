@@ -16,6 +16,7 @@
         "_",
         "s_",
         "n_",
-        "ClipboardItem"
+        "ClipboardItem",
+        "ReadableStream"
     ]
 }

@@ -270,6 +270,15 @@ function _imagify(el) {
     });
 }
 
+function genBorderCSS(side, cs) {
+    let w = cs.getPropertyValue(`border-${ side }-width`);
+    if (w === '0px')
+        return `border-${ side }:0px;`;
+    let s = cs.getPropertyValue(`border-${ side }-style`);
+    let c = cs.getPropertyValue(`border-${ side }-color`);
+    return `border-${ side }:${ w } ${ s } ${ c };`;
+}
+
 function _htmlify(el, options) {
 
     if (el.nodeType === Node.TEXT_NODE) {
@@ -436,23 +445,14 @@ function _htmlify(el, options) {
                         let bottom = cs.getPropertyValue('border-bottom-width');
                         let left = cs.getPropertyValue('border-left-width');
 
-                        function genBorderCSS(side) {
-                            let w = cs.getPropertyValue(`border-${ side }-width`);
-                            if (w === '0px')
-                                return `border-${ side }:0px;`;
-                            let s = cs.getPropertyValue(`border-${ side }-style`);
-                            let c = cs.getPropertyValue(`border-${ side }-color`);
-                            return `border-${ side }:${ w } ${ s } ${ c };`;
-                        }
-
                         if (top === '0px' && right === '0px' && bottom === '0px' && left === '0px') {
-                            html += 'border:0px;' // '0px' is less chars than 'none'
+                            html += 'border:0px;'; // '0px' is less chars than 'none'
                         }
                         else {
-                            html += genBorderCSS('top');
-                            html += genBorderCSS('right');
-                            html += genBorderCSS('bottom');
-                            html += genBorderCSS('left');
+                            html += genBorderCSS('top', cs);
+                            html += genBorderCSS('right', cs);
+                            html += genBorderCSS('bottom', cs);
+                            html += genBorderCSS('left', cs);
                         }
                     }
                     else if (style === 'text-align') {

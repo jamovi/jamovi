@@ -21,7 +21,7 @@ class AnalyseTab extends RibbonTab {
         this.$store = $(`<div class="jmv-store"></div>`).appendTo(document.body);
         this.store = new Store({ el : this.$store, model : model });
         this.store.on('notification', note => {
-            this.emit('notification', note)
+            this.emit('notification', note);
          });
 
         this.populate();

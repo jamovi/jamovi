@@ -153,6 +153,8 @@ const Annotation = function(address, suffix) {
         this.ql_editor = this._body.querySelector('.ql-editor');
         this.ql_editor.setAttribute('tabindex', '-1');
 
+
+
         this._backgroundClicked = this._backgroundClicked.bind(this);
         this._event = this._event.bind(this);
 
@@ -171,11 +173,11 @@ const Annotation = function(address, suffix) {
     this._pointerDown = function(event) {
         if (event.button !== 0)
             event.preventDefault();
-    }
+    };
 
     this._blur = function(event) {
         this.editor.setSelection(null);
-    }
+    };
 
     this.attach = function() {
         if (this.attached)

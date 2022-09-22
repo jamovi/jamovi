@@ -182,7 +182,7 @@ class Coms {
         let headers = init.headers || { };
         let token = await auth.getAuthToken();
         if (token)
-            headers['Authorization'] = `Bearer ${ token }`;
+            headers.Authorization = `Bearer ${ token }`;
         init.headers = headers;
         init.method = 'POST';
         let response = await fetch(url, init);

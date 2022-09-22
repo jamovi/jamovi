@@ -30,7 +30,7 @@ const Notify = Backbone.Model.extend({
 });
 
 function sessionShutdownMessage(seconds) {
-    let nearest30secs = parseInt(seconds / 30) * 30
+    let nearest30secs = parseInt(seconds / 30) * 30;
     if (nearest30secs >= 120)
         return _('This session will end in around {} minutes').replace('{}', parseInt(nearest30secs / 60));
     else if (nearest30secs >= 60)
@@ -72,15 +72,15 @@ Notify.createFromPB = function(pb) {
         switch (id) {
         case SESSION_SHUTDOWN_IDLE:
             title = _('Idle session');
-            message = sessionShutdownMessage(values['shutdownIn']);
+            message = sessionShutdownMessage(values.shutdownIn);
             break;
         case SESSION_SHUTDOWN_MAINTENANCE:
             title = _('Scheduled maintenance');
-            message = sessionShutdownMessage(values['shutdownIn']);
+            message = sessionShutdownMessage(values.shutdownIn);
             break;
         case SESSION_SHUTDOWN_TIME_LIMIT:
             title = _('Approaching plan time limit');
-            message = sessionShutdownMessage(values['shutdownIn']);
+            message = sessionShutdownMessage(values.shutdownIn);
             break;
         default:
             title = _('Unexpected error');

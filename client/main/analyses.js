@@ -149,7 +149,7 @@ Analysis.prototype.enable = function() {
     this.enabled = true;
     if (this._parent !== null)
         this._parent._notifyOptionsChanged(this);
-}
+};
 
 Analysis.prototype.notifyColumnsRenamed = function(columnRenames) {
     for (let i = 0; i < columnRenames.length; i++)
