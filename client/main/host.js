@@ -71,7 +71,7 @@ function openWindow(instanceId) {
     let opened = window.open(url, '_blank');
     // can fail under safari
     if (opened === null)
-        _notify('window-open-failed', { url })
+        _notify('window-open-failed', { url });
 }
 
 function closeWindow() {

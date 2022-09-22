@@ -194,7 +194,7 @@ const Instance = Backbone.Model.extend({
                                     else
                                         // fail
                                         controller.error(new JError(_('Upload failed'), { cause: xhr.statusText }));
-                                    resolve()
+                                    resolve();
                                 }, { once: true });
                             });
                         }
@@ -223,7 +223,7 @@ const Instance = Backbone.Model.extend({
                             if (xhr.readyState !== XMLHttpRequest.OPENED)
                                 resolve();
                         });
-                    })
+                    });
 
                     if (xhr.status === 0) // aborted
                         throw new CancelledError();

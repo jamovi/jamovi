@@ -34,7 +34,7 @@ const Heading = function(address, text) {
     this._pointerDown = function(event) {
         if (event.button !== 0)
             event.preventDefault();
-    }
+    };
 
     this.compareAddress = function(address, isTop) {
         let path = address.join('/') + ':' + isTop;

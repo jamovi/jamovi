@@ -5,9 +5,6 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const Notification = require('./notification');
-
-
 const NotificationView = Backbone.View.extend({
     className: "notification",
     initialize: function() {
