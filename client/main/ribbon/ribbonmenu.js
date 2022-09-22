@@ -74,7 +74,6 @@ const RibbonMenu = Backbone.View.extend({
     },
     showMenu(fromMouse) {
         this.positionMenu(fromMouse);
-        //focusLoop.updateShortcuts();
     },
     hideModule(name, item) {
         if (item === undefined)
@@ -84,8 +83,10 @@ const RibbonMenu = Backbone.View.extend({
         if (item.moduleName === name)
             changed = true;
 
-        if (item.type === 'module' && item.name === name)
-            item.$el.find('input')[0].checked = false;
+        if (item.type === 'module' && item.name === name) {
+            let menuId = item.$el[0].getAttribute('aria-controls');
+            document.querySelector(`#${menuId} input`).checked = false;
+        }
 
         if (item.items && item.items.length > 0) {
             let allHidden = true;
@@ -111,8 +112,10 @@ const RibbonMenu = Backbone.View.extend({
         if (item.moduleName === name)
             changed = true;
 
-        if (item.type === 'module' && item.name === name)
-            item.$el.find('input')[0].checked = true;
+        if (item.type === 'module' && item.name === name) {
+            let menuId = item.$el[0].getAttribute('aria-controls');
+            document.querySelector(`#${menuId} input`).checked = true;
+        }
 
         if (item.items) {
             let allHidden = true;
@@ -231,6 +234,9 @@ const RibbonMenu = Backbone.View.extend({
                 if (event.code == 'ArrowLeft' || event.code === 'Enter' || event.code === 'Space')
                     this.showSidePanel(item, false);
             });
+
+            let $moduleItemCheck = $sidePanel.find('input');
+            $moduleItemCheck.change(event => this._moduleDisplayClicked(event));
         }
         focusLoop.createHoverItem(item, () => {
             if (item.analyses) {
@@ -312,12 +318,11 @@ const RibbonMenu = Backbone.View.extend({
 
         this.$menuItems = $menu.find('.jmv-ribbon-menu-item:not(.module)');
         this.$moduleItems = $menu.find('.jmv-ribbon-menu-item.module');
-        this.$moduleItemCheck = $menu.find('.jmv-ribbon-menu-item.module input');
+
         this.$groupItemLists = $menu.find('.jmv-group-items:not(.side-panel .jmv-group-items)');
 
         this.$menuItems.click(event => this._itemClicked(event, event.detail > 0));
 
-        this.$moduleItemCheck.change(event => this._moduleDisplayClicked(event));
         this.$groupItemLists.scroll(event => this._moduleListScroll(event));
     },
     getMenus() {
