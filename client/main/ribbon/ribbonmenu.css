@@ -11,14 +11,12 @@
     flex-wrap: nowrap;
     align-items: center;
     flex-direction: column;
-    /*transition: 0.2s opacity, 0.2s width, 0.2s visibility;*/
+    transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
     opacity: 1;
     visibility: visible;
     background-color: inherit;
     font: inherit;
-
     transition-delay: .01s;
-    transition-property: background-color
 }
 
 .display-in-menu {
@@ -103,9 +101,6 @@
     background-color: #CCCCCC ;
 }
 
-/*.jmv-ribbon-button:focus {
-    outline: none ;
-}*/
 
 .jmv-ribbon-button-icon {
     width: 45px;
@@ -181,7 +176,6 @@
     margin-left: 8px;
     filter: opacity(80%);
     opacity: 0;
-    /*transition: 0.2s width, 0.3s opacity, 0.2s margin-right, 0.2s visibility;*/
     visibility: hidden;
 }
 
@@ -228,12 +222,20 @@
     visibility: visible;
 }
 
+.menu-item-hiding:not(.jmv-ribbon-button) {
+    height: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
 .menu-item-hiding {
     opacity: 0;
     width: 0px;
-    height: 0px;
     visibility: hidden;
-    position: absolute;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
 }
 
 .jmv-ribbon-menu-heading {

@@ -11,6 +11,8 @@ Backbone.$ = $;
 
 const Notify = require('../notification');
 const Version = require('../utils/version');
+const ProgressStream = require('../utils/progressstream');
+
 
 const PageModules = Backbone.View.extend({
     className: 'PageModules',
@@ -18,6 +20,9 @@ const PageModules = Backbone.View.extend({
 
         this.modules = this.model.modules;
         this.settings = this.model.settings;
+
+        this.settings.on('change:permissions_library_show_hide', () => this._triggerRefresh());
+        this.settings.on('change:permissions_library_add_remove', () => this._triggerRefresh());
 
         this.$el.addClass('jmv-store-page-installed');
 
@@ -39,8 +44,8 @@ const PageModules = Backbone.View.extend({
 
         this.$progressbar = this.$installing.find('.jmv-store-progress-bar');
 
-        this.modules.on('change:modules', this._refresh, this);
-        this.modules.on('moduleVisibilityChanged', this._refresh, this);
+        this.modules.on('change:modules', this._triggerRefresh, this);
+        this.modules.on('moduleVisibilityChanged', this._triggerRefresh, this);
 
         this.$modules = $();
         this.$uninstall = $();
@@ -82,7 +87,25 @@ const PageModules = Backbone.View.extend({
 
         this.$errorRetry.on('click', () => this.modules.retrieve());
 
-        this._refresh();
+        this._events = new ProgressStream();
+        
+        (async () => {
+            // event dispatcher
+            for await (let event of this._events) {
+                if (event.type === 'refresh')
+                    await this._refresh();
+            }
+        })();
+
+        this._triggerRefresh();
+    },
+    _triggerRefresh() {
+        this._events.setProgress({ type: 'refresh' });
+    },
+    stopListening() {
+        // technically not necessary, because this is never remove()d
+        this._events.resolve();
+        Backbone.View.prototype.stopListening(this, arguments);
     },
     _updateMessage() {
         let message = this.modules.attributes.message;
@@ -126,11 +149,11 @@ const PageModules = Backbone.View.extend({
 
     async _refresh() {
 
-        this.$modules.off();
         this.$uninstall.off();
         this.$visibility.off();
         this.$install.off();
-        this.$content.empty();
+
+        this.$content.find('.jmv-store-module').addClass('to-be-removed');
 
         this._updateMessage();
 
@@ -158,8 +181,8 @@ const PageModules = Backbone.View.extend({
                     </div>
                     <div class="jmv-store-module-rhs">
                         <h2 class="mark-search">${ label }<span class="version">${ version }</span></h2>
-                        <div class="authors"></div>
-                        <div class="description"></div>`;
+                        <div class="authors">${module.authors.join(', ')}</div>
+                        <div class="description">${module.description}</div>`;
 
             for (let op of module.ops) {
                 let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
@@ -220,14 +243,19 @@ const PageModules = Backbone.View.extend({
                     </div>
                 </div>`;
 
-            let $module = $(html);
 
-            $module.find('.description').html(module.description);
-            $module.find('.authors').html(module.authors.join(', '));
-
-            $module.appendTo(this.$content);
-            $module.on('click', event => this._moduleClicked(event));
+            let $module = this.$content.find(`.jmv-store-module[data-name=${ module.name }]`);
+            if ($module.length === 0) {
+                $module = $(html);
+                $module.appendTo(this.$content);
+            }
+            else {
+                $module.removeClass('to-be-removed');
+                $module[0].outerHTML = html;
+            }
         }
+
+        this.$content.find('.to-be-removed').remove();
 
         this.markHTML();
 
@@ -239,6 +267,7 @@ const PageModules = Backbone.View.extend({
         this.$uninstall.on('click', event => this._uninstallClicked(event));
         this.$install.on('click', event => this._installClicked(event));
         this.$visibility.on('click', event => this._visibilityClicked(event));
+
     },
     _installClicked(event) {
         let $target = $(event.target);
@@ -295,13 +324,7 @@ const PageModules = Backbone.View.extend({
     },
     _notify(note) {
         this.trigger('notification', new Notify(note));
-    },
-    _moduleClicked(event) {
-        let $target = $(event.target);
-        let $module = $target.closest(this.$modules);
-        this.$modules.removeClass('selected');
-        $module.addClass('selected');
-    },
+    }
 });
 
 module.exports = PageModules;

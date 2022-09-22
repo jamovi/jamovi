@@ -12,8 +12,11 @@ class AnalyseTab extends RibbonTab {
     constructor(modules, model) {
         super('analyses', 'A', _('Analyses'));
         this.modules = modules;
+        this.buttons = [ ];
         this._analysesList = { };
         this._moduleCount = 0;
+
+        this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
 
         this.$store = $(`<div class="jmv-store"></div>`).appendTo(document.body);
         this.store = new Store({ el : this.$store, model : model });
@@ -22,6 +25,29 @@ class AnalyseTab extends RibbonTab {
          });
 
         this.populate();
+    }
+
+    _onModuleVisibilityChanged(module) {
+        if (module.visible)
+            this._showModule(module.name);
+        else
+            this._hideModule(module.name);
+    }
+
+    _hideModule(name) {
+        for (let i = 0; i < this.buttons.length; i++) {
+            let button = this.buttons[i];
+            if (button.hideModule)
+                button.hideModule(name);
+        }
+    }
+
+    _showModule(name) {
+        for (let i = 0; i < this.buttons.length; i++) {
+            let button = this.buttons[i];
+            if (button.showModule)
+                button.showModule(name);
+        }
     }
 
     needsRefresh() {
@@ -46,9 +72,9 @@ class AnalyseTab extends RibbonTab {
     }
 
     async getRibbonItems(ribbon) {
-        let buttons = [ ];
+        this.buttons = [ ];
         if ( ! this.modules)
-            return buttons;
+            return this.buttons;
 
         let moduleList = [];
         this._analysesList = { };
@@ -90,7 +116,7 @@ class AnalyseTab extends RibbonTab {
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
             { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
         ], true, false);
-        buttons.push(button);
+        this.buttons.push(button);
 
         let menus = { };
         let lastSub = null;
@@ -151,10 +177,10 @@ class AnalyseTab extends RibbonTab {
             let $button = $('<button></button>');
             let  button = new RibbonMenu($button, menu._title, groupName, shortcutKey, flattened, false, containsNew);
 
-            buttons.push(button);
+            this.buttons.push(button);
         }
 
-        return buttons;
+        return this.buttons;
     }
 
     _analysisSelected(analysis) {

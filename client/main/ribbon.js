@@ -7,7 +7,6 @@ Backbone.$ = $;
 
 const RibbonMenu = require('./ribbon/ribbonmenu');
 const AppMenu = require('./ribbon/appmenu');
-//const Store = require('./store');
 const Modules = require('./modules');
 const tarp = require('./utils/tarp');
 const DataTab = require('./ribbon/datatab');
@@ -66,9 +65,6 @@ const RibbonModel = Backbone.Model.extend({
 
 const RibbonView = Backbone.View.extend({
     initialize() {
-
-        this.buttons = [ ];
-
         if (this.model === undefined)
             this.model = new RibbonModel();
 
@@ -89,7 +85,7 @@ const RibbonView = Backbone.View.extend({
                 tab.update();
             }
         } , this);
-        this.model.modules().on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
+
         this.model.on('change:selectedTab', async () => {
             await this._refresh();
             if (this.selectedTab) {
@@ -146,7 +142,6 @@ const RibbonView = Backbone.View.extend({
         this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
         this.$fullScreen = this.$el.find('.jmv-ribbon-fullscreen');
 
-        //this.$store = this.$el.find('.jmv-store');
         let $notifs = this.$el.find('#jmv-ribbon-notifs');
 
         this.$fileButton.on('click', (event) => {
@@ -250,29 +245,7 @@ const RibbonView = Backbone.View.extend({
     notify(options) {
         return this.notifs.notify(options);
     },
-    _onModuleVisibilityChanged(module) {
-        if (module.visible)
-            this._showModule(module.name);
-        else
-            this._hideModule(module.name);
-    },
-    _hideModule(name) {
-        for (let i = 0; i < this.buttons.length; i++) {
-            let button = this.buttons[i];
-            if (button.hideModule)
-                button.hideModule(name);
-        }
-    },
-    _showModule(name) {
-        for (let i = 0; i < this.buttons.length; i++) {
-            let button = this.buttons[i];
-            if (button.showModule)
-                button.showModule(name);
-        }
-    },
     async _refresh() {
-
-        this.buttons = [ ];
 
         if (this.selectedTab)
             this.selectedTab.detachItems();
@@ -287,10 +260,7 @@ const RibbonView = Backbone.View.extend({
 
     _menuClosed() {
         this.$el.css('z-index', '');
-        /*for (let button of this.buttons) {
-            if (button.hideMenu)
-                button.hideMenu();
-        }*/
+
         this.appMenu.hide();
 
         this.$el[0].focus();
@@ -298,17 +268,7 @@ const RibbonView = Backbone.View.extend({
     _buttonClicked : function(action) {
         this._menuClosed();
         this.model._actionRequest(action);
-    },
-    /*_analysisSelected : function(analysis) {
-        if (analysis.name === 'modules' && analysis.ns === 'app')
-            this.store.show(1);
-        else if (analysis.name === 'manageMods' && analysis.ns === 'app')
-            this.store.show(0);
-        else if (analysis.ns === 'installed')
-            this.model.modules().setModuleVisibility(analysis.name, analysis.checked);
-        else
-            this.trigger('analysisSelected', analysis);
-    },*/
+    }
 });
 
 module.exports = { View : RibbonView, Model : RibbonModel };
