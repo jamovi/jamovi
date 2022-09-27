@@ -54,7 +54,8 @@ const FSEntryListModel = Backbone.Model.extend({
         extensions: true,
         multiselect: false,
         wdType: 'main',
-        status: 'loading'
+        status: 'loading',
+        suggestedPath: null
     },
     requestOpen : function(filePath, title, type) {
         this.trigger('dataSetOpenRequested', filePath, title, type, this.get('wdType'));
@@ -156,6 +157,7 @@ const FSEntryBrowserView = SilkyView.extend({
             this.model = new FSEntryListModel();
 
         this.model.on('change:items change:dirInfo change:status', this._render, this);
+        this.model.on('change:suggestedPath', this._suggestedChanged, this);
 
         this.$el.addClass('silky-bs-fslist');
         this._createHeader();
@@ -186,6 +188,27 @@ const FSEntryBrowserView = SilkyView.extend({
         'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
         'input .search' : '_searchChanged',
         'keydown .search' : '_searchKeyDown'
+    },
+    _suggestedChanged: function(event) {
+        let $saveName = this.$el.find('.silky-bs-fslist-browser-save-name');
+        if ($saveName.length > 0) {
+            let filePath = this.model.attributes.suggestedPath;
+            if (filePath) {
+                let extension = path.extname(filePath);
+                filePath = s6e(path.basename(filePath, extension));
+            }
+            else
+                filePath = '';
+
+            $saveName.val(filePath);
+
+            let $button = this.$el.find('.silky-bs-fslist-browser-save-button');
+            if (filePath)
+                $button.removeClass('disabled-div');
+            else
+                $button.addClass('disabled-div');
+        }
+
     },
     _listFocus: function(event) {
         let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : ((this.$items && this.$items.length > 0) ? 0 : -1);
@@ -335,7 +358,7 @@ const FSEntryBrowserView = SilkyView.extend({
             html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
             html += '       <div style="flex: 1 1 auto;">';
 
-            let filePath = this.model.suggestedPath;
+            let filePath = this.model.attributes.suggestedPath;
             let insert = '';
             if (filePath) {
                 extension = path.extname(filePath);
@@ -1094,7 +1117,6 @@ const BackstageModel = Backbone.Model.extend({
 
         this._pcSaveListModel = new FSEntryListModel();
         this._pcSaveListModel.clickProcess = 'save';
-        this._pcSaveListModel.suggestedPath = null;
         this._pcSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._pcSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._pcSaveListModel.on('dataSetSaveRequested', this.trySave, this);
@@ -1105,7 +1127,6 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceSaveListModel.attributes.wdType = 'temp';
         this._deviceSaveListModel.writeOnly = true;
         this._deviceSaveListModel.clickProcess = 'save';
-        this._deviceSaveListModel.suggestedPath = null;
         this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._deviceSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
         this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
@@ -1114,7 +1135,6 @@ const BackstageModel = Backbone.Model.extend({
 
         this._pcExportListModel = new FSEntryListModel();
         this._pcExportListModel.clickProcess = 'export';
-        this._pcExportListModel.suggestedPath = null;
         this._pcExportListModel.fileExtensions = [
             { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
             { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
@@ -1137,7 +1157,6 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceExportListModel = new FSEntryListModel();
         this._deviceExportListModel.clickProcess = 'export';
         this._deviceExportListModel.writeOnly = true;
-        this._deviceExportListModel.suggestedPath = null;
         this._deviceExportListModel.fileExtensions = [
             { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
             { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
@@ -1164,7 +1183,6 @@ const BackstageModel = Backbone.Model.extend({
             this._dialogExportListModel.writeOnly = true;
             this._dialogExportListModel.attributes.wdType = 'temp';
         }
-        this._dialogExportListModel.suggestedPath = null;
         this._dialogExportListModel.fileExtensions = [ ];
         this._dialogExportListModel.on('dataSetExportRequested', this.dialogExport, this);
         this._dialogExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
@@ -1219,7 +1237,7 @@ const BackstageModel = Backbone.Model.extend({
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
-                                this._dialogExportListModel.suggestedPath = this.instance.get('title');
+                                this._dialogExportListModel.set('suggestedPath', this.instance.get('title'));
                             }
                         },
                     ]
@@ -1236,13 +1254,16 @@ const BackstageModel = Backbone.Model.extend({
                         {
                             name: 'thispc', title: _('This PC'),  shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
                             action: () => {
-                                this._dialogExportListModel.suggestedPath = this.instance.get('title');
+                                let filePath = this._determineSavePath('main');
+                                this._dialogExportListModel.set('suggestedPath', filePath);
+                                return this.setCurrentDirectory('main', path.dirname(filePath));
                             }
                         }
                     ]
                 }
             ];
         }
+
         this.set('ops', _ops);
 
         this.set('activated', true);
@@ -1315,9 +1336,8 @@ const BackstageModel = Backbone.Model.extend({
                         let place = this.instance.settings().getSetting('openPlace', 'thispc');
                         if (place === 'thispc') {
                             let filePath = this._determineSavePath('main');
-                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
-                                this._pcSaveListModel.suggestedPath = filePath;
-                            });
+                            this._pcSaveListModel.set('suggestedPath', filePath);
+                            return this.setCurrentDirectory('main', path.dirname(filePath));
                         }
                     },
                     places: [
@@ -1325,7 +1345,7 @@ const BackstageModel = Backbone.Model.extend({
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
-                                this._deviceSaveListModel.suggestedPath = this.instance.get('title');
+                                this._deviceSaveListModel.set('suggestedPath', this.instance.get('title'));
                             }
                         }
                     ]
@@ -1344,7 +1364,7 @@ const BackstageModel = Backbone.Model.extend({
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceExportListModel, view: FSEntryBrowserView,
                             action: () => {
-                                this._deviceExportListModel.suggestedPath = this.instance.get('title');
+                                this._deviceExportListModel.set('suggestedPath', this.instance.get('title'));
                             }
                         },
                     ]
@@ -1420,9 +1440,8 @@ const BackstageModel = Backbone.Model.extend({
                     shortcutKey: 'a',
                     action: () => {
                         let filePath = this._determineSavePath('main');
-                        return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
-                            this._pcSaveListModel.suggestedPath = filePath;
-                        });
+                        this._pcSaveListModel.set('suggestedPath', filePath);
+                        return this.setCurrentDirectory('main', path.dirname(filePath));
                     },
                     places: [
                         { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
@@ -1436,7 +1455,9 @@ const BackstageModel = Backbone.Model.extend({
                         {
                             name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
                             action: () => {
-                                this._pcExportListModel.suggestedPath = this.instance.get('title');
+                                let filePath = this._determineSavePath('main');
+                                this._pcExportListModel.set('suggestedPath', this.instance.get('title'));
+                                return this.setCurrentDirectory('main', path.dirname(filePath));
                             }
                         }
                     ]
@@ -2409,10 +2430,11 @@ const BackstageChoices = SilkyView.extend({
                 this.$current.removeClass('wd-changing');
         }
 
-        if (old)
+        if (old) {
             setTimeout(function() {
                 old.remove();
             }, 200);
+        }
 
         if ('action' in place)
             place.action();
