@@ -49,7 +49,7 @@
 .jmv-results-panel iframe {
     overflow: hidden ;
     background-color: transparent ;
-    transition: 0.3s background-color;
+    transition: 0.3s background-color, 0.2s height, 0.2s width;
 }
 
 .jmv-results-panel iframe::-webkit-scrollbar {
