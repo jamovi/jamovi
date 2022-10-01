@@ -372,6 +372,7 @@ class Session(dict):
                     # do nothing
                     pass
                 elif idle_for > TIMEOUT_IDLE:
+                    log.info('ending session: idle')
                     self.stop()
                 elif idle_for > (TIMEOUT_IDLE - TIMEOUT_IDLE_NOTICE):
                     # notify session is idle
@@ -394,6 +395,7 @@ class Session(dict):
                 
                 if TIME_LIMIT and now - session_start_time > TIME_LIMIT - TIMEOUT_IDLE_NOTICE:
                     if now - session_start_time > TIME_LIMIT:
+                        log.info('ending session: exceeded time limit')
                         self.stop()
                     elif last_time_limit_warning is None:
                         shutdown_in = TIME_LIMIT - (now - session_start_time)
