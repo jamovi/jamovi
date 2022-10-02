@@ -1,7 +1,8 @@
+FROM rstudio/r-base:4.1.2-jammy AS r-base
+ENV R_HOME /opt/R/4.1.2/lib/R
+ENV CRAN_MIRROR https://packagemanager.rstudio.com/cran/__linux__/jammy/2021-12-29
 
-FROM ubuntu:22.04
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     locales
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
@@ -9,50 +10,36 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     update-locale LANG=en_US.UTF-8
 ENV LANG en_US.UTF-8
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    curl
-
-WORKDIR /tmp
-RUN curl -O https://cran.r-project.org/src/base/R-4/R-4.1.2.tar.gz && \
-    tar xf R-4.1.2.tar.gz && \
-    rm R-4.1.2.tar.gz
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    build-essential \
-    gfortran \
-    libcurl4-nss-dev \
-    libxml2-dev \
-    libreadline-dev \
-    libbz2-dev \
-    liblzma-dev \
-    libpng-dev \
-    liblapack-dev \
-    libcairo2-dev \
-    libfreetype6-dev \
-    libpng-dev \
-    libtiff5-dev \
-    libjpeg-dev \
-    libharfbuzz-dev \
-    libfribidi-dev
-
-WORKDIR /tmp/R-4.1.2
-RUN ./configure \
-    --enable-R-shlib \
-    --with-x=no \
-    --disable-BLAS-shlib && \
-        make && \
-        make install
-
-RUN mkdir -p /tmp/source/jmv/build/R4.1.2-linux
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libprotoc-dev
 
-COPY docker/install-packages.py .
+RUN echo "options(repos=c(pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
 
-COPY docker/base-deps-sources.json .
-RUN python3 install-packages.py base-deps-sources.json /usr/local/lib/R/library
+RUN R -e "\
+    packages <- c('R6','RColorBrewer','base64enc','brio','cpp11','curl','farver','fastmap','magrittr','praise','rprojroot','rstudioapi','utf8','viridisLite','yaml','Rcpp','colorspace','crayon','digest','evaluate','fansi','glue','gtable','isoband','jsonlite','labeling','pkgconfig','ps','remotes','rlang','stringi','systemfonts','withr','xfun','RInside','RProtoBuf','cli','desc','diffobj','ellipsis','highr','htmltools','lifecycle','munsell','processx','stringr','textshaping','tinytex','callr','jquerylib','knitr','pkgload','ragg','scales','vctrs','pillar','rmarkdown','tibble','ggplot2','rematch2','waldo','testthat'); \
+    for (pkg in packages) {               \
+        install.packages(                 \
+            pkg,                          \
+            depends=FALSE,                \
+            lib='$R_HOME/library',        \
+            INSTALL_opts='--no-data --no-help --no-demo --no-html --no-docs --no-multiarch --clean'); \
+        library(pkg, character.only=TRUE); \
+    }"
 
-COPY docker/jmv-deps-sources.json .
-RUN python3 install-packages.py jmv-deps-sources.json /tmp/source/jmv/build/R4.1.2-linux
-RUN rm -rf /tmp/source/jmv/build/R4.1.2-linux/BH /tmp/source/jmv/build/R4.1.2-linux/StanHeaders
+
+# deps for igraph
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libglpk40 \
+    libgmp10 \
+    libxml2
+
+RUN R -e "\
+    packages <- c('GPArotation','RcppParallel','SQUAREM','backports','bitops','ca','carData','contfrac','glasso','gower','jpeg','lisrelToR','listenv','matrixStats','nloptr','numDeriv','pbivnorm','png','prettyunits','qvcalc','tmvnsim','truncnorm','zip','Formula','MatrixModels','PMCMR','RUnit','RcppArmadillo','RcppEigen','Rsolnp','SparseM','TH.data','XML','abind','caTools','checkmate','coda','corpcor','data.table','deSolve','elliptic','estimability','fdrtool','forcats','generics','ggrepel','globals','gridExtra','gtools','hms','htmlwidgets','igraph','iterators','latticeExtra','minqa','mnormt','mvnormtest','mvtnorm','openxlsx','parallelly','pbapply','plyr','progressr','proxy','purrr','relimp','sp','ssanv','timeDate','xtable','zoo','ModelMetrics','e1071','emmeans','exactci','foreach','future','ggridges','gnm','gplots','htmlTable','hypergeo','kutils','lavaan','lme4','lmtest','lubridate','maptools','pROC','progress','psych','reshape','reshape2','rpf','sandwich','tidyselect','viridis','BayesFactor','Hmisc','OpenMx','ROCR','arm','dplyr','exact2x2','future.apply','lmerTest','multcomp','regsem','rockchalk','vcd','lava','mi','qgraph','tidyr','vcdExtra','GGally','broom','prodlim','sem','ipred','pbkrtest','semPlot','recipes','caret','conquer','quantreg','car','afex'); \
+    for (pkg in packages) {               \
+        install.packages(                 \
+            pkg,                          \
+            depends=FALSE,                \
+            lib='$R_HOME/library',        \
+            INSTALL_opts='--no-data --no-help --no-demo --no-html --no-docs --no-multiarch --clean'); \
+        library(pkg, character.only=TRUE); \
+    }"
