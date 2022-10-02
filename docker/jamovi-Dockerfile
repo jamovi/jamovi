@@ -1,20 +1,13 @@
 
-FROM ubuntu:22.04 AS base
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    locales
-
-RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
-    dpkg-reconfigure --frontend=noninteractive locales && \
-    update-locale LANG=en_US.UTF-8
-ENV LANG en_US.UTF-8
+FROM ubuntu:22.04 as base
+FROM jamovi/jamovi-deps:2.3.17 as r-base
 
 
 ##### SERVER #####
 
-FROM base AS server
+FROM r-base AS server
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
     python3 \
@@ -41,15 +34,16 @@ RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
 
 COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
 
+
 ####### CLIENT #######
 
-FROM base AS client
+FROM r-base AS client
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nodejs \
     npm
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libarchive-zip-perl  # for crc32
 
 ARG JAMOVI_ROOT=.
@@ -73,7 +67,7 @@ RUN cp www/*.css       /usr/lib/jamovi/client
 RUN cp -r www/assets   /usr/lib/jamovi/client
 RUN cp favicon.ico     /usr/lib/jamovi/client
 
-# debug
+# # debug
 # RUN npm run build
 # RUN cp *.js        /usr/lib/jamovi/client
 # RUN cp *.html      /usr/lib/jamovi/client
@@ -81,11 +75,14 @@ RUN cp favicon.ico     /usr/lib/jamovi/client
 # RUN cp -r assets   /usr/lib/jamovi/client
 # RUN cp favicon.ico /usr/lib/jamovi/client
 
+COPY $JAMOVI_ROOT/version /usr/lib/jamovi/client
+
+
 ##### ENGINE #####
 
-FROM jamovi/jamovi-deps:2.3 AS engine
+FROM r-base AS engine
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
     libprotobuf23 \
     protobuf-compiler \
@@ -103,22 +100,37 @@ COPY $JAMOVI_ROOT/server/jamovi/server/jamovi.proto /tmp/source/server/jamovi/se
 
 WORKDIR /tmp/source/engine
 
-RUN bash configure --rhome=/usr/local/lib/R \
-    --base-module-path=/usr/local/lib/R/library \
-    --rpath=/usr/local/lib/R/library/RInside/lib \
-    --rpath=/usr/local/lib/R/lib \
+RUN bash configure --rhome=$R_HOME \
+    --base-module-path=$R_HOME/library \
+    --rpath=$R_HOME/library/RInside/lib \
+    --rpath=$R_HOME/lib \
     CXXFLAGS=-DJAMOVI_ENGINE_SUPPORT_LOCAL_SOCKETS
 RUN make
 RUN DESTDIR=/usr/lib/jamovi make install
 
 
-##### JMV #####
+##### JMVCORE #####
 
-FROM jamovi/jamovi-deps:2.3 AS jmv
+FROM r-base AS jmvcore
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+ARG JAMOVI_ROOT=.
+
+RUN mkdir -p /usr/lib/jamovi/modules/base/R
+
+COPY $JAMOVI_ROOT/jmvcore /tmp/source/jmvcore
+RUN R CMD INSTALL /tmp/source/jmvcore --library=/usr/lib/jamovi/modules/base/R
+
+
+##### COMPILER #####
+
+FROM jmvcore AS compiler
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nodejs \
     npm
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    git
 
 RUN mkdir -p /usr/lib/jamovi
 RUN mkdir -p /usr/lib/jamovi/modules
@@ -132,36 +144,44 @@ COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin
 COPY $JAMOVI_ROOT/platform/jamovi   /usr/lib/jamovi/bin
 RUN chmod u+x /usr/lib/jamovi/bin/jamovi
 
-COPY $JAMOVI_ROOT/jmvcore /tmp/source/jmvcore
-RUN R CMD INSTALL /tmp/source/jmvcore --library=/usr/local/lib/R/library
-
 COPY $JAMOVI_ROOT/jamovi-compiler /tmp/source/jamovi-compiler
 WORKDIR /tmp/source/jamovi-compiler
-RUN npm install
+RUN npm install && npm install -g
 
-COPY $JAMOVI_ROOT/scatr/ /tmp/source/scatr
-WORKDIR /tmp/source/scatr
-RUN node /tmp/source/jamovi-compiler/index.js --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --rlibs /tmp/source/jmv/build/R4.1.2-linux
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    git
+##### JMV #####
 
-WORKDIR /tmp/source
-RUN git clone https://github.com/raviselker/surveymv.git
-RUN node /tmp/source/jamovi-compiler/index.js --install surveymv --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --rlibs /tmp/source/jmv/build/R4.1.2-linux
-RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
-RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
+FROM compiler AS jmv
+
+ARG JAMOVI_ROOT=.
 
 COPY $JAMOVI_ROOT/jmv/ /tmp/source/jmv
 WORKDIR /tmp/source/jmv
-RUN node /tmp/source/jamovi-compiler/index.js --install . --to /usr/lib/jamovi/modules --rhome /usr/local/lib/R --patch-version
+RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
+
+
+##### EXTRAS #####
+
+FROM compiler AS extras
+
+ARG JAMOVI_ROOT=.
+
+COPY $JAMOVI_ROOT/scatr/ /tmp/source/scatr
+WORKDIR /tmp/source/scatr
+RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
+
+WORKDIR /tmp/source
+RUN git clone https://github.com/raviselker/surveymv.git
+RUN jmc --install surveymv --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
+RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
+RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
 
 
 ##### I18N #####
 
 FROM base AS i18n
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nodejs \
     npm
 
@@ -177,9 +197,9 @@ RUN node /tmp/source/i18n/index.js --build src --dest /usr/lib/jamovi/i18n/json
 
 ##### FINAL #####
 
-from base AS jamovi
+FROM r-base AS jamovi
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python3-minimal \
     python3-pkg-resources \
     python3-six \
@@ -200,8 +220,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-instal
     libtiff5 \
     libreadline8
 
-COPY --from=jmv     /usr/local/lib/R /usr/local/lib/R
 COPY --from=jmv     /usr/lib/jamovi/ /usr/lib/jamovi/
+COPY --from=extras  /usr/lib/jamovi/ /usr/lib/jamovi/
 COPY --from=server  /usr/lib/jamovi/ /usr/lib/jamovi/
 COPY --from=server  /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
 COPY --from=server  /usr/lib/x86_64-linux-gnu/libnanomsg.so /usr/lib/x86_64-linux-gnu/libnanomsg.so
@@ -209,10 +229,10 @@ COPY --from=client  /usr/lib/jamovi/client/ /usr/lib/jamovi/client/
 COPY --from=i18n    /usr/lib/jamovi/i18n/json /usr/lib/jamovi/i18n/json
 COPY --from=engine  /usr/lib/jamovi/bin/jamovi-engine /usr/lib/jamovi/bin/jamovi-engine
 
-ENV LD_LIBRARY_PATH /usr/local/lib/R/lib
+ENV LD_LIBRARY_PATH $R_HOME/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
 ENV PYTHONPATH /usr/lib/jamovi/server
-ENV R_LIBS /usr/local/lib/R/library
+ENV R_LIBS $R_HOME/library
 ENV JAMOVI_SESSION_EXPIRES 0
 ENV JAMOVI_ALLOW_ARBITRARY_CODE false
 
