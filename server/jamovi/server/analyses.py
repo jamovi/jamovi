@@ -130,6 +130,19 @@ class Analysis:
             self.changes |= set(changes)
         self.status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
+    
+    def set_error(self, message):
+        results = jcoms.AnalysisResponse()
+        results.analysisId = self.id
+        results.name = self.name
+        results.ns = self.ns
+        results.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
+        results.revision = self.revision
+        results.results.name = self.name
+        results.results.title = self.name
+        results.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_ERROR')
+        results.results.error.message = message
+        self.set_results(results)
 
     def set_results(self, results, complete=True, silent=False):
 
@@ -153,7 +166,8 @@ class Analysis:
                     new_results = results
                 else:
                     new_results = self.results
-
+                    
+                new_results.revision = self.revision
                 new_results.results.error.message = results.results.error.message
                 self._change_status_to_complete(new_results.results)
                 results = new_results
