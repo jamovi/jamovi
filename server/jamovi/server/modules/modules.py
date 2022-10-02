@@ -20,7 +20,11 @@ from functools import lru_cache
 
 
 import yaml
-from yaml import CSafeLoader as Loader
+
+try:
+    from yaml import CSafeLoader as Loader
+except ImportError:
+    from yaml import SafeLoader as Loader
 
 
 log = logging.getLogger('jamovi')
