@@ -10,6 +10,7 @@ from .jamovi_pb2 import AnalysisRequest
 from .jamovi_pb2 import AnalysisStatus
 from .pool import Pool
 from .utils import req_str
+from .i18n import _
 
 
 ANALYSIS_ERROR = AnalysisStatus.Value('ANALYSIS_ERROR')
@@ -19,16 +20,22 @@ PERFORM_SAVE = AnalysisRequest.Perform.Value('SAVE')
 PERFORM_RUN = AnalysisRequest.Perform.Value('RUN')
 
 
+class BadAnalysis(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
 log = getLogger(__name__)
 
 
 class Scheduler:
 
-    def __init__(self, n_init_slots, n_run_slots, analyses):
+    def __init__(self, n_init_slots, n_run_slots, analyses, modules):
         self._n_init_slots = n_init_slots
         self._n_run_slots = n_run_slots
         self._n_slots = n_init_slots + n_run_slots
         self._analyses = analyses
+        self._modules = modules
 
         self._n_initing = 0
         self._n_running = 0
@@ -46,18 +53,24 @@ class Scheduler:
             key = (analysis.instance.id, analysis.id)
             if key in self._pool:
                 analysis.status = Analysis.Status.RUNNING
-                request = self._to_message(analysis, 'init')
-                self._run_analysis(request)
-                self._n_initing += 1
-                log.debug('%s %s %s', 'inc_counters', 'initing', (self._n_initing, self._n_running, self._n_slots))
+                try:
+                    self._run_analysis(analysis, 'init')
+                except BadAnalysis as e:
+                    analysis.set_error(e.message)
+                else:
+                    self._n_initing += 1
+                    log.debug('%s %s %s', 'inc_counters', 'initing', (self._n_initing, self._n_running, self._n_slots))
 
         if self._n_initing + self._n_running >= self._n_slots:
             return
 
         for analysis in self._analyses.needs_init:
             analysis.status = Analysis.Status.RUNNING
-            request = self._to_message(analysis, 'init')
-            self._run_analysis(request)
+            try:
+                self._run_analysis(analysis, 'init')
+            except BadAnalysis as e:
+                analysis.set_error(e.message)
+                continue
             self._n_initing += 1
             log.debug('%s %s %s', 'inc_counters', 'initing', (self._n_initing, self._n_running, self._n_slots))
             if self._n_initing + self._n_running >= self._n_slots:
@@ -68,8 +81,11 @@ class Scheduler:
 
         for analysis in self._analyses.needs_op:
             analysis.status = Analysis.Status.RUNNING
-            request = self._to_message(analysis, 'op')
-            self._run_analysis(request)
+            try:
+                self._run_analysis(analysis, 'op')
+            except BadAnalysis as e:
+                analysis.set_error(e.message)
+                continue
             self._n_running += 1
             log.debug('%s %s %s', 'inc_counters', 'running', (self._n_initing, self._n_running, self._n_slots))
             if self._n_running + self._n_initing >= self._n_slots:
@@ -79,8 +95,11 @@ class Scheduler:
 
         for analysis in self._analyses.needs_run:
             analysis.status = Analysis.Status.RUNNING
-            request = self._to_message(analysis, 'run')
-            self._run_analysis(request)
+            try:
+                self._run_analysis(analysis, 'run')
+            except BadAnalysis as e:
+                analysis.set_error(e.message)
+                continue
             self._n_running += 1
             log.debug('%s %s %s', 'inc_counters', 'running', (self._n_initing, self._n_running, self._n_slots))
             if self._n_running + self._n_initing >= self._n_slots:
@@ -88,7 +107,13 @@ class Scheduler:
             if self._n_running >= self._n_run_slots:
                 return
 
-    def _run_analysis(self, request):
+    def _run_analysis(self, analysis, perform):
+
+        if analysis.ns not in self._modules:
+            raise BadAnalysis(_('The module for this analysis is not installed, or is unavailable'))
+
+        request = self._to_message(analysis, perform)
+
         log.debug('%s %s', 'sending_to_pool', req_str(request))
         stream = self._pool.add(request)
         task = create_task(self._handle_results(request, stream))

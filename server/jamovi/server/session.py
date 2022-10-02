@@ -90,7 +90,7 @@ class Session(dict):
         if language != '':
             i18n.set_language(language)
 
-        self._scheduler = Scheduler(1, 3, self._analyses)
+        self._scheduler = Scheduler(1, 3, self._analyses, self._modules)
 
         task_queue_url = conf.get('task_queue_url')
         if task_queue_url is not None:

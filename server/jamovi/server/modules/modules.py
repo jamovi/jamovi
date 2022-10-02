@@ -202,6 +202,13 @@ class Modules:
             if module.name == name:
                 return module
         raise KeyError()
+    
+    def __contains__(self, name):
+        for module in self._modules:
+            if module.name == name:
+                return True
+        else:
+            return False
 
     def add_listener(self, listener):
         self._listeners.append(listener)
