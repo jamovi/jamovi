@@ -11,12 +11,10 @@
     flex-wrap: nowrap;
     align-items: center;
     flex-direction: column;
-    transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
     opacity: 1;
     visibility: visible;
     background-color: inherit;
     font: inherit;
-    transition-delay: .01s;
 }
 
 .display-in-menu {
@@ -47,6 +45,8 @@
 
 .jmv-analyses-button {
     padding: 6px 0;
+    transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
+    transition-delay: .01s;
 }
 
 .jmv-analyses-button:focus {
