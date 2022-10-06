@@ -57,7 +57,6 @@ class Session(dict):
         self._path = data_path
         self._id = id
         self._session_path = os.path.join(data_path, id)
-        self._update_status = 'na'
         self._analyses = SessionAnalyses(self)
         self._analysis_listeners = [ ]
         self._session_listeners = [ ]
@@ -132,6 +131,11 @@ class Session(dict):
         self._backend.set_auth(auth_token)
 
     def apply_settings(self, settings: dict):
+        if 'updateStatus' in settings:
+            update_status = settings['updateStatus']
+            if (update_status != self.update_status
+                    and (update_status == 'checking' or update_status == 'downloading')):
+                self.request_update(update_status)
         self._settings.apply({ 'main': settings })
         self.notify_global_changes()
 
@@ -143,6 +147,7 @@ class Session(dict):
         settings.group('main').specify_default('autoUpdate', def4ult)
         settings.group('main').specify_default('missings', 'NA')
         settings.group('main').specify_default('selectedLanguage', '')
+        settings.group('main').specify_default('updateStatus', 'na')
 
     async def create(self, instance_id=None):
 
@@ -208,18 +213,19 @@ class Session(dict):
 
     @property
     def update_status(self):
-        return self._update_status
+        main_settings = self._settings.group('main').get('updateStatus', 'na')
 
     @property
     def session_path(self):
         return self._session_path
 
     def set_update_status(self, status):
-        self._update_status = status
+
+        main_settings = self._settings.group('main')
+        main_settings.set('updateStatus', status)
         self.notify_global_changes()
 
         if status == 'available':
-            main_settings = self._settings.group('main')
             if main_settings.get('autoUpdate', False):
                 self.request_update('downloading')
 
