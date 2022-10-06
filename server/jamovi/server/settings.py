@@ -8,6 +8,8 @@ from asyncio import create_task
 from .utils.event import Event
 from .utils.event import EventHook
 
+local_settings_keys = ('updateStatus',)
+
 
 class Settings(dict):
 
@@ -102,8 +104,9 @@ class Settings(dict):
         return keys.__iter__()
 
     def vanilla_dict(self):
-        values = dict()
+        groups = dict()
         for name, group in self._children.items():
-            values[name] = group
-        values.update(self)
-        return values
+            group_ex_local = dict((k, v) for k, v in group.items() if k not in local_settings_keys)
+            groups[name] = group_ex_local
+        groups.update(self)
+        return groups

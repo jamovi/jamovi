@@ -3108,10 +3108,6 @@ class Instance:
 
         response = jcoms.SettingsResponse()
 
-        setting_pb = response.settings.add()
-        setting_pb.name = 'updateStatus'
-        setting_pb.s = self._session.update_status
-
         for name in main_settings:
             value = main_settings.get(name)
             if isinstance(value, str):
