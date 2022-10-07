@@ -666,7 +666,7 @@ class Instance:
 
             else:
                 if path.startswith('{{Temp}}'):
-                    if self._perms.save.temp is False:
+                    if self._perms.save.download is False:
                         raise PermissionError()
                 else:
                     if self._perms.save.local is False:
@@ -825,7 +825,7 @@ class Instance:
         if is_url(path) and self._perms.open.remote is False:
             raise PermissionError()
         if path != '' and not is_example:
-            if self._perms.open.temp is False:
+            if self._perms.open.upload is False:
                 raise PermissionError()
             if self._perms.open.local is False:
                 temp_dir = conf.get('upload_path', None)
