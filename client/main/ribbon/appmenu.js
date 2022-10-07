@@ -222,9 +222,11 @@ const AppMenuButton = Backbone.View.extend({
         this._updateUI();
     },
     _checkForUpdate() {
+        this.$menuPanel.focus();
         this.model.settings().setSetting('updateStatus', 'checking');
     },
     _downloadUpdate() {
+        this.$menuPanel.focus();
         this.model.settings().setSetting('updateStatus', 'downloading');
     },
     _restartAndInstall() {
