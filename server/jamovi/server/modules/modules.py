@@ -303,6 +303,27 @@ class Modules:
         modules = list(sorted(modules, key=lambda m: m.index))
         
         return modules
+    
+
+    def _attach_addons(self):
+        # fill in addons
+        modules_by_name = dict(map(lambda m: (m.name, m), self))
+
+        for module in self:
+            for analysis in module.analyses:
+                del analysis.addons[:]
+
+        for module in self:
+            for analysis in module.analyses:
+                if analysis.addon_for is not None:
+                    try:
+                        (ns, name) = analysis.addon_for
+                        target_module = modules_by_name.get(ns)
+                        target_analysis = next(iter(filter(lambda a: a.name == name, target_module.analyses)))
+                        target_analysis.addons.append((analysis.ns, analysis.name))
+                    except Exception:
+                        pass
+
 
     async def _reread_installed(self):
 
@@ -334,24 +355,12 @@ class Modules:
             except Exception as e:
                 log.exception(e)
 
-
-            # fill in addons
-            modules_by_name = dict(map(lambda m: (m.name, m), modules))
-            for module in modules:
-                for analysis in module.analyses:
-                    if analysis.addon_for is not None:
-                        try:
-                            target_module = modules_by_name.get(analysis.addon_for[0])
-                            target_analysis = next(iter(filter(lambda a: a.name == analysis.addon_for[1], target_module.analyses)))
-                            target_analysis.addons.append((analysis.ns, analysis.name))
-                        except Exception:
-                            pass
-
             self._read = True
         except Exception as e:
             log.exception(e)
         
         self._modules = modules
+        self._attach_addons()
 
     def set_visibility(self, name, value):
         for module in self._modules:
