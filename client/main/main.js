@@ -460,7 +460,7 @@ $(document).ready(async() => {
         });
     });
 
-    if ( ! host.isElectron) {
+    if (host.os === 'ios') {
         let headerAlert = document.createElement('jmv-headeralert');
         document.body.prepend(headerAlert);
         host.on('window-open-failed', (event) => {
