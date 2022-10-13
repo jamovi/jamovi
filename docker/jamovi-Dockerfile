@@ -120,6 +120,7 @@ RUN mkdir -p /usr/lib/jamovi/modules/base/R
 COPY $JAMOVI_ROOT/jmvcore /tmp/source/jmvcore
 RUN R CMD INSTALL /tmp/source/jmvcore --library=/usr/lib/jamovi/modules/base/R
 
+ENV R_LIBS /usr/lib/jamovi/modules/base/R
 
 ##### COMPILER #####
 
