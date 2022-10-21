@@ -14,6 +14,7 @@ const Annotations = require('./annotations');
 const Tracker = require('./itemtracker');
 const I18n = require("../common/i18n");
 const focusLoop = require('../common/focusloop');
+const { contextMenuListener } = require('../common/utils');
 
 window._ = I18n._;
 
@@ -88,11 +89,17 @@ class Main {  // this is constructed at the bottom
         $(document).mouseup(this, (event) => this._mouseUp(event));
         $(document).mousemove(this, (event) => this._mouseMove(event));
 
-        document.body.addEventListener('contextmenu', (event) => {
-            let clickEvent = $.Event('contextmenu');
-            clickEvent.pageX = event.pageX;
-            clickEvent.pageY = event.pageY;
-            this.$results.trigger(clickEvent);
+        contextMenuListener(document.body, (event) => {
+            const clickEvent = new MouseEvent('contextmenu', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                screenX: event.screenX,
+                screenY: event.screenY
+            });
+            this.$results[0].dispatchEvent(clickEvent);
         });
     }
 
@@ -211,10 +218,14 @@ class Main {  // this is constructed at the bottom
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
             if (el === document.body)
                 el = this.$results[0];
-            let clickEvent = $.Event('contextmenu');
-            clickEvent.pageX = hostEvent.pageX;
-            clickEvent.pageY = hostEvent.pageY;
-            $(el).trigger(clickEvent);
+            const clickEvent = new MouseEvent('contextmenu', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: hostEvent.pageX,
+                clientY: hostEvent.pageY,
+            });
+            el.dispatchEvent(clickEvent);
         }
         else if (hostEvent.type === 'enterannotation') {
             let annotation = Annotations.controls[0];
