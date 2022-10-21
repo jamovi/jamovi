@@ -6,6 +6,7 @@ Backbone.$ = $;
 const Tracker = require('./itemtracker');
 
 const b64 = require('../common/utils/b64');
+const { contextMenuListener } = require('../common/utils');
 
 require('./refs');
 
@@ -29,11 +30,11 @@ const ElementView = Backbone.View.extend({
         this.$el.addClass('jmv-results-item');
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
-        this.$el.on('contextmenu', event => {
+        contextMenuListener(this.$el[0], event => {
             if ('activeElement' in document)
                 document.activeElement.blur();
             event.stopPropagation();
-            this._sendEvent({ type : 'menu', data : { entries : [ ], pos : { left: event.pageX, top: event.pageY } } });
+            this._sendEvent({ type: 'menu', data: { entries: [], pos: { left: event.pageX, top: event.pageY } } });
             return false;
         });
 

@@ -15,10 +15,10 @@ const dialogs = require('dialogs')({cancel:false});
 const SilkyView = require('./view');
 const Notify = require('./notification');
 const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
-const host = require('./host');
 const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
+const { contextMenuListener } = require('../common/utils');
 
 const VariablesView = SilkyView.extend({
     className: 'variablesview',
@@ -91,6 +91,19 @@ const VariablesView = SilkyView.extend({
 
         this.$body.on('mouseleave', (event) => {
             this.$body.find('.cell.hovering').removeClass('hovering');
+        });
+
+        contextMenuListener(this.$el[0], (event) => {
+            let element = document.elementFromPoint(event.clientX, event.clientY);
+            let $view = $(element).closest('.jmv-variables-container');
+            if ($view.length > 0) {
+                let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
+                let column = this.model.getColumn(colNo);
+                if (column !== null && column.columnType === 'filter')
+                    ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
+                else
+                    ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+            }
         });
 
         this.controller = options.controller;
@@ -662,18 +675,6 @@ const VariablesView = SilkyView.extend({
         this._delayClear = false;
         this._dragging = false;
 
-        if (event.button === 2) {
-            let element = document.elementFromPoint(event.clientX, event.clientY);
-            let $view = $(element).closest('.jmv-variables-container');
-            if ($view.length > 0) {
-                let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
-                let column = this.model.getColumn(colNo);
-                if (column !== null && column.columnType === 'filter')
-                    ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
-                else
-                    ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
-            }
-        }
         this._mouseDownClicked = false;
     },
 

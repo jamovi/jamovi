@@ -16,7 +16,7 @@ const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
 const focusLoop = require('../common/focusloop');
 
-const { s6e } = require('../common/utils');
+const { s6e, contextMenuListener } = require('../common/utils');
 
 
 const TableView = SilkyView.extend({
@@ -218,14 +218,14 @@ const TableView = SilkyView.extend({
             this._createSecondarySelections(prevSel, 0);
         });
 
-        this.$body.on('contextmenu', event => {
+        contextMenuListener(this.$body[0], event => {
             if (this._editing)
                 return true;
-            this._contextMenuPreparation();
+            this._contextMenuPreparation(event);
             return this._bodyMenu(event);
         });
-        this.$header.on('contextmenu', event => {
-            this._contextMenuPreparation();
+        contextMenuListener(this.$header[0], event => {
+            this._contextMenuPreparation(event);
             return this._headerMenu(event);
         });
 
@@ -248,6 +248,7 @@ const TableView = SilkyView.extend({
 
         this.selection.clearSelectionList();
     },
+    
     onEditingVarChanged(editingColumns) {
         if (this.selection !== null) {
             this._endEditing().then(() => {
@@ -686,7 +687,7 @@ const TableView = SilkyView.extend({
 
         return { rowNo: rowNo, colNo: colNo, x: vx, y: vy, onHeader: onHeader, tiltX: tiltX, tiltY: tiltY };
     },
-    _contextMenuPreparation() {
+    _contextMenuPreparation(event) {
         this._contextMenuOpened = true;
 
         let pos = this._getPos(event.clientX, event.clientY);
@@ -2388,7 +2389,7 @@ const TableView = SilkyView.extend({
     },
     _createCell(top, height, rowNo, colNo, isInput) {
 
-        let cell = document.createElement(isInput ? 'textarea' : 'div');
+        let cell = document.createElement(isInput ? 'input' : 'div');
         //cell.setAttribute('tabindex', -1);
         /*if (rowNo !== -1) {
             this._focusCell.setAttribute('role', 'gridcell');

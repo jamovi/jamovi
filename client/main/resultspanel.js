@@ -16,11 +16,11 @@ const Notify = require('./notification');
 const host = require('./host');
 
 const { flatten, unflatten } = require('../common/utils/addresses');
+const { contextMenuListener } = require('../common/utils');
 
 require('./references');
 
 const path = require('path');
-
 
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
@@ -87,7 +87,7 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable = document.createElement('jmv-references');
         this._refsTable.style.display = 'none';
         this._refsTable.setAnalyses(this.model.analyses());
-        this._refsTable.addEventListener('contextmenu', (event) => {
+        contextMenuListener(this._refsTable, (event) => {
             event.preventDefault();
             event.stopPropagation();
             this._refsRightClicked(event);
@@ -96,7 +96,7 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable.addEventListener('click', (event) => this._resultsClicked(event, 'refsTable'));
         this.el.appendChild(this._refsTable);
 
-        this.el.addEventListener('contextmenu', (event) => {
+        contextMenuListener(this.el, (event) => {
             if (Object.keys(this.resources).length > 0) {
                 this._showMenu(-1, { entries: [ ], pos: { left: event.pageX, top: event.pageY }});
                 this.el.classList.add('all-selected');
@@ -216,7 +216,7 @@ const ResultsPanel = Backbone.View.extend({
             });
         }
 
-        $cover.on('contextmenu', event => {
+        contextMenuListener($cover[0], event => {
             this._resultsMouseClicked(2, event.offsetX, event.offsetY, analysis);
             event.stopPropagation();
             return false;
