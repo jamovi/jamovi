@@ -73,6 +73,8 @@ class Main {  // this is constructed at the bottom
                 data : { url: url }}, '*');
         };
 
+        document.oncontextmenu = function () { return false; };
+
         // the location of the script should be inside the body
         // so we don't need document.ready()
         this.$body = $('body');
@@ -100,6 +102,7 @@ class Main {  // this is constructed at the bottom
                 screenY: event.screenY
             });
             this.$results[0].dispatchEvent(clickEvent);
+            event.preventDefault();
         });
     }
 

@@ -284,7 +284,7 @@ $(document).ready(async() => {
         $('#max-button').on('click', event => host.maximizeWindow());
     }
 
-    //document.oncontextmenu = function() { return false; };
+    document.oncontextmenu = function() { return false; };
 
     // note: in linux, as of electron 1.7.9, the drop event is never fired,
     // so we handle the navigate event in the electron app
