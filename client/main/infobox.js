@@ -97,7 +97,7 @@ class InfoBox extends HTMLElement {
 
             this._local.classList.add('external');
 
-            if (status.message || info.title) {
+            if (info.message || info.title) {
                 this._host.setAttribute('title', info.title || '');
                 this._host.setAttribute('message', info.message || '');
                 this._host.setAttribute('status', info.status || '');
