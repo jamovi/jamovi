@@ -35,6 +35,7 @@ const ElementView = Backbone.View.extend({
                 document.activeElement.blur();
             event.stopPropagation();
             this._sendEvent({ type: 'menu', data: { entries: [], pos: { left: event.pageX, top: event.pageY } } });
+            event.preventDefault();
             return false;
         });
 

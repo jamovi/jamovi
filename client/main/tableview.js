@@ -696,6 +696,8 @@ const TableView = SilkyView.extend({
 
         if (! this.selection.cellInSelection(rowNo, colNo))
             this.selection.clearSelectionList();
+        
+        event.preventDefault();
     },
     _headerMenu(event) {
         let colNo = this.selection === null ? 0 : this.selection.colNo;

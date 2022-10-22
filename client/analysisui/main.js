@@ -103,6 +103,7 @@ let requestLocalColumnData = function(data) {
 
 let dataResources = { columns: [] };
 
+document.oncontextmenu = function () { return false; };
 
 const Analysis = function(def, i18nDef, jamoviVersion, id) {
 

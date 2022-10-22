@@ -219,6 +219,7 @@ const ResultsPanel = Backbone.View.extend({
         contextMenuListener($cover[0], event => {
             this._resultsMouseClicked(2, event.offsetX, event.offsetY, analysis);
             event.stopPropagation();
+            event.preventDefault();
             return false;
         });
 

@@ -103,6 +103,7 @@ const VariablesView = SilkyView.extend({
                     ContextMenu.showFilterMenu(event.clientX, event.clientY, true);
                 else
                     ContextMenu.showVariableMenu(event.clientX, event.clientY, this.selection.getColumnStart() !== this.selection.getColumnEnd(), true);
+                event.preventDefault();
             }
         });
 
