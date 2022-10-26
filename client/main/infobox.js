@@ -64,8 +64,15 @@ class InfoBox extends HTMLElement {
                 && info.title === this._displayInfo.title
                 && info.message === this._displayInfo.message
                 && info.status === this._displayInfo.status
-                && info['message-src'] === this._displayInfo['message-src'])
+                && info['message-src'] === this._displayInfo['message-src']) {
+
+            if (info['message-src'] && info.data) {
+                // this allows the iframe to receive updates
+                this._iframe.contentWindow.postMessage(info.data);
+            }
+
             return;
+        }
 
         if (params === undefined)
             params = { };
