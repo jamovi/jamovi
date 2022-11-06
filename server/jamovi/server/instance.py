@@ -36,7 +36,11 @@ import functools
 from time import monotonic
 from itertools import islice
 from urllib import parse
+
 from aiohttp import ClientSession
+from aiohttp import TCPConnector
+from ipaddress import ip_address
+
 from asyncio import ensure_future as create_task
 from collections import namedtuple
 
@@ -864,8 +868,16 @@ class Instance:
                     path = url
 
                     integ_handler = get_special_handler(url)
+                    
+                    class Connector(TCPConnector):
+                        async def _resolve_host(self, host: str, port: int, traces = None):
+                            resolved_list = await super()._resolve_host(host, port, traces)
+                            for resolved in resolved_list:
+                                if not ip_address(resolved['host']).is_global:
+                                    raise PermissionError
+                            return resolved_list
 
-                    async with ClientSession(raise_for_status=True) as session:
+                    async with ClientSession(raise_for_status=True, connector=Connector()) as session:
                         async with session.get(url, ssl=ssl_context()) as response:
 
                             if integ_handler is not None:
