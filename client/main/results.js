@@ -89,7 +89,7 @@ const ResultsView = Backbone.View.extend({
         this.$el[0].appendChild(this.welcome);
 
         host.version.then((version) => {
-            iframe.src = `https://www.jamovi.org/welcome/?v=${ version }&p=${ host.os }`;
+            iframe.src = `https://www.jamovi.org/welcome/?v=${ version }&p=${ host.os }&plan=${ localStorage.getItem("plan") }`;
         });
 
         const messageHandler = (event) => {
