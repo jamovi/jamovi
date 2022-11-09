@@ -19,7 +19,6 @@
      }
 
      .jmv-column-header .jmv-column-header-resizer {
-         visibility: : hidden;
          pointer-events: none;
          opacity: 0;
          touch-action: none;

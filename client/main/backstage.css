@@ -404,7 +404,7 @@
 
 .silky-bs-fslist {
     display: flex;
-    flex-flow: column; nowrap;
+    flex-flow: column;
 }
 
 .silky-bs-fslist-entry {
