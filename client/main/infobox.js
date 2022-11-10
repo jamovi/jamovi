@@ -314,7 +314,7 @@ class InfoBox extends HTMLElement {
                 display: flex ;
                 flex-direction: column ;
                 justify-content: center ;
-                transition: width 1s, height 1s, opacity .2s ;
+                transition: width 0.2s, height 0.2s, opacity .2s ;
                 opacity: 0;
                 overflow: hidden ;
                 box-shadow: 0px 0px 10px #777777;
