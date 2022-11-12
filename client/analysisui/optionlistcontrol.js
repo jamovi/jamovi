@@ -5,7 +5,6 @@ const SelectableLayoutGrid = require('./selectablelayoutgrid');
 const OptionControl = require('./optioncontrol');
 const TitledGridControl = require('./titledgridcontrol');
 const FormatDef = require('./formatdef');
-let DefaultControls;
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
 const Backbone = require('backbone');
@@ -14,10 +13,9 @@ const TemplateItemControl = require('./templateitemcontrol');
 const TargetListValueFilter = require('./targetlistvaluefilter');
 const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
 
-const OptionListControl = function(params) {
-    if (!DefaultControls)
-        DefaultControls = require('./defaultcontrols');
+const OptionListControl = function (params) {
 
+    this.defaultControls = params.DefaultControls;
     if (params.columns === undefined) {
         let columnInfo = {
             name: "column1",
@@ -249,7 +247,7 @@ const OptionListControl = function(params) {
         if (cell === null) {
 
             let isVirtual = columnInfo.isVirtual;
-            let params = { type: DefaultControls.Label };
+            let params = { type: this.defaultControls.Label };
 
             if (isVirtual !== undefined)
                 params.isVirtual = isVirtual;

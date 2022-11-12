@@ -289,6 +289,7 @@ const OptionsView = function(uiModel) {
 
         let name = uiDef.name === undefined ? null :  uiDef.name;
 
+        uiDef.DefaultControls = DefaultControls;
         uiDef._parentControl = parent;
 
         let templateInfo = uiDef._templateInfo;
