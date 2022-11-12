@@ -2,7 +2,7 @@
 
 const $ = require('jquery');
 const GridOptionControl = require('./gridoptioncontrol');
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
 
 const rmafcItem = function(parent, data, isFirst, isLast) {

@@ -159,3 +159,4 @@ class ClipboardPrompt extends HTMLElement {
 }
 
 customElements.define('jmv-clipboardprompt', ClipboardPrompt);
+module.exports = ClipboardPrompt;

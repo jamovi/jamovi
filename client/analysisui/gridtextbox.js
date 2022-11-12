@@ -1,7 +1,7 @@
 'use strict';
 
 const $ = require('jquery');
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 const GridOptionControl = require('./gridoptioncontrol');
 const FormatDef = require('./formatdef');
 const EnumPropertyFilter = require('./enumpropertyfilter');

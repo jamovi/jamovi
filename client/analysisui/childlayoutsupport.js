@@ -1,7 +1,7 @@
 
 'use strict';
 
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const SuperClass = require('../common/superclass');
 

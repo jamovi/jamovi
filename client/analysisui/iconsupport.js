@@ -4,7 +4,7 @@
 const $ = require('jquery');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 
-const getIcons = function(parent) {
+const get = function(parent) {
 
     let icons = parent.getPropertyValue('icons');
     let iconPosition = parent.getPropertyValue('iconPosition');
@@ -20,19 +20,14 @@ const getIcons = function(parent) {
 const addSupport = function(parent) {
     parent.registerSimpleProperty("icons", null);
     parent.registerSimpleProperty("iconPosition", "right", new EnumPropertyFilter(["left", "right", "above", "below"], "right"));
-
-
 };
 
 const exists = function(parent) {
     return parent.hasProperty('icons') && parent.getPropertyValue('icons') !== null;
 };
 
-const getPosition = function(parent) {
+const position = function(parent) {
     return parent.getPropertyValue('iconPosition');
 };
 
-module.exports.get = getIcons;
-module.exports.exists = exists;
-module.exports.position = getPosition;
-module.exports.addSupport = addSupport;
+module.exports = { get, exists, position, addSupport };

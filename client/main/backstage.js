@@ -2441,5 +2441,4 @@ const BackstageChoices = SilkyView.extend({
     }
 });
 
-module.exports.View = BackstageView;
-module.exports.Model = BackstageModel;
+module.exports = { View: BackstageView, Model: BackstageModel };

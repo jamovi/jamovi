@@ -416,3 +416,4 @@ class InfoBox extends HTMLElement {
 }
 
 customElements.define('jmv-infobox', InfoBox);
+module.exports = InfoBox;
