@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const GridControl = require('./gridcontrol');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');

@@ -98,3 +98,4 @@ class HeaderAlert extends HTMLElement {
 }
 
 customElements.define('jmv-headeralert', HeaderAlert);
+module.exports = HeaderAlert;

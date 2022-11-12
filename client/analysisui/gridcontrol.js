@@ -3,7 +3,7 @@
 const SuperClass = require('../common/superclass');
 const ControlBase = require('./controlbase');
 const EnumPropertyFilter = require('./enumpropertyfilter');
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 
 const GridControl = function(params) {
 

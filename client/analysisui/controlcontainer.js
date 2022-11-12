@@ -1,7 +1,7 @@
 'use strict';
 
 const SuperClass = require('../common/superclass');
-const LayoutGrid = require('./layoutgrid').Grid;
+const LayoutGrid = require('./layoutgrid');
 const TitledGridControl = require('./titledgridcontrol');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');

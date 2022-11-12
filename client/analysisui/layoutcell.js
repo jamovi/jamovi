@@ -435,4 +435,4 @@ LayoutCell.defaultFormat = 'minmax(max-content, max-content)';
 
 SuperClass.create(LayoutCell);
 
-module.exports.LayoutCell = LayoutCell;
+module.exports = LayoutCell;

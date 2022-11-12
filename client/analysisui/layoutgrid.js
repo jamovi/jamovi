@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-const LayoutCell = require('./layoutcell').LayoutCell;
+const LayoutCell = require('./layoutcell');
 const SuperClass = require('../common/superclass');
 
 const LayoutGrid = function() {
@@ -327,4 +327,4 @@ const LayoutGrid = function() {
 
 SuperClass.create(LayoutGrid);
 
-module.exports.Grid = LayoutGrid;
+module.exports = LayoutGrid;

@@ -98,7 +98,7 @@ function currentZoom() {
     return 100;
 }
 
-require('./utils/clipboardprompt');
+const clipboardprompt = require('./utils/clipboardprompt');
 let clipboardPromptBox;
 let clipboardPrompt;
 
