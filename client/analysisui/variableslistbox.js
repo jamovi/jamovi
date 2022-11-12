@@ -5,15 +5,11 @@ const FormatDef = require('./formatdef');
 const GridOptionListControl = require('./gridoptionlistcontrol');
 const RequestDataSupport = require('./requestdatasupport');
 const SuperClass = require('../common/superclass');
-let DefaultControls;
 
-const VariablesListBox = function(params) {
+const VariablesListBox = function (params) {
 
-    if (params.columns === undefined) {
-        if (!DefaultControls)
-            DefaultControls = require('./defaultcontrols');
-        params.template = { type: DefaultControls.VariableLabel };
-    }
+    if (params.columns === undefined)
+        params.template = { type: params.DefaultControls.VariableLabel };
 
     GridOptionListControl.extendTo(this, params);
     RequestDataSupport.extendTo(this);
