@@ -766,9 +766,12 @@ $(document).ready(async() => {
         let match = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname);
         if (match)
             instanceId = match[1];
+        
+        const params = new URLSearchParams(window.location.search);
+        const toOpen = params.get('open');
+        const accessKey = params.get('key');
 
-        if (window.location.search.indexOf('?open=') !== -1) {
-            toOpen = `${ window.location.search }${ window.location.hash }`.split('?open=')[1];
+        if (toOpen) {
             if (toOpen.startsWith('http://') || toOpen.startsWith('https://'))
                 ; // do nothing
             else
@@ -795,7 +798,7 @@ $(document).ready(async() => {
 
             while (true) {
 
-                let stream = instance.open(toOpen, { existing: !!instanceId, authToken });
+                let stream = instance.open(toOpen, { existing: !!instanceId, authToken, accessKey });
                 for await (let progress of stream)
                     notify(progress);
                 status = await stream;
