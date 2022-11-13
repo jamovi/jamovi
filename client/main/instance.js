@@ -207,7 +207,7 @@ const Instance = Backbone.Model.extend({
                             setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel: () => xhr.abort() });
                     });
 
-                    let url = `${ host.baseUrl }open?p&filename=${ encodeURIComponent(file.name) }`;
+                    let url = `${ host.baseUrl }open?p=&filename=${ encodeURIComponent(file.name) }`;
                     if (options.title)
                         url += `&title=${ encodeURIComponent(options.title) }`;
 
@@ -247,7 +247,7 @@ const Instance = Backbone.Model.extend({
                     let url;
 
                     if (file) {
-                        url = `${ host.baseUrl }open?p&url=${ encodeURIComponent(file) }`;
+                        url = `${ host.baseUrl }open?p=&url=${ encodeURIComponent(file) }`;
                         if (options.title)
                             url += `&title=${ encodeURIComponent(options.title) }`;
                     }
@@ -255,14 +255,16 @@ const Instance = Backbone.Model.extend({
                         url = 'open';
                     }
                     else {
-                        url = `${ host.baseUrl }open?p`;
+                        url = `${ host.baseUrl }open?p=`;
+                        if (options.accessKey)
+                            url += `&key=${ options.accessKey }`;
                     }
 
                     response = await fetch(url, {
                         method: 'GET',
                         credentials: 'include',
                         cache: 'no-store',
-                        headers: headers
+                        headers: headers,
                     });
 
                     if (response.status === 204)
