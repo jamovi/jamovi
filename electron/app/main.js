@@ -360,7 +360,6 @@ const spawn = new Promise((resolve, reject) => {
     updateUrl = `https://www.jamovi.org/downloads/update?p=${ platform }&v=${ config.version }&f=zip&r=${ os.release() }&a=${ process.arch }`;
 
     setTimeout(() => checkForUpdate(updateUrl), 500);
-    setInterval(() => checkForUpdate(updateUrl, 'checking', false), 60 * 1000);
 
 }).catch(error => {
     console.log(error)
