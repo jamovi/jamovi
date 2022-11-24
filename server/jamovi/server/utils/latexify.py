@@ -1,7 +1,7 @@
 
 import os.path
 import re
-import base64
+from base64 import b64decode
 from zipfile import ZipFile
 from zipfile import ZipInfo
 from io import TextIOWrapper
@@ -28,9 +28,10 @@ async def latexify(content, out, resolve_image):
         # remove references and table footer for now: if it contains useful information, it has to be handled
         # remove empty table lines or empty headings
         # remove style attributes (which make the HTML code pretty unreadable)
-        body = re.sub(' style="text-align:.*?"',           '',                 body)
         body = re.sub(' style="font-weight:.*?"',          '',                 body)
         body = re.sub(' style="font-style:.*?"',           '',                 body)
+        body = re.sub(' style="padding:.*?"',              '',                 body)
+        body = re.sub(' style="text-align:.*?"',           '',                 body)
         body = re.sub(' style="width:.*?"',                '',                 body)
         body = re.sub(' alt=".+?"',                        '',                 body)
 
@@ -55,6 +56,8 @@ async def latexify(content, out, resolve_image):
         body = re.sub(r'<sup>(\S+?)<\/sup>',               r'$^{\1}$',         body)
         body = re.sub(r'<sub>(\S+?)<\/sub>',               r'$_{\1}$',         body)
         body = re.sub('&nbsp;',                            '',                 body)
+        body = re.sub('&#x27;',                            '\'',               body)
+        body = re.sub('&#039;',                            '\'',               body)
         body = re.sub('\xA0',                              ' ',                body)
         body = re.sub('\xB1',                              '$\\\\pm$',         body)
         body = re.sub('\xB2',                              '$^2$',             body)
@@ -215,15 +218,16 @@ async def latexify(content, out, resolve_image):
         idta = re.findall('<img src=".*?>', body)
         n_idta = len(idta)
 
-        for i, url in enumerate(idta):
+        for i, isrc in enumerate(idta):
             i_fn = f'figure_{ i + 1 }.png'
 
             try:
-                i_uri = re.findall(r'img src="data:\w+\/\w+;base64,(\S+)"', url)
-                if i_uri:
+                i_b64 = re.findall(r'img src="data:\w+\/\w+;base64,(\S+)"', isrc)
+                if i_b64:
                     zi = ZipInfo(i_fn, now)
                     with z.open(zi, 'w') as f:
-                        f.write(base64.b64decode(i_uri.group(1)))
+                        f.write(b64decode(i_b64[0]))
+#                       f.write(b64decode(i_b64.group(1)))
                 else:
                     # extract data address, get place where the file is stored, and write it with
                     # the file name Figure + counter (using the original extension) into the ZIP file
@@ -271,11 +275,11 @@ async def latexify(content, out, resolve_image):
                 raut = re.findall(r'([\s\S]*)[1-2][0-9][0-9][0-9]', rcrr)[0].replace(' (', '').replace('&amp; ', '').replace('& ', '')
                 if re.search(', ', raut):
                     raus = re.split(', ', raut)
-                    for j in range(len(raus)):
-                        if j % 2 == 0:
+                    for j in range(len(raus) - int('et al.' in raus)):
+                        if j % 2 == 0 and j + 1 < len(raus):
                             raus[j] = (raus[j + 1].strip() + ' ' + raus[j].strip())
                             raus[j + 1] = None
-                    raut = ' and '.join([k for k in raus if k])
+                    raut = ' and '.join([k for k in raus if k]).replace(' and et al.', ' et al.')
                 else:
                     raut = '{' + raut + '}'
                 # URL-References
@@ -287,20 +291,20 @@ async def latexify(content, out, resolve_image):
                     rbib = (rbib + '@MISC{' + rkey[i] + ',\n  author       = {' + raut + '},\n  year         = {' + r_yr + '},\n  title        = {' + rtit[0] + '},\n  note         = {'
                                             + rtit[1].replace(') [', ', ').replace('] (', ', ').replace('[', '').replace(']', '').replace('(', '').replace(')', '') + '},\n  howpublished = {\\url{' + rurl + '}},\n}\n\n')
                 # Articles and books: not yet finished
-        #       else:
-        #           rtit = rcrr.match(/[\s\S]*?[1-2][0-9][0-9][0-9](.+?). <em>/)[1].replace('). ', '')
-        #           remp = rcrr.match(/<em>(.+?)<\/em>/)[1].split(/, /)
-        #           rjnl = remp[0]
-        #           if (remp[1].indexOf('(') == -1)
-        #               rvol = remp[1]
-        #               rnum = ''
-        #           else:
-        #               rvnn = remp[1].split(/(/)
-        #               rvol = rvnn[0]
-        #               rnum = rvnn[0].replace(')', '')
-        #           rpag = rcrr.match(/[0-9]+-[0-9]+/)[0]
-        #           rbib = (rbib + '@ARTICLE{' + ',\n  author       = {' + raut + '},\n  title        = {' + rtit + '},\n  journal      = {' + rjnl + '},\n  year         = {' + r_yr +
-        #                                       '},\n  volume       = {' + rvol + '},\n  number       = {' + rnum + '},\n  pages        = {' + rpag + '},\n}\n\n')
+#               else:
+#                   rtit = rcrr.match(/[\s\S]*?[1-2][0-9][0-9][0-9](.+?). <em>/)[1].replace('). ', '')
+#                   remp = rcrr.match(/<em>(.+?)<\/em>/)[1].split(/, /)
+#                   rjnl = remp[0]
+#                   if (remp[1].indexOf('(') == -1)
+#                       rvol = remp[1]
+#                       rnum = ''
+#                   else:
+#                       rvnn = remp[1].split(/(/)
+#                       rvol = rvnn[0]
+#                       rnum = rvnn[0].replace(')', '')
+#                   rpag = rcrr.match(/[0-9]+-[0-9]+/)[0]
+#                   rbib = (rbib + '@ARTICLE{' + ',\n  author       = {' + raut + '},\n  title        = {' + rtit + '},\n  journal      = {' + rjnl + '},\n  year         = {' + r_yr +
+#                                               '},\n  volume       = {' + rvol + '},\n  number       = {' + rnum + '},\n  pages        = {' + rpag + '},\n}\n\n')
             # end: for i in range(len(rref))
             # only write a bib-file and generate text for statstical analyses section if there are references in the original HTML
             if len(rref) > 0:
