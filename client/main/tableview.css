@@ -268,7 +268,7 @@
 .jmv-column-cell,
 .jmv-column-header-label {
     overflow: hidden;
-    white-space: nowrap;
+    white-space: pre;
     text-overflow: ellipsis;
     padding-left: 4px;
     line-height: normal;
