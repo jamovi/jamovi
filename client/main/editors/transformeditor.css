@@ -407,6 +407,7 @@
     height: inherit;
     box-sizing: border-box;
     transition: .2s text-indent;
+    white-space: pre-wrap;
 }
 
 .jmv-transform-editor-options > .formula-box .item-0 .formula {
