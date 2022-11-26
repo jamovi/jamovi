@@ -65,6 +65,7 @@
     flex-grow: 1;
     text-align: left;
     padding: 3px 6px;
+    white-space: pre;
 }
 
 .jmv-formula-toolbar-options > .ops-box > .op > .content > .item:hover {

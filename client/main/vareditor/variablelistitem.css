@@ -18,6 +18,7 @@
 
 .jmv-variable-list-item > .label {
     flex-grow: 1;
+    white-space: pre;
 }
 
 .jmv-variable-list-item:hover {

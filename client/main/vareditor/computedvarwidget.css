@@ -130,6 +130,7 @@
     min-height: 1em;
     width: 350px;
     box-sizing: border-box;
+    white-space: pre-wrap;
 }
 
 [contenteditable=true]:empty:before {
