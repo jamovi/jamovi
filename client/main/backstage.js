@@ -2246,10 +2246,15 @@ const BackstageView = SilkyView.extend({
 
         setTimeout(() => {
             focusLoop.enterFocusLoop(this.$el[0], { withMouse: fromMouse });
+            // fix chrome render issue - force redraw
+            this.$opPanel[0].style.zIndex = 1;
         }, 200);
         this.activeStateChanging = false;
     },
     deactivate : function(fromMouse) {
+
+        // fix chrome render issue - reset for future force redraw
+        this.$opPanel[0].style.zIndex = 'auto';
 
         this.activeStateChanging = true;
         tarp.hide('backstage');

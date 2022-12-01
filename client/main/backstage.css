@@ -1,6 +1,7 @@
 
 .silky-bs {
-    display: flex ;
+    display: grid ;
+    grid-template-columns: min-content auto;
     position: fixed ;
     overflow: hidden;
     left: 0 ;
@@ -88,8 +89,8 @@
     z-index: 0 ;
     background-color: #FFFFFF ;
     color: #333333 ;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: min-content min-content auto min-content;
 }
 
 .silky-bs-main {
@@ -97,6 +98,7 @@
     flex: 1;
     position: relative;
     -webkit-app-region: no-drag;
+    grid-column-start: 2;
 }
 
 .silky-bs-header {
