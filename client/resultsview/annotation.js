@@ -2,13 +2,14 @@
 'use strict';
 
 window.katex = require('katex');
-window.hljs = require('highlight.js');
 const Quill = require('quill');
+const hljs = require('highlight.js');
 
 const $ = require('jquery');
 const Parchment = Quill.import('parchment');
 const TextBlot = Quill.import('blots/text');
-const QuillDeltaToHtmlConverter = require('quill-delta-to-html').QuillDeltaToHtmlConverter;
+
+import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 
 //////////////////////////////////////////////////////////////////////////////
 // Needed to fix an issue with how quill interacts with highlightjs
@@ -94,14 +95,14 @@ const Annotation = function(address, suffix) {
         this.editor = new Quill(this._editor, {
             modules: {
                 formula: true,
-                syntax: true,
+                syntax: { highlight: text => hljs.highlightAuto(text).value },
                 toolbar: [],
                 history: {
                   delay: 1000,
                   maxStack: 500,
                   userOnly: true
                 },
-                clipboard: { }
+                clipboard: { },
             },
             placeholder: '>',
             theme: 'snow'

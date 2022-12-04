@@ -4,7 +4,7 @@
     width: 10px;
     height: 10px;
     transform: rotate(180deg);
-    background-image: url(assets/context-menu-arrow.svg);
+    background-image: url('../../assets/context-menu-arrow.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;

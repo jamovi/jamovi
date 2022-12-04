@@ -21,7 +21,7 @@
 }
 
 .jmv-filter-options > .title-box.think {
-    background-image: url('../assets/indicator-running.svg');
+    background-image: url('../../assets/indicator-running.svg');
     background-repeat: no-repeat;
     background-size: contain;
     background-position: center;
@@ -223,7 +223,7 @@
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
     width: 23px;
     border: 1px solid #dadada;
-    background-image: url('assets/filters-formula.svg');
+    background-image: url('../../assets/filters-formula.svg');
     background-position: center left 1px;
     background-repeat: no-repeat;
     background-size: 65%;
@@ -241,7 +241,7 @@
 .jmv-filter-options > .formula-list > .formula-box .show-editor > .down-arrow {
     filter: inherit;
     position: absolute;
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../../assets/filters-down-arrow.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100%;
@@ -332,15 +332,15 @@
 
 .filter-button.add-filter {
     background-size: 80%;
-    background-image: url('../assets/filters-add.svg');
+    background-image: url('../../assets/filters-add.svg');
 }
 
 .show-filter-columns {
-    background-image: url('../assets/filters-hidden.svg');
+    background-image: url('../../assets/filters-hidden.svg');
 }
 
 .hide-filter-columns {
-    background-image: url('../assets/filters-visible.svg');
+    background-image: url('../../assets/filters-visible.svg');
 }
 
 .jmv-filter-options.remove {

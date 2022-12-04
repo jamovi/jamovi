@@ -243,7 +243,7 @@
     background-repeat: no-repeat ;
     background-size: auto 80% ;
     background-position: 6px 1px ;
-    cursor: url('assets/column-select.svg'), auto;
+    cursor: url('../assets/column-select.svg'), auto;
     display: flex;
     align-items: center;
 }
@@ -592,7 +592,7 @@ input.jmv-table-cell-selected.copying {
     border-image: linear-gradient(to left, #ACACAC, rgba(0,0,0,0)) 1 100% ;
     border-image-slice: 1 ;
     box-sizing: border-box ;
-    cursor: url('assets/row-select.svg'), auto;
+    cursor: url('../assets/row-select.svg'), auto;
 }
 
 .jmv-row-header-cell:first-child {

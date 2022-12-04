@@ -46,6 +46,7 @@ const nameAndVersion = Promise.resolve(APP_NAME + ' ' + remote.getGlobal('versio
 const baseUrl = 'http://127.0.0.1:' + remote.getGlobal('mainPort') + '/';
 const analysisUIUrl  = 'http://127.0.0.1:' + remote.getGlobal('analysisUIPort') + '/';
 const resultsViewUrl = 'http://127.0.0.1:' + remote.getGlobal('resultsViewPort') + '/';
+const viteHMR = remote.getGlobal('viteHMR');
 
 const ipc = electron.ipcRenderer;
 
@@ -75,15 +76,21 @@ let closing = false;
 
 window.onbeforeunload = (event) => {
     if (closing !== true && loading !== true) {
-        setTimeout(() => {
-            let event = { };
-            let returned = _notify('close', event);
-            if (returned !== false) {
-                closing = true;
-                closeWindow();
-            }
-        });
-        return false;
+        if (viteHMR) {
+             // if running under vite, we don't want to trigger this from HMR
+             console.warn('unload event! (running under vite, and can\'t distinguish HMR from window close -- prompts to save are disabled)')
+        }
+        else {
+            setTimeout(() => {
+                let event = { };
+                let returned = _notify('close', event);
+                if (returned !== false) {
+                    closing = true;
+                    closeWindow();
+                }
+            });
+            return false;
+        }
     }
     webContents.removeListener('before-input-event', beforeInputEvent);
 };

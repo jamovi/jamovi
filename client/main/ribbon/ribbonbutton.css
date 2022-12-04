@@ -32,7 +32,7 @@
     width: 6px;
     height: 6px;
     transform: rotate(270deg);
-    background-image: url(assets/modules-analyses-arrow.svg);
+    background-image: url('../../assets/modules-analyses-arrow.svg');
     background-position: center;
     background-repeat: no-repeat ;
     background-size: contain;

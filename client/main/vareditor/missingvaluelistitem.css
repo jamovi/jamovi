@@ -44,7 +44,7 @@
 
 .jmv-missing-value-list-item .formula-list-item > .down-arrow {
     position: absolute;
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../../assets/filters-down-arrow.svg');
     background-position: right 2px top 1px;
     background-repeat: no-repeat;
     background-size: 5px 5px;
@@ -135,7 +135,7 @@
 
 .jmv-missing-value-list-item .formula-list-item > .down-arrow {
     position: absolute;
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../../assets/filters-down-arrow.svg');
     background-position: right 2px top 1px;
     background-repeat: no-repeat;
     background-size: 5px 5px;

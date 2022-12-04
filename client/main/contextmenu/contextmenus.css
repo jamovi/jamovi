@@ -1,81 +1,81 @@
 
 
 .jmv-context-menu-button[data-icon='copy'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-data-copy.svg');
+    background-image: url('../../assets/menu-data-copy.svg');
 }
 
 .jmv-context-menu-button[data-icon='paste'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-data-paste.svg');
+    background-image: url('../../assets/menu-data-paste.svg');
 }
 
 .jmv-context-menu-button[data-icon='appendvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-variable-append.svg');
+    background-image: url('../../assets/menu-variable-append.svg');
 }
 
 .jmv-context-menu-button[data-icon='appendrow'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-row-append.svg');
+    background-image: url('../../assets/menu-row-append.svg');
 }
 
 .jmv-context-menu-button[data-icon='delrow'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-row-remove.svg');
+    background-image: url('../../assets/menu-row-remove.svg');
 }
 
 .jmv-context-menu-button[data-icon='delvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-variable-remove.svg');
+    background-image: url('../../assets/menu-variable-remove.svg');
 }
 
 .jmv-context-menu-button[data-icon='cut'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-data-cut.svg');
+    background-image: url('../../assets/menu-data-cut.svg');
 }
 
 .jmv-context-menu-button[data-icon='transform'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-data-transform.svg');
+    background-image: url('../../assets/menu-data-transform.svg');
 }
 
 .jmv-context-menu-button[data-icon='editvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-variable-edit.svg');
+    background-image: url('../../assets/menu-variable-edit.svg');
 }
 
 .jmv-context-menu-button[data-icon='addvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-variable-add.svg');
+    background-image: url('../../assets/menu-variable-add.svg');
 }
 
 .jmv-context-menu-button[data-icon='insertvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-variable-insert.svg');
+    background-image: url('../../assets/menu-variable-insert.svg');
 }
 
 .jmv-context-menu-button[data-icon='insertrow'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-row-insert.svg');
+    background-image: url('../../assets/menu-row-insert.svg');
 }
 
 .jmv-context-menu-button[data-icon='addrow'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-row-add.svg');
+    background-image: url('../../assets/menu-row-add.svg');
 }
 
 .jmv-context-menu-button[data-icon='insertcomputed'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-computed-insert.svg');
+    background-image: url('../../assets/menu-computed-insert.svg');
 }
 
 .jmv-context-menu-button[data-icon='appendcomputed'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-computed-append.svg');
+    background-image: url('../../assets/menu-computed-append.svg');
 }
 
 .jmv-context-menu-button[data-icon='insertrecoded'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-transformed-insert.svg');
+    background-image: url('../../assets/menu-transformed-insert.svg');
 }
 
 .jmv-context-menu-button[data-icon='appendrecoded'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-transformed-append.svg');
+    background-image: url('../../assets/menu-transformed-append.svg');
 }
 
 .jmv-context-menu-button[data-icon='datavar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/variable-nominal.svg');
+    background-image: url('../../assets/variable-nominal.svg');
 }
 
 .jmv-context-menu-button[data-icon='compvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/variable-computed.svg')
+    background-image: url('../../assets/variable-computed.svg')
 }
 
 .jmv-context-menu-button[data-icon='transvar'] > .jmv-ribbon-button-icon {
-    background-image: url('../assets/menu-data-transform.svg');
+    background-image: url('../../assets/menu-data-transform.svg');
 }

@@ -57,3 +57,15 @@
     background-color: #e6ebf3;
     border: 1px solid #cadaf3;
 }
+
+.jmv-variable-new-container .data-variable .icon {
+    background-image: url('../../assets/variable-nominal.svg');
+}
+
+.jmv-variable-new-container .computed-variable .icon {
+    background-image: url('../../assets/variable-computed.svg');
+}
+
+.jmv-variable-new-container .transformed-variable .icon {
+    background-image: url('../../assets/menu-data-transform.svg');
+}

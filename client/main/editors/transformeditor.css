@@ -122,19 +122,19 @@
 }
 
 .jmv-transform-editor-bottom .measure-box .transform-measure-icon[measure-type='id'] {
-    background-image: url('../assets/variable-id.svg');
+    background-image: url('../../assets/variable-id.svg');
 }
 
 .jmv-transform-editor-bottom .measure-box .transform-measure-icon[measure-type='continuous'] {
-    background-image: url('../assets/variable-continuous.svg');
+    background-image: url('../../assets/variable-continuous.svg');
 }
 
 .jmv-transform-editor-bottom .measure-box .transform-measure-icon[measure-type='nominal'] {
-    background-image: url('../assets/variable-nominal.svg');
+    background-image: url('../../assets/variable-nominal.svg');
 }
 
 .jmv-transform-editor-bottom .measure-box .transform-measure-icon[measure-type='ordinal'] {
-    background-image: url('../assets/variable-ordinal.svg');
+    background-image: url('../../assets/variable-ordinal.svg');
 }
 
 .jmv-transform-editor-bottom {
@@ -252,7 +252,7 @@
 
 .jmv-transform-editor > .contents > .insert-box > .insert {
     background-size: 100%;
-    background-image: url('assets/filters-add.svg');
+    background-image: url('../../assets/filters-add.svg');
     background-position: center;
     background-repeat: no-repeat;
     height: 100%;
@@ -289,7 +289,7 @@
     align-self: stretch;
     margin-right: 4px;
     border: 1px solid #dadada;
-    background-image: url('assets/filters-formula.svg');
+    background-image: url('../../assets/filters-formula.svg');
     background-position: center left 1px;
     background-repeat: no-repeat;
     background-size: 65%;
@@ -306,7 +306,7 @@
 .jmv-transform-editor-options > .formula-box .show-editor > .down-arrow {
     filter: inherit;
     position: absolute;
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../../assets/filters-down-arrow.svg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100%;
@@ -319,7 +319,7 @@
 
 .jmv-transform-editor-options > .formula-box .formula-list-item > .down-arrow {
     position: absolute;
-    background-image: url('assets/filters-down-arrow.svg');
+    background-image: url('../../assets/filters-down-arrow.svg');
     background-position: right 2px top 1px;
     background-repeat: no-repeat;
     background-size: 5px 5px;

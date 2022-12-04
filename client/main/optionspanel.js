@@ -1,7 +1,11 @@
 'use strict';
 
 const $ = require('jquery');
-const Framesg = require('framesg').default;
+
+let Framesg = require('framesg');
+if ('default' in Framesg) // this import is handled differently between browserify and vite
+    Framesg = Framesg.default;
+
 const Backbone = require('backbone');
 Backbone.$ = $;
 const host = require('./host');

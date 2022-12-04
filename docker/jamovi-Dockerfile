@@ -39,12 +39,8 @@ COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
 
 FROM r-base AS client
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    nodejs \
-    npm
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libarchive-zip-perl  # for crc32
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash
+RUN apt install nodejs
 
 ARG JAMOVI_ROOT=.
 ARG MODS_ROOT=$JAMOVI_ROOT/docker/mods
@@ -59,21 +55,7 @@ COPY $JAMOVI_ROOT/client/                           /tmp/source/client/
 COPY   $MODS_ROOT/client/                           /tmp/source/client/
 COPY $JAMOVI_ROOT/server/jamovi/server/jamovi.proto /tmp/source/server/jamovi/server/jamovi.proto
 
-# release
-RUN npm run build:release
-RUN cp www/*.js        /usr/lib/jamovi/client
-RUN cp www/*.html      /usr/lib/jamovi/client
-RUN cp www/*.css       /usr/lib/jamovi/client
-RUN cp -r www/assets   /usr/lib/jamovi/client
-RUN cp favicon.ico     /usr/lib/jamovi/client
-
-# # debug
-# RUN npm run build
-# RUN cp *.js        /usr/lib/jamovi/client
-# RUN cp *.html      /usr/lib/jamovi/client
-# RUN cp *.css       /usr/lib/jamovi/client
-# RUN cp -r assets   /usr/lib/jamovi/client
-# RUN cp favicon.ico /usr/lib/jamovi/client
+RUN node_modules/.bin/vite build --outDir /usr/lib/jamovi/client
 
 COPY $JAMOVI_ROOT/version /usr/lib/jamovi/client
 
