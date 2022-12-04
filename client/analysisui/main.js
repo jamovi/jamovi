@@ -4,7 +4,9 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-const Framesg = require('framesg').default;
+
+import Framesg from 'framesg';
+
 Backbone.$ = $;
 
 const Options = require('./options');
@@ -122,12 +124,18 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
     };
     window._ = this.translate.bind(this);
 
-    eval(def);
+    if (ui)
+        // eval requires ui, but there's no references to ui, so this if ensures
+        // ui isn't optimised away
+        eval(def);
 
-    let options = module.exports.options;
+    // this comes through differently depending on whether the vite server
+    // or rollup build is used ... i don't know why.
+    const moduleExports = module.exports || module;
 
-    let layoutDef = new module.exports.view.layout();
-    this.viewTemplate = new module.exports.view();
+    let options = moduleExports.options;
+    let layoutDef = new moduleExports.view.layout();
+    this.viewTemplate = new moduleExports.view();
 
     LayoutUpdateCheck(layoutDef);
 

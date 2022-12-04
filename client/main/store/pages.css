@@ -22,7 +22,7 @@
     margin-left: 4px;
     margin-right: 3px;
     height: 12px;
-    background-image: url(../assets/variable-search.svg);
+    background-image: url('../../assets/variable-search.svg');
     background-repeat: no-repeat;
     background-size: contain;
     filter: opacity(0.5);
@@ -63,7 +63,7 @@
 }
 
 .jmv-store-message .icon {
-    background-image: url('../assets/action-info.svg');
+    background-image: url('../../assets/action-info.svg');
     width: 22px;
     background-repeat: no-repeat;
     background-size: 100% 100%;
@@ -89,7 +89,7 @@
 .jmv-store-module-icon {
     width: 70px ;
     height: 70px ;
-    background-image: url('../assets/analysis-module.svg');
+    background-image: url('../../assets/analysis-module.svg');
     background-size: 60%;
     background-position: center;
     background-repeat: no-repeat ;
@@ -210,7 +210,7 @@
     height: 200px ;
     transition: opacity .2s ;
     opacity: 0;
-    background-image: url('../assets/indicator-running.svg');
+    background-image: url('../../assets/indicator-running.svg');
     background-size: 50px ;
     background-position: center;
     background-repeat: no-repeat;

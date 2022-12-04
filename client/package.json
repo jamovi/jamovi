@@ -6,7 +6,7 @@
     "url": "https://github.com/jamovi/jamovi.git"
   },
   "scripts": {
-    "build": "echo BUILDING CLIENT && npm run build:main && npm run build:analysisui && npm run build:resultsview && npm run build:coms && echo DONE && npm run beep",
+    "build": "vite build && npm run build:coms",
     "build:coms": "node -e \"require('fs').copyFileSync('../server/jamovi/server/jamovi.proto', 'assets/coms.proto')\"",
     "build:main":        "browserify --debug main/main.js        --outfile main.js        && lessc main/main.less        main.css",
     "build:analysisui":  "browserify --debug analysisui/main.js  --outfile analysisui.js  && lessc analysisui/main.less  analysisui.css",
@@ -21,12 +21,14 @@
   },
   "devDependencies": {
     "backbone": "^1.4.0",
+    "@rollup/plugin-commonjs": "^23.0.2",
+    "@rollup/plugin-node-resolve": "^15.0.1",
     "beepbeep": "^1.3.0",
     "browserify": "^16.5.2",
     "chai": "^4.2.0",
     "clipboard-js": "^0.3.6",
-    "dialogs": "^2.0.1",
     "element-resize-detector": "^1.2.1",
+    "dialogs": "github:jonathon-love/dialogs#cb8c36eae8f651db6116a511d8416c87c7251d52",
     "framesg": "^0.1.3",
     "highlight.js": "^10.1.2",
     "jquery": "^3.5.1",
@@ -43,10 +45,14 @@
     "protobufjs": "5.0.1",
     "q": "^1.5.1",
     "quill": "^1.3.7",
-    "quill-delta-to-html": "^0.12.0",
+    "quill-delta-to-html": "^0.12.1",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "uglifyify": "^5.0.2",
     "underscore": "^1.11.0",
     "jed": "1.1.1",
-    "mark.js": "8.11.1"
+    "mark.js": "8.11.1",
+    "vite": "^3.2.3",
+    "vite-plugin-commonjs": "^0.6.0",
+    "vite-plugin-require": "^1.0.8"
   }
 }

@@ -51,7 +51,7 @@
 
 .jmv-missing-value-list .add-missing-value > .insert {
     background-size: 100%;
-    background-image: url('assets/filters-add.svg');
+    background-image: url('../../assets/filters-add.svg');
     background-position: center;
     background-repeat: no-repeat;
     height: 100%;

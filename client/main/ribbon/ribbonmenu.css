@@ -166,7 +166,7 @@
 }
 
 .to-analyses-arrow {
-    background-image: url('assets/context-menu-arrow.svg');
+    background-image: url('../../assets/context-menu-arrow.svg');
     width: 10px;
     height: 10px;
     background-position: center;

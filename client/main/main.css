@@ -1,0 +1,62 @@
+
+@import "../lib/metro-icons.css";
+
+@import "backstage.css";
+@import "optionspanel.css";
+@import "progressbar.css";
+@import "results.css";
+
+@import "contextmenu.css";
+
+@import "ribbon.css";
+@import "ribbon/analysetab.css";
+@import "ribbon/datatab.css";
+@import "ribbon/annotationtab.css";
+@import "ribbon/ribbonbutton.css";
+@import "ribbon/ribbongroup.css";
+@import "ribbon/ribbonseparator.css";
+@import "ribbon/ribbonmenu.css";
+@import "ribbon/appmenu.css";
+@import "ribbon/notifs.css";
+@import "store.css";
+@import "store/pages.css";
+@import "contextmenu/contextmenubutton.css";
+@import "contextmenu/contextmenus.css";
+
+@import "jamovi.css";
+@import "splitpanel.css";
+@import "variablesview.css";
+@import "tableview.css";
+@import "editorpanel.css";
+@import "editors/transformeditor.css";
+@import "editors/missingvalueeditor.css";
+@import "variableeditor.css";
+@import "vareditor/datavarwidget.css";
+@import "vareditor/outputvarwidget.css";
+@import "vareditor/computedvarwidget.css";
+@import "vareditor/recodedvarwidget.css";
+@import "vareditor/filterwidget.css";
+@import "vareditor/newvarwidget.css";
+@import "vareditor/formulatoolbar.css";
+@import "editors/operatordropdown.css";
+@import "vareditor/dropdown.css";
+@import "vareditor/transformlist.css";
+@import "vareditor/transformlistitem.css";
+@import "vareditor/missingvaluelist.css";
+@import "vareditor/missingvaluelistitem.css";
+@import "vareditor/variablelist.css";
+@import "vareditor/variablelistitem.css";
+@import "vareditor/measurelist.css";
+@import "vareditor/measurelistitem.css";
+@import "notifications.css";
+@import "statusbar/statusbar.css";
+@import "statusbar/statusbarbutton.css";
+
+@import "menu.css";
+
+@import "../common/toolbar/toolbar.css";
+@import "../common/toolbar/toolbarbutton.css";
+@import "../common/toolbar/toolbargroup.css";
+@import "../common/toolbar/toolbarseparator.css";
+@import "../common/focusloop.css";
+@import "../common/menu.css";

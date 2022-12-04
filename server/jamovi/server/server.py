@@ -17,6 +17,7 @@ from .utils import conf
 from .appinfo import app_info
 from jamovi.core import Dirs
 from .i18n import _
+from .webhandlers import ForwardHandler
 
 import sys
 import os
@@ -504,7 +505,8 @@ class Server:
                  host='127.0.0.1',
                  session_id=None,
                  stdin_slave=False,
-                 debug=False):
+                 debug=False,
+                 dev_server=None):
 
         # these are mostly not necessary, however the mimetypes library relies
         # on OS level config, and this can be bad/wrong. so we override these
@@ -531,6 +533,7 @@ class Server:
         self._host = host
         self._stdin_slave = stdin_slave
         self._debug = debug
+        self._dev_server = dev_server
 
         self.ports_opened = self._ioloop.create_future()
 
@@ -741,46 +744,80 @@ class Server:
                 'session': self._session,
                 'path': f'{ i18n_path }/manifest.json' }),
             (fr'{ path_a }/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
-            (fr'{ path_a }/assets/(.*)', StaticFileHandler, {
-                'path': assets_path }),
-            (fr'{ path_a }/[a-f0-9-]+/()', StaticFileHandler, {
-                'path': client_path,
-                'default_filename': 'index.html',
-                'extra_headers': cache_headers }),
-            (fr'{ path_a }/([-0-9a-z.]*)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers })
         ])
 
-        analysisui_path = os.path.join(client_path, 'analysisui.html')
+        if self._dev_server:
+            self._main_app.add_handlers(match_a, [
+                (fr'{ path_a }/(@vite/client)', ForwardHandler, {
+                    'base_url': self._dev_server }),
+                (fr'{ path_a }/[a-f0-9-]+/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server }),
+                (fr'{ path_a }/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server }),
+            ])
+        else:
+            self._main_app.add_handlers(match_a, [
+                (fr'{ path_a }/assets/(.*)', StaticFileHandler, {
+                    'path': assets_path }),
+                (fr'{ path_a }/[a-f0-9-]+/()', StaticFileHandler, {
+                    'path': client_path,
+                    'default_filename': 'index.html',
+                    'extra_headers': cache_headers }),
+                (fr'{ path_a }/([-0-9a-z.]*)', StaticFileHandler, {
+                    'path': client_path,
+                    'extra_headers': cache_headers })
+            ])
 
-        self._analysisui_app.add_handlers(match_b, [
-            (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
-                'path': analysisui_path,
-                'extra_headers': cache_headers }),
-            (fr'{ path_b }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                'path': assets_path }),
-            (fr'{ path_b }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
-        ])
+        if self._dev_server:
 
-        resultsview_path = os.path.join(client_path, 'resultsview.html')
+            self._analysisui_app.add_handlers(match_b, [
+                (fr'{ path_b }/', VersionHandler),  # send back garbage to abort the vite web socket
+                (fr'{ path_b }/[a-f0-9-]+/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server, 'default_filename': 'analysisui.html' }),
+                (fr'{ path_b }/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server }),
+            ])
 
-        self._resultsview_app.add_handlers(match_c, [
-            (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
-                'path': resultsview_path,
-                'extra_headers': cache_headers }),
-            (fr'{ path_c }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                'path': assets_path }),
-            (fr'{ path_c }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                'path': client_path,
-                'extra_headers': cache_headers }),
-            (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
-                'session': self._session }),
-            (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
-                ModuleAssetHandler, { 'session': self._session }),
-        ])
+            self._resultsview_app.add_handlers(match_c, [
+                (fr'{ path_c }/', VersionHandler),  # send back garbage to abort the vite web socket
+                (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
+                    'session': self._session }),
+                (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
+                    ModuleAssetHandler, { 'session': self._session }),
+                (fr'{ path_c }/[a-f0-9-]+/[0-9]+/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server, 'default_filename': 'resultsview.html' }),
+                (fr'{ path_c }/(.*)', ForwardHandler, {
+                    'base_url': self._dev_server }),
+            ])
+
+        else:
+            analysisui_path = os.path.join(client_path, 'analysisui.html')
+            self._analysisui_app.add_handlers(match_b, [
+                (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
+                    'path': analysisui_path,
+                    'extra_headers': cache_headers }),
+                (fr'{ path_b }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                    'path': assets_path }),
+                (fr'{ path_b }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                    'path': client_path,
+                    'extra_headers': cache_headers }),
+            ])
+
+            resultsview_path = os.path.join(client_path, 'resultsview.html')
+            self._resultsview_app.add_handlers(match_c, [
+                (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
+                    'path': resultsview_path,
+                    'extra_headers': cache_headers }),
+                (fr'{ path_c }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                    'path': assets_path }),
+                (fr'{ path_c }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                    'path': client_path,
+                    'extra_headers': cache_headers }),
+                (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
+                    'session': self._session }),
+                (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
+                    ModuleAssetHandler, { 'session': self._session }),
+            ])
 
         sockets = tornado.netutil.bind_sockets(port_a, self._host)
         server = tornado.httpserver.HTTPServer(self._main_app)
@@ -822,6 +859,7 @@ class Server:
             # now we have the port numbers, we can add CSP
             cache_headers[ 'Content-Security-Policy' ] = f'''
                 default-src 'self';
+                font-src 'self' data:;
                 img-src 'self' data:;
                 script-src  'self' 'unsafe-eval' 'unsafe-inline';
                 style-src 'self' 'unsafe-inline';

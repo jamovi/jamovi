@@ -1,5 +1,29 @@
 
 
+@import "../lib/metro-icons.css";
+@import "../common/toolbar/toolbar.css";
+@import "../common/toolbar/toolbarbutton.css";
+@import "../common/toolbar/toolbargroup.css";
+@import "../common/toolbar/toolbarseparator.css";
+@import "../common/focusloop.css";
+@import "../common/menu.css";
+@import "iconsupport.css";
+@import "controlcontainer.css";
+@import "optionlistcontrol.css";
+@import "layoutgroupview.css";
+@import "layoutvariablesview.css";
+@import "layoutsupplierview.css";
+@import "layoutcollapseview.css";
+@import "gridcheckbox.css";
+@import "gridradiobutton.css";
+@import "gridtextbox.css";
+@import "gridcombobox.css";
+@import "levelselector.css";
+@import "rmanovafactorscontrol.css";
+@import "gridvariablestargetlist.css";
+@import "gridtargetcontrol.css";
+@import "gridcontrol.css";
+
 * {
     user-select: none ;
     -webkit-user-select: none;
@@ -295,23 +319,23 @@ h1 {
 }
 
 .silky-layout-grid.multi-item.smallest-size {
-    height: 32px; //27px + 5 for end insert space
+    height: 32px; /* 27px + 5 for end insert space */
 }
 
 .silky-layout-grid.multi-item.small-size {
-    height: 59px; //54px + 5 for end insert space
+    height: 59px; /* 54px + 5 for end insert space */
 }
 
 .silky-layout-grid.multi-item.normal-size {
-    height: 113px; //108px + 5 for end insert space
+    height: 113px; /* 108px + 5 for end insert space */
 }
 
 .silky-layout-grid.multi-item.large-size {
-    height: 221px; //216px + 5 for end insert space
+    height: 221px; /* 216px + 5 for end insert space */
 }
 
 .silky-layout-grid.multi-item.largest-size {
-    height: 437px; //432px + 5 for end insert space
+    height: 437px; /* 432px + 5 for end insert space */
 }
 
 
@@ -452,28 +476,3 @@ input[type=text].silky-option-listitem:focus {
     filter: invert(100%) grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8);
 
 }
-
-
-@import (inline) "../lib/metro-icons.css";
-@import (inline) "../common/toolbar/toolbar.css";
-@import (inline) "../common/toolbar/toolbarbutton.css";
-@import (inline) "../common/toolbar/toolbargroup.css";
-@import (inline) "../common/toolbar/toolbarseparator.css";
-@import (inline) "../common/focusloop.css";
-@import (inline) "../common/menu.css";
-@import (inline) "iconsupport.css";
-@import (inline) "controlcontainer.css";
-@import (inline) "optionlistcontrol.css";
-@import (inline) "layoutgroupview.css";
-@import (inline) "layoutvariablesview.css";
-@import (inline) "layoutsupplierview.css";
-@import (inline) "layoutcollapseview.css";
-@import (inline) "gridcheckbox.css";
-@import (inline) "gridradiobutton.css";
-@import (inline) "gridtextbox.css";
-@import (inline) "gridcombobox.css";
-@import (inline) "levelselector.css";
-@import (inline) "rmanovafactorscontrol.css";
-@import (inline) "gridvariablestargetlist.css";
-@import (inline) "gridtargetcontrol.css";
-@import (inline) "gridcontrol.css";

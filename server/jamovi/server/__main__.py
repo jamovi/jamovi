@@ -59,6 +59,8 @@ async def main():  # run down below()
         host = ''
     else:
         host = '127.0.0.1'
+    
+    dev_server = conf.get('dev_server')
 
     for arg in sys.argv:
         if arg.startswith('--task-queue-url='):
@@ -69,6 +71,8 @@ async def main():  # run down below()
             conf.set('spool_path', spool_path)
         elif arg.startswith('--session-id='):
             session_id = arg.split('=')[1]
+        elif arg.startswith('--dev-server='):
+            _, dev_server = arg.split('=')
 
     sys.stdout.write('jamovi\nversion: 0.0.0\ncli:     0.0.0\n')
     sys.stdout.flush()
@@ -91,7 +95,8 @@ async def main():  # run down below()
             host=host,
             session_id=session_id,
             stdin_slave=stdin_slave,
-            debug=debug)
+            debug=debug,
+            dev_server=dev_server)
 
         server.start()
         signal.signal(signal.SIGTERM, lambda _, __: server.stop())

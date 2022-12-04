@@ -1,10 +1,10 @@
 
-@import (inline) "../lib/metro-icons.css";
+@import "../lib/metro-icons.css";
 
-@import (inline) '../node_modules/quill/dist/quill.core.css';
-@import (inline) '../node_modules/katex/dist/katex.min.css';
-@import (inline) './annotation.css';
-@import (inline) '../node_modules/highlight.js/styles/tomorrow.css';
+@import '../node_modules/quill/dist/quill.core.css';
+@import '../node_modules/katex/dist/katex.min.css';
+@import './annotation.css';
+@import '../node_modules/highlight.js/styles/tomorrow.css';
 
 body {
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
@@ -183,7 +183,7 @@ input, [contenteditable], [contenteditable] * {
 .jmv-results-status-inited  .jmv-results-table-status-indicator,
 .jmv-results-status-running .jmv-results-table-status-indicator {
     visibility: visible ;
-    background-image: url('../../assets/indicator-running.svg');
+    background-image: url('../assets/indicator-running.svg');
 }
 
 .jmv-results-table-table {
@@ -314,31 +314,31 @@ th button {
 }
 
 th button.sort-asc {
-    background-image: url('../../assets/action-sort-asc.svg');
+    background-image: url('../assets/action-sort-asc.svg');
 }
 
 th button.sort-desc {
     position: relative ;
     left: -4px ;
-    background-image: url('../../assets/action-sort-desc.svg');
+    background-image: url('../assets/action-sort-desc.svg');
 }
 
 th button.sorted-asc {
-    background-image: url('../../assets/action-sorted-asc.svg');
+    background-image: url('../assets/action-sorted-asc.svg');
 }
 
 th button.sorted-desc {
     position: relative ;
     left: -4px ;
-    background-image: url('../../assets/action-sorted-desc.svg');
+    background-image: url('../assets/action-sorted-desc.svg');
 }
 
 th button.sort-asc:hover {
-    background-image: url('../../assets/action-sort-asc-hover.svg');
+    background-image: url('../assets/action-sort-asc-hover.svg');
 }
 
 th button.sort-desc:hover {
-    background-image: url('../../assets/action-sort-desc-hover.svg');
+    background-image: url('../assets/action-sort-desc-hover.svg');
 }
 
 table.row-selectable tr.content-row:hover:not(.selected) td {
@@ -362,7 +362,7 @@ table.row-selectable tr.selected td {
     margin-top: -20px ;
     width: 40px ;
     height: 40px ;
-    background-image: url('../../assets/indicator-running.svg');
+    background-image: url('../assets/indicator-running.svg');
     background-size: 100% ;
     display: none ;
 }

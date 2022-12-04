@@ -277,19 +277,19 @@
 }
 
 .jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='id'] {
-    background-image: url('../assets/variable-id.svg');
+    background-image: url('../../assets/variable-id.svg');
 }
 
 .jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='continuous'] {
-    background-image: url('../assets/variable-continuous.svg');
+    background-image: url('../../assets/variable-continuous.svg');
 }
 
 .jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='nominal'] {
-    background-image: url('../assets/variable-nominal.svg');
+    background-image: url('../../assets/variable-nominal.svg');
 }
 
 .jmv-variable-editor-datavarwidget .measure-box .icon[measure-type='ordinal'] {
-    background-image: url('../assets/variable-ordinal.svg');
+    background-image: url('../../assets/variable-ordinal.svg');
 }
 
 .jmv-variable-editor-level .pin {
@@ -312,7 +312,7 @@
 
 .jmv-variable-editor-level:not(.pinned):hover .pin, .jmv-variable-editor-level:not(.pinned).selected .pin {
     opacity: 1;
-    background-image: url('assets/levels-pin-2.svg');
+    background-image: url('../../assets/levels-pin-2.svg');
     visibility: visible;
 }
 
@@ -322,6 +322,6 @@
 
 .jmv-variable-editor-level.pinned .pin {
     opacity: 1;
-    background-image: url('assets/levels-pin-1.svg');
+    background-image: url('../../assets/levels-pin-1.svg');
     visibility: visible;
 }

@@ -94,7 +94,7 @@ const marshallArgs = function(args, wd, first) {
     let i = 0;
     while (i < args.length) {
         let arg = args[i]
-        if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug'].includes(arg))
+        if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug', '--devel'].includes(arg))
             // strip the chromium switches
             args.splice(i, 1);
         else
@@ -138,6 +138,10 @@ const marshallArgs = function(args, wd, first) {
     else if (args[0] === '--debug') {
         cmd.open = '';
         cmd.debug = true;
+    }
+    else if (args[0] === '--devel') {
+        cmd.open = '';
+        cmd.devel = true;
     }
     else {
         let filePath = args[0];
@@ -195,6 +199,10 @@ if (debug)
     config.serverArgs.unshift('-vvv');
 if (argvCmd.debug)
     config.serverArgs.push('--debug');
+if (argvCmd.devel) {
+    global.viteHMR = true;
+    config.serverArgs.push('--dev-server=http://localhost:5173');
+}
 
 global.version = config.version;
 

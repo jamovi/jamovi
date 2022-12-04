@@ -56,7 +56,7 @@ class ClipboardPrompt extends HTMLElement {
             .content .heading .icon {
                 height: 30px;
                 width: 30px;
-                background-image: url('../assets/menu-data-copy.svg');
+                background-image: url('../../assets/menu-data-copy.svg');
                 background-size: 100% 100%;
                 background-position: center;
                 background-repeat: no-repeat;

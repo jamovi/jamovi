@@ -7,6 +7,15 @@ services:
       dockerfile: docker/deps-Dockerfile
     profiles:
       - donotstart
+  
+  # vite:
+  #   image: jonathonlove/vite:latest
+  #   container_name: vite
+  #   volumes:
+  #     - ./client:/build
+  #   ports:
+  #     - '5173:5173'
+  #     - '24678:24678'
 
   jamovi:
     image: jamovi/jamovi:2.3.17
@@ -22,6 +31,10 @@ services:
     command: ["/usr/bin/python3 -m jamovi.server 41337 --if=*"]
     stdin_open: true
     environment:
+
+        # for development, use the vite dev server
+        # (uncomment/enable the vite service above too)
+        # JAMOVI_DEV_SERVER: "http://vite:5173"
 
         # block Rj - don't enable unless you understand the risks!
         JAMOVI_ALLOW_ARBITRARY_CODE: 'false'

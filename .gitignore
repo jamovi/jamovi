@@ -21,6 +21,7 @@ __pycache__
 /client/*.css
 /client/www
 /client/assets/coms.proto
+/client/dist
 
 # protocol buffers
 *.pb.cc

@@ -49,7 +49,7 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
 
 .jmv-ribbon-appmenu-icon {
     width: 45px;
-    background-image: url('../assets/logo-v-naked.svg');
+    background-image: url('../../assets/logo-v-naked.svg');
     background-size: 30px;
     background-repeat: no-repeat;
     background-position: center;
@@ -80,9 +80,9 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
 
 .jmv-ribbon-appmenu-back-button > div {
     flex: 1;
-    mask: url('../assets/action-back.svg') 0 0/25px 25px no-repeat;
+    mask: url('../../assets/action-back.svg') 0 0/25px 25px no-repeat;
     background-color: #333333;
-    -webkit-mask: url('../assets/action-back.svg');
+    -webkit-mask: url('../../assets/action-back.svg');
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: 25px;
@@ -183,4 +183,8 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
 :not(body.electron) .jmv-ribbon-appmenu-version,
 :not(body.electron) .jmv-language-selector {
     display: none ;
+}
+
+.jmv-ribbon-appmenu .loading {
+    content: url('../../assets/indicator-running.svg')
 }

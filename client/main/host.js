@@ -13,13 +13,7 @@ const $ = require('jquery');
 
 const APP_NAME = 'jamovi';
 
-// temp workaround because i set the cache on config.js too long
-// will remove once the new config.js has propagated
-if ( ! window.config.client) {
-    window.config.client = {
-        roots: ['cloud.jamovi.org', 'a.cloud.jamovi.org', 'r.cloud.jamovi.org']
-    };
-}
+window.config = window.config || { 'client': { roots: ['cloud.jamovi.org', 'a.cloud.jamovi.org', 'r.cloud.jamovi.org'] }};
 
 let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }`;
 let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }`;
