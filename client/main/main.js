@@ -768,8 +768,9 @@ $(document).ready(async() => {
             instanceId = match[1];
         
         const params = new URLSearchParams(window.location.search);
-        const toOpen = params.get('open');
         const accessKey = params.get('key');
+
+        let toOpen = params.get('open');
 
         if (toOpen) {
             if (toOpen.startsWith('http://') || toOpen.startsWith('https://'))
