@@ -18,7 +18,6 @@ const focusLoop = require('../common/focusloop');
 
 const { s6e, contextMenuListener } = require('../common/utils');
 
-
 const TableView = SilkyView.extend({
     className: 'tableview',
     initialize(options) {
@@ -1030,7 +1029,7 @@ const TableView = SilkyView.extend({
         }
         else {
             if ( ! this._editing)
-                this._beginEditing();
+                this._beginEditing(true);
         }
     },
     _scrollToPosition(pos) {
@@ -1177,6 +1176,12 @@ const TableView = SilkyView.extend({
             this._focusCell.addEventListener('paste', pasteEventHandle);
             this._focusCell.addEventListener('input', inputEventHandle);
             this._focusCell.addEventListener('keydown', keypressEventHandle);
+            this._focusCell.addEventListener('pointerdown', (event) => {
+                if (this._editing) {
+                    this._modifyingCellContents = true;
+                    this.statusbar.updateInfoLabel('editStatus', _('Edit'));
+                }
+            });
             this._focusCell.addEventListener('beforeinput', (event) => {
                 if (this._delayedEditing && this._editing === false) {
                     if (event.data.length > 1) {
@@ -1184,7 +1189,7 @@ const TableView = SilkyView.extend({
                         this.controller.pasteClipboardToSelection(this, content);
                     }
                     else
-                        this._beginEditing();
+                        this._beginEditing(true);
                 }
                 this._delayedEditing = false;
             });
@@ -1198,9 +1203,6 @@ const TableView = SilkyView.extend({
             this._focusCell.addEventListener('focus', (event) => {
                 this._focusCell.select();
             });
-
-            /*this._focusGrid = document.createElement('div');
-            this._focusGrid.setAttribute('role', 'grid');*/
 
             this._focusRow = document.createElement('div');
             this._focusRow.setAttribute('role', 'row');
@@ -1386,7 +1388,7 @@ const TableView = SilkyView.extend({
     _isColumnEditable(column) {
         return (column.columnType === 'data' || column.columnType === 'none');
     },
-    _beginEditing(ch) {
+    _beginEditing(modifyingCellContents, ch) {
 
         if (this._editing)
             return;
@@ -1414,7 +1416,7 @@ const TableView = SilkyView.extend({
 
         this._editing = true;
         keyboardJS.setContext('spreadsheet-editing');
-        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
+        this.statusbar.updateInfoLabel('editStatus', modifyingCellContents ? _('Edit') : _('Enter'));
 
         this._focusCell.classList.add('editing');
         this.$selection.addClass('editing');
@@ -1431,14 +1433,9 @@ const TableView = SilkyView.extend({
 
             this._focusCell.value = value;
             this._focusCell.select();
-            /*let selection = window.getSelection();
-            let range = document.createRange();
-            range.selectNodeContents(this._focusCell);
-            selection.removeAllRanges();
-            selection.addRange(range);*/
         }
 
-        this._modifyingCellContents = true;
+        this._modifyingCellContents = modifyingCellContents;
 
         if (ch !== undefined)
             this._edited = true;
@@ -1521,11 +1518,6 @@ const TableView = SilkyView.extend({
 
             if (this._focusCell) {
                 this._focusCell.select();
-                /*let selection = window.getSelection();
-                let range = document.createRange();
-                range.selectNodeContents(this._focusCell);
-                selection.removeAllRanges();
-                selection.addRange(range);*/
             }
             throw 'cancelled';
         });
@@ -1540,13 +1532,15 @@ const TableView = SilkyView.extend({
             return;
 
         this._editing = false;
-        this.statusbar.updateInfoLabel('editStatus', _('Edit'));
+        this.statusbar.updateInfoLabel('editStatus', _('Ready'));
         this._modifyingCellContents = false;
         keyboardJS.setContext('controller');
         this._edited = false;
         this.$selection.removeClass('editing');
-        if (this._focusCell)
+        if (this._focusCell) {
             this._focusCell.classList.remove('editing');
+            this._focusCell.value = '';
+        }
     },
     _editingKeyPress(event) {
 
@@ -1603,6 +1597,16 @@ const TableView = SilkyView.extend({
             case 'Delete':
             case 'Backspace':
                 this._edited = true;
+                break;
+            case 'F2':
+                if (this._modifyingCellContents) {
+                    this._modifyingCellContents = false;
+                    this.statusbar.updateInfoLabel('editStatus', _('Enter'));
+                }
+                else {
+                    this._modifyingCellContents = true;
+                    this.statusbar.updateInfoLabel('editStatus', _('Edit'));
+                }
                 break;
             default:
                 if (event.metaKey === false && event.altKey === false && event.ctrlKey === false && event.key.length === 1)
@@ -1801,14 +1805,14 @@ const TableView = SilkyView.extend({
                 this.selection.deleteCellContents();
                 break;
             case 'F2':
-                this._beginEditing();
+                this._beginEditing(true);
                 break;
             case ' ':
                 event.preventDefault();
                 break;
             default:
                 if (event.key.length === 1 || event.key === 'Process')
-                    this._beginEditing(event.key);
+                    this._beginEditing(false, event.key);
                 break;
         }
     },
