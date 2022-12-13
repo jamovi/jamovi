@@ -8,10 +8,16 @@ Backbone.$ = $;
 const host = require('./host');
 const ResultsPanel = require('./resultspanel');
 const focusLoop = require('../common/focusloop');
+const jamoviIcon = require('../common/icon');
 
 const ResultsView = Backbone.View.extend({
     className: 'ResultsView',
-    initialize: function(args) {
+    initialize: function (args) {
+        host.version.then(version => {
+            this.icon = new jamoviIcon(version);
+            this.$el[0].appendChild(this.icon.el);
+        });
+        
 
         this.$el.addClass('jmv-results');
         focusLoop.applyShortcutOptions(this.$el[0], {
@@ -104,6 +110,8 @@ const ResultsView = Backbone.View.extend({
         };
         window.addEventListener('message', messageHandler);
 
+        this.hidePlaceHolder();
+
         this.model.analyses().once('analysisCreated', (event) => {
             this.hideWelcome();
         });
@@ -111,6 +119,12 @@ const ResultsView = Backbone.View.extend({
     hideWelcome() {
         if (this.welcome)
             this.welcome.classList.add('jmv-welcome-panel-hidden');
+        
+        this.hidePlaceHolder();
+    },
+    hidePlaceHolder() {
+        if (this.icon)
+            this.icon.el.classList.add('hidden');
     },
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);

@@ -246,7 +246,9 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
     if (focusLoop.inAccessibilityMode())
         focusLoop.enterFocusLoop(document.body, { withMouse: false });
 
+    let $optionsBlock = $('.jmv-options-block');
     let $title = $('.silky-options-title');
+
     if (def.error) {
         $title.empty();
         $title.append(def.error);
@@ -273,11 +275,13 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
                         ${ errors }
                     </div>
                     </div>`);
-                $('.jmv-options-block').append($errorList);
+                $optionsBlock.find('.placeholder-options').remove();
+                $optionsBlock.append($errorList);
             }
             else {
-                $('.jmv-options-block').append(analysis.View.$el);
+                $optionsBlock.append(analysis.View.$el);
                 analysis.View.render();
+                $optionsBlock.find('.placeholder-options').remove();
 
                 analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
             }

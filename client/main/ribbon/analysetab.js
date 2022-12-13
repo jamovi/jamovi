@@ -5,6 +5,7 @@ const $ = require('jquery');
 
 const RibbonMenu = require('./ribbonmenu');
 const RibbonTab = require('./ribbontab');
+const Placeholder = require('./placeholder');
 
 const Store = require('../store');
 
@@ -15,6 +16,7 @@ class AnalyseTab extends RibbonTab {
         this.buttons = [ ];
         this._analysesList = { };
         this._moduleCount = 0;
+        this.settings = model.settings();
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
 
@@ -178,6 +180,15 @@ class AnalyseTab extends RibbonTab {
             let  button = new RibbonMenu($button, menu._title, groupName, shortcutKey, flattened, false, containsNew);
 
             this.buttons.push(button);
+        }
+
+        if (this.settings.attributes.settingsRecieved === false) {
+            this.buttons.push(new Placeholder('exploration', _('Exploration')));
+            this.buttons.push(new Placeholder('t-tests', _('T-Tests')));
+            this.buttons.push(new Placeholder('anova', _('ANOVA')));
+            this.buttons.push(new Placeholder('regression', _('Regression')));
+            this.buttons.push(new Placeholder('frequencies', _('Frequencies')));
+            this.buttons.push(new Placeholder('factor', _('Factor')));
         }
 
         return this.buttons;

@@ -1,3 +1,11 @@
+.jmv-ribbon-temp-button {
+    padding: 6px 0 !important;
+}
+
+.end-temp-button {
+    position: absolute;
+    right: 0px;
+}
 
 
 .jmv-ribbon-button {
@@ -61,7 +69,7 @@
     color: #555555 ;
 }
 
-.jmv-analyses-button > .jmv-ribbon-button-label {
+.jmv-analyses-button > .jmv-ribbon-button-label, .jmv-ribbon-temp-button > .jmv-ribbon-button-label {
     font-size: 90% ;
 }
 

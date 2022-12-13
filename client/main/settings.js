@@ -42,6 +42,7 @@ const Settings = Backbone.Model.extend({
         zoom: 100,
         updateStatus: 'na',
         format: '{"t":"sf","n":3,"p":3}',
+        settingsRecieved: false
     },
 
     retrieve(instanceId) {
@@ -85,6 +86,8 @@ const Settings = Backbone.Model.extend({
 
         if (this.attributes.zoom !== host.currentZoom())
             host.zoom(this.attributes.zoom);
+        
+        this.set('settingsRecieved', true);
     },
 
     zoomIn() {
