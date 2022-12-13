@@ -28,7 +28,7 @@
     "chai": "^4.2.0",
     "clipboard-js": "^0.3.6",
     "element-resize-detector": "^1.2.1",
-    "dialogs": "github:jonathon-love/dialogs#cb8c36eae8f651db6116a511d8416c87c7251d52",
+    "dialogs": "https://github.com/jonathon-love/dialogs#cb8c36eae8f651db6116a511d8416c87c7251d52",
     "framesg": "^0.1.3",
     "highlight.js": "^10.1.2",
     "jquery": "^3.5.1",
