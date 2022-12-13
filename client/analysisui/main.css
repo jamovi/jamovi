@@ -30,6 +30,36 @@
     -moz-user-select: none;
 }
 
+@keyframes gradient {
+    0% {
+        background-position: 100% 0%;
+    }
+
+    100% {
+        background-position: 0% 100%;
+    }
+}
+
+.placeholder-line {
+    height: 5px;
+    width: 60%;
+    border: 1px solid #d4d4d400;
+    border-radius: 5px;
+    background: linear-gradient(-90deg, #bebebe4a, #bebebe4a, #bebebe4a, #ffffff59, #bebebe4a, #bebebe4a, #bebebe4a);
+    background-size: 400% 400%;
+    animation: gradient 1.5s linear infinite;
+}
+
+.placeholder-pic {
+    height: 24px;
+    width: 40%;
+    border: 1px solid #d4d4d400;
+    border-radius: 5px;
+    background: linear-gradient(-90deg, #bebebe4a, #bebebe4a, #bebebe4a, #ffffff59, #bebebe4a, #bebebe4a, #bebebe4a);
+    background-size: 500% 300%;
+    animation: gradient 1.5s linear infinite;
+}
+
 input, [contenteditable], [contenteditable] * {
     user-select: initial ;
     -webkit-user-select: initial;

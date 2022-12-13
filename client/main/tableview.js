@@ -104,7 +104,7 @@ const TableView = SilkyView.extend({
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
         this.$body      = this.$container.find('.jmv-table-body');
-        this.$rhColumn  = this.$body.find('.jmv-column-row-header');
+        this.$rhColumn = this.$body.find('.jmv-column-row-header');
 
         this.$topLeftCell = this.$el.find('.select-all');
         this.$topLeftCell.on('pointerdown', event => {

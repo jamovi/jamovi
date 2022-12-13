@@ -1,0 +1,40 @@
+.icon-info-box.hidden {
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s visibility, 0.2s opacity;
+}
+
+.icon-info-box {
+    opacity: 1;
+    visibility: visible;
+    position: absolute;
+    width: 400px;
+    top: 40%;
+    left: 50%;
+    margin-top: -25px;
+    margin-left: -200px;
+    z-index: 200;
+}
+
+.icon-info-box .icon-version {
+    display: flex;
+    color: #AAAAAA;
+    align-items: center;
+    margin: auto;
+    width: 250px;
+    z-index: 200;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.icon-info-box .icon-version .version-separator {
+    color: #AAAAAA;
+    border-left: 2px solid #AAAAAA;
+    height: 50px;
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
+.icon-info-box .icon-version .version-text {
+    margin-left: 6px;
+}

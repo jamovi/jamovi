@@ -525,8 +525,10 @@ $(document).ready(async() => {
     let selection = new Selection(dataSetModel);
     let viewController = new ViewController(dataSetModel, selection);
     let mainTable   = new TableView({el : '#spreadsheet', model : dataSetModel, controller: viewController });
-    let variablesTable   = new VariablesView({el : '#variablelist', model : dataSetModel, controller: viewController });
+    
     viewController.focusView('spreadsheet');
+
+    let variablesTable = new VariablesView({ el: '#variablelist', model: dataSetModel, controller: viewController });
 
     backstageModel.on('change:activated', function(event) {
         if ('activated' in event.changed) {
@@ -870,6 +872,7 @@ $(document).ready(async() => {
     }
 
     // if it's just the results heading ...
+    let welcomeShown = false;
     if (instance.analyses().count() === 1) {
         for (let analysis of instance.analyses()) {
             // ... and it's not edited
@@ -879,6 +882,8 @@ $(document).ready(async() => {
             resultsView.showWelcome();
         }
     }
+    if (!welcomeShown)
+        resultsView.hidePlaceHolder();
 
     for await (let event of auth.events()) {
         if (event.type === 'request-auth')
