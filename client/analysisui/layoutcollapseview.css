@@ -46,6 +46,8 @@
     padding: 5px;
     vertical-align: middle ;
     color: #555555 ;
+    width: 100%;
+    text-align: left;
 }
 
 .silky-options-collapse-icon {

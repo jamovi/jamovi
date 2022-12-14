@@ -15,7 +15,7 @@ const GridCheckbox = function(params) {
     this.registerSimpleProperty("format", FormatDef.bool);
     Icons.addSupport(this);
 
-    this.$_subel = $('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
+    this.$_subel = $('<div role="presentation" class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
 
     this.$el = this.$_subel;
 

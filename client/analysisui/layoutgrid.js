@@ -10,6 +10,7 @@ const LayoutGrid = function() {
 
     this.$el = $('<div class="silky-layout-grid"></div>');
     this.$el.css("position", "relative");
+    this.$el.attr('role', 'presentation');
 
     this.editable = false;
 

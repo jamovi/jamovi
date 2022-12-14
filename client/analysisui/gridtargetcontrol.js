@@ -13,6 +13,7 @@ const Toolbar = require('../common/toolbar/toolbar');
 const ToolbarButton = require('../common/toolbar/toolbarbutton');
 const ToolbarGroup = require('../common/toolbar/toolbargroup');
 const ToolbarSeparator = require('../common/toolbar/toolbarseparator');
+const _focusLoop = require('../common/focusloop');
 
 const TargetListSupport = function(supplier) {
     DragNDrop.extendTo(this);
@@ -1011,8 +1012,10 @@ const GridTargetContainer = function(params) {
         let label = this.getPropertyValue('label');
         if (label !== null) {
             label = this.translate(label);
-            this.$label = $('<div style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-' + this.getPropertyValue('margin') + '">' + label + '</div>');
+            this.labelId = _focusLoop.getNextAriaElementId('label');
+            this.$label = $(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
             grid.addCell(column, row, this.$label);
+            this.container.controls[0].$el.attr('aria-labelledby', this.labelId);
         }
 
         if (grid.addTarget) {

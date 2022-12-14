@@ -12,7 +12,7 @@ const OptionsView = function(uiModel) {
 
     Object.assign(this, Backbone.Events);
 
-    this.$el = $('<div class="silky-options-content"></div>');
+    this.$el = $('<div class="silky-options-content" role="presentation"></div>');
     this.el = this.$el[0];
 
     this.model = uiModel;

@@ -7,6 +7,7 @@ const LayoutGrid = require('./layoutgrid');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const GridControl = require('./gridcontrol');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');
+const focusLoop = require('../common/focusloop');
 
 const LayoutCollapseView = function(params) {
 
@@ -28,15 +29,10 @@ const LayoutCollapseView = function(params) {
         let groupText = this.getPropertyValue('label');
         groupText = this.translate(groupText);
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
-        this.$header = $('<div class="silky-options-collapse-button silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;">' + t + groupText + '</div>');
+        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.$header = $(`<button id="${this.labelId}" class="silky-options-collapse-button silky-control-margin-${this.getPropertyValue("margin")}" style="white-space: nowrap;">${t + groupText }</button>`);
 
-        this.$header.attr('tabindex', 0);
-
-        this.$header.keydown((event) => {
-            if (event.keyCode == 13 || event.keyCode == 32) {  // 13=enter, 32=space
-                this.toggleColapsedState();
-            }
-        });
+        this.$header.attr('aria-expanded', ! this._collapsed);
 
         if (this._collapsed) {
             this.$el.addClass('view-colapsed');
@@ -52,7 +48,17 @@ const LayoutCollapseView = function(params) {
         });
     };
 
-    this.setBody = function(body) {
+    this.setBody = function (body) {
+        let bodyId = body.$el.attr('id');
+        if (!bodyId) {
+            bodyId = focusLoop.getNextAriaElementId('body');
+            body.$el.attr('id', bodyId);
+        }
+        body.$el.attr('role', 'region');
+        body.$el.attr('aria-labelledby', this.labelId);
+
+        this.$header.attr('aria-controls', bodyId);
+
         this._body = body;
         body.$el.addClass("silky-control-body");
         let data = body.renderToGrid(this, 1, 0);
@@ -71,6 +77,7 @@ const LayoutCollapseView = function(params) {
 
         this.setContentVisibility(false);
         this._collapsed = true;
+        this.$header.attr('aria-expanded', false);
     };
 
     this.setContentVisibility = function(visible) {
@@ -87,7 +94,7 @@ const LayoutCollapseView = function(params) {
 
         this.setContentVisibility(true);
         this._collapsed = false;
-
+        this.$header.attr('aria-expanded', true);
     };
 
     this.toggleColapsedState = function() {

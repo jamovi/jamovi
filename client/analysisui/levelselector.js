@@ -4,6 +4,7 @@ const $ = require('jquery');
 const GridOptionControl = require('./gridoptioncontrol');
 const RequestDataSupport = require('./requestdatasupport');
 const FormatDef = require('./formatdef');
+const _focusLoop = require('../common/focusloop');
 
 const LevelSelector = function(params) {
 
@@ -31,14 +32,15 @@ const LevelSelector = function(params) {
 
         let columnUsed = 0;
         let cell = null;
+        let id = _focusLoop.getNextAriaElementId('ctrl');
         if (label !== '') {
-            this.$label = $('<div class="silky-option-combo-label silky-control-margin-' + this.getPropertyValue('margin') + '" style="display: inline; white-space: nowrap;" >' + label + '</div>');
+            this.$label = $(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue('margin')}" style="display: inline; white-space: nowrap;" >${label}</label>`);
             cell = grid.addCell(column, row, this.$label);
             cell.setAlignment('left', 'center');
             columnUsed += 1;
         }
 
-        let t = '<select class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-' + this.getPropertyValue('margin') + '">';
+        let t = `<select id="${id}" class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-${this.getPropertyValue('margin')}">`;
         if (this.getPropertyValue('allowNone'))
             t += '<option>' + this.none + '</option>';
         t += '</select>';

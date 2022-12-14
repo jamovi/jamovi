@@ -10,6 +10,7 @@ const LayoutGrid = require('./layoutgrid');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
 const RequestDataSupport = require('./requestdatasupport');
+const focusLoop = require('../common/focusloop');
 
 const LayoutSupplierView = function(params) {
 
@@ -131,14 +132,18 @@ const LayoutSupplierView = function(params) {
 
         this.baseLayout.$el.append(this.$warning);
 
+        let labelId = focusLoop.getNextAriaElementId('label');
+
         let label = this.getPropertyValue('label');
         let nextRow = 0;
         if (label !== null) {
             label = this.translate(label);
-            this.baseLayout.addCell(0, nextRow++, $('<div style="white-space: nowrap;" class="silky-options-supplier-group-header">' + label + '</div>'));
+            this.baseLayout.addCell(0, nextRow++, $(`<div id="${labelId}" style="white-space: nowrap;" class="silky-options-supplier-group-header">${label}</div>`));
         }
 
         this.supplierGrid = new SelectableLayoutGrid();
+        if (label !== null)
+            this.supplierGrid.$el.attr('aria-labelledby', labelId)
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
         this.supplierGrid.stretchEndCells = false;
         this.supplierGrid._animateCells = true;
@@ -162,7 +167,7 @@ const LayoutSupplierView = function(params) {
 
 
         //////////////////////////////////
-        this.$searchButton = $('<div class="search"><div class="image"></div></div>');
+        this.$searchButton = $('<div class="search" role="presentation"><div class="image"></div></div>');
         this.supplierGrid.$el.append(this.$searchButton);
         this.$searchButton.hide();
 
@@ -473,6 +478,9 @@ const LayoutSupplierView = function(params) {
 
         c1.setStretchFactor(1);
 
+        c1.$el.attr('role', 'listitem');
+        c1.$el.attr('tabindex', '0');
+
         item.$el = c1.$el;
     };
 
@@ -571,6 +579,9 @@ const LayoutSupplierView = function(params) {
         });
 
         c1.setStretchFactor(1);
+
+        c1.$el.attr('role', 'listitem');
+        c1.$el.attr('tabindex', '0');
 
         item.$el = c1.$el;
     };

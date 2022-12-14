@@ -10,7 +10,7 @@ const GridRadioButton = function(params) {
     OptionControl.extendTo(this, params);
     TitledGridControl.extendTo(this, params);
 
-    this.$_subel = $('<div class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
+    this.$_subel = $('<div role="presentation" class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
     this.$el = this.$_subel;
 
     this.createItem = function() {

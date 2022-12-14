@@ -24,10 +24,10 @@
 
 </head>
 
-<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default">
-    <div id="backstage" tabindex="-1"></div>
+<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default" role="presentation">
+    <div id="backstage" tabindex="-1" role="region" aria-label="File"></div>
 
-    <div id="main">
+    <div id="main" role="presentation">
         <div id="header" aria-hidden="true">
             <div id="header-text" class="app-dragable">jamovi<span class="header-file-name"></span></div>
             <div id="header-buttons">
@@ -46,8 +46,8 @@
         <div class="silky-ribbon">
         </div>
 
-        <div id="main-view">
-            <div id="variable-editor" class="hidden">
+        <div id="main-view" role="presentation">
+            <div id="variable-editor" class="hidden" role="menu" aria-label="variable editor">
             </div>
         </div>
     </div>

@@ -5,6 +5,7 @@ const LayoutGrid = require('./layoutgrid');
 const GridOptionControl = require('./gridoptioncontrol');
 const FormatDef = require('./formatdef');
 const EnumPropertyFilter = require('./enumpropertyfilter');
+const _focusLoop = require('../common/focusloop');
 
 const GridTextbox = function(params) {
 
@@ -40,12 +41,13 @@ const GridTextbox = function(params) {
             label = '';
 
         label = this.translate(label);
-        let id = `${ this.getPropertyValue('name') }-option-textbox`;
+        
+        let id = _focusLoop.getNextAriaElementId('ctrl');
 
 
         let cell = null;
         let startClass = label === '' ? '' : 'silky-option-text-start';
-        this.$label = $('<label for="'+id+'" class="silky-option-text-label silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + label + '</label>');
+        this.$label = $(`<label for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
         cell = grid.addCell(column, row, this.$label);
         cell.blockInsert('right');
         cell.setAlignment('left', 'center');
@@ -146,7 +148,7 @@ const GridTextbox = function(params) {
 
         let $ctrl = this.$input;
         if (suggestedValues !== null) {
-            $ctrl = $('<div></div>');
+            $ctrl = $('<div role="presentation"></div>');
             $ctrl.append(this.$input);
             $ctrl.append(this.$suggestValues);
             this.$fullCtrl = $ctrl;
