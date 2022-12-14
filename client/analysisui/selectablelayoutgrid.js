@@ -15,15 +15,55 @@ var SelectableLayoutGrid = function() {
     this.fullRowSelect = false;
     this._rootCell = null;
 
-    this.selectCell = function(cell) {
+    this.$el.addClass('selectable-list');
+    this.$el.attr('tabindex', '0');
+    this.$el.attr('role', 'list');
+    this.$el.on('focus', (event) => {
+        if (this._selectedCells.length === 0 && this._cells.length > 0) {
+            let index = 0;
+            let cell = this._cells[index];
+            while ((cell._clickable === false || cell.visible() === false) && index + 1 < this._cells.length) {
+                index += 1;
+                cell = this._cells[index];
+            }
+            if (cell._clickable && cell.visible())
+                this.selectCell(cell);
+        }
+        this.trigger('layoutgrid.gotFocus');
+    });
+
+    this.$el.on('keydown', (event) => {
+        if (this._selectedCells.length === 0)
+            return;
+        
+        let ctrlKey = event.ctrlKey;
+        if (navigator.platform == "MacIntel")
+            ctrlKey = event.metaKey;
+        
+        if (event.keyCode === 40) { //down key
+            this.selectCell(this._selectedCells[this._selectedCells.length - 1].bottomCell(true), ctrlKey, event.shiftKey, true);
+            event.preventDefault();
+        }
+        else if (event.keyCode === 38) { //up key
+            this.selectCell(this._selectedCells[this._selectedCells.length - 1].topCell(true), ctrlKey, event.shiftKey, true);
+            event.preventDefault();
+        }
+    });
+
+    this.selectCell = function (cell, ctrlKey, shiftKey, toogleValue) {
         if (cell === null)
             return;
 
-        var selected = cell.isSelected();
-        if (selected)
-            return;
+        if ( ! toogleValue) {
+            var selected = cell.isSelected();
+            if (selected)
+                return;
+        }
+        
+        ctrlKey = ctrlKey === undefined ? false : ctrlKey;
+        shiftKey = shiftKey === undefined ? false : shiftKey;
 
-        this.onSelectionChanged(cell, false, false);
+        this.onSelectionChanged(cell, ctrlKey, shiftKey);
     };
 
     this.onSelectionChanged = function(cell, ctrlKey, shiftKey) {

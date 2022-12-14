@@ -8,7 +8,7 @@ const SuperClass = require('../common/superclass');
 const LayoutCell = function(parent, properties) {
 
     this.$el = $('<div style="opacity: 0; visibility: hidden; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>');
-
+    this.$el.attr('role', 'presentation');
     //if (parent.editable)
     //    this.$el.css("border", "1px dotted red");
 
@@ -272,8 +272,6 @@ const LayoutCell = function(parent, properties) {
         this.updateGridProperties();
     };
 
-
-
     this.rightCell = function() {
         let cell = null;
         let c = this.data.column + 1;
@@ -288,8 +286,17 @@ const LayoutCell = function(parent, properties) {
         return cell;
     };
 
-    this.topCell = function() {
-        return this._parentLayout.getCell(this.data.column, this.data.row - 1);
+    this.topCell = function (onlyVisible) {
+        let row = this.data.row - 1;
+        let cell = this._parentLayout.getCell(this.data.column, row);
+        if (onlyVisible) {
+            while (cell && (cell._clickable === false || cell.visible() === false)) {
+                row -= 1;
+                cell = this._parentLayout.getCell(this.data.column, row);
+            }
+
+        }
+        return cell;
     };
 
     this.leftCell = function() {
@@ -306,8 +313,17 @@ const LayoutCell = function(parent, properties) {
         return cell;
     };
 
-    this.bottomCell = function() {
-        return this._parentLayout.getCell(this.data.column, this.data.row + 1);
+    this.bottomCell = function (onlyVisible) {
+        let row = this.data.row + 1;
+        let cell = this._parentLayout.getCell(this.data.column, row);
+        if (onlyVisible) {
+            while (cell && (cell._clickable === false || cell.visible() === false)) {
+                row += 1;
+                cell = this._parentLayout.getCell(this.data.column, row);
+            }
+                
+        }
+        return cell;
     };
 
     this.setHorizontalAlign = function(hAlign) {
