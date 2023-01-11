@@ -169,7 +169,7 @@ class Module {
         if (response.ok) {
             let content = await response.text();
             try {
-                let moduleDefn = yaml.safeLoad(content);
+                let moduleDefn = yaml.load(content);
                 if (moduleDefn.languages)
                     this._languages = moduleDefn.languages;
 
@@ -232,7 +232,7 @@ class Module {
                     if (response.ok) {
                         try {
                             let defn = await response.text();
-                            defn = yaml.safeLoad(defn);
+                            defn = yaml.load(defn);
                             return defn;
                         }
                         catch (e) {

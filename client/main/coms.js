@@ -8,6 +8,8 @@ const Q = require('q');
 const host = require('./host');
 const auth = require('./auth/auth');
 
+import PROTO_DEFN from '../assets/coms.proto?raw';
+
 class Coms {
 
     constructor() {
@@ -18,32 +20,21 @@ class Coms {
         this._listeners = [ ];
 
         this.connected = null;
-        this.Messages = null;
+
+        const builder = ProtoBuf.loadProto(PROTO_DEFN);
+        this.Messages = builder.build().jamovi.coms;
 
         this.ready = Promise.resolve();
     }
 
-    _loadProtoDefn() {
-        if (this.Messages)
-            return;
+    connect() {
 
-        return new Q.promise((resolve, reject) => {
+        if (this.connected)
+            return this.connected;
 
-            let protoUrl = `${ host.baseUrl }assets/coms.proto`;
+        let url = `${ window.location.origin }${ window.location.pathname }coms`;
+        url = url.replace('http', 'ws'); // http -> ws, https -> wss
 
-            ProtoBuf.loadProtoFile(protoUrl, (err, builder) => {
-                if (err) {
-                    reject('Unable to load proto definitions');
-                }
-                else {
-                    this.Messages = builder.build().jamovi.coms;
-                    resolve();
-                }
-            });
-        });
-    }
-
-    _connectWS(url) {
         return new Q.promise((resolve, reject) => {
 
             this._ws = new WebSocket(url);
@@ -85,25 +76,6 @@ class Coms {
                 }
             };
         });
-    }
-
-    connect() {
-
-        if (this.connected)
-            return this.connected;
-
-        let url = `${ window.location.origin }${ window.location.pathname }coms`;
-        url = url.replace('http', 'ws'); // http -> ws, https -> wss
-
-        let defnsReady = this._loadProtoDefn();
-        let wsReady = this._connectWS(url);
-
-        this.connected = Q.all([
-            defnsReady,
-            wsReady,
-        ]).timeout(15000, 'connection timed out');
-
-        return this.connected;
     }
 
     send(request) {
