@@ -1,7 +1,7 @@
 
 'use strict';
 
-const ProgressStream = require('../utils/progressstream');
+import ProgressStream from '../utils/progressstream';
 
 function events() {
     let stream = new ProgressStream();
@@ -33,4 +33,4 @@ function init() {
 
 }
 
-module.exports = { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn };
+export default { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn };

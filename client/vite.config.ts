@@ -1,8 +1,10 @@
+
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 import commonjs from 'vite-plugin-commonjs';
 import vitePluginRequire from 'vite-plugin-require';
+import vuejsPlugin from '@vitejs/plugin-vue';
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
   console.log(command);
@@ -13,6 +15,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       }
     },
     plugins: [
+      vuejsPlugin(),
       {
         ...vitePluginRequire(),  // transform require()s
         apply: 'serve',
@@ -20,7 +23,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       {
         ...commonjs(),           // transform module.exports
         apply: 'serve',
-      }
+      },
     ],
     define: {
       'process.env': {},
@@ -30,7 +33,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       rollupOptions: {
         plugins: [
           vitePluginRequire(),
-          commonjs()
+          commonjs(),
         ],
         input: {
           main: resolve(__dirname, 'index.html'),
