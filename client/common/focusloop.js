@@ -62,15 +62,22 @@ class FocusLoop extends EventEmitter {
         });
 
         window.addEventListener('keydown', (event) => {
+            if (event.ctrlKey) {
+                this.ctrlDown = true;
+                return;
+            }
+            
             if (event.altKey) {
                 if (this.focusMode !== 'shortcuts') {
                     this.altDown = true;
                     if ( ! this.altTimer) {
                         this.shortcutPath = '';
                         this.altTimer = setTimeout(() => {
-                            this.setFocusMode('shortcuts');
+                            if (this.ctrlDown === false) {
+                                this.setFocusMode('shortcuts');
+                                this.turnedOn = true;
+                            }
                             this.altTimer = null;
-                            this.turnedOn = true;
                         }, 1000);
                     }
 
@@ -84,6 +91,9 @@ class FocusLoop extends EventEmitter {
         });
 
         window.addEventListener('keyup', (event) => {
+            if (event.ctrlKey)
+                this.ctrlDown = true;
+
             if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
                 this.altDown = false;
                 if (this.altTimer) {
@@ -91,18 +101,23 @@ class FocusLoop extends EventEmitter {
                     this.altTimer = null;
                 }
 
-                if ( ! this.turnedOn) {
-                    if (this.inAccessibilityMode()) {
-                        this.shortcutPath = '';
-                        this.setFocusMode('default');
+                if (this.ctrlDown === false) {
+                    
+                    if (!this.turnedOn) {
+                        if (this.inAccessibilityMode()) {
+                            this.shortcutPath = '';
+                            this.setFocusMode('default');
+                        }
+                        else
+                            this.setFocusMode('shortcuts');
                     }
-                    else
-                        this.setFocusMode('shortcuts');
-                }
-                this.turnedOn = false;
+                    this.turnedOn = false;
 
-                event.preventDefault();
-                event.stopPropagation();
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                this.ctrlDown = false;
             }
         });
 

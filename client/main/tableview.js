@@ -1613,7 +1613,6 @@ const TableView = SilkyView.extend({
                     this._edited = true;
                 break;
         }
-        event.stopPropagation();
     },
     _notEditingKeyPress(event) {
 
