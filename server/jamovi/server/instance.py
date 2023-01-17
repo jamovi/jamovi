@@ -818,17 +818,22 @@ class Instance:
         else:
             self._coms.send_error(_('Error'), _('Unable to access analysis'), self._instance_id, request)
 
-    def open(self, path, title=None, is_temp=False, ext=None):
+    def open(self, path, title=None, is_temp=False, ext=None, options=None):
 
         is_example = path.startswith('{{Examples}}')
         if is_example:
             is_temp = True  # don't add to recents, etc.
 
-        if is_example and self._perms.open.examples is False:
-            raise PermissionError()
-        if is_url(path) and self._perms.open.remote is False:
-            raise PermissionError()
-        if path != '' and not is_example:
+        if path == '':
+            pass
+        elif is_example:
+            if self._perms.open.examples is False:
+                raise PermissionError()
+        elif is_url(path):
+            if self._perms.open.remote is False:
+                raise PermissionError()
+        else:
+            # either an upload or opening a local file
             if self._perms.open.upload is False:
                 raise PermissionError()
             if self._perms.open.local is False:
@@ -868,7 +873,7 @@ class Instance:
                     path = url
 
                     integ_handler = get_special_handler(url)
-                    
+
                     class Connector(TCPConnector):
                         async def _resolve_host(self, host: str, port: int, traces = None):
                             resolved_list = await super()._resolve_host(host, port, traces)
