@@ -11,7 +11,7 @@ module.exports = {
 
     contextMenuListener: function (element, callback) {
         element.addEventListener('contextmenu', (event) => {
-            return callback(event)
+            return callback(event);
         }); // needed for ipads as well because the results panel simulates contextmenu events
 
         if (['iPad Simulator',

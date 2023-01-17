@@ -143,7 +143,7 @@ const LayoutSupplierView = function(params) {
 
         this.supplierGrid = new SelectableLayoutGrid();
         if (label !== null)
-            this.supplierGrid.$el.attr('aria-labelledby', labelId)
+            this.supplierGrid.$el.attr('aria-labelledby', labelId);
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
         this.supplierGrid.stretchEndCells = false;
         this.supplierGrid._animateCells = true;
