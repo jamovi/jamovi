@@ -44,7 +44,7 @@ class Permissions:
             self.browse.examples = True
             self.open.local = False
             self.open.upload = True
-            self.open.remote = False
+            self.open.remote = True
             self.open.examples = True
             self.save.local = False
             self.save.download = True
