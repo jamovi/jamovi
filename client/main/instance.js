@@ -207,15 +207,16 @@ const Instance = Backbone.Model.extend({
                             setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel: () => xhr.abort() });
                     });
 
-                    let url = `${ host.baseUrl }open?p=&filename=${ encodeURIComponent(file.name) }`;
-                    if (options.title)
-                        url += `&title=${ encodeURIComponent(options.title) }`;
+                    let url = `${ host.baseUrl }open?p=`;
+
+                    const data = new FormData();
+                    data.append('options', JSON.stringify(options));
+                    data.append('file', file, file.name);
 
                     xhr.open('POST', url, true);
-                    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
                     for (let header of headers.entries())
                         xhr.setRequestHeader(header[0], header[1]);
-                    xhr.send(file);
+                    xhr.send(data);
 
                     // wait till upload completes
                     await new Promise((resolve) => {

@@ -325,19 +325,42 @@ class OpenHandler(RequestHandler):
 
     async def post(self, instance_id=None):
 
-        filename = self.get_query_argument('filename')
+        file_path: str
+        file_title: str
+        file_ext = None
+        options: dict = { }
+
+        if 'file' in self.request.files:
+            file = self.request.files['file'][-1]
+            file_title, ext = os.path.splitext(file.filename)
+            temp_file = NamedTemporaryFile(suffix=ext)
+            with open(temp_file.name, 'wb') as writer:
+                writer.write(file.body)
+            file_path = temp_file.name
+        elif 'path' in self.request.body_arguments:
+            file_path = self.get_body_argument('path')
+            filename = self.get_body_argument('name')
+            file_title, dot_ext = os.path.splitext(filename)
+            file_ext = dot_ext[1:]
+        else:
+            self.set_status(400)
+            self.write('400: Bad Request')
+            return
+
+        try:
+            options_json = self.get_body_argument('options', '{}')
+            options_dict = json.loads(options_json)
+            if isinstance(options_dict, dict):
+                options = options_dict
+        except (KeyError, ValueError) as e:
+            pass
 
         lang_code = self.request.headers.get('Accept-Language', 'en')
-
         self._session.set_language(lang_code)
 
         try:
-            base, ext = os.path.splitext(os.path.basename(filename))
-            temp_file = NamedTemporaryFile(suffix=ext)
-            with open(temp_file.name, 'wb') as writer:
-                writer.write(self.request.body)
             instance = await self._session.create()
-            async for progress in instance.open(temp_file.name, title=base, is_temp=True):
+            async for progress in instance.open(file_path, title=file_title, is_temp=True, ext=file_ext, options=options):
                 self._write('progress', progress)
         except Exception as e:
             log.exception(e)
