@@ -2170,6 +2170,8 @@ const BackstageView = SilkyView.extend({
 
             let $op = $(`<div class="silky-bs-menu-item" data-op="${ s6e(op.name) }-item"></div>`);
             let $opTitle = $(`<div class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            if (op.action)
+                $opTitle.addClass('bs-menu-action');
             if (op.shortcutKey) {
                 focusLoop.applyShortcutOptions($opTitle[0], {
                     key: op.shortcutKey.toUpperCase(),
@@ -2185,6 +2187,8 @@ const BackstageView = SilkyView.extend({
                 let $opPlaces = $('<div class="silky-bs-op-places"></div>');
                 for (let place of op.places) {
                     let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
+                    if (place.action)
+                        $opPlace.addClass('bs-menu-action');
                     if (place.shortcutKey) {
                         focusLoop.applyShortcutOptions($opPlace[0], {
                             key: place.shortcutKey.toUpperCase(),
