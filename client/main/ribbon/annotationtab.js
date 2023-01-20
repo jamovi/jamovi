@@ -94,63 +94,88 @@ class AnnotationTab extends RibbonTab {
     }
 
     getRibbonItems(ribbon) {
-        return [
-            new RibbonGroup({ title: _('Clipboard'), margin: 'large', items: [
-                new RibbonButton({ title: _('Paste'), name: 'textPaste', size: 'large', shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' } }),
-                new RibbonGroup({ orientation: 'vertical', items: [
-                    new RibbonButton({ title: _('Cut'), name: 'textCut', size: 'small', shortcutKey: 'x', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Copy'), name: 'textCopy', size: 'small', shortcutKey: 'c1' })
-                ]})
-            ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ title: _('Edit'), margin: 'large', alignContents: 'center', items: [
-                new RibbonButton({ title: _('Undo Edit'), name: 'textUndo', size: 'small', shortcutKey: 'az' }),
-                new RibbonButton({ title: _('Redo Edit'), name: 'textRedo', size: 'small', shortcutKey: 'aq' })
-            ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ title: _('Font'), margin: 'large', orientation: 'vertical', items: [
-                new RibbonGroup({ orientation: 'horizontal', items: [
-                    new RibbonButton({ title: _('Bold'), name: 'textBold', size: 'small', icon: Icons.bold, shortcutKey: '1', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Italic'), name: 'textItalic', size: 'small', icon: Icons.italic, shortcutKey: '2', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Underline'), name: 'textUnderline', size: 'small', icon: Icons.underline, shortcutKey: '3', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Strike'), name: 'textStrike', size: 'small', icon: Icons.strike, shortcutKey: '4', shortcutPosition: { x: '25%', y: '25%' } })
-                ]}),
-                new RibbonGroup({ orientation: 'horizontal', items: [
-                    new RibbonButton({ title: _('Sub Script'), name: 'textSubScript', size: 'small', icon: Icons.script.sub, shortcutKey: '5' }),
-                    new RibbonButton({ title: _('Super Script'), name: 'textSuperScript', size: 'small', icon: Icons.script.super, shortcutKey: '6' }),
-                    new RibbonSeparator(),
-                    new RibbonButton({ title: _('Highlight Color'), name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', _('No Color')), shortcutKey: 'h' }),
-                    new RibbonButton({ title: _('Text Color'), name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', _('Automatic')), shortcutKey: 'fc'})
-                ]})
-            ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ title: _('Paragraph'), margin: 'large', orientation: 'vertical', items: [
-                new RibbonGroup({ orientation: 'horizontal', items: [
-                    new RibbonButton({ title: _('Left Align'), name: 'textAlignLeft', size: 'small', icon: Icons.align[''], shortcutKey: 'al', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Center Align'), name: 'textAlignCenter', size: 'small', icon: Icons.align.center, shortcutKey: 'ac', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Right Align'), name: 'textAlignRight', size: 'small', icon: Icons.align.right, shortcutKey: 'ar', shortcutPosition: { x: '25%', y: '25%' } }),
-                    new RibbonButton({ title: _('Justify'), name: 'textAlignJustify', size: 'small', icon: Icons.align.justify, shortcutKey: 'aj', shortcutPosition: { x: '25%', y: '25%' } })
-                ]}),
-                new RibbonGroup({ orientation: 'horizontal', items: [
-                    new RibbonButton({ title: _('Ordered List'), name: 'textListOrdered', size: 'small', icon: Icons.list.ordered, shortcutKey: 'n' }),
-                    new RibbonButton({ title: _('Bullet List'), name: 'textListBullet', size: 'small', icon: Icons.list.bullet, shortcutKey: 'u' }),
-                    new RibbonSeparator(),
-                    new RibbonButton({ title: _('Indent -1'), name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'], shortcutKey: 'ao' }),
-                    new RibbonButton({ title: _('Indent +1'), name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'], shortcutKey: 'ai' })
-                ]})
-            ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ title: _('Insert'), margin: 'large', items: [
-                new RibbonButton({ title: _('Formula'), name: 'textFormula', size: 'medium', icon: Icons.formula, shortcutKey: 'f'}),
-            ]}),
-            new RibbonSeparator(),
-            new RibbonGroup({ title: _('Styles'), margin: 'large', items: [
-                new RibbonButton({ title: _('Code-Block'), name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'], shortcutKey: 'cb', shortcutPosition: { x: '50%', y: '90%' } }),
-                new RibbonButton({ title: _('Heading'), name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'], shortcutKey: 'h', shortcutPosition: { x: '50%', y: '90%' } }),
-                //new RibbonButton({ title: _('Clear'), name: 'textClear', margin: 'large', size: 'large', icon: Icons.clean }),
-                new RibbonButton({ title: _('Link'), name: 'textLink', margin: 'large', size: 'large', icon: Icons.link, shortcutKey: 'l', shortcutPosition: { x: '50%', y: '90%' } })
-            ]})
-        ];
+        if (this.items === undefined) {
+            this.items = [
+                new RibbonGroup({
+                    title: _('Clipboard'), margin: 'large', items: [
+                        new RibbonButton({ title: _('Paste'), name: 'textPaste', size: 'large', shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' } }),
+                        new RibbonGroup({
+                            orientation: 'vertical', items: [
+                                new RibbonButton({ title: _('Cut'), name: 'textCut', size: 'small', shortcutKey: 'x', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Copy'), name: 'textCopy', size: 'small', shortcutKey: 'c1' })
+                            ]
+                        })
+                    ]
+                }),
+                new RibbonSeparator(),
+                new RibbonGroup({
+                    title: _('Edit'), margin: 'large', alignContents: 'center', items: [
+                        new RibbonButton({ title: _('Undo Edit'), name: 'textUndo', size: 'small', shortcutKey: 'az' }),
+                        new RibbonButton({ title: _('Redo Edit'), name: 'textRedo', size: 'small', shortcutKey: 'aq' })
+                    ]
+                }),
+                new RibbonSeparator(),
+                new RibbonGroup({
+                    title: _('Font'), margin: 'large', orientation: 'vertical', items: [
+                        new RibbonGroup({
+                            orientation: 'horizontal', items: [
+                                new RibbonButton({ title: _('Bold'), name: 'textBold', size: 'small', icon: Icons.bold, shortcutKey: '1', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Italic'), name: 'textItalic', size: 'small', icon: Icons.italic, shortcutKey: '2', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Underline'), name: 'textUnderline', size: 'small', icon: Icons.underline, shortcutKey: '3', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Strike'), name: 'textStrike', size: 'small', icon: Icons.strike, shortcutKey: '4', shortcutPosition: { x: '25%', y: '25%' } })
+                            ]
+                        }),
+                        new RibbonGroup({
+                            orientation: 'horizontal', items: [
+                                new RibbonButton({ title: _('Sub Script'), name: 'textSubScript', size: 'small', icon: Icons.script.sub, shortcutKey: '5' }),
+                                new RibbonButton({ title: _('Super Script'), name: 'textSuperScript', size: 'small', icon: Icons.script.super, shortcutKey: '6' }),
+                                new RibbonSeparator(),
+                                new RibbonButton({ title: _('Highlight Color'), name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', _('No Color')), shortcutKey: 'h' }),
+                                new RibbonButton({ title: _('Text Color'), name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', _('Automatic')), shortcutKey: 'fc' })
+                            ]
+                        })
+                    ]
+                }),
+                new RibbonSeparator(),
+                new RibbonGroup({
+                    title: _('Paragraph'), margin: 'large', orientation: 'vertical', items: [
+                        new RibbonGroup({
+                            orientation: 'horizontal', items: [
+                                new RibbonButton({ title: _('Left Align'), name: 'textAlignLeft', size: 'small', icon: Icons.align[''], shortcutKey: 'al', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Center Align'), name: 'textAlignCenter', size: 'small', icon: Icons.align.center, shortcutKey: 'ac', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Right Align'), name: 'textAlignRight', size: 'small', icon: Icons.align.right, shortcutKey: 'ar', shortcutPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Justify'), name: 'textAlignJustify', size: 'small', icon: Icons.align.justify, shortcutKey: 'aj', shortcutPosition: { x: '25%', y: '25%' } })
+                            ]
+                        }),
+                        new RibbonGroup({
+                            orientation: 'horizontal', items: [
+                                new RibbonButton({ title: _('Ordered List'), name: 'textListOrdered', size: 'small', icon: Icons.list.ordered, shortcutKey: 'n' }),
+                                new RibbonButton({ title: _('Bullet List'), name: 'textListBullet', size: 'small', icon: Icons.list.bullet, shortcutKey: 'u' }),
+                                new RibbonSeparator(),
+                                new RibbonButton({ title: _('Indent -1'), name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'], shortcutKey: 'ao' }),
+                                new RibbonButton({ title: _('Indent +1'), name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'], shortcutKey: 'ai' })
+                            ]
+                        })
+                    ]
+                }),
+                new RibbonSeparator(),
+                new RibbonGroup({
+                    title: _('Insert'), margin: 'large', items: [
+                        new RibbonButton({ title: _('Formula'), name: 'textFormula', size: 'medium', icon: Icons.formula, shortcutKey: 'f' }),
+                    ]
+                }),
+                new RibbonSeparator(),
+                new RibbonGroup({
+                    title: _('Styles'), margin: 'large', items: [
+                        new RibbonButton({ title: _('Code-Block'), name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'], shortcutKey: 'cb', shortcutPosition: { x: '50%', y: '90%' } }),
+                        new RibbonButton({ title: _('Heading'), name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'], shortcutKey: 'h', shortcutPosition: { x: '50%', y: '90%' } }),
+                        //new RibbonButton({ title: _('Clear'), name: 'textClear', margin: 'large', size: 'large', icon: Icons.clean }),
+                        new RibbonButton({ title: _('Link'), name: 'textLink', margin: 'large', size: 'large', icon: Icons.link, shortcutKey: 'l', shortcutPosition: { x: '50%', y: '90%' } })
+                    ]
+                })
+            ];
+        }
+        return this.items;
     }
 }
 
