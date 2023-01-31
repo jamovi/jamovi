@@ -12,6 +12,9 @@ const deepRenderToGrid = require('./controlcontainer').renderContainerItem;
 const TemplateItemControl = require('./templateitemcontrol');
 const TargetListValueFilter = require('./targetlistvaluefilter');
 const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
+const LayoutGrid = require('./layoutgrid');
+const LayoutGridBorderSupport = require('./layoutgridbordersupport');
+const PropertySupplier = require('./propertysupplier');
 
 const OptionListControl = function (params) {
 
@@ -37,16 +40,35 @@ const OptionListControl = function (params) {
         params.columns = [ columnInfo ];
     }
 
+    if (params.selectable === undefined && params.columns !== undefined && Array.isArray(params.columns)) {
+        let selectable = false;
+        for (let i = 0; i < params.columns.length; i++) {
+            let columnParam = params.columns[i];
+            if (columnParam.selectable === undefined || columnParam.selectable) {
+                selectable = true;
+                break;
+            } 
+        }
+        if (!selectable)
+            params.selectable = false;
+    }
+
     OptionControl.extendTo(this, params);
     TitledGridControl.extendTo(this, params);
-    SelectableLayoutGrid.extendTo(this);
+
+    if (params && (params.selectable || params.selectable === undefined)) 
+        SelectableLayoutGrid.extendTo(this, params);
+    else {
+        LayoutGrid.extendTo(this);
+        LayoutGridBorderSupport.extendTo(this);
+        PropertySupplier.extendTo(this, params);
+    }
 
     Object.assign(this, Backbone.Events);
 
     this.registerSimpleProperty("columns", null);
     this.registerSimpleProperty("maxItemCount", -1);
     this.registerSimpleProperty("showColumnHeaders", false);
-    this.registerSimpleProperty("fullRowSelect", false);
     this.registerSimpleProperty("removeAction", "deleterow", new EnumPropertyFilter(["deleterow", "clearcell"], "deleterow"));
     this.registerSimpleProperty("height", "normal", new EnumPropertyFilter(["smallest", "small", "normal", "large", "largest", "auto"], "normal"));
     this.registerSimpleProperty("rowDataAsArray", false);
@@ -59,7 +81,7 @@ const OptionListControl = function (params) {
 
     this.maxItemCount = this.getPropertyValue('maxItemCount');
     this.showHeaders = this.getPropertyValue('showColumnHeaders');
-    this.fullRowSelect = this.getPropertyValue('fullRowSelect');
+    
     this.removeAction = this.getPropertyValue('removeAction');
     this.rowDataAsArray = this.getPropertyValue('rowDataAsArray');
 
@@ -309,6 +331,8 @@ const OptionListControl = function (params) {
             }
 
             cell.clickable(columnInfo.selectable);
+            if (columnInfo.selectable)
+                cell.$el.attr('role', 'listitem');
             if (this.getPropertyValue('stripedRows')) {
                 if (this.showHeaders)
                     cell.$el.addClass((this.displayRowToRowIndex(dispRow) % 2 === 0) ? "even-list-row" : "odd-list-row");

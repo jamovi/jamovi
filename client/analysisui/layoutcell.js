@@ -4,10 +4,11 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 const SuperClass = require('../common/superclass');
+const focusLoop = require('../common/focusloop');
 
 const LayoutCell = function(parent, properties) {
 
-    this.$el = $('<div style="opacity: 0; visibility: hidden; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>');
+    this.$el = $(`<div id='${ focusLoop.getNextAriaElementId('cell') }' style="opacity: 0; visibility: hidden; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>`);
     this.$el.attr('role', 'presentation');
     //if (parent.editable)
     //    this.$el.css("border", "1px dotted red");
@@ -64,6 +65,10 @@ const LayoutCell = function(parent, properties) {
         this.$el.one("mouseup", null, this, this.onMouseUp);
     };
 
+    this.onFocus = (event) => {
+        this.trigger('layoutcell.focus');
+    };
+
     this.onMouseUp = (event) => {
         let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
@@ -90,10 +95,12 @@ const LayoutCell = function(parent, properties) {
     this.clickable = function(value) {
         this._clickable = value;
         if (value) {
+            this.$el.on("focus", null, this, this.onFocus);
             this.$el.on("mousedown", null, this, this.onMouseDown);
             this.$el.on("touchstart", null, this, this.onTouchStart);
         }
         else {
+            this.$el.off("focus", this.onFocus);
             this.$el.off("mousedown", this.onMouseDown);
             this.$el.off("touchstart", this.onTouchStart);
         }
