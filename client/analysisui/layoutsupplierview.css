@@ -97,6 +97,9 @@
 
 .search {
     position: sticky;
+    background: none;
+    border: none;
+    padding: 0 0 1px 0;
     top: 2px;
     right: 2px;
     height: 0px;
