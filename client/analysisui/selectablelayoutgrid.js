@@ -4,33 +4,42 @@
 
 var LayoutGrid = require('./layoutgrid');
 var LayoutGridBorderSupport = require('./layoutgridbordersupport');
+const PropertySupplier = require('./propertysupplier');
 var SuperClass = require('../common/superclass');
 
-var SelectableLayoutGrid = function() {
+var SelectableLayoutGrid = function (params) {
     LayoutGrid.extendTo(this);
     LayoutGridBorderSupport.extendTo(this);
+    PropertySupplier.extendTo(this, params);
+
+    this.registerSimpleProperty("fullRowSelect", false);
 
     this.hasFocus = false;
     this._selectedCells = [];
-    this.fullRowSelect = false;
+    this.fullRowSelect = this.getPropertyValue('fullRowSelect');
     this._rootCell = null;
 
     this.$el.addClass('selectable-list');
-    this.$el.attr('tabindex', '0');
-    this.$el.attr('role', 'list');
-    this.$el.on('focus', (event) => {
-        if (this._selectedCells.length === 0 && this._cells.length > 0) {
-            let index = 0;
-            let cell = this._cells[index];
-            while ((cell._clickable === false || cell.visible() === false) && index + 1 < this._cells.length) {
-                index += 1;
-                cell = this._cells[index];
+    
+    
+    if (params && (params.selectable || params.selectable === undefined)) {
+        this.$el.attr('aria-multiselectable', 'true');
+        this.$el.attr('tabindex', '0');
+        this.$el.attr('role', 'list');
+        this.$el.on('focus', (event) => {
+            if (this._selectedCells.length === 0 && this._cells.length > 0) {
+                let index = 0;
+                let cell = this._cells[index];
+                while ((cell._clickable === false || cell.visible() === false) && index + 1 < this._cells.length) {
+                    index += 1;
+                    cell = this._cells[index];
+                }
+                if (cell._clickable && cell.visible())
+                    this.selectCell(cell);
             }
-            if (cell._clickable && cell.visible())
-                this.selectCell(cell);
-        }
-        this.trigger('layoutgrid.gotFocus');
-    });
+            this.trigger('layoutgrid.gotFocus');
+        });
+    }
 
     this.$el.on('keydown', (event) => {
         if (this._selectedCells.length === 0)
@@ -152,10 +161,17 @@ var SelectableLayoutGrid = function() {
 
     this._setCellSelection = function(value, cell, ctrlKey, shiftKey) {
         cell.setSelection(value, ctrlKey, shiftKey);
-        if (value)
+        if (value) {
             cell.$el.addClass('selected');
-        else
+            cell.$el.attr('aria-selected', 'true');
+            this.$el.attr('aria-activedescendant', cell.$el.attr('id'));
+        }
+        else {
+            if (this.$el.attr('aria-activedescendant') === cell.$el.attr('id'))
+                this.$el.attr('aria-activedescendant', this._selectedCells[this._selectedCells.length - 1].$el.attr('id'));
             cell.$el.removeClass('selected');
+            cell.$el.attr('aria-selected', 'false');
+        }
     };
 
     this.setCellSelection = function(value, cell, ctrlKey, shiftKey) {
@@ -246,6 +262,10 @@ var SelectableLayoutGrid = function() {
                     self.onSelectionChanged(cell, ctrlKey, shiftKey);
                 });
             }
+        });
+        cell.on('layoutcell.focus', function () {
+            if (cell.isSelected() === false)
+                self.onSelectionChanged(cell, false, false);
         });
         cell.on('layoutcell.mousedown', function(ctrlKey, shiftKey) {
             if (cell.isSelected() === false)

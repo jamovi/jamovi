@@ -8,6 +8,7 @@ var PropertySupplier = function(properties) {
 
     Object.assign(this, Backbone.Events);
 
+    this.params = properties;
     this._propertySupplier_editting = 0;
     this._propertySupplier_eventsPending = {};
 
