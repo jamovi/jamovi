@@ -251,6 +251,7 @@
     color: #555555 ;
     font-size: 72% ;
     padding: 6px 8px ;
+    display: block;
 }
 
 .jmv-ribbon-menu-heading:empty {
