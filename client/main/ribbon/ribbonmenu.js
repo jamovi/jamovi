@@ -188,7 +188,7 @@ const RibbonMenu = Backbone.View.extend({
         if (item.hidden)
             classes += ' menu-item-hiding';
 
-        let html = `<button data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
+        let html = `<button role="menuitem" data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
         if (item.subtitle)
@@ -204,7 +204,7 @@ const RibbonMenu = Backbone.View.extend({
     },
     _createModuleItem(item, level) {
         let classes = 'jmv-ribbon-menu-item module';
-        let html = `<button data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
+        let html = `<button role="menuitem" data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
         html += '<div class="to-analyses-arrow"></div>';
         html += '<div class="description">';
         html += '<div>' + item.title + '</div>';
@@ -215,9 +215,11 @@ const RibbonMenu = Backbone.View.extend({
         item.$el = $(html);
         if (item.analyses !== undefined) {
 
-            item.sidePanel = new Menu(item.$el[0], level + 1);
+            let labelId = focusLoop.getNextAriaElementId('label');
+            item.sidePanel = new Menu(item.$el[0], level + 1, null);
+            item.sidePanel.$el.attr('aria-laeblledby', labelId);
             item.sidePanel.$el.addClass('side-panel');
-            item.sidePanel.$el.append(`<div class="side-panel-heading">Module - ${ item.name }</div>`);
+            item.sidePanel.$el.append(`<div id="${labelId}" class="side-panel-heading">Module - ${ item.name }</div>`);
             item.sidePanel.$el.append(`<label class="display-in-menu"><input type="checkbox"  data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>${ _('Show in main menu') }</label>`);
 
             let $sidePanel = item.sidePanel.$el;
@@ -248,10 +250,11 @@ const RibbonMenu = Backbone.View.extend({
         return item.$el;
     },
     _createMenuGroup(group, level) {
-        let $group = $(`<div class="jmv-ribbon-menu-group"></div>`);
-        let $heading = $('<div class="jmv-ribbon-menu-heading">' + group.title + '</div>');
+        let labelId = focusLoop.getNextAriaElementId('label');
+        let $group = $(`<div class="jmv-ribbon-menu-group" role="group" aria-labelledby="${labelId}"></div>`);
+        let $heading = $(`<label id="${labelId}" class="jmv-ribbon-menu-heading">${group.title}</label>`);
         $group.append($heading);
-        let $items = $('<div class="jmv-group-items"></div>');
+        let $items = $('<div class="jmv-group-items" role="presentation"></div>');
 
         let allHidden = true;
         for (let i = 0; i < group.items.length; i++) {
