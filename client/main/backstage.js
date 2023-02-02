@@ -106,7 +106,7 @@ const FSEntryListView = SilkyView.extend({
                 location = item.description;
             }
 
-            let html = `<div class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
+            let html = `<div role="menuitem" class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
             else if (name.endsWith('.omt'))
@@ -226,12 +226,14 @@ const FSEntryBrowserView = SilkyView.extend({
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
             this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
+            this.$items[selectedIndex].attr('aria-selected', 'true');
             this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             this._selected = true;
 
             let offset = this.$items[selectedIndex].position();
             if (offset.top < 0)
-                this.$itemsList.animate({scrollTop: this.$itemsList.scrollTop() + offset.top}, 100);
+                this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
+            this.updateActiveDesendent();
         }
     },
     _setSelection: function($target) {
@@ -239,7 +241,9 @@ const FSEntryBrowserView = SilkyView.extend({
             this.clearSelection();
         this._selectedIndices.push($target.data('index'));
         $target.addClass('silky-bs-fslist-selected-item');
-        $target.find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+        $target.attr('aria-selected', 'true');
+        $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+        this.updateActiveDesendent();
     },
     _searchChanged: function(event) {
         this._render();
@@ -444,7 +448,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 focusLoop.applyShortcutOptions($search[0], { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
-        this.$itemsList = $('<div class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>');
+        this.$itemsList = $('<div role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>');
         this.$el.append(this.$itemsList);
 
         if (focusLoop.inAccessibilityMode() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
@@ -607,8 +611,9 @@ const FSEntryBrowserView = SilkyView.extend({
                         && ! (item.skipExtensionCheck || this._hasValidExtension(name)))
                     continue;
 
-
-                html += `<div class="silky-bs-fslist-item">`;
+                
+                let itemId = focusLoop.getNextAriaElementId('listitem');
+                html += `<div id="${itemId}" class="silky-bs-fslist-item" role="listitem">`;
                 if (itemType === FSItemType.File)
                     html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox">';
                 html += '   <div class="silky-bs-flist-item-icon">';
@@ -700,12 +705,14 @@ const FSEntryBrowserView = SilkyView.extend({
             if (this.multiMode) {
                 this.multiMode = false;
                 $button.removeClass('on');
+                this.$itemsList.attr('aria-multiselectable', 'false');
                 this.$itemsList.find('.jmv-bs-fslist-checkbox').addClass('hidden');
                 this.$footer.find('.silky-bs-fslist-import-options').addClass('hidden');
                 this.clearSelection();
             }
             else {
                 this.multiMode = true;
+                this.$itemsList.attr('aria-multiselectable', 'true');
                 this.$itemsList.find('.jmv-bs-fslist-checkbox').removeClass('hidden');
                 this.$footer.find('.silky-bs-fslist-import-options').removeClass('hidden');
                 $button.addClass('on');
@@ -714,6 +721,14 @@ const FSEntryBrowserView = SilkyView.extend({
     },
     _toggleMultiMode : function() {
         this._setMultiMode( ! this.multiMode);
+    },
+    updateActiveDesendent() {
+        if (this._selectedIndices.length > 0) {
+            let $activeItem = this.$items[this._selectedIndices[this._selectedIndices.length - 1]];
+            this.$itemsList.attr('aria-activedescendant', $activeItem.attr('id'));
+        }
+        else
+            this.$itemsList.attr('aria-activedescendant', '');
     },
     clickItem: function (target, ctrlKey, shiftKey) {
         let $target = $(target);
@@ -736,12 +751,14 @@ const FSEntryBrowserView = SilkyView.extend({
                     let ii = this._selectedIndices.indexOf(index);
                     if (ii != -1) {
                         this.$items[index].removeClass('silky-bs-fslist-selected-item');
+                        this.$items[index].attr('aria-selected', 'false');
                         this.$items[index].find('.jmv-bs-fslist-checkbox').prop('checked', false);
                         this._selectedIndices.splice(ii, 1);
                     }
                     else {
                         this._selectedIndices.push($target.data('index'));
                         $target.addClass('silky-bs-fslist-selected-item');
+                        $target.attr('aria-selected', 'true');
                         $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
                     }
                     this._baseSelectionIndex = -1;
@@ -749,6 +766,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 else if (shiftKey) {
                     for (let i of this._selectedIndices) {
                         this.$items[i].removeClass('silky-bs-fslist-selected-item');
+                        this.$items[i].attr('aria-selected', 'false');
                         this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
                     }
 
@@ -757,10 +775,12 @@ const FSEntryBrowserView = SilkyView.extend({
                     for (let i = start; i !== index; i = i + ((index > start) ? 1 : -1)) {
                         indices.push(i);
                         this.$items[i].addClass('silky-bs-fslist-selected-item');
+                        this.$items[i].attr('aria-selected', 'true');
                         this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', true);
                     }
                     indices.push($target.data('index'));
                     $target.addClass('silky-bs-fslist-selected-item');
+                    $target.attr('aria-selected', 'true');
                     $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
                     this._selectedIndices = indices;
                     this._baseSelectionIndex = this._selectedIndices[0];
@@ -771,6 +791,7 @@ const FSEntryBrowserView = SilkyView.extend({
                     this.clearSelection();
                 this._selectedIndices.push($target.data('index'));
                 $target.addClass('silky-bs-fslist-selected-item');
+                $target.attr('aria-selected', 'true');
                 $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
             }
 
@@ -801,6 +822,7 @@ const FSEntryBrowserView = SilkyView.extend({
             if (this._selectedIndices.length > 0) {
                 for (let i of this._selectedIndices) {
                     this.$items[i].removeClass('silky-bs-fslist-selected-item');
+                    this.$items[i].attr('aria-selected', 'false');
                     this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
                 }
             }
@@ -809,12 +831,14 @@ const FSEntryBrowserView = SilkyView.extend({
             this._baseSelectionIndex = -1;
             let name = $target.data('name');
             $target.addClass('silky-bs-fslist-selected-item');
+            $target.attr('aria-selected', 'true');
             $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
 
             this.$header.find('.silky-bs-fslist-browser-save-name').val(name);
             this._nameChanged();
             this._selected = true;
         }
+        this.updateActiveDesendent();
     },
     _itemClicked : function(event) {
         this.clickItem(event.currentTarget, event.ctrlKey || event.metaKey, event.shiftKey);
@@ -858,7 +882,8 @@ const FSEntryBrowserView = SilkyView.extend({
         for (let i of this._selectedIndices) {
             if (this.$items[i]) {
                 this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                this.$items[i].find('.jmv-bs-fslist-checkbox').prop( 'checked', false );
+                this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+                this.$items[i].attr('aria-selected', 'false');
             }
         }
         this._selectedIndices = [];
@@ -866,16 +891,18 @@ const FSEntryBrowserView = SilkyView.extend({
         if (this.$footer)
             this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
         this._selected = false;
+        this.updateActiveDesendent();
     },
 
     incrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.$items.length > 0 ? 0 : -1);
         if (selectedIndex !== -1 && selectedIndex !== this.$items.length - 1){
             this.clearSelection();
             selectedIndex += 1;
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
             this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
+            this.$items[selectedIndex].attr('aria-selected', 'true');
             this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             this._selected = true;
 
@@ -885,22 +912,25 @@ const FSEntryBrowserView = SilkyView.extend({
                 let r = this.$itemsList.scrollTop() + (offset.top + height - this.$itemsList.height() + 1);
                 this.$itemsList.animate({scrollTop: r}, 100);
             }
+            this.updateActiveDesendent();
         }
     },
     decrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : (this.$items.length > 0 ? 0 : -1);
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.$items.length > 0 ? 0 : -1);
         if (selectedIndex > 0){
             this.clearSelection();
             selectedIndex -= 1;
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
             this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
+            this.$items[selectedIndex].attr('aria-selected', 'true');
             this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
             this._selected = true;
 
             let offset = this.$items[selectedIndex].position();
             if (offset.top < 0)
-                this.$itemsList.animate({scrollTop: this.$itemsList.scrollTop() + offset.top}, 100);
+                this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
+            this.updateActiveDesendent();
         }
     },
     _itemDoubleClicked : function(event) {
@@ -2159,7 +2189,7 @@ const BackstageView = SilkyView.extend({
 
         $('<div class="silky-bs-main"></div>').appendTo(this.$el);
 
-        let $opList = $('<div class="silky-bs-op-list"></div>');
+        let $opList = $('<div class="silky-bs-op-list" role="group"></div>');
 
         let currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
@@ -2168,8 +2198,9 @@ const BackstageView = SilkyView.extend({
             if (selected)
                 currentOp = op;
 
-            let $op = $(`<div class="silky-bs-menu-item" data-op="${ s6e(op.name) }-item"></div>`);
-            let $opTitle = $(`<div class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            let labelId = focusLoop.getNextAriaElementId('label');
+            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="menuitem" aria-labelledby="${labelId}"></div>`);
+            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
             if (op.action)
                 $opTitle.addClass('bs-menu-action');
             if (op.shortcutKey) {
@@ -2209,14 +2240,15 @@ const BackstageView = SilkyView.extend({
 
         this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
 
-        let $op = $('<div class="silky-bs-op-recents-main"></div>');
+        let recentsLabelId = focusLoop.getNextAriaElementId('label');
+        let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-labelledby="${recentsLabelId}"></div>`);
         if (this.model.get('dialogMode'))
             $op.hide();
         else
             $op.show();
 
-        let $opTitle = $(`<div class="silky-bs-op-header" data-op="Recent">${_('Recent')}</div>`).appendTo($op);
-        let $recentsBody = $('<div class="silky-bs-op-recents"></div>').appendTo($op);
+        let $opTitle = $(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`).appendTo($op);
+        let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
         $op.appendTo(this.$opPanel);
 
         let recentsModel = this.model.recentsModel();
