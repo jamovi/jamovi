@@ -233,7 +233,7 @@ const FSEntryBrowserView = SilkyView.extend({
             let offset = this.$items[selectedIndex].position();
             if (offset.top < 0)
                 this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
-            this.updateActiveDesendent();
+            this.updateActiveDescendant();
         }
     },
     _setSelection: function($target) {
@@ -243,7 +243,7 @@ const FSEntryBrowserView = SilkyView.extend({
         $target.addClass('silky-bs-fslist-selected-item');
         $target.attr('aria-selected', 'true');
         $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
-        this.updateActiveDesendent();
+        this.updateActiveDescendant();
     },
     _searchChanged: function(event) {
         this._render();
@@ -722,7 +722,7 @@ const FSEntryBrowserView = SilkyView.extend({
     _toggleMultiMode : function() {
         this._setMultiMode( ! this.multiMode);
     },
-    updateActiveDesendent() {
+    updateActiveDescendant() {
         if (this._selectedIndices.length > 0) {
             let $activeItem = this.$items[this._selectedIndices[this._selectedIndices.length - 1]];
             this.$itemsList.attr('aria-activedescendant', $activeItem.attr('id'));
@@ -838,7 +838,7 @@ const FSEntryBrowserView = SilkyView.extend({
             this._nameChanged();
             this._selected = true;
         }
-        this.updateActiveDesendent();
+        this.updateActiveDescendant();
     },
     _itemClicked : function(event) {
         this.clickItem(event.currentTarget, event.ctrlKey || event.metaKey, event.shiftKey);
@@ -891,7 +891,7 @@ const FSEntryBrowserView = SilkyView.extend({
         if (this.$footer)
             this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
         this._selected = false;
-        this.updateActiveDesendent();
+        this.updateActiveDescendant();
     },
 
     incrementSelection: function() {
@@ -912,7 +912,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 let r = this.$itemsList.scrollTop() + (offset.top + height - this.$itemsList.height() + 1);
                 this.$itemsList.animate({scrollTop: r}, 100);
             }
-            this.updateActiveDesendent();
+            this.updateActiveDescendant();
         }
     },
     decrementSelection: function() {
@@ -930,7 +930,7 @@ const FSEntryBrowserView = SilkyView.extend({
             let offset = this.$items[selectedIndex].position();
             if (offset.top < 0)
                 this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
-            this.updateActiveDesendent();
+            this.updateActiveDescendant();
         }
     },
     _itemDoubleClicked : function(event) {
