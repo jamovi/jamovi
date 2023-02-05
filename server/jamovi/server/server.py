@@ -12,7 +12,6 @@ from tornado import gen
 from .clientconnection import ClientConnection
 from .session import Session
 from .session import SessionEvent
-from .modules import Modules
 from .utils import conf
 from .appinfo import app_info
 from jamovi.core import Dirs
@@ -48,7 +47,7 @@ if tornado_major < 5:
 access_key = conf.get('access_key', None)
 access_key_generated = False
 
-if access_key == None:
+if access_key is None:
     access_key = uuid.uuid4().hex
     access_key_generated = True
     conf.set('access_key', access_key)
@@ -95,6 +94,7 @@ class SessHandler(RequestHandler):
 
     def initialize(self, session):
         self._session = session
+
 
 class ResourceHandler(SessHandler):
 
@@ -352,7 +352,7 @@ class OpenHandler(RequestHandler):
             options_dict = json.loads(options_json)
             if isinstance(options_dict, dict):
                 options = options_dict
-        except (KeyError, ValueError) as e:
+        except (KeyError, ValueError):
             pass
 
         lang_code = self.request.headers.get('Accept-Language', 'en')
@@ -665,8 +665,6 @@ class Server:
         if i18n_path is None:
             i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
 
-        coms_path = 'jamovi.proto'
-
         session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
 
@@ -728,8 +726,8 @@ class Server:
             raise ValueError
 
         self._main_app = tornado.web.Application(
-            websocket_ping_interval = ping_interval,
-            websocket_ping_timeout = ping_timeout)
+            websocket_ping_interval=ping_interval,
+            websocket_ping_timeout=ping_timeout)
 
         if separate_by == 'port':
             self._analysisui_app = tornado.web.Application()
@@ -753,10 +751,6 @@ class Server:
             (fr'{ path_a }/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
             (fr'{ path_a }/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (fr'{ path_a }/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
-            (fr'{ path_a }/assets/coms.proto', SingleFileHandler, {
-                'path': coms_path,
-                'is_pkg_resource': True,
-                'mime_type': 'text/plain' }),
             (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor, { 'session': self._session }),
             (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{{2}}(?:-[a-z]{{2}})?)', ModuleI18nDescriptor, { 'session': self._session }),
             (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor, { 'session': self._session }),
