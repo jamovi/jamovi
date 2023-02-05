@@ -7,12 +7,26 @@ services:
       dockerfile: docker/deps-Dockerfile
     profiles:
       - donotstart
-  
+
   # vite:
-  #   image: jonathonlove/vite:latest
+  #   image: jonathonlove/vite:1.0
   #   container_name: vite
+  #   privileged: true
+  #   command: [ 'mkdir -p /source/merged && unionfs-fuse -o cow /source/server:/source/client=RW /source/merged && cd /source/merged && echo installing npm deps && npm install && echo starting vite server && vite --host' ]
   #   volumes:
-  #     - ./client:/build
+  #     - './client/main:/source/client/main'
+  #     - './client/resultsview:/source/client/resultsview'
+  #     - './client/analysisui:/source/client/analysisui'
+  #     - './client/lib:/source/client/lib'
+  #     - './client/assets:/source/client/assets'
+  #     - './client/common:/source/client/common'
+  #     - './client/index.html:/source/client/index.html'
+  #     - './client/resultsview.html:/source/client/resultsview.html'
+  #     - './client/analysisui.html:/source/client/analysisui.html'
+  #     - './client/tsconfig.json:/source/client/tsconfig.json'
+  #     - './client/vite.config.ts:/source/client/vite.config.ts'
+  #     - './client/package.json:/source/client/package.json'
+  #     - './server/jamovi/server/jamovi.proto:/source/server/assets/coms.proto'
   #   ports:
   #     - '5173:5173'
   #     - '24678:24678'

@@ -5,7 +5,7 @@ from tornado.httputil import parse_response_start_line
 from tornado.httputil import HTTPHeaders
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httpclient import HTTPRequest
-from tornado.simple_httpclient import HTTPTimeoutError
+
 
 class ForwardHandler(RequestHandler):
 
@@ -30,12 +30,18 @@ class ForwardHandler(RequestHandler):
                         self.set_header(key, value)
                 except Exception:
                     pass
-        
+
         if not path:
-            path = self._default_filename
+            path = f'/{ self._default_filename }'
+        elif path.endswith('/'):
+            path = f'{ path }{ self._default_filename }'
+
+        url = f'{ self._base_url }/{ path }'
+        if self.request.query:
+            url = f'{ url }?{ self.request.query }'
 
         request = HTTPRequest(
-            url=f'{ self._base_url }/{ path }',
+            url=url,
             method='GET',
             headers=self.request.headers,
             header_callback=add_header,
