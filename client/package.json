@@ -19,7 +19,7 @@
     "browserify": "^17.0.0",
     "chai": "^4.3.7",
     "clipboard-js": "^0.3.6",
-    "dialogs": "https://github.com/jonathon-love/dialogs#cb8c36eae8f651db6116a511d8416c87c7251d52",
+    "dialogs": "https://codeload.github.com/jonathon-love/dialogs/tar.gz/refs/tags/v1",
     "element-resize-detector": "^1.2.4",
     "framesg": "^0.1.3",
     "highlight.js": "^10.1.2",
