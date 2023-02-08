@@ -11,7 +11,7 @@
     "": ""
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^24.0.0",
+    "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@vitejs/plugin-vue": "^4.0.0",
     "backbone": "^1.4.1",
@@ -43,8 +43,9 @@
     "rollup-plugin-node-polyfills": "^0.2.1",
     "uglifyify": "^5.0.2",
     "underscore": "^1.13.6",
-    "vite": "^4.0.4",
+    "vite": "^4.1.1",
     "vite-plugin-commonjs": "^0.6.1",
-    "vite-plugin-require": "^1.1.10"
+    "vite-plugin-require": "^1.1.10",
+    "vue": "^3.2.47"
   }
 }
