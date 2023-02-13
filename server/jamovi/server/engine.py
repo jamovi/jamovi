@@ -127,6 +127,10 @@ class Engine:
             # https://github.com/jamovi/jamovi/issues/801
             # https://github.com/jamovi/jamovi/issues/831
 
+        elif platform.uname().system == 'Windows':
+            # lubridate doesn't work without this
+            env['TZDIR'] = f'{ env["R_HOME"] }\\share\\zoneinfo'
+
         con = '--con={}'.format(self._conn_path)
         pth = '--path={}'.format(self._data_path)
 
