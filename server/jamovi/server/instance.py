@@ -1584,11 +1584,11 @@ class Instance:
         changed |= set(map(lambda x: x.name, changes['deleted_columns']))
         changed |= set(map(lambda x: x.name, changes['data_changed']))
 
-        self._update_analyses(changed, renamed, changes['rows_added_removed'])
+        self._update_analyses(changed, renamed, changes['rows_added_removed'], changes['filters_changed'])
 
-    def _update_analyses(self, changed, renamed, rows_added_removed):
+    def _update_analyses(self, changed, renamed, rows_added_removed, filters_changed=False):
 
-        if rows_added_removed:
+        if rows_added_removed or filters_changed:
             changed = set(map(lambda x: x.name, self._data))
 
         for analysis in self._data.analyses:
