@@ -7,7 +7,6 @@ import vitePluginRequire from 'vite-plugin-require';
 import vuejsPlugin from '@vitejs/plugin-vue';
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
-  console.log(command);
   let config = {
     resolve: {
       alias: {
