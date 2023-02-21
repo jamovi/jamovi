@@ -43,9 +43,9 @@ const VariablesView = SilkyView.extend({
         this.$el.addClass('jmv-variablesview');
 
         this.$el.html(`
-            <div class="jmv-variables-searchbox">
+            <div class="jmv-variables-searchbox" role="presentation">
                 <div class="image"></div>
-                <input class="search" placeholder="${_('Search variables')}"></input>
+                <input type="search" class="search" placeholder="${_('Search variables')}"  aria-description="${_('Search variables')}"></input>
             </div>
             <div class="jmv-variables-container">
                 <div class="jmv-variables-body">

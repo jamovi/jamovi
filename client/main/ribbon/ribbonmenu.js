@@ -16,6 +16,7 @@ const RibbonMenu = Backbone.View.extend({
         this.$el.attr('tabindex', '0');
         this.focusId = focusLoop.getNextFocusId();
         this.$el.attr('data-focus-id', this.focusId);
+        this.$el.attr('role', 'menuitem');
 
         this.title = title;
         this.name = name;

@@ -436,10 +436,11 @@ const FSEntryBrowserView = SilkyView.extend({
 
         this.$el.append(this.$header);
 
+        let itemListId = focusLoop.getNextAriaElementId('list');
         if ( ! isSaving) {
             let searchHtml = `<div class="searchbox">
                             <div class="image"></div>
-                            <input class="search" type="text"></input>
+                            <input class="search" type="search" aria-label="${_('Search files')}" aria-controls="${itemListId}"></input>
                         </div>`;
             this.$el.append(searchHtml);
 
@@ -448,7 +449,7 @@ const FSEntryBrowserView = SilkyView.extend({
                 focusLoop.applyShortcutOptions($search[0], { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
-        this.$itemsList = $('<div role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>');
+        this.$itemsList = $(`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
         this.$el.append(this.$itemsList);
 
         if (focusLoop.inAccessibilityMode() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
@@ -2164,7 +2165,7 @@ const BackstageView = SilkyView.extend({
         html += '<div class="silky-bs-op silky-bs-op-panel" role="menu">';
         html += '    <div class="silky-bs-header">';
         html += '        <div class="silky-bs-back">';
-        html += '            <div class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
+        html += '            <div  role="button" aria-label="Close file menu" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
         html += '        </div>';
         html += '        <div class="silky-bs-logo"></div>';
         html += '    </div>';
@@ -2189,7 +2190,7 @@ const BackstageView = SilkyView.extend({
 
         $('<div class="silky-bs-main"></div>').appendTo(this.$el);
 
-        let $opList = $('<div class="silky-bs-op-list" role="group"></div>');
+        let $opList = $(`<div class="silky-bs-op-list" role="group" aria-label="${_('File menu items')}"></div>`);
 
         let currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
@@ -2241,7 +2242,7 @@ const BackstageView = SilkyView.extend({
         this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
 
         let recentsLabelId = focusLoop.getNextAriaElementId('label');
-        let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-labelledby="${recentsLabelId}"></div>`);
+        let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
         if (this.model.get('dialogMode'))
             $op.hide();
         else

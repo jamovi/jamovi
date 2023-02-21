@@ -30,7 +30,9 @@ const NotificationView = Backbone.View.extend({
         this.$message = $('<div class="jmv-notification-message"></div>').appendTo(this.$content);
 
         this.$buttons = $('<div class="jmv-notification-buttons"></div>').appendTo(this.$content);
-        this.$cancel = $(`<div class="jmv-notification-button-cancel">${ _('Cancel') }</div>`).appendTo(this.$buttons);
+        this.$cancel = $(`<div class="jmv-notification-button-cancel">${_('Cancel')}</div>`).appendTo(this.$buttons);
+        
+        this.$buttons[0].style.display = (this.model.attributes.cancel ? null : 'none');
 
         this.$cancel[0].addEventListener('click', (event) => {
             this.model.cancel();
@@ -102,7 +104,7 @@ Notifications.prototype.notify = function(notification) {
     }
 
     if (found === false && dismiss === false) {
-        let $el = $('<div></div>').appendTo(this.$el);
+        let $el = $('<div role="alert"></div>').appendTo(this.$el);
         let $view = new NotificationView({ el : $el, model : notification });
         let item = { model: notification, $view: $view };
         this.list.push(item);
