@@ -6,10 +6,10 @@ const StatusbarButton = require('./statusbarbutton');
 
 const Statusbar = function() {
 
-    let html = `<div class="jmv-status-bar">
-                    <div class="left-dock">
+    let html = `<div class="jmv-status-bar" role="region" aria-label="${_('Data status bar')}">
+                    <div class="left-dock" role="presentation">
                     </div>
-                    <div class="right-dock">
+                    <div class="right-dock" role="presentation">
                     </div>
                 </div>`;
     this.$el = $(html);

@@ -58,16 +58,18 @@ const TableView = SilkyView.extend({
         this.viewOuterRange = { top: 0, bottom: -1, left: 0, right: -1 };
 
         this.$el.addClass('jmv-tableview');
+        this.$el.attr('role', 'grid');
+        this.$el.attr('aria-label', `${_('Spreadsheet')}`);
 
         this.$el.html(`
-            <div class="jmv-table-header">
+            <div class="jmv-table-header" role="presentation">
                 <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>
                 <div class="jmv-table-header-background"></div>
                 <div class="jmv-column-header select-all"></div>
                 <div class="jmv-table-column-highlight"></div>
             </div>
-            <div class="jmv-table-container">
-                <div class="jmv-table-body">
+            <div class="jmv-table-container" role="presentation">
+                <div class="jmv-table-body" role="presentation">
                     <div class="jmv-column-row-header" style="left: 0 ;" aria-hidden="true");></div>
                     <div class="jmv-sub-selections"></div>
                     <div class="jmv-table-cell-selected">
@@ -1216,6 +1218,9 @@ const TableView = SilkyView.extend({
         let sel = this.selection;
 
         let selColumn = this.model.getColumn(sel.colNo, true);
+        this._focusRow.setAttribute('aria-rowindex', sel.rowNo);
+        this._focusCell.setAttribute('aria-rowindex', sel.rowNo);
+        this._focusCell.setAttribute('aria-colindex', sel.colNo);
         this._focusCell.setAttribute('aria-describedby', `column-${ selColumn.id } row-${ sel.rowNo }`);
         this._focusRow.setAttribute('aria-owns', `row-${ sel.rowNo } focusCell`);
 
@@ -2096,6 +2101,7 @@ const TableView = SilkyView.extend({
             let current = rowHeaders[index];
 
             current.textContent = (currentNum + 1);
+            //current.setAttribute('aria-label', `${_('Row') + ' ' + (currentNum + 1)}`);
 
             if (currentNum >= this.model.attributes.rowCount)
                 current.classList.add('virtual');
@@ -2386,7 +2392,7 @@ const TableView = SilkyView.extend({
                 "
             >
                 <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader">${ s6e(column.name) }</div>
+                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" >${ s6e(column.name) }</div>
                 <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>
@@ -2429,6 +2435,7 @@ const TableView = SilkyView.extend({
         bar.classList.add('sub-selection-bar');
 
         cell.innerText = content;
+        //cell.setAttribute('aria-label', `${_('Row') + ' ' + content}`);
         cell.appendChild(bar);
 
         return cell;

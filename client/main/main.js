@@ -410,7 +410,7 @@ $(document).ready(async() => {
 
     let $mainTable = $('#main-table');
     $mainTable.attr('role', 'region');
-    $mainTable.attr('aria-label', 'Spreadsheet');
+    $mainTable.attr('aria-label', 'Data');
     $mainTable.attr('aria-live', 'polite');
 
     let $results = $('#results');

@@ -16,7 +16,7 @@ class RibbonTab extends EventEmitter {
         this.shortcutPath = shortcutPath;
         this.title = title;
 
-        this.$ribbon = $('<div class="jmv-ribbon-menu" role="application"></div>');
+        this.$ribbon = $('<div class="jmv-ribbon-menu" role="menubar"></div>');
         this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$ribbon);
 
         this.populate();
