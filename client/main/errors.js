@@ -1,9 +1,9 @@
 
 'use strict';
 
-class CancelledError extends Error { }
+export class CancelledError extends Error { }
 
-class JError extends Error {
+export class JError extends Error {
     constructor(message, opts={}) {
         super(message);
         this.cause = opts.cause;
@@ -12,7 +12,7 @@ class JError extends Error {
     }
 }
 
-module.exports = {
+export default {
     JError,
     CancelledError,
 };
