@@ -17,11 +17,14 @@ const AppMenuButton = Backbone.View.extend({
         let mode = this.model.settings().getSetting('mode', 'normal');
             this.el.dataset.mode = mode;
 
-        let $decoration = $('<span class="mif-more-vert"></span>').appendTo(this.$el);
-        let $positioner = $('<div class="jmv-ribbon-appmenu-positioner"></div>').appendTo(this.$el);
+        let $decoration = $('<span class="mif-more-vert" role="none"></span>').appendTo(this.$el);
+        let $positioner = $('<div class="jmv-ribbon-appmenu-positioner" role="none"></div>').appendTo(this.$el);
 
-        this.$menuPanel = $('<div class="jmv-ribbon-appmenu-menu-panel" tabindex="-1"></div>').appendTo($positioner);
-        this.$menu = $('<div class="jmv-ribbon-appmenu-menu"></div>').appendTo(this.$menuPanel);
+        let menuId = focusLoop.getNextAriaElementId('menu');
+        this.$menuPanel = $('<div id="${menuId}" class="jmv-ribbon-appmenu-menu-panel" tabindex="-1" role="menu"></div>').appendTo($positioner);
+        this.$el.attr('aria-controls', menuId);
+
+        this.$menu = $(`<div class="jmv-ribbon-appmenu-menu"></div>`).appendTo(this.$menuPanel);
 
         focusLoop.addFocusLoop(this.$menuPanel[0], { level: 1, closeHandler: this.hide.bind(this), exitSelector: '.jmv-ribbon-appmenu' } );
 
@@ -40,9 +43,9 @@ const AppMenuButton = Backbone.View.extend({
                 this.hide();
         });
 
-        this.$header = $('<div class="jmv-ribbon-appmenu-header"></div>').appendTo(this.$menu);
-        this.$icon = $('<div class="jmv-ribbon-appmenu-icon"></div>').appendTo(this.$header);
-        this.$backOuter = $('<div class="jmv-ribbon-appmenu-back"></div>').appendTo(this.$header);
+        this.$header = $('<div class="jmv-ribbon-appmenu-header" role="none"></div>').appendTo(this.$menu);
+        this.$icon = $('<div class="jmv-ribbon-appmenu-icon" role="none"></div>').appendTo(this.$header);
+        this.$backOuter = $('<div class="jmv-ribbon-appmenu-back" role="none"></div>').appendTo(this.$header);
         this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" title="${_('Hide settings')}"></button>`).appendTo(this.$backOuter);
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
@@ -51,68 +54,78 @@ const AppMenuButton = Backbone.View.extend({
             event.stopPropagation();
         });
 
-        this.$content = $('<div class="jmv-ribbon-appmenu-content"></div>').appendTo(this.$menu);
+        this.$content = $('<div class="jmv-ribbon-appmenu-content" role="none"></div>').appendTo(this.$menu);
 
+        let zoomId = focusLoop.getNextAriaElementId('label');
         this.$zoom = $('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>').appendTo(this.$content);
-        this.$zoom.append($(`<div>${_('Zoom')}</div>`));
+        this.$zoom.append($(`<div id="${zoomId}">${_('Zoom')}</div>`));
         this.$zoomButtons = $('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>').appendTo(this.$zoom);
-        this.$zoomOut = $('<button class="jmv-ribbon-appmenu-zoomout">&minus;</button>').appendTo(this.$zoomButtons);
+        this.$zoomOut = $(`<button class="jmv-ribbon-appmenu-zoomout" aria-label="${_('Zoom out')}">&minus;</button>`).appendTo(this.$zoomButtons);
         this.$zoomLevel = $('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>').appendTo(this.$zoomButtons);
-        this.$zoomIn = $('<button class="jmv-ribbon-appmenu-zoomin">+</button>').appendTo(this.$zoomButtons);
+        this.$zoomIn = $(`<button class="jmv-ribbon-appmenu-zoomin" aria-label="${_('Zoom in')}">+</button>`).appendTo(this.$zoomButtons);
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$results = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$resultsHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Results')}</div>`).appendTo(this.$results);
+        let resultsId = focusLoop.getNextAriaElementId('label');
+        this.$results = $(`<div class="jmv-results" role="group" aria-labelledby="${resultsId}"></div>`).appendTo(this.$content);
+        this.$resultsHeading = $(`<div id="${resultsId}" class="jmv-ribbon-appmenu-subheading">${_('Results')}</div>`).appendTo(this.$results);
 
-        this.$nFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$nFormat.append($(`<div>${_('Number format')}</div>`));
-        this.$nFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: 2 }) }</option><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
+        let nFormatId = focusLoop.getNextAriaElementId('label');
+        this.$nFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$results);
+        this.$nFormat.append($(`<div id="${nFormatId}">${_('Number format')}</div>`));
+        this.$nFormatList = $(`<select aria-labelledby="${nFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: 2 }) }</option><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
             .appendTo(this.$nFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
-        this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$pFormat.append($(`<div>${_('p-value format')}</div>`));
-        this.$pFormatList = $(`<select><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
+        let pFormatId = focusLoop.getNextAriaElementId('label');
+        this.$pFormat = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$results);
+        this.$pFormat.append($(`<div id="${pFormatId}">${_('p-value format')}</div>`));
+        this.$pFormatList = $(`<select aria-labelledby="${pFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
             .appendTo(this.$pFormat)
             .click(event => event.stopPropagation())
             .change(event => this._changeResultsFormat());
 
-        this.$refsMode = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$refsMode.append($(`<div>${_('References')}</div>`));
-        this.$refsModeList = $(`<select><option value="bottom">${_('Visible')}</option><option value="hidden">${_('Hidden')}</option></select>`)
+        let refsModeId = focusLoop.getNextAriaElementId('label');
+        this.$refsMode = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$results);
+        this.$refsMode.append($(`<div id="${refsModeId}">${_('References')}</div>`));
+        this.$refsModeList = $(`<select aria-labelledby="${refsModeId}"><option value="bottom">${_('Visible')}</option><option value="hidden">${_('Hidden')}</option></select>`)
             .appendTo(this.$refsMode)
             .click(event => event.stopPropagation())
             .change(event => this._changeRefsMode());
 
-        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$content);
-        this.$syntax.append($(`<div>${_('Syntax mode')}</div>`));
-        this.$syntaxModeCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">').appendTo(this.$syntax);
+        let syntaxId = focusLoop.getNextAriaElementId('label');
+        this.$syntax = $('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>').appendTo(this.$results);
+        this.$syntax.append($(`<div id="${syntaxId}">${_('Syntax mode')}</div>`));
+        this.$syntaxModeCheck = $(`<input aria-labelledby="${syntaxId}" class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">`).appendTo(this.$syntax);
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$plots = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$plotsHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`).appendTo(this.$plots);
+        let plotsId = focusLoop.getNextAriaElementId('label');
+        this.$plots = $(`<div class="jmv-results" role="group" aria-labelledby="${plotsId}"></div>`).appendTo(this.$content);
+        this.$plotsHeading = $(`<div id="${plotsId}" class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`).appendTo(this.$plots);
 
-        this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$theme.append($(`<div>${_('Plot theme')}</div>`));
-        this.$themeList = $(`<select><option value="default">${_('Default')}</option><option value="minimal">${_('Minimal')}</option><option value="iheartspss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option><option value="bw">${_('Black & white')}</option></select>`)
+        let themeId = focusLoop.getNextAriaElementId('label');
+        this.$theme = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$plots);
+        this.$theme.append($(`<div id="${themeId}">${_('Plot theme')}</div>`));
+        this.$themeList = $(`<select aria-labelledby="${themeId}"><option value="default">${_('Default')}</option><option value="minimal">${_('Minimal')}</option><option value="iheartspss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option><option value="bw">${_('Black & white')}</option></select>`)
             .appendTo(this.$theme)
             .click(event => event.stopPropagation())
             .change(event => this._changeTheme(event.target.value));
 
-        this.$palette = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$palette.append($(`<div>${_('Color palette')}</div>`));
-        this.$paletteList = $(`<select><optgroup label="${_('qualitative')}"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="${_('sequential')}"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`)
+        let paletteId = focusLoop.getNextAriaElementId('label');
+        this.$palette = $('<div class="jmv-ribbon-appmenu-item"></div>').appendTo(this.$plots);
+        this.$palette.append($(`<div id="${paletteId}">${_('Color palette')}</div>`));
+        this.$paletteList = $(`<select aria-labelledby="${paletteId}"><optgroup label="${_('qualitative')}"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="${_('sequential')}"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`)
             .appendTo(this.$palette)
             .click(event => event.stopPropagation())
             .change(event => this._changePalette(event.target.value));
 
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$import = $('<div class="jmv-results"></div>').appendTo(this.$content);
-        this.$importHeading = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`).appendTo(this.$import);
+        let importId = focusLoop.getNextAriaElementId('label');
+        this.$import = $(`<div class="jmv-results" role="group" aria-labelledby="${importId}"></div>`).appendTo(this.$content);
+        this.$importHeading = $(`<div id="${importId}" class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`).appendTo(this.$import);
 
         this.$missings = $(`<label class="jmv-ribbon-appmenu-item"><div>${_('Default missings')}</div></label>`).appendTo(this.$import);
         this.$missingsInput = $('<input type="text" size="10" class="jmv-import-missings" list="missings">').appendTo(this.$missings);
@@ -127,7 +140,7 @@ const AppMenuButton = Backbone.View.extend({
         // this.$embedList = $('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
         //     .appendTo(this.$embed)
         //     .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
-        this.$import.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
         this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
         this.$versionInfo = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Updates')}</div>`).appendTo(this.$updateInfo);
@@ -156,9 +169,10 @@ const AppMenuButton = Backbone.View.extend({
         // this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
         // this.$recorder.on('click', (event) => host.openRecorder());
 
+        let languageId = focusLoop.getNextAriaElementId('label');
         this.$language = $('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
-        this.$language.append($(`<div>${_('Language')}</div>`));
-        this.$languageList = $(`<select></select>`)
+        this.$language.append($(`<div id="${languageId}">${_('Language')}</div>`));
+        this.$languageList = $(`<select aria-labelledby="${languageId}"></select>`)
             .appendTo(this.$language)
             .click(event => event.stopPropagation())
             .change(event => this._changeLanguage());

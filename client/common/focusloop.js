@@ -242,7 +242,7 @@ class FocusLoop extends EventEmitter {
         value.containsShortcutKeys = element.querySelectorAll('[shortcut-key]') || value.shortcutKey;
         if (element.tagName === 'INPUT') {
             let elementType = element.getAttribute('type');
-            if ( elementType === null || elementType === '' || elementType === 'text') {
+            if ( elementType === null || elementType === '' || elementType === 'text' || elementType === 'search') {
                 value.isFocusController = false;
                 value.requires = { ArrowLeft: true, ArrowRight: true, ArrowUp: false, ArrowDown: false, Escape: false, Tab: false };
                 value.usesKeyboard = true;
