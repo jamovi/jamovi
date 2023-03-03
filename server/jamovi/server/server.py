@@ -326,26 +326,9 @@ class OpenHandler(RequestHandler):
     async def post(self, instance_id=None):
 
         file_path: str
-        file_title: str
+        file_title = None
         file_ext = None
         options: dict = { }
-
-        if 'file' in self.request.files:
-            file = self.request.files['file'][-1]
-            file_title, ext = os.path.splitext(file.filename)
-            temp_file = NamedTemporaryFile(suffix=ext)
-            with open(temp_file.name, 'wb') as writer:
-                writer.write(file.body)
-            file_path = temp_file.name
-        elif 'path' in self.request.body_arguments:
-            file_path = self.get_body_argument('path')
-            filename = self.get_body_argument('name')
-            file_title, dot_ext = os.path.splitext(filename)
-            file_ext = dot_ext[1:]
-        else:
-            self.set_status(400)
-            self.write('400: Bad Request')
-            return
 
         try:
             options_json = self.get_body_argument('options', '{}')
@@ -355,6 +338,25 @@ class OpenHandler(RequestHandler):
         except (KeyError, ValueError):
             pass
 
+        if 'file' in self.request.files:
+            file = self.request.files['file'][-1]
+            file_title, ext = os.path.splitext(file.filename)
+            temp_file = NamedTemporaryFile(suffix=ext)
+            with open(temp_file.name, 'wb') as writer:
+                writer.write(file.body)
+            file_path = temp_file.name
+        elif 'path' in options:
+            file_path = options['path']
+        elif 'file.path' in self.request.body_arguments:
+            file_path = self.get_body_argument('file.path')
+            filename = self.get_body_argument('file.name')
+            file_title, dot_ext = os.path.splitext(filename)
+            file_ext = dot_ext[1:]
+        else:
+            self.set_status(400)
+            self.write('400: Bad Request')
+            return
+
         lang_code = self.request.headers.get('Accept-Language', 'en')
         self._session.set_language(lang_code)
 
@@ -362,6 +364,7 @@ class OpenHandler(RequestHandler):
             instance = await self._session.create()
             async for progress in instance.open(file_path, title=file_title, is_temp=True, ext=file_ext, options=options):
                 self._write('progress', progress)
+                await self.flush()
         except Exception as e:
             log.exception(e)
             self._write(e)
@@ -382,7 +385,6 @@ class OpenHandler(RequestHandler):
         else:
             p, n = progress
             self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
-        self.flush()
 
 
 @stream_request_body
