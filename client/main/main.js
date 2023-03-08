@@ -66,6 +66,7 @@ try {
     try {
         let def = await response.json();
         I18n.initialise(current, def);
+        document.documentElement.setAttribute('lang', current);
     }
     catch (e) {
         throw new Error(`Unable to load json for language '${ current }'`);
