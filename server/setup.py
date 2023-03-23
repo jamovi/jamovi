@@ -111,7 +111,7 @@ setup(
         'jamovi.server.formatio',
         'jamovi.server.utils',
         'jamovi.server.compute',
-        'jamovi.server.integrations',
+        'jamovi.server.syncs',
         'jamovi.server.modules',
     ] + hydra,
 
