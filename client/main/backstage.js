@@ -29,6 +29,11 @@ import { FSItemType } from './backstage/fsentry';
 import { FSEntryBrowserView } from './backstage/fsentrybrowserview';
 
 
+function isUrl(s) {
+    return s.startsWith('https://') || s.startsWith('http://');
+}
+
+
 const BackstageModel = Backbone.Model.extend({
     defaults: {
         activated : false,
