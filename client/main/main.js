@@ -27,7 +27,7 @@ const I18n = require('../common/i18n');
 
 const Instance = require('./instance');
 const Notify = require('./notification');
-const JError = require('./errors').JError;
+import { UserFacingError } from './errors';
 const focusLoop = require('../common/focusloop');
 
 require('./utils/headeralert');
@@ -526,7 +526,7 @@ $(document).ready(async() => {
     let selection = new Selection(dataSetModel);
     let viewController = new ViewController(dataSetModel, selection);
     let mainTable   = new TableView({el : '#spreadsheet', model : dataSetModel, controller: viewController });
-    
+
     viewController.focusView('spreadsheet');
 
     let variablesTable = new VariablesView({ el: '#variablelist', model: dataSetModel, controller: viewController });
@@ -769,7 +769,7 @@ $(document).ready(async() => {
         let match = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname);
         if (match)
             instanceId = match[1];
-        
+
         const params = new URLSearchParams(window.location.search);
         const accessKey = params.get('key');
 
@@ -822,7 +822,7 @@ $(document).ready(async() => {
                 // if opening fails, open a blank data set
                 status = await instance.open('', { existing: !!instanceId });
                 let notif;
-                if (e instanceof JError)
+                if (e instanceof UserFacingError)
                     notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };
                 else
                     notif = { title: _('Unable to open'), message: e.message, type: 'error', duration: 3000 };
@@ -850,7 +850,7 @@ $(document).ready(async() => {
 
         progNotif.dismiss();
 
-        if (e instanceof JError) {
+        if (e instanceof UserFacingError) {
             infoBox.setup({
                 title: e.message,
                 message: e.cause,

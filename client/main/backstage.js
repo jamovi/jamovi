@@ -20,7 +20,7 @@ const { s6e } = require('../common/utils');
 const focusLoop = require('../common/focusloop');
 const selectionLoop = require('../common/selectionloop');
 
-import { JError } from './errors';
+import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
 
 import { FSEntryListModel } from './backstage/fsentry';
@@ -598,13 +598,12 @@ const BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
-    tryOpen: function(filePath, title, type, wdType) {
+    tryOpen: function(filePath, title, type, wdType, options) {
         if (type === FSItemType.File)
-            this.requestOpen(filePath, title);
+            this.requestOpen(filePath, title, options);
         else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder) {
             wdType = wdType === undefined ? 'main' : wdType;
-            this.setCurrentDirectory(wdType, filePath, type)
-                .done();
+            this.setCurrentDirectory(wdType, filePath, type);
         }
     },
     tryImport: function(paths, type, wdType) {
@@ -684,7 +683,7 @@ const BackstageModel = Backbone.Model.extend({
 
         this.set('activated', false);
     },
-    setCurrentDirectory: function(wdType, dirPath, type, writeOnly=false) {
+    async setCurrentDirectory(wdType, dirPath, type, writeOnly=false) {
         if (dirPath === '')
             dirPath = this._wdData[wdType].defaultPath;
 
@@ -705,9 +704,7 @@ const BackstageModel = Backbone.Model.extend({
             }
 
             wdData.initialised = true;
-            let resolved = Promise.resolve();
-            resolved.done = function(){};
-            return resolved;
+            return;
         }
 
         // A little delay to the 'loading' status change means that it only enters
@@ -855,7 +852,7 @@ const BackstageModel = Backbone.Model.extend({
         if (this.attributes.place !== '')
             this.instance.settings().setSetting('openPlace', this.attributes.place);
     },
-    async requestOpen(filePath, title) {
+    async requestOpen(filePath, title, options={}) {
 
         let progNotif = new Notify({
             title: _('Opening'),
@@ -901,7 +898,7 @@ const BackstageModel = Backbone.Model.extend({
 
             if (e instanceof CancelledError)
                 ; // do nothing
-            else if (e instanceof JError)
+            else if (e instanceof UserFacingError)
                 this._notify(e);
             else
                 this._notify({ message: _('Unable to open'), cause: e.message, type: 'error' });
@@ -1006,14 +1003,15 @@ const BackstageModel = Backbone.Model.extend({
             this.setSavingState(true);
             // instance.save() itself triggers notifications about the save
             // being successful (if you were wondering why it's not here.)
-            let status = await this.instance.save(filePath, options);
+            options.path = filePath;
+            let status = await this.instance.save(options);
             this.setSavingState(false);
             if (this._savePromiseResolve !== null)
                 this._savePromiseResolve();
             this.set('activated', false);
             this.trigger('saved');
 
-            if ( ! host.isElectron) {
+            if (status.download) {
                 let source = path.basename(status.path);
                 let target = path.basename(filePath);
                 let url = `dl/${ source }?filename=${ target }`;
@@ -1446,10 +1444,11 @@ const BackstageChoices = SilkyView.extend({
             if (this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
                 if (place.model.attributes.wdType === 'thispc') {
                     let filePath = this.model._determineSavePath('main');
-                    this.model.setCurrentDirectory('main', path.dirname(filePath)).done();
+                    this.model.setCurrentDirectory('main', path.dirname(filePath));
                 }
-                else
-                    this.model.setCurrentDirectory(place.model.attributes.wdType, '', null, place.model.writeOnly).done();  // empty string requests default path
+                else {
+                    this.model.setCurrentDirectory(place.model.attributes.wdType, '', null, place.model.writeOnly);  // empty string requests default path
+                }
             }
             else if (this.$current.attr('wdtype') === place.model.attributes.wdType)
                 this.$current.removeClass('wd-changing');

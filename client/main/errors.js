@@ -3,7 +3,7 @@
 
 export class CancelledError extends Error { }
 
-export class JError extends Error {
+export class UserFacingError extends Error {
     constructor(message, opts={}) {
         super(message);
         this.cause = opts.cause;
@@ -13,6 +13,6 @@ export class JError extends Error {
 }
 
 export default {
-    JError,
+    UserFacingError,
     CancelledError,
 };

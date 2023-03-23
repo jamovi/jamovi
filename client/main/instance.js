@@ -23,8 +23,14 @@ const ProgressStream = require('./utils/progressstream');
 
 const { flatten, unflatten } = require('../common/utils/addresses');
 
-const JError = require('./errors').JError;
-const CancelledError = require('./errors').CancelledError;
+import { UserFacingError } from './errors';
+import { CancelledError } from './errors';
+
+class FileExistsError extends Error {
+
+}
+
+import { parse as parseJsonLines } from './utils/jsonlines';
 
 
 const Instance = Backbone.Model.extend({
@@ -193,7 +199,7 @@ const Instance = Backbone.Model.extend({
                                         controller.close();
                                     else
                                         // fail
-                                        controller.error(new JError(_('Upload failed'), { cause: xhr.statusText }));
+                                        controller.error(new UserFacingError(_('Upload failed'), { cause: xhr.statusText }));
                                     resolve();
                                 }, { once: true });
                             });
@@ -233,10 +239,10 @@ const Instance = Backbone.Model.extend({
                         return { 'status': 'OK' };
 
                     if (xhr.status === 413)
-                        throw new JError(_('Upload failed'), { cause: 'File size exceeds session limits' });
+                        throw new UserFacingError(_('Upload failed'), { cause: 'File size exceeds session limits' });
 
                     if (xhr.status !== 200)
-                        throw new JError(_('Upload failed'), { cause: xhr.statusText });
+                        throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });
 
                     // if we're here, the upload succeeded, and the opening
                     // process comes next (which may yet fail)
@@ -245,37 +251,42 @@ const Instance = Backbone.Model.extend({
                 }
                 else {
 
-                    let url;
+                    if (( ! file) || options.existing) {
 
-                    if (file) {
-                        url = `${ host.baseUrl }open?p=&url=${ encodeURIComponent(file) }`;
-                        if (options.title)
-                            url += `&title=${ encodeURIComponent(options.title) }`;
-                    }
-                    else if (options.existing) {
-                        url = 'open';
-                    }
-                    else {
-                        url = `${ host.baseUrl }open?p=`;
+                        let url = 'open?p=';
+
                         if (options.accessKey)
                             url += `&key=${ options.accessKey }`;
-                    }
 
-                    response = await fetch(url, {
-                        method: 'GET',
-                        credentials: 'include',
-                        cache: 'no-store',
-                        headers: headers,
-                    });
+                        response = await fetch(url, {
+                            method: 'GET',
+                            credentials: 'include',
+                            cache: 'no-store',
+                            headers: headers,
+                        });
+                    }
+                    else {
+
+                        const data = new FormData();
+                        data.append('options', JSON.stringify(Object.assign({ path: file }, options)));
+
+                        response = await fetch('open?p=', {
+                            method: 'POST',
+                            body: data,
+                            credentials: 'include',
+                            cache: 'no-store',
+                            headers: headers,
+                        });
+                    }
 
                     if (response.status === 204)
                         return { 'status': 'OK' };
 
                     if (response.status === 413)
-                        throw new JError(_('Unable to open'), { cause: 'File size exceeds session limits' });
+                        throw new UserFacingError(_('Unable to open'), { cause: 'File size exceeds session limits' });
 
                     if (response.status !== 200)
-                        throw new JError(_('Unable to open'), { cause: response.statusText });
+                        throw new UserFacingError(_('Unable to open'), { cause: response.statusText });
                 }
 
                 const reader = response.body.getReader();
@@ -321,14 +332,14 @@ const Instance = Backbone.Model.extend({
                 }
 
                 if ( ! message) {
-                    throw new JError(_('Unable to open'), {
+                    throw new UserFacingError(_('Unable to open'), {
                         cause: _('Unexpected error'),
                         status: 'error',
                     });
                 }
                 else if (message.status !== 'OK' && message.status !== 'requires-auth') {
                     let title = message.title || _('Unable to open');
-                    throw new JError(title, {
+                    throw new UserFacingError(title, {
                         cause: message.message || _('Unexpected error'),
                         status: message.status || 'error',
                         messageSrc: message['message-src'],
@@ -349,171 +360,149 @@ const Instance = Backbone.Model.extend({
             }
         });
     },
-    save(filePath, options, recursed) {  // recursed argument is a hack
+    async save(options) {
 
-        if (options === undefined)
-            options = { export: false, part: '' };
-        if (options.name === undefined)
-            options.name = 'Element';
-        if (options.export === undefined)
-            options.export = false;
-        if (options.part === undefined)
-            options.part = '';
-        if (options.format === undefined)
-            options.format = '';
-        if (options.overwrite === undefined)
-            options.overwrite = false;
+        options = Object.assign({}, options); // clone so we can modify without side-effects
 
-        let coms = this.attributes.coms;
+        const progress = new Notify({
+            title: _('Saving'),
+            duration: 0,
+        });
 
-        if ( ! filePath) {
-            filePath = this.attributes.path;
+        if ( ! options.path) {
+            // no path means a 'save' (rather than a 'save as')
+            options.path = this.attributes.path;
             options.format = this.attributes.saveFormat;
             options.overwrite = true;
         }
 
-        return Promise.resolve().then(() => {
+        const filePath = options.path;
+        const filename = path.basename(filePath);
 
-            return host.nameAndVersion;
+        let retrying;
 
-        }).then(app => {
+        do {
+
+            retrying = false;
+
+            try {
+                const stream = this._save(options);
+
+                for await (const message of stream) {
+                    progress.set('progress', message);
+                    this.trigger('notification', progress);
+                }
+
+                const result = await stream;
+
+                let filename = path.basename(result.path);
+
+                if ( ! options.export) {
+                    this.set('path', result.path);
+                    this.set('title', result.title);
+                    this.set('saveFormat', result.saveFormat);
+                    this._dataSetModel.set('edited', false);
+
+                    this._notify({ message: _('File Saved'), cause: _(`Saved to '{filename}'`, { filename }) });
+                }
+                else {
+                    if (result.download)
+                        return result;
+                    else
+                        this._notify({ message: _('Exported'), cause: _(`Exported to '{filename}'`, { filename }) });
+                }
+
+            } catch (e) {
+
+                if (e instanceof FileExistsError && ! options.overwrite) {
+                    const response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, { filename }), _('Confirm overwite'));
+                    if (response) {
+                        options.overwrite = true;
+                        retrying = true;
+                    }
+                }
+                else if (e instanceof UserFacingError) {
+                    this._notify({ message: e.message, cause: e.cause, type: 'error' });
+                    throw e;
+                }
+                else {
+                    this._notify({ message: _('Save failed'), cause: e.message || '', type: 'error' });
+                    throw e;
+                }
+            }
+            finally {
+                progress.dismiss();
+            }
+        }
+        while (retrying);
+
+        return { };
+    },
+    _save(options) {
+
+        options = Object.assign({}, options); // clone so we can modify without side-effects
+
+        return new ProgressStream(async (setProgress) => {
+
+            const app = await host.nameAndVersion;
 
             // Generate content if necessary
+            let content = null;
 
             if (options.content) {
-                return options.content;
+                content = options.content;
+                delete options.content;
             }
             else if (options.partType === 'image') {
                 // images are handled specially below
-                return undefined;
             }
-            else if (filePath.endsWith('.omv') || options.format === 'abs-html') {
-                return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
+            else if (options.path.endsWith('.omv') || options.format === 'abs-html') {
+                content = await this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
             }
-            else if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
-                return this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
+            else if (options.path.endsWith('.html') || options.path.endsWith('.htm')) {
+                content = await this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
             }
-            else if (filePath.endsWith('.zip')) {
-                return this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app}, options.part);
+            else if (options.path.endsWith('.zip')) {
+                content = await this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app}, options.part);
             }
-            else if (filePath.endsWith('.pdf')) {
+            else if (options.path.endsWith('.pdf')) {
                 let images = host.isElectron ? 'absolute' : 'inline';
-                return this.attributes.resultsSupplier.getAsHTML({images:images, generator:app}, options.part)
-                    .then(html => this._requestPDF(html));
-            }
-            else {
-                return undefined;
+                const html = await this.attributes.resultsSupplier.getAsHTML({images:images, generator:app}, options.part);
+                content = await this._requestPDF(html);
             }
 
-        }).then(content => {
+            const data = new FormData();
+            data.append('options', JSON.stringify(options));
+            if (content)
+                data.append('content', new Blob([ content ]));
 
-            // Send the save request
-
-            let part = options.part;
-
-            let save = new coms.Messages.SaveRequest(
-                filePath,
-                options.overwrite,
-                options.export,
-                part,
-                options.format);
-
-            if (content) {
-                if (typeof content === 'string')
-                    content = new TextEncoder('utf-8').encode(content);
-                save.incContent = true;
-                save.content = content;
-                options.content = content;
-            }
-
-            let request = new coms.Messages.ComsMessage();
-            request.payload = save.toArrayBuffer();
-            request.payloadType = 'SaveRequest';
-            request.instanceId = this._instanceId;
-
-            let progress = new Notify({
-                title: _('Saving'),
-                duration: 0
+            const response = await fetch('save', {
+                method: 'POST',
+                body: data,
             });
 
-            return coms.send(request).then(
-                (response) => {
-                    progress.dismiss();
-                    return response;
-                },
-                (err) => {
-                    progress.dismiss();
-                    throw err.cause;
-                },
-                (prog) => {
-                    progress.set('progress', prog);
-                    this.trigger('notification', progress);
-                    return prog;
-                }
-            );
+            if ( ! [200, 204].includes(response.status))
+                throw new Error(response.statusText);
 
-        }).then(response => {
+            const reader = response.body.getReader();
+            const stream = parseJsonLines(reader);
 
-            // Handle the response
+            for await (const message of stream)
+                setProgress(message);
 
-            let info = coms.Messages.SaveProgress.decode(response.payload);
-            if (info.success) {
+            const result = await stream;
 
-                let filename = path.basename(info.path);
-                let status = { message: '', cause: '' };
-
-                if (options.export) {
-
-                    if (host.isElectron) {
-                        status.message = _('Exported');
-                        status.cause = _(`Exported to '{filename}'`, {filename: filename});
-                    }
-                    else {
-                        // don't display a notification when in the browser
-                        // because the user receives a download prompt
-                        status.path = info.path;
-                    }
-                }
-                else {
-                    this.set('path', info.path);
-                    this.set('title', info.title);
-                    this.set('saveFormat', info.saveFormat);
-                    this._dataSetModel.set('edited', false);
-                    status.message = _('File Saved');
-                    status.cause = _(`Saved to '{filename}'`, {filename: filename});
-                }
-
-                if (response.error) {
-                    if (response.error.message)
-                        status.message = response.error.message;
-                    if (response.error.cause)
-                        status.cause = response.error.cause;
-                }
-
-                return status;
+            if (result.status === 'OK') {
+                return result;
+            }
+            else if (result.code === 'file-exists') {
+                throw new FileExistsError();
             }
             else {
-                if (options.overwrite === false && info.fileExists) {
-                    let response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, {filename: path.basename(filePath)}), _('Confirm overwite'));
-                    if (response)
-                        return this.save(filePath, Object.assign({}, options, { overwrite: true }), true);
-                    else
-                        return Promise.reject();  // cancelled
-                }
-                else {
-                    Promise.reject(_('File save failed.'));
-                }
+                throw new UserFacingError(_('Save failed'), { cause: result.message || '' });
             }
-
-        }).then(status => {  // this stuff should get moved to the caller (so we can call this recursively)
-            if ( ! recursed && status && status.message) // hack!
-                this._notify(status);
-            return status;
-        }).catch(error => {
-            if ( ! recursed && error) // if not cancelled
-                this._notify({ message: _('Save failed'), cause: error, type: 'error' });
-            throw error;
         });
+
     },
     browse(filePath, extensions) {
 
