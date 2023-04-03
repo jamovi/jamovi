@@ -26,7 +26,7 @@ const ChildLayoutSupport = function(params) {
         return baseFunction.call(this, grid, row, column);
     });
 
-    this.setBody = function(body) {
+    this.setBody = function (body) {
         this._body = body;
         this.controls = body.controls;
         body.$el.addClass("silky-control-body silky-control-body-style-"  + this._parentStyle);

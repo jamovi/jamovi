@@ -19,6 +19,7 @@ const LevelSelector = require('./levelselector');
 const CustomControl = require('./customcontrol');
 const OutputSupplier = require('./outputsupplier');
 const Output = require('./output');
+const ModeSelector = require('./contentselector');
 
 const DefaultControls = {
 
@@ -43,6 +44,7 @@ const DefaultControls = {
     CustomControl: CustomControl,
     OutputSupplier: OutputSupplier,
     Output: Output,
+    ModeSelector: ModeSelector,
 
     ListItem: { //Not to be used, no longer supported
         TextBox: GridTextbox, //Not to be used, no longer supported

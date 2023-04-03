@@ -23,6 +23,8 @@
 @import "gridvariablestargetlist.css";
 @import "gridtargetcontrol.css";
 @import "gridcontrol.css";
+@import "multicontainer.css";
+@import "contentselector.css";
 
 * {
     user-select: none ;
