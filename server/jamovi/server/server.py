@@ -339,19 +339,25 @@ class OpenHandler(RequestHandler):
             pass
 
         if 'file' in self.request.files:
+            # jamovi handling uploads directly
             file = self.request.files['file'][-1]
             file_title, ext = os.path.splitext(file.filename)
             temp_file = NamedTemporaryFile(suffix=ext)
             with open(temp_file.name, 'wb') as writer:
                 writer.write(file.body)
             file_path = temp_file.name
+            is_temp = True
         elif 'path' in options:
+            # jamovi desktop open from path
             file_path = options['path']
+            is_temp = False
         elif 'file.path' in self.request.body_arguments:
+            # jamovi sitting behind a reverse proxy that handles the uploads (nginx)
             file_path = self.get_body_argument('file.path')
             filename = self.get_body_argument('file.name')
             file_title, dot_ext = os.path.splitext(filename)
             file_ext = dot_ext[1:]
+            is_temp = True
         else:
             self.set_status(400)
             self.write('400: Bad Request')
@@ -362,7 +368,7 @@ class OpenHandler(RequestHandler):
 
         try:
             instance = await self._session.create()
-            async for progress in instance.open(file_path, title=file_title, is_temp=True, ext=file_ext, options=options):
+            async for progress in instance.open(file_path, title=file_title, is_temp=is_temp, ext=file_ext, options=options):
                 self._write('progress', progress)
                 await self.flush()
         except Exception as e:
