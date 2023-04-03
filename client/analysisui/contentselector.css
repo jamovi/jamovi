@@ -1,0 +1,43 @@
+
+.selector-body {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+
+.tablist button {
+    border: none;
+    padding: 6px;
+    min-width: 70px;
+    background-color: transparent;
+    transition: background-color 0.2s;
+    font-family: unset;
+    font-size: unset;
+    line-height: unset;
+    font-weight: unset;
+    font-style: unset;
+    color: grey;
+    margin: 3px;
+}
+
+.tablist button:hover:not(.selected-tab) {
+    background-color: #dadada;
+    border-bottom: 2px solid grey;
+}
+
+/*[form=tabs] .tablist {
+    box-shadow: 0px 2px 4px 0px #d1d1d1;
+    background: linear-gradient(to top, #dcdcdc, transparent);
+    flex-grow: 1;
+}*/
+
+.tablist .selected-tab {
+    background-color: #3e6da92b;
+    color: unset;
+    border-bottom: 2px solid #5981b3;
+}
+
+.selector-body label:not(:empty) {
+    margin-right: 10px;
+}
