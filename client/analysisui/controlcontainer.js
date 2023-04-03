@@ -5,9 +5,10 @@ const LayoutGrid = require('./layoutgrid');
 const TitledGridControl = require('./titledgridcontrol');
 const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
+const MultiContainer = require('./multicontainer');
 
 const deepRenderToGrid = function(ctrl, context, toGrid, row, column) {
-    let bodyContainer = null;
+    let bodyContainers = [];
     let ctrlDef = ctrl.properties;
     if (ctrl.renderContainer)
         ctrl.renderContainer(context);
@@ -16,19 +17,40 @@ const deepRenderToGrid = function(ctrl, context, toGrid, row, column) {
         let childStyle = style.split('-');
         childStyle = childStyle[childStyle.length - 1];
 
-        let containerParams = { controls: ctrl.getPropertyValue('controls'), style: childStyle, _parentControl: ctrl };
+        let looseCtrls = [];
+        let controls = ctrl.getPropertyValue('controls');
+        for (let child of controls) {
+            if (child.typeName === 'Content') {
+                let containerParams = { name: child.name, controls: child.controls, style: childStyle, _parentControl: ctrl };
+                let childContainer = new ControlContainer(containerParams);
+                childContainer.renderContainer(context);
+                bodyContainers.push(childContainer);
+            }
+            else {
+                looseCtrls.push(child);
+            }
+        }
 
-        bodyContainer = new ControlContainer(containerParams);
-        bodyContainer.renderContainer(context);
+        if (looseCtrls) {
+            let containerParams = { controls: looseCtrls, style: childStyle, _parentControl: ctrl };
+
+            let container = new ControlContainer(containerParams);
+            container.renderContainer(context);
+            bodyContainers.push(container);
+        }
+        
     }
 
     let cr2 = ctrl.renderToGrid(toGrid, row, column);
 
-    if (bodyContainer !== null) {
+    if (bodyContainers.length > 0) {
         if (ctrl.setBody) {
-            if (ctrl.getPropertyValue('stretchFactor') > 0)
-                bodyContainer.setPropertyValue('stretchFactor', 1);
-            let bodyCell = ctrl.setBody(bodyContainer);
+            let body = new MultiContainer({ _parentControl: ctrl }, bodyContainers);
+            if (ctrl.getPropertyValue('stretchFactor') > 0) {
+                body.setPropertyValue('stretchFactor', 1);
+            }
+
+            let bodyCell = ctrl.setBody(body);
         }
         else
             throw "this control does not yet support child controls";
