@@ -99,6 +99,10 @@
     background-image: url("../../assets/analysis-ufs.svg");
 }
 
+.jmv-ribbon-button[data-name="jeva"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-jeva.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-more.svg");
 }
