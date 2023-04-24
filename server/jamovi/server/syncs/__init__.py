@@ -25,10 +25,10 @@ plugins = {
 }
 
 
-def create_file_sync(url: str, options: dict, client: ClientSession, ssl_context: SSLContext):
+def create_file_sync(url: str, options: dict):
     for plugin in plugins.values():
         if plugin.handles(url):
-            return plugin.Sync(url, options, client, ssl_context)
+            return plugin.Sync(url, options)
     else:
-        return HttpSync(url, options, client, ssl_context)
+        return HttpSync(url, options)
 

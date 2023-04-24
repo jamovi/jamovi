@@ -74,17 +74,9 @@ ConnectionStatus = namedtuple('ConnectionStatus',
     defaults=(True, None, False, False))
 
 
-class BlockLocalConnector(TCPConnector):
-    # block connections to the local network (security!)
-    async def _resolve_host(self, host: str, port: int, traces=None):
-        resolved_list = await super()._resolve_host(host, port, traces)
-        for resolved in resolved_list:
-            if not ip_address(resolved['host']).is_global:
-                raise PermissionError
-        return resolved_list
-
-
 class Instance:
+
+    _file_sync_client: ClientSession
 
     def __init__(self, session, instance_path, instance_id, settings):
 
@@ -92,6 +84,8 @@ class Instance:
         self._instance_path = instance_path
         self._instance_id = instance_id
         self._settings = settings
+
+        self._file_sync_client = None
 
         os.makedirs(instance_path, exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
@@ -662,6 +656,24 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
+    @property
+    def file_sync_client(self):
+
+        class BlockLocalConnector(TCPConnector):
+            # block connections to the local network (security!)
+            async def _resolve_host(self, host: str, port: int, traces=None):
+                resolved_list = await super()._resolve_host(host, port, traces)
+                for resolved in resolved_list:
+                    if not ip_address(resolved['host']).is_global:
+                        raise PermissionError
+                return resolved_list
+
+        if self._file_sync_client is None:
+            self._file_sync_client = ClientSession(raise_for_status=True, connector=BlockLocalConnector())
+
+        return self._file_sync_client
+
+
     def save(self, options):
         stream = ProgressStream()
         create_task(self._save(options, stream))
@@ -670,19 +682,17 @@ class Instance:
     async def _save(self, options, return_stream):
 
         path = options['path']
-        file_sync = None
         trigger_download = False
 
         try:
 
-            # if self._data.file_sync is not None:
-            #     file_sync = self._data.file_sync
-
-            if is_url(path):
-                client = ClientSession(raise_for_status=True, connector=BlockLocalConnector())
-                ssl = ssl_context()
-
-                file_sync = create_file_sync(path, {}, client, ssl)
+            if (self._data.file_sync is not None and
+                    self._data.file_sync.url == path):
+                file_sync = self._data.file_sync
+            elif is_url(path):
+                file_sync = create_file_sync(path, options)
+            else:
+                file_sync = None
 
             if file_sync:
                 with NamedTemporaryFile(suffix='.omv', delete=False) as file:
@@ -729,16 +739,33 @@ class Instance:
             if file_sync:
                 stat_info = os.stat(path)
                 file_size = stat_info.st_size
+
                 with open(path, 'rb') as file:
-                    async for progress in file_sync.write(file, file_size):
+                    overwrite = options.get('overwrite', False)
+                    stream = file_sync.write(self.file_sync_client, ssl_context(), file, file_size, overwrite)
+                    async for progress in stream:
                         return_stream.write((multiplier + progress * multiplier, 1000))
+                    file_info: HttpSyncFileInfo = await stream
+
+                path = file_info.url
+                filename = file_info.filename
             else:
                 path = self._virtualise_path(path)
+                filename = os.path.basename(path)
 
-            result = { 'path': path }
+            title, __ = os.path.splitext(filename)
+
+            result = { 'path': path, 'filename': filename, 'title': title }
 
             if not is_export:
-                result['title'] = self._data.title
+                self._data.title = title
+                self._data.path = path
+                self._data.save_format = 'jamovi'
+                self._data.is_edited = False
+                self._data.file_sync = file_sync
+
+                self._add_to_recents(path, self._data.title)
+
                 result['saveFormat'] = self._data.save_format
 
             if trigger_download:
@@ -829,19 +856,6 @@ class Instance:
 
         save_task.result()  # throw if necessary
 
-        if not is_export:
-            name = os.path.basename(path)
-            title, ext = os.path.splitext(name)
-            self._data.title = title
-            self._data.path = path
-            self._data.save_format = 'jamovi'
-            self._data.is_edited = False
-            self._data.integration = None
-
-            self._add_to_recents(path, self._data.title)
-
-    def gen_connector(self):
-        pass
 
     async def _on_save_part(self, path, part):
 
@@ -903,21 +917,17 @@ class Instance:
                 if is_url(path):
 
                     url = path
+                    file_sync = create_file_sync(url, options)
 
-                    client = ClientSession(raise_for_status=True, connector=BlockLocalConnector())
-                    ssl = ssl_context()
-
-                    file_sync = create_file_sync(url, options, client, ssl)
-
-                    read_stream = file_sync.read()
+                    read_stream = file_sync.read(self.file_sync_client, ssl_context())
                     async for progress in read_stream:
-                        progress_to_50 = (progress[0], 2 * progress[1])
+                        progress_to_50 = (500 * progress, 1000)
                         stream.write(progress_to_50)
 
-                    file_info = read_stream.result()
+                    file_info = await read_stream
 
-                    norm_path = file_info.path
-                    title = file_info.title
+                    norm_path = file_info.url
+                    title, __ = os.path.splitext(file_info.filename)
                     ext = file_info.ext
 
                     if ext == 'omv' and not file_sync.read_only:
@@ -1069,7 +1079,7 @@ class Instance:
                 path = self._paths[self._i]
 
                 norm_path = instance._normalise_path(path)
-                name = os.path.splitext(os.path.basename(path))[0]
+                name, __ = os.path.splitext(os.path.basename(path))
 
                 model = InstanceModel(instance)
 
