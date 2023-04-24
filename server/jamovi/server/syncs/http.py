@@ -19,10 +19,11 @@ def handles(url: str) -> bool:
 
 
 class HttpSyncFileInfo:
-    def __init__(self, path, title, ext):
-        self.path = path
-        self.title = title
+    def __init__(self, url, filename, ext, message=None):
+        self.url = url
+        self.filename = filename
         self.ext = ext
+        self.message = message
 
 
 def filename_from_url(url: str):
@@ -42,28 +43,32 @@ class HttpSync:
 
     def __init__(self,
             url: str,
-            options: dict,
-            client: ClientSession,
-            ssl_context: SSLContext):
+            options: dict):
 
         self.url = url
-        self.options = options
-        self.client = client
-        self.ssl_context = ssl_context
+        self.options = { k: v for k, v in options.items() if k != 'overwrite' }
 
         self._temp_file = None
         self._temp_file_path = None
 
-    def read(self) -> ProgressStream:
+    def read(self, client: ClientSession, ssl_context: SSLContext) -> ProgressStream:
+
+        self.client = client
+        self.ssl_context = ssl_context
+
         stream = ProgressStream()
-        stream.write((0, 1))
+        stream.write(0)
         task = create_task(self.aread(stream))
         return stream
 
-    def write(self, content: BinaryIO, content_size: int) -> ProgressStream:
+    def write(self, client: ClientSession, ssl_context: SSLContext, content: BinaryIO, content_size: int, overwrite: bool = False) -> ProgressStream:
+
+        self.client = client
+        self.ssl_context = ssl_context
+
         stream = ProgressStream()
-        stream.write((0, 1))
-        task = create_task(self.awrite(content, content_size, stream))
+        stream.write(0)
+        task = create_task(self.awrite(content, content_size, overwrite, stream))
         task.add_done_callback(lambda t: t.result())
         return stream
 
@@ -74,7 +79,7 @@ class HttpSync:
         except BaseException as e:
             stream.set_exception(e)
 
-    async def awrite(self, content: BinaryIO, content_size: int, stream: ProgressStream):
+    async def awrite(self, content: BinaryIO, content_size: int, overwrite: bool, stream: ProgressStream):
         raise NotImplementedError
 
     async def read_response(self, response: ClientResponse, stream: ProgressStream) -> HttpSyncFileInfo:
@@ -110,17 +115,17 @@ class HttpSync:
             if content_length:
                 n = content_length
 
-            stream.write((p, n))
+            stream.write(p / n)
 
             async for data in response.content.iter_any():
                 self._temp_file.write(data)
                 if content_length:
                     p += len(data)
-                    stream.write((p, n))
+                    stream.write(p / n)
         finally:
             self._temp_file.close()
 
-        info = HttpSyncFileInfo(self._temp_file_path, title, ext)
+        info = HttpSyncFileInfo(self._temp_file_path, filename, ext)
         stream.set_result(info)
 
     def is_for(self, url):
