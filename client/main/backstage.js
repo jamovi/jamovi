@@ -33,6 +33,8 @@ function isUrl(s) {
     return s.startsWith('https://') || s.startsWith('http://');
 }
 
+import { OneDriveView } from './backstage/onedrive';
+
 
 const BackstageModel = Backbone.Model.extend({
     defaults: {
@@ -206,6 +208,22 @@ const BackstageModel = Backbone.Model.extend({
         this._dialogExportListModel.on('browseRequested', this.dialogBrowse, this);
         this.addToWorkingDirData(this._dialogExportListModel);
 
+        if (OneDriveView) {
+            this._oneDriveOpenModel = new FSEntryListModel();
+            this._oneDriveOpenModel.clickProcess = 'open';
+            this._oneDriveOpenModel.attributes.wdType = 'onedrive';
+            this._oneDriveOpenModel.attributes.extensions = false;
+            this._oneDriveOpenModel.on('dataSetOpenRequested', this.tryOpen, this);
+
+            this._oneDriveSaveModel = new FSEntryListModel();
+            this._oneDriveSaveModel.clickProcess = 'save';
+            this._oneDriveSaveModel.attributes.wdType = 'onedrive';
+            this._oneDriveSaveModel.attributes.extensions = false;
+            this._oneDriveSaveModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
+            this._oneDriveSaveModel.on('dataSetSaveRequested', this.trySave, this);
+        }
+
+
         this._savePromiseResolve = null;
 
         ActionHub.get('save').on('request', async () => {
@@ -332,9 +350,9 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;*/
                     },
                     places: [
-                        /*{ name: 'thispc', title: _('jamovi Cloud'), model: this._pcListModel, view: FSEntryBrowserView },*/
+                        ... OneDriveView ? [ { name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: OneDriveView } ] : [ ],
                         { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
-                        { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } }
+                        { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } },
                     ]
                 },
                 // {
@@ -358,13 +376,13 @@ const BackstageModel = Backbone.Model.extend({
                         }
                     },
                     places: [
-                        /*{ name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },*/
+                        ... OneDriveView ? [ { name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: OneDriveView } ] : [ ],
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
                                 this._deviceSaveListModel.set('suggestedPath', this.instance.get('title'));
                             }
-                        }
+                        },
                     ]
                 },
                 {
