@@ -376,9 +376,7 @@ const Instance = Backbone.Model.extend({
             options.overwrite = true;
         }
 
-        const filePath = options.path;
-        const filename = path.basename(filePath);
-
+        let filename;
         let retrying;
 
         do {
@@ -395,7 +393,7 @@ const Instance = Backbone.Model.extend({
 
                 const result = await stream;
 
-                let filename = path.basename(result.path);
+                filename = result.filename;
 
                 if ( ! options.export) {
                     this.set('path', result.path);

@@ -609,9 +609,9 @@ const BackstageModel = Backbone.Model.extend({
     tryImport: function(paths, type, wdType) {
         this.requestImport(paths);
     },
-    async trySave(filePath, type) {
+    async trySave(filePath, options) {
         try {
-            await this.requestSave(filePath);
+            await this.requestSave(filePath, options);
         }
         catch (e) {
             if ( ! this.instance.attributes.saveFormat) {
@@ -620,9 +620,10 @@ const BackstageModel = Backbone.Model.extend({
             }
         }
     },
-    async tryExport(filePath, type) {
+    async tryExport(filePath, options) {
         try {
-            await this.requestSave(filePath, { export: true });
+            options = Object.apply({ }, options, { export: true });
+            await this.requestSave(filePath, options);
         }
         catch(e) {
             this.set('activated', true);
@@ -861,8 +862,6 @@ const BackstageModel = Backbone.Model.extend({
 
         let deactivated = false;
         try {
-
-            let options = { };
             if (title)
                 options.title = title;
             let stream = this.instance.open(filePath, options);
@@ -971,13 +970,7 @@ const BackstageModel = Backbone.Model.extend({
             $saveIcon.removeClass('saving-file');
         }
     },
-    async requestSave(filePath, options) {
-
-        if ( ! options)
-            options = { };
-
-        if ( ! host.isElectron)
-            options.export = true;
+    async requestSave(filePath=null, options={}) {
 
         // if filePath is not specified then the current opened path is used.
         // if overwrite is false and the specified file already exists a popup asks for overwrite.
