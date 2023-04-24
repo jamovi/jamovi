@@ -820,6 +820,15 @@ class Server:
             (fr'{ path_a }/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
         ])
 
+        try:
+            from .extras import get_extra_handlers
+            extra_handlers = get_extra_handlers()
+            for h_path, handler in extra_handlers:
+                h_path = f'{ path_a }{ h_path }'
+                self._main_app.add_handlers(match_a, [ (h_path, handler, { 'session': self._session }) ])
+        except ImportError:
+            pass
+
         if self._dev_server:
             self._main_app.add_handlers(match_a, [
                 (fr'{ path_a }/(@vite/client)', ForwardHandler, {
