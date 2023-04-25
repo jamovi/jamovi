@@ -73,6 +73,9 @@ export const FSEntryBrowserView = SilkyView.extend({
         'input .search' : '_searchChanged',
         'keydown .search' : '_searchKeyDown'
     },
+    preferredWidth() {
+        return '750px';
+    },
     _suggestedChanged: function(event) {
         let $saveName = this.$el.find('.silky-bs-fslist-browser-save-name');
         if ($saveName.length > 0) {
@@ -263,7 +266,7 @@ export const FSEntryBrowserView = SilkyView.extend({
     _createHeader() {
         let html = '';
         if ( ! host.isElectron)
-            html = '<div class="place-title">' + this.model.attributes.title + '</div>';
+            html = `<div class="title-bar"><div class="place-title">${ this.model.attributes.title }</div></div>`;
         html += '<div class="silky-bs-fslist-header">';
 
 

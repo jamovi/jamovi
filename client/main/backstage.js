@@ -214,6 +214,10 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveOpenModel.attributes.wdType = 'onedrive';
             this._oneDriveOpenModel.attributes.extensions = false;
             this._oneDriveOpenModel.on('dataSetOpenRequested', this.tryOpen, this);
+            this._oneDriveOpenModel.fileExtensions = [
+                '.omv', '.omt', '.csv', '.tsv', '.txt', '.json', '.ods', '.xlsx', '.sav', '.zsav', '.por',
+                '.rdata', '.rds', '.dta', '.sas7bdat', '.xpt', '.jasp'];
+            //this.addToWorkingDirData(this._oneDriveOpenModel);
 
             this._oneDriveSaveModel = new FSEntryListModel();
             this._oneDriveSaveModel.clickProcess = 'save';
@@ -221,6 +225,8 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveSaveModel.attributes.extensions = false;
             this._oneDriveSaveModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
             this._oneDriveSaveModel.on('dataSetSaveRequested', this.trySave, this);
+            this._oneDriveSaveModel.fileExtensions = [];
+            //this.addToWorkingDirData(this._oneDriveSaveModel);
         }
 
 
@@ -431,7 +437,7 @@ const BackstageModel = Backbone.Model.extend({
                     },
                     places: [
                         { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcListModel, view: FSEntryBrowserView },
-                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView }
+                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
                     ]
                 },
                 {
@@ -479,7 +485,7 @@ const BackstageModel = Backbone.Model.extend({
                         return this.setCurrentDirectory('main', path.dirname(filePath));
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
                     ]
                 },
                 {
@@ -1198,6 +1204,7 @@ const BackstageView = SilkyView.extend({
             if ('places' in op) {
                 let $opPlaces = $('<div class="silky-bs-op-places"></div>');
                 for (let place of op.places) {
+                    $opPlaces.append($(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }"></div>`));
                     let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
                     if (place.action)
                         $opPlace.addClass('bs-menu-action');
@@ -1245,7 +1252,7 @@ const BackstageView = SilkyView.extend({
         if (this.main)
             this.main.close();
 
-        this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model });
+        this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model, parent: this });
     },
     activate : function(fromMouse) {
         this.activeStateChanging = true;
@@ -1362,7 +1369,9 @@ const BackstageView = SilkyView.extend({
         let $contents = $subOps.contents();
         let height = 0;
         for(let i = 0; i < $contents.length; i++) {
-            height += $contents[i].offsetHeight;
+            let element = $contents[i];
+            if (element.classList.contains('silky-bs-op-place'))
+                height += $contents[i].offsetHeight;
         }
         $subOps.css('height', height);
         $subOps.css('opacity', 1);
@@ -1393,8 +1402,9 @@ const BackstageChoices = SilkyView.extend({
         this.model.off('change:place', this._placeChanged);
     },
 
-    initialize : function() {
+    initialize : function(params) {
 
+        this.parent = params.parent;
         this.model.on('change:place', this._placeChanged, this);
 
         let html = '';
@@ -1428,13 +1438,17 @@ const BackstageChoices = SilkyView.extend({
         if (place.model) {
             if ($old)
                 $old.removeClass('fade-in');
-            this.$current = $('<div class="silky-bs-choices-list" style="width:500px; height:100%;"></div>');
+            this.$current = $('<div class="silky-bs-choices-list"></div>');
+
             this.$current.appendTo(this.$el);
             if (this.current)
                 this.current.close();
 
             place.model.set('title', place.title);
             this.current = new place.view({ el: this.$current, model: place.model });
+
+            if (this.current.preferredWidth)
+                this.parent.$el.css("width", this.current.preferredWidth());
 
             if (this.current.setShortcutPath) {
                 let op = this.model.getCurrentOp();
