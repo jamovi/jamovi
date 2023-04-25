@@ -6,7 +6,7 @@
     "url": "https://github.com/jamovi/jamovi.git"
   },
   "scripts": {
-    "build": "npm run build:coms && node node_modules/.bin/vite build",
+    "build": "npm run build:coms && vite build",
     "build:coms": "node -e \"require('fs').copyFileSync('../server/jamovi/server/jamovi.proto', 'assets/coms.proto')\"",
     "": ""
   },
