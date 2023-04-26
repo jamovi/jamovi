@@ -291,12 +291,10 @@ def VBOXCOXLAMBDA(values: float):
 
 @row_wise
 def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
-    if lmbda > 0:
-        return (x ** lmbda - 1) / lmbda
-    elif lmbda == 0:
+    if lmbda == 0:
         return math.log(x)
     else:
-        return NaN
+        return (x ** lmbda - 1) / lmbda
 
 
 @row_wise
