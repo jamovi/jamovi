@@ -811,6 +811,8 @@ $(document).ready(async() => {
                     await infoBox.setup(status);
                     await auth.waitForSignIn();
                     authToken = await auth.getAuthToken();
+                    // notify any background shared workers that the account has changed
+                    new BroadcastChannel('account-events').postMessage({ type: 'reset' });
                 }
                 else {
                     break;
