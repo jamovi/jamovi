@@ -217,7 +217,6 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveOpenModel.fileExtensions = [
                 '.omv', '.omt', '.csv', '.tsv', '.txt', '.json', '.ods', '.xlsx', '.sav', '.zsav', '.por',
                 '.rdata', '.rds', '.dta', '.sas7bdat', '.xpt', '.jasp'];
-            //this.addToWorkingDirData(this._oneDriveOpenModel);
 
             this._oneDriveSaveModel = new FSEntryListModel();
             this._oneDriveSaveModel.clickProcess = 'save';
@@ -226,7 +225,17 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveSaveModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
             this._oneDriveSaveModel.on('dataSetSaveRequested', this.trySave, this);
             this._oneDriveSaveModel.fileExtensions = [];
-            //this.addToWorkingDirData(this._oneDriveSaveModel);
+
+            let onedriveWorkingDir = this.instance.settings().getSetting('onedriveWorkingDir', '');
+            this._oneDriveSaveModel.on('change:suggestedPath', event => {
+                let dirPath = this._oneDriveSaveModel.get('suggestedPath');
+                this.instance.settings().setSetting('onedriveWorkingDir', dirPath);
+                this._oneDriveOpenModel.set('suggestedPath', dirPath);
+            });
+            this.instance.settings().on('change:onedriveWorkingDir', (event) => {
+                this._oneDriveSaveModel.set('suggestedPath', this.instance.settings().getSetting('onedriveWorkingDir', ''));
+            });
+            
         }
 
 
@@ -327,11 +336,6 @@ const BackstageModel = Backbone.Model.extend({
     createOps: function() {
         let mode = this.instance.settings().getSetting('mode', 'normal');
 
-        let open_thispc = null;
-        let import_thispc = null;
-        let saveAs = null;
-        let export_thispc = null;
-
         if ( ! host.isElectron) {
             return [
                 {
@@ -344,19 +348,8 @@ const BackstageModel = Backbone.Model.extend({
                     name: 'open',
                     title: _('Open'),
                     shortcutKey: 'o',
-                    action: () => {
-                        /*let place = this.instance.settings().getSetting('openPlace', 'thispc');
-                        if (place === 'thispc') {
-                            let filePath = this._determineSavePath('main');
-                            return this.setCurrentDirectory('main', path.dirname(filePath)).then(() => {
-                                this.attributes.place = place;
-                            });
-                        }
-                        else
-                            this.attributes.place = place;*/
-                    },
                     places: [
-                        ... OneDriveView ? [ { name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: OneDriveView } ] : [ ],
+                        ...OneDriveView ? [{ name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: OneDriveView, }] : [],
                         { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
                         { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } },
                     ]
@@ -373,16 +366,13 @@ const BackstageModel = Backbone.Model.extend({
                     name: 'saveAs',
                     title: _('Save As'),
                     shortcutKey: 'a',
-                    action: () => {
-                        let place = this.instance.settings().getSetting('openPlace', 'thispc');
-                        if (place === 'thispc') {
-                            let filePath = this._determineSavePath('main');
-                            this._pcSaveListModel.set('suggestedPath', filePath);
-                            return this.setCurrentDirectory('main', path.dirname(filePath));
-                        }
-                    },
                     places: [
-                        ... OneDriveView ? [ { name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: OneDriveView } ] : [ ],
+                        ...OneDriveView ? [{
+                            name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: OneDriveView,
+                            action: () => {
+                                this._oneDriveSaveModel.set('suggestedTitle', this.instance.get('title') + '.omv');
+                            }
+                        }] : [],
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: FSEntryBrowserView,
                             action: () => {
@@ -396,12 +386,6 @@ const BackstageModel = Backbone.Model.extend({
                     title: _('Export'),
                     shortcutKey: 'e',
                     places: [
-                        /*{
-                            name: 'thispc', title: _('jamovi Cloud'), separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
-                            action: () => {
-                                this._pcExportListModel.suggestedPath = this.instance.get('title');
-                            }
-                        },*/
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceExportListModel, view: FSEntryBrowserView,
                             action: () => {
@@ -511,11 +495,9 @@ const BackstageModel = Backbone.Model.extend({
         let wdType = model.attributes.wdType;
         if (this._wdData[wdType].models === undefined) {
             let wdTypeData = this._wdData[wdType];
-            wdTypeData.wd =  wdTypeData.fixed ? wdTypeData.defaultPath : this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
             wdTypeData.models = [ ];
             wdTypeData.path = '';
             wdTypeData.initialised = false;
-            wdTypeData.wd = '';
             if ( ! wdTypeData.fixed) {
                 this.instance.settings().on('change:' + wdType + 'WorkingDir', (event) => {
                     this._wdData[wdType].defaultPath = this.instance.settings().getSetting(wdType + 'WorkingDir', wdTypeData.defaultPath);
@@ -1435,6 +1417,9 @@ const BackstageChoices = SilkyView.extend({
             return;
         }
 
+        if ('action' in place)
+            place.action();
+
         if (place.model) {
             if ($old)
                 $old.removeClass('fade-in');
@@ -1484,9 +1469,6 @@ const BackstageChoices = SilkyView.extend({
                 old.remove();
             }, 200);
         }
-
-        if ('action' in place)
-            place.action();
     }
 });
 

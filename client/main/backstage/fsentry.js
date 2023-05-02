@@ -28,7 +28,8 @@ export const FSEntryListModel = Backbone.Model.extend({
         multiselect: false,
         wdType: 'main',
         status: 'loading',
-        suggestedPath: null
+        suggestedPath: null,
+        suggestedTitle: null
     },
     requestOpen : function(filePath, title, type, options={}) {
         this.trigger('dataSetOpenRequested', filePath, title, type, this.get('wdType'), options);
