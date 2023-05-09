@@ -5,8 +5,9 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 const ActionHub = require('../actionhub');
 const focusLoop = require('../../common/focusloop');
+const EventEmitter = require('events');
 
-const RibbonGroup = Backbone.View.extend({
+class RibbonGroup extends EventEmitter {
 
     /*
     params
@@ -22,8 +23,8 @@ const RibbonGroup = Backbone.View.extend({
     }
     */
 
-    initialize(params) {
-
+    constructor(params) {
+        super();
         let title = params.title === undefined ? null : params.title;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
@@ -70,32 +71,28 @@ const RibbonGroup = Backbone.View.extend({
         this.$label = this.$el.find('.jmv-ribbon-group-label');
         this.$body   = this.$el.find('.jmv-ribbon-group-body');
 
-        if (name !== null) {
-            this.$el.on('menuActioned', (event, item) => {
-                let action = ActionHub.get(this.name);
-                action.do(item);
-            });
-        }
-
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
                 this.addItem(params.items[i]);
         }
-    },
+    }
+    
     setParent(parent, parentShortcutPath, inMenu) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setParent)
                 item.setParent(parent, parentShortcutPath, inMenu);
         }
-    },
+    }
+
     setTabName(name) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setTabName)
                 item.setTabName(name);
         }
-    },
+    }
+
     getEntryButton(openPath, open, fromMouse) {
         if (openPath.length > 0) {
             for (let item of this.items) {
@@ -107,7 +104,8 @@ const RibbonGroup = Backbone.View.extend({
             }
         }
         return null;
-    },
+    }
+
     addItem(item) {
         this.items.push(item);
 
@@ -122,16 +120,27 @@ const RibbonGroup = Backbone.View.extend({
             else
                 item.$el.insertBefore(this.$separator);
         }
-    },
+
+        item.on('menuActioned', (item) => {
+            if (this.name !== null) {
+                let action = ActionHub.get(this.name);
+                action.do(item);
+            }
+            this.emit('menuActioned', item);
+        });
+    }
+
     hideMenu() {
         for (let item of this.items) {
             if (item.hideMenu)
                 item.hideMenu();
         }
-    },
+    }
+
     setEnabled(enabled) {
         this.$el.prop('disabled', ! enabled);
-    },
+    }
+
     getMenus() {
         let menus = [];
         for (let item of this.items) {
@@ -140,6 +149,6 @@ const RibbonGroup = Backbone.View.extend({
         }
         return menus;
     }
-});
+}
 
 module.exports = RibbonGroup;
