@@ -8,8 +8,9 @@ const RibbonGroup = require('./ribbongroup');
 const ActionHub = require('../actionhub');
 const focusLoop = require('../../common/focusloop');
 const Menu = require('../../common/menu');
+const EventEmitter = require('events');
 
-const RibbonButton = Backbone.View.extend({
+class RibbonButton extends EventEmitter {
 
     /*
     params
@@ -25,7 +26,8 @@ const RibbonButton = Backbone.View.extend({
     }
     */
 
-    initialize(params) {
+    constructor(params) {
+        super();
 
         let title = params.title === undefined ? null : params.title;
         let icon = params.icon === undefined ? null : params.icon;
@@ -113,21 +115,24 @@ const RibbonButton = Backbone.View.extend({
             this.$el.attr('title', this.title);
 
         this.value = false;
-    },
+    }
+
     render_xml(id, xml_string){
         var doc = new DOMParser().parseFromString(xml_string, 'application/xml');
         var el = document.getElementById(id);
         el.appendChild(
             el.ownerDocument.importNode(doc.documentElement, true)
         );
-    },
+    }
+
     setValue(value) {
         this.value = value;
         if (value)
             this.$el.addClass('checked');
         else
             this.$el.removeClass('checked');
-    },
+    }
+
     setParent(parent, parentShortcutPath, inMenu) {
         this.parent = parent;
 
@@ -149,20 +154,23 @@ const RibbonButton = Backbone.View.extend({
 
         if (this._menuGroup !== undefined)
             this._menuGroup.setParent(parent, shortcutPath + this.shortcutKey, true);
-    },
+    }
+
     setTabName(name) {
         if (this._definedTabName === false)
             this.tabName = name;
 
         if (this._menuGroup !== undefined)
             this._menuGroup.setTabName(name);
-    },
+    }
+
     setEnabled(enabled) {
         if (enabled)
             this.$el.removeAttr('disabled');
         else
             this.$el.attr('disabled', '');
-    },
+    }
+
     _clicked(event, fromMouse) {
 
         let $target = $(event.target);
@@ -179,11 +187,11 @@ const RibbonButton = Backbone.View.extend({
         }
         else {
             action.do(this);
-            this.$el.trigger('menuActioned', this);
+            this.emit('menuActioned', this);
         }
 
         event.preventDefault();
-    },
+    }
 
     addItem(item) {
         if (this._menuGroup === undefined) {
@@ -196,9 +204,10 @@ const RibbonButton = Backbone.View.extend({
             this.menu.$el.append(this._menuGroup.$el);
             $('<div class="jmv-ribbon-menu-arrow"></div>').appendTo(this.$el);
 
-            this.$el.on('menuActioned', (event, item) => {
+            this._menuGroup.on('menuActioned', (item) => {
                 let action = ActionHub.get(this.name);
                 action.do(item);
+                this.emit('menuActioned', item);
             });
         }
 
@@ -211,13 +220,13 @@ const RibbonButton = Backbone.View.extend({
                     subMenu.connect(this.menu);
             }
         }
-    },
+    }
 
     getMenus() {
         if (this.menu)
             return [ this.menu ];
         return [];
-    },
+    }
 
     _refresh() {
         let html = '';
@@ -230,27 +239,30 @@ const RibbonButton = Backbone.View.extend({
             this.$el.attr('aria-label', this.title);
 
         this.$el.html(html);
-    },
+    }
 
     hideMenu(fromMouse) {
         if ( ! this.menu)
             return;
 
         this.menu.hide(fromMouse);
-    },
+    }
+
     showMenu(fromMouse) {
         if ( ! this.menu || this.menu.isVisible())
             return;
 
         this.positionMenu(fromMouse);
         //focusLoop.updateShortcuts();
-    },
+    }
+
     _toggleMenu(fromMouse) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
         else
             this.showMenu(fromMouse);
-    },
+    }
+
     positionMenu(fromMouse) {
         let anchor = 'left';
         let x = this.$el.offset().left + 5;
@@ -262,6 +274,6 @@ const RibbonButton = Backbone.View.extend({
 
         this.menu.show(x, y, { withMouse: fromMouse });
     }
-});
+}
 
 module.exports = RibbonButton;

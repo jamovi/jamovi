@@ -176,8 +176,13 @@ const Annotation = function(address, suffix) {
             event.preventDefault();
     };
 
-    this._blur = function(event) {
-        this.editor.setSelection(null);
+    this._blur = function (event) {
+        if (!this.selectionClearTimeOut) {
+            this.selectionClearTimeOut = setTimeout(() => {
+                this.editor.setSelection(null);
+                this.selectionClearTimeOut = null;
+            }, 10);
+        }
     };
 
     this.attach = function() {
@@ -381,6 +386,11 @@ const Annotation = function(address, suffix) {
             clearTimeout(this.finaliseBlur);
             this.finaliseBlur = null;
         }
+
+        if (this.selectionClearTimeOut) {
+            clearTimeout(this.selectionClearTimeOut);
+            this.selectionClearTimeOut = null;
+        }
     };
 
     this.getHTML = function() {
@@ -399,7 +409,12 @@ const Annotation = function(address, suffix) {
         return html;
     };
 
-    this.processToolbarAction = function(action) {
+    this.processToolbarAction = function (action) {
+        if (action.type === 'authentication') {
+            this.cancelBlur();
+            return;
+        }
+            
         this.editor.focus();
         if (this.lastSelection)
             this.editor.setSelection(this.lastSelection.index, this.lastSelection.length);
