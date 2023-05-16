@@ -20,6 +20,7 @@ typedef struct
     ColumnStruct *scratch;
     int rowCountExFiltered;
     ColumnStruct *indices;
+    int weights;
 
 } DataSetStruct;
 
@@ -39,6 +40,8 @@ public:
     Column operator[](int index);
     Column operator[](const char *name);
     Column getColumnById(int id);
+    bool hasWeights();
+    Column weights();
 
 protected:
 

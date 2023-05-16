@@ -126,3 +126,31 @@ int DataSet::getIndexExFiltered(int index)
 {
     return indices().raw<int>(index);
 }
+
+bool DataSet::hasWeights()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    if (dss->weights < 1)
+        return false;
+
+    try
+    {
+        getColumnById(dss->weights);
+        return true;
+    }
+    catch (runtime_error)
+    {
+        return false;
+    }
+}
+
+Column DataSet::weights()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    if (dss->weights < 1)
+        throw runtime_error("no weights");
+
+    return getColumnById(dss->weights);
+}

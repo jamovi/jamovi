@@ -28,6 +28,7 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->scratch = NULL;
     dss->rowCountExFiltered = 0;
     dss->indices = NULL;
+    dss->weights = 0;
 
     // add the filter indices column
     ColumnStruct *col = mm->allocateBase<ColumnStruct>();
@@ -487,4 +488,32 @@ void DataSetW::discardScratchColumn(int id)
     scratch = _mm->resolve(scratch);
     if (scratch->id == id)
         scratch->id = -1;
+}
+
+bool DataSetW::hasWeights()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    if (dss->weights < 1)
+        return false;
+
+    try
+    {
+        getColumnById(dss->weights);
+        return true;
+    }
+    catch (runtime_error)
+    {
+        return false;
+    }
+}
+
+int DataSetW::weights()
+{
+    return _mm->resolve<DataSetStruct>(_rel)->weights;
+}
+
+void DataSetW::setWeights(int id)
+{
+    _mm->resolve<DataSetStruct>(_rel)->weights = id;
 }

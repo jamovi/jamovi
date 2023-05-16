@@ -439,6 +439,10 @@ table.row-selectable tr.selected td {
     width: 500px ;
 }
 
+.jmv-results-html .content {
+    padding-bottom: 12px ;
+}
+
 body[data-mode="text"] {
     padding-left: 12px ;
 }

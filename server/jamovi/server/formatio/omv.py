@@ -115,22 +115,23 @@ def write(data, path, prog_cb, html=None, is_template=False):
 
         metadata = { }
 
-        metadataset = { }
-        metadataset['rowCount'] = row_count
-        metadataset['columnCount'] = data.column_count
-        metadataset['removedRows'] = data.row_tracker.removed_row_ranges
-        metadataset['addedRows'] = data.row_tracker.added_row_ranges
-        metadataset['fields'] = fields
-        metadataset['transforms'] = transforms
+        meta_dataset = { }
+        meta_dataset['rowCount'] = row_count
+        meta_dataset['columnCount'] = data.column_count
+        meta_dataset['removedRows'] = data.row_tracker.removed_row_ranges
+        meta_dataset['addedRows'] = data.row_tracker.added_row_ranges
+        meta_dataset['fields'] = fields
+        meta_dataset['transforms'] = transforms
+        meta_dataset['weights'] = data.weights_name
 
         # if data.import_path is not '':
-        #     metadataset['importPath'] = data.import_path
+        #     meta_dataset['importPath'] = data.import_path
         # if data.embedded_path is not '':
-        #     metadataset['embeddedPath'] = data.embedded_path
+        #     meta_dataset['embeddedPath'] = data.embedded_path
         # if data.embedded_name is not '':
-        #     metadataset['embeddedName'] = data.embedded_name
+        #     meta_dataset['embeddedName'] = data.embedded_name
 
-        metadata['dataSet'] = metadataset
+        metadata['dataSet'] = meta_dataset
 
         zip.writestr('metadata.json', json.dumps(metadata), zipfile.ZIP_DEFLATED)
 
@@ -406,6 +407,7 @@ def read(data, path, prog_cb, **kwargs):
         data.row_tracker.added_row_ranges = meta_dataset.get('addedRows', [])
 
         data.set_row_count(row_count)
+        data.set_weights_by_name(meta_dataset.get('weights'))
 
         columns_w_bad_levels = [ ]  # do some repair work
 
@@ -425,7 +427,7 @@ def read(data, path, prog_cb, **kwargs):
                                 if len(meta_label) > 3:
                                     pinned = meta_label[3]
                                 else:
-                                    pinned = column.trim_levels == False
+                                    pinned = column.trim_levels is False
                                 column.append_level(meta_label[0], meta_label[1],  import_value, pinned)
                         else:
                             columns_w_bad_levels.append(column.id)
