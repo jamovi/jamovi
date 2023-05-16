@@ -23,12 +23,21 @@ const RibbonModel = Backbone.Model.extend({
         this._modules = args.modules;
         this._settings = args.settings;
 
+        this._variablesTab = new VariablesTab();
+        this._dataTab = new DataTab();
+        this._analysesTab = new AnalyseTab(this._modules, this);
+        this._editTab = new AnnotationTab();
+
         this.set('tabs', [
-            new VariablesTab(),
-            new DataTab(),
-            new AnalyseTab(this._modules, this),
-            new AnnotationTab()
+            this._variablesTab,
+            this._dataTab,
+            this._analysesTab,
+            this._editTab,
         ]);
+
+        this._analysesTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
+        this._dataTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis))
+        
     },
     defaults : {
         tabs : [ ],

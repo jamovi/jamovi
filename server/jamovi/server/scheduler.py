@@ -52,7 +52,7 @@ class Scheduler:
         if analysis is not None:
             key = (analysis.instance.id, analysis.id)
             if key in self._pool:
-                analysis.status = Analysis.Status.RUNNING
+                analysis.set_status(Analysis.Status.RUNNING)
                 try:
                     self._run_analysis(analysis, 'init')
                 except BadAnalysis as e:
@@ -65,7 +65,7 @@ class Scheduler:
             return
 
         for analysis in self._analyses.needs_init:
-            analysis.status = Analysis.Status.RUNNING
+            analysis.set_status(Analysis.Status.RUNNING)
             try:
                 self._run_analysis(analysis, 'init')
             except BadAnalysis as e:
@@ -80,7 +80,7 @@ class Scheduler:
             return
 
         for analysis in self._analyses.needs_op:
-            analysis.status = Analysis.Status.RUNNING
+            analysis.set_status(Analysis.Status.RUNNING)
             try:
                 self._run_analysis(analysis, 'op')
             except BadAnalysis as e:
@@ -94,7 +94,7 @@ class Scheduler:
                 return
 
         for analysis in self._analyses.needs_run:
-            analysis.status = Analysis.Status.RUNNING
+            analysis.set_status(Analysis.Status.RUNNING)
             try:
                 self._run_analysis(analysis, 'run')
             except BadAnalysis as e:
@@ -152,11 +152,11 @@ class Scheduler:
                 analysis.set_results(results)
 
             if results.status == ANALYSIS_ERROR:
-                analysis.status = Analysis.Status.ERROR
+                analysis.set_status(Analysis.Status.ERROR)
             elif request.perform == PERFORM_INIT:
-                analysis.status = Analysis.Status.INITED
+                analysis.set_status(Analysis.Status.INITED)
             else:
-                analysis.status = Analysis.Status.COMPLETE
+                analysis.set_status(Analysis.Status.COMPLETE)
         finally:
             if request.perform == PERFORM_INIT:
                 self._n_initing -= 1
@@ -196,7 +196,7 @@ class Scheduler:
 
         else:
 
-            analysis.status = Analysis.Status.RUNNING
+            analysis.set_status(Analysis.Status.RUNNING)
 
             request_pb.options.CopyFrom(analysis.options.as_pb())
             request_pb.changed.extend(analysis.changes)

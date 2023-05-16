@@ -6,10 +6,17 @@ const RibbonSeparator = require('./ribbonseparator');
 const RibbonGroup = require('./ribbongroup');
 const RibbonTab = require('./ribbontab');
 
+import ActionHub from '../actionhub';
+
+
 class DataTab extends RibbonTab {
 
     constructor() {
-        super('data', 'D', _("Data"));
+        super('data', 'D', _('Data'));
+
+        ActionHub.get('weights').on('request', () => {
+            this.emit('analysisSelected', { name: 'weights', ns: 'jmv', title: _('Weights'), index: 1, onlyOne: true });
+        });
     }
 
     getRibbonItems(ribbon) {
@@ -31,6 +38,7 @@ class DataTab extends RibbonTab {
                 new RibbonButton({ title: _('Setup'), name: 'editVar', margin: 'large', size: 'large', shortcutKey: 's', shortcutPosition: { x: '50%', y: '90%' } }),
                 new RibbonButton({ title: _('Compute'), name: 'compute', margin: 'large', size: 'large', shortcutKey: 'q', shortcutPosition: { x: '50%', y: '90%' } }),
                 new RibbonButton({ title: _('Transform'), name: 'transform', margin: 'large', size: 'large', shortcutKey: 't', shortcutPosition: { x: '50%', y: '90%' } }),
+                new RibbonButton({ title: _('Weights'), name: 'weights', margin: 'large', size: 'large', shortcutKey: 'w', shortcutPosition: { x: '50%', y: '90%' } }),
                 new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: _('Add'), name: 'addVar', shortcutKey: 'a', shortcutPosition: { x: '25%', y: '25%' }, subItems: [
                         new RibbonGroup({ title: _('Data Variable'), orientation: 'vertical', titlePosition: 'top', items: [

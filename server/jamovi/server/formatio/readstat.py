@@ -82,6 +82,15 @@ class Parser(ReadStatParser):
                         levels[index] = (value_and_label[0], new_label, new_label)
                 column.change(levels=levels)
 
+        weights_id = self._data.weights
+        if weights_id != 0:
+            try:
+                weights_name = self._data.get_column_by_id(weights_id).name
+                weights_analysis = self._data.analyses.create(id=0, name='weights', ns='jmv')
+                weights_analysis.set_weights(weights_name)
+            except KeyError:
+                pass
+
     def handle_metadata(self, metadata):
         if metadata.row_count >= 0:  # negative values are possible here!
             self._data.set_row_count(metadata.row_count)
@@ -251,6 +260,13 @@ class Parser(ReadStatParser):
 
         if missings:
             column.set_missing_values(missings)
+
+    def handle_fweight(self, variable):
+        try:
+            weight_id = self._data[variable.name].id
+            self._data.set_weights(weight_id)
+        except KeyError:
+            pass
 
     def handle_value(self, var_index, row_index, value):
 

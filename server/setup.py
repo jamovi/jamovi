@@ -108,6 +108,7 @@ setup(
     packages=[
         'jamovi.core',
         'jamovi.server',
+        'jamovi.server.analyses',
         'jamovi.server.formatio',
         'jamovi.server.utils',
         'jamovi.server.compute',

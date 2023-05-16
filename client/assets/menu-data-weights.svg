@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="42.981mm" height="29.633mm" version="1.1" viewBox="0 0 42.981 29.633" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="translate(0 -267.37)" stroke="#91a3bd" stroke-linecap="round">
+  <g transform="translate(.5825 -.15886)" stroke-width="2.159">
+   <path d="m16.465 288.91a7.9759 6.9926 0 0 1-3.9879 6.0558 7.9759 6.9926 0 0 1-7.9759 0 7.9759 6.9926 0 0 1-3.9879-6.0558h7.9759z" fill="#91a3bd"/>
+   <path d="m0.51367 288.91 7.7574-14.313" fill="#668fc4"/>
+   <path d="m8.271 274.6 8.1944 14.313" fill="#668fc4"/>
+  </g>
+  <g transform="translate(.5825 -.15886)" stroke-width="2.159">
+   <path d="m41.32 286.32c5e-6 2.4982-1.5202 4.8066-3.9879 6.0558-2.4678 1.2491-5.5081 1.2491-7.9759 0-2.4678-1.2491-3.988-3.5575-3.9879-6.0558h7.9759z" fill="#91a3bd" style="paint-order:markers stroke fill"/>
+   <path d="m25.368 286.32 7.7574-14.313" fill="#668fc4"/>
+   <path d="m33.126 272.01 8.1944 14.313" fill="#668fc4"/>
+  </g>
+  <g transform="translate(.80117 -.15886)">
+   <path d="m20.891 272.58 0.12784-3.9286" fill="#668fc4" stroke-width="1.7847"/>
+   <path d="m8.271 274.6 24.855-2.5931" fill="#668fc4" stroke-width="2.159"/>
+   <ellipse cx="20.974" cy="273.54" rx="2.2165" ry="2.1645" fill="#fff" stroke-width="2.159"/>
+  </g>
+ </g>
+</svg>

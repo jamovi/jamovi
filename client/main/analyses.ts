@@ -183,6 +183,20 @@ Analysis.prototype.isFirst = function() {
     return this.index === 0;
 };
 
+interface CreateOpts {
+    readonly name: string;
+    readonly ns: string;
+    readonly title?: string;
+    readonly id?: number;
+    readonly index?: number;
+    readonly dependsOn?: number;
+    readonly options?: typeof Options;
+    readonly results?: any;
+    readonly references?: any;
+    readonly enabled?: boolean;
+    readonly arbitraryCode?: boolean;
+}
+
 const Analyses = Backbone.Model.extend({
 
     initialize() {
@@ -193,16 +207,13 @@ const Analyses = Backbone.Model.extend({
             let index = 0;
             return {
                 next: () => {
-                    let ret = { };
                     if (index < this._analyses.length) {
-                        ret.value = this._analyses[index];
-                        ret.done = false;
                         index++;
+                        return { value: this._analyses[index-1], done: false };
                     }
                     else {
-                        ret.done = true;
+                        return { done: true };
                     }
-                    return ret;
                }
             };
         };
@@ -217,7 +228,8 @@ const Analyses = Backbone.Model.extend({
     count() {
         return this._analyses.length;
     },
-    async create(options) {
+    async create(options: CreateOpts): Promise<typeof Analysis> {
+        
         let name = options.name;
         let ns = options.ns;
         let id = options.id;
@@ -226,11 +238,12 @@ const Analyses = Backbone.Model.extend({
             this._nextId = this._nextId + 2;
         }
         else {
-            if (id >= this._nextId)
+            if (id >= this._nextId) {
                 if (id % 2 === 0)
                     this._nextId = id + 2;
                 else
                     this._nextId = id + 1;
+            }
         }
 
         let modules = this.attributes.modules;

@@ -9,7 +9,9 @@ const host = require('./host');
 const Notify = require('./notification');
 const dialogs = require('dialogs')({cancel:false});
 const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
-const ActionHub = require('./actionhub');
+
+import ActionHub from './actionhub';
+
 const focusLoop = require('../common/focusloop');
 
 class ViewController {

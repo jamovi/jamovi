@@ -1,27 +1,16 @@
 
-import os.path
-import json
 from enum import Enum
-from asyncio import Future
-from copy import deepcopy
 from collections import namedtuple
+from asyncio import Future
 from itertools import islice
-from logging import getLogger
-
-from .modules import Modules
-from .options import Options
-from . import jamovi_pb2 as jcoms
+from copy import deepcopy
 
 from jamovi.core import MeasureType
-from . import i18n
-from .i18n import _
+from jamovi.server import jamovi_pb2 as jcoms
 
 Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
 AnalysisOutputs = namedtuple('Outputs', 'analysis_id outputs')
-
-
-log = getLogger(__name__)
 
 
 class Analysis:
@@ -56,17 +45,17 @@ class Analysis:
             self.future.set_exception(exception)
 
     def __init__(self,
-            dataset,
-            id,
-            name,
-            ns,
-            options,
-            parent,
-            enabled,
-            *,
-            addons=None,
-            load_error=False,
-            arbitrary_code=False):
+                 dataset,
+                 id,
+                 name,
+                 ns,
+                 options,
+                 parent,
+                 enabled,
+                 *,
+                 addons=None,
+                 load_error=False,
+                 arbitrary_code=False):
 
         self.dataset = dataset
         self.id = id
@@ -77,7 +66,7 @@ class Analysis:
         self.results = None
         self.revision = 0
         self.changes = set()
-        self.status = Analysis.Status.NONE
+        self._status = Analysis.Status.NONE
         self.clear_state = False
         self.enabled = enabled
         self.arbitrary_code = arbitrary_code
@@ -128,9 +117,16 @@ class Analysis:
         self.complete = False
         if len(changes) > 0:
             self.changes |= set(changes)
-        self.status = Analysis.Status.NONE
+        self._status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
-    
+
+    @property
+    def status(self):
+        return self._status
+
+    def set_status(self, status):
+        self._status = status
+
     def set_error(self, message):
         results = jcoms.AnalysisResponse()
         results.analysisId = self.id
@@ -166,7 +162,7 @@ class Analysis:
                     new_results = results
                 else:
                     new_results = self.results
-                    
+
                 new_results.revision = self.revision
                 new_results.results.error.message = results.results.error.message
                 self._change_status_to_complete(new_results.results)
@@ -198,7 +194,7 @@ class Analysis:
                     if option_name in self._outputs_synced:
                         keys_synced = self._outputs_synced[option_name]
                         keys = map(lambda x: x.name, element.outputs.outputs)
-                        keys_synced = { k : keys_synced.get(k, False) for k in keys }
+                        keys_synced = { k: keys_synced.get(k, False) for k in keys }
                     else:
                         keys_synced = { }
 
@@ -279,13 +275,13 @@ class Analysis:
         if changes:
             self.changes |= set(changes)
         self.complete = False
-        self.status = Analysis.Status.NONE
+        self._status = Analysis.Status.NONE
         if self.enabled:
             self.parent._notify_options_changed(self)
 
     def copy_from(self, analysis):
         self.revision = analysis.revision
-        self.status = analysis.status
+        self._status = analysis.status
         results = deepcopy(analysis.results)
 
         results.instanceId = self.instance.id
@@ -302,12 +298,12 @@ class Analysis:
 
     def run(self):
         self.complete = False
-        self.status = Analysis.Status.NONE
+        self._status = Analysis.Status.NONE
         self.parent._notify_options_changed(self)
 
     def rerun(self):
         self.complete = False
-        self.status = Analysis.Status.NONE
+        self._status = Analysis.Status.NONE
         self.clear_state = True
         self.parent._notify_options_changed(self)
 
@@ -384,297 +380,7 @@ class Analysis:
             return resources
         return [ ]
 
+    def notify_removing(self):
+        pass
 
-class AnalysisIterator:
-    def __init__(self, parent, needs_init=False, needs_op=False):
-        self._parent = parent
-        self._needs_init = needs_init
-        self._needs_op = needs_op
-        self._iter = parent.__iter__()
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self._needs_op:
-            while True:
-                analysis = self._iter.__next__()
-                if analysis.status is Analysis.Status.COMPLETE and analysis.needs_op:
-                    return analysis
-        else:
-            while True:
-                analysis = self._iter.__next__()
-                if analysis.ns == 'jmv' and analysis.name == 'empty':
-                    continue
-                if analysis.status is Analysis.Status.NONE:
-                    return analysis
-                if not analysis.enabled:
-                    continue
-                if self._needs_init is False and analysis.status is Analysis.Status.INITED:
-                    return analysis
-
-
-class Analyses:
-    def __init__(self, dataset, modules):
-        self._dataset = dataset
-        self._modules = modules
-        self._modules.add_listener(self._module_event)
-
-        self._analyses = []
-        self._options_changed_listeners = []
-        self._results_changed_listeners = []
-        self._output_received_listeners = []
-        self._next_id = 1   # server side created analyses always have odd ids
-
-    def count(self):
-        return len(self._analyses)
-
-    def _module_event(self, event):
-        if event['type'] == 'moduleInstalled':
-            module_name = event['data']['name']
-            ids = [ ]
-            for analysis in self._analyses:
-                if analysis.ns == module_name:
-                    ids.append(analysis.id)
-
-            for id in ids:
-                self.recreate(id).rerun()
-
-    def _construct(self, id, name, ns, options_pb=None, enabled=None):
-
-        if name == 'empty' and ns == 'jmv':
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
-
-        try:
-            module_meta = self._modules.get(ns)
-            analysis_meta = module_meta.get(name)
-
-            analysis_name = analysis_meta.name
-            option_defs = analysis_meta.defn['options']
-
-            analysis_meta.translate_defaults(module_meta, i18n.get_language())
-
-            arbitrary_code = (analysis_meta.defn.get('arbitraryCode', False)
-                    or analysis_meta.defn.get('arbitraryCode2', False))
-
-            if enabled is None:
-                enabled = not arbitrary_code
-
-            options = Options.create(option_defs)
-            if options_pb is not None:
-                options.set(options_pb)
-
-            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
-
-            return Analysis(self._dataset, id, analysis_name, ns, options, self,
-                    enabled, addons=addons, arbitrary_code=arbitrary_code)
-
-        except Exception as e:
-            log.exception(e)
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False, load_error=True)
-
-    def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
-        for ref_pb in analysis_pb.references:
-            # Handle corrupt references
-            if not ref_pb.HasField('authors'):
-                del analysis_pb.references[:]
-                break
-
-        id = analysis_pb.analysisId
-        if new_id:
-            id = self._next_id
-            self._next_id += 2
-
-        if id >= self._next_id:
-            if id % 2 != 0:
-                self._next_id = id + 2
-            else:
-                self._next_id = id + 1
-
-        analysis = self._construct(
-            id,
-            analysis_pb.name,
-            analysis_pb.ns,
-            analysis_pb.options,
-            None)
-
-        if analysis_pb.dependsOn != 0:
-            patron = self.get(analysis_pb.dependsOn)
-            if patron is not None:
-                patron.add_dependent(analysis)
-
-        analysis.set_results(analysis_pb, silent=True)
-        analysis.status = status
-
-        return analysis
-
-    def create_from_serial(self, serial):
-
-        analysis_pb = jcoms.AnalysisResponse()
-        analysis_pb.ParseFromString(serial)
-
-        analysis = self._construct_from_pb(analysis_pb, status=Analysis.Status.COMPLETE)
-
-        self._analyses.append(analysis)
-
-        return analysis
-
-    def has_header_annotation(self):
-        if len(self._analyses) == 0:
-            return False
-
-        return self._analyses[0].name == 'empty'
-
-    def create(self, id, name, ns, options_pb, index=None):
-
-        if id == 0:
-            id = self._next_id
-            self._next_id += 2
-        elif id >= self._next_id:
-            if id % 2 != 0:
-                self._next_id = id + 2
-            else:
-                self._next_id = id + 1
-
-        analysis = self._construct(id, name, ns, options_pb, True)
-
-        if index is not None:
-            self._analyses.insert(index, analysis)
-        else:
-            self._analyses.append(analysis)
-            index = len(self._analyses) - 1
-
-        annotation = self.create_annotation(index + 1, update_indices=False)
-
-        self.update_indices()
-
-        analysis.add_dependent(annotation)
-
-        return analysis
-
-    def create_annotation(self, index, update_indices=True):
-        options = Options.create({})
-        annotation = self._construct(
-            self._next_id,
-            'empty',
-            'jmv',
-            options.as_pb())
-        annotation.status = Analysis.Status.COMPLETE
-        self._next_id += 2
-
-        annotation_pb = jcoms.AnalysisResponse()
-        annotation_pb.name = annotation.name
-        annotation_pb.ns = annotation.ns
-        annotation_pb.analysisId = annotation.id
-        annotation_pb.options.ParseFromString(annotation.options.as_bytes())
-        annotation_pb.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
-        annotation_pb.index = index + 1
-        annotation_pb.title = ''
-        annotation_pb.hasTitle = True
-        annotation_pb.results.title = _('Results')
-        annotation_pb.results.group.CopyFrom(jcoms.ResultsGroup())
-        annotation_pb.results.status = jcoms.AnalysisStatus.Value('ANALYSIS_COMPLETE')
-
-        annotation.set_results(annotation_pb, silent=True)
-
-        if index is not None:
-            self._analyses.insert(index, annotation)
-        else:
-            self._analyses.append(annotation)
-
-        if update_indices:
-            self.update_indices()
-
-        return annotation
-
-    def update_indices(self):
-        for i in range(0, len(self._analyses)):
-            if self._analyses[i].results is not None:
-                self._analyses[i].results.index = i + 1
-
-    def index_of(self, analysis):
-        try:
-            return self._analyses.index(analysis)
-        except Exception:
-            return -1
-
-    def recreate(self, id):
-        old = self[id]
-        index = self._analyses.index(old)
-        del self[id]
-        analysis = self.create(id, old.name, old.ns, old.options.as_pb(), index)
-        analysis.revision = old.revision
-        return analysis
-
-    def rerun(self):
-        for analysis in self:
-            if analysis.enabled:
-                analysis.rerun()
-
-    @property
-    def needs_init(self):
-        return AnalysisIterator(self, True)
-
-    @property
-    def needs_run(self):
-        return AnalysisIterator(self, False)
-
-    @property
-    def needs_op(self):
-        return AnalysisIterator(self, needs_op=True)
-
-    def add_results_changed_listener(self, listener):
-        self._results_changed_listeners.append(listener)
-
-    def remove_results_changed_listener(self, listener):
-        self._results_changed_listeners.remove(listener)
-
-    def add_options_changed_listener(self, listener):
-        self._options_changed_listeners.append(listener)
-
-    def remove_options_changed_listener(self, listener):
-        self._options_changed_listeners.remove(listener)
-
-    def add_output_received_listener(self, listener):
-        self._output_received_listeners.append(listener)
-
-    def remove_output_received_listener(self, listener):
-        self._output_received_listeners.remove(listener)
-
-    def remove_all(self):
-        self._analyses = []
-
-    def _notify_options_changed(self, analysis):
-        for listener in self._options_changed_listeners:
-            listener(analysis)
-
-    def _notify_results_changed(self, analysis):
-        for listener in self._results_changed_listeners:
-            listener(analysis)
-
-    def _notify_output_received(self, analysis, output):
-        for listener in self._output_received_listeners:
-            listener(analysis, output)
-
-    def get(self, id, instance_id=None):
-        for analysis in self._analyses:
-            if analysis.id == id:
-                return analysis
-        return None
-
-    def __getitem__(self, id):
-        analysis = self.get(id)
-        if analysis is None:
-            raise KeyError(id)
-        return analysis
-
-    def __delitem__(self, id):
-        for analysis in self._analyses:
-            if analysis.id == id:
-                self._analyses.remove(analysis)
-                break
-        else:
-            raise KeyError(id)
-
-    def __iter__(self):
-        return self._analyses.__iter__()

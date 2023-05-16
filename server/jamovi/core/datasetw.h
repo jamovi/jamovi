@@ -34,6 +34,10 @@ public:
     ColumnW getColumnById(int id);
     ColumnW indices();
 
+    bool hasWeights();
+    int weights();
+    void setWeights(int id);
+
     ColumnW swapWithScratchColumn(ColumnW &column);
     void discardScratchColumn(int id);
 

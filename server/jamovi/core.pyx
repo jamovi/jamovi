@@ -68,6 +68,9 @@ cdef extern from "datasetw.h":
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
+        bool hasWeights();
+        int weights() except +
+        void setWeights(int id);
         void setEdited(bool edited);
         bool isEdited() const;
         void setBlank(bool blank);
@@ -156,6 +159,13 @@ cdef class DataSet:
     @property
     def column_count(self):
         return self._this.columnCount()
+
+    @property
+    def weights(self) -> int:
+        return self._this.weights()
+
+    def set_weights(self, id: int):
+        self._this.setWeights(id)
 
     def get_index_ex_filtered(self, index):
         if index < self.row_count_ex_filtered:

@@ -121,6 +121,13 @@ class InstanceModel:
         else:
             raise KeyError('No such column: ' + str(id))
 
+    def get_column_by_name(self, name):
+        for column in self:
+            if column.name == name:
+                return column
+        else:
+            raise KeyError('No such column: ' + name)
+
     def get_transform_by_id(self, id):
         for transform in self.transforms:
             if transform.id == id:
@@ -727,6 +734,34 @@ class InstanceModel:
     @is_blank.setter
     def is_blank(self, blank):
         self._dataset.blank = blank
+
+    @property
+    def has_weights(self):
+        return self.weights_name is not None
+
+    @property
+    def weights(self):
+        return self._dataset.weights
+
+    def set_weights(self, id: int):
+        self._dataset.set_weights(id)
+
+    @property
+    def weights_name(self):
+        weights_id = self.weights
+        if weights_id == 0:
+            return None
+        try:
+            return self.get_column_by_id(weights_id).name
+        except KeyError:
+            return None
+
+    def set_weights_by_name(self, name):
+        if name is None:
+            self._dataset.set_weights(0)
+        else:
+            column = self.get_column_by_name(name)
+            self._dataset.set_weights(column.id)
 
     def get_column_count_by_type(self, columnType):
         count = 0
