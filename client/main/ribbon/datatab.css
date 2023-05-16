@@ -91,3 +91,7 @@
 .jmv-ribbon-button[data-name=compute] > .jmv-ribbon-button-icon {
     background-image: url('../../assets/menu-compute.svg');
 }
+
+.jmv-ribbon-button[data-name='weights'] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-data-weights.svg');
+}

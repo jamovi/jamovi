@@ -122,7 +122,7 @@ keyboardJS.Keyboard.prototype.resume = function(key) {
     }
 };
 
-let instance = new Instance({ coms : coms });
+const instance = new Instance({ coms : coms });
 
 let dataSetModel = instance.dataSetModel();
 let analyses = instance.analyses();
@@ -302,9 +302,16 @@ $(document).ready(async() => {
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
     let backstage = new Backstage({ el : '#backstage', model : backstageModel });
 
-    ribbon.model.getTab('analyses').on('analysisSelected', async function(analysis) {
-        let translate = await instance.modules().getTranslator(analysis.ns);
-        instance.createAnalysis(analysis.name, analysis.ns, translate(analysis.title));
+    ribbon.model.on('analysisSelected', async function(analysis) {
+        const translate = await instance.modules().getTranslator(analysis.ns);
+        const defn = {
+            name: analysis.name,
+            ns: analysis.ns,
+            title: translate(analysis.title),
+            index: analysis.index,
+            onlyOne: analysis.onlyOne,
+        };
+        instance.createAnalysis(defn);
     });
 
     let mainTableMode = 'spreadsheet';

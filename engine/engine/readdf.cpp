@@ -283,8 +283,6 @@ DataFrame readDF(
         colNo++;
     }
 
-    delete mm;
-
     if (colNo < columnsRequired.size())
     {
         columns.erase(colNo, columnsRequired.size());
@@ -294,6 +292,55 @@ DataFrame readDF(
     columns.attr("names") = columnNames;
     columns.attr("row.names") = rowNames;
     columns.attr("class") = "data.frame";
+
+    if (dataset.hasWeights())
+    {
+        String weightsName = dataset.weightsName();
+        columns.attr("jmv-weights-name") = weightsName;
+
+        auto weights = dataset.weights();
+
+        if (weights.dataType() == DataType::INTEGER)
+        {
+            IntegerVector v(rowCountExFiltered, IntegerVector::get_na());
+            rowNo = 0;
+
+            for (int j = 0; j < rowCount; j++)
+            {
+                if ( ! dataset.isRowFiltered(j))
+                {
+                    int value = weights.raw<int>(j);
+                    if (value != INT_MIN)
+                    {
+                        if (weights.shouldTreatAsMissing(j) == false)
+                            v[rowNo] = value;
+                    }
+                    rowNo++;
+                }
+            }
+
+            columns.attr("jmv-weights") = v;
+        }
+        else if (weights.dataType() == DataType::DECIMAL)
+        {
+            NumericVector v(rowCountExFiltered, NumericVector::get_na());
+            rowNo = 0;
+
+            for (int j = 0; j < rowCount; j++)
+            {
+                if ( ! dataset.isRowFiltered(j))
+                {
+                    if (weights.shouldTreatAsMissing(j) == false)
+                        v[rowNo] = weights.raw<double>(j);
+                    rowNo++;
+                }
+            }
+
+            columns.attr("jmv-weights") = v;
+        }
+    }
+
+    delete mm;
 
     return columns;
 }
