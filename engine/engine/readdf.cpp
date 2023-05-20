@@ -295,6 +295,9 @@ DataFrame readDF(
 
     if (dataset.hasWeights())
     {
+        String weightsName = dataset.weightsName();
+        columns.attr("jmv-weights-name") = weightsName;
+
         auto weights = dataset.weights();
 
         if (weights.dataType() == DataType::INTEGER)

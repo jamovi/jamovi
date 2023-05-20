@@ -154,3 +154,8 @@ Column DataSet::weights()
 
     return getColumnById(dss->weights);
 }
+
+const char* DataSet::weightsName()
+{
+    return weights().name();
+}

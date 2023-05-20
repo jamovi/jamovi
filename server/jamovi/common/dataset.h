@@ -42,6 +42,7 @@ public:
     Column getColumnById(int id);
     bool hasWeights();
     Column weights();
+    const char* weightsName();
 
 protected:
 
