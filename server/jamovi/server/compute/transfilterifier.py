@@ -8,6 +8,8 @@ class Transfilterifier(ast.NodeTransformer):
         self._filters = filters
 
     def visit_Name(self, node):
+        if node.id == 'NA':
+            return node
         ops = [ ast.Eq() ] * len(self._filters)
         call = ast.Call(
             func=ast.Name(id='IF', ctx=ast.Load()),
