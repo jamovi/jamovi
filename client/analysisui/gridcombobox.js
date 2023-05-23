@@ -76,7 +76,7 @@ const GridCombobox = function(params) {
     };
 
     this.onOptionValueChanged = function(key, data) {
-        if (this.$label)
+        if (this.$input)
             this.updateDisplayValue();
     };
 
