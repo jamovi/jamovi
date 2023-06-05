@@ -45,6 +45,9 @@ export const FSEntryListModel = Backbone.Model.extend({
     },
     requestBrowse : function(list, type, filename) {
         this.trigger('browseRequested', list, type, filename, this.get('wdType'));
+    },
+    cancel() {
+        this.trigger('cancel', null);
     }
 });
 

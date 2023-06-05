@@ -214,6 +214,7 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveOpenModel.attributes.wdType = 'onedrive';
             this._oneDriveOpenModel.attributes.extensions = false;
             this._oneDriveOpenModel.on('dataSetOpenRequested', this.tryOpen, this);
+            this._oneDriveOpenModel.on('cancel', () => { this.set('activated', false); });
             this._oneDriveOpenModel.fileExtensions = [
                 '.omv', '.omt', '.csv', '.tsv', '.txt', '.json', '.ods', '.xlsx', '.sav', '.zsav', '.por',
                 '.rdata', '.rds', '.dta', '.sas7bdat', '.xpt', '.jasp'];
@@ -224,9 +225,9 @@ const BackstageModel = Backbone.Model.extend({
             this._oneDriveSaveModel.attributes.extensions = false;
             this._oneDriveSaveModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
             this._oneDriveSaveModel.on('dataSetSaveRequested', this.trySave, this);
+            this._oneDriveOpenModel.on('cancel', () => { this.set('activated', false); });
             this._oneDriveSaveModel.fileExtensions = [];
 
-            let onedriveWorkingDir = this.instance.settings().getSetting('onedriveWorkingDir', '');
             this._oneDriveSaveModel.on('change:suggestedPath', event => {
                 let dirPath = this._oneDriveSaveModel.get('suggestedPath');
                 this.instance.settings().setSetting('onedriveWorkingDir', dirPath);
@@ -235,7 +236,7 @@ const BackstageModel = Backbone.Model.extend({
             this.instance.settings().on('change:onedriveWorkingDir', (event) => {
                 this._oneDriveSaveModel.set('suggestedPath', this.instance.settings().getSetting('onedriveWorkingDir', ''));
             });
-            
+
         }
 
 
