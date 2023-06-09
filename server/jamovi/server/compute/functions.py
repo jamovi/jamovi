@@ -291,7 +291,9 @@ def VBOXCOXLAMBDA(values: float):
 
 @row_wise
 def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
-    if lmbda == 0:
+    if x < 0:
+        return NaN
+    elif lmbda == 0:
         return math.log(x)
     else:
         return (x ** lmbda - 1) / lmbda
