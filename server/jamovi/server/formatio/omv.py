@@ -21,6 +21,12 @@ from jamovi.server.appinfo import app_info
 from ..i18n import _
 
 
+from logging import getLogger
+
+
+log = getLogger(__name__)
+
+
 def write(data, path, prog_cb, html=None, is_template=False):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
@@ -215,8 +221,11 @@ def write(data, path, prog_cb, html=None, is_template=False):
             resources += analysis.resources
 
         for rel_path in resources:
-            abs_path = os.path.join(data.instance_path, rel_path)
-            zip.write(abs_path, rel_path)
+            try:
+                abs_path = os.path.join(data.instance_path, rel_path)
+                zip.write(abs_path, rel_path)
+            except FileNotFoundError:
+                log.error(f"Unable to include resource '{ rel_path }'")
 
         # if data.embedded_path is not '':
         #     try:
