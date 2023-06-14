@@ -162,6 +162,10 @@ def fix_column_names(dataset):
     column_names = map(lambda column: column.name, dataset)
     column_names = list(column_names)
 
+    for i, name in enumerate(column_names):
+        name = re.sub(r'[\s]+', ' ', name)
+        column_names[i] = name
+
     for i, orig in enumerate(column_names):
         used = column_names[:i]
         if orig == '':
@@ -175,9 +179,11 @@ def fix_column_names(dataset):
         while name in used:
             name = '{} ({})'.format(orig, c)
             c += 1
-        if name != column_names[i]:
-            column_names[i] = name
-            column = dataset[i]
+        column_names[i] = name
+
+    for i, name in enumerate(column_names):
+        column = dataset[i]
+        if column.name != name:
             column.name = name
             column.import_name = name
 

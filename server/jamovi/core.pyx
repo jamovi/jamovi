@@ -281,7 +281,6 @@ cdef class Column:
         def __set__(self, name):
             if not isinstance(name, str):
                 raise TypeError('name must be instance of str')
-            name = name[:63]
             self._this.setName(name.encode('utf-8'))
 
     property import_name:
@@ -291,7 +290,6 @@ cdef class Column:
         def __set__(self, name):
             if not isinstance(name, str):
                 raise TypeError('name must be instance of str')
-            name = name[:63]
             self._this.setImportName(name.encode('utf-8'))
 
     property description:
@@ -301,7 +299,6 @@ cdef class Column:
         def __set__(self, desc):
             if not isinstance(desc, str):
                 raise TypeError('desc must be instance of str')
-            desc = desc[:1024]
             self._this.setDescription(desc.encode('utf-8'))
 
     property column_type:
