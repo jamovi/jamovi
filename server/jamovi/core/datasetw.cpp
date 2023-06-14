@@ -324,15 +324,14 @@ void DataSetW::deleteRows(int delStart, int delEnd)
         else if (column.dataType() == DataType::TEXT &&
                  column.measureType() == MeasureType::ID)
         {
-             for (int j = delStart; j < finalCount; j++)
-             {
-                 int from = j + delCount;
-                 int to = j;
-                 const char* value = column.raws(from);
-                 column.setSValue(to, value);
-             }
+            for (int j = delStart; j < finalCount; j++)
+            {
+                int from = j + delCount;
+                int to = j;
+                column.cellAt<char*>(to) = column.cellAt<char*>(from);
+            }
 
-             column.setRowCount<char*>(finalCount);
+            column.setRowCount<char*>(finalCount);
         }
         else
         {
