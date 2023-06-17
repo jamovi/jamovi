@@ -131,7 +131,7 @@ class References extends HTMLElement {
             url: 'https://www.jamovi.org',
         }));
 
-        refs.push(this.resolve('R', {
+        const R = {
             name: 'R',
             type: 'software',
             authors: { complete: 'R Core Team' },
@@ -140,12 +140,18 @@ class References extends HTMLElement {
             publisher: '(Version 4.1) [Computer software]. Retrieved from https://cran.r-project.org',
             url: 'https://cran.r-project.org',
             extra: 'R packages retrieved from MRAN snapshot 2022-01-01'
-        }));
+        };
+
+        refs.push(this.resolve('R', R));
 
         for (let analysis of this._analyses) {
             modules.add(analysis.ns);
             for (let ref of analysis.references) {
-                refs.push(this.resolve(analysis.ns, ref));
+                if (ref.name === 'R')
+                    // keep all R refs in sync
+                    refs.push(this.resolve(analysis.ns, R));
+                else
+                    refs.push(this.resolve(analysis.ns, ref));
             }
         }
 
