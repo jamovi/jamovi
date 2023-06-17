@@ -89,7 +89,7 @@ def write(data, path, prog_cb, **kwargs):
         os.remove(temp_file.name)
 
 
-def read(data, path, prog_cb):
+def read(data, path, prog_cb, **kwargs):
 
     with ZipFile(path, 'r') as zip:
         # manifest = zip.read('META-INF/MANIFEST.MF')
