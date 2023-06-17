@@ -1209,23 +1209,25 @@ const BackstageView = SilkyView.extend({
         }
         this.$opPanel.append($opList);
 
-        this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
+        if ( ! OneDriveView) {
+            this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
 
-        let recentsLabelId = focusLoop.getNextAriaElementId('label');
-        let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
-        if (this.model.get('dialogMode'))
-            $op.hide();
-        else
-            $op.show();
+            let recentsLabelId = focusLoop.getNextAriaElementId('label');
+            let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
+            if (this.model.get('dialogMode'))
+                $op.hide();
+            else
+                $op.show();
 
-        let $opTitle = $(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`).appendTo($op);
-        let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
-        $op.appendTo(this.$opPanel);
+            let $opTitle = $(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`).appendTo($op);
+            let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
+            $op.appendTo(this.$opPanel);
 
-        let recentsModel = this.model.recentsModel();
-        new FSEntryListView({el: $recentsBody, model: recentsModel});
+            let recentsModel = this.model.recentsModel();
+            new FSEntryListView({el: $recentsBody, model: recentsModel});
 
-        $recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
+            $recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
+        }
 
         this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
         this.$ops = this.$el.find('.silky-bs-menu-item');
