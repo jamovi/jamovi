@@ -1145,12 +1145,10 @@ const BackstageView = SilkyView.extend({
 
         this.menuSelection = new selectionLoop('bs-menu', this.$opPanel[0]);
         this.menuSelection.on('selected-index-changed', (data) => {
-
             if (data.target.hasAttribute('data-path'))
                 this.clickRecent(data);
             if (data.target.classList.contains('silky-bs-back-button'))
                 this.deactivate(data.withMouse);
-                //focusLoop.leaveFocusLoop(this.$el[0], data.withMouse);
             else if (data.target.hasAttribute('data-place'))
                 this.clickPlace(data);
             else if (data.target.hasAttribute('data-op'))
@@ -1253,6 +1251,8 @@ const BackstageView = SilkyView.extend({
         $('#main').attr('aria-hidden', true);
         $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', true);
 
+        this.menuSelection.selectElement(this.$opPanel.find('.silky-bs-back-button')[0], false, true);
+
         setTimeout(() => {
             focusLoop.enterFocusLoop(this.$el[0], { withMouse: fromMouse });
             // fix chrome render issue - force redraw
@@ -1276,6 +1276,7 @@ const BackstageView = SilkyView.extend({
 
         this.model.set('operation', '');
         this.model.set('place', '');
+        this.$el.css('width', '');
 
         $('body').find('.app-dragable').removeClass('ignore');
         $('#main').attr('aria-hidden', false);
@@ -1429,14 +1430,23 @@ const BackstageChoices = SilkyView.extend({
             this.$current = $('<div class="silky-bs-choices-list"></div>');
 
             this.$current.appendTo(this.$el);
-            if (this.current)
+            if (this.current) {
+                this.current.off('preferredWidthChanged');
                 this.current.close();
+            }
 
             place.model.set('title', place.title);
             this.current = new place.view({ el: this.$current, model: place.model });
 
-            if (this.current.preferredWidth)
-                this.parent.$el.css("width", this.current.preferredWidth());
+            if (this.current.preferredWidth) {
+                this.parent.$el.css('width', this.current.preferredWidth());
+                this.current.on('preferredWidthChanged', (event) => {
+                    this.parent.$el.css('width', this.current.preferredWidth());
+                });
+            }
+            else {
+                this.parent.$el.css('width', '');
+            }
 
             if (this.current.setShortcutPath) {
                 let op = this.model.getCurrentOp();
