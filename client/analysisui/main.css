@@ -22,7 +22,6 @@
 @import "rmanovafactorscontrol.css";
 @import "gridvariablestargetlist.css";
 @import "gridtargetcontrol.css";
-@import "gridcontrol.css";
 @import "multicontainer.css";
 @import "contentselector.css";
 
@@ -168,7 +167,6 @@ h1 {
     font-size: 24px ;
     width: 40px ;
     height: 40px ;
-    /*float: right;*/
     box-sizing: border-box ;
     border: 3px solid #555555 ;
     border-radius: 50% ;
@@ -392,8 +390,10 @@ h1 {
     margin-top: 0px;
 }
 
-.silky-control-body-style-inline {
-    margin-left: 1ex;
+.content-disconnected {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
 }
 
 .silky-layout-cell.cell-invisible, .silky-layout-cell.cell-invisible * {
@@ -401,12 +401,30 @@ h1 {
     transition: 0.2s visibility;
     visibility: hidden !important;
     overflow: hidden;
+    margin: 0px !important;
+    width: 0px;
+    padding: 0px !important;
 }
 
 .silky-layout-cell.rendered {
     transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, opacity 0.2s, visibility 0.2s;
 }
 
+.item-template {
+    margin: 5px;
+}
+
+.list-item-cell > * {
+    padding: 5px;
+}
+
+.list-item-cell>.silky-format-term {
+    margin: 0px;
+}
+
+.list-item-cell>.silky-format-variable {
+    margin: 0px;
+}
 
 input[type=text].silky-option-listitem {
   -webkit-transition: all 0.30s ease-in-out;

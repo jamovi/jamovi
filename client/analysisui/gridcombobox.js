@@ -67,7 +67,14 @@ const GridCombobox = function(params) {
             self.setValue(value);
         });
 
-        cell = grid.addCell(column + columnUsed, row, this.$input);
+        let spans = { rows: 1, columns: 1 };
+        let vAlign = 'top';
+        if (columnUsed === 0 && this.isPropertyDefined('cell')) {
+            spans = { rows: 1, columns: 2 };
+            vAlign = 'center';
+        }
+        
+        cell = grid.addCell(column + columnUsed, row, this.$input, { spans, vAlign });
         cell.setAlignment("left", "center");
 
         columnUsed += 1;

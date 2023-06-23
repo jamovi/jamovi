@@ -46,25 +46,39 @@ const GridTextbox = function(params) {
 
 
         let cell = null;
+        let valueOffset = 0;
         let startClass = label === '' ? '' : 'silky-option-text-start';
-        this.$label = $(`<label for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
-        cell = grid.addCell(column, row, this.$label);
-        cell.blockInsert('right');
-        cell.setAlignment('left', 'center');
+        if (label !== '') {
+            
+            this.$label = $(`<label for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            cell = grid.addCell(column, row, this.$label);
+            cell.blockInsert('right');
+            cell.setAlignment('left', 'center');
+            valueOffset += 1;
+        }
 
 
         let suffix = this.getPropertyValue('suffix');
         if (suffix === null)
             suffix = '';
+        
+        suffix = suffix.trim();
 
         let subgrid = new LayoutGrid();
+        subgrid.$el.css('column-gap', '1ex');
         subgrid.$el.addClass('silky-layout-grid');
-        cell = grid.addCell(column + 1, row, subgrid);
+        let spans = { rows: 1, columns: 1 };
+        let vAlign = 'top';
+        if (valueOffset === 0 && this.isPropertyDefined('cell')) {
+            spans = { rows: 1, columns: 2 };
+            vAlign = 'center';
+        }
+
+        cell = grid.addCell(column + valueOffset, row, subgrid, { spans, vAlign });
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
         cell.blockInsert('left');
-        startClass = label === '' ? 'silky-option-text-start' : '';
-        startClass = startClass + ' ' + (suffix === '' ? 'silky-option-text-end' : '');
-
+        
+        
         let dd = '';
         let suggestedValues = this.getPropertyValue('suggestedValues');
         let optionsName = suggestedValues === null ? null : this.getPropertyValue('name') + '_suggestedValues';
@@ -87,7 +101,6 @@ const GridTextbox = function(params) {
         }
         this.$suggestValues = $(dd);
 
-
         let t = '<input id="'+id+'" class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" value="' + this.getValueAsString() + '"';
 
         // this code block has been commented out because of a bug in electron 3.X that caused a crash if
@@ -96,6 +109,7 @@ const GridTextbox = function(params) {
         if (format.name === 'number')
             t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';*/
         t += '>';
+        
 
         this.$input = $(t);
         if (this.getPropertyValue('stretchFactor') === 0)
@@ -159,13 +173,15 @@ const GridTextbox = function(params) {
         cell.setAlignment('left', 'center');
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
 
-        startClass = suffix === '' ? '' : 'silky-option-text-end';
+        if (suffix !== '') {
+            startClass = suffix === '' ? '' : 'silky-option-text-end';
 
-        this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + _(suffix) + '</div>');
-        cell = subgrid.addCell(1, 0, this.$suffix);
-        cell.setAlignment('left', 'center');
-
-        return { height: 1, width: 3 };
+            this.$suffix = $('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + _(suffix) + '</div>');
+            cell = subgrid.addCell(1, 0, this.$suffix);
+            cell.setAlignment('left', 'center');
+        }
+        
+        return { height: 1, width: 1 + valueOffset };
     };
 
     this.getValueAsString = function() {
@@ -182,7 +198,7 @@ const GridTextbox = function(params) {
     };
 
     this._override('onPropertyChanged', (baseFunction, name) => {
-        baseFunction.call(this, name);
+        if (baseFunction) baseFunction.call(this, name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
             this.$input.prop('disabled', disabled);

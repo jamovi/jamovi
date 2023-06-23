@@ -4,7 +4,6 @@ const $ = require('jquery');
 const LayoutGrid = require('./layoutgrid');
 const GridControl = require('./gridcontrol');
 const OptionControl = require('./optioncontrol');
-const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const focusLoop = require('../common/focusloop');
 
@@ -13,15 +12,12 @@ const ContentSelector = function(params) {
     OptionControl.extendTo(this, params);
     GridControl.extendTo(this, params);
     LayoutGrid.extendTo(this);
-    LayoutGridBorderSupport.extendTo(this);
 
     this.registerSimpleProperty("label", null);
     this.registerOptionProperty("options");
     this.registerSimpleProperty("form", "tabs", new EnumPropertyFilter(["listbox", "radio", "tabs"], "listbox"));
 
     this._body = null;
-
-    this.$el = $('<div></div>');
 
     this.createItem = function () {
         let name = this.getPropertyValue('name');
