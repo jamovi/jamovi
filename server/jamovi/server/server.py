@@ -18,6 +18,9 @@ from jamovi.core import Dirs
 from .i18n import _
 from .webhandlers import ForwardHandler
 
+from .exceptions import FileExistsException
+from .exceptions import UserException
+
 import sys
 import os
 import os.path
@@ -393,6 +396,51 @@ class OpenHandler(RequestHandler):
             self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
 
 
+class SaveHandler(SessHandler):
+
+    async def post(self, instance_id: str):
+
+        instance = self._session.get(instance_id)
+        if instance is None:
+            self.set_status(404)
+            self.write('404: Not Found')
+            return
+
+        options: dict = { }
+
+        try:
+            options_json = self.get_body_argument('options', '{}')
+            options_dict = json.loads(options_json)
+            if isinstance(options_dict, dict):
+                options = options_dict
+        except (KeyError, ValueError):
+            pass
+
+        content_file = self.request.files.get('content', None)
+        if content_file is not None:
+            options['content'] = content_file[-1].body
+
+        self.set_header('content-type', 'text/plain')  # jsonlines, so text/plain
+
+        data: dict
+
+        try:
+            stream = instance.save(options)
+            async for progress in stream:
+                p, n = progress
+                self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
+                await self.flush()
+            data = { 'status': 'OK' }
+            data.update(await stream)
+        except FileExistsException:
+            data = { 'status': 'error', 'code': 'file-exists'}
+        except UserException as e:
+            data = { 'status': 'error', 'message': e.cause }
+
+        content = json.dumps(data)
+        self.write(content)
+
+
 @stream_request_body
 class PDFConverter(RequestHandler):
 
@@ -757,6 +805,7 @@ class Server:
             (fr'{ path_a }/end', EndHandler, { 'session': self._session }),
             (fr'{ path_a }/version', VersionHandler),
             (fr'{ path_a }/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
+            (fr'{ path_a }/([a-f0-9-]+)/save', SaveHandler, { 'session': self._session }),
             (fr'{ path_a }/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (fr'{ path_a }/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
             (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor, { 'session': self._session }),
@@ -770,6 +819,15 @@ class Server:
                 'path': f'{ i18n_path }/manifest.json' }),
             (fr'{ path_a }/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
         ])
+
+        try:
+            from .extras import get_extra_handlers
+            extra_handlers = get_extra_handlers()
+            for h_path, handler in extra_handlers:
+                h_path = f'{ path_a }{ h_path }'
+                self._main_app.add_handlers(match_a, [ (h_path, handler, { 'session': self._session }) ])
+        except ImportError:
+            pass
 
         if self._dev_server:
             self._main_app.add_handlers(match_a, [

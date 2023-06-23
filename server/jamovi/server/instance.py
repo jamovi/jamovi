@@ -21,7 +21,11 @@ from .instancemodel import InstanceModel
 from . import formatio
 from .modtracker import ModTracker
 from .permissions import Permissions
-from .integrations import get_special_handler
+
+from .exceptions import FileExistsException
+from .exceptions import UserException
+
+from .syncs import create_file_sync
 
 import os
 import os.path
@@ -41,6 +45,8 @@ from aiohttp import TCPConnector
 from ipaddress import ip_address
 
 from asyncio import ensure_future as create_task
+from asyncio import wait
+
 from collections import namedtuple
 
 from tempfile import NamedTemporaryFile
@@ -70,12 +76,16 @@ ConnectionStatus = namedtuple('ConnectionStatus',
 
 class Instance:
 
+    _file_sync_client: ClientSession
+
     def __init__(self, session, instance_path, instance_id, settings):
 
         self._session = session
         self._instance_path = instance_path
         self._instance_id = instance_id
         self._settings = settings
+
+        self._file_sync_client = None
 
         os.makedirs(instance_path, exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
@@ -651,81 +661,148 @@ class Instance:
             cause = str(e)
             self._coms.send_error(message, cause, self._instance_id, request)
 
-    async def _on_save(self, request):
+    @property
+    def file_sync_client(self):
 
-        path = request.filePath
-        i9n = self._data.integration
+        class BlockLocalConnector(TCPConnector):
+            # block connections to the local network (security!)
+            async def _resolve_host(self, host: str, port: int, traces=None):
+                resolved_list = await super()._resolve_host(host, port, traces)
+                for resolved in resolved_list:
+                    if not ip_address(resolved['host']).is_global:
+                        raise PermissionError
+                return resolved_list
+
+        if self._file_sync_client is None:
+            self._file_sync_client = ClientSession(raise_for_status=True, connector=BlockLocalConnector())
+
+        return self._file_sync_client
+
+
+    def save(self, options):
+        stream = ProgressStream()
+        create_task(self._save(options, stream))
+        return stream
+
+    async def _save(self, options, return_stream):
+
+        path = options['path']
+        trigger_download = False
 
         try:
-            if i9n and i9n.is_for(path):
 
-                async for progress in i9n.save(self._data, request.content):
-                    self._coms.send(None, self._instance_id, request,
-                                    complete=False, progress=progress)
-                status = i9n.gen_message()
+            if (self._data.file_sync is not None and
+                    self._data.file_sync.url == path):
+                file_sync = self._data.file_sync
+            elif is_url(path):
+                file_sync = create_file_sync(path, options)
+            else:
+                file_sync = None
 
-                response = jcoms.SaveProgress()
-                response.success = True
-                response.path = self._data.path
-                response.title = self._data.title
-                response.saveFormat = self._data.save_format
-                self._coms.send(response, self._instance_id, request, status=status)
-
+            if file_sync:
+                with NamedTemporaryFile(suffix='.omv', delete=False) as file:
+                    path = file.name
+                file_exists = False
             else:
                 if path.startswith('{{Temp}}'):
                     if self._perms.save.download is False:
                         raise PermissionError()
+                    trigger_download = True
                 else:
                     if self._perms.save.local is False:
                         raise PermissionError()
 
                 path = self._normalise_path(path)
-
                 file_exists = os.path.isfile(path)
-                if file_exists is False or request.overwrite is True:
-                    if path.endswith('.omv'):
-                        await self._on_save_everything(request)
-                    elif request.incContent:
-                        await self._on_save_content(request)
-                    elif request.part != '':
-                        await self._on_save_part(request)
-                    else:
-                        await self._on_save_everything(request)
-                else:
-                    response = jcoms.SaveProgress()
-                    response.fileExists = True
-                    response.success = False
-                    self._coms.send(response, self._instance_id, request)
 
-        except PermissionError as e:
+            if file_exists and not options.get('overwrite', False):
+                raise FileExistsException
+
+            content = options.get('content')
+            part = options.get('part')
+
+            multiplier = 1000
+            if file_sync:
+                # if we're uploading, the save process represents
+                # only half of the total operation. (uploading is
+                # the second half)
+                multiplier = 500
+
+            if (not path.endswith('.omv')) and (content is not None) and (not file_sync):
+                stream = self._on_save_content(path, content)
+                is_export = True
+            elif part is not None:
+                stream = self._on_save_part(path, part)
+                is_export = True
+            else:
+                is_export = options.get('export', False)
+                stream = self._on_save_everything(path, content, is_export)
+
+            async for progress in stream:
+                return_stream.write((progress * multiplier, 1000))
+
+            if file_sync:
+                stat_info = os.stat(path)
+                file_size = stat_info.st_size
+
+                with open(path, 'rb') as file:
+                    overwrite = options.get('overwrite', False)
+                    stream = file_sync.write(self.file_sync_client, ssl_context(), file, file_size, overwrite)
+                    async for progress in stream:
+                        return_stream.write((multiplier + progress * multiplier, 1000))
+                    file_info: HttpSyncFileInfo = await stream
+
+                path = file_info.url
+                filename = file_info.filename
+            else:
+                path = self._virtualise_path(path)
+                filename = os.path.basename(path)
+
+            title, __ = os.path.splitext(filename)
+
+            result = { 'path': path, 'filename': filename, 'title': title }
+
+            if not is_export:
+                self._data.title = title
+                self._data.path = path
+                self._data.save_format = 'jamovi'
+                self._data.is_edited = False
+                self._data.file_sync = file_sync
+
+                self._add_to_recents(path, self._data.title)
+
+                result['saveFormat'] = self._data.save_format
+
+            if trigger_download:
+                result['download'] = True
+
+            return_stream.set_result(result)
+
+        except FileExistsException as e:
+            return_stream.set_exception(e)
+
+        except Exception as e:
+
             log.exception(e)
+
             base    = os.path.basename(path)
             message = _('Unable to save {}').format(base)
-            cause = str(e)
-            if cause == '':
-                cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
-            self._coms.send_error(message, cause, self._instance_id, request)
+            cause = None
 
-        except OSError as e:
-            log.exception(e)
-            base    = os.path.basename(path)
-            message = _('Unable to save {}').format(base)
-            cause = e.strerror
-            self._coms.send_error(message, cause, self._instance_id, request)
+            if isinstance(e, PermissionError):
+                cause = str(e)
+                if cause == '':
+                    cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
+            elif isinstance(e, OSError):
+                cause = e.strerror
+            else:
+                cause = str(e)
 
-        except BaseException as e:
-            log.exception(e)
-            base    = os.path.basename(path)
-            message = _('Unable to save {}').format(base)
-            cause = str(e)
-            if not cause:
-                cause = type(e).__name__
-            self._coms.send_error(message, cause, self._instance_id, request)
+            return_stream.set_exception(UserException(message, cause))
 
-    async def _on_save_content(self, request):
-        path = request.filePath
-        path = self._normalise_path(path)
-        content = request.content
+    async def _on_save_content(self, path, content):
+
+        yield 0
 
         if path.endswith('.zip'):  # latex bundle export
 
@@ -746,60 +823,48 @@ class Instance:
             with open(path, 'wb') as file:
                 content = content.decode('utf-8')
                 async for progress in latexify(content, file, resolve_image):
-                    self._coms.send(None, self._instance_id, request,
-                                    complete=False, progress=progress)
+                    yield progress
 
         else:
             with open(path, 'wb') as file:
                 file.write(content)
 
-        path = self._virtualise_path(path)
+    async def _on_save_everything(self, path, content, is_export):
 
-        response = jcoms.SaveProgress()
-        response.path = path
-        response.success = True
-        self._coms.send(response, self._instance_id, request)
-
-    async def _on_save_everything(self, request):
-        path = request.filePath
-        path = self._normalise_path(path)
-        is_export = request.export
-        content = request.content
+        yield 0
 
         ioloop = asyncio.get_event_loop()
+        events = asyncio.Queue(1)
+
+        def add_to_event_queue(p):
+            if events.full():
+                events.get_nowait()  # discard
+            events.put_nowait(p)
 
         def prog_cb(p):
-            coms = self._coms
-            ioloop.call_soon_threadsafe(
-                functools.partial(
-                    coms.send, None, self._instance_id, request,
-                    complete=False, progress=(1000 * p, 1000)))
+            ioloop.call_soon_threadsafe(add_to_event_queue, p)
 
-        await ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content)
+        save_task = create_task(ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content))
+        retrieve_event_task = create_task(events.get())
+        pending = (retrieve_event_task, save_task)
 
-        if not is_export:
-            title = os.path.basename(path)
-            title, ext = os.path.splitext(title)
-            self._data.title = title
-            self._data.path = path
-            self._data.save_format = 'jamovi'
-            self._data.is_edited = False
-            self._data.integration = None
+        while True:
+            done, pending = await wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            if save_task in done:
+                break
+            yield retrieve_event_task.result()
+            retrieve_event_task = create_task(events.get())
+            pending = (retrieve_event_task, save_task)
 
-        response = jcoms.SaveProgress()
-        response.success = True
-        response.title = self._data.title
-        response.path = self._virtualise_path(path)
-        response.saveFormat = self._data.save_format
-        self._coms.send(response, self._instance_id, request)
+        for task in pending:
+            task.cancel()
 
-        if not is_export:
-            self._add_to_recents(path, self._data.title)
+        save_task.result()  # throw if necessary
 
-    async def _on_save_part(self, request):
-        path = request.filePath
-        path = self._normalise_path(path)
-        part = request.part
+
+    async def _on_save_part(self, path, part):
+
+        yield 0
 
         segments = part.split('/')
         analysisId = int(segments[0])
@@ -808,18 +873,9 @@ class Instance:
         analysis = self.analyses.get(analysisId)
 
         if analysis is not None:
-            try:
-                await analysis.save(path, address)
-            except Exception as e:
-                self._coms.send_error(_('Unable to save'), str(e), self._instance_id, request)
-            else:
-                path = self._virtualise_path(path)
-                response = jcoms.SaveProgress()
-                response.path = path
-                response.success = True
-                self._coms.send(response, self._instance_id, request)
+            await analysis.save(path, address)
         else:
-            self._coms.send_error(_('Error'), _('Unable to access analysis'), self._instance_id, request)
+            raise Exception(_('Unable to access analysis'))
 
     def open(self, path, title=None, is_temp=False, ext=None, options=None):
 
@@ -856,71 +912,31 @@ class Instance:
             nonlocal ext
 
             old_mm = None
-            temp_file = None
-            temp_file_path = None
+            # temp_file = None
+            # temp_file_path = None
+            file_sync = None
 
             try:
                 url = None
-                integ_handler = None
 
                 if is_url(path):
 
-                    url = parse.urlsplit(path)
-                    path = parse.unquote(url.path)
+                    url = path
+                    file_sync = create_file_sync(url, options)
 
-                    url = list(url)
-                    url[2] = parse.quote(path)
-                    url = parse.urlunsplit(url)
+                    read_stream = file_sync.read(self.file_sync_client, ssl_context())
+                    async for progress in read_stream:
+                        progress_to_50 = (500 * progress, 1000)
+                        stream.write(progress_to_50)
 
-                    filename = os.path.basename(path)
-                    path = url
+                    file_info = await read_stream
 
-                    integ_handler = get_special_handler(url)
+                    norm_path = file_info.url
+                    title, __ = os.path.splitext(file_info.filename)
+                    ext = file_info.ext
 
-
-                    class Connector(TCPConnector):
-                        async def _resolve_host(self, host: str, port: int, traces):
-                            resolved_list = await super()._resolve_host(host, port, traces)
-                            for resolved in resolved_list:
-                                if not ip_address(resolved['host']).is_global:
-                                    raise PermissionError
-                            return resolved_list
-
-                    async with ClientSession(raise_for_status=True, connector=Connector()) as session:
-                        async with session.get(url, ssl=ssl_context()) as response:
-
-                            if integ_handler is not None:
-                                await integ_handler.read(response)
-
-                            content_length = response.content_length
-
-                            if response.content_disposition and response.content_disposition.filename:
-                                filename = response.content_disposition.filename
-
-                            if not formatio.is_supported(filename):
-                                raise RuntimeError(_('Unrecognised file format'))
-
-                            title, dotext = os.path.splitext(filename)
-                            fd, temp_file_path = mkstemp(suffix=dotext)
-                            temp_file = os.fdopen(fd, 'wb')
-
-                            if dotext != '':
-                                ext = dotext[1:].lower()
-
-                            progress = [0, 1]
-                            if content_length:
-                                progress = [0, 2 * content_length]  # only goes up to 50%
-
-                            stream.write(progress)
-
-                            async for data in response.content.iter_any():
-                                temp_file.write(data)
-                                if content_length:
-                                    progress[0] += len(data)
-                                    stream.write(progress)
-
-                    temp_file.close()
-                    norm_path = temp_file_path
+                    if ext == 'omv' and not file_sync.read_only:
+                        is_temp = False
 
                 else:
                     norm_path = self._normalise_path(path)
@@ -937,17 +953,15 @@ class Instance:
                         progress = (500 + 500 * p, 1000)
                     else:
                         progress = (1000 * p, 1000)
-                    ioloop.call_soon_threadsafe(
-                        functools.partial(
-                            stream.write, progress))
+                    ioloop.call_soon_threadsafe(stream.write, progress)
 
                 main_settings = self._settings.group('main')
                 func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
                 result = await ioloop.run_in_executor(None, func)
 
-                if integ_handler is not None:
-                    self._data.integration = integ_handler
-                    await integ_handler.process(self._data)
+                if file_sync is not None:
+                    self._data.file_sync = file_sync
+                    self._data.path = url
 
                 stream.set_result(result)
 
@@ -997,13 +1011,13 @@ class Instance:
             finally:
                 if old_mm is not None:
                     old_mm.close()
-                if temp_file:
-                    if not temp_file.closed:
-                        temp_file.close()
-                    try:
-                        os.remove(temp_file_path)
-                    except Exception:
-                        pass
+                # if temp_file:
+                #     if not temp_file.closed:
+                #         temp_file.close()
+                #     try:
+                #         os.remove(temp_file_path)
+                #     except Exception:
+                #         pass
 
         create_task(read_file(path, is_temp, stream))
         return stream
@@ -1070,7 +1084,7 @@ class Instance:
                 path = self._paths[self._i]
 
                 norm_path = instance._normalise_path(path)
-                name = os.path.splitext(os.path.basename(path))[0]
+                name, __ = os.path.splitext(os.path.basename(path))
 
                 model = InstanceModel(instance)
 

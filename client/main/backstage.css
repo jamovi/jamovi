@@ -15,6 +15,15 @@
     filter: drop-shadow(0px 0px 5px #00000066);
 }
 
+.silky-bs-choices-list {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .ops-title{
     opacity: 1;
     vertical-align: -moz-middle-with-baseline;
@@ -26,15 +35,20 @@
     text-indent: 40px;
 }
 
+.title-bar {
+    display: flex;
+    align-items: center;
+    height: 80px;
+    justify-content: space-between;
+}
 .place-title {
-    height: 60px;
-    line-height: 60px;
+    height: 100px;
+    line-height: 100px;
     font-size: 30px;
     color: #3e6da9;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
     font-weight: lighter;
     text-indent: 10px;
+    margin-top: -20px;
 }
 
 .searchbox {
@@ -77,7 +91,8 @@
 }
 
 .silky-bs.activated-sub {
-    width: 750px;
+    width: 1350px;
+    max-width:100%;
 }
 
 .silky-bs-op-panel {
@@ -201,11 +216,25 @@
     padding: 0px 0px 0px 0px;
     transition: .2s height ease-out, .2s opacity ease-out, 0.2s visibility ease-out;
     visibility: hidden;
+    display: grid;
+    grid-template-columns: 30px min-content auto;
+    grid-auto-rows: min-content;
+}
+
+.silky-bs-op-places > .icon {
+    height: 20px;
+    grid-column-start: 2;
+    align-self: center;
+}
+
+.silky-bs-op-places > .icon[data-place=onedrive] {
+    width: 20px;
+    background-image: url('../assets/onedrive-icon.svg');
 }
 
 .silky-bs-op-place.selected-place {
     /*background-color: #e1e9f4 ;*/
-    padding: 8px 0px 8px 28px;
+    padding: 8px 0px 8px 8px;
     font-weight: bold;
     color: #3E6DA9;
     font-size: 105%;
@@ -214,10 +243,12 @@
 }
 
 .silky-bs-op-place {
-    padding: 8px 0px 8px 28px;
+    padding: 8px 0px 8px 8px;
     transition: .2s padding ease-out;
     border: 2px solid transparent;
     position: relative;
+    grid-column-start: 3;
+    align-self: center;
 }
 
 .silky-bs-op-place:not(.selected-place):hover {

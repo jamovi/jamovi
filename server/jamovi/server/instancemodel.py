@@ -15,6 +15,7 @@ import collections
 
 
 class InstanceModel:
+
     N_VIRTUAL_COLS = 5
     N_VIRTUAL_ROWS = 50
 
@@ -40,7 +41,7 @@ class InstanceModel:
         self._log = NullLog()
         self._row_tracker = RowTracker()
 
-        self.integration = None
+        self.file_sync = None
 
     @property
     def filters_visible(self):
