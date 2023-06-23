@@ -1,7 +1,7 @@
 
 'use strict';
 
-class ProgressStream {
+export class ProgressStream {
 
     constructor(fun) {
 
@@ -70,4 +70,4 @@ class ProgressStream {
     }
 }
 
-module.exports = ProgressStream;
+export default ProgressStream;

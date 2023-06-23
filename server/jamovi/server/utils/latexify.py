@@ -38,7 +38,7 @@ async def latexify(content, out, resolve_image):
         # remove header markings
         body = re.sub(' contenteditable=".*?"',            '',                 body)
         body = re.sub(' spellcheck=".*?"',                 '',                 body)
-        
+
         # remove empty table lines
         body = re.sub(r'<tr><\/tr>[\s]*?',                 '',                 body)
         body = re.sub(r'<h[1-5]><\/h[1-5]>[\s]*?',         '',                 body)
@@ -233,7 +233,7 @@ async def latexify(content, out, resolve_image):
                     # the file name Figure + counter (using the original extension) into the ZIP file
                     i_adr = re.findall('<img src=".*?" data-address="(.+?)"', idta[i])[0]
                     i_adr = unquote(i_adr).replace('\\"', '"')
-                    yield (i, n_idta)  # progress
+                    yield (i / n_idta)  # progress
                     i_tmp = await resolve_image(i_adr)
                     _, ext = os.path.splitext(i_tmp)
                     i_fn = f'figure_{ i + 1 }{ ext }'
@@ -337,7 +337,7 @@ async def latexify(content, out, resolve_image):
                 ccrr = re.sub('<li.*?>',   '\\\\item ',               re.sub('</li>',       '\\n',                      ccrr))
                 # handle preformatted text
                 ccrr = re.sub(r'<pre>',    '\\\\begin{verbatim}\\n',  re.sub(r'<\/pre>',    '\\\\end{verbatim}\\n\\n',  ccrr))
-                
+
                 # handle paragraphs
                 cpgh = re.findall(r'<p[\s\S]*?<\/p>', ccrr)
                 for j in range(len(cpgh)):
@@ -348,10 +348,10 @@ async def latexify(content, out, resolve_image):
                         cpgc = cpgc.replace('ql-align-right',   '')
                     elif re.search('ql-align-center',  cpgc):
                         wrpp = ['\\begin{center}\n',     '\\end{center}\n'    ]
-                        cpgc = cpgc.replace('ql-align-center',  '')                
+                        cpgc = cpgc.replace('ql-align-center',  '')
                     elif re.search('ql-align-justify', cpgc):
                         wrpp = ['',                      '\n'                 ]
-                        cpgc = cpgc.replace('ql-align-justify', '')                
+                        cpgc = cpgc.replace('ql-align-justify', '')
                     else:
                         wrpp = ['\\begin{flushleft}\n',  '\\end{flushleft}\n' ]
                     # decode text indentation
@@ -360,13 +360,13 @@ async def latexify(content, out, resolve_image):
                         cpgc = re.sub(r'ql-indent-[0-9]+ ', '', cpgc)
                         wrpp = ['{\\narrower' * indn + '\n' + wrpp[0], wrpp[1] + '}' * indn + '\n']
                     cpgc = cpgc.replace(' class=""', '')
-                    cpgc = re.sub(r'<br/>', '\\n\\n', cpgc)          
+                    cpgc = re.sub(r'<br/>', '\\n\\n', cpgc)
                     if cpgc.splitlines() != ['<p>', '', '</p>']:
                         cpgc = cpgc.replace(r'<p>', wrpp[0] + '\\noindent\n').replace(r'</p>', '\n' + wrpp[1] + '\n')
                         ccrr = ccrr.replace(cpgh[j], cpgc)
                     else:
                         ccrr = ccrr.replace(cpgh[j], '')
-                    
+
                 # handle spans
                 cspn = re.findall(r'<span[\s\S]*?<\/span>', ccrr)
                 for j in range(len(cspn)):
@@ -399,9 +399,9 @@ async def latexify(content, out, resolve_image):
                         cspc = wrps[0] + re.findall('<span style="*?>([\S\s]*?)<\/span>', cspc)[0] + wrps[1]
                     cspc = re.sub(r'<br/>', '\\n\\n', cspc)
                     ccrr = ccrr.replace(cspn[j], cspc)
-                
+
                 body = body.replace(cdta[i], '\n' + ccrr)
-                
+
         # handle section headers
         hdta = re.findall(r'<h[1-5]>[\s\S]*?<\/h[1-5]>', body)
         for i in range(len(hdta)):
@@ -409,7 +409,7 @@ async def latexify(content, out, resolve_image):
             hcrr = hcrr.replace('<h1>', '\n\\section{').replace('<h2>', '\n\\subsection{').replace('<h3>', '\n\\subsubsection{').replace('<h4>', '\n\\paragraph{').replace('<h5>', '\n\\subparagraph{')
             hcrr = re.sub(r'<\/h[1-5]>', '}\n', hcrr)
             body = body.replace(hdta[i], hcrr)
-        
+
         # handle empty lines
         edta = re.findall(r'\\end{\S*?}\s*\\begin{\S*?}', body)
         for i in range(len(edta)):
