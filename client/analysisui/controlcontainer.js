@@ -63,7 +63,7 @@ const ControlContainer = function(params) {
 
     LayoutGrid.extendTo(this);
     TitledGridControl.extendTo(this, params);
-    LayoutGridBorderSupport.extendTo(this);
+    LayoutGridBorderSupport.extendTo(this, true);
 
     this.editable = true;
 

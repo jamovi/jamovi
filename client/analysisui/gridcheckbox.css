@@ -5,18 +5,6 @@
     align-items: center;
 }
 
-.silky-option-checkbox.silky-control-margin-small {
-    margin: 2px;
-}
-
-.silky-option-checkbox.silky-control-margin-normal {
-    margin: 5px;
-}
-
-.silky-option-checkbox.silky-control-margin-large {
-    margin: 10px;
-}
-
 .silky-layout-container > .first-cell > .silky-option-checkbox {
     margin-left: 0px;
 }

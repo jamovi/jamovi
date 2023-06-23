@@ -4,18 +4,6 @@
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
-.silky-options-supplier-group.silky-control-margin-small {
-    margin: 2px;
-}
-
-.silky-options-supplier-group.silky-control-margin-normal {
-    margin: 5px;
-}
-
-.silky-options-supplier-group.silky-control-margin-large {
-    margin: 10px;
-}
-
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-options-supplier-group {
     margin-top: 0px;
 }

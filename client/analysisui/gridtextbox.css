@@ -26,6 +26,7 @@
   -moz-transition: all 0.30s ease-in-out;
   -ms-transition: all 0.30s ease-in-out;
   -o-transition: all 0.30s ease-in-out;
+  transition: all 0.30s ease-in-out;
   outline: none;
   padding: 3px 3px 3px 3px;
   border: 1px solid transparent;
@@ -48,75 +49,8 @@
     text-align: center
 }
 
-.silky-option-text-input:not(.silky-option-text-start)  {
-    margin-left: 1ex;
-}
-
-.silky-option-text-input:not(.silky-option-text-end)  {
-    margin-right: 1ex;
-}
-
 .jmv-option-text-input-suggested:not(.silky-option-text-start)  {
     margin-left: 1ex;
-}
-
-.silky-option-text-start.silky-control-margin-small:not(.frameless-textbox) {
-    margin-left: 2px;
-}
-
-.silky-option-text-end.silky-control-margin-small:not(.frameless-textbox) {
-    margin-right: 2px;
-}
-
-.silky-option-text-input.silky-control-margin-small:not(.frameless-textbox) {
-    margin-top: 2px;
-    margin-bottom: 2px;
-}
-
-.jmv-option-text-input-suggested.silky-control-margin-small:not(.frameless-textbox) {
-    margin-top: -2px;
-}
-
-.silky-option-text-start.silky-control-margin-normal {
-    margin-left: 5px;
-}
-
-.silky-option-text-end.silky-control-margin-normal {
-    margin-right: 5px;
-}
-
-.silky-option-text-input.silky-control-margin-normal {
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-.jmv-option-text-input-suggested.silky-control-margin-normal {
-    margin-top: -5px;
-}
-
-.silky-option-text-start.silky-control-margin-large {
-    margin-left: 10px;
-}
-
-.silky-option-text-end.silky-control-margin-large {
-    margin-right: 10px;
-}
-
-.silky-option-text-input.silky-control-margin-large {
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.jmv-option-text-input-suggested.silky-control-margin-large {
-    margin-top: -10px;
-}
-
-.silky-layout-container > .first-cell > .silky-option-text-start:not(.frameless-textbox) {
-    margin-left: 0px;
-}
-
-.silky-layout-container > .last-cell > .silky-option-text-end:not(.frameless-textbox) {
-    margin-right: 0px;
 }
 
 .jmv-option-text-input-suggested {

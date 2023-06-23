@@ -140,7 +140,7 @@ const LayoutSupplierView = function(params) {
             this.baseLayout.addCell(0, nextRow++, $(`<div id="${labelId}" style="white-space: nowrap;" class="silky-options-supplier-group-header">${label}</div>`));
         }
 
-        this.supplierGrid = new SelectableLayoutGrid(this.params);
+        this.supplierGrid = new SelectableLayoutGrid(this.params, false);
         if (label !== null)
             this.supplierGrid.$el.attr('aria-labelledby', labelId);
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
