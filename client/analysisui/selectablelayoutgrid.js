@@ -7,9 +7,9 @@ var LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const PropertySupplier = require('./propertysupplier');
 var SuperClass = require('../common/superclass');
 
-var SelectableLayoutGrid = function (params) {
+var SelectableLayoutGrid = function (params, cellStatus) {
     LayoutGrid.extendTo(this);
-    LayoutGridBorderSupport.extendTo(this);
+    LayoutGridBorderSupport.extendTo(this, cellStatus);
     PropertySupplier.extendTo(this, params);
 
     this.registerSimpleProperty("fullRowSelect", false);

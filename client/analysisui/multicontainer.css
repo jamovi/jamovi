@@ -2,5 +2,5 @@
 .container-hidden {
     visibility: hidden;
     opacity: 0;
-    display: none !important;
+    height: 0px;
 }

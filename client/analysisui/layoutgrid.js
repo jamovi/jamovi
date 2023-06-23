@@ -94,6 +94,7 @@ const LayoutGrid = function() {
         row = this.getTranformedRow(row, column);
         column = this.getTranformedColumn(row, column);
 
+        
         if (this._orderedCells[row] === undefined)
             this._orderedCells[row] = [];
         else if (cell.spanAllRows)
@@ -101,9 +102,13 @@ const LayoutGrid = function() {
 
         let oldCell = this._orderedCells[row][column];
         if (oldCell === undefined || oldCell === null) {
+            if (item.params !== undefined && item.params.cell !== undefined)
+                item = item;
             cell.data = { cell: cell, row: row, column: column, spans: { rows: 1, columns: 1 }, listIndex: this._cells.length, initialized: false, hasNewContent: true };
             if (item.getSpans)
                 cell.data.spans = item.getSpans();
+            else if (properties && properties.spans)
+                cell.data.spans = properties.spans;
 
             if (this._orderedColumns[column] === undefined)
                 this._orderedColumns[column] = [];
@@ -129,7 +134,7 @@ const LayoutGrid = function() {
         }
         else
             throw "Cell already exists.";
-
+        
         if (this.onCellAdded)
             this.onCellAdded(orgColumn, orgRow, cell);
 
@@ -138,10 +143,10 @@ const LayoutGrid = function() {
             this.$el.append(cell.$el);
         }
         cell.data.initialized = true;
-
+        
         cell.updateGridProperties();
         this.updateGridProperties();
-
+        
         return cell;
     };
 

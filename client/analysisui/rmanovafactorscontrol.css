@@ -57,18 +57,6 @@
     margin-bottom: 2px;
 }
 
-.silky-rmanova-factors-header.silky-control-margin-small {
-    margin-top: 3px;
-}
-
-.silky-rmanova-factors-header.silky-control-margin-normal {
-    margin-top: 5px;
-}
-
-.silky-rmanova-factors-header.silky-control-margin-large {
-    margin-top: 10px;
-}
-
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-rmanova-factors-header {
     margin-top: 0px;
 }

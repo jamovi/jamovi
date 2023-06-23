@@ -335,8 +335,19 @@ const LayoutActionManager = function(view) {
             events = resource.getPropertyValue('events');
         else if (resource.events !== undefined)
             events = resource.events;
+        
+        let hasBinding = false;
+        if (resource.properties !== undefined) {
+            for (let property in resource.properties) {
+                let prop = resource.properties[property];
+                if (prop.binding !== undefined) {
+                    hasBinding = true;
+                    break;
+                }
+            }
+        }
 
-        if (events !== null || name !== null)
+        if (events !== null || name !== null || hasBinding)
             this._resources[useId] = resource;
         else
             useId = null;

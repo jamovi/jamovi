@@ -90,6 +90,11 @@ var PropertySupplier = function(properties) {
         }
     };
 
+    this.isPropertyDefined = function (propertyName) {
+        let property = this.properties[propertyName];
+        return property && property.isDefined;
+    };
+
     this.hasProperty = function(property) {
         return property in this.properties;
     };

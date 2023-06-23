@@ -6,36 +6,73 @@
     align-items: center;
 }
 
-.silky-control-label.silky-control-margin-small {
-    margin: 2px;
+.titled-group.top-title.heading:not(.view-colapsed) {
+    row-gap: 10px;
 }
 
-.silky-control-label.silky-control-margin-normal {
+.titled-group.top-title:not(.view-colapsed) {
+    row-gap: 10px;
+}
+
+ .jmv-content-selector .silky-control-body {
+     /*padding-bottom: 10px;*/
+ }
+
+.jmv-content-selector {
+    row-gap: 10px !important;
+}
+
+.titled-group.top-title:not(.jmv-collapse-view) {
+    row-gap: 5px;
+}
+
+.titled-group.top-title.silky-options-group-style-inline:not(.view-colapsed) {
+    column-gap: 5px;
+}
+
+.silky-control-container:not(.silky-options-supplier-group):not(.jmv-content-selector) >.layout-cell, 
+.multi-cell-wrapper > .layout-cell {
+    padding: 3px 5px;
+}
+
+.layout-cell.first-cell {
+    padding-left: 0px !important;
+}
+
+.layout-cell.last-cell {
+    padding-right: 0px !important;
+}
+
+.layout-cell.first-row {
+    padding-top: 0px !important;
+}
+
+.layout-cell.last-row {
+    padding-bottom: 0px !important;
+}
+
+.titled-group.top-title.heading:not(.jmv-collapse-view):not(.silky-options-group-style-inline) {
     margin: 5px;
 }
 
-.silky-control-label.silky-control-margin-large {
+.titled-group.top-title:not(.jmv-collapse-view):not(.silky-options-group-style-inline) {
+    margin: 5px 0px;
+}
+
+.silky-control-container.silky-control-margin-large {
     margin: 10px;
+}
+
+.no-gap-col {
+    column-gap: 0px !important;
+}
+
+.heading-formating {
+    font-weight: bold;
 }
 
 .silky-control-label.silky-control-label-empty {
     margin: 0px;
-}
-
-.silky-layout-container > .first-row > .silky-control-label {
-    margin-top: 0px;
-}
-
-.silky-layout-container:not(.silky-control-body) > .first-cell > .silky-control-label {
-    margin-left: 0px;
-}
-
-.silky-layout-container > .last-cell > .silky-control-label {
-    margin-right: 0px;
-}
-
-.silky-layout-container:not(.silky-control-body) > .last-row > .silky-control-label {
-    margin-bottom: 0px;
 }
 
 /*Adding a space after a header if the grid is inline*/
@@ -45,35 +82,21 @@
 
 .silky-control-label span {
     font-size: 100% ;
-    font-weight: bold;
     white-space: nowrap;
 }
 
-
-.silky-options-group.silky-control-margin-small {
-    margin: 2px;
-}
-
-.silky-options-group.silky-control-margin-normal {
-    margin: 5px;
-}
-
-.silky-options-group.silky-control-margin-large {
-    margin: 10px;
-}
-
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-options-group {
-    margin-top: 0px;
+    margin-top: 0px !important;
 }
 
 .silky-layout-container > .first-cell > .silky-options-group {
-    margin-left: 0px;
+    margin-left: 0px !important;
 }
 
 .silky-layout-container > .last-cell > .silky-options-group {
-    margin-right: 0px;
+    margin-right: 0px !important;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-group {
-    margin-bottom: 0px;
+    margin-bottom: 0px !important;
 }

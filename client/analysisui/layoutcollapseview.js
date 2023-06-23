@@ -6,14 +6,12 @@ const $ = require('jquery');
 const LayoutGrid = require('./layoutgrid');
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const GridControl = require('./gridcontrol');
-const LayoutGridBorderSupport = require('./layoutgridbordersupport');
 const focusLoop = require('../common/focusloop');
 
 const LayoutCollapseView = function(params) {
 
     GridControl.extendTo(this, params);
     LayoutGrid.extendTo(this);
-    LayoutGridBorderSupport.extendTo(this);
 
     this.registerSimpleProperty("collapsed", false);
     this.registerSimpleProperty("label", null);
@@ -24,7 +22,7 @@ const LayoutCollapseView = function(params) {
     this._body = null;
 
     this.createItem = function() {
-        this.$el.addClass("jmv-collapse-view silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
+        this.$el.addClass("jmv-collapse-view titled-group top-title silky-layout-container silky-options-group silky-options-group-style-list silky-control-margin-" + this.getPropertyValue("margin"));
 
         let groupText = this.getPropertyValue('label');
         groupText = this.translate(groupText);

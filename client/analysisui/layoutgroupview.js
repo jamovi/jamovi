@@ -24,6 +24,8 @@ const LayoutGroupView = function(params) {
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
     this.registerSimpleProperty("margin", "large", new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
     this.registerSimpleProperty("format", FormatDef.string);
+    this.registerSimpleProperty("heading", false);
+
     Icons.addSupport(this);
 
     this.style = this.getPropertyValue('style');
@@ -38,6 +40,23 @@ const LayoutGroupView = function(params) {
     groupText = this.translate(groupText);
 
     let classes = groupText === "" ? "silky-control-label-empty" : "";
+
+    let hasChildren = this.hasProperty('controls');
+
+    if (hasChildren === false) {
+        if (params.cell && params.verticalAlignment === undefined) {
+            this.setPropertyValue('verticalAlignment', 'center');
+        }
+    }
+    
+    let isHeading = true;
+    if (hasChildren === false)
+        isHeading = this.getPropertyValue('heading');
+        
+    classes += hasChildren === false ? ' no-children' : '';
+    classes += isHeading ? ' heading-formating' : '';
+
+
     this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;"><span>' + groupText + '</span></div>');
     this.$el = this.$_subel;
 
@@ -81,8 +100,15 @@ const LayoutGroupView = function(params) {
         };
     }
 
-    this.onI18nChanged = function() {
-        this.setLabel(this.getPropertyValue('label'));
+    this.onI18nChanged = function () {
+        let label = null;
+        if (isOptionControl) {
+            let format = this.getPropertyValue('format');
+            label = format.toString(this.getValue());
+        }
+        else
+            label = this.getPropertyValue('label');
+        this.setLabel(label);
     };
 
     this.setLabel = function(value) {

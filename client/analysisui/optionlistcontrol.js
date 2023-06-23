@@ -57,10 +57,10 @@ const OptionListControl = function (params) {
     TitledGridControl.extendTo(this, params);
 
     if (params && (params.selectable || params.selectable === undefined)) 
-        SelectableLayoutGrid.extendTo(this, params);
+        SelectableLayoutGrid.extendTo(this, params, false);
     else {
         LayoutGrid.extendTo(this);
-        LayoutGridBorderSupport.extendTo(this);
+        LayoutGridBorderSupport.extendTo(this, false);
         PropertySupplier.extendTo(this, params);
     }
 
@@ -311,6 +311,7 @@ const OptionListControl = function (params) {
             ctrl.setPropertyValue("verticalAlignment", "center");
 
             cell = deepRenderToGrid(ctrl, this._context, this, dispRow, dispColumn).cell;
+            cell.$el.addClass('list-item-cell');
             this.onListItemAdded(ctrl, this.displayRowToRowIndex(dispRow));
 
             let hadAddButton = this.getPropertyValue("addButton") !== null;

@@ -277,6 +277,7 @@ const OptionsView = function(uiModel) {
         }
     };
 
+    this.q = 0;
     this._nextControlID = 0;
     this._templateCtrlNameCount = { };
     this.createControl = function(uiDef, parent) {
@@ -286,6 +287,8 @@ const OptionsView = function(uiModel) {
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
         }
+
+        
 
         let name = uiDef.name === undefined ? null :  uiDef.name;
 
@@ -312,13 +315,10 @@ const OptionsView = function(uiModel) {
 
         if (ctrl.setRequestedDataSource)
             ctrl.setRequestedDataSource(this._requestedDataSource);
-
-        if (ctrl.setI18nSource)
-            ctrl.setI18nSource(this._i18nSource);
-
+        
         if (ctrl.setControlManager)
             ctrl.setControlManager(this);
-
+        
         if (uiDef.name !== undefined || ctrl.hasProperty("optionName")) {
             if (ctrl.setOption) {
                 let id = ctrl.getPropertyValue("optionName");
@@ -340,9 +340,15 @@ const OptionsView = function(uiModel) {
             }
         }
 
+        if (ctrl.setI18nSource)
+            ctrl.setI18nSource(this._i18nSource);
+
         let resourceId = null;
-        if (ctrl !== null)
+        if (ctrl !== null) {
+            if (ctrl.params.contentLink)
+                ctrl = ctrl;
             resourceId = this.model.actionManager.addResource(name, ctrl);
+        }
 
         ctrl._override("onDisposed", (baseFunction) => {
             if (baseFunction !== null)
@@ -355,7 +361,6 @@ const OptionsView = function(uiModel) {
         });
 
         this._allCtrls.push( { ctrl: ctrl, resourceId: resourceId } );
-
         return ctrl;
     };
 

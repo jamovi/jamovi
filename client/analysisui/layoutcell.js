@@ -3,40 +3,62 @@
 
 const $ = require('jquery');
 const Backbone = require('backbone');
-const SuperClass = require('../common/superclass');
 const focusLoop = require('../common/focusloop');
+const { constructor } = require('./formatdef');
 
-const LayoutCell = function(parent, properties) {
+class LayoutCell {
 
-    this.$el = $(`<div id='${ focusLoop.getNextAriaElementId('cell') }' style="opacity: 0; visibility: hidden; position: relative; align-self: stretch; justify-self: stretch; box-sizing: border-box;" class="not-rendered"></div>`);
-    this.$el.attr('role', 'presentation');
-    //if (parent.editable)
-    //    this.$el.css("border", "1px dotted red");
+    constructor(parent, properties) {
+        this.$el = $(`<div id='${focusLoop.getNextAriaElementId('cell')}' style="display: flex; justify-self: stretch; align-self: stretch; opacity: 0; visibility: hidden; position: relative;  box-sizing: border-box;" class="layout-cell not-rendered"></div>`);
+        this.$el.attr('role', 'presentation');
 
-    Object.assign(this, Backbone.Events);
+        //if (parent.editable)
+        //    this.$el.css("border", "1px dotted red");
 
-    this._visible = true;
-    this.hAlign = "left";
-    this.vAlign = "top";
-    this.item = null;
-    this.$content = null;
-    this.$previousContent = null;
-    this._clickable = false;
-    this._selected = false;
-    this._initialized = false;
-    this._parentLayout = parent;
+        Object.assign(this, Backbone.Events);
 
-    if (properties) {
-        if (properties.visible === false) {
-            this._visible = properties.visible;
-            this.$el.addClass("cell-invisible");
-            this.$el.addClass('cell-disconnected');
-            this.$el.css( { opacity:  0, visibility: 'hidden', height: '0px' });
-            this.$el.attr('data-collapsed', 'true');
+        this._visible = true;
+        this.hAlign = "left";
+        this.vAlign = "top";
+        this.item = null;
+        this.$content = null;
+        this.$previousContent = null;
+        this._clickable = false;
+        this._selected = false;
+        this._initialized = false;
+        this._parentLayout = parent;
+
+        this.onMouseDown = this.onMouseDown.bind(this);
+        this.onFocus = this.onFocus.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+        this.isSelected = this.isSelected.bind(this);
+        this.setSelection = this.setSelection.bind(this);
+
+        this.horizontalStretchFactor = 0;
+
+        this.spanAllRows = false;
+
+        this.isVirtual = false;
+
+        if (properties) {
+            if (properties.visible === false) {
+                this._visible = properties.visible;
+                this.$el.addClass("cell-invisible");
+                this.$el.addClass('cell-disconnected');
+                this.$el.css({ opacity: 0, visibility: 'hidden', height: '0px' });
+                this.$el.attr('data-collapsed', 'true');
+            }
+
+            if (properties.hAlign)
+                this.setHorizontalAlign(properties.hAlign);
+            if (properties.vAlign)
+                this.setVerticalAlign(properties.vAlign);
         }
     }
 
-    this.makeSticky = function(dockcss) {
+    makeSticky(dockcss) {
         if (dockcss === undefined) {
             dockcss = {
                 'z-index': 10,
@@ -50,49 +72,49 @@ const LayoutCell = function(parent, properties) {
         dockcss.position = 'sticky';
 
         this.$el.css(dockcss);
-    };
+    }
 
-    this.blockInsert = function(direction) {
-        if (parent.editable)
+    blockInsert(direction) {
+        if (this._parentLayout.editable)
             this.$el.css("border-" + direction + "-style", "none");
-    };
+    }
 
-    this.onMouseDown = (event) => {
+    onMouseDown(event) {
         let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
         this.trigger('layoutcell.mousedown', ctrlKey, event.shiftKey);
         this.$el.one("mouseup", null, this, this.onMouseUp);
-    };
+    }
 
-    this.onFocus = (event) => {
+    onFocus(event) {
         this.trigger('layoutcell.focus');
-    };
+    }
 
-    this.onMouseUp = (event) => {
+    onMouseUp(event) {
         let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
         this.trigger('layoutcell.mouseup', ctrlKey, event.shiftKey);
-    };
+    }
 
-    this.onTouchStart = (event) => {
+    onTouchStart(event) {
         let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
         this.trigger('layoutcell.touchstart', ctrlKey, event.shiftKey);
         event.preventDefault();
         this.$el.one("touchend", null, this, this.onTouchEnd);
-    };
+    }
 
-    this.onTouchEnd = (event) => {
+    onTouchEnd(event) {
         let ctrlKey = event.ctrlKey;
         if (navigator.platform == "MacIntel")
             ctrlKey = event.metaKey;
         this.trigger('layoutcell.touchend', ctrlKey, event.shiftKey);
-    };
+    }
 
-    this.clickable = function(value) {
+    clickable(value) {
         this._clickable = value;
         if (value) {
             this.$el.on("focus", null, this, this.onFocus);
@@ -104,9 +126,9 @@ const LayoutCell = function(parent, properties) {
             this.$el.off("mousedown", this.onMouseDown);
             this.$el.off("touchstart", this.onTouchStart);
         }
-    };
+    }
 
-    this.setSelection = (value, ctrlKey, shiftKey) => {
+    setSelection(value, ctrlKey, shiftKey) {
         if (value && this.visible() === false)
             return;
 
@@ -114,13 +136,13 @@ const LayoutCell = function(parent, properties) {
             this._selected = value;
             this.trigger('layoutcell.selectionChanged', ctrlKey, shiftKey);
         }
-    };
+    }
 
-    this.isSelected = () => {
+    isSelected() {
         return this._selected;
-    };
+    }
 
-    this.setContent = function(item) {
+    setContent(item) {
 
         if (this.$content !== null)
             this.$previousContent = this.$content;
@@ -132,13 +154,21 @@ const LayoutCell = function(parent, properties) {
             this.$content = item;
 
         if (this.$content !== null) {
-            this.$content.css('position', 'relative');
+            let css = {};
+            css.position = 'relative';
+            if (this.hAlign === 'stretch' || this.vAlign === 'stretch') {
+                css['flex-grow'] = '1';
+                css['flex-shrink'] = '1';
+            }
+            this.$content.css(css);
+        
+            
         }
 
         this.render();
-    };
+    }
 
-    this.render = function() {
+    render() {
 
         if (this.$previousContent !== null) {
             this.$previousContent.remove();
@@ -156,13 +186,13 @@ const LayoutCell = function(parent, properties) {
         this.$el.addClass("rendered");
         if (this._visible)
             this.$el.css( { opacity: 1, visibility: 'visible' });
-    };
+    }
 
-    this.visible = function() {
+    visible() {
         return this._visible;
-    };
+    }
 
-    this.collapse = function(immediately) {
+    collapse(immediately) {
 
         if (this._expandingTimer) {
             clearTimeout(this._expandingTimer);
@@ -193,9 +223,9 @@ const LayoutCell = function(parent, properties) {
         }
 
         element.setAttribute('data-collapsed', 'true');
-    };
+    }
 
-    this.expand = function(immediately) {
+    expand(immediately) {
 
         if (this._expandingTimer) {
             clearTimeout(this._expandingTimer);
@@ -220,9 +250,9 @@ const LayoutCell = function(parent, properties) {
         }
 
         element.setAttribute('data-collapsed', 'false');
-    };
+    }
 
-    this.setVisibility = function(visible, immediately) {
+    setVisibility(visible, immediately) {
         if (this._visible !== visible) {
             this._visible = visible;
 
@@ -249,19 +279,13 @@ const LayoutCell = function(parent, properties) {
             this.$el.css( { opacity: (this._visible ? 1 : 0), visibility: (this._visible ? 'visible' : 'hidden') } );
 
             this.trigger('layoutcell.visibleChanged');
+
+            if (this._parentLayout.refreshCellStatus)
+                this._parentLayout.refreshCellStatus();
         }
-    };
+    }
 
-    let observer = new ResizeObserver(entries => {
-        if (this.hAlign === 'center')
-            this.setHorizontalAlign(this.hAlign);
-        if (this.vAlign === 'center')
-            this.setVerticalAlign(this.vAlign);
-    });
-
-    observer.observe(this.$el[0]);
-
-    this.setStretchFactor = function(factor) {
+    setStretchFactor(factor) {
         if (factor === this.horizontalStretchFactor)
             return;
 
@@ -277,9 +301,9 @@ const LayoutCell = function(parent, properties) {
             this._parentLayout.setStretchFactor(column, factor);
 
         this.updateGridProperties();
-    };
+    }
 
-    this.rightCell = function() {
+    rightCell() {
         let cell = null;
         let c = this.data.column + 1;
         if (c < this._parentLayout._columnCount) {
@@ -291,9 +315,9 @@ const LayoutCell = function(parent, properties) {
             while (cell === null && c < this._parentLayout._columnCount);
         }
         return cell;
-    };
+    }
 
-    this.topCell = function (onlyVisible) {
+    topCell(onlyVisible) {
         let row = this.data.row - 1;
         let cell = this._parentLayout.getCell(this.data.column, row);
         if (onlyVisible) {
@@ -304,9 +328,9 @@ const LayoutCell = function(parent, properties) {
 
         }
         return cell;
-    };
+    }
 
-    this.leftCell = function() {
+    leftCell() {
         let cell = null;
         let c = this.data.column - 1;
         if (c < this._parentLayout._columnCount) {
@@ -318,9 +342,9 @@ const LayoutCell = function(parent, properties) {
             while (cell === null && c >= 0);
         }
         return cell;
-    };
+    }
 
-    this.bottomCell = function (onlyVisible) {
+    bottomCell(onlyVisible) {
         let row = this.data.row + 1;
         let cell = this._parentLayout.getCell(this.data.column, row);
         if (onlyVisible) {
@@ -331,66 +355,84 @@ const LayoutCell = function(parent, properties) {
                 
         }
         return cell;
-    };
+    }
 
-    this.setHorizontalAlign = function(hAlign) {
+    setHorizontalAlign(hAlign) {
         if (! this.$content)
             return;
 
         switch (hAlign) {
             case 'stretch':
-                this.$content.css({ left: '0px', float: '' });
+                this.$el.css('justify-content', 'stretch');
+                this.$content.css('flex-grow', '1');
+                this.$content.css('flex-strink', '1');
                 break;
             case 'left':
-                this.$content.css({ left: '0px', float: 'left' });
+                this.$el.css('justify-content', 'flex-start');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             case 'right':
-                this.$content.css({ right: '0px', float: 'right' });
+                this.$el.css('justify-content', 'flex-end');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             case 'center':
-                let left = (this.$el.innerWidth() / 2) - (this.$content.outerWidth(true) / 2);
-                this.$content.css({ left: left + 'px', float: '' });
+                this.$el.css('justify-content', 'center');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             default:
-                this.$content.css({ left: '0px', float: '' });
+                this.$el.css('justify-content', 'auto');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
         }
 
         this.hAlign = hAlign;
-    };
+    }
 
-    this.setVerticalAlign = function(vAlign) {
+    setVerticalAlign(vAlign) {
         if (! this.$content)
             return;
 
         switch (vAlign) {
             case 'stretch':
-                this.$content.css('top', '0px');
+                this.$el.css('align-items', 'stretch');
+                this.$content.css('flex-grow', '1');
+                this.$content.css('flex-strink', '1');
                 break;
             case 'top':
-                this.$content.css('top', '0px');
+                this.$el.css('align-items', 'flex-start');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             case 'bottom':
-                this.$content.css('bottom', '0px');
+                this.$el.css('align-items', 'flex-end');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             case 'center':
-                let top = (this.$el.innerHeight() / 2) - (this.$content.outerHeight(true) / 2);
-                this.$content.css('top', top + 'px');
+                this.$el.css('align-items', 'center');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
             default:
-                this.$content.css('top', '0px');
+                this.$el.css('align-items', 'auto');
+                this.$content.css('flex-grow', '');
+                this.$content.css('flex-strink', '');
                 break;
         }
 
         this.vAlign = vAlign;
-    };
+    }
 
-    this.setAlignment = function(hAlign, vAlign) {
+    setAlignment(hAlign, vAlign) {
         this.setHorizontalAlign(hAlign);
         this.setVerticalAlign(vAlign);
-    };
+    }
 
-    this.setDimensionMinMax = function(minWidth, maxWidth, minHeight, maxHeight) {
+    setDimensionMinMax(minWidth, maxWidth, minHeight, maxHeight) {
         if (! this.$content)
             return;
 
@@ -405,13 +447,9 @@ const LayoutCell = function(parent, properties) {
             data['max-height'] = maxHeight;
 
         this.$content.css( data );
-    };
+    }
 
-    this.horizontalStretchFactor = 0;
-
-    this.spanAllRows = false;
-
-    this.setSpanAllRows = function(value) {
+    setSpanAllRows(value) {
         this.spanAllRows = value;
         if (value) {
             this.$el.css('grid-row-end', '-1');
@@ -420,9 +458,9 @@ const LayoutCell = function(parent, properties) {
             this.$el.css('grid-row-end', '');
         }
         this.updateGridProperties();
-    };
+    }
 
-    this.updateGridProperties = function(fromSide) {
+    updateGridProperties(fromSide) {
 
         let columnEnd = 'span ' + this.data.spans.columns;
 
@@ -449,13 +487,9 @@ const LayoutCell = function(parent, properties) {
             rightCell.updateGridProperties('left');
 
         this.$el.css({ "grid-column": (this.data.column + 1) + '/ ' + columnEnd, 'grid-row': (this.data.row + 1) + ' / ' + (this.spanAllRows ? '-1' : ('span ' + this.data.spans.rows)) });
-    };
-
-    this.isVirtual = false;
-};
+    }
+}
 
 LayoutCell.defaultFormat = 'minmax(max-content, max-content)';
-
-SuperClass.create(LayoutCell);
 
 module.exports = LayoutCell;

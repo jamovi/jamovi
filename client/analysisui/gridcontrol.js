@@ -18,6 +18,15 @@ const GridControl = function(params) {
     this.registerSimpleProperty("maxHeight", -1);
     this.registerSimpleProperty("cell", null);
     this.registerSimpleProperty("useSingleCell", false);
+    this.registerSimpleProperty("contentLink", true); // displays the control with specific content of a content selector. The value is a bool however in the yaml it is a string of the content path.
+
+    this._override('onPropertyChanged', (baseFunction, name) => {
+        if (baseFunction) baseFunction.call(this, name);
+        if (name === 'contentLink') {
+            if (this._cell)
+                this._cell.setVisibility(this.getPropertyValue('contentLink'), true);
+        }
+    });
 
     this._fabricatedItem = false;
 
@@ -37,11 +46,20 @@ const GridControl = function(params) {
             cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
 
         cell.setDimensionMinMax(this.getPropertyValue('minWidth'), this.getPropertyValue('maxWidth'), this.getPropertyValue('minHeight'), this.getPropertyValue('maxHeight'));
+
+        if (this.isPropertyDefined('contentLink') && cell.$content === this.$el) {
+            cell.setVisibility(this.getPropertyValue('contentLink'), true);
+            this._cell = cell;
+        }
     };
 
-    this.getSpans = function() {
+    this.getSpans = function () {
+        if (this.isPropertyDefined('cell'))
+            return { rows: 1, columns: 2 };
         return { rows: 1, columns: 1 };
     };
+
+    this._cell = null;
 
     this.renderToGrid = function(grid, row, column) {
         let spans = this.getSpans();
@@ -53,7 +71,7 @@ const GridControl = function(params) {
             if (this.hasProperty('itemKey')) {
                 let templateName = this.getTemplateInfo().templateName;
                 if (templateName !== undefined)
-                    this.$el.addClass(templateName);
+                    this.$el.addClass('item-template ' + templateName);
             }
 
             let cell = grid.addCell(column, row, this);
@@ -71,7 +89,7 @@ const GridControl = function(params) {
             if (this.hasProperty('itemKey')) {
                 let templateName = this.getTemplateInfo().templateName;
                 if (templateName !== undefined)
-                    this.$el.addClass(templateName);
+                    this.$el.addClass('item-template ' + templateName);
             }
             if (this.componentItemsMerged)
                 this.componentItemsMerged();

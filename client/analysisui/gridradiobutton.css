@@ -18,18 +18,6 @@ input[type="radio"] {
     line-height: 18px;
 }
 
-.silky-option-radio.silky-control-margin-small {
-    margin: 2px;
-}
-
-.silky-option-radio.silky-control-margin-normal {
-    margin: 5px;
-}
-
-.silky-option-radio.silky-control-margin-large {
-    margin: 10px;
-}
-
 .silky-control-container .first-cell > .silky-option-radio {
     margin-left: 0px;
 }

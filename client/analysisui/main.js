@@ -248,7 +248,6 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
 
     let $optionsBlock = $('.jmv-options-block');
     let $title = $('.silky-options-title');
-
     if (def.error) {
         $title.empty();
         $title.append(def.error);
@@ -281,6 +280,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
             else {
                 $optionsBlock.append(analysis.View.$el);
                 analysis.View.render();
+                
                 $optionsBlock.find('.placeholder-options').remove();
 
                 analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);

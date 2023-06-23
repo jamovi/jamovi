@@ -1,14 +1,3 @@
-.silky-option-list.silky-control-margin-small {
-    margin: 2px;
-}
-
-.silky-option-list.silky-control-margin-normal {
-    margin: 5px;
-}
-
-.silky-option-list.silky-control-margin-large {
-    margin: 10px;
-}
 
 .silky-layout-container > .first-cell > .silky-option-list {
     margin-left: 0px;

@@ -60,7 +60,7 @@ const GridRadioButton = function(params) {
     };
 
     this._override('onPropertyChanged', (baseFunction, name) => {
-        baseFunction.call(this, name);
+        if (baseFunction) baseFunction.call(this, name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
             this.$_subel.find('input').prop('disabled', disabled);

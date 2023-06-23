@@ -3,7 +3,7 @@
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    margin-bottom: 10px;
+    border-bottom: 1px solid #bdbbbb;
 }
 
 .tablist button {
@@ -26,13 +26,7 @@
     border-bottom: 2px solid grey;
 }
 
-/*[form=tabs] .tablist {
-    box-shadow: 0px 2px 4px 0px #d1d1d1;
-    background: linear-gradient(to top, #dcdcdc, transparent);
-    flex-grow: 1;
-}*/
-
-.tablist .selected-tab {
+.jmv-content-selector .tablist .selected-tab {
     background-color: #3e6da92b;
     color: unset;
     border-bottom: 2px solid #5981b3;
