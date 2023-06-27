@@ -15,6 +15,10 @@ const SyntaxView  = require('./syntax').View;
 const HtmlModel = require('./html').Model;
 const HtmlView  = require('./html').View;
 
+import { NoticeModel } from './notice';
+import { NoticeView } from './notice';
+
+
 const createItem = function(element, options, $el, level, parent, mode, devMode, fmt, refTable ) {
 
     if (level === undefined)
@@ -173,6 +177,25 @@ const createItem = function(element, options, $el, level, parent, mode, devMode,
             options: options,
             refTable: refTable });
         view = new HtmlView({
+            el: $el,
+            model: model,
+            update: updateItem,
+            level: level,
+            parent: parent,
+            mode: mode });
+    }
+    else if (element.type === 'notice') {
+        model = new NoticeModel({
+            name : element.name,
+            title : element.title,
+            element : element.notice,
+            status: element.status,
+            error: element.error,
+            stale: element.stale,
+            refs: element.refs,
+            options: options,
+            refTable: refTable });
+        view = new NoticeView({
             el: $el,
             model: model,
             update: updateItem,
