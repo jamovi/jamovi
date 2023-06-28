@@ -23,9 +23,15 @@ const selectionLoop = require('../common/selectionloop');
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
 
+import { IOpenOptions } from './backstage/fsentry';
+import { ISaveOptions } from './backstage/fsentry';
+import { IImportOptions } from './backstage/fsentry';
+import { IBrowseOptions } from './backstage/fsentry';
+
 import { FSEntryListModel } from './backstage/fsentry';
 import { FSEntryListView } from './backstage/fsentry';
 import { FSItemType } from './backstage/fsentry';
+
 import { FSEntryBrowserView } from './backstage/fsentrybrowserview';
 
 
@@ -319,7 +325,7 @@ const BackstageModel = Backbone.Model.extend({
 
         this.set('activated', true);
         this.set('operation', type);
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
             this.once('change:activated', () => resolve());
         });
 
@@ -343,7 +349,7 @@ const BackstageModel = Backbone.Model.extend({
                     name: 'new',
                     title: _('New'),
                     shortcutKey: 'n',
-                    action: () => { this.requestOpen(''); }
+                    action: () => { this.requestOpen(); }
                 },
                 {
                     name: 'open',
@@ -352,7 +358,7 @@ const BackstageModel = Backbone.Model.extend({
                     places: [
                         ...OneDriveView ? [{ name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: OneDriveView, }] : [],
                         { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
-                        { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse(this._pcListModel.fileExtensions, 'open'); } },
+                        { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse({ list: this._pcListModel.fileExtensions, type: 'open' }); } },
                     ]
                 },
                 // {
@@ -360,7 +366,7 @@ const BackstageModel = Backbone.Model.extend({
                 //     title: _('Import'),
                 //     places: [
                 //         /*{ name: 'thispc', title: _('jamovi Cloud'),  model: this._pcImportListModel, view: FSEntryBrowserView  },*/
-                //         { name: 'thisdevice', title: _('This Device'), action: () => { this.tryBrowse(this._pcImportListModel.fileExtensions, 'import'); } }
+                //         { name: 'thisdevice', title: _('This Device'), action: () => { this.tryBrowse({ list: this._pcImportListModel.fileExtensions, type: 'import' }); } }
                 //     ]
                 // },
                 {
@@ -403,7 +409,7 @@ const BackstageModel = Backbone.Model.extend({
                     name: 'new',
                     title: _('New'),
                     shortcutKey: 'n',
-                    action: () => { this.requestOpen(''); }
+                    action: () => { this.requestOpen(); }
                 },
                 {
                     name: 'open',
@@ -507,7 +513,9 @@ const BackstageModel = Backbone.Model.extend({
         }
         this._wdData[wdType].models.push(model);
     },
-    tryBrowse: async function(list, type, filename) {
+    tryBrowse: async function(options: IBrowseOptions) {
+
+        const { list, type, filename } = options;
 
         let filters = [];
         for (let i = 0; i < list.length; i++) {
@@ -531,7 +539,7 @@ const BackstageModel = Backbone.Model.extend({
 
             if ( ! result.cancelled) {
                 let file = result.files[0];
-                this.requestOpen(file);
+                this.requestOpen({ path: file });
             }
         }
         else if (type === 'import') {
@@ -543,7 +551,7 @@ const BackstageModel = Backbone.Model.extend({
             });
 
             if ( ! result.cancelled)
-                this.requestImport(result.files);
+                this.requestImport({ paths: result.files });
         }
         else if (type === 'save') {
 
@@ -553,7 +561,7 @@ const BackstageModel = Backbone.Model.extend({
             });
 
             if ( ! result.cancelled) {
-                this.requestSave(result.file, { overwrite: true }).catch((e) => {
+                this.requestSave({ path: result.file, overwrite: true }).catch((e) => {
                     if ( ! this.instance.attributes.saveFormat) {
                         this.set('activated', true);
                         this.set('operation', 'saveAs');
@@ -605,20 +613,21 @@ const BackstageModel = Backbone.Model.extend({
 
         return op.places[index];
     },
-    tryOpen: function(filePath, title, type, wdType, options) {
-        if (type === FSItemType.File)
-            this.requestOpen(filePath, title, options);
-        else if (type === FSItemType.Folder || type === FSItemType.Drive || type === FSItemType.SpecialFolder) {
-            wdType = wdType === undefined ? 'main' : wdType;
-            this.setCurrentDirectory(wdType, filePath, type);
+    tryOpen(options: IOpenOptions) {
+        if (options.type === FSItemType.File) {
+            this.requestOpen(options);
+        }
+        else if ([ FSItemType.Folder, FSItemType.Drive, FSItemType.SpecialFolder ].includes(options.type)) {
+            let wdType = options.wdType === undefined ? 'main' : options.wdType;
+            this.setCurrentDirectory(wdType, options.path, options.type);
         }
     },
-    tryImport: function(paths, type, wdType) {
-        this.requestImport(paths);
+    tryImport(options: IImportOptions) {
+        this.requestImport(options);
     },
-    async trySave(filePath, options) {
+    async trySave(options: ISaveOptions) {
         try {
-            await this.requestSave(filePath, options);
+            await this.requestSave(options);
         }
         catch (e) {
             if ( ! this.instance.attributes.saveFormat) {
@@ -627,22 +636,22 @@ const BackstageModel = Backbone.Model.extend({
             }
         }
     },
-    async tryExport(filePath, options) {
+    async tryExport(options: ISaveOptions) {
         try {
-            options = Object.apply({ }, options, { export: true });
-            await this.requestSave(filePath, options);
+            options = Object.assign({ }, options, { export: true });
+            await this.requestSave(options);
         }
         catch(e) {
             this.set('activated', true);
             this.set('operation', 'export');
         }
     },
-    dialogExport: function(filePath, type) {
-        this._dialogPath = filePath;
+    dialogExport: function(options: ISaveOptions) {
+        this._dialogPath = options.path;  // this may constitute a hack
         this.set('activated', false);
     },
-    dialogBrowse: async function(list, type, filename) {
-
+    async dialogBrowse(options: IBrowseOptions) {
+        const { list, type, filename } = options;
         let filters = [];
         for (let i = 0; i < list.length; i++) {
             let desc = list[i].description === undefined ? list[i].name : list[i].description;
@@ -860,7 +869,7 @@ const BackstageModel = Backbone.Model.extend({
         if (this.attributes.place !== '')
             this.instance.settings().setSetting('openPlace', this.attributes.place);
     },
-    async requestOpen(filePath, title, options={}) {
+    async requestOpen(options: IOpenOptions = { path: '' }) {
 
         let progNotif = new Notify({
             title: _('Opening'),
@@ -869,9 +878,7 @@ const BackstageModel = Backbone.Model.extend({
 
         let deactivated = false;
         try {
-            if (title)
-                options.title = title;
-            let stream = this.instance.open(filePath, options);
+            let stream = this.instance.open(options.path, options);
             for await (let progress of stream) {
 
                 progNotif.set({
@@ -903,7 +910,7 @@ const BackstageModel = Backbone.Model.extend({
                 this.set('activated', true);
 
             if (e instanceof CancelledError)
-                ; // do nothing
+                {} // do nothing
             else if (e instanceof UserFacingError)
                 this._notify(e);
             else
@@ -913,7 +920,7 @@ const BackstageModel = Backbone.Model.extend({
             progNotif.dismiss();
         }
     },
-    requestImport: function(paths) {
+    requestImport: function(options: IImportOptions) {
         let deactivated = false;
         let deactivate = () => {
             if ( ! deactivated) {
@@ -922,7 +929,7 @@ const BackstageModel = Backbone.Model.extend({
             }
         };
 
-        this.instance.import(paths)
+        this.instance.import(options.paths)
             .then(deactivate, undefined, deactivate);
     },
     externalRequestSave: function(filePath, options) {
@@ -936,8 +943,12 @@ const BackstageModel = Backbone.Model.extend({
         if (this.get('activated'))
             throw 'This method can only be called from outside of backstage.';
 
-        if (this.instance.attributes.path)
-            return this.requestSave(this.instance.attributes.path, { overwrite: true });
+        let saveOptions: ISaveOptions = Object.assign({ path: filePath }, options);
+
+        if (this.instance.attributes.path) {
+            saveOptions = Object.assign(saveOptions, { path: this.instance.attributes.path, overwrite: true });
+            return this.requestSave(saveOptions);
+        }
 
         let rej;
         let prom = new Promise((resolve, reject) => {
@@ -947,7 +958,7 @@ const BackstageModel = Backbone.Model.extend({
             this._savePromiseResolve = null;
         });
 
-        this.requestSave(filePath, options).catch(() => {
+        this.requestSave(saveOptions).catch(() => {
             this.set('activated', true);
             this.set('operation', 'saveAs');
             this.once('change:activated', () => {
@@ -977,13 +988,9 @@ const BackstageModel = Backbone.Model.extend({
             $saveIcon.removeClass('saving-file');
         }
     },
-    async requestSave(filePath=null, options={}) {
+    async requestSave(options: ISaveOptions | null = null) {
 
-        // if filePath is not specified then the current opened path is used.
-        // if overwrite is false and the specified file already exists a popup asks for overwrite.
-        // if overwrite is true and the specified file already exists the file is overwritten.
-
-        if ( ! filePath) {
+        if (options === null) {
             if (this.instance.attributes.saveFormat) {
                 // saveFormat is typically either empty, or 'jamovi'
                 // empty means the user hasn't saved it as a .omv file yet, and
@@ -993,17 +1000,18 @@ const BackstageModel = Backbone.Model.extend({
                 // particular format
                 // it follows that when saveFormat isn't empty, the saveAs
                 // shouldn't appear either on save, or on save failure
-                options.overwrite = true;
+                options = { path: this.instance.attributes.path, overwrite: true };
             }
-            else
+            else {
+                // shouldn't get here
                 throw undefined;
+            }
         }
 
         try {
             this.setSavingState(true);
             // instance.save() itself triggers notifications about the save
             // being successful (if you were wondering why it's not here.)
-            options.path = filePath;
             let status = await this.instance.save(options);
             this.setSavingState(false);
             if (this._savePromiseResolve !== null)
@@ -1013,7 +1021,7 @@ const BackstageModel = Backbone.Model.extend({
 
             if (status.download) {
                 let source = path.basename(status.path);
-                let target = path.basename(filePath);
+                let target = path.basename(options.path);
                 let url = `dl/${ source }?filename=${ target }`;
                 await host.triggerDownload(url);
             }
@@ -1119,10 +1127,11 @@ const BackstageView = SilkyView.extend({
 
     },
     clickRecent: function(event) {
-        let filePath = event.target.getAttribute('data-path');
-        let fileName = event.target.getAttribute('data-name');
-        let recentsModel = this.model.recentsModel();
-        recentsModel.requestOpen(filePath, fileName, FSItemType.File);
+        const filePath = event.target.getAttribute('data-path');
+        const fileName = event.target.getAttribute('data-name');
+        const recentsModel = this.model.recentsModel();
+        const options = { path: filePath, title: fileName, type: FSItemType.File };
+        recentsModel.requestOpen(options);
     },
     render: function() {
         this.$el.empty();

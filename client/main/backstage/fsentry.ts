@@ -15,6 +15,31 @@ export const FSItemType = {
     SpecialFolder: 3
 };
 
+export interface IOpenOptions {
+    path: string;
+    title?: string;
+    type?: number;
+    wdType?: string;
+}
+
+export interface ISaveOptions {
+    path: string;
+    export?: boolean;
+    overwrite?: boolean;
+    name?: string;
+    part?: string;
+}
+
+export interface IImportOptions {
+    paths: Array<string>;
+}
+
+export interface IBrowseOptions {
+    list: Array<any>;
+    type: 'save' | 'open' | 'import';
+    filename?: string;
+}
+
 export function isUrl(s) {
     return s.startsWith('https://') || s.startsWith('http://');
 }
@@ -31,20 +56,22 @@ export const FSEntryListModel = Backbone.Model.extend({
         suggestedPath: null,
         suggestedTitle: null
     },
-    requestOpen : function(filePath, title, type, options={}) {
-        this.trigger('dataSetOpenRequested', filePath, title, type, this.get('wdType'), options);
+    requestOpen : function(options: IOpenOptions) {
+        options.wdType = this.get('wdType');
+        this.trigger('dataSetOpenRequested', options);
     },
-    requestImport : function(paths) {
-        this.trigger('dataSetImportRequested', paths, FSItemType.File, this.get('wdType'));
+    requestImport : function(options: IImportOptions) {
+        this.trigger('dataSetImportRequested', options);
     },
-    requestSave : function(filePath, type, options={}) {
-        this.trigger('dataSetSaveRequested', filePath, type, this.get('wdType'), options);
+    requestSave : function(options: ISaveOptions) {
+        this.trigger('dataSetSaveRequested', options);
     },
-    requestExport : function(filePath, type, options={}) {
-        this.trigger('dataSetExportRequested', filePath, type, this.get('wdType'), options);
+    requestExport : function(options: ISaveOptions) {
+        options.export = true;
+        this.trigger('dataSetExportRequested', options);
     },
-    requestBrowse : function(list, type, filename) {
-        this.trigger('browseRequested', list, type, filename, this.get('wdType'));
+    requestBrowse : function(options: IBrowseOptions) {
+        this.trigger('browseRequested', options);
     },
     cancel() {
         this.trigger('cancel', null);
@@ -102,10 +129,11 @@ export const FSEntryListView = SilkyView.extend({
                 path: `F`,
                 position: { x: '13%', y: '27%' },
                 action: (event) => {
-                    let target = event.currentTarget;
-                    let filePath = $(target).attr('data-path');
-                    let fileName = $(target).attr('data-name');
-                    this.model.requestOpen(filePath, fileName, FSItemType.File);
+                    const target = event.currentTarget;
+                    const filePath = $(target).attr('data-path');
+                    const fileName = $(target).attr('data-name');
+                    const options: IOpenOptions = { path: filePath, title: fileName, type: FSItemType.File };
+                    this.model.requestOpen(options);
                 }
             });
 

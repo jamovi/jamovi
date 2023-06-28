@@ -197,7 +197,7 @@ export const FSEntryBrowserView = SilkyView.extend({
         else if (this.model.clickProcess === 'import')
             type = 'import';
 
-        this.model.requestBrowse(this.model.fileExtensions, type, filename);
+        this.model.requestBrowse({ list: this.model.fileExtensions, type, filename });
     },
     _createFileTypeSelector: function() {
         let html = '';
@@ -636,7 +636,7 @@ export const FSEntryBrowserView = SilkyView.extend({
         let itemTitle = $target.data('name');
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
             this.clearSelection();
-            this.model.requestOpen(itemPath, itemTitle, itemType);
+            this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
             focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
@@ -692,7 +692,7 @@ export const FSEntryBrowserView = SilkyView.extend({
 
             if ((multiSelect === false || modifier === false) && this.multiMode === false) {
                 let paths = this._getSelectedPaths();
-                this.model.requestImport(paths);
+                this.model.requestImport({ paths });
                 this.$footer.find('.silky-bs-fslist-import-options').addClass('hidden');
                 this._setMultiMode(false);
                 this.$itemsList.find('.jmv-bs-fslist-checkbox').addClass('hidden');
@@ -760,13 +760,13 @@ export const FSEntryBrowserView = SilkyView.extend({
                     let itemPath = $target.data('path');
                     let itemTitle = $target.data('name');
                     if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-                        this.model.requestOpen(itemPath, itemTitle, itemType);
+                        this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
-                        this.model.requestImport(this._getSelectedPaths());
+                        this.model.requestImport({ paths: this._getSelectedPaths() });
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
-                        this.model.requestSave(itemPath, itemType);
+                        this.model.requestSave({ path: itemPath });
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'export')
-                        this.model.requestExport(itemPath, itemType);
+                        this.model.requestExport({ path: itemPath });
                 }
                 event.preventDefault();
                 event.stopPropagation();
@@ -836,13 +836,13 @@ export const FSEntryBrowserView = SilkyView.extend({
         if (itemType === FSItemType.File)
             this._setMultiMode(false);
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-            this.model.requestOpen(itemPath, itemTitle, itemType);
+            this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
-            this.model.requestImport([itemPath]);
+            this.model.requestImport({ paths: [itemPath] });
         else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
-            this.model.requestSave(itemPath, itemType);
+            this.model.requestSave({ path: itemPath });
         else if (itemType === FSItemType.File && this.model.clickProcess === 'export')
-            this.model.requestExport(itemPath, itemType);
+            this.model.requestExport({ path: itemPath });
     },
     _nameChanged : function(event) {
         let $button = this.$header.find('.silky-bs-fslist-browser-save-button');
@@ -886,17 +886,18 @@ export const FSEntryBrowserView = SilkyView.extend({
             if (this._hasValidExtension(name) === false)
                 name = name + '.' + this.filterExtensions[0];
 
-            let filePath = dirInfo.path + '/' + name;
+            const filePath = dirInfo.path + '/' + name;
+            const options = { path: filePath };
 
             if (this.model.clickProcess === 'save')
-                this.model.requestSave(filePath, FSItemType.File);
+                this.model.requestSave(options);
             else if (this.model.clickProcess === 'export')
-                this.model.requestExport(filePath, FSItemType.File);
+                this.model.requestExport(options);
         }
     },
     _importClicked : function(event) {
         if (this._selectedIndices.length > 0)
-            this.model.requestImport(this._getSelectedPaths());
+            this.model.requestImport({ paths: this._getSelectedPaths() });
         else {
             let dirInfo = this.model.get('dirInfo');
             if (dirInfo !== undefined) {
@@ -904,7 +905,7 @@ export const FSEntryBrowserView = SilkyView.extend({
                 if (name === '')
                     return;
 
-                this.model.requestImport([ dirInfo.path + '/' + name ]);
+                this.model.requestImport({ paths: [ dirInfo.path + '/' + name ] });
             }
         }
     },
@@ -919,7 +920,7 @@ export const FSEntryBrowserView = SilkyView.extend({
         focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
     },
     _goToFolder: function(dirPath) {
-        this.model.requestOpen(dirPath, null, FSItemType.Folder);
+        this.model.requestOpen({ path: dirPath, type: FSItemType.Folder });
     },
     _calcBackDirectory: function(filePath, type) {
         let index = -1;
