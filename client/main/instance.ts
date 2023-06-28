@@ -383,7 +383,7 @@ const Instance = Backbone.Model.extend({
             options.overwrite = true;
         }
 
-        let filename;
+        let filename = path.basename(options.path);
         let retrying;
 
         do {
