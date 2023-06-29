@@ -346,6 +346,21 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         view.level = level;
         view.mode = mode;
     }
+    else if (element.type === 'notice') {
+
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.notice;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.stale = element.stale;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
+
+        view.level = level;
+        view.mode = mode;
+    }
 
     return true;
 };

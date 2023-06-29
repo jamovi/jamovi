@@ -16,6 +16,10 @@
     padding: 2px 0px 0 2px;
 }
 
+.jmv-results-container[data-analysis-name='weights'] {
+    margin: 10px 0px;
+}
+
 .jmv-welcome-panel {
     width: 100% ;
     height: 100% ;

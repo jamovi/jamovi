@@ -107,8 +107,9 @@ class Main {  // this is constructed at the bottom
     }
 
     _reallyNotifyResize() {
-        let width  = this.$results.width()  + 40;
-        let height = this.$results.height();// + 25;
+        let rect = this.$results[0].getBoundingClientRect();
+        let width = rect.width  + 40;
+        let height = rect.height;// + 25;
         let scrollIntoView = true;
         let $focusedAnnotations = $('.jmv-annotation.focused');
         if ($focusedAnnotations.length > 0)
@@ -326,9 +327,18 @@ class Main {  // this is constructed at the bottom
             this._refTable = new RefTable();
             this._refTable.setup(this.resultsDefn.refs, this.resultsDefn.refsMode);
 
-            this.$results = $('<div id="results"></div>');
-            if (this.resultsDefn.isEmpty)
-                this.$results.addClass('annotation');
+            if (this.resultsDefn.ns === 'jmv' && this.resultsDefn.name === 'weights') {
+                this.resultsDefn.results.title = '';
+                this.resultsDefn.hasTitle = false;
+                this.resultsDefn.allowAnnotations = false;
+                this.$results = $(`<div id="results" class="weights"><div class="title-box"><div class="icon"></div><div class="title">${_('Weights')}</div></div></div>`);
+            }
+            else {
+                this.$results = $('<div id="results"></div>');
+                if (this.resultsDefn.isEmpty)
+                    this.$results.addClass('annotation');
+            }
+                
             this.results = createItem(
                 this.resultsDefn.results,
                 this.resultsDefn.options,
@@ -342,8 +352,6 @@ class Main {  // this is constructed at the bottom
 
             if ( ! this.results)
                 return null;
-
-
 
             this._updateAnnotationStates();
             this.$results.appendTo(this.$body);
