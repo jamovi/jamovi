@@ -90,6 +90,10 @@ function allFunctions($functionsContent) {
     descriptions.STDEV = { label: 'STDEV( <i>number 1, number 2, \u2026</i>, ignore_missing=0 )', content: _('Returns the standard deviation of a set of numbers.') };
     $functionsContent.append($('<div class="item" data-name="SUM">SUM</div>'));
     descriptions.SUM = { label: 'SUM( <i>number 1, number 2, \u2026</i>, ignore_missing=0, min_valid=0 )', content: _('Returns the sum of a set of numbers.') };
+    $functionsContent.append($('<div class="item" data-name="VMAD">VMAD</div>'));
+    descriptions.VMAD = { label: 'VMAD( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation of a variable.') };
+    $functionsContent.append($('<div class="item" data-name="VMADR">VMADR</div>'));
+    descriptions.VMADR = { label: 'VMADR( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation robust of a variable.') };
     $functionsContent.append($('<div class="item" data-name="VMAX">VMAX</div>'));
     descriptions.VMAX = { label: 'VMAX( <i>variable</i>, group_by=0 )', content: _('Returns the largest value of a variable.') };
     $functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
