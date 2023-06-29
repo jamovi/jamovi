@@ -353,6 +353,8 @@ const ResultsPanel = Backbone.View.extend({
         let event = {
             type: 'results',
             data: {
+                name: analysis.name,
+                ns: analysis.ns,
                 results: analysis.results,
                 options: analysis.options ? analysis.options.getValues() : {},
                 mode: this.model.settings().get('syntaxMode') ? 'text' : 'rich',

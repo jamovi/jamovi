@@ -115,7 +115,7 @@ const GroupView = Elem.View.extend({
             childOfSelectList = this.parent.hasAnnotations() === false;
 
         let current = null;
-        if (this.isEmptyAnalysis || (this.model.attributes.title !== '' && ! childOfSelectList))
+        if (this.isEmptyAnalysis || (this.hasTitle !== false && this.model.attributes.title !== '' && ! childOfSelectList))
             current = this._includeAnnotation(current, this.address().join('/'), this, true);
 
 

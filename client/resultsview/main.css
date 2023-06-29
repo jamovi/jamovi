@@ -6,6 +6,87 @@
 @import './annotation.css';
 @import '../node_modules/highlight.js/styles/tomorrow.css';
 
+#results.weights .title {
+    font-size: 160%;
+    color: #3E6DA9;
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+
+#results.weights:not(.analysis-selected) {
+    border: 1px solid #3e6da9cc;
+    border-left-width: 5px;
+}
+
+#results.weights
+{
+    background-color: #ffffff;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
+    padding: 10px 10px 10px 20px;
+    border-left-width: 5px;
+}
+
+#results.weights .title-box
+{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#results.weights .icon {
+    width: 30px;
+    height: 30px;
+    background-image: url(/resultsview/assets/menu-data-weights.svg);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    margin-right: 10px;
+}
+
+.notice-box>.icon.warning-1 {
+    background-image: url(/resultsview/assets/action-warning.svg);
+}
+
+.notice-box>.icon.warning-2 {
+    background-image: url(/resultsview/assets/action-warning.svg);
+}
+
+.notice-box>.icon.error {
+    background-image: url(/resultsview/assets/action-error.svg);
+}
+
+.notice-box > .icon.info {
+    background-image: url(/resultsview/assets/action-info.svg);
+}
+
+.notice-box > .icon {
+    width: 20px;
+    height: 20px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    filter: opacity(0.5);
+}
+
+.notice-box > .content {
+    max-width: 450px;
+    line-height: 18px;
+}
+
+.notice-box {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    margin: 0px 10px;
+    border: 1px solid #a0a0a0;
+    /*background-color: #f1f7ff;*/
+    border-radius: 5px;
+    padding: 5px 12px;
+    border-left-width: 4px;
+}
+
 body {
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol" ;
     color: #333333 ;
@@ -106,6 +187,7 @@ input, [contenteditable], [contenteditable] * {
     padding-left:  12px ;
     padding-right: 12px ;
     /*margin-top:    10px ;*/
+    box-sizing: border-box;
 }
 
 #selector {
