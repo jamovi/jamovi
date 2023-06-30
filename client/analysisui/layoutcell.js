@@ -301,6 +301,8 @@ class LayoutCell {
             this._parentLayout.setStretchFactor(column, factor);
 
         this.updateGridProperties();
+
+        this.trigger('layoutcell.horizontalStretchFactorChanged', this);
     }
 
     rightCell() {
@@ -450,6 +452,9 @@ class LayoutCell {
     }
 
     setSpanAllRows(value) {
+        if (this.spanAllRows === value)
+            return;
+        
         this.spanAllRows = value;
         if (value) {
             this.$el.css('grid-row-end', '-1');
@@ -458,6 +463,7 @@ class LayoutCell {
             this.$el.css('grid-row-end', '');
         }
         this.updateGridProperties();
+        this.trigger('layoutcell.spanAllRowsChanged', this);
     }
 
     updateGridProperties(fromSide) {

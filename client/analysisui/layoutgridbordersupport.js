@@ -16,7 +16,7 @@ var LayoutGridBorderSupport = function(cellStatus) {
     }
 
     this.onCellAdded = function(column, row, cell) {
-        this._checkForAddedCell(column, row, cell);
+        this._checkForAddedCell(column, row, cell, true);
     };
 
     if (cellStatus) {
@@ -164,14 +164,17 @@ var LayoutGridBorderSupport = function(cellStatus) {
         };
     }
 
-    this._checkForAddedCell = function(column, row, cell) {
+    this._checkForAddedCell = function(column, row, cell, cleanBorders) {
         var columnCells = null;
         var rowCells = null;
         if (cell.isVirtual === false && cell.visible()) {
             if (self.cellStatus) {
-                self._refreshColumnStatus(column);
-                self._refreshRowStatus(row);
+                self._defineColumnEdges(column, false);
+                self._defineRowEdges(row, false);
             }
+
+            if (cleanBorders)
+                this.defineBoundaryCells();
 
             if (self._cellBorders === "cells")
                 cell.$el.addClass("cell-border");
@@ -182,9 +185,11 @@ var LayoutGridBorderSupport = function(cellStatus) {
         }
     };
 
-    this._refreshColumnStatus = function (columnIndex) {
+    this._defineColumnEdges = function (columnIndex, cleanBorders) {
         if (this.cellStatus === false)
             return;
+        
+        let edgeCells = this._topBottomCells[columnIndex];
         
         let start = -1;
         let last = -1;
@@ -193,8 +198,6 @@ var LayoutGridBorderSupport = function(cellStatus) {
             if (row && columnIndex < row.length) {
                 let cell = row[columnIndex];
                 if (cell) {
-                    cell.$el.removeClass("first-row");
-                    cell.$el.removeClass("last-row");
                     if (cell.visible() && cell.isVirtual === false) {
                         if (start === -1)
                             start = r;
@@ -203,22 +206,61 @@ var LayoutGridBorderSupport = function(cellStatus) {
                 }
             }
         }
+
+        if (start === -1 && edgeCells) {
+            edgeCells.top.cell.$el.removeClass("first-row top-edge");
+            edgeCells.bottom.cell.off('layoutcell.spanAllRowsChanged', this._rowBoundaryPropertyChanged);
+            edgeCells.bottom.cell.$el.removeClass("last-row bottom-edge");
+            delete this._topBottomCells[columnIndex];
+            return;
+        }
+
+        let changed = false;
         if (start != -1) {
-            self._orderedCells[start][columnIndex].$el.addClass("first-row");
-            if (this._firstRowIndex === -1 || this._firstRowIndex > start)
+            let oldCell = edgeCells ? edgeCells.top.cell : null;
+            let cell = self._orderedCells[start][columnIndex];
+            if (this._firstRowIndex === -1 || this._firstRowIndex >= start)
                 this._firstRowIndex = start;
+            if (!edgeCells) {
+                edgeCells = {};
+                this._topBottomCells[columnIndex] = edgeCells;
+            }
+            if (cell !== oldCell) {
+                cell.$el.addClass("top-edge");
+                if (oldCell)
+                    oldCell.$el.removeClass("first-row top-edge");
+                edgeCells.top = { cell, row: start };
+                changed = true;
+            }
         }
+        
         if (last != -1) {
-            self._orderedCells[last][columnIndex].$el.addClass("last-row");
-            if (this._lastRowIndex === -1 || this._lastRowIndex < last)
+            let oldCell = edgeCells && edgeCells.bottom ? edgeCells.bottom.cell : null;
+            let cell = self._orderedCells[last][columnIndex];
+            if (this._lastRowIndex === -1 || this._lastRowIndex <= last)
                 this._lastRowIndex = last;
+            if (cell !== oldCell) {
+                cell.$el.addClass("bottom-edge");
+                if (oldCell) {
+                    oldCell.off('layoutcell.spanAllRowsChanged', this._rowBoundaryPropertyChanged);
+                    oldCell.$el.removeClass("last-row bottom-edge");
+                }
+                edgeCells.bottom = { cell, row: last };
+                cell.on('layoutcell.spanAllRowsChanged', this._rowBoundaryPropertyChanged);
+                changed = true;
+            }
         }
+        
+        if (cleanBorders && changed)
+            this.defineBoundaryCells();
 
     };
 
-    this._refreshRowStatus = function (rowIndex) {
+    this._defineRowEdges = function (rowIndex, cleanBorders) {
         if (this.cellStatus === false)
             return;
+        
+        let edgeCells = this._leftRightCells[rowIndex];
         
         let row = self._orderedCells[rowIndex];
         if (row && row.length > 0) {
@@ -227,8 +269,6 @@ var LayoutGridBorderSupport = function(cellStatus) {
             for (let c = 0; c < row.length; c++) {
                 let cell = row[c];
                 if (cell) {
-                    cell.$el.removeClass("first-cell");
-                    cell.$el.removeClass("last-cell");
                     if (cell.visible() && cell.isVirtual === false) {
                         if (start === -1)
                             start = c;
@@ -237,15 +277,112 @@ var LayoutGridBorderSupport = function(cellStatus) {
                 }
             }
 
-            if (start != -1) {
-                row[start].$el.addClass("first-cell");
-                if (this._firstColumnIndex === -1 || this._firstColumnIndex > start)
-                    this._firstColumnIndex = start;
+            if (start === -1 && edgeCells) {
+                edgeCells.left.cell.$el.removeClass("first-cell left-edge");
+                edgeCells.right.cell.off('layoutcell.horizontalStretchFactorChanged', this._colBoundaryPropertyChanged);
+                edgeCells.right.cell.$el.removeClass("last-cell right-edge");
+                delete this._topBottomCells[rowIndex];
+                return;
             }
+
+            let changed = false;
+            if (start != -1) {
+                let oldCell = edgeCells ? edgeCells.left.cell : null;
+                let cell = row[start];
+                if (this._firstColumnIndex === -1 || this._firstColumnIndex >= start)
+                    this._firstColumnIndex = start;
+                if (!edgeCells) {
+                    edgeCells = {};
+                    this._leftRightCells[rowIndex] = edgeCells;
+                }
+                if (cell !== oldCell) {
+                    cell.$el.addClass("left-edge");
+                    if (oldCell)
+                        oldCell.$el.removeClass("first-cell left-edge");
+                    edgeCells.left = { cell, column: start };
+                    changed = true;
+                }
+            }
+            
             if (last != -1) {
-                row[last].$el.addClass("last-cell");
-                if (this._lastColumnIndex === -1 || this._lastColumnIndex < last)
+                let oldCell = edgeCells && edgeCells.right ? edgeCells.right.cell : null;
+                let cell = row[last];
+                if (this._lastColumnIndex === -1 || this._lastColumnIndex <= last)
                     this._lastColumnIndex = last;
+                if (cell !== oldCell) {
+                    cell.$el.addClass("right-edge");
+                    if (oldCell) {
+                        oldCell.off('layoutcell.horizontalStretchFactorChanged', this._colBoundaryPropertyChanged);
+                        oldCell.$el.removeClass("last-cell right-edge");
+                    }
+                    edgeCells.right = { cell, column: last };
+                    cell.on('layoutcell.horizontalStretchFactorChanged', this._colBoundaryPropertyChanged);
+                    changed = true;
+                }
+            }
+            
+            if (cleanBorders && changed)
+                this.defineBoundaryCells();
+        }
+    };
+
+    this._topBottomCells = {};
+    this._leftRightCells = {};
+
+    this._rowBoundaryPropertyChanged = function (cell) {
+        let rowIndex = cell.data.row;
+        if (rowIndex === this._lastRowIndex || cell.spanAllRows)
+            cell.$el.addClass('last-row');
+        else
+            cell.$el.removeClass('last-row');
+    };
+    this._rowBoundaryPropertyChanged = this._rowBoundaryPropertyChanged.bind(this);
+
+    this._colBoundaryPropertyChanged = function (cell) {
+        let colIndex = cell.data.column;
+        if (colIndex === this._lastColumnIndex || cell.horizontalStretchFactor > 0)
+            cell.$el.addClass('last-cell');
+        else
+            cell.$el.removeClass('last-cell');
+    };
+    this._colBoundaryPropertyChanged = this._colBoundaryPropertyChanged.bind(this);
+
+    this.defineBoundaryCells = function () {
+        for (let col in this._topBottomCells) {
+            let edgeCells = this._topBottomCells[col];
+            if (edgeCells) {
+                let cell = edgeCells.top.cell;
+                let rowIndex = edgeCells.top.row;
+                if (rowIndex === this._firstRowIndex)
+                    cell.$el.addClass('first-row');
+                else
+                    cell.$el.removeClass('first-row');
+            
+                cell = edgeCells.bottom.cell;
+                rowIndex = edgeCells.bottom.row;
+                if (rowIndex === this._lastRowIndex || cell.spanAllRows)
+                    cell.$el.addClass('last-row');
+                else
+                    cell.$el.removeClass('last-row');
+            }
+        }
+
+        for (let row in this._leftRightCells) {
+            let edgeCells = this._leftRightCells[row];
+            if (edgeCells) {
+                let cell = edgeCells.left.cell;
+                let colIndex = edgeCells.left.column;
+                if (colIndex === this._firstColumnIndex)
+                    cell.$el.addClass('first-cell');
+                else
+                    cell.$el.removeClass('first-cell');
+
+                cell = edgeCells.right.cell;
+                colIndex = edgeCells.right.column;
+                if (colIndex === this._lastColumnIndex || cell.horizontalStretchFactor > 0)
+                    cell.$el.addClass('last-cell');
+                else
+                    cell.$el.removeClass('last-cell');
             }
         }
     };
@@ -263,10 +400,12 @@ var LayoutGridBorderSupport = function(cellStatus) {
             return;
 
         for (let r = 0; r < self._orderedCells.length; r++)
-            this._refreshRowStatus(r);
+            this._defineRowEdges(r);
 
         for (let c = 0; c < self._columnCount; c++)
-            this._refreshColumnStatus(c);
+            this._defineColumnEdges(c);
+        
+        this.defineBoundaryCells();
     };
 
     this.setCellBorders = function(type) {
@@ -290,8 +429,10 @@ var LayoutGridBorderSupport = function(cellStatus) {
                 cell.$el.removeClass("last-row");
                 cell.$el.removeClass("first-row");
             }
-            this._checkForAddedCell(cell.data.column, cell.data.row, cell);
+            this._checkForAddedCell(cell.data.column, cell.data.row, cell, false);
         }
+
+        this.defineBoundaryCells();
     };
 };
 
