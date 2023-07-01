@@ -4,7 +4,7 @@ import os.path as path
 from tempfile import TemporaryFile
 import pkg_resources
 
-from tornado.httpclient import AsyncHTTPClient
+from tornado.simple_httpclient import SimpleAsyncHTTPClient as AsyncHTTPClient
 
 from .utils import conf
 from .utils.stream import ProgressStream
