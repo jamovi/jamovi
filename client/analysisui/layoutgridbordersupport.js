@@ -281,7 +281,7 @@ var LayoutGridBorderSupport = function(cellStatus) {
                 edgeCells.left.cell.$el.removeClass("first-cell left-edge");
                 edgeCells.right.cell.off('layoutcell.horizontalStretchFactorChanged', this._colBoundaryPropertyChanged);
                 edgeCells.right.cell.$el.removeClass("last-cell right-edge");
-                delete this._topBottomCells[rowIndex];
+                delete this._leftRightCells[rowIndex];
                 return;
             }
 

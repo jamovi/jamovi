@@ -136,7 +136,7 @@ const LayoutGrid = function() {
             throw "Cell already exists.";
         
         if (this.onCellAdded)
-            this.onCellAdded(orgColumn, orgRow, cell);
+            this.onCellAdded(column, row, cell);
 
         if (cell.$el) {
             cell.render();
