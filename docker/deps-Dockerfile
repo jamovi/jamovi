@@ -1,6 +1,6 @@
-FROM rstudio/r-base:4.1.2-jammy AS r-base
-ENV R_HOME /opt/R/4.1.2/lib/R
-ENV CRAN_MIRROR https://packagemanager.rstudio.com/cran/__linux__/jammy/2021-12-29
+FROM rstudio/r-base:4.1.3-jammy AS r-base
+ENV R_HOME /opt/R/4.1.3/lib/R
+ENV CRAN_MIRROR https://packagemanager.rstudio.com/cran/__linux__/jammy/2023-04-07
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     locales
@@ -16,7 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 RUN echo "options(repos=c(pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
 
 RUN R -e "\
-    packages <- c('R6','RColorBrewer','base64enc','brio','cpp11','curl','farver','fastmap','magrittr','praise','rprojroot','rstudioapi','utf8','viridisLite','yaml','Rcpp','colorspace','crayon','digest','evaluate','fansi','glue','gtable','isoband','jsonlite','labeling','pkgconfig','ps','remotes','rlang','stringi','systemfonts','withr','xfun','RInside','RProtoBuf','cli','desc','diffobj','ellipsis','highr','htmltools','lifecycle','munsell','processx','stringr','textshaping','tinytex','callr','jquerylib','knitr','pkgload','ragg','scales','vctrs','pillar','rmarkdown','tibble','ggplot2','rematch2','waldo','testthat'); \
+    packages <- c('R6', 'RColorBrewer', 'base64enc', 'brio', 'cpp11', 'curl', 'farver', 'fastmap', 'magrittr', 'praise', 'rappdirs', 'rprojroot', 'utf8', 'viridisLite', 'yaml', 'Rcpp', 'cli', 'colorspace', 'crayon', 'digest', 'evaluate', 'fansi', 'fs', 'glue', 'isoband', 'jsonlite', 'labeling', 'mime', 'pkgconfig', 'ps', 'remotes', 'rlang', 'stringi', 'systemfonts', 'withr', 'xfun', 'RInside', 'RProtoBuf', 'cachem', 'desc', 'diffobj', 'ellipsis', 'highr', 'lifecycle', 'munsell', 'processx', 'textshaping', 'tinytex', 'callr', 'gtable', 'htmltools', 'knitr', 'memoise', 'pkgload', 'ragg', 'scales', 'vctrs', 'fontawesome', 'jquerylib', 'pillar', 'sass', 'stringr', 'bslib', 'tibble', 'ggplot2', 'rematch2', 'rmarkdown', 'waldo', 'testthat'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \
@@ -34,7 +34,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libxml2
 
 RUN R -e "\
-    packages <- c('GPArotation','RcppParallel','SQUAREM','backports','bitops','ca','carData','contfrac','glasso','gower','jpeg','lisrelToR','listenv','matrixStats','nloptr','numDeriv','pbivnorm','png','prettyunits','qvcalc','tmvnsim','truncnorm','zip','Formula','MatrixModels','PMCMR','RUnit','RcppArmadillo','RcppEigen','Rsolnp','SparseM','TH.data','XML','abind','caTools','checkmate','coda','corpcor','data.table','deSolve','elliptic','estimability','fdrtool','forcats','generics','ggrepel','globals','gridExtra','gtools','hms','htmlwidgets','igraph','iterators','latticeExtra','minqa','mnormt','mvnormtest','mvtnorm','openxlsx','parallelly','pbapply','plyr','progressr','proxy','purrr','relimp','sp','ssanv','timeDate','xtable','zoo','ModelMetrics','e1071','emmeans','exactci','foreach','future','ggridges','gnm','gplots','htmlTable','hypergeo','kutils','lavaan','lme4','lmtest','lubridate','maptools','pROC','progress','psych','reshape','reshape2','rpf','sandwich','tidyselect','viridis','BayesFactor','Hmisc','OpenMx','ROCR','arm','dplyr','exact2x2','future.apply','lmerTest','multcomp','regsem','rockchalk','vcd','lava','mi','qgraph','tidyr','vcdExtra','GGally','broom','prodlim','sem','ipred','pbkrtest','semPlot','recipes','caret','conquer','quantreg','car','afex'); \
+    packages <- c('RcppParallel', 'backports', 'bitops', 'ca', 'carData', 'contfrac', 'glasso', 'jpeg', 'lisrelToR', 'mnormt', 'numDeriv', 'pbivnorm', 'png', 'prettyunits', 'quadprog', 'qvcalc', 'rematch', 'rstudioapi', 'zip', 'Formula', 'GPArotation', 'MatrixModels', 'PMCMR', 'RUnit', 'RcppEigen', 'SparseM', 'TH.data', 'XML', 'abind', 'caTools', 'cellranger', 'checkmate', 'coda', 'corpcor', 'data.table', 'deSolve', 'elliptic', 'estimability', 'fdrtool', 'forcats', 'generics', 'ggrepel', 'ggridges', 'gridExtra', 'gtools', 'here', 'hms', 'htmlwidgets', 'igraph', 'lavaan', 'minqa', 'mvnormtest', 'mvtnorm', 'nloptr', 'openxlsx', 'pbapply', 'plyr', 'psych', 'purrr', 'relimp', 'ssanv', 'tidyselect', 'xtable', 'zoo', 'dplyr', 'emmeans', 'exactci', 'gnm', 'gplots', 'htmlTable', 'hypergeo', 'kutils', 'lme4', 'lmtest', 'progress', 'quantreg', 'reshape', 'reshape2', 'rpf', 'sandwich', 'viridis', 'BayesFactor', 'Hmisc', 'OpenMx', 'ROCR', 'arm', 'exact2x2', 'lmerTest', 'multcomp', 'readxl', 'rockchalk', 'tidyr', 'vcd', 'GGally', 'broom', 'mi', 'qgraph', 'vcdExtra', 'pbkrtest', 'sem', 'car', 'semPlot', 'afex'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \

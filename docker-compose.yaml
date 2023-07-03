@@ -1,7 +1,7 @@
 version: '3'
 services:
   jamovi-deps:
-    image: jamovi/jamovi-deps:2.3.17
+    image: jamovi/jamovi-deps:2.4.0
     build:
       context: .
       dockerfile: docker/deps-Dockerfile
@@ -32,7 +32,7 @@ services:
   #     - '24678:24678'
 
   jamovi:
-    image: jamovi/jamovi:2.3.17
+    image: jamovi/jamovi:2.4.0
     container_name: jamovi
     build:
       context: .
