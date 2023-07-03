@@ -10,18 +10,6 @@
     </script>
     <script src="../config.js" type="text/javascript"></script>
     <script src="main/main.js" type="module"></script>
-
-    <script>
-        if ( ! window.location.port) {
-            var optionsUrl = window.location.protocol + '//a.' + window.location.hostname;
-            var resultsUrl = window.location.protocol + '//r.' + window.location.hostname;
-            document.write('<link rel="prefetch" href="' + optionsUrl + '/analysisui.js">');
-            document.write('<link rel="prefetch" href="' + optionsUrl + '/analysisui.css">');
-            document.write('<link rel="prefetch" href="' + resultsUrl + '/resultsview.js">');
-            document.write('<link rel="prefetch" href="' + resultsUrl + '/resultsview.css">');
-        }
-    </script>
-
 </head>
 
 <body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default" role="application" aria-label="jamovi">
