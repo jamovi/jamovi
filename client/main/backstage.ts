@@ -370,6 +370,22 @@ const BackstageModel = Backbone.Model.extend({
                 //     ]
                 // },
                 {
+                    name: 'save',
+                    title: _('Save'),
+                    shortcutKey: 's',
+                    action: async () => {
+                        try {
+                            await this.requestSave();
+                        }
+                        catch (e) {
+                            if ( ! this.instance.attributes.saveFormat) {
+                                this.set('activated', true);
+                                this.set('operation', 'saveAs');
+                            }
+                        }
+                    }
+                },
+                {
                     name: 'saveAs',
                     title: _('Save As'),
                     shortcutKey: 'a',
