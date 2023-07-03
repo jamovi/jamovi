@@ -225,8 +225,10 @@ $(document).ready(async() => {
             instance.restartEngines();
         }
         else if (event.ctrlKey || event.metaKey) {
-            if (event.key === 's')
+            if (event.key === 's') {
                 ActionHub.get('save').do();
+                event.preventDefault();
+            }
             else if (event.key === 'o')
                 ActionHub.get('open').do();
             else if (event.key === 'F4' && host.isElectron)
