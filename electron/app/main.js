@@ -89,9 +89,28 @@ function readConfig() {
 
 const marshallArgs = function(args, wd, first) {
 
-    let cmd = { first: first };
+    const cmd = { first };
 
-    let i = 0;
+    let i;
+
+    // sorry, this is bit hacky, and should all be done properly
+    // but i'm having a bad day. apologies in advance.
+    i = 0;
+    while (i < args.length) {
+        let arg = args[i];
+        if (arg.startsWith('--title=')) {
+            cmd.title = args.splice(i, 1)[0].substring(8);
+        }
+        else if (arg == '--temp') {
+            cmd.temp = true;
+            args.splice(i, 1);
+        }
+        else {
+            i++;
+        }
+    }
+
+    i = 0;
     while (i < args.length) {
         let arg = args[i]
         if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug', '--devel'].includes(arg))
@@ -588,6 +607,12 @@ const createWindow = function(open) {
             filePath = path.resolve(filePath);
             url = `${ url }?open=${ encodeURIComponent(filePath) }`;
         }
+
+        if (open.temp) {
+            url = `${ url }&temp=1`;
+            if (open.title)
+                url = `${ url }&title=${ encodeURIComponent(open.title) }`;
+        }
     }
 
     if (accessKey) {
@@ -597,8 +622,9 @@ const createWindow = function(open) {
             url += `&access_key=${ accessKey }`;
     }
 
-    wind.loadURL(url);
     // wind.openDevTools();
+    wind.loadURL(url);
+
 
     wind.webContents.on('new-window', function(e, url) {
         e.preventDefault();
