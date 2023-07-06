@@ -93,7 +93,7 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="VMAD">VMAD</div>'));
     descriptions.VMAD = { label: 'VMAD( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation of a variable.') };
     $functionsContent.append($('<div class="item" data-name="VMADR">VMADR</div>'));
-    descriptions.VMADR = { label: 'VMADR( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation robust of a variable.') };
+    descriptions.VMADR = { label: 'VMADR( <i>variable</i>, group_by=0 )', content: _('Returns the robust median absolute deviation of a variable.') };
     $functionsContent.append($('<div class="item" data-name="VMAX">VMAX</div>'));
     descriptions.VMAX = { label: 'VMAX( <i>variable</i>, group_by=0 )', content: _('Returns the largest value of a variable.') };
     $functionsContent.append($('<div class="item" data-name="VMEAN">VMEAN</div>'));
