@@ -811,7 +811,7 @@ $(document).ready(async() => {
 
             while (true) {
 
-                let stream = instance.open(toOpen, { existing: !!instanceId, authToken, accessKey });
+                let stream = instance.open(toOpen, { authToken, accessKey });
                 for await (let progress of stream)
                     notify(progress);
                 status = await stream;
@@ -831,7 +831,7 @@ $(document).ready(async() => {
         catch (e) {
             if (host.isElectron && toOpen !== '') {
                 // if opening fails, open a blank data set
-                status = await instance.open('', { existing: !!instanceId });
+                status = await instance.open('');
                 let notif;
                 if (e instanceof UserFacingError)
                     notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };

@@ -262,7 +262,7 @@ const Instance = Backbone.Model.extend({
                 }
                 else {
 
-                    if (file === undefined || file === null || options.existing) {
+                    if (file === undefined || file === null) {
 
                         let url = 'open?p=';
 
