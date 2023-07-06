@@ -877,6 +877,9 @@ class Instance:
 
     def open(self, path, title=None, is_temp=False, ext=None, options=None):
 
+        if options is None:
+            options = { }
+
         is_example = path.startswith('{{Examples}}')
         if is_example:
             is_temp = True  # don't add to recents, etc.

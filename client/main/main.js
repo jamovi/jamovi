@@ -763,8 +763,6 @@ $(document).ready(async() => {
 
     document.body.appendChild(infoBox);
 
-    let toOpen = '';  // '' denotes blank data set
-
     let progNotif = new Notify({
         title: _('Opening'),
         duration: 0
@@ -780,15 +778,24 @@ $(document).ready(async() => {
             instanceId = match[1];
 
         const params = new URLSearchParams(window.location.search);
-        const accessKey = params.get('key');
+        let filePath = params.get('open');
 
-        let toOpen = params.get('open');
+        const options = {
+            authToken: null,
+            accessKey: params.get('key') || null,
+        };
 
-        if (toOpen) {
-            if (toOpen.startsWith('http://') || toOpen.startsWith('https://'))
-                ; // do nothing
+        if (params.get('temp')) {
+            options.temp = true;
+            if (params.get('title'))
+                options.title = decodeURI(params.get('title'));
+        }
+
+        if (filePath) {
+            if (filePath.startsWith('http://') || filePath.startsWith('https://'))
+                {} // do nothing
             else
-                toOpen = decodeURI(toOpen);
+                filePath = decodeURI(filePath);
         }
 
         const notify = (progress) => {
@@ -807,11 +814,9 @@ $(document).ready(async() => {
         let status;
 
         try {
-            let authToken = null;
-
             while (true) {
 
-                let stream = instance.open(toOpen, { authToken, accessKey });
+                let stream = instance.open(filePath, options);
                 for await (let progress of stream)
                     notify(progress);
                 status = await stream;
@@ -819,7 +824,7 @@ $(document).ready(async() => {
                 if (status.status === 'requires-auth') {
                     await infoBox.setup(status);
                     await auth.waitForSignIn();
-                    authToken = await auth.getAuthToken();
+                    options.authToken = await auth.getAuthToken();
                     // notify any background shared workers that the account has changed
                     new BroadcastChannel('account-events').postMessage({ type: 'reset' });
                 }
@@ -829,7 +834,7 @@ $(document).ready(async() => {
             }
         }
         catch (e) {
-            if (host.isElectron && toOpen !== '') {
+            if (host.isElectron && filePath !== '') {
                 // if opening fails, open a blank data set
                 status = await instance.open('');
                 let notif;

@@ -263,9 +263,9 @@ class EntryHandler(RequestHandler):
                 self.set_cookie('access_key', provided_key)
 
         instance = await self._session.create()
-        query = self.get_argument('open', '')
-        if query:
-            query = '?open=' + query
+        query = ''
+        if self.request.query:
+            query = f'?{ self.request.query }'
         self.redirect('/%s/%s' % (instance.id, query))
 
 
@@ -304,7 +304,7 @@ class OpenHandler(RequestHandler):
                 return
 
         title = self.get_query_argument('title', None)
-        is_temp = self.get_query_argument('temp', '0') == '1'
+        is_temp = self.get_query_argument('temp', False) != False
         ext = None
 
         filename = self.get_query_argument('filename', None)
@@ -353,7 +353,8 @@ class OpenHandler(RequestHandler):
         elif 'path' in options:
             # jamovi desktop open from path
             file_path = options['path']
-            is_temp = False
+            is_temp = (options.get('temp', False) != False)
+            file_title = options.get('title')
         elif 'file.path' in self.request.body_arguments:
             # jamovi sitting behind a reverse proxy that handles the uploads (nginx)
             file_path = self.get_body_argument('file.path')
