@@ -246,8 +246,7 @@ def VMED(values: float):
 
 @column_wise
 def VMAD(values: float):
-    median = VMED(values)
-    return VMED([abs(value - median) for value in values])
+    return VMED(map(lambda v: abs(v - VMED(values)), values))
 
 
 @column_wise
