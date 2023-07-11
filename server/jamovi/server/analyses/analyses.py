@@ -52,7 +52,7 @@ class Analyses:
             return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
 
         if name == 'weights' and ns == 'jmv':
-            return Weights(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
+            return Weights(self._dataset, id, name, ns, None, self, enabled=False)
 
         try:
             module_meta = self._modules.get(ns)

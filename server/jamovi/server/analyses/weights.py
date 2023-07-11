@@ -4,6 +4,8 @@ from jamovi.server.jamovi_pb2 import AnalysisResponse
 from jamovi.server.jamovi_pb2 import AnalysisStatus
 from jamovi.server.jamovi_pb2 import ResultsGroup
 
+from jamovi.server.options import Options
+
 from jamovi.server.i18n import _
 from jamovi.server.utils.event import Event
 
@@ -18,6 +20,11 @@ class Weights(Analysis):
     _results: AnalysisResponse
 
     def __init__(self, dataset, id, name, ns, options, parent, enabled, **kwargs):
+
+        options = Options.create([
+            { 'name': 'weights', 'type': 'Variable' },
+        ])
+
         super().__init__(dataset, id, name, ns, options, parent, enabled, **kwargs)
         self._status = Analysis.Status.COMPLETE
 
@@ -50,6 +57,11 @@ class Weights(Analysis):
     def run(self):
         # do nothing
         pass
+
+    def notify_changes(self, changes, renamed=None):
+        if renamed:
+            self.options.rename_using(renamed)
+            self._update(just_created=True)
 
     def set_options(self, options, changes, revision, enabled=None):
         self.options.set(options)
