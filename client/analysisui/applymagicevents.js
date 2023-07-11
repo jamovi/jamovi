@@ -35,6 +35,7 @@ const eventInheritance = {
     CheckBox: ['OptionControl'],
     RadioButton: ['OptionControl'],
     ComboBox: ['OptionControl'],
+    ModeSelector: ['OptionControl'],
     LevelSelector: ['OptionControl'],
     TextBox: ['OptionControl'],
     ListBox: ['OptionControl', 'OptionListControl', 'TargetListSupport'],
