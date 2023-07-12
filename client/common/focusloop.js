@@ -275,7 +275,7 @@ class FocusLoop extends EventEmitter {
         }
         else if (element.isContentEditable) {
             value.isFocusController = true;
-            value.requires = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Escape: false, Tab: false };
+            value.requires = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Escape: false, Tab: false, Enter: true, Space: true };
             value.usesKeyboard = true;
         }
 
