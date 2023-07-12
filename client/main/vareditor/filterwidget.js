@@ -4,7 +4,6 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const keyboardJS = require('keyboardjs');
 const formulaToolbar = require('./formulatoolbar');
 const dropdown = require('./dropdown');
 const Notify = require('../notification');
@@ -38,7 +37,7 @@ const FilterWidget = Backbone.View.extend({
         this.$filterListButtons = $('<div class="jmv-filter-list-buttons"></div>').appendTo(this.$el);
         this.$filterList = $('<div class="jmv-filter-list-box"></div>').appendTo(this.$el);
 
-        this.$addFilter = $(`<div class="filter-button filter-button-tooltip add-filter" title="${_('Add new filter')}"></div>`).appendTo(this.$filterListButtons);
+        this.$addFilter = $(`<button class="filter-button filter-button-tooltip add-filter" title="${_('Add new filter')}"></button>`).appendTo(this.$filterListButtons);
         this.$addFilter.on('click', (event) => {
             this._internalCreate = true;
             this._addFilter();
@@ -56,7 +55,7 @@ const FilterWidget = Backbone.View.extend({
 
         let filtersVisible = this.dataset.get('filtersVisible');
 
-        this.$showFilter = $(`<div class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" title="${_('Show filter columns')}"></div>`).appendTo(this.$filterListButtons);
+        this.$showFilter = $(`<button class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" title="${_('Show filter columns')}"></button>`).appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
             this.dataset.toggleFilterVisibility();
         });
@@ -401,16 +400,16 @@ const FilterWidget = Backbone.View.extend({
 
         if (rIndex > 0) {
             $(`<div class="equal">${_('and')}</div>`).appendTo($formulaBox);
-            let $removeNested = $('<div class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></div>').appendTo($formulaBox);
+            let $removeNested = $('<button class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></button>').appendTo($formulaBox);
             this.removeNestedEvents($removeNested, relatedColumn.id);
         }
         else {
             $('<div class="equal">=</div>').appendTo($formulaBox);
-            let $addNested = $(`<div class="add-nested" title="${_('Add another nested filter')}"><span class="mif-plus"></span></div>`).appendTo($formulaBox);
+            let $addNested = $(`<button class="add-nested" title="${_('Add another nested filter')}"><span class="mif-plus"></span></button>`).appendTo($formulaBox);
             this.addNestedEvents($addNested, rootColumn.id);
         }
 
-        let $showEditor = $(`<div class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></div>`).appendTo($formulaBox);
+        let $showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         $showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== $formula) {
@@ -431,7 +430,7 @@ const FilterWidget = Backbone.View.extend({
         let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" placeholder="e.g. ' + _example + '" contenteditable="true"></div>').appendTo($formulaPair);
+        let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" placeholder="e.g. ' + _example + '" contenteditable="true" tabindex="0"></div>').appendTo($formulaPair);
 
         $formula.on('input', (event) => {
             dropdown.updatePosition();
@@ -493,18 +492,18 @@ const FilterWidget = Backbone.View.extend({
         let $titleBox = $('<div class="title-box"></div>').appendTo($filter);
         $(`<div class="label-parent"><div class="label">${_('Filter {i}', {i: (index + 1)} )}</div></div>`).appendTo($titleBox);
         let $middle = $('<div class="middle-box"></div>').appendTo($titleBox);
-        let $statusBox = $('<div class="status-box"></div>').appendTo($middle);
+        let $statusBox = $('<div class="status-box" tabindex="0"></div>').appendTo($middle);
         let $active = $(`<div class="active" title="${_('Filter is active')}"><div class="switch"></div></div>`).appendTo($statusBox);
         let $status = $(`<div class="status">${_('active')}</div>`).appendTo($statusBox);
         $('<div class="header-splitter"></div>').appendTo($titleBox);
 
 
-        let $removeButton = $(`<div class="remove-filter-btn" title="${_('Remove filter')}"><span class="mif-cross"></span></div>`);
+        let $removeButton = $(`<button class="remove-filter-btn" title="${_('Remove filter')}"><span class="mif-cross"></button></div>`);
         $removeButton.appendTo($titleBox);
 
 
         let $formulaList = $('<div class="formula-list"></div>').appendTo($filter);
-        let $description = $(`<div class="description" type="text" placeholder="${_('Description')}"></div>`).appendTo($filter);
+        let $description = $(`<div class="description" type="text" placeholder="${_('Description')}" tabindex="0"></div>`).appendTo($filter);
 
         $removeButton.on('click', async (event) => {
             if (this._removingFilter)
@@ -551,9 +550,11 @@ const FilterWidget = Backbone.View.extend({
             event.preventDefault();
         };
 
-
-        $active.on('click', activeChanged);
-        $status.on('click', activeChanged);
+        $statusBox.on('click', activeChanged);
+        $statusBox.on('keydown', (event) => {
+            if (event.keyCode === 13 || event.keyCode === 32)   //enter  - space
+                activeChanged(event);
+        });
 
         $description[0].textContent = column.description;
 
@@ -708,7 +709,6 @@ const FilterWidget = Backbone.View.extend({
                 return;
             }
 
-            keyboardJS.pause('filter-' + column.id);
             this.dataset.set('editingVar', [column.id]);
 
             $element.select();
@@ -719,7 +719,6 @@ const FilterWidget = Backbone.View.extend({
                 return;
             }
 
-            keyboardJS.resume('filter-' + column.id);
             if ($element[0].textContent !== column[name]) {
                 let data = { };
                 data[name] = $element[0].textContent;
@@ -730,14 +729,8 @@ const FilterWidget = Backbone.View.extend({
         });
         $element.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
+                dropdown.hide();
                 $element.blur();
-                event.preventDefault();
-                event.stopPropagation();
-            }
-
-            if (event.keyCode === 9) {    //tab
-                event.preventDefault();
-                event.stopPropagation();
             }
         });
     },

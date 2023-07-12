@@ -36,7 +36,7 @@ const RibbonModel = Backbone.Model.extend({
         ]);
 
         this._analysesTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
-        this._dataTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis))
+        this._dataTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
         
     },
     defaults : {
