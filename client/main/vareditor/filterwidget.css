@@ -58,7 +58,6 @@
     flex-direction: column;
     flex-grow: 1;
     flex-shrink: 1;
-    /*min-height: 100px;*/
     flex: 2;
     border: 2px solid #e7e7e7;
     border-left: 4px solid #c1c1c1;
@@ -67,7 +66,6 @@
     background: #f8f8f8;
     opacity: 1;
     transition: 0.2s opacity, 0.2s visibility, 0.2s height, 0.2s margin, 0.2s padding, 0.2s border-width;
-    visibility: visible;
 }
 
 .jmv-filter-splitter {
