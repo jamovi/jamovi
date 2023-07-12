@@ -39,6 +39,8 @@
     margin: 2px 5px 2px 5px;
     background-repeat: no-repeat;
     background-position: center;
+    border: none;
+    background-color: transparent;
 }
 
 .filter-button:hover {
@@ -157,8 +159,11 @@
     font-weight: normal;
     color: #658ec2;
     text-align: center;
-    /* line-height: 19px; */
+    line-height: 12px;
     margin: 0px 0px 0px 5px;
+    padding: 1px;
+    border: none;
+    background-color: transparent;
 }
 
 .remove-filter-btn:hover {
@@ -195,7 +200,7 @@
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .equal {
-    padding: 5px 5px 0px 34px;
+    padding: 5px 5px 0px 37px;
     position: absolute;
     top: 0;
     left: 0;
@@ -211,6 +216,8 @@
     color: #658ec2;
     cursor: default;
     line-height: 20px;
+    border: none;
+    background-color: transparent;
 }
 
 .jmv-filter-options > .formula-list > .formula-box .formula-pair {
@@ -221,10 +228,10 @@
 
 .jmv-filter-options > .formula-list > .formula-box .show-editor {
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
-    width: 23px;
+    width: 28px;
     border: 1px solid #dadada;
     background-image: url('../../assets/filters-formula.svg');
-    background-position: center left 1px;
+    background-position: center left 3px;
     background-repeat: no-repeat;
     background-size: 65%;
     cursor: default;
@@ -248,7 +255,7 @@
     top: 50%;
     margin-top: -3px;
     width: 5px;
-    left: 16px;
+    left: 18px;
     height: 5px;
 }
 
@@ -263,6 +270,8 @@
     color: #bbbbbb;
     cursor: default;
     line-height: 21px;
+    border: none;
+    background-color: transparent;
 }
 
 .jmv-filter-options > .formula-list > .formula-box > .remove-nested:hover {
