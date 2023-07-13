@@ -154,7 +154,13 @@ const BackstageModel = Backbone.Model.extend({
         this._deviceSaveListModel.clickProcess = 'save';
         this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._deviceSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
-        this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
+
+        if (OneDriveView)
+            // for now the defined-ness of OneDriveView indicates the cloud version
+            this._deviceSaveListModel.on('dataSetSaveRequested', this.tryExport, this);
+        else
+            this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
+
         this._deviceSaveListModel.on('browseRequested', this.tryBrowse, this);
         this.addToWorkingDirData(this._deviceSaveListModel);
 
