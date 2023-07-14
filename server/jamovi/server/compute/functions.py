@@ -245,6 +245,17 @@ def VMED(values: float):
 
 
 @column_wise
+def VMAD(values: float):
+    median = VMED(values)
+    return VMED(map(lambda v: abs(v - median), values))
+
+
+@column_wise
+def VMADR(values: float):
+    return VMAD(values)*1.4826
+
+
+@column_wise
 def VMODE(values: float):
     values = filter(lambda x: not math.isnan(x), values)
     return stats.mode(values)
