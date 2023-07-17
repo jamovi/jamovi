@@ -71,7 +71,11 @@ export const FSEntryBrowserView = SilkyView.extend({
         'focus .silky-bs-fslist-browser-import-name' : '_nameGotFocus',
         'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
         'input .search' : '_searchChanged',
-        'keydown .search' : '_searchKeyDown'
+        'keydown .search': '_searchKeyDown',
+        'click .jmv-bs-fslist-checkbox': '_checkclicked'
+    },
+    _checkclicked(event) {
+        event.preventDefault();
     },
     preferredWidth() {
         return '750px';
@@ -99,8 +103,11 @@ export const FSEntryBrowserView = SilkyView.extend({
     _listPointerDown: function(event) {
         this._clickedItem = document.elementFromPoint(event.pageX, event.pageY);
         this._clickedItem = this._clickedItem.closest('.silky-bs-fslist-item');
-        if (this._clickedItem)
-            this.clickItem(this._clickedItem, event.ctrlKey, event.shiftKey);
+        if (this._clickedItem) {
+            let fromChecked = event.target.classList.contains('jmv-bs-fslist-checkbox') && !event.target.getAttribute('checked');
+            this.clickItem(this._clickedItem, event.ctrlKey, event.shiftKey, fromChecked);
+        }
+            
     },
     _listFocus: function (event) {
         if (this._clickedItem) {
@@ -510,7 +517,7 @@ export const FSEntryBrowserView = SilkyView.extend({
                 let itemId = focusLoop.getNextAriaElementId('listitem');
                 html += `<div id="${itemId}" class="silky-bs-fslist-item" role="listitem">`;
                 if (itemType === FSItemType.File)
-                    html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox">';
+                    html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox" tabindex="-1">';
                 html += '   <div class="silky-bs-flist-item-icon">';
                 if (itemType === FSItemType.File) { //file
                     if (item.isExample) // examples don't have extensions
@@ -625,9 +632,22 @@ export const FSEntryBrowserView = SilkyView.extend({
         else
             this.$itemsList.attr('aria-activedescendant', '');
     },
-    clickItem: function (target, ctrlKey, shiftKey) {
+    removeNonFileItemsFromSelection() {
+        let filtered = [];
+        for (let i of this._selectedIndices) {
+            let itemType = this.$items[i].data('type');
+            if (itemType === FSItemType.File)
+                filtered.push(i);
+            else {
+                this.$items[i].removeClass('silky-bs-fslist-selected-item');
+                this.$items[i].attr('aria-selected', 'false');
+                this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+            }
+        }
+        this._selectedIndices = filtered;
+    },
+    clickItem: function (target, ctrlKey, shiftKey, fromChecked) {
         let $target = $(target);
-        let fromChecked = $target.hasClass('silky-bs-fslist-selected-item') !== $target.find('.jmv-bs-fslist-checkbox').prop('checked');
         let multiSelect = this.model.get('multiselect');
         let modifier = ctrlKey || shiftKey || fromChecked;
 
@@ -641,6 +661,7 @@ export const FSEntryBrowserView = SilkyView.extend({
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
             if (multiSelect && this._selectedIndices.length > 0 && modifier) {
+                this.removeNonFileItemsFromSelection();
                 let index = $target.data('index');
                 if (ctrlKey || fromChecked) {
                     let ii = this._selectedIndices.indexOf(index);
@@ -736,7 +757,7 @@ export const FSEntryBrowserView = SilkyView.extend({
         this.updateActiveDescendant();
     },
     _itemClicked : function(event) {
-        this.clickItem(event.currentTarget, event.ctrlKey || event.metaKey, event.shiftKey);
+        this.clickItem(event.currentTarget, event.ctrlKey || event.metaKey, event.shiftKey, false);
     },
     _keyPressHandle : function(event) {
         if (event.metaKey || event.ctrlKey || event.altKey)
