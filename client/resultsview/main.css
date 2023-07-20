@@ -18,6 +18,11 @@
     border-left-width: 5px;
 }
 
+.jmv-results-notice {
+    display: block !important;
+    margin: 10px 0;
+}
+
 #results.weights
 {
     background-color: #ffffff;
