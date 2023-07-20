@@ -93,10 +93,18 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
         else
             this.$label.attr('placeholder', '');
 
-        if (clash && level.modified === false)
-            this.$label.val('');
-        else
-            this.$label.val(labels[0]);
+        if (clash && level.modified === false) {
+            if (this.readOnly)
+                this.$label.text('');
+            else
+                this.$label.val('');
+        }
+        else {
+            if (this.readOnly)
+                this.$label.text(labels[0]);
+            else
+                this.$label.val(labels[0]);
+        }
 
         let importValue = imports.join(', ');
         if (this.model._compareWithValue) {
