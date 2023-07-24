@@ -20,6 +20,7 @@ const CustomControl = require('./customcontrol');
 const OutputSupplier = require('./outputsupplier');
 const Output = require('./output');
 const ModeSelector = require('./contentselector');
+const ActionButton = require('./gridactionbutton');
 
 const DefaultControls = {
 
@@ -45,6 +46,7 @@ const DefaultControls = {
     OutputSupplier: OutputSupplier,
     Output: Output,
     ModeSelector: ModeSelector,
+    ActionButton: ActionButton,
 
     ListItem: { //Not to be used, no longer supported
         TextBox: GridTextbox, //Not to be used, no longer supported
