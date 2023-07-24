@@ -1,0 +1,28 @@
+.jmv-action-button {
+    padding: 4px 10px;
+    width: max-content;
+    background: #3498db;
+    background-image: linear-gradient(to bottom, #3498db, #2980b9);
+    box-shadow: 0px 1px 3px #666666;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    border-style: none;
+    transition: 0.2s all;
+}
+
+button.jmv-action-button[disabled] {
+    color: #c5c5c5;
+    background-color: #ababab;
+    background-image: none;
+    box-shadow: none;
+}
+
+.jmv-action-button:active:hover {
+    background: #3cb0fd;
+}
+
+.jmv-action-button:hover {
+    background: #3cb0fd;
+    background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+}
