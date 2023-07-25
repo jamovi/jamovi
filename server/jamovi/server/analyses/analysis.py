@@ -181,6 +181,10 @@ class Analysis:
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
 
+        if complete:
+            # set 'action options' back to false
+            self.options.clear_actions()
+
         if complete and not silent:
 
             analysis_outputs = [ ]
