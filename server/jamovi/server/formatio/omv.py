@@ -312,7 +312,7 @@ def read(data, path, prog_cb, **kwargs):
             raise FileCorruptError(_('File is corrupt (manifest is corrupt)'))
 
         jav = (int(jav.group(1)), int(jav.group(2)))
-        if jav[0] > 11:
+        if jav[0] > 12:
             raise FileFormatNotSupportedError(_('A newer version of jamovi is required'))
 
         meta_content = zip.read('metadata.json').decode('utf-8')
