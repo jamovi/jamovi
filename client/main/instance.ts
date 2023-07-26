@@ -58,7 +58,7 @@ const Instance = Backbone.Model.extend({
             modules: this._modules,
             dataSetModel: this._dataSetModel });
 
-        this._analyses.on('analysisOptionsChanged', this._runAnalysis, this);
+        this._analyses.on('analysisOptionsChanged', this._onOptionsChanged, this);
 
         this._instanceId = null;
 
@@ -66,9 +66,13 @@ const Instance = Backbone.Model.extend({
         this.attributes.coms.on('broadcast', this._onBC);
 
     },
+    _onOptionsChanged(analysis, incoming) {
+        if ( ! incoming)
+            this._runAnalysis(analysis);
+    },
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
-        this._analyses.off('analysisOptionsChanged', this._runAnalysis, this);
+        this._analyses.off('analysisOptionsChanged', this._onOptionsChanged, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
     },

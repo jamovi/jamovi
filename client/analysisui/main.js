@@ -49,7 +49,9 @@ const frameCommsApi = {
 
     initialiseOptions: setOptionsValues,
 
-    setTitle: setTitle
+    setTitle: setTitle,
+
+    updateOptions: updateOptions
 };
 
 let parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
@@ -303,6 +305,31 @@ function setTitle(title) {
     if (title !== original)
         title = `${ title }<div class="sub-title">${ original }</div>`;
     $title.append(title);
+}
+
+function updateOptions(values) {
+    if (analysis.inError)
+        return;
+    
+    if (analysis.View.isLoaded() === false) {
+        setTimeout(() => {
+            setOptionsValues(data);
+        }, 0);
+        return;
+    }
+
+    let model = analysis.model;
+    model.options.beginEdit();
+    for (let key in values) {
+        let value = values[key];
+        if (key === 'results//heading') {
+            setTitle(value);
+            titleSet = true;
+        }
+        else
+            model.options.setOptionValue(key, value);
+    }
+    model.options.endEdit();
 }
 
 function setOptionsValues(data) {
