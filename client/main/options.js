@@ -51,20 +51,40 @@ OptionTypes.Option = function(template, value, isLeaf) {
             return this._onGetValue();
     };
 
-    this.setValue = function(value) {
-        if (this._isLeaf)
-            this._value = value;
+    this.setValue = function (value) {
+        let changed = false;
+        if (this._isLeaf) {
+            if (this._value !== value) {
+                this._value = value;
+                changed = true;
+            }
+        }
         else {
-            this.children = [];
-            if (value === null)
-                return;
+            if (this._initialized === false) {
+                this.children = [];
+                if (value === null)
+                    return true;
 
-            if (this._createChildren)
-                this._createChildren(value);
+                if (this._createChildren)
+                    this._createChildren(value);
+                changed = true;
+            }
+            else if (value === null) {
+                if (this.children.length > 0) {
+                    this.children = [];
+                    changed = true;
+                }
+            }
+            else {
+                if (this._updateChildren)
+                    changed = this._updateChildren(value) || changed;
+            }
         }
 
         if (value !== null)
             this._initialized = true;
+        
+        return changed;
     };
 
     this.getAssignedColumns = function() {
@@ -401,6 +421,25 @@ OptionTypes.Array = function(template, value) {
             this.children.push(OptionTypes.create(this._template.template, value[i]));
     });
 
+    this._override('_updateChildren', (baseFunction, value) => {
+        let changed = false;
+        for (let i = 0; i < value.length; i++) {
+            if (i < this.children.length)
+                changed = this.children[i].setValue(value[i]) || changed;
+            else {
+                this.children.push(OptionTypes.create(this._template.template, value[i]));
+                changed = true;
+            }
+        }
+
+        if (value.length < this.children.length) {
+            this.children.splice(value.length - this.children.length);
+            changed = true;
+        }
+
+        return changed;
+    });
+
     this.getChild = function(index) {
         return this.children[index];
     };
@@ -434,6 +473,29 @@ OptionTypes.Group = function(template, value) {
             this.children.push(child);
             this._indexedChildren[element.name] = child;
         }
+    });
+
+    this._override('_updateChildren', (baseFunction, value) => {
+        let changed = false;
+        this.children = [];
+        let newIndexedChildren = {};
+        for (let i = 0; i < this._template.elements.length; i++) {
+            let element = this._template.elements[i];
+            let child = this._indexedChildren[element.name];
+            if (child) {
+                changed = child.setValue(value[element.name]) || changed;
+                delete this._indexedChildren[element.name];
+            }
+            else {
+                child = OptionTypes.create(element, value[element.name]);
+                changed = true;
+            }
+
+            this.children.push(child);
+            newIndexedChildren[element.name] = child;
+        }
+        this._indexedChildren = newIndexedChildren;
+        return changed;
     });
 
     this.getChild = function(name) {
@@ -541,11 +603,12 @@ const Options = function(def=[]) {
                 if (name in this._options) {
                     // results options / params are notified as cleared by
                     // having values of null
-                    if (value === null)
-                         delete this._options[name];
+                    if (value === null) {
+                        delete this._options[name];
+                        changed = true;
+                    }
                     else
-                        this._options[name].setValue(value, initializeOnly);
-                    changed = true;
+                        changed = this._options[name].setValue(value) || changed;
                 }
                 else {
                     if (value !== null) {
@@ -567,8 +630,7 @@ const Options = function(def=[]) {
                     value = result.value;
                 }
                 if (apply) {
-                    this._options[name].setValue(value, initializeOnly);
-                    changed = true;
+                    changed = this._options[name].setValue(value) || changed;
                 }
             }
         }
