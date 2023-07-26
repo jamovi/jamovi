@@ -134,6 +134,11 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             this.frameComms.send("initialiseOptions", { id: this.analysis.id, options: this.options });
     };
 
+    this.updateOptions = function (values) {
+        if ( ! this.analysis.missingModule)
+            this.frameComms.send("updateOptions", values);
+    };
+
     this.notifyDataChanged = function(dataType, dataInfo) {
         this.frameComms.send("dataChanged", { dataType: dataType, dataInfo: dataInfo });
     };
@@ -195,7 +200,18 @@ let OptionsPanel = SilkyView.extend({
 
         args.model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
 
+        args.model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
+
         this.render();
+    },
+
+    _optionsChanged: function (analysis, incoming) {
+        if (incoming) {
+            let analysesKey = analysis.ns + "-" + analysis.name;
+            let resources = this._analysesResources[analysesKey];
+            if (resources)
+                resources.updateOptions(analysis.options.getValues());
+        }
     },
 
     _analysisNameChanged: function(analysis) {
