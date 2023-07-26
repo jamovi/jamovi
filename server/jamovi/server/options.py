@@ -385,8 +385,6 @@ class Options:
         for i, name in enumerate(self._pb.names):
             option = self._options.get(name, None)
             if option is not None and option.type == 'Action':
-                print(name)
-                print(option.type)
                 opt_pb = self._pb.options[i]
                 write_value_to_pb(False, opt_pb)
 

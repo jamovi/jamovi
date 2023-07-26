@@ -412,7 +412,7 @@ const Analyses = Backbone.Model.extend({
     _notifyResultsChanged(analysis) {
         this.trigger('analysisResultsChanged', analysis);
     },
-    _notifyOptionsChanged(analysis, incoming) {
+    _notifyOptionsChanged(analysis, incoming) {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
         this.trigger('analysisOptionsChanged', analysis, incoming);
     },
     _notifyAnalysisCreated(analysis) {

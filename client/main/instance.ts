@@ -67,7 +67,7 @@ const Instance = Backbone.Model.extend({
 
     },
     _onOptionsChanged(analysis, incoming) {
-        if (!incoming)
+        if ( ! incoming)
             this._runAnalysis(analysis);
     },
     destroy() {
