@@ -197,10 +197,17 @@ const LayoutSupplierView = function(params) {
         };
 
         this.$searchInput.on('input', (event) => {
-            this.filterSuppliersList(true);
-            setTimeout(() => {
-                this.supplierGrid.$el.scrollTop(0);
-            }, 0);
+            if (this.searchingInProgress)
+                clearTimeout(this.searchingInProgress);
+
+            this.searchingInProgress = setTimeout(() => {
+                this.filterSuppliersList(true);
+                setTimeout(() => {
+                    this.supplierGrid.$el.scrollTop(0);
+                }, 0);
+                this.searchingInProgress = null;
+            }, 600);
+            
         });
 
         this.$searchInput.on('keydown', (event) => {

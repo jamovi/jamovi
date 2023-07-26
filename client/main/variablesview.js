@@ -75,9 +75,15 @@ const VariablesView = SilkyView.extend({
         this.$search      = this.$el.find('.search');
 
         this.$search.on('input', (event) => {
-            this._updateList();
-            if (this._topIndex !== -1)
-                this.selection.setSelection(0, this._topIndex, true);
+            if (this.searchingInProgress)
+                clearTimeout(this.searchingInProgress);
+            
+            this.searchingInProgress = setTimeout(() => {
+                this._updateList();
+                if (this._topIndex !== -1)
+                    this.selection.setSelection(0, this._topIndex, true);
+                this.searchingInProgress = null;
+            }, 600);
         });
 
         this.$search.on('focus', () => {
