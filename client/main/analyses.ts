@@ -109,8 +109,12 @@ Analysis.prototype.setResults = async function(res) {
     this.references = res.references;
     this.arbitraryCode = res.arbitraryCode;
     this.enabled = (res.enabled === undefined ? true : res.enabled);
-    if (this.options)
-        this.options.setValues(res.options);
+    if (this.options) {
+        if (this.options.setValues(res.options)) {
+            if (this._parent !== null)
+                this._parent._notifyOptionsChanged(this, true);
+        }
+    }
     if (this._parent !== null)
         this._parent._notifyResultsChanged(this);
 };
@@ -408,8 +412,8 @@ const Analyses = Backbone.Model.extend({
     _notifyResultsChanged(analysis) {
         this.trigger('analysisResultsChanged', analysis);
     },
-    _notifyOptionsChanged(analysis) {
-        this.trigger('analysisOptionsChanged', analysis);
+    _notifyOptionsChanged(analysis, incoming) {
+        this.trigger('analysisOptionsChanged', analysis, incoming);
     },
     _notifyAnalysisCreated(analysis) {
         this.trigger('analysisCreated', analysis);
