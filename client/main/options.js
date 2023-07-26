@@ -493,10 +493,9 @@ OptionTypes.Group = function(template, value) {
 
             this.children.push(child);
             newIndexedChildren[element.name] = child;
-
-            return changed;
         }
         this._indexedChildren = newIndexedChildren;
+        return changed;
     });
 
     this.getChild = function(name) {
