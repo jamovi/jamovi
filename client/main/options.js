@@ -609,7 +609,7 @@ const Options = function(def=[]) {
                         changed = true;
                     }
                     else
-                        changed = this._options[name].setValue(value);
+                        changed = this._options[name].setValue(value) || changed;
                 }
                 else {
                     if (value !== null) {
@@ -631,7 +631,7 @@ const Options = function(def=[]) {
                     value = result.value;
                 }
                 if (apply) {
-                    changed = this._options[name].setValue(value);
+                    changed = this._options[name].setValue(value) || changed;
                 }
             }
         }
