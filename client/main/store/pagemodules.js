@@ -53,13 +53,13 @@ const PageModules = Backbone.View.extend({
         this.$visibility = $();
 
         this.$search.on('input', (event) => {
-            if ( ! this.searchTimer) {
-                clearTimeout(this.searchTimer);
-                this.searchTimer = setTimeout(() => {
-                    this.searchTimer = null;
-                    this.markHTML();
-                }, 1000);
-            }
+            if (this.searchingInProgress)
+                clearTimeout(this.searchingInProgress);
+
+            this.searchingInProgress = setTimeout(() => {
+                this.markHTML();
+                this.searchingInProgress = null;
+            }, 600);
         });
 
         this.$search.on('focus', (event) => {
