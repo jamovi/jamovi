@@ -4,64 +4,123 @@ import os.path as path
 from tempfile import TemporaryFile
 import pkg_resources
 
+from functools import partial
+from asyncio import create_task
+
 from tornado.simple_httpclient import SimpleAsyncHTTPClient as AsyncHTTPClient
 
 from .utils import conf
 from .utils.stream import ProgressStream
 
+from tornado.httpclient import HTTPError as TornadoHTTPError
+from ssl import SSLCertVerificationError
+
+from .i18n import _
+
+
+class DownloadError(Exception):
+    def __init__(self):
+        super().__init__(_('Unable to reach the library'))
+
+
+class NoNetworkError(DownloadError):
+    def __init__(self):
+        super().__init__(_('No internet connection'))
+
+
+class CaptivePortalError(DownloadError):
+    def __init__(self):
+        super().__init__(_('Unable to access the internet (likely due to a captive portal)'))
+
+
+class DownloadInfo:
+    def __init__(self, response, progress, size, file, stream):
+        self.response = response
+        self.progress = progress
+        self.size = size
+        self.file = file
+        self.stream = stream
+
 
 class Download:
-    def __init__(self, url, file=None):
-        self._url = url
-        self._progress = 0
-        self._size = -1
-        self._file = file
-        self._stream = ProgressStream()
+    def __init__(self):
+        self._chain_path = pkg_resources.resource_filename(__name__, 'resources/chain.pem')
+        if not path.isfile(self._chain_path):
+            self._chain_path = None
 
-        chain_path = pkg_resources.resource_filename(__name__, 'resources/chain.pem')
-        if not path.isfile(chain_path):
-            chain_path = None
+        self._client = AsyncHTTPClient(max_body_size=512 * 1024 * 1024)
 
-        client = AsyncHTTPClient(max_body_size=512 * 1024 * 1024)
-        response = client.fetch(
+    def download(self, url, io=None):
+
+        info = DownloadInfo(None, 0, -1, io, ProgressStream())
+
+        header_callback = partial(self._header_callback, info)
+        streaming_callback = partial(self._streaming_callback, info)
+        complete_callback = partial(self._complete, info)
+
+        response = self._client.fetch(
             url,
-            header_callback=self._header_callback,
-            streaming_callback=self._streaming_callback,
+            header_callback=header_callback,
+            streaming_callback=streaming_callback,
             request_timeout=24 * 60 * 60,
-            ca_certs=chain_path)
-        response.add_done_callback(self._done_callback)
-        self._stream.write((0, 1))
+            ca_certs=self._chain_path)
 
-    def _done_callback(self, future):
+        info.response = response
+
+        info.stream.write((0, 1))
+        task = create_task(self._download(info))
+        task.add_done_callback(complete_callback)
+
+        return info.stream
+
+    def _complete(self, info, result):
         try:
-            future.result()
-            self._file.flush()
-            self._file.seek(0)
-            self._stream.set_result(self._file)
+            result.result()
         except Exception as e:
-            self._stream.set_exception(e)
+            info.stream.set_exception(e)
 
-    def _header_callback(self, line):
+    async def _download(self, info):
+
+        try:
+            await info.response
+            info.file.flush()
+            info.file.seek(0)
+            info.stream.set_result(info.file)
+        except SSLCertVerificationError as e:
+            try:
+                response = await self._client.fetch(
+                    'http://clients3.google.com/generate_204')
+                if response.code != 204:
+                    raise CaptivePortalError
+                else:
+                    raise DownloadError
+            except OSError as e:
+                raise NoNetworkError
+        except OSError as e:
+            raise NoNetworkError
+
+
+    def _header_callback(self, info, line):
         match = re.match(r'Content-Length:[\s]*([0-9]+)', line)
         if match:
-            self._size = int(match.group(1))
+            info.size = int(match.group(1))
 
-    def _streaming_callback(self, chunk):
-        if self._file is None:
-            self._file = TemporaryFile()
+    def _streaming_callback(self, info, chunk):
+        if info.file is None:
+            info.file = TemporaryFile()
 
-        self._file.write(chunk)
-        self._progress += len(chunk)
-        self._stream.write((self._progress, self._size))
+        info.file.write(chunk)
+        info.progress += len(chunk)
+        info.stream.write((info.progress, info.size))
 
 
 class Downloader:
     @staticmethod
     def download(url):
-        dl = Download(url)
-        return dl._stream
+        dl = Download()
+        return dl.download(url)
 
     @staticmethod
     def download_to(url, stream):
-        dl = Download(url, stream)
-        return dl._stream
+        dl = Download()
+        return dl.download(url, stream)
