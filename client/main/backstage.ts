@@ -283,8 +283,10 @@ const BackstageModel = Backbone.Model.extend({
 
         let _oldOps = this.get('ops');
 
+        const mode = this.instance.settings().getSetting('mode', 'normal');
+
         let _ops = [ ];
-        if ( ! host.isElectron) {
+        if (mode === 'cloud') {
             _ops = [
                 {
                     name: type,
@@ -347,9 +349,9 @@ const BackstageModel = Backbone.Model.extend({
         }
     },
     createOps: function() {
-        let mode = this.instance.settings().getSetting('mode', 'normal');
+        const mode = this.instance.settings().getSetting('mode', 'normal');
 
-        if ( ! host.isElectron) {
+        if (mode === 'cloud') {
             return [
                 {
                     name: 'new',
@@ -545,8 +547,10 @@ const BackstageModel = Backbone.Model.extend({
             filters.push({ name: desc, extensions: list[i].extensions });
         }
 
+        const mode = this.instance.settings().getSetting('mode', 'normal');
+
         let osPath = '';
-        if (host.isElectron) {
+        if (mode === 'normal') {
             if (this._wdData.main.initialised === false)
                 return;
             osPath = this._wdData.main.oswd;
@@ -680,8 +684,10 @@ const BackstageModel = Backbone.Model.extend({
             filters.push({ name: desc, extensions: list[i].extensions });
         }
 
+        const mode = this.instance.settings().getSetting('mode', 'normal');
+
         let osPath = '';
-        if (host.isElectron) {
+        if (mode === 'normal') {
             if (this._wdData.main.initialised === false)
                 return;
             osPath = this._wdData.main.oswd;
@@ -1367,7 +1373,9 @@ const BackstageView = SilkyView.extend({
             }
         }
 
-        if ( ! host.isElectron) {
+        const mode = this.model.instance.settings().getSetting('mode', 'normal');
+
+        if (mode === 'cloud') {
 
             let $logo = this.$el.find('.silky-bs-logo');
             if (op !== null) {
