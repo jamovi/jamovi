@@ -4,121 +4,116 @@
 
 'use strict';
 
-// when running in electron, you'll see that module.exports is assigned from
-// window.host (down the bottom of this file)
 
 const events = require('events');
 const $ = require('jquery');
 
+const etron = window.electronAPI || {};
 
 const APP_NAME = 'jamovi';
 
-window.config = window.config || { 'client': { roots: ['cloud.jamovi.org', 'a.cloud.jamovi.org', 'r.cloud.jamovi.org'] }};
+function resolveUrl(root) {
+    let v = `${ window.location.protocol }//${ root }`;
+    if (new URL(v).port === '' && window.location.port !== '')
+        v += `:${ window.location.port }`;
+    v += '/';
+    return v;
+}
 
-let baseUrl = `${ window.location.protocol }//${ window.config.client.roots[0] }`;
-let analysisUIUrl = `${ window.location.protocol }//${ window.config.client.roots[1] }`;
-let resultsViewUrl = `${ window.location.protocol }//${ window.config.client.roots[2] }`;
-
-// add ports if necessary
-if (new URL(baseUrl).port === '' && window.location.port !== '')
-    baseUrl += `:${ window.location.port }`;
-if (new URL(analysisUIUrl).port === '' && window.location.port !== '')
-    analysisUIUrl += `:${ window.location.port }`;
-if (new URL(resultsViewUrl).port === '' && window.location.port !== '')
-    resultsViewUrl += `:${ window.location.port }`;
-
-// add trailing slashes
-baseUrl += '/';
-analysisUIUrl += '/';
-resultsViewUrl += '/';
+export const baseUrl = resolveUrl(window.config.client.roots[0]);
+export const analysisUIUrl = resolveUrl(window.config.client.roots[1]);
+export const resultsViewUrl = resolveUrl(window.config.client.roots[2]);
 
 
 let dialogProvider;
 
-let emitter = new events.EventEmitter();
+const emitter = new events.EventEmitter();
 
-let on = (name, args) => emitter.on(name, args);
+const on = etron.on || ((name, args) => emitter.on(name, args));
 let _notify = (name, args) => emitter.emit(name, args);
 
-let os;
-if (['iPad Simulator',
-        'iPhone Simulator',
-        'iPod Simulator',
-        'iPad',
-        'iPhone',
-        'iPod',
-        ].includes(navigator.platform)
-        // iPad on iOS 13 detection
-        || (navigator.userAgent.includes('Mac') && 'ontouchend' in document))
-    os = 'ios';
-else if (navigator.platform === 'Win32')
-    os = 'win64';
-else if (navigator.platform === 'MacIntel')
-    os = 'macos';
-else if (navigator.platform.startsWith('Linux'))
-    os = 'linux';
-else
-    os = 'other';
+export const os = (function() {
+    if (['iPad Simulator',
+            'iPhone Simulator',
+            'iPod Simulator',
+            'iPad',
+            'iPhone',
+            'iPod',
+            ].includes(navigator.platform)
+            // iPad on iOS 13 detection
+            || (navigator.userAgent.includes('Mac') && 'ontouchend' in document))
+        return 'ios';
+    else if (navigator.platform === 'Win32')
+        return 'win64';
+    else if (navigator.platform === 'MacIntel')
+        return 'macos';
+    else if (navigator.platform.startsWith('Linux'))
+        return 'linux';
+    else
+        return 'other';
+})();
 
-function openWindow(instanceId) {
+export const openWindow = etron.openWindow || function(instanceId) {
     let url = `${ window.location.origin }/${ instanceId }/`;
     let opened = window.open(url, '_blank');
     // can fail under safari
     if (opened === null)
         _notify('window-open-failed', { url });
-}
+};
 
-function closeWindow() {
+export const closeWindow = etron.closeWindow || function() {
     window.close();
     if ( ! window.closed)
         window.location = baseUrl;
-}
+};
 
-function navigate(instanceId) {
+export const navigate = etron.navigate || function(instanceId) {
     window.location = `${ window.location.origin }/${ instanceId }/`;
-}
+};
 
-const version = new Promise((resolve, reject) => {
+export const version = etron.version || new Promise((resolve, reject) => {
     $.ajax('/version', { dataType: 'text'})
         .done(data => resolve(data.trim()))
         .fail(reject);
 });
 
-const nameAndVersion = version.then(version => {
+export const nameAndVersion = etron.nameAndVersion || version.then(version => {
     return APP_NAME + ' ' + version;
 });
 
-function currentZoom() {
+export const currentZoom = etron.currentZoom || function() {
     return 100;
 }
+
+export const zoom    = etron.zoom || function() {};
+export const zoomIn  = etron.zoomIn  || function() {};
+export const zoomOut = etron.zoomOut || function() {};
 
 const clipboardprompt = require('./utils/clipboardprompt');
 let clipboardPromptBox;
 let clipboardPrompt;
 
-async function copyToClipboard(data) {
+export const copyToClipboard = etron.copyToClipboard || (async function(data) {
 
-        if ( ! clipboardPromptBox) {
-            clipboardPromptBox = document.createElement('jmv-infobox');
-            document.body.appendChild(clipboardPromptBox);
-        }
+    if ( ! clipboardPromptBox) {
+        clipboardPromptBox = document.createElement('jmv-infobox');
+        document.body.appendChild(clipboardPromptBox);
+    }
 
-        if ( ! clipboardPrompt)
-            clipboardPrompt = document.createElement('jmv-clipboardprompt');
+    if ( ! clipboardPrompt)
+        clipboardPrompt = document.createElement('jmv-clipboardprompt');
 
-        clipboardPromptBox.setup(clipboardPrompt);
+    clipboardPromptBox.setup(clipboardPrompt);
 
-        try {
-            await clipboardPrompt.copy(data);
-            clipboardPromptBox.hide();
-        }
-        catch (e) {
-            clipboardPromptBox.hide();
-            throw e;
-        }
-}
+    try {
+        await clipboardPrompt.copy(data);
+    }
+    finally {
+        clipboardPromptBox.hide();
+    }
+});
 
-function pasteFromClipboard() {
+export const pasteFromClipboard = etron.pasteFromClipboard || (function() {
     let readFnc = navigator.clipboard.read;
     if (navigator.clipboard.read) {
         return navigator.clipboard.read().then(async (clipboardContents) => {
@@ -145,9 +140,9 @@ function pasteFromClipboard() {
     }
     else
         return null;
-}
+});
 
-async function showOpenDialog(options) {
+export const showOpenDialog = etron.showOpenDialog || (async function(options) {
 
     if ( ! showOpenDialog.browser) {
         showOpenDialog.browser = document.createElement('input');
@@ -201,9 +196,11 @@ async function showOpenDialog(options) {
     // }
 
     return result;
-}
+});
 
-async function triggerDownload(url) {
+export const showSaveDialogExternal = etron.showSaveDialogExternal || (() => {});
+
+export async function triggerDownload(url) {
     if ( ! triggerDownload.iframe) {
         triggerDownload.iframe = document.createElement('iframe');
         triggerDownload.iframe.style.display = 'none';
@@ -212,28 +209,25 @@ async function triggerDownload(url) {
     triggerDownload.iframe.src = url;
 }
 
-function setDialogProvider(provider) {
+export const setDialogProvider = etron.setDialogProvider || (function (provider) {
     dialogProvider = provider;
-}
+});
 
-async function showSaveDialog(options) {
+export const showSaveDialog = etron.showSaveDialog || (async function(options) {
     return await dialogProvider.showDialog('export', options);
-}
+});
 
-function setEdited() {
-    // do nothing, is implemented for electron
-}
+export const showMessageBox = etron.showMessageBox; // || (async () => { });
 
-function openUrl() {
+export const setEdited = etron.setEdited || (() => {});
+export const openUrl = etron.openUrl || (() => {});
+export const constructMenu = etron.constructMenu || (() => {});
+export const toggleDevTools = etron.toggleDevTools || (() => {});
 
-}
+export const isElectron = etron.isElectron || false;
 
-function constructMenu() {
-
-}
-
-module.exports = window.host || {
-    isElectron: false,
+export default {
+    isElectron,
     version,
     nameAndVersion,
     baseUrl,
@@ -242,16 +236,22 @@ module.exports = window.host || {
     closeWindow,
     openWindow,
     currentZoom,
+    zoom,
+    zoomIn,
+    zoomOut,
     on,
     setEdited,
     navigate,
     constructMenu,
     copyToClipboard,
     pasteFromClipboard,
-    showSaveDialog,
     showOpenDialog,
+    showSaveDialog,
+    showSaveDialogExternal,
+    showMessageBox,
     os,
     openUrl,
     triggerDownload,
-    setDialogProvider
+    setDialogProvider,
+    toggleDevTools,
 };
