@@ -960,25 +960,12 @@ const BackstageModel = Backbone.Model.extend({
         this.instance.import(options.paths)
             .then(deactivate, undefined, deactivate);
     },
-    externalRequestSave: function(filePath, options) {
-
-        // can be called as externalRequestSave(filePath, overwrite), externalRequestSave(filePath), externalRequestSave(), externalRequestSave(overwrite)
-
-        // if filePath is not specified then the current opened path is used. If overwrite is not specified it defaults to false.
-        // if overwrite is false and the specified file already exists a popup asks for overwrite.
-        // if overwrite is true and the specified file already exists the file is overwritten.
+    externalRequestSave: function() {
 
         if (this.get('activated'))
             throw 'This method can only be called from outside of backstage.';
 
-        let saveOptions: ISaveOptions = Object.assign({ path: filePath }, options);
-
-        if (this.instance.attributes.path) {
-            saveOptions = Object.assign(saveOptions, { path: this.instance.attributes.path, overwrite: true });
-            return this.requestSave(saveOptions);
-        }
-
-        let rej;
+        let rej: Function;
         let prom = new Promise((resolve, reject) => {
             this._savePromiseResolve = resolve;
             rej = reject;
@@ -986,7 +973,7 @@ const BackstageModel = Backbone.Model.extend({
             this._savePromiseResolve = null;
         });
 
-        this.requestSave(saveOptions).catch(() => {
+        this.requestSave().catch(() => {
             this.set('activated', true);
             this.set('operation', 'saveAs');
             this.once('change:activated', () => {

@@ -740,9 +740,10 @@ $(document).ready(async() => {
             optionspanel.hideOptions();
     });
 
-    host.on('close', (event) => {
+    host.on('close', async (event) => {
+
         if (dataSetModel.attributes.edited) {
-            let response = host.showMessageBox({
+            const response = await host.showMessageBox({
                 type: 'question',
                 buttons: [ _('Save'), _('Cancel'), _("Don't Save") ],
                 defaultId: 1,
@@ -752,9 +753,12 @@ $(document).ready(async() => {
                 return false;
             }
             else if (response === 0) {  // Save
-                backstageModel.externalRequestSave()
-                    .then(() => host.closeWindow(true));
-                return false;
+                try {
+                    await backstageModel.externalRequestSave();
+                }
+                catch (e) {
+                    return false;
+                }
             }
         }
     });

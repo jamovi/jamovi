@@ -61,7 +61,7 @@ const Settings = Backbone.Model.extend({
         });
     },
 
-    _onSettingsReceived(message) {
+    async _onSettingsReceived(message) {
         if (message.payloadType !== 'SettingsResponse')
             return;
 
@@ -86,11 +86,11 @@ const Settings = Backbone.Model.extend({
 
         if (this.attributes.zoom !== host.currentZoom())
             host.zoom(this.attributes.zoom);
-        
+
         this.set('settingsRecieved', true);
     },
 
-    zoomIn() {
+    async zoomIn() {
         host.zoomIn();
         let zoom = host.currentZoom();
         this.setSetting('zoom', zoom);

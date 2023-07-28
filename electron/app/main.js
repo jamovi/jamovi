@@ -9,6 +9,9 @@ const os = require('os');
 const shell = electron.shell;
 const Menu = electron.Menu;
 
+const { clipboard } = electron;
+const { nativeImage } = electron;
+
 const ini = require('./ini');
 const tmp = require('./tmp');
 
@@ -218,12 +221,13 @@ if (debug)
     config.serverArgs.unshift('-vvv');
 if (argvCmd.debug)
     config.serverArgs.push('--debug');
-if (argvCmd.devel) {
-    global.viteHMR = true;
+if (argvCmd.devel)
     config.serverArgs.push('--dev-server=http://localhost:5173');
-}
 
-global.version = config.version;
+const clientConfig = {
+    version: config.version,
+    roots: undefined,
+}
 
 let env = { };
 if (process.platform === 'linux') {
@@ -293,7 +297,6 @@ const convertToPDF = function(path) {
 
 let server;
 let ports = null;
-let windows = [ ];
 let rootUrl;
 let accessKey;
 let updateUrl;
@@ -369,9 +372,11 @@ const spawn = new Promise((resolve, reject) => {
 
     server.on('close', (code) => { if (code === 0) app.quit(); });
 
-    global.mainPort = info.ports[0];
-    global.analysisUIPort = info.ports[1];
-    global.resultsViewPort = info.ports[2];
+    clientConfig.roots = [
+        `http://127.0.0.1:${ info.ports[0] }/`,
+        `http://127.0.0.1:${ info.ports[1] }/`,
+        `http://127.0.0.1:${ info.ports[2] }/`,
+    ];
 
     rootUrl = `http://127.0.0.1:${ info.ports[0] }/`;
     accessKey = info.accessKey;
@@ -471,26 +476,56 @@ app.on('second-instance', async(e, argv, wd) => {
     handleCommand(cmd);
 });
 
+const windowState = { };
+
+ipc.handle('get-config', (event, arg) => {
+    return clientConfig;
+});
+
+ipc.handle('show-message-box', async (event, options) => {
+    const webContents = event.sender;
+    const win = BrowserWindow.fromWebContents(webContents);
+    const { response } = await dialog.showMessageBox(win, options);
+    return response;
+});
+
+ipc.handle('copy-to-clipboard', (event, arg) => {
+    let { content } = arg;
+    if ('image' in content)
+        content.image = nativeImage.createFromDataURL(content.image);
+    clipboard.write(content);
+    return undefined;
+});
+
+ipc.handle('show-open-dialog', (event, options) => {
+    return dialog.showOpenDialog(options);
+});
+
+ipc.handle('show-save-dialog', (event, options) => {
+    return dialog.showSaveDialog(options);
+});
+
+ipc.on('notify-return', (event, returned) => {
+    if (returned.type === 'close' && returned.value !== false) {
+        const webContents = event.sender;
+        const win = BrowserWindow.fromWebContents(webContents);
+        windowState[win.id].closing = true;
+        win.close();
+    }
+});
+
 // handle requests sent from the browser instances
 ipc.on('request', (event, arg) => {
 
-    // locate the sender
-    let wind = null;
-    for (let i = 0; i < windows.length; i++) {
-        wind = windows[i];
-        if (wind.webContents === event.sender)
-            break;
-    }
-
-    if (wind === null)
-        return;
+    const webContents = event.sender;
+    const wind = BrowserWindow.fromWebContents(webContents);
 
     let eventType = arg.type;
     let eventData = arg.data;
 
     switch (eventType) {
-        case 'openDevTools':
-            wind.webContents.toggleDevTools();
+        case 'toggleDevTools':
+            webContents.toggleDevTools();
             break;
         case 'openWindow':
             createWindow({ id: eventData });
@@ -511,9 +546,24 @@ ipc.on('request', (event, arg) => {
             else
                 wind.maximize();
             break;
-        //case 'openRecorder':
-        //    openRecorder(eventData);
-        //    break;
+        case 'setEdited':
+            wind.setDocumentEdited(eventData.edited);
+            break;
+        case 'setMenu':
+            const { template } = eventData;
+            const menu = Menu.buildFromTemplate(template);
+            Menu.setApplicationMenu(menu);
+            break;
+        case 'copyToClipboard':
+            const { content } = eventData;
+            if ('image' in content)
+                content.image = nativeImage.createFromDataURL(content.image);
+            clipboard.write(content);
+            break;
+        case 'zoom':
+            const { zoom } = eventData;
+            webContents.setZoomFactor(zoom);
+            break;
     }
 });
 
@@ -547,7 +597,7 @@ const createWindow = function(open) {
         y = open.bounds.y;
     }
 
-    let wind = new BrowserWindow({
+    const wind = new BrowserWindow({
         width, height, x, y,
         minWidth: 800,
         minHeight: 600,
@@ -562,6 +612,46 @@ const createWindow = function(open) {
         },
     });
 
+    windowState[wind.id] = { loading: false, closing: false };
+
+    const { webContents } = wind;
+
+    const beforeInputEvent = (event, input) => {
+
+        // intercept page refreshes, so we can differentiate between
+        // a page refresh, and a window close
+
+        if (input.type !== 'keyDown')
+            return;
+
+        if ((input.key === 'r' && input.meta)
+                || (input.key === 'F5')
+                || (input.key === 'r' && input.ctrlKey)) {
+            windowState[wind.id].loading = true;
+            wind.webContents.reload();
+        }
+    };
+
+    webContents.on('before-input-event', beforeInputEvent);
+
+    wind.on('close', (event) => {
+
+        // beforeunload is how we intercept window closes (prompt to save)
+        // but it also gets triggered for page refreshes. in general, the user
+        // shouldn't be able to refresh the page, but they're useful during
+        // development.
+
+        const state = windowState[wind.id];
+
+        if (state.closing !== true && state.loading !== true) {
+            webContents.send('notify', { type: 'close', data: { } });
+            event.preventDefault();
+        }
+        else {
+            webContents.removeListener('before-input-event', beforeInputEvent);
+        }
+    });
+
     // as of electron 1.7.9 on linux, drag and drop from the fs to electron
     // doesn't seem to work, the drop event is never fired. so we handle the
     // navigate event here to achieve the same thing
@@ -573,26 +663,12 @@ const createWindow = function(open) {
         }
     });
 
-    // if (recorderWindow !== null) {
-    //     let script = `window.notifyCurrentWindowChanged(${wind.id})`;
-    //     recorderWindow.webContents.executeJavaScript(script);
-    // }
-
-    // wind.on('focus', (event) => {
-    //     if (recorderWindow !== null) {
-    //         let script = `window.notifyCurrentWindowChanged(${event.sender.id})`;
-    //         recorderWindow.webContents.executeJavaScript(script);
-    //     }
-    // });
-
     wind.webContents.on('did-finish-load', (event) => {
         if (splash != null) {
             splash.close();
             splash = null;
         }
     });
-
-    windows.push(wind);
 
     let url = rootUrl;
     if (open.id)
@@ -625,20 +701,9 @@ const createWindow = function(open) {
     // wind.openDevTools();
     wind.loadURL(url);
 
-
     wind.webContents.on('new-window', function(e, url) {
         e.preventDefault();
         electron.shell.openExternal(url);
-    });
-
-    wind.on('closed', (event) => {
-        windows = windows.filter(w => w != wind);
-        // if (windows.length === 0 && recorderWindow !== null) {
-        //     let recorder = recorderWindow;
-        //     // set it to null to really close
-        //     recorderWindow = null;
-        //     recorder.close();
-        // }
     });
 };
 
@@ -703,58 +768,3 @@ const notifyUpdateStatus = function(status) {
     });
 }
 
-/* const openRecorder = function(id) {
-    if (recorderWindow === null) {
-
-        // setting focusable to false seems only useful on macOS
-        // it's bad on windows, and completely useless on linux
-        let focusable = process.platform !== 'darwin';
-
-        // on linux, alwaysOnTop doesn't work, so it's better
-        // to leave it in the taskbar
-        let skipTaskbar = process.platform !== 'linux';
-
-        recorderWindow = new BrowserWindow({
-            show: false,
-            width: 340,
-            height: 240,
-            resizable: false,
-            minimizable: false,
-            maximizable: false,
-            alwaysOnTop: true,
-            fullscreenable: false,
-            focusable: focusable,
-            skipTaskbar: skipTaskbar,
-            vibrancy: 'titlebar',
-            acceptFirstMouse: true,
-            defaultEncoding: 'UTF-8',
-            webPreferences: {
-                nodeIntegration: true,
-            },
-        });
-
-        recorderWindow.loadURL(rootUrl + 'recorder.html');
-        recorderWindow.once('ready-to-show', () => {
-            let script = `window.notifyCurrentWindowChanged(${id})`;
-            recorderWindow.webContents.executeJavaScript(script);
-            recorderWindow.show();
-        });
-        recorderWindow.on('close', (event) => {
-            // set recorderWindow to null to close properly
-            if (recorderWindow !== null) {
-                recorderWindow.hide();
-                event.preventDefault();
-            }
-        })
-        recorderWindow.once('closed', (event) => {
-            recorderWindow = null;
-        });
-    }
-    else if (recorderWindow.isVisible()) {
-        recorderWindow.focus();
-        recorderWindow.flashFrame();
-    }
-    else {
-        recorderWindow.show();
-    }
-} */
