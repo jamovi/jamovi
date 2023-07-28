@@ -176,12 +176,12 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
     line-height: 45px;
 }
 
-:not(body.electron) .jmv-update-info,
-:not(body.electron) .jmv-recorder,
-:not(body.electron) .jmv-devmode,
-:not(body.electron) .jmv-zoom,
-:not(body.electron) .jmv-ribbon-appmenu-version,
-:not(body.electron) .jmv-language-selector {
+body:not(.electron) .jmv-update-info,
+body:not(.electron) .jmv-recorder,
+body:not(.electron) .jmv-devmode,
+body:not(.electron) .jmv-zoom,
+body:not(.electron) .jmv-ribbon-appmenu-version,
+body:not(.electron) .jmv-language-selector {
     display: none ;
 }
 
