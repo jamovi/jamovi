@@ -100,7 +100,7 @@ class Option:
                 return { 'value': def4ult, 'vars': [ ], 'synced': [ ] }
             else:
                 return def4ult
-        elif self.type == 'Bool':
+        elif self.type == 'Bool' or self.type == 'Action':
             return False
         elif self.type == 'Variables':
             return [ ]
