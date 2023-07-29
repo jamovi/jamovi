@@ -140,7 +140,9 @@ class Analysis:
         results.results.error.message = message
         self.set_results(results)
 
-    def set_results(self, results, complete=True, silent=False):
+    def set_results(self, results, complete=True, *, status=Status.COMPLETE, silent=False):
+
+        self._status = status
 
         if results.results.error.message != '':
             use_previous_results = False
@@ -181,9 +183,11 @@ class Analysis:
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
 
-        if complete:
+        if self._status in (Analysis.Status.COMPLETE, Analysis.Status.ERROR) and complete:
             # set 'action options' back to false
             self.options.clear_actions()
+            # copy those options back into the results, so they get sent to the client
+            results.options.CopyFrom(self.options.as_pb())
 
         if complete and not silent:
 

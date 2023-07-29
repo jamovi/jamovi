@@ -148,15 +148,17 @@ class Scheduler:
                     analysis.op.set_exception(ValueError(results.error.message))
                 else:
                     analysis.op.set_result(results)
-            else:
-                analysis.set_results(results)
-
-            if results.status == ANALYSIS_ERROR:
-                analysis.set_status(Analysis.Status.ERROR)
-            elif request.perform == PERFORM_INIT:
-                analysis.set_status(Analysis.Status.INITED)
-            else:
                 analysis.set_status(Analysis.Status.COMPLETE)
+            else:
+                if results.status == ANALYSIS_ERROR:
+                    status = Analysis.Status.ERROR
+                elif request.perform == PERFORM_INIT:
+                    status = Analysis.Status.INITED
+                else:
+                    status = Analysis.Status.COMPLETE
+
+                analysis.set_results(results, status=status)
+
         finally:
             if request.perform == PERFORM_INIT:
                 self._n_initing -= 1
