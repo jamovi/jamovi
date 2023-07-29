@@ -81,7 +81,7 @@ class Weights(Analysis):
             weights = self.options.get_value('weights')
             if weights:
                 bolded = f'<strong>{ html.escape(weights) }</strong>'
-                content = _('Data is weighted by the variable {}').format(bolded)
+                content = _('The data is weighted by the variable {}.').format(bolded)
             else:
                 content = _('Data is unweighted')
             self._html_pb.content = content

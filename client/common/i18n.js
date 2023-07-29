@@ -29,7 +29,7 @@ class I18n {
         return this._availableLanguages;
     }
 
-    _(key, formats) {
+    _(key, formats, options={ prefix: '', postfix: '' }) {
         let value = null;
         if ( ! this.jed)
             value = key;
@@ -37,7 +37,7 @@ class I18n {
             value = this.jed.dcnpgettext(undefined, undefined, key);
 
         if (formats)
-            value = this.format(value, formats);
+            value = this.format(value, formats, options);
         return value;
     }
 
@@ -97,12 +97,33 @@ class I18n {
         return value;
     }
 
-    format(value, formats) {
-        let newValue = value;
-        for (let name in formats) {
-            newValue = newValue.replace(`{${name}}`, formats[name]);
+    __(compound, options={ prefix: '', postfix: '' }) {
+        const parts = compound.split('\u0004');
+        if (parts.length === 1) {
+            // not a translatable string
+            return parts[0];
         }
-        return newValue;
+        else if (parts.length < 3) {
+            return _(parts[0]);
+        }
+        else {
+            const key = parts[1];
+            const values = JSON.parse(parts[2]);
+            return _(key, values, options);
+        }
+    }
+
+    format(fstring, values, options={ prefix: '', postfix: '' }) {
+        const { prefix, postfix } = options;
+        if (typeof values === 'string') {
+            return fstring.replace('{}', `${ prefix }${ values }${ postfix }`);
+        }
+        else {
+            let value = fstring;
+            for (let name in values)
+                value = value.replace(`{${name}}`, `${ prefix }${ values[name] }${ postfix }`);
+            return value;
+        }
     }
 
     isRTL() {

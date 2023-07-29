@@ -6,6 +6,8 @@ Backbone.$ = $;
 
 const Elem = require('./element');
 
+import i18n from '../common/i18n';
+
 
 export const NoticeModel = Elem.Model.extend({
     defaults : {
@@ -64,7 +66,10 @@ export const NoticeView = Elem.View.extend({
 
         let $content = this.$el.find('.content');
         this.$el.find('a[href]').off('click');
-        $content.html(doc.content);
+
+        const content = i18n.__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
+        $content.html(content);
+
         this.$el.find('a[href]').on('click', (event) => this._handleLinkClick(event));
     },
     _handleLinkClick(event) {
