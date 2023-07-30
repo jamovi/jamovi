@@ -308,12 +308,12 @@ function setTitle(title) {
 }
 
 function updateOptions(values) {
-    if (analysis.inError)
+    if (! analysis || analysis.inError)
         return;
     
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {
-            setOptionsValues(data);
+            updateOptions(values);
         }, 0);
         return;
     }
@@ -322,10 +322,8 @@ function updateOptions(values) {
     model.options.beginEdit();
     for (let key in values) {
         let value = values[key];
-        if (key === 'results//heading') {
+        if (key === 'results//heading')
             setTitle(value);
-            titleSet = true;
-        }
         else
             model.options.setOptionValue(key, value);
     }
