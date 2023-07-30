@@ -99,16 +99,12 @@ class I18n {
 
     __(compound, options={ prefix: '', postfix: '' }) {
         const parts = compound.split('\u0004');
-        if (parts.length === 1) {
-            // not a translatable string
-            return parts[0];
-        }
-        else if (parts.length < 3) {
+        if (parts.length < 2 || parts[1] === '') {
             return _(parts[0]);
         }
         else {
-            const key = parts[1];
-            const values = JSON.parse(parts[2]);
+            const key = parts[0];
+            const values = JSON.parse(parts[1]);
             return _(key, values, options);
         }
     }
