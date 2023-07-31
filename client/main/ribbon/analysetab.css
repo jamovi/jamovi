@@ -103,6 +103,10 @@
     background-image: url("../../assets/analysis-jeva.svg");
 }
 
+.jmv-ribbon-button[data-name="esci"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-esci.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-more.svg");
 }
