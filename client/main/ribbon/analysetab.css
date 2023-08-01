@@ -42,6 +42,10 @@
     background-image: url("../../assets/analysis-factor.svg");
 }
 
+.jmv-ribbon-button[data-name="data"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-data.svg");
+}
+
 .jmv-ribbon-button[data-name="base r"] .jmv-ribbon-button-icon,
 .jmv-ribbon-button[data-name="r"]  .jmv-ribbon-button-icon,
 .jmv-ribbon-button[data-name="rj"] .jmv-ribbon-button-icon {
@@ -105,6 +109,10 @@
 
 .jmv-ribbon-button[data-name="esci"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-esci.svg");
+}
+
+.jmv-ribbon-button[data-name="sem"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-sem.svg");
 }
 
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
