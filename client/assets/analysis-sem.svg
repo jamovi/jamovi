@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg enable-background="new 0 0 74 44" version="1.1" viewBox="0 0 74 44" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+<style type="text/css">
+	.st0{fill:none;stroke:#9F9F9F;stroke-width:3;stroke-linecap:square;}
+	.st1{fill:#FFFFFF;}
+	.st2{fill:#6B9DE8;}
+	.st3{fill:#E6AC40;}
+</style>
+<line class="st0" x1="50.734" x2="29.425" y1="11.687" y2="11.751"/><line class="st0" x1="21.148" x2="9.1829" y1="13.033" y2="37.969" fill="none" stroke="#9f9f9f" stroke-linecap="square" stroke-width="1.664"/><line class="st0" x1="21.77" x2="31.762" y1="10.162" y2="35.952" fill="none" stroke="#9f9f9f" stroke-linecap="square" stroke-width="1.664"/><g>
+<ellipse cx="21.989" cy="11.65" rx="7.5443" ry="6.1317" fill="#6b9de8" fill-rule="evenodd"/><ellipse cx="20.587" cy="11.398" rx="3.2726" ry="2.1612" fill="#6b9de8"/><ellipse cx="22.038" cy="11.611" rx="4.9443" ry="3.3637" fill="#fff" stroke-width="1.1022"/></g><line class="st0" x1="55.398" x2="47.324" y1="14.095" y2="34.297" fill="none" stroke="#9f9f9f" stroke-linecap="square" stroke-width="1.4004"/><line class="st0" x1="56.967" x2="68.141" y1="10.343" y2="36.015" fill="none" stroke="#9f9f9f" stroke-linecap="square" stroke-width="1.7557"/><ellipse cx="57.333" cy="11.338" rx="7.5443" ry="6.1317" fill="#e6ac40" fill-rule="evenodd"/><ellipse cx="57.316" cy="11.156" rx="4.9443" ry="3.3637" fill="#fff" stroke-width="1.1022"/><ellipse cx="64.66" cy="11.955" rx="1.7851" ry=".20918" fill-opacity="0"/><g fill="#fff" stroke-width="2.5193"><rect x="6.3196" y="32.165" width="12.381" height="7.0587" stroke="#6b9de8"/><rect x="23.365" y="32.165" width="12.381" height="7.0587" stroke="#6b9de8"/><rect x="40.41" y="32.165" width="12.381" height="7.0587" stroke="#e6ac40"/><rect x="57.455" y="32.165" width="12.381" height="7.0587" stroke="#e6ac40"/></g></svg>
