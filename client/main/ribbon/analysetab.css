@@ -52,6 +52,10 @@
     background-image: url("../../assets/analysis-r.svg");
 }
 
+.jmv-ribbon-button[data-name="major"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-major.svg");
+}
+
 .jmv-ribbon-button[data-name="medmod"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-medmod.svg");
 }
