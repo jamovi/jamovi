@@ -22,6 +22,8 @@ const deepRenderToGrid = function(ctrl, context, toGrid, row, column) {
         for (let child of controls) {
             if (child.typeName === 'Content') {
                 let containerParams = { name: child.name, controls: child.controls, style: childStyle, _parentControl: ctrl };
+                if (ctrl.getPropertyValue('stretchFactor') > 0)
+                    containerParams.stretchFactor = 1;
                 let childContainer = new ControlContainer(containerParams);
                 childContainer.renderContainer(context);
                 bodyContainers.push(childContainer);
@@ -34,6 +36,9 @@ const deepRenderToGrid = function(ctrl, context, toGrid, row, column) {
         if (looseCtrls) {
             let containerParams = { controls: looseCtrls, style: childStyle, _parentControl: ctrl };
 
+            if (ctrl.getPropertyValue('stretchFactor') > 0)
+                containerParams.stretchFactor = 1;
+            
             let container = new ControlContainer(containerParams);
             container.renderContainer(context);
             bodyContainers.push(container);
