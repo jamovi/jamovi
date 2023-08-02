@@ -39,10 +39,6 @@ def write(data, path, prog_cb, html=None, is_template=False):
 
         byts = bytes(content.getvalue(), 'utf-8')
 
-        # this causes problems with emails
-        zip.writestr('META-INF/MANIFEST.MF', byts, zipfile.ZIP_DEFLATED)
-
-        # so we'll move to this
         zip.writestr('meta', byts, zipfile.ZIP_DEFLATED)
 
         if html is not None:
