@@ -294,7 +294,7 @@ def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
     if x < 0:
         return NaN
     elif x == 0 and lambda < 0:
-        float('-inf')
+        return float('-inf')
     elif lmbda == 0:
         return math.log(x)
     else:
