@@ -226,6 +226,9 @@ export const toggleDevTools = etron.toggleDevTools || (() => {});
 
 export const isElectron = etron.isElectron || false;
 
+export const maximizeWindow = etron.maximizeWindow || (() => { });
+export const minimizeWindow = etron.minimizeWindow || (() => { });
+
 export default {
     isElectron,
     version,
@@ -235,6 +238,8 @@ export default {
     resultsViewUrl,
     closeWindow,
     openWindow,
+    maximizeWindow,
+    minimizeWindow,
     currentZoom,
     zoom,
     zoomIn,
