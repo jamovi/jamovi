@@ -152,9 +152,8 @@ async function copyToClipboard(content) {
     await ipc.invoke('copy-to-clipboard', { content });
 }
 
-function pasteFromClipboard() {
-    let text = clipboard.readText();
-    let html = clipboard.readHTML();
+async function pasteFromClipboard() {
+    const { text, html } = await ipc.invoke('paste-from-clipboard');
     if (html === text)
         html = '';
     return { text, html };

@@ -497,6 +497,12 @@ ipc.handle('copy-to-clipboard', (event, arg) => {
     return undefined;
 });
 
+ipc.handle('paste-from-clipboard', (event, arg) => {
+    const text = clipboard.readText();
+    const html = clipboard.readHTML();
+    return { text, html };
+});
+
 ipc.handle('show-open-dialog', (event, options) => {
     return dialog.showOpenDialog(options);
 });
