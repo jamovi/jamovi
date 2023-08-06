@@ -107,7 +107,6 @@ class ClipboardPrompt extends HTMLElement {
                 this._textarea.innerHTML = content.html;
             }
             else if ('text' in content) {
-                //this._textarea.innerText = content.text;
                 let pre = document.createElement('pre');
                 pre.innerText = content.text;
                 this._textarea.innerHTML = '';
@@ -119,9 +118,8 @@ class ClipboardPrompt extends HTMLElement {
                 this._textarea.innerHTML = '';
                 this._textarea.appendChild(img);
             }
-            this._selectContent();
         }
-
+        this._selectContent();
 
         return new Promise((resolve, reject) => {
             this._resolve = resolve;
@@ -129,8 +127,8 @@ class ClipboardPrompt extends HTMLElement {
     }
 
     _selectContent() {
-        var selection = window.getSelection();
-        var range = document.createRange();
+        let selection = window.getSelection();
+        let range = document.createRange();
         range.selectNodeContents(this._textarea);
         selection.removeAllRanges();
         selection.addRange(range);
