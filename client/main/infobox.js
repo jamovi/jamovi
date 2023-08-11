@@ -307,7 +307,6 @@ class InfoBox extends HTMLElement {
 
             div.body {
                 position: relative ;
-                max-width: 540px ;
                 box-sizing: border-box ;
                 background-color: #f9f9f9;
                 border: 1px solid #888888 ;
@@ -326,7 +325,7 @@ class InfoBox extends HTMLElement {
 
             div.remote {
                 height: 100% ;
-                width: 450px ;
+                width: 100% ;
             }
 
             iframe {
