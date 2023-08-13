@@ -266,7 +266,7 @@ class EntryHandler(RequestHandler):
         query = ''
         if self.request.query:
             query = f'?{ self.request.query }'
-        self.redirect('/%s/%s' % (instance.id, query))
+        self.redirect('%s/%s' % (instance.id, query))
 
 
 class OpenHandler(RequestHandler):
