@@ -707,9 +707,13 @@ const createWindow = function(open) {
     // wind.openDevTools();
     wind.loadURL(url);
 
-    wind.webContents.on('new-window', function(e, url) {
-        e.preventDefault();
-        electron.shell.openExternal(url);
+    wind.webContents.setWindowOpenHandler((details) => {
+        const { url, disposition } = details;
+        if (disposition === 'foreground-tab') {
+            // i suppose insisting on the foreground-tab is better security?
+            electron.shell.openExternal(url);
+        }
+        return { action: 'deny' };
     });
 };
 
