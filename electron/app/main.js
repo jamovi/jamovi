@@ -570,6 +570,11 @@ ipc.on('request', (event, arg) => {
             const { zoom } = eventData;
             webContents.setZoomFactor(zoom);
             break;
+        case 'openUrl':
+            const { url } = eventData;
+            if (url.startsWith('http://') || url.startsWith('https://'))
+                shell.openExternal(url);
+            break;
     }
 });
 
@@ -711,7 +716,7 @@ const createWindow = function(open) {
         const { url, disposition } = details;
         if (disposition === 'foreground-tab') {
             // i suppose insisting on the foreground-tab is better security?
-            electron.shell.openExternal(url);
+            shell.openExternal(url);
         }
         return { action: 'deny' };
     });
