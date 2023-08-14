@@ -77,8 +77,7 @@ function toggleDevTools() {
 }
 
 function openUrl(url) {
-    if (url.startsWith('http://') || url.startsWith('https://'))
-        shell.openExternal(url);
+    ipc.send('request', { type: 'openUrl', data: { url } });
 }
 
 const zoomLevels = [ 30, 50, 67, 80, 90, 100, 110, 120, 133, 150, 170, 200, 240, 300 ];
