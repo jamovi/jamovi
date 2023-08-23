@@ -57,23 +57,20 @@ class Coms {
 
             this._ws.onclose = (event) => {
 
-                if (host.isElectron && event.code === 1006) {
-                    // this occurs when the computer hibernates
-                    // so we should try reconnecting
-                    this.connected = null;
-                    this._opened = false;
-                    setTimeout(() => {
-                        this.connect().catch((error) => {
-                            this._notifyEvent('failure');
-                            this._notifyEvent('closed');
-                        });
-                    });
-                }
-                else {
-                    if (this._opened && event.code !== 1000 && event.code !== 1001)
+                this.connected = null;
+                this._opened = false;
+
+                let tryReconnectIn = 0;
+                if ([1000, 1001].includes(event.code))
+                    // person is navigating away
+                    // but just in case they aren't
+                    tryReconnectIn = 2000;
+
+                setTimeout(() => {
+                    this.connect().catch(() => {
                         this._notifyEvent('failure');
-                    this._notifyEvent('closed');
-                }
+                    });
+                }, tryReconnectIn);
             };
         });
     }
