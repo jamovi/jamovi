@@ -36,6 +36,9 @@ export function contextMenuListener(element, callback) {
         };
 
         element.addEventListener('pointerdown', event => {
+            if (event.pointerType === 'mouse')
+                return;
+            
             element.addEventListener('pointerup', cancelRightClick);
             element.addEventListener('pointercancel', cancelRightClick);
             element.addEventListener('pointermove', cancelRightClick);

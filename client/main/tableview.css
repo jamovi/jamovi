@@ -12,13 +12,13 @@
          visibility: visible;
      }
 
-     .jmv-column-header.highlighted .jmv-column-header-resizer {
+     .jmv-column-header.highlighted .jmv-column-header-resizer:not(.jmv-tableview.fine-pointer *) {
          visibility: visible;
          pointer-events: all;
          opacity: 1;
      }
 
-     .jmv-column-header .jmv-column-header-resizer {
+     .jmv-column-header .jmv-column-header-resizer:not(.jmv-tableview.fine-pointer *) {
          pointer-events: none;
          opacity: 0;
          touch-action: none;
@@ -37,7 +37,7 @@
          background-color: #ff000000;
      }
 
-     .jmv-table-cell-selected > .selection-sizer {
+     .jmv-table-cell-selected > .selection-sizer:not(.jmv-tableview.fine-pointer *) {
          visibility: hidden;
          opacity: 0;
          width: 16px;
@@ -50,21 +50,21 @@
          position: absolute;
      }
 
-     .jmv-table-cell-selected.dragging {
+     .jmv-table-cell-selected.dragging:not(.jmv-tableview.fine-pointer *) {
          transition: none ;
      }
 
-     .jmv-table-cell-selected:not(.editing):not(.dragging):not(.scrolling):not(.resizing):not(.all-selected) > .selection-sizer {
+     .jmv-table-cell-selected:not(.editing):not(.dragging):not(.scrolling):not(.resizing):not(.all-selected) > .selection-sizer:not(.jmv-tableview.fine-pointer *) {
          visibility: visible;
          opacity: 1;
      }
 
-     .jmv-table-cell-selected > .bottom-right-sizer {
+     .jmv-table-cell-selected > .bottom-right-sizer:not(.jmv-tableview.fine-pointer *) {
          right: -13px;
          bottom: -13px;
      }
 
-     .jmv-table-cell-selected > .top-left-sizer {
+     .jmv-table-cell-selected > .top-left-sizer:not(.jmv-tableview.fine-pointer *) {
          left: -13px;
          top: -13px;
      }
