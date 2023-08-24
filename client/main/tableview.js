@@ -725,13 +725,23 @@ const TableView = SilkyView.extend({
         return false;
     },
 
+    setTouchMode(value) {
+        this.touchMode = value;
+       if (value === false)
+            this.$el.addClass('fine-pointer');
+        else
+            this.$el.removeClass('fine-pointer');
+    },
+
     updateTouchMode() {
         let pointerType = window.matchMedia('(pointer: coarse)');
-        this.touchMode = pointerType.matches;
+        this.setTouchMode(pointerType.matches);
         pointerType.addEventListener("change", this.updateTouchMode.bind(this), { once: true });
     },
 
     _mouseDown(event) {
+
+        this.setTouchMode((!event.pointerType && this.touchMode) || event.pointerType !== 'mouse');
 
         this.$body[0].setPointerCapture(event.pointerId);
 
@@ -747,8 +757,11 @@ const TableView = SilkyView.extend({
             }
             else
                 this.tapCount += 1;
-
-            return Promise.resolve();
+            let pos = this._getPos(event.clientX, event.clientY);
+            if (pos.onHeader === 'columns' || pos.onHeader === 'rows')
+                return this._selectionMade(event);
+            else
+                return Promise.resolve();
         }
 
         if (event.button === 2) {
@@ -963,7 +976,8 @@ const TableView = SilkyView.extend({
     },
 
     _mouseMove(event) {
-
+        this.setTouchMode((!event.pointerType && this.touchMode) || event.pointerType !== 'mouse');
+        
         if (this.controller.focusedOn !== this)
             return;
 
