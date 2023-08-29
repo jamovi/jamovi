@@ -4,6 +4,7 @@
 
 'use strict';
 
+import { Future } from './utils/common';
 
 const events = require('events');
 const $ = require('jquery');
@@ -60,6 +61,19 @@ export const openWindow = etron.openWindow || function(instanceId) {
     if (opened === null)
         _notify('window-open-failed', { url });
 };
+
+export async function open(url, target, windowFeatures) {
+    let opened = window.open(url, target, windowFeatures);
+    // can fail under safari
+    if (opened === null) {
+        const future = new Future();
+        _notify('window-open-failed', { url, future });
+        return future;
+    }
+    else {
+        return opened;
+    }
+}
 
 export const closeWindow = etron.closeWindow || function() {
     window.close();
@@ -238,6 +252,7 @@ export default {
     resultsViewUrl,
     closeWindow,
     openWindow,
+    open,
     maximizeWindow,
     minimizeWindow,
     currentZoom,
