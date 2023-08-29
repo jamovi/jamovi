@@ -10,23 +10,15 @@ const init = function(name) {
     if ($tarps[name] !== undefined)
         return $tarps[name];
 
-    let $tarp = $(`<div style="
-            width: 100% ;
-            height: 100% ;
-            position: absolute ;
-            z-index: 99 ;
-            top: 0 ;
-            left: 0 ;
-            background-color: black ;
-            display: none ;
-            opacity: 0 ;
-        "></div>`);
-        $tarp.appendTo($('body'));
-        $tarp.on('click', event => {
-            $tarp.trigger('tarp-clicked');
-            event.preventDefault();
-            event.stopPropagation();
-        });
+    let $body = $('body');
+
+    let $tarp = $('<div class="tarp">');
+    $tarp.appendTo($body);
+    $tarp.on('click', event => {
+        $tarp.trigger('tarp-clicked');
+        event.preventDefault();
+        event.stopPropagation();
+    });
 
     $tarps[name] = $tarp;
 

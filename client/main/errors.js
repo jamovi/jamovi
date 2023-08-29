@@ -12,6 +12,8 @@ export class UserFacingError extends Error {
     }
 }
 
+export class TimedOut extends Error { }
+
 export default {
     UserFacingError,
     CancelledError,
