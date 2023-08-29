@@ -57,6 +57,9 @@ class Coms {
 
             this._ws.onclose = (event) => {
 
+                if ( ! this._opened)
+                    return;
+
                 this.connected = null;
                 this._opened = false;
 
