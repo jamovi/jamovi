@@ -395,7 +395,7 @@ const spawn = new Promise((resolve, reject) => {
 
 }).catch(error => {
     console.log(error)
-    dialog.showErrorBox('Server Error', 'Unfortunately, the jamovi server could not be started, and jamovi must now close. We regret the inconvenience.\n\nPlease report your experiences to the jamovi team.');
+    dialog.showErrorBox('Server Error', 'Unfortunately, the jamovi server could not be started, and jamovi must now close. We regret the inconvenience.\n\nMore information is available by visiting www.jamovi.org/troubleshooting.html');
     app.quit();
 });
 

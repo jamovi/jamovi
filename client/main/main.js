@@ -163,7 +163,7 @@ coms.on('broadcast', (message) => {
         let error = message.error;
         infoBox.setup({
             title: 'Server message',
-            message: `${ error.message }\n\n${ error.cause }`,
+            message: `${ error.message }\n\n${ error.cause }\n\nSee www.jamovi.org/troubleshooting.html for more information.`,
             status: 'terminated',
         });
         infoBox.style.display = null;
