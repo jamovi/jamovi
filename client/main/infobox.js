@@ -253,7 +253,7 @@ class InfoBox extends HTMLElement {
                 if (this._iframe)
                     this._remote.removeChild(this._iframe);
                 this._iframe = document.createElement('iframe');
-                this._iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox';
+                this._iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms';
                 this._iframe.setAttribute('src', src);
                 this._remote.appendChild(this._iframe);
             }
