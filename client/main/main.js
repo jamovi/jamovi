@@ -826,6 +826,8 @@ $(document).ready(async() => {
                 status = await stream;
 
                 if (status.status === 'requires-auth') {
+                    if (window.location.search === '?completed=verifyEmail')
+                        status['message-src'] += '#/verified';
                     await infoBox.setup(status);
                     await auth.waitForSignIn();
                     options.authToken = await auth.getAuthToken();
