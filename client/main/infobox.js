@@ -308,19 +308,18 @@ class InfoBox extends HTMLElement {
             div.body {
                 position: relative ;
                 box-sizing: border-box ;
-                background-color: #f9f9f9;
-                border: 1px solid #888888 ;
                 display: flex ;
                 flex-direction: column ;
                 justify-content: center ;
                 transition: width 0.2s, height 0.2s, opacity .2s ;
-                opacity: 0;
                 overflow: hidden ;
-                box-shadow: 0px 0px 10px #777777;
             }
 
             div.local {
                 margin: 20px;
+                background-color: white;
+                padding: 20px;
+                box-shadow: 0px 0px 10px #777777;
             }
 
             div.remote {
@@ -329,9 +328,21 @@ class InfoBox extends HTMLElement {
             }
 
             iframe {
-                border: none ;
-                width: 100% ;
-                height: 100% ;
+                z-index: 99999;
+                display: block;
+                background-color: transparent;
+                border: 0px none transparent;
+                overflow-x: hidden;
+                overflow-y: auto;
+                visibility: visible;
+                margin: 0px;
+                padding: 0px;
+                -webkit-tap-highlight-color: transparent;
+                position: fixed;
+                left: 0px;
+                top: 0px;
+                width: 100%;
+                height: 100%;
             }
 
             .heading {
