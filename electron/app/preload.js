@@ -163,17 +163,7 @@ function setDialogProvider(provider) {
 }
 
 async function showSaveDialog(options) {
-    let result = await dialogProvider.showDialog('export', options);
-    if (result.cancelled)
-        return result;
-    // On linux we don't get an extension, so here we add the default one
-    // https://github.com/electron/electron/issues/21935
-    let hasExtension = /\.[^\/\\]+$/.test(result.file);
-    if (hasExtension === false && options.filters) {
-        let defaultExt = options.filters[0].extensions[0];
-        result.file = `${ result.file }.${ defaultExt }`;
-    }
-    return result;
+    return await dialogProvider.showDialog('export', options);
 }
 
 async function showSaveDialogExternal(options) {
@@ -184,6 +174,13 @@ async function showSaveDialogExternal(options) {
     }
     else {
         let file = result.filePath.replace(/\\/g, '/');
+        // On linux we don't get an extension, so here we add the default one
+        // https://github.com/electron/electron/issues/21935
+        let hasExtension = /\.[^\/\\]+$/.test(file);
+        if (hasExtension === false && options.filters) {
+            let defaultExt = options.filters[0].extensions[0];
+            file = `${ file }.${ defaultExt }`;
+        }
         return { cancelled: false, file };
     }
 }
