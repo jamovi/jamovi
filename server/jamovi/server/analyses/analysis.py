@@ -225,7 +225,8 @@ class Analysis:
 
                         if output.incData:
 
-                            keys_synced[output.name] = True
+                            if not output.stale:
+                                keys_synced[output.name] = True
 
                             if len(output.d) > 0:
                                 values = [float('nan')] * n_rows
