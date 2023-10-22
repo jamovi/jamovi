@@ -47,12 +47,13 @@ class XLSXReader(Reader):
         if self._ws is None:
             raise FileCorruptError
 
-        self.set_total(self._ws.max_row - self._ws.min_row + 1)
+        # survey software often doesn't set these properly
+        bad_min_max = (self._ws.max_row is None or self._ws.min_row is None)
 
-        if 1 == self._ws.min_row == self._ws.min_column == self._ws.max_row == self._ws.max_column:
+        # qualtrics doesn't set these values correctly
+        bad_from_qualtrics = 1 == self._ws.min_row == self._ws.min_column == self._ws.max_row == self._ws.max_column
 
-            # qualtrics doesn't set these values correctly,
-            # so we have to determine them.
+        if bad_min_max or bad_from_qualtrics:
 
             self._first_col = 0
             self._last_col = 0
@@ -82,6 +83,8 @@ class XLSXReader(Reader):
 
         self._row_count = self._last_row - self._first_row + 1
         self._col_count = self._last_col - self._first_col + 1
+
+        self.set_total(self._row_count)
 
     def close(self):
         if self._file is not None:
