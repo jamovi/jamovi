@@ -119,6 +119,10 @@
     background-image: url("../../assets/analysis-sem.svg");
 }
 
+.jmv-ribbon-button[data-name="foodiestats"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-foodiestats.svg");
+}
+
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-more.svg");
 }
