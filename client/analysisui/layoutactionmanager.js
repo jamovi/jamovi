@@ -120,16 +120,25 @@ const LayoutActionManager = function(view) {
             }
         }
 
-        if (this._resources[sourceName] === undefined)
-            throw "Cannot bind to '" + sourceName + "'. It does not exist.";
+        let failed = false;
+        if (this._resources[sourceName] === undefined) {
+            failed = true;
+            console.log("WARNING: Cannot bind to '" + sourceName + "'. It does not exist.");
+        }
 
-        let sourceNames = [sourceName];
-        if (compareValue !== null && compareValue.bindFunction !== undefined)
-            sourceNames = this._arrayUnique(sourceNames.concat(compareValue.sourceNames));
+        let sourceNames = [];
+        if ( ! failed) {
+            sourceNames = [sourceName];
+            if (compareValue !== null && compareValue.bindFunction !== undefined)
+                sourceNames = this._arrayUnique(sourceNames.concat(compareValue.sourceNames));
+        }
 
         return {
             bindFunction: (ui) => {
-                let value = ui[sourceName].value();
+                let value = null;
+                if (failed === false)
+                    value = ui[sourceName].value();
+
                 if (compareValue !== null) {
                     let cValue = compareValue;
                     if (compareValue.bindFunction !== undefined) {
@@ -179,6 +188,7 @@ const LayoutActionManager = function(view) {
 
         let partData = null;
         let endIndex = startIndex;
+        let failed = false;
         for (let i = startIndex + beginOffset; i < syntax.length; i++) {
 
             i = this._nextNonWhiteChar(syntax, i);
@@ -212,8 +222,11 @@ const LayoutActionManager = function(view) {
                     logic = 'and';
                     operatorLength = 2;
                 }
-                else
-                    throw 'Unknown logic operator in binding syntax: "' + syntax + '"';
+                else {
+                    failed = true;
+                    console.log('WARNING: Unknown logic operator in binding syntax: "' + syntax + '"');
+                    break;
+                }
 
                 partData.logic = logic;
                 i += operatorLength - 1;
@@ -227,6 +240,9 @@ const LayoutActionManager = function(view) {
         }
 
         let logicFunction = (ui) => {
+            if (failed)
+                return false;
+
             let prevLogic = null;
             let value = false;
             for (let i = 0; i < parts.length; i++) {
