@@ -63,19 +63,28 @@ class Coms {
                 this.connected = null;
                 this._opened = false;
 
-                let tryReconnectIn = 0;
                 if ([1000, 1001].includes(event.code))
                     // person is navigating away
                     // but just in case they aren't
-                    tryReconnectIn = 2000;
-
-                setTimeout(() => {
-                    this.connect().catch(() => {
-                        this._notifyEvent('failure');
-                    });
-                }, tryReconnectIn);
+                    this.reconnect([2000])
+                else
+                    this.reconnect([0, 200, 400, 600, 800])
             };
         });
+    }
+
+    reconnect(retries) {
+        if (retries.length === 0) {
+            this._notifyEvent('failure');
+            return;
+        }
+
+        const retryIn = retries.shift();
+        setTimeout(() => {
+            this.connect().catch((err) => {
+              this.reconnect(retries);
+            });
+        }, retryIn);
     }
 
     send(request) {
