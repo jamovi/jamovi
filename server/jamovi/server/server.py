@@ -707,8 +707,7 @@ class Server:
             self._session.stop()
 
     def start(self):
-        t = create_task(self._run())
-        t.add_done_callback(lambda t: t.result())
+        create_task(self._run())
 
     async def wait_ended(self):
         if self._session is not None:
