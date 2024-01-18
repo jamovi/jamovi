@@ -146,7 +146,7 @@ function View() {
 
         let diff = null;
 
-        if (Array.isArray(current)) {
+        if (Array.isArray(current) || Array.isArray(oldValue)) {
             diff = { removed: [], added: [], hasChanged: false };
             if (oldValue !== undefined)
                 diff = this.findDifferences(oldValue, current, format, itemProperty);
@@ -163,7 +163,7 @@ function View() {
                     hasChanged = format.isEqual(oldValue, current) === false;
             }
 
-            diff = { oldValue: oldValue, newValue: current, hasChanged: hasChanged };
+            diff = { oldValue: oldValue, newValue: current, hasChanged: hasChanged, removed: [], added: [] };
         }
 
         if (updateWS)
