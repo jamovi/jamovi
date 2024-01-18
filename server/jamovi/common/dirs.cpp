@@ -5,6 +5,12 @@
 #include "dirs.h"
 
 #ifdef _WIN32
+
+#ifndef NOMINMAX
+// https://stackoverflow.com/questions/6884093/warning-c4003-not-enough-actual-parameters-for-macro-max-visual-studio-2010
+#define NOMINMAX
+#endif
+
 #include <windows.h>
 #include <Shlobj.h>
 #include <shlwapi.h>
