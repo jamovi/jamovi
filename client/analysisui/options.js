@@ -252,6 +252,7 @@ const Options = function(def, translator) {
 
         let eOpt = Opt.getDefaultEventParams();
         eOpt.force = eventParams.force;
+        eOpt.externalEvent = eventParams.externalEvent;
 
         if (option.setValue(value, keys, eOpt) && eventParams.silent === false)
             this.onValueChanged(option, value, keys, 'change');

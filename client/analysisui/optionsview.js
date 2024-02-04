@@ -7,6 +7,7 @@ const ControlContainer = require('./controlcontainer').container;
 const DefaultControls = require('./defaultcontrols');
 const Backbone = require('backbone');
 const Opt = require('./option');
+const ApplyMagicEventsForCtrl = require('./applymagicevents').applyMagicEventsForCtrl;
 
 const OptionsView = function(uiModel) {
 
@@ -39,7 +40,9 @@ const OptionsView = function(uiModel) {
                 let option = options._list[i];
                 let name = option.params.name;
                 if (this.layoutActionManager.exists(name) === false) {
-                    let backgroundOption = new OptionControlBase( { name: name, _parentControl: null });
+                    let ctrlDef = { name: name, typeName: '_hiddenOption', _parentControl: null };
+                    ApplyMagicEventsForCtrl(ctrlDef, this.layoutActionManager._view);
+                    let backgroundOption = new OptionControlBase(ctrlDef);
                     backgroundOption.setOption(this._getOption(name));
                     this.layoutActionManager.addResource(name, backgroundOption);
                 }

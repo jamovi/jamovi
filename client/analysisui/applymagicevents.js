@@ -1,8 +1,49 @@
 
 'use strict';
 
-const applyMagicEvents = function(layout, template) {
+const applyMagicEvents = function (layout, template) {
     findMagicEvents(layout, 'view', template);
+};
+
+const applyMagicEventsForCtrl = function (ctrl, template, name) {
+    if (name === undefined)
+        name = ctrl.name;
+
+    if (name !== undefined) {
+        for (let handler in template.handlers) {
+            if (handler.startsWith(name + '_')) {
+                let eventName = handler.substring(name.length + 1);
+                if (isValidEvent(ctrl.typeName ? ctrl.typeName : ctrl.type, eventName)) {
+                    eventName = convertEventName(eventName);
+                    if (name === 'view') {
+                        if (template[eventName] !== undefined)
+                            continue;
+
+                        template[eventName] = template.handlers[handler];
+                    }
+                    else {
+                        let events = ctrl.events;
+                        if (events === undefined) {
+                            events = [];
+                            ctrl.events = events;
+                        }
+
+                        if (events[eventName] !== undefined)
+                            continue;
+
+                        let event = {};
+                        if (eventName === "change")
+                            event.execute = template.handlers[handler];
+                        else {
+                            event.onEvent = eventName;
+                            event.execute = template.handlers[handler];
+                        }
+                        events.push(event);
+                    }
+                }
+            }
+        }
+    }
 };
 
 const validEvents = {
@@ -45,7 +86,8 @@ const eventInheritance = {
     Label: ['OptionControl'],
     VariableLabel: ['OptionControl'],
     TermLabel: ['OptionControl'],
-    root: ['root']
+    root: ['root'],
+    _hiddenOption: ['OptionControl']
 };
 
 const isValidEvent = function(ctrlType, eventName) {
@@ -66,41 +108,7 @@ const isValidEvent = function(ctrlType, eventName) {
 };
 
 const findMagicEvents = function(ctrl, name, template) {
-    if (name !== undefined) {
-        for (let handler in template.handlers) {
-            if (handler.startsWith(name + '_')) {
-                let eventName = handler.substring(name.length + 1);
-                if (isValidEvent(ctrl.typeName ? ctrl.typeName : ctrl.type, eventName)) {
-                    eventName = convertEventName(eventName);
-                    if (name === 'view') {
-                        if (template[eventName] !== undefined)
-                            continue;
-
-                        template[eventName] = template.handlers[handler];
-                    }
-                    else {
-                        let events = ctrl.events;
-                        if (events === undefined) {
-                            events = [ ];
-                            ctrl.events = events;
-                        }
-
-                        if (events[eventName] !== undefined)
-                            continue;
-
-                        let event = { };
-                        if (eventName === "change")
-                            event.execute = template.handlers[handler];
-                        else {
-                            event.onEvent = eventName;
-                            event.execute = template.handlers[handler];
-                        }
-                        events.push(event);
-                    }
-                }
-            }
-        }
-    }
+    applyMagicEventsForCtrl(ctrl, template, name)
 
     if (Array.isArray(ctrl.controls)) {
         for (let i = 0; i < ctrl.controls.length; i++) {
@@ -128,4 +136,4 @@ const checkForSetupErrors = function(ctrl, template) {
         template.errors.push(`The use of a ${ ctrl.typeName === 'Supplier' ? ("'" + ctrl.typeName + "' control") : ("'" + ctrl.typeName + "' control, with the property > populate: 'manual',") } requires an 'updated' event handler to be assigned. Option: ${ctrl.name === undefined ? ctrl.typeName : ctrl.name}`);
 };
 
-module.exports = applyMagicEvents;
+module.exports = { applyMagicEvents, applyMagicEventsForCtrl };
