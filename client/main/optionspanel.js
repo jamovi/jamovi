@@ -23,6 +23,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
     this.name = analysis.name;
     this.options = null;
     this.def = null;
+    this.optionsViewReady = false;
 
     this.key = analysis.ns + '-' + analysis.name;
 
@@ -74,6 +75,10 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
                 let column = this.dataSetModel.getFirstEmptyColumn();
                 return this.dataSetModel.changeColumn(column.id, data.requestData ).then(() => { return column.name; });
             }
+        },
+
+        optionsViewReady: ready => {
+            this.optionsViewReady = ready;
         },
 
         requestData: data => {
@@ -128,9 +133,18 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
         this.instance = instance;
     };
 
+    this.initializeView = function () {
+        this.optionsViewReady = false;
+        this.ready.then(() => {
+            this.analysis.ready.then(() => {
+                this.updateData(this.analysis.options.getValues());
+            });
+        });  
+    };
+
     this.updateData = function(options) {
         this.options = options;
-        if ( ! this.analysis.missingModule)
+        if (!this.analysis.missingModule)
             this.frameComms.send("initialiseOptions", { id: this.analysis.id, options: this.options });
     };
 
@@ -264,13 +278,9 @@ let OptionsPanel = SilkyView.extend({
             this._currentResources = null;
         }
 
-        resources.ready.then(() => {
-            analysis.ready.then(() => {
-                resources.updateData(analysis.options.getValues());
-            });
-        });
-
         resources.analysis = analysis;
+        resources.initializeView();
+        
         if (this._currentResources === null) {
             this._currentResources = resources;
             this.addMsgListeners(this._currentResources);

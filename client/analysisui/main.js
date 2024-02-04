@@ -24,7 +24,7 @@ const GridOptionControl = require('./gridoptioncontrol');
 const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
 const GridOptionListControl = require('./gridoptionlistcontrol');
-const ApplyMagicEvents = require('./applymagicevents');
+const ApplyMagicEvents = require('./applymagicevents').applyMagicEvents;
 const focusLoop = require('../common/focusloop');
 
 const I18n = require("../common/i18n");
@@ -320,12 +320,14 @@ function updateOptions(values) {
 
     let model = analysis.model;
     model.options.beginEdit();
+    let params = Options.getDefaultEventParams("changed");
+    params.externalEvent = true;
     for (let key in values) {
         let value = values[key];
         if (key === 'results//heading')
             setTitle(value);
         else
-            model.options.setOptionValue(key, value);
+            model.options.setOptionValue(key, value, params);
     }
     model.options.endEdit();
 }
@@ -333,7 +335,7 @@ function updateOptions(values) {
 function setOptionsValues(data) {
     if (analysis.inError)
         return;
-
+    
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {
             setOptionsValues(data);
@@ -362,6 +364,8 @@ function setOptionsValues(data) {
         analysis.View.endDataInitialization(data.id);
     }
     model.options.endEdit();
+
+    parentFrame.send("optionsViewReady", true);
 }
 
 function onValuesForServerChanges(e) {

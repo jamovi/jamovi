@@ -11,6 +11,7 @@ const Opt = function(initialValue, params) {
     this._paramsOverride = { };
     this._overrideCount = 0;
     this._value = initialValue;
+    this._defaultValue = initialValue;
     this._initialized = false;
 
     Object.assign(this, Backbone.Events);
@@ -76,7 +77,6 @@ const Opt = function(initialValue, params) {
         else
             return obj[key];
     };
-
 
     this.getValue = function(key) {
         return this._getObjectElement(this._value, key);
@@ -152,6 +152,11 @@ const Opt = function(initialValue, params) {
         this._initialized = true;
 
         if (keys.length === 0) {
+            if (fValue === null && this._defaultValue !== null) {
+                fValue = this._defaultValue;
+                if (eventParams.externalEvent)
+                    force = true;  // makes sure the server is updated with the default value;
+            }
             if (force || underscore.isEqual(fValue, this._value) === false) {
                 this._value = fValue;
                 if (eventParams.silent === false)

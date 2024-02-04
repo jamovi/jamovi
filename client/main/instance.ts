@@ -893,7 +893,7 @@ const Instance = Backbone.Model.extend({
                 if (response.name !== 'empty')
                     this.set('selectedAnalysis', analysis);
             }
-            else {
+            else {       
                 analysis.results.index = response.index;
                 analysis.index = response.index - 1;
 
@@ -901,13 +901,16 @@ const Instance = Backbone.Model.extend({
                 if (response.revision === analysis.revision)
                     options = OptionsPB.fromPB(response.options, coms.Messages);
 
-                if (analysis.isReady === false)
+                let optionsApplied = false;
+                if (analysis.isReady === false) {
+                    optionsApplied = true;
                     analysis.setup(options);
+                }
 
-                if (response.results)
+                if (response.results) 
                     analysis.setResults({
                         results: response.results,
-                        options: options,
+                        options: !optionsApplied ? options : undefined,
                         references: response.references,
                         enabled: response.enabled,
                         arbitraryCode: response.arbitraryCode,

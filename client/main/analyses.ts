@@ -104,15 +104,18 @@ Analysis.prototype.setup = function(values) {
     this._notifySetup(this);
 };
 
-Analysis.prototype.setResults = async function(res) {
+Analysis.prototype.setResults = async function (res, internal) {
+    if (internal === undefined)
+        internal = false;
+
     this.results = res.results;
     this.references = res.references;
     this.arbitraryCode = res.arbitraryCode;
     this.enabled = (res.enabled === undefined ? true : res.enabled);
     if (this.options) {
         if (this.options.setValues(res.options)) {
-            if (this._parent !== null)
-                this._parent._notifyOptionsChanged(this, true);
+            if (this._parent !== null) 
+                this._parent._notifyOptionsChanged(this, !internal);
         }
     }
     if (this._parent !== null)
@@ -311,7 +314,7 @@ const Analyses = Backbone.Model.extend({
             results: results,
             enabled: options.enabled,
             arbitraryCode: options.arbitraryCode,
-        });
+        }, true);
 
         analysis._parent = this;
         this._notifyAnalysisCreated(analysis);
