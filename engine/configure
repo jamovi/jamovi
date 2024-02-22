@@ -19,6 +19,10 @@ case $i in
     CXXFLAGS="${i#*=}"
     shift # past argument=value
     ;;
+    MFLAGS=*)
+    MFLAGS="${i#*=}"
+    shift # past argument=value
+    ;;
     --rhome=*)
     R_HOME="${i#*=}"
     shift # past argument=value
@@ -40,6 +44,7 @@ echo "PREFIX=${PREFIX}"
 echo "LIBDIR=${LIBDIR}"
 echo "CFLAGS= ${CFLAGS}"
 echo "CXXFLAGS=${CXXFLAGS}"
+echo "MFLAGS=${MFLAGS}"
 echo "R_HOME=${R_HOME}"
 echo "BASE_MODULE_PATH=${BASE_MODULE_PATH}"
 echo "R_PATH=${R_PATH}"
@@ -48,6 +53,7 @@ sed -e "s|%PREFIX%|$PREFIX|g"   \
     -e "s|%LIBDIR%|${LIBDIR}|g" \
     -e "s|%CFLAGS%|${CFLAGS}|g" \
     -e "s|%CXXFLAGS%|${CXXFLAGS}|g" \
+    -e "s|%MFLAGS%|${MFLAGS}|g" \
     -e "s|%R_HOME%|${R_HOME}|g" \
     -e "s|%R_PATH%|${R_PATH}|g" \
     -e "s|%BASE_MODULE_PATH%|${BASE_MODULE_PATH}|g" \
