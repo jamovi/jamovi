@@ -4,6 +4,7 @@
 PREFIX=%PREFIX%
 LIBDIR=%LIBDIR%
 CFLAGS=%CFLAGS%
+MFLAGS=%MFLAGS%
 CXXFLAGS=%CXXFLAGS%
 
 ifneq (%R_PATH%,)
@@ -50,7 +51,7 @@ ifeq ($(os),OSX)
 				-lboost_filesystem \
 				-lboost_system \
 				-framework Foundation
-	MFLAGS = -mmacosx-version-min=10.13
+	MFLAGS += -mmacosx-version-min=10.13
 	CXXFLAGS += $(MFLAGS)
 else
 ifeq ($(os),Linux)
