@@ -134,7 +134,8 @@ let ribbonModel = new RibbonModel({ modules: instance.modules(), settings: insta
 host.setDialogProvider({ showDialog: (op, options) => backstageModel.showDialog(op, options) });
 
 let infoBox = document.createElement('jmv-infobox');
-infoBox.style.display = 'none';
+    infoBox.style.display = 'none';
+    infoBox.setAttribute('id', 'infobox');
 
 coms.on('failure', (event) => {
     if (host.isElectron) {
