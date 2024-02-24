@@ -76,6 +76,34 @@ hr {
     height: 0px;
 }
 
+.upgrade-button {
+    padding: 6px 20px;
+    background-color: #3e6da9;
+    border: 1px solid #3e6da9;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.upgrade-button.light {
+    color: white;
+    border: 1px solid #3e6da9;
+    color: #3e6da9;
+    background-color: white;
+}
+
+.upgrade-button:hover {
+    background-color: #5e8bc5;
+}
+
+.upgrade-button.light:hover {
+    background-color: #f3f8ff;
+}
+
+.upgrade-button:active {
+    background-color: #555555;
+}
+
 body.windows.electron #header {
     height: 32px ;
     line-height: 32px ;
