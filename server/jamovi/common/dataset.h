@@ -15,7 +15,7 @@ typedef struct
     int columnCount; // columns used
     int rowCount;
     ColumnStruct ** volatile columns;
-    int capacity;  // size of columns array
+    int volatile capacity;  // size of columns array
     int nextColumnId;
     ColumnStruct *scratch;
     int rowCountExFiltered;
