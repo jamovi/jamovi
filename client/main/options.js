@@ -51,12 +51,55 @@ OptionTypes.Option = function(template, value, isLeaf) {
             return this._onGetValue();
     };
 
+    this.arraysEqual = function(a, b) {
+        if (a === b) return true;
+        if (a == null || b == null) return false;
+        if (a.length !== b.length) return false;
+
+        for (let i = 0; i < a.length; ++i) {
+            if (this.areEqual(a[i], b[i]) === false)
+                return false;
+        }
+        return true;
+    };
+
+    this.objectsEqual = function (a, b) {
+        if (a === b) return true;
+        if (a == null || b == null) return false;
+
+        const obj1Keys = Object.keys(a).sort();
+        const obj2Keys = Object.keys(b).sort();
+        if (obj1Keys.length !== obj2Keys.length)
+            return false;
+
+        return obj1Keys.every((key, index) => {
+            const objValue1 = a[key];
+            const objValue2 = b[obj2Keys[index]];
+            return this.areEqual(objValue1, objValue2);
+        });
+    };
+
+    this.areEqual = function (a, b) {
+        if (Array.isArray(a) && a !== null) {
+            if (this.arraysEqual(b, a) === false)
+                return false;
+        }
+        if (typeof a === 'object' && a !== null) {
+            if (this.objectsEqual(b, a) === false)
+                return false;
+        }
+        else if (b !== a)
+            return false;
+
+        return true;
+    }
+
     this.setValue = function (value) {
         let changed = false;
         if (this._isLeaf) {
-            if (this._value !== value) {
-                this._value = value;
+            if (this.areEqual(value, this._value) === false) {
                 changed = true;
+                this._value = value;
             }
         }
         else {

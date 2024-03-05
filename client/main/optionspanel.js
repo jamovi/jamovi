@@ -223,7 +223,7 @@ let OptionsPanel = SilkyView.extend({
         if (incoming) {
             let analysesKey = analysis.ns + "-" + analysis.name;
             let resources = this._analysesResources[analysesKey];
-            if (resources)
+            if (resources && analysis.id === resources.analysis.id)
                 resources.updateOptions(analysis.options.getValues());
         }
     },
