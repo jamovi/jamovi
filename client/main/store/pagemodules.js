@@ -88,7 +88,7 @@ const PageModules = Backbone.View.extend({
         this.$errorRetry.on('click', () => this.modules.retrieve());
 
         this._events = new ProgressStream();
-        
+
         (async () => {
             // event dispatcher
             for await (let event of this._events) {
@@ -213,7 +213,7 @@ const PageModules = Backbone.View.extend({
                         label = _('Requires a newer version of jamovi');
                     break;
                     case 'incompatible':
-                        label = _('Installed version is incompatible');
+                        label = _('Installed version needs to be updated');
                     break;
                     case 'show':
                         if ( ! showHide)
