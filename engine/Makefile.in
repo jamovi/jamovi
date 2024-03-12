@@ -132,7 +132,7 @@ jamovi.pb.cc.o: jamovi.pb.cc
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(MFLAGS) $(INCLUDES)
 
-engine/%.cpp.o: $(SRCDIR)/engine/%.cpp
+engine/%.cpp.o: $(SRCDIR)/engine/%.cpp jamovi.pb.cc
 	mkdir -p $(@D)
 	$(CXX) -c -o $@ $^ $(CXXFLAGS) $(INCLUDES)
 
