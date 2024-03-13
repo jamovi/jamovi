@@ -120,6 +120,7 @@ class Engine:
         env['R_LIBS'] = self._config.get('r_libs', env.get('R_LIBS', ''))
         env['FONTCONFIG_PATH'] = self._config.get('fontconfig_path', env.get('FONTCONFIG_PATH', ''))
         env['JAMOVI_MODULES_PATH'] = self._config.get('modules_path', env.get('JAMOVI_MODULES_PATH', ''))
+        env['PATH'] = self._config.get('path', env.get('PATH', ''))
 
         if platform.uname().system == 'Linux':
             # plotting under linux sometimes doesn't work without this
