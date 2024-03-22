@@ -51,7 +51,6 @@ const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
         params.promise = new Promise((resolve, reject) => {
             params.resolvePromise = resolve;
             params.rejectPromise = reject;
-            $tarp.css('opacity', params.opacity);
             $tarp.css('z-index', params.zIndex);
             params.onMouseDown =  event => {
                 if (params.canCancel) {
