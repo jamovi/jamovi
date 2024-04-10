@@ -41,7 +41,6 @@ class Weights(Analysis):
 
         self.results.options.CopyFrom(self.options.as_pb())
 
-        self._html_pb = self.results.results.group.elements.add().html
         self._removed = False
         self._update(just_created=True)
 
@@ -84,7 +83,14 @@ class Weights(Analysis):
                 content = _('The data is weighted by the variable {}.').format(bolded)
             else:
                 content = _('Data is unweighted')
-            self._html_pb.content = content
+
+            elements = self.results.results.group.elements
+            if len(elements) == 0:
+                html_pb = elements.add().html
+            else:
+                html_pb = elements[0].html
+
+            html_pb.content = content
             self.parent._notify_results_changed(self)
 
         if just_created:
