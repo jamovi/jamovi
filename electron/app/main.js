@@ -299,8 +299,6 @@ let server;
 let ports = null;
 let rootUrl;
 let accessKey;
-let updateUrl;
-// let recorderWindow = null;
 
 const spawn = new Promise((resolve, reject) => {
 
@@ -344,19 +342,6 @@ const spawn = new Promise((resolve, reject) => {
                         server.stdin.write(response);
                     });
                 }
-            case 'software-update':
-                match = /^"(.*)"$/.exec(match[3]);
-                if (match) {
-                    try {
-                        checkForUpdate(updateUrl, match[1]);
-                        let response = `response: software-update (${ id }) 1\n`;
-                        server.stdin.write(response);
-                    }
-                    catch (e) {
-                        let response = `response: software-update (${ id }) 0 "' + e.message + '"\n`;
-                        server.stdin.write(response);
-                    }
-                }
             }
         }
     };
@@ -388,10 +373,6 @@ const spawn = new Promise((resolve, reject) => {
         platform = 'win64';
     else
         platform = 'linux';
-
-    updateUrl = `https://www.jamovi.org/downloads/update?p=${ platform }&v=${ config.version }&f=zip&r=${ os.release() }&a=${ process.arch }`;
-
-    setTimeout(() => checkForUpdate(updateUrl), 500);
 
 }).catch(error => {
     console.log(error)
@@ -722,64 +703,4 @@ const createWindow = function(open) {
     });
 };
 
-const updater = electron.autoUpdater;
-
-updater.on('error', () => {
-    notifyUpdateStatus('error');
-});
-
-updater.on('update-downloaded', () => {
-    notifyUpdateStatus('ready');
-});
-
-let lastUpdateCheck = new Date(0);
-
-const checkForUpdate = function(url, type='checking', force=true) {
-
-    if (process.platform !== 'darwin')  // only macOS for now
-        return;
-
-    let now = new Date()
-    if (force === false && (now - lastUpdateCheck) < 60 * 60 * 1000)
-        return;
-    lastUpdateCheck = now;
-
-    if (type === 'checking') {
-        const https = require('https');
-        let req = https.request(url);
-        req.end();
-        notifyUpdateStatus('checking');
-        req.on('response', (message) => {
-            if (message.statusCode === 204)
-                notifyUpdateStatus('uptodate');
-            else if (message.statusCode === 200)
-                notifyUpdateStatus('available');
-            else
-                notifyUpdateStatus('checkerror');
-        });
-        req.on('error', (error) => {
-            notifyUpdateStatus('checkerror');
-        });
-    }
-    else if (type === 'downloading') {
-        notifyUpdateStatus('downloading');
-        updater.setFeedURL(updateUrl);
-        updater.checkForUpdates();
-    }
-    else if (type === 'installing') {
-        updater.quitAndInstall();
-    }
-};
-
-const notifyUpdateStatus = function(status) {
-    setTimeout(() => {
-        try {
-            let response = 'notification: update ' + status + '\n';
-            server.stdin.write(response);
-        }
-        catch (e) {
-            // do nothing
-        }
-    });
-}
 

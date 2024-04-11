@@ -142,33 +142,6 @@ const AppMenuButton = Backbone.View.extend({
         //     .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
         this.$content.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        this.$updateInfo = $('<div class="jmv-update-info" style="display: none"></div>').appendTo(this.$content);
-        this.$versionInfo = $(`<div class="jmv-ribbon-appmenu-subheading">${_('Updates')}</div>`).appendTo(this.$updateInfo);
-
-        this.$versionInfoStatus = { };
-        this.$versionInfoStatus.uptodate    = $(`<div class="jmv-version-info-uptodate jmv-ribbon-appmenu-item">${_('jamovi is up-to-date')}<button>${_('Check again')}</button></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.checking    = $(`<div class="jmv-version-info-checking jmv-ribbon-appmenu-item"><label>${_('Checking for updates')}</label><img width="16" height="16" class="loading"></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.checkerror  = $(`<div class="jmv-version-info-checkerror jmv-ribbon-appmenu-item">${_('Update not found')}<button>${_('Retry')}</button></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.available   = $(`<div class="jmv-version-info-available jmv-ribbon-appmenu-item"><label>${_('An update is available')}</label><button>${_('Update')}</button></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.downloading = $(`<div class="jmv-version-info-downloading jmv-ribbon-appmenu-item">${_('Update is being downloaded')}<img width="16" height="16" class="loading"></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.error       = $(`<div class="jmv-version-info-error jmv-ribbon-appmenu-item"><label>${_('Update did not complete')}</label><button>${_('Retry')}</button></div>`).appendTo(this.$updateInfo);
-        this.$versionInfoStatus.ready       = $(`<div class="jmv-version-info-ready jmv-ribbon-appmenu-item"><label>${_('Update is ready')}</label><button>${_('Restart and Install')}</button></div>`).appendTo(this.$updateInfo);
-
-        this.$versionInfoStatus.uptodate.find('button').on('click', () => this._checkForUpdate());
-        this.$versionInfoStatus.checkerror.find('button').on('click', () => this._checkForUpdate());
-        this.$versionInfoStatus.available.find('button').on('click', () => this._downloadUpdate());
-        this.$versionInfoStatus.error.find('button').on('click', () => this._downloadUpdate());
-        this.$versionInfoStatus.ready.find('button').on('click', () => this._restartAndInstall());
-
-        this.$versionInfoUpdates = $('<label class="jmv-ribbon-appmenu-item checkbox" for="keep-uptodate"></label>').appendTo(this.$updateInfo);
-        this.$versionInfoUpdates.append($(`<div>${_('Automatically install updates')}</div>`));
-        this.$versionInfoUpdatesCheck = $('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="keep-uptodate">').appendTo(this.$versionInfoUpdates);
-
-        this.$updateInfo.append($('<div class="jmv-ribbon-appmenu-separator"></div>'));
-
-        // this.$recorder = $('<div class="jmv-ribbon-appmenu-item action jmv-recorder">Screen Capture Tool</div>').appendTo(this.$content);
-        // this.$recorder.on('click', (event) => host.openRecorder());
-
         let languageId = focusLoop.getNextAriaElementId('label');
         this.$language = $('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>').appendTo(this.$content);
         this.$language.append($(`<div id="${languageId}">${_('Language')}</div>`));
@@ -201,16 +174,10 @@ const AppMenuButton = Backbone.View.extend({
             this.model.settings().setSetting('devMode', this.$devModeCheck.prop('checked'));
         });
 
-        this.$versionInfoUpdatesCheck.on('change', event => {
-            this.model.settings().setSetting('autoUpdate', this.$versionInfoUpdatesCheck.prop('checked'));
-        });
-
         this.model.settings().on('change:theme',        () => this._updateUI());
         this.model.settings().on('change:palette',      () => this._updateUI());
         this.model.settings().on('change:devMode',      () => this._updateUI());
         this.model.settings().on('change:zoom',         () => this._updateUI());
-        this.model.settings().on('change:updateStatus', () => this._updateUI());
-        this.model.settings().on('change:autoUpdate',   () => this._updateUI());
         this.model.settings().on('change:format',       () => this._updateUI());
         this.model.settings().on('change:missings',     () => this._updateUI());
         this.model.settings().on('change:refsMode',     () => this._updateUI());
@@ -231,20 +198,7 @@ const AppMenuButton = Backbone.View.extend({
 
         this.$languageList[0].innerHTML = available.join('');
 
-        // this.model.settings().on('change:embedCond',    () => this._updateUI());
-
         this._updateUI();
-    },
-    _checkForUpdate() {
-        this.$menuPanel.focus();
-        this.model.settings().setSetting('updateStatus', 'checking');
-    },
-    _downloadUpdate() {
-        this.$menuPanel.focus();
-        this.model.settings().setSetting('updateStatus', 'downloading');
-    },
-    _restartAndInstall() {
-        this.model.settings().setSetting('updateStatus', 'installing');
     },
     _changeTheme(name) {
         this.model.settings().setSetting('theme', name);
@@ -323,19 +277,6 @@ const AppMenuButton = Backbone.View.extend({
 
         let language = settings.getSetting('selectedLanguage', '');
         this.$languageList.val(language);
-
-        // let embedCond = settings.getSetting('embedCond', '< 10 Mb');
-        // this.$embedList.val(embedCond);
-
-        let autoUpdate = settings.getSetting('autoUpdate', false);
-        this.$versionInfoUpdatesCheck.prop('checked', autoUpdate);
-
-        let status = settings.getSetting('updateStatus', 'na');
-
-        if (status === 'na')
-            this.$updateInfo.hide();
-        else
-            this.$updateInfo.show();
 
         for (let key in this.$versionInfoStatus) {
             let $item = this.$versionInfoStatus[key];
