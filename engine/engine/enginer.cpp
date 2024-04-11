@@ -422,10 +422,9 @@ void EngineR::initR()
 
     _rInside = new RInside();
 
-    // set english locale (the arrogance!)
     // fixes some unicode handling issues
 #ifdef _WIN32
-    _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'English_United States.1252')\n");
+    _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', '.UTF-8')\n");
 #else
     _rInside->parseEvalQNT("Sys.setlocale('LC_ALL', 'en_US.UTF-8')\n");
 #endif
