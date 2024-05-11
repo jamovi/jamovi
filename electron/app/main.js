@@ -116,7 +116,7 @@ const marshallArgs = function(args, wd, first) {
     i = 0;
     while (i < args.length) {
         let arg = args[i]
-        if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug', '--devel'].includes(arg))
+        if (arg.startsWith('--') && ! ['--version', '--r-version', '--install', '--debug2', '--devel'].includes(arg))
             // strip the chromium switches
             args.splice(i, 1);
         else
@@ -157,7 +157,7 @@ const marshallArgs = function(args, wd, first) {
         // https://github.com/electron/electron/issues/3657
         cmd.open = '';
     }
-    else if (args[0] === '--debug') {
+    else if (args[0] === '--debug2') {
         cmd.open = '';
         cmd.debug = true;
     }
