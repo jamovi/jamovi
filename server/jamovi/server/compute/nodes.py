@@ -412,10 +412,11 @@ class Call(ast.Call, Node):
     def fvalue(self, index, row_count, filt):
         if self._function.__name__ == 'OFFSET':
             offset = convert(self.args[1].fvalue(index, row_count, False), int)
-            if index < offset:
-                value = NaN
+            dest_index = index - offset
+            if 0 <= dest_index < row_count:
+                value = self.args[0].fvalue(dest_index, row_count, False)
             else:
-                value = self.args[0].fvalue(index - offset, row_count, False)
+                value = NaN
         elif self._function.meta.is_column_wise:
             if self._cached_value is None:
                 group_by = None
