@@ -186,8 +186,20 @@ const AppMenuButton = Backbone.View.extend({
         let available = i18n.availableLanguages().map((code) => {
             if (code === '---')
                 return `</optgroup><optgroup label="${ _('In development') }">`;
-            let ownName = new Intl.DisplayNames([code], { type: 'language' }).of(code);
-            ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
+              
+            let ownName;
+            if (code === 'zh-cn') {
+                // sensitive! shouldn't be translated
+                ownName = 'Chinese (Simplified)';
+            }
+            else if (code === 'zh-tw') {
+                // sensitive! shouldn't be translated
+                ownName = 'Chinese (Traditional)';
+            }
+            else {
+                ownName = new Intl.DisplayNames([code], { type: 'language' }).of(code);
+                ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
+            }
             return `<option value="${ code }">${ ownName }</option>`;
         });
         available.unshift(`<optgroup label="${ _('Available') }">`);
