@@ -620,7 +620,11 @@ class Server:
         self._spool_path = conf.get('spool_path')
         if self._spool_path is None:
             self._spool = TemporaryDirectory()
-            self._spool_path = self._spool.name
+            # realpath() is required to expand the windows short path
+            # at time of writing, R (4.3) was barfing on the short path
+            # hence this fix
+            spool_path = os.path.realpath(self._spool.name)
+            self._spool_path = spool_path
 
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
