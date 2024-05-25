@@ -12,15 +12,15 @@
 
 typedef struct
 {
-    int columnCount; // columns used
-    int rowCount;
+    int volatile columnCount; // columns used
+    int volatile rowCount;
     ColumnStruct ** volatile columns;
     int volatile capacity;  // size of columns array
-    int nextColumnId;
-    ColumnStruct *scratch;
-    int rowCountExFiltered;
-    ColumnStruct *indices;
-    int weights;
+    int volatile nextColumnId;
+    ColumnStruct * volatile scratch;
+    int volatile rowCountExFiltered;
+    ColumnStruct * volatile indices;
+    int volatile weights;
 
 } DataSetStruct;
 
