@@ -98,8 +98,7 @@ class InstanceModel:
             for column in self:
                 if column.name == name:
                     return column
-            else:
-                raise KeyError(name)
+            raise KeyError(name)
         else:
             raise ValueError
 
@@ -119,22 +118,19 @@ class InstanceModel:
         for column in self:
             if column.id == id:
                 return column
-        else:
-            raise KeyError('No such column: ' + str(id))
+        raise KeyError('No such column: ' + str(id))
 
     def get_column_by_name(self, name):
         for column in self:
             if column.name == name:
                 return column
-        else:
-            raise KeyError('No such column: ' + name)
+        raise KeyError('No such column: ' + name)
 
     def get_transform_by_id(self, id):
         for transform in self.transforms:
             if transform.id == id:
                 return transform
-        else:
-            raise KeyError('No such transform: ' + str(id))
+        raise KeyError('No such transform: ' + str(id))
 
     def is_parent_of(self, parent, column, deep):
         if column.parent_id == parent.id:
