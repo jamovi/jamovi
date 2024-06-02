@@ -1649,15 +1649,13 @@ class Instance:
                     _('You cannot insert rows while filtered rows are hidden'))
 
         insert_offsets = [0] * len(insertions)
-        for i in range(0, len(insertions)):
-            row_data = insertions[i]
+        for i, row_data in enumerate(insertions):
             self._data.insert_rows(row_data.rowStart + insert_offsets[i], row_data.rowCount)
-            for j in range(0, len(insertions)):
+            for j, _ in enumerate(insertions):
                 if j != i and (insertions[j].rowStart + insert_offsets[j]) >= (row_data.rowStart + insert_offsets[i]):
                     insert_offsets[j] += row_data.rowCount
 
-        for i in range(0, len(insertions)):
-            row_data = insertions[i]
+        for i, row_data in enumerate(insertions):
             row_data_pb = response.rows.add()
             row_data_pb.rowStart = row_data.rowStart + insert_offsets[i]
             row_data_pb.rowCount = row_data.rowCount
