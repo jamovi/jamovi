@@ -8,6 +8,7 @@ from .fileentry import FileEntry
 from .nulllog import NullLog
 from .latexify import latexify
 from .stream import ProgressStream
+from .describe import describe_datasetrr
 
 import os.path
 import ssl

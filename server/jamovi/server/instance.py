@@ -57,11 +57,12 @@ from .utils import fs
 from .utils import is_int32
 from .utils import is_url
 from .utils import latexify
+from .utils import describe_datasetrr
 from .i18n import _
 
 
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.DEBUG)
 
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
@@ -1404,16 +1405,20 @@ class Instance:
                 self._clone_cell_selections(request, response)
                 self._on_dataset_get(request, response)
             elif request.op == jcoms.GetSet.Value('UNDO'):
+                log.debug('Undo')
                 undo_request = self._mod_tracker.begin_undo()
                 response.op = undo_request.op
                 self._clone_cell_selections(undo_request, response)
                 self._on_dataset_set(undo_request, response)
                 self._mod_tracker.end_undo(response)
+                log.debug('Undo complete')
             elif request.op == jcoms.GetSet.Value('REDO'):
+                log.debug('Redo')
                 redo_request = self._mod_tracker.get_redo()
                 response.op = redo_request.op
                 self._clone_cell_selections(redo_request, response)
                 self._on_dataset_set(redo_request, response)
+                log.debug('Redo complete')
             else:
                 raise ValueError()
 
@@ -1563,13 +1568,19 @@ class Instance:
             'rows_added_removed': False,
         }
 
-        self._on_dataset_del_cols(request, response, changes)
-        self._on_dataset_del_rows(request, response, changes)
-        self._on_dataset_ins_cols(request, response, changes)
-        self._on_dataset_ins_rows(request, response, changes)
-        self._on_dataset_mod_cols(request, response, changes)
-        if request.incData:
-            self._apply_cells(request, response, changes)
+        desc = describe_datasetrr(request)
+        log.debug('DataSet change: %s', desc)
+
+        try:
+            self._on_dataset_del_cols(request, response, changes)
+            self._on_dataset_del_rows(request, response, changes)
+            self._on_dataset_ins_cols(request, response, changes)
+            self._on_dataset_ins_rows(request, response, changes)
+            self._on_dataset_mod_cols(request, response, changes)
+            if request.incData:
+                self._apply_cells(request, response, changes)
+        finally:
+            log.debug('DataSet changes complete')
 
         if changes['filters_changed']:
             response.filtersChanged = True
@@ -1824,7 +1835,7 @@ class Instance:
 
         filter_deleted = False
 
-        for i in range(len(to_delete)):
+        for i, _ in enumerate(to_delete):
             column = None
             if request_schema_columns[i].id == 0:
                 column = self._data[request_schema_columns[i].index]
