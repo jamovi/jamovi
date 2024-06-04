@@ -81,7 +81,7 @@ class Session(dict):
         if backend_mode == 'file':
             self._settings.read_nowait()
             language = self._settings.group('main').get('selectedLanguage', '')
-        
+
         self._modules = Modules(self._settings.group('modules'))
 
         if language == '':
@@ -115,7 +115,7 @@ class Session(dict):
     @property
     def id(self):
         return self._id
-    
+
     @property
     def modules(self):
         return self._modules
@@ -157,7 +157,7 @@ class Session(dict):
 
         if instance_id is None:
             instance_id = str(uuid.uuid4())
-        log.info('%s %s', 'creating instance:', instance_id)
+
         instance_path = os.path.join(self._session_path, instance_id)
         instance = Instance(self, instance_path, instance_id, self._settings)
         instance.analyses.add_options_changed_listener(self._options_changed_handler)
@@ -347,7 +347,7 @@ class Session(dict):
                         if ((status.unclean and no_conn_for > TIMEOUT_NC_UNCLEAN)
                                 or (status.virgin is True and no_conn_for > TIMEOUT_NC_VIRGIN)
                                 or (status.virgin is False and status.unclean is False and no_conn_for > TIMEOUT_NC)):
-                            log.info('%s %s', 'destroying instance:', id)
+
                             self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                             instance.close()
                             del self[id]
@@ -367,7 +367,7 @@ class Session(dict):
                     # and no connections for a while, end the session
                     if ((session_no_connection_unclean and no_conn_for > TIMEOUT_NC_UNCLEAN)
                             or (session_no_connection_unclean is False and no_conn_for > TIMEOUT_NC)):
-                        log.info('%s %s', 'ending session:', self._id)
+                        log.info('ending session: idle')
                         self.stop()
 
                 # now determine, notify, or end the session if the idle
@@ -398,7 +398,7 @@ class Session(dict):
                         self._notify(notif)
                         idle_warning_since = None
                         last_idle_warning = None
-                
+
                 if TIME_LIMIT and now - session_start_time > TIME_LIMIT - TIMEOUT_IDLE_NOTICE:
                     if now - session_start_time > TIME_LIMIT:
                         log.info('ending session: exceeded time limit')
