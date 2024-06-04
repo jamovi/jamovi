@@ -730,7 +730,7 @@ class Server:
 
         self._session = Session(self._spool_path, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
-        self._session.add_session_listener(self._session_event)
+        # self._session.add_session_listener(self._session_event)
 
         await self._session.start()
 

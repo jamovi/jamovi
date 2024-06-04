@@ -906,6 +906,8 @@ class Instance:
                 else:
                     raise PermissionError()
 
+        log.debug("opening '%s' '%s' %s", path, title, ext)
+
         stream = ProgressStream()
 
         async def read_file(path, is_temp, stream):
@@ -1570,6 +1572,7 @@ class Instance:
 
         desc = describe_datasetrr(request)
         log.debug('DataSet change: %s', desc)
+        log.debug('Request: %s', request.SerializeToString())
 
         try:
             self._on_dataset_del_cols(request, response, changes)
