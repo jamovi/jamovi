@@ -434,10 +434,7 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue,
             descending = false;
     }
 
-    if (ascending && descending)
-        descending = false;
-
-    if (ascending == false && descending == false)
+    if (ascending == descending)
     {
         // if the levels are neither ascending nor descending
         // then just add the level to the end
