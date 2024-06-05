@@ -2569,7 +2569,12 @@ class Instance:
 
                 elif column.data_type == DataType.INTEGER:
                     for value in values:
-                        if isinstance(value, int) and not is_int32(value):
+                        if value is None or value == '':
+                            pass
+                        elif not isinstance(value, int):
+                            if column.measure_type == MeasureType.CONTINUOUS:
+                                raise TypeError(_("Cannot assign non-integer value to column '{}'").format(column.name))
+                        elif not is_int32(value):
                             raise TypeError(_("Value is too large for column '{}' of type integer").format(column.name))
 
             if col_count > 0 and data_col_count == 0:
@@ -2682,6 +2687,8 @@ class Instance:
                         column.set_value(row_no, value)
                     elif isinstance(value, str):
                         if column.measure_type == MeasureType.ID:
+                            raise RuntimeError('Should not get here')
+                        elif column.measure_type == MeasureType.CONTINUOUS:
                             raise RuntimeError('Should not get here')
                         elif column.has_level(value):
                             index = column.get_value_for_label(value)
