@@ -11,7 +11,7 @@ def get_readers():
     return [ ( 'xlsx', read ) ]
 
 
-def read(data, path, prog_cb, *, settings, **kwargs):
+def read(data, path, prog_cb, *, settings, **_):
 
     reader = XLSXReader(settings)
     reader.read_into(data, path, prog_cb)
@@ -30,6 +30,13 @@ def to_string(value):
 
 
 class XLSXReader(Reader):
+
+    _first_col: int = 0
+    _last_col: int = 0
+    _first_row: int = 0
+    _last_row: int = 0
+    _row_count: int = 0
+    _col_count: int = 0
 
     def __init__(self, settings):
         Reader.__init__(self, settings)

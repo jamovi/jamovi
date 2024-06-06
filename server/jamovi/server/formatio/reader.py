@@ -53,7 +53,7 @@ class Reader:
 
         self.open(path)
 
-        column_names = self.__iter__().__next__()
+        column_names = next(iter(self))
 
         column_count = 0
         column_readers = [ ]
@@ -61,8 +61,7 @@ class Reader:
         if len(column_names) == 0:
             column_names = ['A']
 
-        for i in range(len(column_names)):
-            column_name = column_names[i]
+        for i, column_name in enumerate(column_names):
             if column_name is None:
                 column_name = ''
             data.append_column(column_name, column_name)
@@ -72,19 +71,28 @@ class Reader:
             column_count += 1
 
         row_count = 0
-
+        empty_count = 0  # we exclude empty rows at the end of the data set
         first = True
 
         for row in self:
             if first:
                 first = False
             else:
+                empty_row = True
                 for i in range(column_count):
-                    column_readers[i].examine_row(row)
+                    not_empty = column_readers[i].examine_row(row)
+                    if not_empty:
+                        empty_row = False
 
-                row_count += 1
+                if empty_row:
+                    # if the row is empty, we exclude it ...
+                    empty_count += 1
+                else:
+                    # ... unless its followed by a not empty row
+                    row_count += empty_count + 1
+                    empty_count = 0
 
-            if row_count % 1000 == 0:
+            if (row_count + empty_count) % 1000 == 0:
                 prog_cb(0.33333 * self.progress() / self._total)
 
         for column_reader in column_readers:
@@ -100,6 +108,8 @@ class Reader:
             if first:
                 first = False
             else:
+                if row_no >= row_count:
+                    break
                 for i in range(column_count):
                     column_readers[i].parse_row(row, row_no)
                 row_no += 1
@@ -111,7 +121,7 @@ class Reader:
 
 
 euro_float_pattern = re.compile(r'^(-)?([0-9]*),([0-9]+)$')
-euro_float_repl = r'\1\2.\3'
+EURO_FLOAT_REPL = r'\1\2.\3'
 
 
 class ColumnReader:
@@ -124,7 +134,7 @@ class ColumnReader:
     def _parse_euro_float(self, v):
         v = re.sub(
             euro_float_pattern,
-            euro_float_repl,
+            EURO_FLOAT_REPL,
             v)
         return float(v)
 
@@ -145,17 +155,17 @@ class ColumnReader:
         self._ruminated = False
         self._dps = 0
 
-    def examine_row(self, row):
+    def examine_row(self, row) -> bool:
 
         if self._column_index >= len(row):
-            return
+            return False
 
         value = row[self._column_index]
 
-        if value == self._missings or value == '' or value == ' ' or value is None:
-            return
-        else:
-            self._is_empty = False
+        if value in (None, self._missings, '', ' '):
+            return False
+
+        self._is_empty = False
 
         if not self._many_uniques:
             if value not in self._unique_values:
@@ -187,6 +197,8 @@ class ColumnReader:
                 else:
                     self._only_euro_floats = False
 
+        return True
+
     def ruminate(self):
 
         if self._only_integers:
@@ -198,7 +210,7 @@ class ColumnReader:
                     measure_type=MeasureType.NOMINAL)
 
                 self._unique_values = list(self._unique_values)
-                self._unique_values = list(map(lambda x: int(x), self._unique_values))
+                self._unique_values = list(map(int, self._unique_values))
                 self._unique_values.sort()
                 for level in self._unique_values:
                     self._column.append_level(level, str(level))
@@ -229,8 +241,7 @@ class ColumnReader:
 
                 self._unique_values = list(self._unique_values)
                 self._unique_values.sort()
-                for i in range(0, len(self._unique_values)):
-                    label = self._unique_values[i]
+                for i, label in enumerate(self._unique_values):
                     self._column.append_level(i, label)
             else:
                 self._data_type = DataType.TEXT
@@ -252,7 +263,7 @@ class ColumnReader:
         else:
             value = row[self._column_index]
 
-            if value == self._missings or value == '' or value == ' ':
+            if value in (self._missings, '', ' '):
                 value = None
 
         if self._data_type == DataType.INTEGER:
@@ -269,7 +280,7 @@ class ColumnReader:
                 if self._only_euro_floats:
                     value = re.sub(
                         euro_float_pattern,
-                        euro_float_repl,
+                        EURO_FLOAT_REPL,
                         value)
                 self._column.set_value(row_no, float(value))
 
