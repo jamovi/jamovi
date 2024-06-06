@@ -178,20 +178,6 @@ cdef class DataSet:
         offsets = list(offsets)
         return offsets
 
-    property is_edited:
-        def __get__(self):
-            return self._this.isEdited()
-
-        def __set__(self, edited):
-            self._this.setEdited(edited)
-
-    property is_blank:
-        def __get__(self):
-            return self._this.isBlank()
-
-        def __set__(self, blank):
-            self._this.setBlank(blank)
-
     def refresh_filter_state(self):
         self._this.refreshFilterState()
 

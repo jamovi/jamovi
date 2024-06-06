@@ -11,4 +11,4 @@ def read(data):
 
     data.dataset.set_row_count(n_rows)
     data.title = 'Untitled'
-    data.dataset.is_blank = True
+    data.is_blank = True
