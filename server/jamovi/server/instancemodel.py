@@ -1,4 +1,14 @@
 
+from __future__ import annotations
+
+from collections import deque
+import typing
+
+from jamovi.core import DataSet
+from jamovi.core import ColumnType
+from jamovi.core import DataType
+from jamovi.core import MeasureType
+
 from .transform import Transform
 from .rowtracker import RowTracker
 from .column import Column
@@ -6,18 +16,37 @@ from .analyses import Analyses
 from .utils import NullLog
 from .permissions import Permissions
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
 from .i18n import _
 
-import collections
+if typing.TYPE_CHECKING:
+    from .instance import Instance
+    from .syncs import HttpSync
+
 
 
 class InstanceModel:
 
     N_VIRTUAL_COLS = 5
     N_VIRTUAL_ROWS = 50
+
+    _instance: Instance
+    _dataset: DataSet | None
+    _analyses: Analyses
+    _path: str
+    _save_format: str
+    _title: str
+    _reuseable_virtual_ids: deque
+    _filters_visible: bool
+    _is_edited: bool = False
+    _is_blank: bool = False
+    _perms: Permissions
+    _columns: list
+    _transforms: list
+    _next_id: int
+    _transform_next_id: int
+    _log: object
+    _row_tracker: RowTracker
+    file_sync: HttpSync
 
     def __init__(self, instance):
         self._instance = instance
@@ -26,7 +55,7 @@ class InstanceModel:
         self._path = ''
         self._save_format = ''
         self._title = ''
-        self._reuseable_virtual_ids = collections.deque([])
+        self._reuseable_virtual_ids = deque([])
         self._filters_visible = True
 
         self._perms = Permissions.retrieve()
@@ -550,11 +579,11 @@ class InstanceModel:
         return self._dataset is not None
 
     @property
-    def dataset(self):
+    def dataset(self) -> DataSet:
         return self._dataset
 
     @dataset.setter
-    def dataset(self, dataset):
+    def dataset(self, dataset: DataSet):
         self._dataset = dataset
 
     def setup(self):
@@ -717,20 +746,20 @@ class InstanceModel:
         return self._dataset.column_count
 
     @property
-    def is_edited(self):
-        return self._dataset.is_edited
+    def is_edited(self) -> bool:
+        return self._is_edited
 
     @is_edited.setter
-    def is_edited(self, edited):
-        self._dataset.is_edited = edited
+    def is_edited(self, edited: bool):
+        self._is_edited = edited
 
     @property
     def is_blank(self):
-        return self._dataset.is_blank
+        return self._is_blank
 
     @is_blank.setter
     def is_blank(self, blank):
-        self._dataset.blank = blank
+        self._is_blank = blank
 
     @property
     def has_weights(self):
