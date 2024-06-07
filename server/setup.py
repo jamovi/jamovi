@@ -1,10 +1,18 @@
 
 import os
-from os import path
 import sys
+from os import path
+
+include_core = True
+include_server = True
+
+if os.environ.get('SETUP_CORE_ONLY', '0') == '1':
+    include_server = False
+
+if os.environ.get('SETUP_SERVER_ONLY', '0') == '1':
+    include_core = False
 
 tld = path.realpath(path.join(path.dirname(__file__), '../..'))
-sys.path.append(path.join(tld, 'lib/python3.5/site-packages'))
 
 import glob
 import subprocess
@@ -15,16 +23,6 @@ from Cython.Build import cythonize
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-source_files = glob.glob('./jamovi/core/*.cpp')
-source_files.extend(glob.glob('./jamovi/common/*.cpp'))
-
-if os.name != 'nt' and os.uname()[0] == "Darwin":  # obj c
-    source_files.extend(glob.glob('./jamovi/common/*.m'))
-
-source_files.append('./jamovi/core.pyx')
-
-# exclude the generated core.cpp (made from core.pyx)
-source_files = list(filter(lambda file: not file.endswith('core.cpp'), source_files))
 
 include_dirs = [
     path.join(here, './jamovi/core'),
@@ -53,6 +51,54 @@ else:
     raise RuntimeError("Shouldn't get here!")
 
 
+source_files = [ ]
+packages = [ ]
+package_data = { }
+
+
+if include_core:
+    packages += ['jamovi.core']
+
+    source_files = glob.glob('./jamovi/core/*.cpp')
+    source_files.extend(glob.glob('./jamovi/common/*.cpp'))
+
+    if os.name != 'nt' and os.uname()[0] == "Darwin":  # obj c
+        source_files.extend(glob.glob('./jamovi/common/*.m'))
+
+    source_files.append('./jamovi/core.pyx')
+
+    # exclude the generated core.cpp (made from core.pyx)
+    source_files = list(filter(lambda file: not file.endswith('core.cpp'), source_files))
+
+if include_server:
+
+    here = path.abspath(path.dirname(__file__))
+
+    # build server/jamovi_pb.py
+
+    rc = subprocess.call([
+        'protoc',
+        '--proto_path=' + path.join(here, 'jamovi/server'),
+        '--python_out=' + path.join(here, 'jamovi/server'),
+        path.join(here, 'jamovi/server/jamovi.proto')])
+
+    if rc != 0:
+        raise(RuntimeError('protoc failed!'))
+
+    packages += [
+        'jamovi.server',
+        'jamovi.server.analyses',
+        'jamovi.server.formatio',
+        'jamovi.server.utils',
+        'jamovi.server.compute',
+        'jamovi.server.syncs',
+        'jamovi.server.modules',
+    ]
+    package_data['jamovi.server'] = [ 'jamovi.proto', 'resources/chain.pem' ]
+
+if path.exists(path.join(here, 'jamovi/hydra')):
+    packages += [ 'jamovi.hydra' ]
+
 extensions = [
     Extension('jamovi.core',
               source_files,
@@ -64,24 +110,6 @@ extensions = [
               language="c++",
               undef_macros=[ "NDEBUG" ])
 ]
-
-here = path.abspath(path.dirname(__file__))
-
-# build server/jamovi_pb.py
-
-rc = subprocess.call([
-    'protoc',
-    '--proto_path=' + path.join(here, 'jamovi/server'),
-    '--python_out=' + path.join(here, 'jamovi/server'),
-    path.join(here, 'jamovi/server/jamovi.proto')])
-
-if rc != 0:
-    raise(RuntimeError('protoc failed!'))
-
-if path.exists(path.join(here, 'jamovi/hydra')):
-    hydra = [ 'jamovi.hydra' ]
-else:
-    hydra = [ ]
 
 setup(
     name='jamovi',
@@ -106,20 +134,13 @@ setup(
 
     keywords='statistics analysis spreadsheet',
 
-    packages=[
-        'jamovi.core',
-        'jamovi.server',
-        'jamovi.server.analyses',
-        'jamovi.server.formatio',
-        'jamovi.server.utils',
-        'jamovi.server.compute',
-        'jamovi.server.syncs',
-        'jamovi.server.modules',
-    ] + hydra,
+    packages=packages,
 
     ext_modules=cythonize(
         extensions,
         language="c++"),
+
+    package_data=package_data,
 
     # install_requires=[
     #     'tornado',
@@ -131,10 +152,6 @@ setup(
     #     'dev': ['cython'],
     #     'test': ['flake8'],
     # },
-
-    package_data={
-        'jamovi.server': [ 'jamovi.proto', 'resources/chain.pem' ]
-    },
 
     # data_files=[
     #     ('jamovi/server/resources/client', glob.glob('jamovi/server/resources/client/*.*')),
