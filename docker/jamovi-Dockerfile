@@ -42,9 +42,18 @@ COPY $JAMOVI_ROOT/readstat /tmp/source/readstat
 WORKDIR /tmp/source/readstat
 RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
 
-COPY $JAMOVI_ROOT/server/ $MODS_ROOT/server/ /tmp/source/server/
 WORKDIR /tmp/source/server
-RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
+
+COPY $JAMOVI_ROOT/server/setup.py           /tmp/source/server/
+COPY $JAMOVI_ROOT/server/jamovi/core        /tmp/source/server/jamovi/core
+COPY $JAMOVI_ROOT/server/jamovi/common      /tmp/source/server/jamovi/common
+COPY $JAMOVI_ROOT/server/jamovi/core.pyx    /tmp/source/server/jamovi/
+COPY $JAMOVI_ROOT/server/jamovi/__init__.py /tmp/source/server/jamovi/
+
+RUN SETUP_CORE_ONLY=1 python3 setup.py install --install-lib=/usr/lib/jamovi/server
+
+COPY $JAMOVI_ROOT/server/ $MODS_ROOT/server/ /tmp/source/server/
+RUN SETUP_SERVER_ONLY=1 python3 setup.py install --install-lib=/usr/lib/jamovi/server
 
 COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
 
