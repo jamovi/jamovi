@@ -8,3 +8,4 @@ nanomsg
 openpyxl
 pyexcel-ezodf
 aiohttp
+pytest
