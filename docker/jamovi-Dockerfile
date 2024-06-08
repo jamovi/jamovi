@@ -225,12 +225,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 
 COPY --from=jmv     /usr/lib/jamovi/ /usr/lib/jamovi/
 COPY --from=extras  /usr/lib/jamovi/ /usr/lib/jamovi/
-COPY --from=server  /usr/lib/jamovi/ /usr/lib/jamovi/
-COPY --from=server  /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
-COPY --from=server  /usr/lib/x86_64-linux-gnu/libnanomsg.so /usr/lib/x86_64-linux-gnu/libnanomsg.so
 COPY --from=client  /usr/lib/jamovi/client/ /usr/lib/jamovi/client/
 COPY --from=i18n    /usr/lib/jamovi/i18n/json /usr/lib/jamovi/i18n/json
 COPY --from=engine  /usr/lib/jamovi/bin/jamovi-engine /usr/lib/jamovi/bin/jamovi-engine
+COPY --from=server  /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --from=server  /usr/lib/x86_64-linux-gnu/libnanomsg.so /usr/lib/x86_64-linux-gnu/libnanomsg.so
+COPY --from=server  /usr/lib/jamovi/ /usr/lib/jamovi/
 
 ENV LD_LIBRARY_PATH $R_HOME/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
