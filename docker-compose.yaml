@@ -31,6 +31,16 @@ services:
   #     - '5173:5173'
   #     - '24678:24678'
 
+  tests:
+    image: jamovi/jamovi:2.5.0
+    build:
+      context: .
+      dockerfile: docker/jamovi-Dockerfile
+    platform: linux/amd64
+    profiles:
+      - donotstart
+    command: ["/usr/bin/python3 -m pytest /usr/lib/jamovi/server"]
+
   jamovi:
     image: jamovi/jamovi:2.5.0
     container_name: jamovi

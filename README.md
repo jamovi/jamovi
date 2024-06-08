@@ -23,3 +23,11 @@ docker-compose up
 ```
 
 this launches an embedded web-server, and jamovi can be accessed with a web-browser at the url http://127.0.0.1:41337
+
+## testing
+
+tests can be run with:
+
+```
+docker-compose up tests
+```
