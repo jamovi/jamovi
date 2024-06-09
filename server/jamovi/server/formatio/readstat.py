@@ -79,7 +79,7 @@ class Parser(ReadStatParser):
                 for index, value_and_label in enumerate(levels):
                     new_label = value_labels.get(value_and_label[0])
                     if new_label is not None:
-                        levels[index] = (value_and_label[0], new_label, new_label)
+                        levels[index] = (value_and_label[0], new_label, new_label, True)
                 column.change(levels=levels)
 
         weights_id = self._data.weights
