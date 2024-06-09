@@ -12,13 +12,13 @@ from jamovi.core import MeasureType
 
 
 @fixture
-def temp_dir():
+def temp_dir() -> str:
     with TemporaryDirectory() as temp:
         yield temp
 
 
 @fixture
-def memory_map(temp_dir: str):
+def memory_map(temp_dir: str) -> MemoryMap:
     temp_file = path.join(temp_dir, 'fred.mm')
     mm = MemoryMap.create(temp_file)
     yield mm
@@ -26,25 +26,47 @@ def memory_map(temp_dir: str):
 
 
 @fixture
-def dataset(memory_map):
+def empty_dataset(memory_map: MemoryMap) -> DataSet:
     return DataSet.create(memory_map)
 
 
-def test_dataset(dataset):
+def test_columns_persist_properties(empty_dataset):
 
-    c1 = dataset.append_column('fred')
-    c2 = dataset.append_column('jim')
-    c3 = dataset.append_column('bob')
+    # GIVEN a column
+    # WHEN i change its property values
+    # THEN the property values are persisted
 
-    dataset.set_row_count(30)
+    dataset = empty_dataset
+    column = dataset.append_column('fred')
 
-    assert dataset.column_count == 3
-    assert dataset.row_count == 30
+    column.auto_measure = True
+    assert column.auto_measure is True
+    column.auto_measure = False
+    assert column.auto_measure is False
 
-    c1.column_type = ColumnType.FILTER
-    c2.column_type = ColumnType.DATA
-    c3.column_type = ColumnType.COMPUTED
+    column.column_type = ColumnType.DATA
+    assert column.column_type is ColumnType.DATA
 
-    assert c1.column_type is ColumnType.FILTER
-    assert c2.column_type is ColumnType.DATA
-    assert c3.column_type is ColumnType.COMPUTED
+    column.column_type = ColumnType.COMPUTED
+    assert column.column_type is ColumnType.COMPUTED
+
+    column.description = 'the fish was delish äüïöëÿ'
+    assert column.description == 'the fish was delish äüïöëÿ'
+
+    column.formula = '6 + 2 - 3'
+    assert column.formula == '6 + 2 - 3'
+
+    column.formula_message = 'your formula is bad'
+    assert column.formula_message == 'your formula is bad'
+
+    column.id = 7
+    assert column.id == 7
+
+    column.import_name = 'bruce äüïöëÿ'
+    assert column.import_name == 'bruce äüïöëÿ'
+
+    column.measure_type = MeasureType.CONTINUOUS
+    assert column.measure_type is MeasureType.CONTINUOUS
+
+    column.name = 'fred äüïöëÿ'
+    assert column.name == 'fred äüïöëÿ'
