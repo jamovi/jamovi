@@ -17,7 +17,7 @@ _readers = None
 _writers = None
 
 
-__all__ = (FileReadError, FileWriteError)  # prevent flake whining F401
+__all__ = ('FileReadError', 'FileWriteError')  # prevent flake whining F401
 
 
 def _init():

@@ -60,7 +60,11 @@ class XLSXReader(Reader):
         # qualtrics doesn't set these values correctly
         bad_from_qualtrics = 1 == self._ws.min_row == self._ws.min_column == self._ws.max_row == self._ws.max_column
 
-        if bad_min_max or bad_from_qualtrics:
+        # xlsx sheets with many rows are typically mostly empty
+        # i'm not sure what software is responsible
+        many_rows_probably_empty = self._ws.max_row > 500000
+
+        if bad_min_max or bad_from_qualtrics or many_rows_probably_empty:
 
             self._first_col = 0
             self._last_col = 0
@@ -74,13 +78,22 @@ class XLSXReader(Reader):
                 max_col=1000,
                 values_only=True)
 
+            empty_count = 0
+
             for row_no, row in enumerate(values):
                 for col_no, value in enumerate(row):
+                    empty_count += 1
                     if value is not None:
                         self._first_col = min(col_no, self._first_col)
                         self._last_col = max(col_no, self._last_col)
                         self._first_row = min(row_no, self._first_row)
                         self._last_row = row_no
+                        empty_count = 0
+
+                # if we find 10000 empty rows, probably the rest of the
+                # data set is empty
+                if empty_count >= 10000:
+                    break
 
         else:
             self._first_row = self._ws.min_row - 1
