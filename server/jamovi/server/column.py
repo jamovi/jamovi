@@ -377,10 +377,10 @@ class Column:
             self._create_child()
         self._child.append(value)
 
-    def insert_level(self, raw, label, importValue=None, pinned=False):
+    def insert_level(self, raw, label, import_value=None, pinned=False):
         if self._child is None:
             self._create_child()
-        self._child.insert_level(raw, label, importValue, pinned)
+        self._child.insert_level(raw, label, import_value, pinned)
 
     def get_label(self, value):
         if self._child is None:

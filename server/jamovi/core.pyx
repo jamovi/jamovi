@@ -406,15 +406,15 @@ cdef class Column:
         else:
             self._this.append[int](value)
 
-    def append_level(self, raw, label, importValue=None, pinned=False):
-        if importValue is None:
-            importValue = label
-        self._this.appendLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'), pinned)
+    def append_level(self, raw, label, import_value=None, pinned=False):
+        if import_value is None:
+            import_value = label
+        self._this.appendLevel(raw, label.encode('utf-8'), import_value.encode('utf-8'), pinned)
 
-    def insert_level(self, raw, label, importValue=None, pinned=False):
-        if importValue is None:
-            importValue = label
-        self._this.insertLevel(raw, label.encode('utf-8'), importValue.encode('utf-8'), pinned)
+    def insert_level(self, raw, label, import_value=None, pinned=False):
+        if import_value is None:
+            import_value = label
+        self._this.insertLevel(raw, label.encode('utf-8'), import_value.encode('utf-8'), pinned)
 
     def get_label(self, value):
         cdef int v
@@ -610,7 +610,7 @@ cdef class Column:
 
         self._this.setLevels(new_levels)
 
-    def parse_missing_value(self, missing_value):
+    def _parse_missing_value(self, missing_value):
         optr = 0
         new_value = missing_value.strip()
         if new_value.startswith('=='):
@@ -681,7 +681,7 @@ cdef class Column:
         utf8_bytes = [None] * len(missing_values)
 
         for index, missing_value in enumerate(missing_values):
-            pmv = self.parse_missing_value(missing_value)
+            pmv = self._parse_missing_value(missing_value)
             if pmv['type'] is 0:
                 utf8_bytes[index] = pmv['value'].encode('utf-8')
                 m_value.value.s = utf8_bytes[index]
@@ -725,7 +725,7 @@ cdef class Column:
             self.set_levels(levels)
 
     def should_treat_as_missing(self, index):
-        return self._this.shouldTreatAsMissing(index);
+        return self._this.shouldTreatAsMissing(index)
 
 cdef extern from "dirs.h":
     cdef cppclass CDirs "Dirs":
