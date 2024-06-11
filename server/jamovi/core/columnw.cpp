@@ -779,7 +779,10 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
             for (int rowNo = 0; rowNo < rowCount(); rowNo++)
             {
                 const char *value = old.svalue(rowNo);
-                setSValue(rowNo, value, true);
+                string copy = string(value);
+                // value is in shared memory, which may move if setSValue
+                // results in a segment enlargement, so we make a copy
+                setSValue(rowNo, copy.c_str(), true);
             }
         }
         else
