@@ -1,14 +1,16 @@
 
-from pytest import fixture
-
 from tempfile import TemporaryDirectory
 from os import path
 
-from jamovi.core import DataSet
-from jamovi.core import MemoryMap
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from pytest import fixture
+
+from jamovi.server.dataset import StoreFactory
+from jamovi.server.dataset import Store
+from jamovi.server.dataset import DataSet
+from jamovi.server.dataset import Column
+from jamovi.server.dataset import ColumnType
+from jamovi.server.dataset import DataType
+from jamovi.server.dataset import MeasureType
 
 
 @fixture
@@ -18,26 +20,38 @@ def temp_dir() -> str:
 
 
 @fixture
-def memory_map(temp_dir: str) -> MemoryMap:
+def shared_memory_store(temp_dir: str) -> Store:
     temp_file = path.join(temp_dir, 'fred.mm')
-    mm = MemoryMap.create(temp_file)
-    yield mm
-    mm.close()
+    store = StoreFactory.create(temp_file, 'shmem')
+    yield store
+    store.close()
 
 
 @fixture
-def empty_dataset(memory_map: MemoryMap) -> DataSet:
-    return DataSet.create(memory_map)
+def duckdb_store(temp_dir: str) -> Store:
+    temp_file = path.join(temp_dir, 'fred.duckdb')
+    store = StoreFactory.create(temp_file, 'duckdb')
+    yield store
+    store.close()
 
 
-def test_columns_persist_properties(empty_dataset):
+@fixture
+def empty_dataset(shared_memory_store: Store) -> DataSet:
+    return shared_memory_store.create_dataset()
+
+
+@fixture
+def empty_column(empty_dataset: DataSet) -> Column:
+    return empty_dataset.append_column('fred')
+
+
+def test_columns_persist_properties(empty_column: Column):
 
     # GIVEN a column
     # WHEN i change its property values
     # THEN the property values are persisted
 
-    dataset = empty_dataset
-    column = dataset.append_column('fred')
+    column = empty_column
 
     column.auto_measure = True
     assert column.auto_measure is True

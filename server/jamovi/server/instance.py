@@ -6,7 +6,6 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.core import Dirs
-from jamovi.core import MemoryMap
 from jamovi.core import DataSet
 
 from . import jamovi_pb2 as jcoms
@@ -52,6 +51,8 @@ from collections import namedtuple
 from tempfile import NamedTemporaryFile
 from tempfile import mktemp
 from tempfile import mkstemp
+
+from .dataset import StoreFactory
 
 from .utils import fs
 from .utils import is_int32
@@ -946,8 +947,8 @@ class Instance:
                     norm_path = self._normalise_path(path)
 
                 old_mm = self._mm
-                self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
-                dataset = DataSet.create(self._mm)
+                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
+                dataset = self._mm.create_dataset()
                 self._data.dataset = dataset
 
                 ioloop = asyncio.get_event_loop()
