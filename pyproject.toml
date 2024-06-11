@@ -1,0 +1,115 @@
+[tool.poetry]
+name = "jamovi"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+poethepoet = "^0.26.1"
+black = "^24.4.2"
+isort = "^5.13.2"
+pytest = "^8.2.2"
+pylint = "^3.2.3"
+pytest-cov = "^5.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.poe.tasks]
+# QA-related tasks
+pylint = "pylint server/"
+tests = "docker-compose up tests --build"
+black = "black server/"
+black-check = "black --check server/"
+isort = "isort server/"
+isort-check = "isort --check server/"
+reformat = ["black", "isort"]
+# unittests = "pytest -m \"not e2e_test and not integration_test\""
+# all-tests = "pytest"
+
+[tool.pytest.ini_options]
+pythonpath = "server"
+addopts = [
+    "--import-mode=importlib",
+    "--strict-markers",
+]
+markers = [
+    "integration_test: mark a test as an integration test",
+    "e2e_test: mark a test as an end-to-end test",
+]
+
+[tool.pylint.main]
+py-version = "3.12"  # Change to your minimal Python-version
+fail-under = 10
+jobs = 0  # Autodetect the supported number of parallel jobs
+recursive = true
+suggestion-mode = true
+
+[tool.pylint.basic]
+good-names = ["_", "i", "j", "k", "exc", "ex", "e"]
+include-naming-hint = true
+
+# These naming convents match those recommended in the Google Python
+# Style Guide.
+# See: https://google.github.io/styleguide/pyguide.html#3164-guidelines-derived-from-guidos-recommendations
+module-naming-style = "snake_case"
+class-naming-style = "PascalCase"
+function-naming-style = "snake_case"
+const-naming-style = "UPPER_CASE"
+class-const-naming-style = "UPPER_CASE"
+class-attribute-naming-style = "snake_case"
+attr-naming-style = "snake_case"
+method-naming-style = "snake_case"
+argument-naming-style = "snake_case"
+variable-naming-style = "snake_case"
+inlinevar-naming-style = "snake_case"
+
+# List of member names that should not trigger a "protected member"
+# warning. All excluded names, except `os._exit`, are part of the
+# interface for `collections.namedtuple`, which does not follow the
+# regular leading underscore convention.
+# See: https://docs.python.org/3/library/collections.html#collections.namedtuple
+exclude-protected = [
+    "_asdict",
+    "_fields",
+    "_replace",
+    "_make",
+    "_field_defaults",
+    "os._exit",
+]
+
+[tool.pylint.design]
+max-statements = 30
+
+[tool.pylint.format]
+max-line-length = 88
+max-module-lines = 1000
+single-line-class-stmt = false
+single-line-if-stmt = false
+
+[tool.pylint."messages control"]
+# Enable checkers that detect erroneous or undesirable suppresions
+enable = [
+    "bad-inline-option",
+    "deprecated-pragma",
+    "file-ignored",
+    "useless-suppression",
+]
+
+[tool.pylint.string]
+check-quote-consistency = true
+
+[tool.pylint.typecheck]
+ignore-none = false
+
+[tool.pylint.variables]
+dummy-variables-rgx = "^_.*"
+ignored-argument-names = "^_.*"
