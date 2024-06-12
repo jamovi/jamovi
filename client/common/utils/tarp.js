@@ -17,7 +17,7 @@ const init = function() {
             position: absolute ;
             top: 0 ;
             left: 0 ;
-            background-color: black ;
+            background-color: #00000059 ;
             display: none ;
             opacity: 0 ;
         "></div>`);
@@ -43,7 +43,6 @@ const show = function(cancellable, opacity, zIndex) {
     promise = new Promise((resolve, reject) => {
         resolvePromise = resolve;
         rejectPromise = reject;
-        $tarp.css('opacity', opacity);
         if (zIndex !== undefined)
             $tarp.css('z-index', zIndex);
         $tarp.one('mousedown', event => {

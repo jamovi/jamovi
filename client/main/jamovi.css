@@ -368,8 +368,10 @@ body.windows.electron #header-buttons {
     position: absolute ;
     top: 0 ;
     left: 0 ;
-    background-color: black ;
+    background-color: rgba(0, 0, 0, 0.4);
     display: none ;
+    backdrop-filter: blur(1px);
+    
 }
 
 jmv-headeralert.visible ~ .tarp {
