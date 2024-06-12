@@ -303,6 +303,7 @@ class InfoBox extends HTMLElement {
                 background-color: rgba(0, 0, 0, 0.4) ;
                 opacity: 0;
                 transition: opacity 0.2s;
+                backdrop-filter: blur(1px);
             }
 
             div.body {
