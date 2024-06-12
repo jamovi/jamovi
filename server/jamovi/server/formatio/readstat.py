@@ -69,10 +69,14 @@ class Parser(ReadStatParser):
         # some times we don't get the level labels until after the columns and
         # data have been set up. this adds them on at the end (if necessary).
         for labels_key, column in self._columns_by_labels_key.items():
+            value_labels = self._tmp_value_labels.get(labels_key)
+            if value_labels is None:
+                continue
+            if column.data_type is DataType.DECIMAL:
+                column.determine_dps()
+                if column.dps == 0:
+                    column.change(data_type=DataType.INTEGER)
             if column.data_type is DataType.INTEGER:
-                value_labels = self._tmp_value_labels.get(labels_key)
-                if value_labels is None:
-                    continue
                 if column.measure_type is MeasureType.CONTINUOUS:
                     column.change(measure_type=MeasureType.NOMINAL)
                 levels = column.levels
