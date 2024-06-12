@@ -62,7 +62,7 @@ from .i18n import _
 
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
