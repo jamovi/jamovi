@@ -62,6 +62,9 @@ class FocusLoop extends EventEmitter {
         });
 
         window.addEventListener('keydown', (event) => {
+            if (event.altKey && event.key === 'F4')
+                return;
+
             if (event.ctrlKey) {
                 this.ctrlDown = true;
                 return;
