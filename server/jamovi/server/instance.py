@@ -61,6 +61,9 @@ from .utils import describe_datasetrr
 from .i18n import _
 
 
+EURO_REGEX = re.compile(r'^\d+,\d+$')
+
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
@@ -2563,8 +2566,30 @@ class Instance:
                 values = block['values'][i]
 
                 if column.data_type == DataType.DECIMAL:
+
+                    # automagically convert euro floats
+                    euro_floats: bool = True
+
                     for value in values:
-                        if value is not None and value != '' and not isinstance(value, int) and not isinstance(value, float):
+                        if value is None or value == '':
+                            continue
+                        elif isinstance(value, float):
+                            euro_floats = False
+                            break
+                        elif isinstance(value, str):
+                            if not EURO_REGEX.match(value):
+                                euro_floats = False
+                                break
+
+                    for i, value in enumerate(values):
+                        if value is None or value == '':
+                            pass
+                        elif isinstance(value, int) or isinstance(value, float):
+                            pass
+                        elif euro_floats:
+                            # convert euro floats
+                            values[i] = float(value.replace(',', '.'))
+                        else:
                             raise TypeError(_("Cannot assign non-numeric value to column '{}'").format(column.name))
 
                 elif column.data_type == DataType.INTEGER:
