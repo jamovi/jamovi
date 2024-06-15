@@ -282,7 +282,7 @@ function genBorderCSS(side, cs) {
 function _htmlify(el, options) {
 
     if (el.nodeType === Node.TEXT_NODE) {
-        let data = el.data.replace('\u2212', '-');
+        let data = el.data.replace('\u2212', '-').replace('\u2009', '');
         data = s6e(data);
         return Promise.resolve(data);
     }
