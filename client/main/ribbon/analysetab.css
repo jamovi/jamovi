@@ -75,6 +75,10 @@
     background-image: url("../../assets/analysis-power.svg");
 }
 
+.jmv-ribbon-button[data-name="power"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-power.svg");
+}
+
 .jmv-ribbon-button[data-name="statkat"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-statkat.svg");
 }
