@@ -96,8 +96,8 @@ class CSVReader(Reader):
             self._text_stream = TextIOWrapper(self._file, encoding=encoding, errors='replace')
 
             try:
-                some_data = self._text_stream.read(131072)
-                if len(some_data) == 131072:  # csv sniffer doesn't like partial lines
+                some_data = self._text_stream.read(16384)
+                if len(some_data) == 16384:  # csv sniffer doesn't like partial lines
                     some_data = trim_after_last_newline(some_data)
                 self._dialect = csv.Sniffer().sniff(some_data, ', \t;')
             except csv.Error as e:
