@@ -66,7 +66,7 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def set_weights(self, weights_id: int):
+    def set_weights(self, weights_id: int) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -79,4 +79,12 @@ class DataSet(Protocol):
 
     @abstractmethod
     def refresh_filter_state(self) -> None:
+        raise NotImplementedError
+
+    def attach(self) -> None:
+        ''' attach to the backing store '''
+        raise NotImplementedError
+
+    def detach(self) -> None:
+        ''' detach from the backing store '''
         raise NotImplementedError
