@@ -14,7 +14,7 @@ class FocusLoopToken extends EventEmitter {
 // and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
-    constructor() {
+    constructor(desktopMode) {
         super();
 
         this._mainWindow = window.top;
@@ -61,69 +61,103 @@ class FocusLoop extends EventEmitter {
             }
         });
 
-        window.addEventListener('keydown', (event) => {
-            if (event.altKey && event.key === 'F4')
-                return;
+        if (desktopMode) {
+            window.addEventListener('keydown', (event) => {
+                if (event.altKey && event.key === 'F4')
+                    return;
 
-            if (event.ctrlKey) {
-                this.ctrlDown = true;
-                return;
-            }
-            
-            if (event.altKey) {
-                if (this.focusMode !== 'shortcuts') {
-                    this.altDown = true;
-                    if ( ! this.altTimer) {
-                        this.shortcutPath = '';
-                        this.altTimer = setTimeout(() => {
-                            if (this.ctrlDown === false) {
-                                this.setFocusMode('shortcuts');
-                                this.turnedOn = true;
-                            }
-                            this.altTimer = null;
-                        }, 1000);
-                    }
-
-                    if (event.keyCode !== 18)
-                        this.shortcutPath += event.key.toUpperCase();
+                if (event.ctrlKey) {
+                    this.ctrlDown = true;
+                    return;
                 }
-
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-
-        window.addEventListener('keyup', (event) => {
-            if (event.ctrlKey)
-                this.ctrlDown = true;
-
-            if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
-                this.altDown = false;
-                if (this.altTimer) {
-                    clearTimeout(this.altTimer);
-                    this.altTimer = null;
-                }
-
-                if (this.ctrlDown === false) {
-                    
-                    if (!this.turnedOn) {
-                        if (this.inAccessibilityMode()) {
+                
+                if (event.altKey) {
+                    if (this.focusMode !== 'shortcuts') {
+                        this.altDown = true;
+                        if ( ! this.altTimer) {
                             this.shortcutPath = '';
-                            this.setFocusMode('default');
+                            this.altTimer = setTimeout(() => {
+                                if (this.ctrlDown === false) {
+                                    this.setFocusMode('shortcuts');
+                                    this.turnedOn = true;
+                                }
+                                this.altTimer = null;
+                            }, 1000);
                         }
-                        else
-                            this.setFocusMode('shortcuts');
+
+                        if (event.keyCode !== 18)
+                            this.shortcutPath += event.key.toUpperCase();
                     }
-                    this.turnedOn = false;
 
                     event.preventDefault();
                     event.stopPropagation();
                 }
+            });
 
-                this.ctrlDown = false;
-            }
-        });
+            window.addEventListener('keyup', (event) => {
+                if (event.ctrlKey)
+                    this.ctrlDown = true;
 
+                if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
+                    this.altDown = false;
+                    if (this.altTimer) {
+                        clearTimeout(this.altTimer);
+                        this.altTimer = null;
+                    }
+
+                    if (this.ctrlDown === false) {
+                        
+                        if (!this.turnedOn) {
+                            if (this.inAccessibilityMode()) {
+                                this.shortcutPath = '';
+                                this.setFocusMode('default');
+                            }
+                            else
+                                this.setFocusMode('shortcuts');
+                        }
+                        this.turnedOn = false;
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    this.ctrlDown = false;
+                }
+            });
+        }
+        else {
+            window.addEventListener('keydown', (event) => {
+                if (event.altKey && event.key !== 'Alt') // as modifier
+                    this._starting = false
+                else if (event.key === 'Alt')
+                    this._starting = true;
+            });
+
+            window.addEventListener('keyup', (event) => {
+                if (this._starting === false)
+                    return;
+
+                this._starting = false;
+
+                if (event.key === 'Alt') { // not as modifier
+                    if (event.ctrlKey === false) {
+                        if (this.inAccessibilityMode()) {
+                            this.shortcutPath = '';
+                            this.setFocusMode('default');
+                        }
+                        else if (this.focusMode !== 'shortcuts') {
+                            this.shortcutPath = '';
+                            this.setFocusMode('shortcuts');
+                        }
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+        }
+
+        
         window.addEventListener('focus', (event) => {
             this.emit('focus', event);
 
@@ -962,6 +996,9 @@ class FocusLoop extends EventEmitter {
     async _handleKeyPress(event) {
         this._mouseClicked = false;
 
+        if (event.altKey) // alt as modifier
+            return;
+
         if (this.focusMode === 'default')
             return;
 
@@ -1116,6 +1153,6 @@ class FocusLoop extends EventEmitter {
     }
 }
 
-const _focusLoop = new FocusLoop();
+const _focusLoop = new FocusLoop(false);
 
 module.exports = _focusLoop;
