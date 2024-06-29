@@ -137,6 +137,12 @@ function allFunctions($functionsContent) {
     $functionsContent.append($('<div class="item" data-name="VALUE">VALUE</div>'));
     descriptions.VALUE = { label: 'VALUE( <i>text</i> )', content: _('Converts text to a number (if possible).') };
 
+    $functionsContent.append($(`<div class="subtitle" data-name="">${_('Date / Time')}</div>`));
+    $functionsContent.append($('<div class="item" data-name="DATEVALUE">DATEVALUE</div>'));
+    descriptions.DATEVALUE = { label: 'DATEVALUE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Parses a date, and converts it to the number of days since the 1st of January, 1970.') };
+    $functionsContent.append($('<div class="item" data-name="DATE">DATE</div>'));
+    descriptions.DATE = { label: 'DATE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Takes a number representing the number of days since the 1st of January 1970, and produces a formatted date.') };
+
     $functionsContent.append($(`<div class="subtitle" data-name="">${_('Reference')}</div>`));
     $functionsContent.append($('<div class="item" data-name="HLOOKUP">HLOOKUP</div>'));
     descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ...</i> )', content: _('The value in the provided values at index.') };

@@ -3,6 +3,8 @@ import random
 import math
 from numbers import Number as num
 import statistics as stats
+from datetime import datetime
+from datetime import timezone
 
 from numpy import quantile
 from scipy.stats import boxcox
@@ -382,6 +384,18 @@ def FILTER(index, x, *conds: int):
         if not cond:
             return -2147483648
     return x
+
+
+@row_wise
+@returns(DataType.INTEGER, MeasureType.CONTINUOUS)
+def DATEVALUE(_, x: str, fmt: str = '%Y-%m-%d'):
+    return int(datetime.strptime(x, fmt).replace(tzinfo=timezone.utc).timestamp() // 60 // 60 // 24)
+
+
+@row_wise
+@returns(DataType.TEXT, MeasureType.ORDINAL)
+def DATE(_, x: int, fmt: str = '%Y-%m-%d'):
+    return datetime.fromtimestamp(x * 60 * 60 * 24, timezone.utc).strftime(fmt)
 
 
 @row_wise
