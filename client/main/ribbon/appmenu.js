@@ -18,11 +18,11 @@ const AppMenuButton = Backbone.View.extend({
             this.el.dataset.mode = mode;
 
         let $decoration = $('<span class="mif-more-vert" role="none"></span>').appendTo(this.$el);
-        let $positioner = $('<div class="jmv-ribbon-appmenu-positioner" role="none"></div>').appendTo(this.$el);
+        let $positioner = $('<div class="jmv-ribbon-appmenu-positioner"></div>').appendTo(this.$el);
 
         let menuId = focusLoop.getNextAriaElementId('menu');
-        this.$menuPanel = $('<div id="${menuId}" class="jmv-ribbon-appmenu-menu-panel" tabindex="-1" role="menu"></div>').appendTo($positioner);
-        this.$el.attr('aria-controls', menuId);
+        this.$menuPanel = $('<div id="${menuId}" class="jmv-ribbon-appmenu-menu-panel" tabindex="-1" role="grid" aria-label="Application preferences" aria-modal="true"></div>').appendTo($positioner);
+        //this.$el.attr('aria-controls', menuId);
 
         this.$menu = $(`<div class="jmv-ribbon-appmenu-menu"></div>`).appendTo(this.$menuPanel);
 
@@ -46,7 +46,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$header = $('<div class="jmv-ribbon-appmenu-header" role="none"></div>').appendTo(this.$menu);
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon" role="none"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back" role="none"></div>').appendTo(this.$header);
-        this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" title="${_('Hide settings')}"></button>`).appendTo(this.$backOuter);
+        this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" title="${_('Hide preferences')}"></button>`).appendTo(this.$backOuter);
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {
@@ -309,7 +309,7 @@ const AppMenuButton = Backbone.View.extend({
             return;
         this.menuVisible = true;
         this.$menuPanel.addClass('activated');
-        this.$el.attr('aria-expanded', 'true');
+        //this.$el.attr('aria-expanded', 'true');
         setTimeout(() => {
             focusLoop.enterFocusLoop(this.$menuPanel[0], { withMouse: fromMouse });
         }, 200);
@@ -319,7 +319,7 @@ const AppMenuButton = Backbone.View.extend({
         if ( ! this.menuVisible)
             return;
         this.menuVisible = false;
-        this.$el.attr('aria-expanded', 'false');
+        //this.$el.attr('aria-expanded', 'false');
         this.$menuPanel.removeClass('activated');
         this.trigger('hidden');
     }

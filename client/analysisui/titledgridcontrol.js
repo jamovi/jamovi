@@ -14,6 +14,14 @@ const TitledGridControl = function(params) {
 
         return { rows: 1, columns: 2 };
     });
+
+    this.getLabelId = function() {
+        let labelId = this.labelId;
+        if (labelId)
+            return labelId;
+
+        return null;
+    };
 };
 
 SuperClass.create(TitledGridControl);

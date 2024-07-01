@@ -45,7 +45,8 @@ class RibbonGroup extends EventEmitter {
             this.$el.attr('role', 'group');
         }
         else
-            this.$el.attr('role', 'none');
+            this.$el.attr('role', 'group');
+        this.$el.attr('aria-orientation', orientation);
 
         if (name !== null)
             this.$el.attr('data-name', this.name.toLowerCase());

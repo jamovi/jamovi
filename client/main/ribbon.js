@@ -120,20 +120,18 @@ const RibbonView = Backbone.View.extend({
         }, this);
 
         this.$el.addClass('jmv-ribbon app-dragable');
-        this.$el.attr('role', 'region');
-        this.$el.attr('aria-label', 'Top ribbon');
 
         this.$el.append(`
-            <div class="jmv-ribbon-header">
-                <button class="jmv-ribbon-tab file-tab" data-tabname="file"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
+            <div class="jmv-ribbon-header" role="group" aria-orientation="horizontal">
+                <button class="jmv-ribbon-tab file-tab" data-tabname="file" role="toolbaritem"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
                 <div class="ribbon-tabs" role="tablist"></div>
                 <div id="jmv-user-widget"></div>
                 <button class="jmv-ribbon-fullscreen" aria-label="${_('Enable/disable full screen mode')}"></button>
-                <button class="jmv-ribbon-appmenu" aria-haspopup="true" aria-expanded="false" aria-label="${_('Preferences')}"></button>
+                <button class="jmv-ribbon-appmenu" aria-label="${_('Preferences')}"></button>
             </div>
             <div id="ribbon-body" class="
                 jmv-ribbon-body
-                jmv-ribbon-group-body-horizontal" hloop="true" role="tabpanel">
+                jmv-ribbon-group-body-horizontal" hloop="true" role="tabpanel" aria-roledescription="">
             </div>
             <div id="jmv-ribbon-notifs"></div>
         `);

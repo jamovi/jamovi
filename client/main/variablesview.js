@@ -19,6 +19,7 @@ const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
 const { contextMenuListener } = require('../common/utils');
+const _focusLoop = require('../common/focusloop');
 
 const VariablesView = SilkyView.extend({
     className: 'variablesview',
@@ -41,14 +42,17 @@ const VariablesView = SilkyView.extend({
         this.model.on('change:filtersVisible', event => this._updateEyeButton());
 
         this.$el.addClass('jmv-variablesview');
+        this.$el.attr('role', 'region');
+        this.$el.attr('aria-label', `${_('Variables List View')}`);
+        this.$el.attr('aria-hidden', true);
 
         this.$el.html(`
             <div class="jmv-variables-searchbox" role="presentation">
                 <div class="image"></div>
                 <input type="search" class="search" placeholder="${_('Search variables')}"  aria-description="${_('Search variables')}"></input>
             </div>
-            <div class="jmv-variables-container">
-                <div class="jmv-variables-body">
+            <div class="jmv-variables-container" role="none">
+                <div class="jmv-variables-body" role="list" aria-label="Variables List" aria-multiselectable="true">
 
                 </div>
             </div>`);
@@ -144,6 +148,7 @@ const VariablesView = SilkyView.extend({
         let $row = row.$elements;
         $row.addClass('selected');
         row.$select.prop('checked', true);
+        row.$select.attr('aria-checked', true);
 
         if (editable && ! row.editableTimer) {
             row.editableTimer = setTimeout(function () {
@@ -162,6 +167,7 @@ const VariablesView = SilkyView.extend({
             row.$name.removeAttr('placeholder');
             row.$description.removeAttr('placeholder');
             row.$select.prop('checked', false);
+            row.$select.attr('aria-checked', false);
             $row.removeClass('selected');
             if (row.editableTimer) {
                 clearTimeout(row.editableTimer);
@@ -284,7 +290,7 @@ const VariablesView = SilkyView.extend({
     },
 
     _createRow(column, row) {
-        let $measureType = $('<div class="measure-box"><div class="measure-type-icon"></div>');
+        let $measureType = $('<div  role="none" class="measure-box"><div class="measure-type-icon"></div>');
 
         if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
             let $dot = $('</div><div class="dot"></div>');
@@ -292,19 +298,21 @@ const VariablesView = SilkyView.extend({
             $measureType.append($dot);
         }
 
-        let $name = $(`<div class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
+        let labelId = _focusLoop.getNextAriaElementId('label');
+
+        let $name = $(`<div  role="none" id="${ labelId }" class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
         if (column.columnType === 'filter')
             $name.addClass('readonly');
         this._addTextEvents($name, 'name', column);
 
-        let $desc = $(`<div class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
+        let $desc = $(`<div role="none" class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
         this._addTextEvents($desc, 'description', column);
 
         let colNo = column.index;
 
         let editingIds = this.model.get('editingVar');
 
-        let $select = $(`<input type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
+        let $select = $(`<input role="listitem" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
         this._addSelectEvents($select);
 
         this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
@@ -544,7 +552,7 @@ const VariablesView = SilkyView.extend({
     _createCell($contents, row, column, classes, hasEvents, columnSpan) {
         if (columnSpan ===undefined)
             columnSpan = 1;
-        let $cell = $(`<div class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
+        let $cell = $(`<div role="none" class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
         if (hasEvents) {
             $cell.on('mouseover', event => {
                 this.$body.find('.cell.hovering').removeClass('hovering');

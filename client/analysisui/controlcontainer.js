@@ -74,6 +74,7 @@ const ControlContainer = function(params) {
 
     this.registerSimpleProperty("style", "list", new EnumPropertyFilter(["list", "inline"], "list"));
     this.registerSimpleProperty("name", null);
+    this.registerSimpleProperty("labelSource", null);
     this.registerSimpleProperty("margin", "none", new EnumPropertyFilter(["small", "normal", "large", "none"], "none"));
 
     this.$el.addClass("silky-control-container silky-layout-container");
@@ -81,6 +82,13 @@ const ControlContainer = function(params) {
     this.$el.addClass("silky-control-margin-" + this.getPropertyValue("margin"));
 
     this.controls = [];
+
+    this._override('getLabelId', (baseFunction) => {
+        if (this.labelSourceCtrl)
+            return this.labelSourceCtrl.getValueId();
+
+        return null;
+    });
 
     this.getControls = function() {
         return this.controls;
@@ -117,6 +125,13 @@ const ControlContainer = function(params) {
 
             let cr2 = deepRenderToGrid(ctrl, context, this, _nextCell.row, _nextCell.column);
             this.controls.push(ctrl);
+
+            let labelSource = this.getPropertyValue('labelSource');
+            if (labelSource && ctrlDef.name === labelSource) {
+                this.labelSourceCtrl = ctrl;
+                this.$el.attr('role', 'group');
+                this.$el.attr('aria-labelledby', ctrl.getValueId());
+            }
 
             if (cell !== undefined) {
                 if (_lastCell.row < _nextCell.row + cr2.height)
