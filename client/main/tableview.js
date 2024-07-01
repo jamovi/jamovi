@@ -17,6 +17,7 @@ const Statusbar = require('./statusbar/statusbar');
 const focusLoop = require('../common/focusloop');
 
 const { s6e, contextMenuListener } = require('../common/utils');
+const { timeout } = require('q');
 
 const TableView = SilkyView.extend({
     className: 'tableview',
@@ -59,10 +60,10 @@ const TableView = SilkyView.extend({
 
         this.$el.addClass('jmv-tableview');
         this.$el.attr('role', 'grid');
-        this.$el.attr('aria-label', `${_('Spreadsheet')}`);
+        this.$el.attr('aria-multiselectable', true);
 
         this.$el.html(`
-            <div class="jmv-table-header" role="presentation">
+            <div class="jmv-table-header" role="row">
                 <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>
                 <div class="jmv-table-header-background"></div>
                 <div class="jmv-column-header select-all"></div>
@@ -106,7 +107,7 @@ const TableView = SilkyView.extend({
         this.$container = this.$el.find('.jmv-table-container');
         this.$header    = this.$el.find('.jmv-table-header');
         this.$body      = this.$container.find('.jmv-table-body');
-        this.$rhColumn = this.$body.find('.jmv-column-row-header');
+        this.$rhColumn  = this.$body.find('.jmv-column-row-header');
 
         this.$topLeftCell = this.$el.find('.select-all');
         this.$topLeftCell.on('pointerdown', event => {
@@ -481,7 +482,12 @@ const TableView = SilkyView.extend({
                 let $header = $(this.$headers[i]);
                 let $column = $(this.$columns[i]);
                 $header.attr('data-index', i);
-                $header.children().attr('data-index', i);
+                for (let child of $header.children()) {
+                    if (child.hasAttribute('data-index'))
+                        child.setAttribute('data-index', i);
+                    if (child.hasAttribute('aria-colindex'))
+                        child.setAttribute('aria-colindex', i);
+                }
                 $header.css('left', '' + this._lefts[i] + 'px');
                 $column.css('left', '' + this._lefts[i] + 'px');
             }
@@ -584,6 +590,7 @@ const TableView = SilkyView.extend({
 
             let $label = $header.find('.jmv-column-header-label');
             $label.text(column.name);
+            $label.attr('aria-label', `${column.name === '' ? 'Column ' + column.dIndex : column.name}`);
         }
 
         this.controller.enableDisableActions();
@@ -640,6 +647,7 @@ const TableView = SilkyView.extend({
             if (changes.nameChanged) {
                 let $label = $header.find('.jmv-column-header-label');
                 $label.text(column.name);
+                $label.attr('aria-label', `${column.name === '' ? 'Column ' + column.dIndex : column.name}`);
             }
         }
 
@@ -1183,7 +1191,9 @@ const TableView = SilkyView.extend({
 
         if ( ! this._focusCell) {
             this._focusCell = this._createCell(0, 0, -1, -1, true);
+            this._focusCell.setAttribute('type', 'text');
             this._focusCell.setAttribute('role', 'gridcell');
+            this._focusCell.setAttribute('aria-selected', true);
             this._focusCell.id = 'focusCell';
             this._focusCell.classList.add('temp-focus-cell');
             let pasteEventHandle = this._pasteEventHandler.bind(this);
@@ -1209,6 +1219,7 @@ const TableView = SilkyView.extend({
                 }
                 this._delayedEditing = false;
             });
+
             this._focusCell.addEventListener('blur', async (event) => {
                 if (this._editing) {
                     this._focusValue = this._focusCell.value;
@@ -1222,21 +1233,33 @@ const TableView = SilkyView.extend({
 
             this._focusRow = document.createElement('div');
             this._focusRow.setAttribute('role', 'row');
-
             this._focusRow.append(this._focusCell);
+
+
+            this._readableLabel1 = document.createElement('label');
+            this._readableLabel1.classList.add('cellreadout');
+            this._readableLabel1.setAttribute('id', 'gridCellReabable1');
+            this._readableLabel1.setAttribute('role', 'textbox');
+            this._readableLabel1.setAttribute('aria-roledescription', '');
+            this._readableLabel1.setAttribute('tabindex', '-1');
+            this._focusRow.append(this._readableLabel1);
+
+            this._readableLabel2 = document.createElement('label');
+            this._readableLabel2.classList.add('cellreadout');
+            this._readableLabel2.setAttribute('id', 'gridCellReabable2');
+            this._readableLabel2.setAttribute('role', 'textbox');
+            this._readableLabel2.setAttribute('aria-roledescription', '');
+            this._readableLabel2.setAttribute('tabindex', '-1');
+            this._focusRow.append(this._readableLabel2);
+
+            this._focusCell.setAttribute('aria-owns', 'gridCellReabable1 gridCellReabable2');
+            this._focusCell.setAttribute('aria-activedescentant', 'gridCellReabable1');
 
             this.$body.append(this._focusRow);
             focusLoop.setDefaultFocusControl(this._focusCell);
         }
 
         let sel = this.selection;
-
-        let selColumn = this.model.getColumn(sel.colNo, true);
-        this._focusRow.setAttribute('aria-rowindex', sel.rowNo);
-        this._focusCell.setAttribute('aria-rowindex', sel.rowNo);
-        this._focusCell.setAttribute('aria-colindex', sel.colNo);
-        this._focusCell.setAttribute('aria-describedby', `column-${ selColumn.id } row-${ sel.rowNo }`);
-        this._focusRow.setAttribute('aria-owns', `row-${ sel.rowNo } focusCell`);
 
         let x = this._lefts[sel.colNo];
         let y = sel.rowNo * this._rowHeight;
@@ -1249,24 +1272,42 @@ const TableView = SilkyView.extend({
         this._focusCell.style.height = `${height-2}px`;
         this._focusCell.style.lineHeight = `${height-3}px`;
 
+        let selColumn = this.model.getColumn(sel.colNo, true); 
         let value = this.model.valueAt(sel.rowNo, sel.colNo);
-        if (value) {
+        if (value !== null && value !== undefined) {
             for (let levelInfo of this.currentColumn.levels) {
                 if (value === levelInfo.value) {
                     value = levelInfo.label;
                     break;
                 }
             }
+            if (selColumn.columnType === 'filter') {
+                if (value === "1")
+                    value = 'Active';
+                else if (value === "0")
+                    value = 'Inactive';
+            }
         }
         else
             value = '';
-
+           
         this._updateCell(this._focusCell, value, populate, null, false, false, false);
+
+        this._focusRow.setAttribute('aria-rowindex', sel.rowNo);
+        this._focusRow.setAttribute('aria-owns', `row-${ sel.rowNo }`);
+
+        this._focusCell.setAttribute('aria-rowindex', sel.rowNo);
+        this._focusCell.setAttribute('aria-colindex', sel.colNo);
+        this._readableLabel1.setAttribute('aria-labelledby', `column-${ selColumn.id } row-${ sel.rowNo }`);
+        this._readableLabel2.setAttribute('aria-labelledby', `column-${ selColumn.id } row-${ sel.rowNo }`);
+        this._readableLabel1.innerText = value;
+        this._readableLabel2.innerText = value;
+        let currentReadout = this._focusCell.getAttribute('aria-activedescendant');
+        this._focusCell.setAttribute('aria-activedescendant', currentReadout === 'gridCellReabable1' ? 'gridCellReabable2' : 'gridCellReabable1');
 
         if (focusLoop.focusMode === 'default') {
             if (document.activeElement !== this._focusCell)
                 this._focusCell.focus({preventScroll: true});
-
         }
     },
     _updateSizers() {
@@ -1916,8 +1957,12 @@ const TableView = SilkyView.extend({
                         this._lefts[i] += column.width;
                         let $header = $(this.$headers[i]);
                         let $column = $(this.$columns[i]);
-                        $header.attr('data-index', i);
-                        $header.children().attr('data-index', i);
+                        for (let child of $header.children()) {
+                            if (child.hasAttribute('data-index'))
+                                child.setAttribute('data-index', i);
+                            if (child.hasAttribute('aria-colindex'))
+                                child.setAttribute('aria-colindex', i);
+                        }
                         $header.css('left', '' + this._lefts[i] + 'px');
                         $column.css('left', '' + this._lefts[i] + 'px');
                     }
@@ -2114,8 +2159,9 @@ const TableView = SilkyView.extend({
             let aboveNum = rowNums[index - 1];
             let current = rowHeaders[index];
 
-            current.textContent = (currentNum + 1);
-            //current.setAttribute('aria-label', `${_('Row') + ' ' + (currentNum + 1)}`);
+            let header = current.querySelector('.jmv-row-header');
+            if (header)
+                header.textContent = (currentNum + 1);
 
             if (currentNum >= this.model.attributes.rowCount)
                 current.classList.add('virtual');
@@ -2273,12 +2319,19 @@ const TableView = SilkyView.extend({
                 content = '';
             cell.value = content;
         }
-        else if (type === 'bool')
+        else if (type === 'bool') {
             cell.innerHTML = content;
+        }
         else {
             if ( ! populate)
                 content = '';
-            cell.textContent = content;
+            if (cell.value !== undefined) {
+                if (cell.value !== content)
+                    cell.value = content;
+            }
+            else if (cell.textContent !== content)
+                cell.textContent = content;
+            
         }
 
         cell.dataset.type = type;
@@ -2406,7 +2459,7 @@ const TableView = SilkyView.extend({
                 "
             >
                 <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" >${ s6e(column.name) }</div>
+                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" aria-colindex="${column.dIndex}" aria-label="${s6e(column.name) === '' ? 'Column ' + column.dIndex : s6e(column.name)}">${ s6e(column.name) }</div>
                 <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>
@@ -2415,12 +2468,7 @@ const TableView = SilkyView.extend({
     _createCell(top, height, rowNo, colNo, isInput) {
 
         let cell = document.createElement(isInput ? 'input' : 'div');
-        //cell.setAttribute('tabindex', -1);
-        /*if (rowNo !== -1) {
-            this._focusCell.setAttribute('role', 'gridcell');
-            this._focusCell.setAttribute('aria-colindex', colNo + 1);
-            this._focusCell.setAttribute('aria-rowindex', rowNo + 1);
-        }*/
+
         cell.classList.add('jmv-column-cell');
         cell.dataset.row = rowNo;
         cell.style.top = `${ top }px`;
@@ -2437,20 +2485,19 @@ const TableView = SilkyView.extend({
 
         let cell = document.createElement('div');
         cell.classList.add('jmv-row-header-cell');
-        cell.setAttribute('role', 'rowheader');
-        cell.id = 'row-' + rowNo;
+        
         if (highlighted != '')
             cell.classList.add('highlighted');
         cell.style.top = `${ top }px`;
         cell.style.height = `${ height + 1}px`;
         cell.style.lineHeight = `${ height - 3 }px`;
 
-        let bar = document.createElement('div');
-        bar.classList.add('sub-selection-bar');
-
-        cell.innerText = content;
-        //cell.setAttribute('aria-label', `${_('Row') + ' ' + content}`);
-        cell.appendChild(bar);
+        let header = document.createElement('div');
+        header.classList.add('jmv-row-header');
+        header.setAttribute('role', 'rowheader');
+        header.id = 'row-' + rowNo;
+        header.innerText = content;
+        cell.appendChild(header);
 
         return cell;
     },

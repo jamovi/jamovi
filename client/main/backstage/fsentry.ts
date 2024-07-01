@@ -110,14 +110,15 @@ export const FSEntryListView = SilkyView.extend({
                 location = item.description;
             }
 
-            let html = `<div role="menuitem" class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
+            let labelId = focusLoop.getNextAriaElementId('label');
+            let html = `<div role="menuitem" aria-labelledby="${labelId}" class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
             else if (name.endsWith('.omt'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omt-icon"></div>';
             else
                 html += '   <div class="silky-bs-fslist-entry-icon"></div>';
-            html += '   <div class="silky-bs-fslist-entry-group">';
+            html += `   <div id="${labelId}" class="silky-bs-fslist-entry-group">`;
             html += '       <div class="silky-bs-fslist-entry-name">' + s6e(name) + '</div>';
             html += '       <div class="silky-bs-fslist-entry-meta">' + s6e(location) + '</div>';
             html += '   </div>';

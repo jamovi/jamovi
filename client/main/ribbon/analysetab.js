@@ -6,6 +6,7 @@ const $ = require('jquery');
 const RibbonMenu = require('./ribbonmenu');
 const RibbonTab = require('./ribbontab');
 const Placeholder = require('./placeholder');
+const focusLoop = require('../../common/focusloop');
 
 const Store = require('../store');
 
@@ -112,7 +113,8 @@ class AnalyseTab extends RibbonTab {
             }
         }
 
-        let $button = $('<button class="modules-menu-item"></button>');
+        let buttonId = focusLoop.getNextAriaElementId('button');
+        let $button = $(`<button id="${ buttonId }" class="modules-menu-item"></button>`);
         let  button = new RibbonMenu($button, _('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
@@ -176,7 +178,8 @@ class AnalyseTab extends RibbonTab {
             }
 
             let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
-            let $button = $('<button></button>');
+            let buttonId2 = focusLoop.getNextAriaElementId('button');
+            let $button = $(`<button id="${ buttonId2 }"></button>`);
             let  button = new RibbonMenu($button, menu._title, groupName, shortcutKey, flattened, false, containsNew);
 
             this.buttons.push(button);

@@ -4,6 +4,7 @@ const $ = require('jquery');
 const GridOptionControl = require('./gridoptioncontrol');
 const RequestDataSupport = require('./requestdatasupport');
 const FormatDef = require('./formatdef');
+const focusLoop = require('../common/focusloop');
 
 const VariableLabel = function(params) {
 
@@ -32,7 +33,9 @@ const VariableLabel = function(params) {
         if (displayValue === null)
             displayValue = '';
 
-        this.$label = $('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + displayValue + '</div>');
+        this.labelId = focusLoop.getNextAriaElementId('label');
+
+        this.$label = $(`<div id="${this.labelId}" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
         this.$icon = $('<div class="silky-variable-type-img" style="display: inline-block; overflow: hidden;"></div>');
 
         this.$el.append(this.$icon);

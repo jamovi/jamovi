@@ -317,7 +317,7 @@ const OptionListControl = function (params) {
             let hadAddButton = this.getPropertyValue("addButton") !== null;
             if (hadAddButton) {
                 if (columnInfo === this._columnInfo._list[this._columnInfo._list.length - 1]) {
-                    let $closeButton = $('<button class="list-item-delete-button"><span class="mif-cross"></span></button>');
+                    let $closeButton = $('<button class="list-item-delete-button" aria-label="Delete Item"><span class="mif-cross"></span></button>');
                     $closeButton.click((event) => {
                         let selectedIndices = this.getSelectedRowIndices();
                         this.getOption().removeAt(ctrl.getItemKey());
@@ -332,8 +332,14 @@ const OptionListControl = function (params) {
             }
 
             cell.clickable(columnInfo.selectable);
-            if (columnInfo.selectable)
+            if (columnInfo.selectable) {
                 cell.$el.attr('role', 'listitem');
+                if (ctrl.getLabelId) {
+                    let labelId = ctrl.getLabelId();
+                    if (labelId)
+                        cell.$el.attr('aria-labelledby', labelId);
+                }
+            }
             if (this.getPropertyValue('stripedRows')) {
                 if (this.showHeaders)
                     cell.$el.addClass((this.displayRowToRowIndex(dispRow) % 2 === 0) ? "even-list-row" : "odd-list-row");

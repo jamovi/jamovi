@@ -55,6 +55,14 @@ const OptionControlBase = function(params) {
     this.registerSimpleProperty('name', null);
     this.registerSimpleProperty('isVirtual', false);
 
+    this.getValueId = function() {
+        let valueId = this.valueId;
+        if (valueId)
+            return valueId;
+
+        return null;
+    };
+
     this._override('onPropertyChanged', (baseFunction, property) => {
         if (this.isDisposed)
             return;

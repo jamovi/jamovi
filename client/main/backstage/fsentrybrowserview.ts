@@ -209,7 +209,7 @@ export const FSEntryBrowserView = SilkyView.extend({
     _createFileTypeSelector: function() {
         let html = '';
         html += '           <div class="silky-bs-fslist-browser-save-filetype">';
-        html += '               <select class="silky-bs-fslist-browser-save-filetype-inner">';
+        html += `               <select class="silky-bs-fslist-browser-save-filetype-inner" aria-label="${ _('File type') }">`;
         for (let i = 0; i < this.model.fileExtensions.length; i++) {
             let exts = this.model.fileExtensions[i].extensions;
             let desc = this.model.fileExtensions[i].description === undefined ? this.model.fileExtensions[i].name : this.model.fileExtensions[i].description;
@@ -297,13 +297,13 @@ export const FSEntryBrowserView = SilkyView.extend({
 
             html += this._createFileTypeSelector();
             html += '       </div>';
-            html += '       <div class="silky-bs-fslist-browser-save-button' + s6e(filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
+            html += '       <button class="silky-bs-fslist-browser-save-button' + s6e(filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
             html += '           <div class="silky-bs-flist-save-icon"></div>';
             if (this.model.clickProcess === 'save')
                 html += `           <span>${_('Save')}</span>`;
             else if (this.model.clickProcess === 'export')
                 html += `           <span>${_('Export')}</span>`;
-            html += '       </div>';
+            html += '       </button>';
             html += '   </div>';
         }
 
@@ -313,7 +313,7 @@ export const FSEntryBrowserView = SilkyView.extend({
             html += '   <div class="silky-bs-fslist-path-browser">';
             if (this.model.get('multiselect'))
                 html += '       <button class="silky-bs-fslist-browser-check-button"></button>';
-            html += '       <button class="silky-bs-fslist-browser-back-button"><span class="mif-arrow-up"></span></button>';
+            html += `       <button class="silky-bs-fslist-browser-back-button" aria-label="${_('Move back directory')}"><span class="mif-arrow-up"></span></button>`;
             html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
 
             if (this.model.attributes.browseable) {
@@ -429,6 +429,9 @@ export const FSEntryBrowserView = SilkyView.extend({
 
         let searchValue = '';
         let $search = this.$el.find('.searchbox > input');
+
+        $search.attr('aria-label', _('Search for file in directory {0}', [filePath]));
+
         if ($search.length > 0) {
             searchValue = $search.val().trim();
             if (focusLoop.inAccessibilityMode() === false) {
@@ -437,6 +440,12 @@ export const FSEntryBrowserView = SilkyView.extend({
                 }, 250);
             }
         }
+
+        let $backbutton = this.$el.find('.silky-bs-fslist-browser-back-button');
+        if ($backbutton)
+        $backbutton.attr('aria-label', _('Move back from directory {0}', [filePath]));
+
+        this.$itemsList.attr('aria-label', _('{0} directory contents', [filePath]));
 
         let html = '';
         this._orderItems('type', 1, items);
@@ -515,7 +524,8 @@ export const FSEntryBrowserView = SilkyView.extend({
 
 
                 let itemId = focusLoop.getNextAriaElementId('listitem');
-                html += `<div id="${itemId}" class="silky-bs-fslist-item" role="listitem">`;
+                let labelId = focusLoop.getNextAriaElementId('label');
+                html += `<div id="${itemId}" aria-labelledby="${labelId}" class="silky-bs-fslist-item" role="listitem">`;
                 if (itemType === FSItemType.File)
                     html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox" tabindex="-1">';
                 html += '   <div class="silky-bs-flist-item-icon">';
@@ -542,7 +552,7 @@ export const FSEntryBrowserView = SilkyView.extend({
                 html += '   </div>';
 
                 if (item.description || item.tags || item.license) {
-                    html += '   <div class="silky-bs-fslist-entry-group">';
+                    html += `   <div id="${labelId}" class="silky-bs-fslist-entry-group">`;
                     html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
                     html += '       <div class="silky-bs-fslist-entry-meta">';
                     if (item.description) {

@@ -248,6 +248,10 @@
     align-items: center;
 }
 
+.cellreadout {
+    width: 0px;
+    height: 0px;
+}
 
 .jmv-column-header.highlighted,
 .jmv-row-header-cell.highlighted {

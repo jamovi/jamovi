@@ -29,6 +29,8 @@ const ResultsPanel = Backbone.View.extend({
         this._focus = 0;
         this.el.innerHTML = '';
         this.el.classList.add('jmv-results-panel');
+        this.$el.attr('role', 'list');
+        this.$el.attr('aria-label', 'Results');
         this.el.dataset.mode = args.mode;
         this.annotationFocus = 0;
 
@@ -72,6 +74,7 @@ const ResultsPanel = Backbone.View.extend({
         analyses.on('analysisDeleted', this._analysisDeleted, this);
         analyses.on('analysisResultsChanged', this._resultsEvent, this);
         analyses.on('analysisAnnotationChanged', this._annotationEvent, this);
+        analyses.on('analysisHeadingChanged', this._analysisNameChanged, this);
 
         this.model.on('change:selectedAnalysis', this._selectedChanged, this);
 
@@ -153,7 +156,7 @@ const ResultsPanel = Backbone.View.extend({
         if (isEmptyAnalysis)
             classes = 'empty-analysis';
 
-        let $container = $('<div class="jmv-results-container ' + classes + '" tabindex="0"></div>');
+        let $container = $(`<div class="jmv-results-container ${ classes }" tabindex="0" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
         $container.on('keydown', (event) => {
             if (event.keyCode === 13) { //enter
                 this.model.set('selectedAnalysis', analysis);
@@ -281,6 +284,15 @@ const ResultsPanel = Backbone.View.extend({
             resources.analysis = analysis;
             if (resources.loaded)
                 this._sendResults(resources);
+        }
+    },
+    _analysisNameChanged(analysis){
+        let resources = this.resources[analysis.id];
+        if (resources) {
+            let heading = analysis.getHeading();
+            if (heading === null)
+                heading = analysis.results.title
+            resources.$container.attr('aria-label', `${ heading } - Results`);
         }
     },
     _resultsEvent(analysis) {

@@ -467,13 +467,20 @@ class ViewController {
     }
 
     focusView(name) {
+        if (this.focusedOn)
+            this.focusedOn.$el.attr('aria-hidden', true);
+
         this.focusedOn = this._views[name];
+
         this.selection.hiddenIncluded = this.focusedOn.selectionIncludesHidden === true;
         if (this.model.attributes.hasDataSet)
             this.enableDisableActions();
 
         if (this.focusedOn.onViewControllerFocus)
             this.focusedOn.onViewControllerFocus();
+
+        if (this.focusedOn)
+            this.focusedOn.$el.attr('aria-hidden', false);
     }
 
     _updateEditingVarFromSelection(allowHidden) {

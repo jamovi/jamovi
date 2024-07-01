@@ -6,6 +6,8 @@ const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
 const FormatDef = require('./formatdef');
 const Icons = require('./iconsupport');
+const focusLoop = require('../common/focusloop');
+
 
 const GridCheckbox = function(params) {
 
@@ -31,7 +33,8 @@ const GridCheckbox = function(params) {
         if (label === null)
             label = this.getTranslatedProperty('name');
 
-        let $checkbox = $('<label style="white-space: nowrap;"></label>');
+        this.labelId = focusLoop.getNextAriaElementId('label');
+        let $checkbox = $(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.$input = $('<input class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
         $checkbox.append(this.$input);

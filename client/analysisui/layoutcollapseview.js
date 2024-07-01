@@ -28,7 +28,7 @@ const LayoutCollapseView = function(params) {
         groupText = this.translate(groupText);
         let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.labelId = focusLoop.getNextAriaElementId('label');
-        this.$header = $(`<button id="${this.labelId}" class="silky-options-collapse-button silky-control-margin-${this.getPropertyValue("margin")}" style="white-space: nowrap;">${t + groupText }</button>`);
+        this.$header = $(`<button id="${this.labelId}" aria-level="2" class="silky-options-collapse-button silky-control-margin-${this.getPropertyValue("margin")}" style="white-space: nowrap;">${t + groupText }</button>`);
 
         this.$header.attr('aria-expanded', ! this._collapsed);
 
@@ -56,12 +56,14 @@ const LayoutCollapseView = function(params) {
         body.$el.attr('aria-labelledby', this.labelId);
 
         this.$header.attr('aria-controls', bodyId);
+        this.$header.attr('aria-owns', bodyId);
 
         this._body = body;
         body.$el.addClass("silky-control-body");
         let data = body.renderToGrid(this, 1, 0);
         this._bodyCell = data.cell;
         this._bodyCell.setVisibility(this._collapsed === false, true);
+        body.$el.attr('aria-hidden', this._collapsed);
         return data.cell;
     };
 
@@ -72,6 +74,7 @@ const LayoutCollapseView = function(params) {
 
         this.$header.addClass("silky-gridlayout-collapsed");
         this.$el.addClass('view-colapsed');
+        this._body.$el.attr('aria-hidden', true);
 
         this.setContentVisibility(false);
         this._collapsed = true;
@@ -89,6 +92,7 @@ const LayoutCollapseView = function(params) {
 
         this.$header.removeClass("silky-gridlayout-collapsed");
         this.$el.removeClass('view-colapsed');
+        this._body.$el.attr('aria-hidden', false);
 
         this.setContentVisibility(true);
         this._collapsed = false;
