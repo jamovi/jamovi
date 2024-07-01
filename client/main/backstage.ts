@@ -1191,8 +1191,8 @@ const BackstageView = SilkyView.extend({
                 currentOp = op;
 
             let labelId = focusLoop.getNextAriaElementId('label');
-            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="menuitem" aria-labelledby="${labelId}"></div>`);
-            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="none"></div>`);
+            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" role="menuitem" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
             if (op.action)
                 $opTitle.addClass('bs-menu-action');
             if (op.shortcutKey) {
