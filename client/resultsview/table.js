@@ -5,6 +5,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const determFormat = require('../common/formatting').determFormat;
 const format = require('../common/formatting').format;
+const focusLoop = require('../common/focusloop');
 
 const Elem = require('./element');
 
@@ -145,13 +146,16 @@ const TableView = Elem.View.extend({
 
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
-        this.$table = $('<table class="jmv-results-table-table' + rowSelectable + '"></table>');
+        let titleId = focusLoop.getNextFocusId('label');
+        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
         this.addContent(this.$table);
 
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
         this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
         this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
-        this.$titleText = $('<span class="jmv-results-table-title-text"></span>').appendTo(this.$titleCell);
+        
+        
+        this.$titleText = $(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`).appendTo(this.$titleCell);
         this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
         this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);

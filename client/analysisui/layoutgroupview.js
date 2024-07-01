@@ -9,6 +9,7 @@ const EnumPropertyFilter = require('./enumpropertyfilter');
 const FormatDef = require('./formatdef');
 const GridOptionControl = require('./gridoptioncontrol');
 const Icons = require('./iconsupport');
+const focusLoop = require('../common/focusloop');
 
 const LayoutGroupView = function(params) {
 
@@ -56,8 +57,8 @@ const LayoutGroupView = function(params) {
     classes += hasChildren === false ? ' no-children' : '';
     classes += isHeading ? ' heading-formating' : '';
 
-
-    this.$_subel = $('<div class="silky-control-label silky-control-margin-' + this.getPropertyValue("margin") + ' ' + classes + '" style="white-space: nowrap;"><span>' + groupText + '</span></div>');
+    this.labelId = focusLoop.getNextAriaElementId('label');
+    this.$_subel = $(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span>${ groupText }</span></div>`);
     this.$el = this.$_subel;
 
     if (Icons.exists(this)) {

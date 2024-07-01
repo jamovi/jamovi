@@ -85,6 +85,7 @@ class Main {  // this is constructed at the bottom
                 focusLoop.enterFocusLoop(document.body, { withMouse: false });
             }
         });
+
         document.body.setAttribute('tabindex', '-1');
 
         $(document).mousedown(this, (event) => this._mouseDown(event));

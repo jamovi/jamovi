@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html role="application" aria-label="jamovi">
 <head>
     <meta charset="utf-8" />
     <title>jamovi</title>
@@ -12,8 +12,8 @@
     <script src="main/main.js" type="module"></script>
 </head>
 
-<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default" role="application" aria-label="jamovi">
-    <div id="backstage" tabindex="-1" role="region" aria-label="File"></div>
+<body data-table-mode="spreadsheet" data-splitpanel-mode="mixed" accessible="false" focusMode="default">
+    <div id="backstage" tabindex="-1" role="menu" aria-label="File"></div>
 
     <div id="main" role="presentation">
         <div id="header" aria-hidden="true">
@@ -31,10 +31,10 @@
             </div>
         </div>
 
-        <div class="silky-ribbon">
+        <div class="silky-ribbon" role="toolbar" aria-label="Ribbon" aria-orientation="horizontal">
         </div>
 
-        <div id="main-view" role="presentation">
+        <div id="main-view" role="main" aria-label="Workspace">
             <div id="variable-editor" class="hidden jmv-variable-editor" role="menu" aria-label="variable editor">
             </div>
         </div>

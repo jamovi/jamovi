@@ -18,9 +18,12 @@ class References extends HTMLElement {
 
         let heading = document.createElement('h1');
         heading.textContent = _('References');
+        heading.setAttribute('id', 'ref_heading');
 
         this._body = document.createElement('div');
         this._body.className += ' body';
+        this._body.setAttribute('role', 'list');
+        this._body.setAttribute('aria-labelledby', 'ref_heading');
 
         this._root.appendChild(heading);
         this._root.appendChild(this._body);
@@ -179,6 +182,7 @@ class References extends HTMLElement {
             let ref = refs[i];
             let el = document.createElement('jmv-reference');
             el.setup(i + 1, ref.text);
+            el.setAttribute('role', 'listitem');
             this._body.appendChild(el);
         }
 
