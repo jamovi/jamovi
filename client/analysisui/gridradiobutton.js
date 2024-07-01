@@ -4,6 +4,7 @@ const $ = require('jquery');
 const OptionControl = require('./optioncontrol');
 const TitledGridControl = require('./titledgridcontrol');
 const ChildLayoutSupport = require('./childlayoutsupport');
+const focusLoop = require('../common/focusloop');
 
 const GridRadioButton = function(params) {
 
@@ -40,7 +41,8 @@ const GridRadioButton = function(params) {
 
         label = this.translate(label);
 
-        let $radioButton = $('<label style="white-space: nowrap;"></label>');
+        this.labelId = focusLoop.getNextAriaElementId('label');
+        let $radioButton = $(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.$input = $('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
         $radioButton.append(this.$input);

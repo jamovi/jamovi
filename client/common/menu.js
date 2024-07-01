@@ -20,10 +20,18 @@ class Menu extends EventEmitter {
             this.owner.setAttribute('aria-haspopup', true);
             this.owner.setAttribute('aria-expanded', false);
             this.owner.setAttribute('aria-controls', menuId);
+            this.owner.setAttribute('aria-owns', menuId);
             this.owner.classList.add('menu-owner');
+            
         }
 
         this.$el = $(`<div id="${menuId}" class="jmv-menu jmv-ribbon-group-body-vertical jmv-menu-hidden" tabindex="-1" role="menu"></div>`);
+        if (this.owner) {
+            let labelId = this.owner.getAttribute('id');
+            if (labelId)
+                this.$el.attr('aria-labelledby', labelId);
+        }
+        
         if (className)
             this.$el.addClass(className);
 

@@ -1155,10 +1155,10 @@ const BackstageView = SilkyView.extend({
 
         let html = '';
 
-        html += '<div class="silky-bs-op silky-bs-op-panel" role="menu">';
+        html += '<div class="silky-bs-op silky-bs-op-panel" role="presentation">';
         html += '    <div class="silky-bs-header">';
         html += '        <div class="silky-bs-back">';
-        html += '            <div  role="button" aria-label="Close file menu" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
+        html += '            <div  role="menuitem" aria-label="Close file menu" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
         html += '        </div>';
         html += '        <div class="silky-bs-logo"></div>';
         html += '    </div>';
@@ -1191,8 +1191,8 @@ const BackstageView = SilkyView.extend({
                 currentOp = op;
 
             let labelId = focusLoop.getNextAriaElementId('label');
-            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="menuitem" aria-labelledby="${labelId}"></div>`);
-            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="none"></div>`);
+            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" role="menuitem" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
             if (op.action)
                 $opTitle.addClass('bs-menu-action');
             if (op.shortcutKey) {
@@ -1207,10 +1207,10 @@ const BackstageView = SilkyView.extend({
                 this.menuSelection.highlightElement($opTitle[0]);
 
             if ('places' in op) {
-                let $opPlaces = $('<div class="silky-bs-op-places"></div>');
+                let $opPlaces = $(`<div class="silky-bs-op-places" role="group" aria-label="${ s6e(op.title) }"></div>`);
                 for (let place of op.places) {
-                    $opPlaces.append($(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }"></div>`));
-                    let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }">${ s6e(place.title) }</div>`);
+                    $opPlaces.append($(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="none"></div>`));
+                    let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
                     if (place.action)
                         $opPlace.addClass('bs-menu-action');
                     if (place.shortcutKey) {

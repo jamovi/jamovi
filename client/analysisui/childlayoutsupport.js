@@ -32,6 +32,12 @@ const ChildLayoutSupport = function(params) {
         this._body = body;
         this.controls = body.controls;
         body.$el.addClass("silky-control-body silky-control-body-style-"  + this._parentStyle);
+        
+        if (this.$el.hasClass('heading'))
+            body.$el.attr('role', 'region');
+        else
+            body.$el.attr('role', 'group');
+        body.$el.attr('aria-labelledby', this.getLabelId());
 
         let rData = null;
         if (this._style.startsWith('list'))
