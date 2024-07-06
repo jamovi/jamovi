@@ -304,10 +304,16 @@ td.jmv-results-table-cell-text,
 td.jmv-results-table-cell-integer,
 td.jmv-results-table-cell-number,
 td.jmv-results-table-cell-missing {
-    padding-right: 0 ;
+    position: relative ;
 }
 
-td.jmv-results-table-cell-sup {
+td.jmv-results-table-cell-integer,
+td.jmv-results-table-cell-number {
+    padding-right: 20px ;
+}
+
+.jmv-results-table-sup {
+    position: absolute ;
     padding-left: 2px ;
 }
 
@@ -326,7 +332,7 @@ td.jmv-results-table-cell-sup {
     white-space: nowrap ;
 }
 
-th.jmv-results-table-title-cell{
+th.jmv-results-table-title-cell {
     padding-left: 0 ;
 }
 
@@ -358,18 +364,10 @@ th.jmv-results-table-title-cell{
 }
 
 th.jmv-results-table-cell-format-narrow,
-td.jmv-results-table-cell-format-narrow,
-td.jmv-results-table-cell-format-narrow + td.jmv-results-table-cell-sup {
+td.jmv-results-table-cell-format-narrow {
     min-width: 0 ;
     padding-left: 4px ;
-}
-
-td.jmv-results-table-cell-format-narrow {
-    padding-right: 0 ;
-}
-
-td.jmv-results-table-cell-format-narrow + td.jmv-results-table-cell-sup {
-    padding-left: 0 ;
+    padding-right: 4px ;
 }
 
 td.jmv-results-table-cell-group-begin {
@@ -381,8 +379,7 @@ td.jmv-results-table-cell-negative {
 }
 
 th.jmv-results-table-cell-format-sep,
-td.jmv-results-table-cell-format-sep,
-td.jmv-results-table-cell-format-sep + td.jmv-results-table-cell-sup {
+td.jmv-results-table-cell-format-sep {
     padding-left: 0 ;
     padding-right: 0 ;
     min-width: 0 ;
