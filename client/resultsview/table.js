@@ -153,8 +153,8 @@ const TableView = Elem.View.extend({
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
         this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
         this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
-        
-        
+
+
         this.$titleText = $(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`).appendTo(this.$titleCell);
         this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
@@ -502,7 +502,7 @@ const TableView = Elem.View.extend({
                     span++;
                 }
                 else {
-                    html += '<th class="jmv-results-table-cell" colspan="' + (2 * span) + '">' + content + '</th>';
+                    html += '<th class="jmv-results-table-cell" colspan="' + (span) + '">' + content + '</th>';
                     span = 1;
                 }
             }
@@ -533,7 +533,7 @@ const TableView = Elem.View.extend({
                 }
                 sortStuff = ' <button class="' + asc + '" data-name="' + head.name + '"></button><button class="' + desc + '" data-name="' + head.name + '"></button>';
             }
-            html += '<th class="jmv-results-table-cell' + classes + '" colspan="2">' + content + sortStuff + '</th>';
+            html += '<th class="jmv-results-table-cell' + classes + '">' + content + sortStuff + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
@@ -543,7 +543,7 @@ const TableView = Elem.View.extend({
             return;
         }
 
-        let nPhysCols = 2 * cells.header.length;
+        let nPhysCols = cells.header.length;
 
         if (cells.body.length === 0 || cells.body[0].length === 0) {
             this.$titleCell.attr('colspan', nPhysCols);
@@ -572,18 +572,11 @@ const TableView = Elem.View.extend({
 
                     if (content === '')
                         content = '&nbsp;';
-                    if (cell.sups && cell.classes.indexOf('jmv-results-table-cell-text') !== -1) {
-                        // place the superscript beside the content if left aligned
-                        rowHtml += '<td class="jmv-results-table-cell ' + classes + '">' + content + ' ' + cell.sups + '</td>';
-                        rowHtml += '<td class="jmv-results-table-cell jmv-results-table-cell-sup"></td>';
-                    }
-                    else {
-                        rowHtml += '<td class="jmv-results-table-cell ' + classes + '">' + content + '</td>';
-                        rowHtml += '<td class="jmv-results-table-cell jmv-results-table-cell-sup">' + (cell.sups ? cell.sups : '') + '</td>';
-                    }
+
+                    rowHtml += '<td class="jmv-results-table-cell ' + classes + '">' + content + '<span class="jmv-results-table-sup">' + cell.sups + '</span></td>';
                 }
                 else {
-                    rowHtml += '<td colspan="2">&nbsp;</td>';
+                    rowHtml += '<td>&nbsp;</td>';
                 }
             }
 
