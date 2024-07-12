@@ -268,6 +268,8 @@ class InstanceModel:
         return False
 
     def append_column(self, name, import_name=None, id=0):
+        if import_name is None:
+            import_name = name
         self._check_perms(column_count=self.column_count + 1)
         use_id = self._next_id
         if id != 0:
@@ -280,7 +282,6 @@ class InstanceModel:
             use_id = id
 
         column = self._dataset.append_column(name, import_name)
-        column.column_type = ColumnType.NONE
         column.id = use_id
 
         if use_id == self._next_id:

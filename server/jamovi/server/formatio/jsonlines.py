@@ -207,7 +207,7 @@ class JSONLinesReader(Reader):
 
         source_column = None
         if line_count > 1:
-            source_column = data.append_column('entry', 'entry')
+            source_column = data.append_column('entry')
             source_column.column_type = ColumnType.DATA
             source_column.set_data_type(DataType.INTEGER)
             if line_count > 50:
@@ -217,7 +217,7 @@ class JSONLinesReader(Reader):
 
         for column_name, info in infos.items():
             info.ruminate()
-            column = data.append_column(column_name, column_name)
+            column = data.append_column(column_name)
             column.column_type = ColumnType.DATA
             column.set_data_type(info.data_type)
             column.set_measure_type(info.measure_type)

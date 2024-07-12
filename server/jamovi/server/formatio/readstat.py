@@ -111,7 +111,7 @@ class Parser(ReadStatParser):
         name = variable.name
         label = variable.label
 
-        column = self._data.append_column(name, name)
+        column = self._data.append_column(name)
         if label is not None:
             column.description = label
 

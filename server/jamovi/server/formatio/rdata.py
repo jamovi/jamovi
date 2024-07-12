@@ -100,7 +100,7 @@ class Parser(RDataParser):
         if name is None:
             name = ''
 
-        column = self._data.append_column(name, name)
+        column = self._data.append_column(name)
         self._current = column
 
         column.column_type = ColumnType.DATA

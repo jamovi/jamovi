@@ -64,7 +64,7 @@ class Reader:
         for i, column_name in enumerate(column_names):
             if column_name is None:
                 column_name = ''
-            data.append_column(column_name, column_name)
+            data.append_column(column_name)
             column = data[i]
             column.column_type = ColumnType.DATA
             column_readers.append(ColumnReader(column, i, self._settings))
