@@ -99,7 +99,7 @@ def read(data, path, prog_cb, **kwargs):
         meta_dataset = metadata['dataSet']
 
         for meta_column in meta_dataset['fields']:
-            data.dataset.append_column(meta_column['name'])
+            data.append_column(meta_column['name'])
             column = data.dataset[data.dataset.column_count - 1]
 
             measure_type_str = meta_column['measureType']
