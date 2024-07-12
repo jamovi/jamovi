@@ -1395,38 +1395,38 @@ class Instance:
             return
 
         try:
-
             response = jcoms.DataSetRR()
 
-            if request.op == jcoms.GetSet.Value('SET'):
-                response.op = request.op
-                self._clone_cell_selections(request, response)
-                if request.noUndo is False:
-                    self._mod_tracker.begin_event(request)
-                self._on_dataset_set(request, response)
-                if request.noUndo is False:
-                    self._mod_tracker.end_event()
-            elif request.op == jcoms.GetSet.Value('GET'):
-                response.op = request.op
-                self._clone_cell_selections(request, response)
-                self._on_dataset_get(request, response)
-            elif request.op == jcoms.GetSet.Value('UNDO'):
-                log.debug('Undo')
-                undo_request = self._mod_tracker.begin_undo()
-                response.op = undo_request.op
-                self._clone_cell_selections(undo_request, response)
-                self._on_dataset_set(undo_request, response)
-                self._mod_tracker.end_undo(response)
-                log.debug('Undo complete')
-            elif request.op == jcoms.GetSet.Value('REDO'):
-                log.debug('Redo')
-                redo_request = self._mod_tracker.get_redo()
-                response.op = redo_request.op
-                self._clone_cell_selections(redo_request, response)
-                self._on_dataset_set(redo_request, response)
-                log.debug('Redo complete')
-            else:
-                raise ValueError()
+            with self._data.attach():
+                if request.op == jcoms.GetSet.Value('SET'):
+                    response.op = request.op
+                    self._clone_cell_selections(request, response)
+                    if request.noUndo is False:
+                        self._mod_tracker.begin_event(request)
+                    self._on_dataset_set(request, response)
+                    if request.noUndo is False:
+                        self._mod_tracker.end_event()
+                elif request.op == jcoms.GetSet.Value('GET'):
+                    response.op = request.op
+                    self._clone_cell_selections(request, response)
+                    self._on_dataset_get(request, response)
+                elif request.op == jcoms.GetSet.Value('UNDO'):
+                    log.debug('Undo')
+                    undo_request = self._mod_tracker.begin_undo()
+                    response.op = undo_request.op
+                    self._clone_cell_selections(undo_request, response)
+                    self._on_dataset_set(undo_request, response)
+                    self._mod_tracker.end_undo(response)
+                    log.debug('Undo complete')
+                elif request.op == jcoms.GetSet.Value('REDO'):
+                    log.debug('Redo')
+                    redo_request = self._mod_tracker.get_redo()
+                    response.op = redo_request.op
+                    self._clone_cell_selections(redo_request, response)
+                    self._on_dataset_set(redo_request, response)
+                    log.debug('Redo complete')
+                else:
+                    raise ValueError()
 
             response.changesCount = self._mod_tracker.count
             response.changesPosition = self._mod_tracker.position

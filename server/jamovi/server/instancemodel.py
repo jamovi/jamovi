@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from collections import deque
 import typing
+from typing import Callable
+from contextlib import contextmanager
 
 from jamovi.core import DataSet
 from jamovi.core import ColumnType
@@ -71,6 +73,28 @@ class InstanceModel:
         self._row_tracker = RowTracker()
 
         self.file_sync = None
+
+    @contextmanager
+    def attach(self):
+        ''' attach to the dataset for reading/writing'''
+        attach: Callable[[ ], None] | None
+        detach: Callable[[ ], None] | None
+
+        try:
+            attach = getattr(self._dataset, 'attach')
+            detach = getattr(self._dataset, 'detach')
+        except AttributeError:
+            attach = None
+            detach = None
+
+        if attach:
+            attach()
+
+        try:
+            yield None
+        finally:
+            if detach:
+                detach()
 
     @property
     def filters_visible(self):

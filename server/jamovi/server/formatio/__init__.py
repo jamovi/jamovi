@@ -66,37 +66,38 @@ def get_writers():
     return _writers
 
 
-def read(data, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
+def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
 
-    if title:
-        data.title = title
-    else:
-        data.title, _ = os.path.splitext(os.path.basename(path))
+    with dataset.attach():
+        if title:
+            dataset.title = title
+        else:
+            dataset.title, _ = os.path.splitext(os.path.basename(path))
 
-    if ext is None:
-        ext = os.path.splitext(path)[1].lower()
-        if ext != '':
-            ext = ext[1:]
+        if ext is None:
+            ext = os.path.splitext(path)[1].lower()
+            if ext != '':
+                ext = ext[1:]
 
-    prog_cb(0)
+        prog_cb(0)
 
-    if path == '':
-        blank.read(data)
-    elif not os.path.exists(path):
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
-    elif ext == 'omv':
-        omv.read(data, path, prog_cb)
-        if not is_temp:
-            data.path = path
-            data.save_format = 'jamovi'
-    elif ext == 'omt':
-        omv.read(data, path, prog_cb)
-    else:
-        _import(data, path, prog_cb, settings, ext)
+        if path == '':
+            blank.read(dataset)
+        elif not os.path.exists(path):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+        elif ext == 'omv':
+            omv.read(dataset, path, prog_cb)
+            if not is_temp:
+                dataset.path = path
+                dataset.save_format = 'jamovi'
+        elif ext == 'omt':
+            omv.read(dataset, path, prog_cb)
+        else:
+            _import(dataset, path, prog_cb, settings, ext)
 
-    fix_column_names(data)
+        fix_column_names(dataset)
 
-    data.setup()
+        dataset.setup()
 
 
 def _import(data, path, prog_cb, settings, ext):
@@ -126,18 +127,18 @@ def _import(data, path, prog_cb, settings, ext):
     #         pass
 
 
-def write(data, path, prog_cb, content=None):
+def write(dataset, path, prog_cb, content=None):
     writers = get_writers()
-
     try:
-        temp_path = path + '.tmp'
-        ext = os.path.splitext(path)[1].lower()[1:]
-        if ext == 'omv' or ext == 'omt':
-            omv.write(data, temp_path, prog_cb, content, is_template=(ext == 'omt'))
-        elif ext in writers:
-            writers[ext][1](data, temp_path, prog_cb)
-        else:
-            raise RuntimeError('Unrecognised file format')
+        with dataset.attach():
+            temp_path = path + '.tmp'
+            ext = os.path.splitext(path)[1].lower()[1:]
+            if ext == 'omv' or ext == 'omt':
+                omv.write(dataset, temp_path, prog_cb, content, is_template=(ext == 'omt'))
+            elif ext in writers:
+                writers[ext][1](dataset, temp_path, prog_cb)
+            else:
+                raise RuntimeError('Unrecognised file format')
         os.replace(temp_path, path)
     except Exception as e:
         try:
