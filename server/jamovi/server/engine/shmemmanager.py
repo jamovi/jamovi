@@ -11,16 +11,17 @@ from asyncio import QueueFull
 from asyncio import CancelledError
 from asyncio import FIRST_EXCEPTION
 
+from jamovi.server.utils import req_str
 
-from .utils import req_str
-from .engine import Engine
+from .enginemanager import EngineManager
+from .shmemengine import ShMemEngine
 
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class EngineManager:
+class ShMemManager(EngineManager):
 
     def __init__(self, data_path, queue, config, monitor=None):
 
@@ -44,7 +45,7 @@ class EngineManager:
             self._conn_root = "ipc://{}/conn".format(self._dir.name)
 
         for index in range(queue.qsize):
-            engine = Engine(
+            engine = ShMemEngine(
                 parent=self,
                 data_path=data_path,
                 conn_root=self._conn_root,

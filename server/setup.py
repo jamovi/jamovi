@@ -97,6 +97,7 @@ if include_server:
         'jamovi.server.syncs',
         'jamovi.server.modules',
         'jamovi.server.dataset',
+        'jamovi.server.engine',
         'jamovi.tests',
         'jamovi.tests.data',
     ]
