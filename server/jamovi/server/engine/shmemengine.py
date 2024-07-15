@@ -10,12 +10,6 @@ from enum import Enum
 
 import nanomsg
 
-from .jamovi_pb2 import ComsMessage
-from .jamovi_pb2 import AnalysisStatus
-from .jamovi_pb2 import AnalysisRequest
-from .jamovi_pb2 import AnalysisResponse
-from .jamovi_pb2 import Status as MessageStatus
-
 import logging
 from asyncio import get_event_loop
 from asyncio import Queue
@@ -31,8 +25,14 @@ from asyncio import Lock
 from asyncio import FIRST_COMPLETED
 from asyncio import current_task
 
-from .utils import req_str
-from .i18n import _
+from jamovi.server.jamovi_pb2 import ComsMessage
+from jamovi.server.jamovi_pb2 import AnalysisStatus
+from jamovi.server.jamovi_pb2 import AnalysisRequest
+from jamovi.server.jamovi_pb2 import AnalysisResponse
+from jamovi.server.jamovi_pb2 import Status as MessageStatus
+
+from jamovi.server.utils import req_str
+from jamovi.server.i18n import _
 
 
 MESSAGE_COMPLETE = MessageStatus.Value('COMPLETE')
@@ -51,7 +51,7 @@ PERFORM_SAVE = AnalysisRequest.Perform.Value('SAVE')
 log = logging.getLogger(__name__)
 
 
-class Engine:
+class ShMemEngine:
 
     class Status(Enum):
         WAITING = 0
