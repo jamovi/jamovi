@@ -9,7 +9,7 @@ Come visit us at [jamovi.org](https://www.jamovi.org).
 
 the easiest way to build and work on jamovi, is to build it as a docker container. clone this repo (and submodules), and then build it with:
 
-```
+```bash
 git clone https://github.com/jamovi/jamovi.git
 cd jamovi
 git submodule update --init --recursive
@@ -18,7 +18,7 @@ docker-compose build
 
 once built, it can be run with:
 
-```
+```bash
 docker-compose up
 ```
 
@@ -100,6 +100,7 @@ poetry run poe TASKNAME [OPTIONAL_ADDITIONAL_ARGS]
 ```
 
 For example, to run all tools that reformat code, you can run:
+
 ```bash
 poetry shell
 poe reformat
@@ -127,18 +128,19 @@ poe tests
 
 If you're using VSCode it's recommended to install the following extensions to make python development easier:
 
-- ms-python.black-formatter
 - ms-python.debugpy
-- ms-python.isort
 - ms-python.pylint
 - ms-python.python
 - ms-python.vscode-pylance
+- charliermarsh.ruff
+
 
 ### Configure virtual environment for VSCode
 
 You can [configure the interpreter path for the workspace](https://code.visualstudio.com/docs/python/environments#_select-and-activate-an-environment) so that you don't have to manually activate the terminal every time you open a terminal.
 
 You can find the path to the python interpreter associated with the virtual environment easily by:
+
 ```bash
 # Activate the environment
 poetry shell

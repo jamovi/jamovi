@@ -10,28 +10,27 @@ python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.26.1"
-black = "^24.4.2"
-isort = "^5.13.2"
 pytest = "^8.2.2"
 pylint = "^3.2.3"
 pytest-cov = "^5.0.0"
+ruff = "^0.5.2"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.isort]
-profile = "black"
-
 [tool.poe.tasks]
 # QA-related tasks
 pylint = "pylint server/"
 tests = "docker-compose up tests --build"
-black = "black server/"
-black-check = "black --check server/"
-isort = "isort server/"
-isort-check = "isort --check server/"
-reformat = ["black", "isort"]
+ruff-lint = "ruff check server/"
+ruff-lint-fix = "ruff check --fix server/"
+ruff-format = "ruff format server/"
+ruff-format-check = "ruff format --check server/"
+ruff-isort = "ruff check --select I --fix server/"
+ruff-isort-check = "ruff check --select I server/"
+reformat = ["ruff-isort", "ruff-format"]
+lint = ["pylint", "ruff-lint"]
 # unittests = "pytest -m \"not e2e_test and not integration_test\""
 # all-tests = "pytest"
 
