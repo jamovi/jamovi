@@ -8,4 +8,6 @@ nanomsg
 openpyxl
 pyexcel-ezodf
 aiohttp
+duckdb
+loguru
 pytest
