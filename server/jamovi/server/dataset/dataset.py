@@ -80,3 +80,10 @@ class DataSet(Protocol):
     @abstractmethod
     def refresh_filter_state(self) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def attach(self, read_only: bool=False):
+        raise NotImplementedError
+
+    def detach(self):
+        raise NotImplementedError
