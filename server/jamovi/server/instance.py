@@ -1397,8 +1397,8 @@ class Instance:
         try:
             response = jcoms.DataSetRR()
 
-            with self._data.attach():
-                if request.op == jcoms.GetSet.Value('SET'):
+            if request.op == jcoms.GetSet.Value('SET'):
+                with self._data.attach():
                     response.op = request.op
                     self._clone_cell_selections(request, response)
                     if request.noUndo is False:
@@ -1406,11 +1406,13 @@ class Instance:
                     self._on_dataset_set(request, response)
                     if request.noUndo is False:
                         self._mod_tracker.end_event()
-                elif request.op == jcoms.GetSet.Value('GET'):
+            elif request.op == jcoms.GetSet.Value('GET'):
+                with self._data.attach(read_only=True):
                     response.op = request.op
                     self._clone_cell_selections(request, response)
                     self._on_dataset_get(request, response)
-                elif request.op == jcoms.GetSet.Value('UNDO'):
+            elif request.op == jcoms.GetSet.Value('UNDO'):
+                with self._data.attach():
                     log.debug('Undo')
                     undo_request = self._mod_tracker.begin_undo()
                     response.op = undo_request.op
@@ -1418,15 +1420,16 @@ class Instance:
                     self._on_dataset_set(undo_request, response)
                     self._mod_tracker.end_undo(response)
                     log.debug('Undo complete')
-                elif request.op == jcoms.GetSet.Value('REDO'):
+            elif request.op == jcoms.GetSet.Value('REDO'):
+                with self._data.attach():
                     log.debug('Redo')
                     redo_request = self._mod_tracker.get_redo()
                     response.op = redo_request.op
                     self._clone_cell_selections(redo_request, response)
                     self._on_dataset_set(redo_request, response)
                     log.debug('Redo complete')
-                else:
-                    raise ValueError()
+            else:
+                raise ValueError()
 
             response.changesCount = self._mod_tracker.count
             response.changesPosition = self._mod_tracker.position

@@ -130,7 +130,7 @@ def _import(data, path, prog_cb, settings, ext):
 def write(dataset, path, prog_cb, content=None):
     writers = get_writers()
     try:
-        with dataset.attach():
+        with dataset.attach(read_only=True):
             temp_path = path + '.tmp'
             ext = os.path.splitext(path)[1].lower()[1:]
             if ext == 'omv' or ext == 'omt':

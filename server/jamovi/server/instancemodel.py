@@ -75,26 +75,21 @@ class InstanceModel:
         self.file_sync = None
 
     @contextmanager
-    def attach(self):
+    def attach(self, read_only: bool=False):
         ''' attach to the dataset for reading/writing'''
-        attach: Callable[[ ], None] | None
+        attach: Callable[[ bool ], None] | None
         detach: Callable[[ ], None] | None
 
-        try:
-            attach = getattr(self._dataset, 'attach')
-            detach = getattr(self._dataset, 'detach')
-        except AttributeError:
-            attach = None
-            detach = None
+        attach = getattr(self._dataset, 'attach', lambda _: None)
+        detach = getattr(self._dataset, 'detach', lambda: None)
+        assert attach
+        assert detach
 
-        if attach:
-            attach()
-
+        attach(read_only)
         try:
-            yield None
+            yield
         finally:
-            if detach:
-                detach()
+            detach()
 
     @property
     def filters_visible(self):
