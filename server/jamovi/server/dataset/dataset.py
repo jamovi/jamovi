@@ -1,4 +1,3 @@
-
 from typing import Protocol
 from typing import Iterator
 from typing import Iterable
@@ -7,8 +6,8 @@ from abc import abstractmethod
 
 from .column import Column
 
-class DataSet(Protocol):
 
+class DataSet(Protocol):
     @abstractmethod
     def __getitem__(self, index_or_name: Union[str, int]) -> Column:
         raise NotImplementedError
@@ -18,11 +17,11 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def append_column(self, name: str, import_name: str='') -> Column:
+    def append_column(self, name: str, import_name: str = "") -> Column:
         raise NotImplementedError
 
     @abstractmethod
-    def insert_column(self, index: int, name: str, import_name: str='') -> Column:
+    def insert_column(self, index: int, name: str, import_name: str = "") -> Column:
         raise NotImplementedError
 
     @abstractmethod
@@ -66,7 +65,7 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def set_weights(self, weights_id: int):
+    def set_weights(self, weights_id: int) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -82,8 +81,11 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def attach(self, read_only: bool=False):
+    def attach(self, read_only: bool = False) -> None:
+        """attach to the backing store"""
         raise NotImplementedError
 
-    def detach(self):
+    @abstractmethod
+    def detach(self) -> None:
+        """detach from the backing store"""
         raise NotImplementedError
