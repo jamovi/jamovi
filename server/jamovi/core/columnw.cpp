@@ -805,8 +805,10 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
     }
     else if (dataType == DataType::DECIMAL)
     {
+        bool isEuroFloatColumn = old.isEuroDecimalTextColumn();
+
         for (int rowNo = 0; rowNo < old.rowCount(); rowNo++)
-            setDValue(rowNo, old.dvalue(rowNo), true);
+            setDValue(rowNo, old.dvalue(rowNo, isEuroFloatColumn), true);
     }
 }
 
