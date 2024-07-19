@@ -9,6 +9,7 @@
 #include <sstream>
 #include <cstring>
 #include <iomanip>
+#include <regex>
 
 #include "dataset.h"
 
@@ -600,7 +601,13 @@ const char *Column::svalue(int index)
     }
 }
 
-double Column::dvalue(int index)
+/**
+ * Return the value of the cell at the given index as a double.
+ *
+ * @param index The index of the cell.
+ * @return The value of the cell as a double.
+ */
+double Column::dvalue(int index, bool acceptEuroDecimal)
 {
     if (dataType() == DataType::INTEGER)
     {
@@ -616,20 +623,70 @@ double Column::dvalue(int index)
     }
     else // if (dataType() == DataType::TEXT)
     {
-        const char *value = svalue(index);
+        std::string valueStr = svalue(index);
 
-        if (value[0] == '\0')
+        if (valueStr.empty())
         {
             return NAN;
         }
         else
         {
-            double d;
-            char junk;
-            if (sscanf(value, "%lf%1c", &d, &junk) == 1)
-                return d;
-            else
+            if (acceptEuroDecimal && isEuroDecimalPattern(valueStr))
+            {
+                std::replace(valueStr.begin(), valueStr.end(), ',', '.');
+            }
+            try {
+                return std::stod(valueStr);
+            } catch (const std::invalid_argument& e) {
                 return NAN;
+            } catch (const std::out_of_range& e) {
+                return NAN;
+            }
         }
     }
+}
+
+
+/**
+ * Checks if the column's DataType is TEXT and it's values can all be interpretted as 
+ * decimal numbers written in European format.
+ *
+ * @return true if the column contains european-formatted decimals as text values.
+ */
+bool Column::isEuroDecimalTextColumn()
+{
+    if (dataType() != DataType::TEXT)
+        return false;
+
+    for (int index = 0; index < rowCount(); index++)
+    {
+        std::string valueStr = svalue(index);
+        if (valueStr.empty())
+            continue;
+        else
+        {
+            if (isEuroDecimalPattern(valueStr) == false)
+                return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Checks if the given input string matches the Euro decimal pattern.
+ *
+ * The Euro decimal pattern consists of one or more digits followed by an 
+ * optional comma and one or more digits. e.g.:
+ * - 123
+ * - 123,456
+ * - 0,456
+ *
+ * @param input The input string to be checked.
+ * @return True if the input string matches the Euro decimal pattern, false 
+ * otherwise.
+ */
+bool Column::isEuroDecimalPattern(const std::string &input) const
+{
+    std::regex euroFloatPattern(R"(^\d+(?:,\d+)?$)");
+    return std::regex_match(input, euroFloatPattern);
 }
