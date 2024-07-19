@@ -44,6 +44,19 @@ const FormatDef = {
             return this.format.toString(this.raw);
         };
 
+        this.toAriaLabel = function() {
+            if (this.format === null && this.raw.toString)
+                return this.raw.toString();
+
+            if (this.format === null)
+                return '';
+
+            if (this.format.toAriaLabel)
+                return this.format.toAriaLabel(this.raw);
+
+            return this.toString();
+        };
+
         this.equalTo = function(value) {
             if (this.format === null)
                 return this.raw === value;
@@ -89,6 +102,20 @@ FormatDef.variables = new Format({
         return r;
     },
 
+    toAriaLabel: function(raw) {
+        if (raw.length === 1)
+            return `Variable ${ raw[0] }`;
+
+        let first = raw[0];
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                first += ', ' + raw[i];
+            }
+        }
+        let second = raw[raw.length - 1];
+        return s_('Variables {0} and {1}', [first, second]);
+    },
+
     parse: function(value) {
         return value;
     },
@@ -130,6 +157,10 @@ FormatDef.variable = new Format ({
 
     toString: function(raw) {
         return raw;
+    },
+
+    toAriaLabel: function(raw) {
+        return `${raw} variable`;
     },
 
     parse: function(value) {
@@ -223,6 +254,20 @@ FormatDef.term = new Format ({
 
     toString: function(raw) {
         return FormatDef.term._itemToString(raw, 0);
+    },
+
+    toAriaLabel: function(raw) {
+        if (raw.length === 1)
+            return raw[0];
+
+        let first = raw[0];
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                first += ', ' + raw[i];
+            }
+        }
+        let second = raw[raw.length - 1];
+        return s_('The interaction of {0} and {1}', [first, second]);
     },
 
     parse: function(value) {

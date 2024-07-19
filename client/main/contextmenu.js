@@ -11,8 +11,9 @@ const ContextMenu = function() { // this is constructed at the bottom
 
     Object.assign(this, Backbone.Events);
 
-    this.menu = new Menu();
+    this.menu = new Menu(null, 0, { exitKeys: ['ArrowLeft'] });
     this.$el = this.menu.$el;
+    this.$el.attr('hloop', false);
 
     this.menu.on('menu-hidden', (event) => {
         if (! this._showing)

@@ -464,6 +464,9 @@ class FocusLoop extends EventEmitter {
         if (options.level === undefined)
             options.level = 0;
 
+        if (options.exitKeys === undefined)
+            options.exitKeys = [];
+
         let token = new FocusLoopToken(options);
 
         this.loopOptions.set(element, token);
@@ -996,8 +999,7 @@ class FocusLoop extends EventEmitter {
     async _handleKeyPress(event) {
         this._mouseClicked = false;
 
-        if (event.altKey) // alt as modifier
-            return;
+        
 
         if (this.focusMode === 'default')
             return;
@@ -1016,9 +1018,25 @@ class FocusLoop extends EventEmitter {
             }
         }
 
+        let exitKeys = [];
+        let token = this.loopOptions.get(parent);
+        exitKeys = token.exitKeys;
+        let keyCode = event.code;
+        if (event.altKey && event.code !== 'Alt')
+            keyCode = 'Alt+' + keyCode;
+        if (event.ctrlKey && event.code !== 'Ctrl')
+            keyCode = 'Ctrl+' + keyCode;
+        console.log(keyCode);
+        console.log(exitKeys);
+        if (exitKeys.includes(keyCode)) {
+            this.leaveFocusLoop(parent, false);
+            event.preventDefault();
+            return;
+        }
+
         let keyToEnter = false;
         if (event.target === parent) {
-            let token = this.loopOptions.get(parent);
+            //let token = this.loopOptions.get(parent);
             keyToEnter = token.keyToEnter;
             if (keyToEnter) {
                 parent = target.parentElement.closest('.menu-level');
@@ -1028,6 +1046,9 @@ class FocusLoop extends EventEmitter {
         }
 
         if (reservedKeys && reservedKeys[event.code])
+            return;
+
+        if (event.altKey) // alt as modifier
             return;
 
         if (this.focusMode === 'hover')
@@ -1070,9 +1091,11 @@ class FocusLoop extends EventEmitter {
                     this.enterFocusLoop(parent, { withMouse: false });
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
-                    list = this.keyboardfocusableElements(loopContainer, level);
-                    if (this.findNextElement(target, list, 'left'))
-                        event.preventDefault();
+                    //if (loopContainer.getAttribute('hloop') === 'true') {
+                        list = this.keyboardfocusableElements(loopContainer, level);
+                        if (this.findNextElement(target, list, 'left'))
+                            event.preventDefault();
+                    //}
                 }
                 break;
             case "ArrowRight":

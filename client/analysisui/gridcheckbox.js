@@ -35,7 +35,7 @@ const GridCheckbox = function(params) {
 
         this.labelId = focusLoop.getNextAriaElementId('label');
         let $checkbox = $(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
-        this.$input = $('<input class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
+        this.$input = $('<input class="silky-option-input" tabindex="0" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
         this.$label = $('<span>' + label + '</span>');
         $checkbox.append(this.$input);
         $checkbox.append(this.$label);
@@ -49,6 +49,15 @@ const GridCheckbox = function(params) {
             else
                 this.$_subel.prepend(this.$icons);
         }
+
+        this.$input.on('click', (event) => {
+            let enabled = this.getPropertyValue('enable');
+            if ( ! enabled) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        });
 
         this.$input.change((event) => {
             let value = this.$input[0].checked;

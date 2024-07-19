@@ -14,6 +14,7 @@ const ContextMenus = require('./contextmenu/contextmenus');
 const ContextMenu = require('./contextmenu');
 const Notify = require('./notification');
 const host = require('./host');
+const selectionLoop = require('../common/selectionloop');
 
 const { flatten, unflatten } = require('../common/utils/addresses');
 const { contextMenuListener } = require('../common/utils');
@@ -29,10 +30,16 @@ const ResultsPanel = Backbone.View.extend({
         this._focus = 0;
         this.el.innerHTML = '';
         this.el.classList.add('jmv-results-panel');
+        this.el.classList.add('results-loop');
         this.$el.attr('role', 'list');
         this.$el.attr('aria-label', 'Results');
+        this.$el.attr('tabindex', '-1');
+
         this.el.dataset.mode = args.mode;
         this.annotationFocus = 0;
+
+        this.resultsLooper = new selectionLoop('results-loop', this.el, true);
+        this.analysisCount = 0;
 
         focusLoop.addFocusLoop(this.el);
 
@@ -156,7 +163,7 @@ const ResultsPanel = Backbone.View.extend({
         if (isEmptyAnalysis)
             classes = 'empty-analysis';
 
-        let $container = $(`<div class="jmv-results-container ${ classes }" tabindex="0" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
+        let $container = $(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
         $container.on('keydown', (event) => {
             if (event.keyCode === 13) { //enter
                 this.model.set('selectedAnalysis', analysis);
@@ -174,7 +181,6 @@ const ResultsPanel = Backbone.View.extend({
         $container.insertBefore($after);
 
         $container.attr('data-analysis-name', analysis.name);
-
 
         let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
         let $iframe = $(element).appendTo($container);
@@ -209,6 +215,9 @@ const ResultsPanel = Backbone.View.extend({
 
         if (isEmptyAnalysis === false) {
             $cover.on('click', event => this._resultsClicked(event, analysis));
+            this.analysisCount += 1;
+            if (this.analysisCount === 1)
+                $container.attr('tabindex', 0);
         }
         else {
             $cover.on('click', event =>  {
@@ -244,6 +253,7 @@ const ResultsPanel = Backbone.View.extend({
         if (analysis.name === 'empty')
             $container.remove();
         else {
+            this.analysisCount -= 1;
             let removed = false;
             $container.one('transitionend', () => {
                 $container.remove();
