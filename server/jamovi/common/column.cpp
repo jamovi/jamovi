@@ -22,8 +22,7 @@ Column::Column(DataSet *parent, MemoryMap *mm, ColumnStruct *rel)
     _rel = rel;
 }
 
-int Column::id() const
-{
+int Column::id() const {
     return struc()->id;
 }
 
@@ -48,31 +47,28 @@ const char *Column::description() const
 
 ColumnType::Type Column::columnType() const
 {
-    return (ColumnType::Type)struc()->columnType;
+    return (ColumnType::Type) struc()->columnType;
 }
 
 DataType::Type Column::dataType() const
 {
-    return (DataType::Type)struc()->dataType;
+    return (DataType::Type) struc()->dataType;
 }
 
 MeasureType::Type Column::measureType() const
 {
-    return (MeasureType::Type)struc()->measureType;
+    return (MeasureType::Type) struc()->measureType;
 }
 
-bool Column::autoMeasure() const
-{
+bool Column::autoMeasure() const {
     return struc()->autoMeasure;
 }
 
-int Column::rowCount() const
-{
+int Column::rowCount() const {
     return struc()->rowCount;
 }
 
-int Column::rowCountExFiltered() const
-{
+int Column::rowCountExFiltered() const {
     return _parent->rowCountExFiltered();
 }
 
@@ -137,15 +133,16 @@ int Column::levelCountExFiltered(bool requiresMissings) const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &level = levels[i];
-        if (level.countExFiltered > 0 && (requiresMissings || level.treatAsMissing == false))
+        if (level.countExFiltered > 0
+                && (requiresMissings || level.treatAsMissing == false))
             count++;
     }
     return count;
 }
 
-const char *Column::raws(int index)
+const char* Column::raws(int index)
 {
-    const char *value = cellAt<char *>(index);
+    const char *value = cellAt<char*>(index);
     if (value == NULL)
         return "";
     else
@@ -198,7 +195,7 @@ const vector<LevelData> Column::levels() const
         }
         else
         {
-            int value = l.value;
+            int value   = l.value;
             char *label = _mm->resolve(l.label);
             m.push_back(LevelData(value, label, pinned, filtered, treatAsMissing));
         }
@@ -222,7 +219,7 @@ bool Column::hasUnusedLevels() const
     return false;
 }
 
-const char *Column::getLabel(const char *value) const
+const char *Column::getLabel(const char* value) const
 {
     if (value[0] == '\0')
         return value;
@@ -274,8 +271,7 @@ const char *Column::getImportValue(int value) const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        if (l.value == value)
-        {
+        if (l.value == value) {
             char *iv = _mm->resolve(l.importValue);
             if (iv[0] != '\0')
                 return iv;
@@ -439,7 +435,7 @@ bool Column::shouldTreatAsMissing(const char *sv, int iv, double dv, const char 
                     return true;
             }
         }
-        else if (mv.type == 1 && !isnan(dv))
+        else if (mv.type == 1 && ! isnan(dv))
         {
             double dc = mv.value.d;
 
@@ -537,7 +533,7 @@ int Column::ivalue(int index)
             if (sscanf(v, "%i%1c", &value, &junk) == 1)
                 return value;
             else if (sscanf(v, "%lf%1c", &d, &junk) == 1)
-                return (int)d;
+                return (int) d;
             else
                 return INT_MIN;
         }
@@ -585,7 +581,7 @@ const char *Column::svalue(int index)
     }
     else if (dataType() == DataType::TEXT && measureType() == MeasureType::ID)
     {
-        const char *value = cellAt<char *>(index);
+        const char *value = cellAt<char*>(index);
         if (value == NULL)
             return "";
         else
@@ -659,10 +655,6 @@ double Column::dvalue(int index, bool acceptEuroDecimal)
  */
 bool Column::isEuroDecimalTextColumn()
 {
-
-    if (dataType() == DataType::DECIMAL || dataType() == DataType::INTEGER)
-        return false;
-
     if (dataType() != DataType::TEXT)
         return false;
 

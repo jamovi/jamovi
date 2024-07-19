@@ -924,4 +924,3 @@ void ColumnW::_discardScratchColumn()
     DataSetW *ds = (DataSetW*)_parent;
     ds->discardScratchColumn(id());
 }
-
