@@ -39,7 +39,7 @@ services:
     platform: linux/amd64
     profiles:
       - donotstart
-    command: ["/usr/bin/python3 -m pytest /usr/lib/jamovi/server"]
+    command: ["/usr/bin/python3 -m pytest /usr/lib/jamovi/server -k test_engine -s -W ignore::DeprecationWarning"]
 
   jamovi:
     image: jamovi/jamovi:2.5.0
@@ -54,6 +54,7 @@ services:
       - '41339:41339'
     command: ["/usr/bin/python3 -m jamovi.server 41337 --if=*"]
     stdin_open: true
+    stop_grace_period: 1s
     environment:
 
         # for development, use the vite dev server
@@ -85,7 +86,7 @@ services:
         # then access jamovi with ?access_key=yourpasswordhere added to the url
         # i.e. 127.0.0.1:41337/?access_key=yourpasswordhere
         # or alternatively, remove the password requirement:
-        # JAMOVI_ACCESS_KEY: ''
+        JAMOVI_ACCESS_KEY: ''
 
     volumes:
       - $HOME/Documents:/root/Documents

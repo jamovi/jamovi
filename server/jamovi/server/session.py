@@ -95,7 +95,7 @@ class Session(dict):
         if task_queue_url is not None:
             self._runner = EngineFactory.create('remote', task_queue_url, self._scheduler.queue, conf)
         else:
-            self._runner = EngineFactory.create('shmem', self._path, self._scheduler.queue, conf)
+            self._runner = EngineFactory.create('duckdb', self._path, self._scheduler.queue, conf)
 
         self._runner.add_engine_listener(self._on_engine_event)
 

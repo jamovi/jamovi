@@ -1,8 +1,8 @@
-
 from collections import OrderedDict
 from numbers import Number
 from datetime import date
 import math
+from typing import Iterable
 
 from jamovi.core import ColumnType
 from jamovi.core import DataType
@@ -13,29 +13,66 @@ from jamovi.readstat import Error as ReadStatError
 from jamovi.readstat import Writer
 from jamovi.readstat import Measure
 
+from .types import Reader
 
-def get_readers():
+
+def get_readers() -> Iterable[Reader]:
     return [
-        ( 'sav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
-        ( 'zsav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
-        ( 'dta', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='dta', **kwargs) ),
-        ( 'por', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='por', **kwargs) ),
-        ( 'xpt', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='xpt', **kwargs) ),
-        ( 'sas7bdat', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sas7bdat', **kwargs) ) ]
+        (
+            "sav",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="sav", **kwargs
+            ),
+        ),
+        (
+            "zsav",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="sav", **kwargs
+            ),
+        ),
+        (
+            "dta",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="dta", **kwargs
+            ),
+        ),
+        (
+            "por",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="por", **kwargs
+            ),
+        ),
+        (
+            "xpt",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="xpt", **kwargs
+            ),
+        ),
+        (
+            "sas7bdat",
+            lambda data, path, prog_cb, **kwargs: read(
+                data, path, prog_cb, format="sas7bdat", **kwargs
+            ),
+        ),
+    ]
 
 
-def get_writers():
+def get_writers() -> Iterable[Writer]:
     return [
-        ( 'sav', lambda data, path, prog_cb: write(data, path, prog_cb, 'sav') ),
-        ( 'dta', lambda data, path, prog_cb: write(data, path, prog_cb, 'dta') ),
-        ( 'por', lambda data, path, prog_cb: write(data, path, prog_cb, 'por') ),
-        ( 'xpt', lambda data, path, prog_cb: write(data, path, prog_cb, 'xpt') ),
-        ( 'sas7bdat', lambda data, path, prog_cb: write(data, path, prog_cb, 'sas7bdat') ) ]
+        ("sav", lambda data, path, prog_cb: write(data, path, prog_cb, "sav")),
+        ("dta", lambda data, path, prog_cb: write(data, path, prog_cb, "dta")),
+        ("por", lambda data, path, prog_cb: write(data, path, prog_cb, "por")),
+        ("xpt", lambda data, path, prog_cb: write(data, path, prog_cb, "xpt")),
+        (
+            "sas7bdat",
+            lambda data, path, prog_cb: write(data, path, prog_cb, "sas7bdat"),
+        ),
+    ]
 
 
-def read(data, path, prog_cb, *, format, **kwargs):
+def read(data, path, prog_cb, *, fmt, **_):
     parser = Parser(data, prog_cb)
-    parser.parse(path, format)
+    parser.parse(path, fmt)
     for column in data.dataset:
         column.determine_dps()
 
@@ -44,22 +81,20 @@ TIME_START = date(1970, 1, 1)
 
 
 class Parser(ReadStatParser):
-
     def __init__(self, data, prog_cb):
-
         self._data = data
         self._prog_cb = prog_cb
         self._max_row_index = 0
 
-        self._tmp_value_labels = { }
-        self._columns_by_labels_key = { }
+        self._tmp_value_labels = {}
+        self._columns_by_labels_key = {}
 
         self._metadata = None
-        self._labels = [ ]
+        self._labels = []
 
-    def parse(self, path, format):
+    def parse(self, path, fmt):
         try:
-            super().parse(path, format)
+            super().parse(path, fmt)
         except ReadStatError as e:
             if e.errno == 9:  # not expected no. of rows
                 self._data.set_row_count(self._max_row_index + 1)
@@ -90,7 +125,9 @@ class Parser(ReadStatParser):
         if weights_id != 0:
             try:
                 weights_name = self._data.get_column_by_id(weights_id).name
-                weights_analysis = self._data.analyses.create(id=0, name='weights', ns='jmv')
+                weights_analysis = self._data.analyses.create(
+                    id=0, name="weights", ns="jmv"
+                )
                 weights_analysis.set_weights(weights_name)
             except KeyError:
                 pass
@@ -165,13 +202,15 @@ class Parser(ReadStatParser):
                     level_i += 1
 
         elif var_type is date:
-
             column.set_data_type(DataType.INTEGER)
             column.set_measure_type(MeasureType.ORDINAL)
 
         elif var_type is int or var_type is float:
-            if var_meas is Measure.NOMINAL or var_meas is Measure.ORDINAL or level_labels:
-
+            if (
+                var_meas is Measure.NOMINAL
+                or var_meas is Measure.ORDINAL
+                or level_labels
+            ):
                 if var_meas == Measure.NOMINAL:
                     measure_type = MeasureType.NOMINAL
                 else:
@@ -181,7 +220,6 @@ class Parser(ReadStatParser):
                 column.set_measure_type(measure_type)
 
                 if level_labels is not None:
-
                     too_wide = False
                     if level_labels is not None:
                         for value in level_labels:
@@ -221,7 +259,7 @@ class Parser(ReadStatParser):
                 column.set_data_type(data_type)
                 column.set_measure_type(MeasureType.CONTINUOUS)
 
-        missings = [ ]
+        missings = []
 
         for low, high in variable.missing_ranges:
             if isinstance(low, str):
@@ -232,7 +270,7 @@ class Parser(ReadStatParser):
             if low is None and high is None:
                 pass
             elif low == high:
-                missings.append('== {}'.format(low))
+                missings.append(f"== { low }")
             elif isinstance(low, Number):  # if it's a range
                 # ranges are weird, and we don't understand why people would
                 # want to use them. we also don't support them, so this is us
@@ -244,23 +282,23 @@ class Parser(ReadStatParser):
                     if n_levels > 12:
                         # then only treat the value closer to zero as relevant
                         if abs(high) < abs(low):
-                            missings.append('<= {}'.format(high))
+                            missings.append("<= {}".format(high))
                         else:
-                            missings.append('>= {}'.format(low))
+                            missings.append(">= {}".format(low))
                     else:
                         # if the no. levels is low, then make lots of equals
                         for i in range(low, high + 1):
-                            missings.append('== {}'.format(i))
+                            missings.append("== {}".format(i))
                 else:
                     # treat the value closer to zero as relevant
                     if abs(high) < abs(low):
-                        missings.append('<= {}'.format(high))
+                        missings.append("<= {}".format(high))
                     else:
-                        missings.append('>= {}'.format(low))
+                        missings.append(">= {}".format(low))
             else:
                 # shouldn't get here
-                missings.append('== {}'.format(low))
-                missings.append('== {}'.format(high))
+                missings.append("== {}".format(low))
+                missings.append("== {}".format(high))
 
         if missings:
             column.set_missing_values(missings)
@@ -273,7 +311,6 @@ class Parser(ReadStatParser):
             pass
 
     def handle_value(self, var_index, row_index, value):
-
         if row_index >= self._data.row_count:
             self._data.set_row_count(row_index + 1)
         else:
@@ -293,17 +330,17 @@ class Parser(ReadStatParser):
                 if column.has_levels:
                     if not column.has_level(value):
                         column.append_level(
-                            column.level_count,
-                            value,
-                            value,
-                            pinned=False)
+                            column.level_count, value, value, pinned=False
+                        )
                     if column.level_count > 50:
                         column.change(measure_type=MeasureType.ID)
                 column.set_value(row_index, value)
             else:
-                column.set_value(row_index, '')
-        elif (column.measure_type is MeasureType.NOMINAL
-                or column.measure_type is MeasureType.ORDINAL):
+                column.set_value(row_index, "")
+        elif (
+            column.measure_type is MeasureType.NOMINAL
+            or column.measure_type is MeasureType.ORDINAL
+        ):
             if isinstance(value, Number):
                 if not math.isclose(float(value) % 1.0, 0.0):
                     column.change(data_type=DataType.DECIMAL)
@@ -316,8 +353,8 @@ class Parser(ReadStatParser):
                         raise Exception()
                 except Exception:
                     column.change(
-                        data_type=DataType.DECIMAL,
-                        measure_type=MeasureType.CONTINUOUS)
+                        data_type=DataType.DECIMAL, measure_type=MeasureType.CONTINUOUS
+                    )
                 column.set_value(row_index, value)
             elif vt is date:
                 delta = value - TIME_START
@@ -331,7 +368,7 @@ class Parser(ReadStatParser):
             if isinstance(value, Number):
                 column.set_value(row_index, float(value))
             else:
-                column.set_value(row_index, float('nan'))
+                column.set_value(row_index, float("nan"))
         elif column.data_type is DataType.INTEGER:
             if isinstance(value, Number):
                 column.set_value(row_index, int(value))
@@ -339,13 +376,13 @@ class Parser(ReadStatParser):
                 column.set_value(row_index, -2147483648)
 
 
-def write(data, path, prog_cb, format):
+def write(data, path, prog_cb, fmt):
     writer = Writer()
-    writer.open(path, format)
-    writer.set_file_label('jamovi data set')
+    writer.open(path, fmt)
+    writer.set_file_label("jamovi data set")
 
     def fix_name(name):
-        name = name.replace(' ', '_')
+        name = name.replace(" ", "_")
         return name
 
     columns = filter(lambda col: not col.is_virtual, data)
@@ -362,10 +399,10 @@ def write(data, path, prog_cb, format):
             storage_width = 0
             if column.has_levels:
                 for level in column.levels:
-                    storage_width = max(storage_width, len(level[1].encode('utf-8')))
+                    storage_width = max(storage_width, len(level[1].encode("utf-8")))
             else:
                 for value in column:
-                    storage_width = max(storage_width, len(value.encode('utf-8')))
+                    storage_width = max(storage_width, len(value.encode("utf-8")))
         elif column.data_type is DataType.DECIMAL:
             data_type = float
             storage_width = 8
@@ -384,10 +421,7 @@ def write(data, path, prog_cb, format):
 
         name = column_names[col_no]
 
-        var = writer.add_variable(
-            name,
-            data_type,
-            storage_width)
+        var = writer.add_variable(name, data_type, storage_width)
 
         var.label = column.description
         var.measure = measure_type

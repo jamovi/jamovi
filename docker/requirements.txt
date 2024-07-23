@@ -11,5 +11,7 @@ aiohttp
 duckdb
 loguru
 pytest
+pytest-asyncio
+pytest-timeout
 rpy2
 appdirs

@@ -7,6 +7,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+rpy2 = "^3.5.16"
+loguru = "^0.7.2"
+appdirs = "^1.4.4"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.26.1"
