@@ -35,12 +35,15 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 ARG JAMOVI_ROOT=.
 ARG MODS_ROOT=$JAMOVI_ROOT/docker/mods
 
+RUN python3 -m pip install -U pip setuptools wheel
+RUN apt remove -y python3-setuptools python3-pip python3-pkg-resources python3-wheel
+
 COPY $JAMOVI_ROOT/docker/requirements.txt $MODS_ROOT/server/requirements.tx[t] /tmp/source/
 RUN python3 -m pip install --trusted-host pypi.python.org -r /tmp/source/requirements.txt
 
 COPY $JAMOVI_ROOT/readstat /tmp/source/readstat
 WORKDIR /tmp/source/readstat
-RUN python3 setup.py install --install-lib=/usr/lib/jamovi/server
+RUN python3 setup.py install --single-version-externally-managed --root=/ --install-lib=/usr/lib/jamovi/server
 
 WORKDIR /tmp/source/server
 
@@ -50,10 +53,10 @@ COPY $JAMOVI_ROOT/server/jamovi/common      /tmp/source/server/jamovi/common
 COPY $JAMOVI_ROOT/server/jamovi/core.pyx    /tmp/source/server/jamovi/
 COPY $JAMOVI_ROOT/server/jamovi/__init__.py /tmp/source/server/jamovi/
 
-RUN SETUP_CORE_ONLY=1 python3 setup.py install --install-lib=/usr/lib/jamovi/server
+RUN SETUP_CORE_ONLY=1 python3 setup.py install --single-version-externally-managed --root=/ --install-lib=/usr/lib/jamovi/server
 
 COPY $JAMOVI_ROOT/server/ $MODS_ROOT/server/ /tmp/source/server/
-RUN SETUP_SERVER_ONLY=1 python3 setup.py install --install-lib=/usr/lib/jamovi/server
+RUN SETUP_SERVER_ONLY=1 python3 setup.py install --single-version-externally-managed --root=/ --install-lib=/usr/lib/jamovi/server
 
 COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
 
@@ -123,6 +126,9 @@ RUN mkdir -p /usr/lib/jamovi/modules/base/R
 
 COPY $JAMOVI_ROOT/jmvcore /tmp/source/jmvcore
 RUN R CMD INSTALL /tmp/source/jmvcore --library=/usr/lib/jamovi/modules/base/R
+
+# add duckdb
+RUN R -e "install.packages(c('DBI', 'duckdb'), lib='/usr/lib/jamovi/modules/base/R', repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
 
 ENV R_LIBS /usr/lib/jamovi/modules/base/R
 
@@ -234,6 +240,7 @@ COPY --from=server  /usr/lib/jamovi/ /usr/lib/jamovi/
 
 ENV LD_LIBRARY_PATH $R_HOME/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
+ENV JAMOVI_MODULES_PATH /usr/lib/jamovi/modules
 ENV PYTHONPATH /usr/lib/jamovi/server
 ENV R_LIBS $R_HOME/library
 ENV JAMOVI_SESSION_EXPIRES 0

@@ -95,6 +95,7 @@ if include_server:
         'jamovi.server.modules',
         'jamovi.server.dataset',
         'jamovi.server.engine',
+        'jamovi.server.worker',
         'jamovi.tests',
     ]
     package_data['jamovi.server'] = [ 'jamovi.proto', 'resources/chain.pem' ]

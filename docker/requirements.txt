@@ -11,3 +11,5 @@ aiohttp
 duckdb
 loguru
 pytest
+rpy2
+appdirs
