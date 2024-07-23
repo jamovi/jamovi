@@ -33,6 +33,7 @@ message ComsMessage {
 message AnalysisRequest {
     string sessionId = 7;
     string instanceId = 1;
+    int32 datasetId = 22;
     int32 analysisId = 2;
     string name = 3;
     string ns = 4;
