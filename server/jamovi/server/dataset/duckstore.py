@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Iterator
+import itertools
+
 from duckdb import connect
 from duckdb import DuckDBPyConnection
 
@@ -12,6 +15,7 @@ class DuckStore(Store):
 
     _db: DuckDBPyConnection | None
     _attached: bool
+    _ids: Iterator[int]
 
     @staticmethod
     def create(path: str) -> DuckStore:
@@ -23,6 +27,10 @@ class DuckStore(Store):
         self._db = None
         self._attached = False
         self._attached_read_only = False
+        self._ids = iter(itertools.count())
+
+    def _next_id(self) -> int:
+        return next(self._ids)
 
     def attach(self, read_only: bool = False):
         """attach to the database to make changes"""
@@ -42,7 +50,7 @@ class DuckStore(Store):
         self._attached = False
 
     def create_dataset(self) -> "DuckDataSet":
-        return DuckDataSet.create(self)
+        return DuckDataSet.create(self, self._next_id())
 
     def retrieve_dataset(self) -> "DuckDataSet":
         raise NotImplementedError
