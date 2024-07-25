@@ -104,16 +104,17 @@ FormatDef.variables = new Format({
 
     toAriaLabel: function(raw) {
         if (raw.length === 1)
-            return `Variable ${ raw[0] }`;
+            return s_(`Variable {0}`, raw);
 
-        let first = raw[0];
+        let list = raw[0];
         if (raw.length > 2) {
             for (let i = 1; i < raw.length - 1; i++) {
-                first += ', ' + raw[i];
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i] });
             }
         }
-        let second = raw[raw.length - 1];
-        return s_('Variables {0} and {1}', [first, second]);
+        let last = raw[raw.length - 1];
+        list = s_('{list} and {lastItem}', {list: list, lastItem: last});
+        return s_('Variables {list}', {list});
     },
 
     parse: function(value) {
@@ -160,7 +161,7 @@ FormatDef.variable = new Format ({
     },
 
     toAriaLabel: function(raw) {
-        return `${raw} variable`;
+        return s_('{name} variable', { name: raw });
     },
 
     parse: function(value) {
@@ -260,14 +261,16 @@ FormatDef.term = new Format ({
         if (raw.length === 1)
             return raw[0];
 
-        let first = raw[0];
+        let list = raw[0];
         if (raw.length > 2) {
             for (let i = 1; i < raw.length - 1; i++) {
-                first += ', ' + raw[i];
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i] });
             }
         }
-        let second = raw[raw.length - 1];
-        return s_('The interaction of {0} and {1}', [first, second]);
+        let last = raw[raw.length - 1];
+        list = s_('{list} and {lastItem}', {list: list, lastItem: last});
+        return s_('The interaction of {list}', {list});
+
     },
 
     parse: function(value) {

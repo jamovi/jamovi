@@ -9,7 +9,7 @@ const Action = Backbone.Model.extend({
     defaults: {
         enabled: true,
         name: '',
-        decsription: '',
+        description: '',
     },
     do(source) {
         if (this._direct) {
@@ -48,10 +48,10 @@ class ActionHub {
         return action;
     }
 
-    setDetails(actionName, name, decsription) {
+    setDetails(actionName, name, description) {
         let action = get(actionName);
         action.attributes.name = name;
-        action.attributes.decsription = decsription;
+        action.attributes.description = description;
     }
 }
 

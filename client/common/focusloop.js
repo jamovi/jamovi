@@ -108,7 +108,7 @@ class FocusLoop extends EventEmitter {
                     if (this.ctrlDown === false) {
                         
                         if (!this.turnedOn) {
-                            if (this.inAccessibilityMode()) {
+                            if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
                                 this.shortcutPath = '';
                                 this.setFocusMode('default');
                             }
@@ -141,7 +141,7 @@ class FocusLoop extends EventEmitter {
 
                 if (event.key === 'Alt') { // not as modifier
                     if (event.ctrlKey === false) {
-                        if (this.inAccessibilityMode()) {
+                        if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
                             this.shortcutPath = '';
                             this.setFocusMode('default');
                         }
@@ -391,6 +391,9 @@ class FocusLoop extends EventEmitter {
             let prevMode = this.focusMode;
 
             this.focusMode = value;
+
+            if (prevMode === 'shortcuts' || this.focusMode === 'shortcuts')
+                this.shortcutPath = '';
 
             if (this.defaultFocusControl && this.focusMode === 'default')
                 this.defaultFocusControl.focus();
@@ -1026,8 +1029,6 @@ class FocusLoop extends EventEmitter {
             keyCode = 'Alt+' + keyCode;
         if (event.ctrlKey && event.code !== 'Ctrl')
             keyCode = 'Ctrl+' + keyCode;
-        console.log(keyCode);
-        console.log(exitKeys);
         if (exitKeys.includes(keyCode)) {
             this.leaveFocusLoop(parent, false);
             event.preventDefault();

@@ -586,14 +586,14 @@ const GridTargetContainer = function(params) {
         if (raw.length === 1)
             return raw[0].toString();
 
-        let first = raw[0].toString();
+        let list = raw[0].toString();
         if (raw.length > 2) {
             for (let i = 1; i < raw.length - 1; i++) {
-                first += ', ' + raw[i].toString();
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i].toString() });
             }
         }
-        let second = raw[raw.length - 1].toString();
-        return s_('{0} and {1}', [first, second]);
+        let last = raw[raw.length - 1].toString();
+        return s_('{list} and {lastItem}', {list: list, lastItem: last});
     };
 
     this.setButtonsMode = function(gainOnClick) {
