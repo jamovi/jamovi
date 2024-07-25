@@ -31,3 +31,6 @@ __pycache__
 /server/jamovi/hydra/
 /modules/
 /bin/
+
+# VSCode
+.vscode/settings.json
