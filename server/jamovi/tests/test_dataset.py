@@ -317,5 +317,9 @@ def test_column_data_types(
     column.change(data_type=data_type, measure_type=MeasureType.CONTINUOUS)
     for i, v in enumerate(values_expected):
         column.set_value(i, v)
+        # TEMP: commit transaction - should be automatic?
+        commit_method = getattr(ds, "commit_set_values")
+        if callable(commit_method):
+            commit_method()
         v2 = column.get_value(i)
         assert equals(v, v2)

@@ -16,6 +16,8 @@ import math
 
 from jamovi.server.logging import logger
 
+# from jamovi.server import column # collides with class method parameters named column
+
 from .core import ColumnType
 from .core import DataType
 from .core import MeasureType
@@ -23,8 +25,11 @@ from .core import MeasureType
 from .dataset import DataSet
 from .duckcolumn import DuckColumn
 from .duckcolumn import DuckLevel
-from .datacache import DataCache
 
+from .datacache import DataReadCache
+from .datacache import DataWriteBuffer
+from .datacache import CellValue
+from .datacache import CellCoordinate
 
 if TYPE_CHECKING:
     from .duckstore import DuckStore
@@ -108,6 +113,7 @@ def batched(iterable, n):
 
 
 class DuckDataSet(DataSet):
+    
     """A data set backed by a duckdb database"""
 
     _id: int
@@ -118,11 +124,13 @@ class DuckDataSet(DataSet):
     _row_count: int
     _row_count_ex_filtered: int
 
-    _cache: DataCache
-    _cache_ex_filtered: DataCache
+    _cache: DataReadCache
+    _cache_ex_filtered: DataReadCache
     _cache_filter_state: OrderedDict[int, bool]
 
     _weights: int
+
+    _write_buffer: DataWriteBuffer
 
     @staticmethod
     def create(store: "DuckStore", dataset_id: int) -> DuckDataSet:
@@ -185,7 +193,8 @@ class DuckDataSet(DataSet):
         self._column_count = 0
         self._row_count = 0
         self._row_count_ex_filtered = 0
-        self._cache = DataCache(self.get_values)
+        self._cache = DataReadCache(self.get_values)
+        self._write_buffer = DataWriteBuffer(self.set_values)
         self._weights = 0
 
     def attach(self, read_only: bool = False) -> None:
@@ -288,6 +297,52 @@ class DuckDataSet(DataSet):
             self.column_update_levels(column, level_to_remove)
 
         self._cache.clear()
+
+    def set_values(self, values:dict[tuple, CellValue]):
+        self._set_values(values, index_name="index")
+
+    def _set_values(self, values:dict[CellCoordinate, CellValue], index_name):
+        
+        # Values written one column at a time base on the assumption that cells 
+        # to be set are not neccessarily adjacent.
+         
+        # NOTE: Performance could be improved by updating groups of columns that have 
+        # updates for all the same rows as each other (instead updating columns one at a time)
+        col_iids = set([t[1] for t in values.keys()])
+        for col_i in col_iids:
+            col_updates:dict[int,CellValue] = {index:value for (index, col_j), value in values.items() if col_i==col_j}
+            self._update_column_values(col_i, col_updates, index_name)
+
+    def _update_column_values(self, col, updates:dict[int,CellValue], index_name):
+        col = self._columns_by_iid[col]
+        data_type = col.data_type
+        measure_type = col.measure_type
+
+        values = ",".join(
+            [f"({row_index},{self.as_sql_string(value, data_type=data_type, measure_type=measure_type)})" 
+                for row_index, value in updates.items()])
+        query = \
+            f"""
+            UPDATE "sheet_data_{self._id}"
+            SET "{col.iid}" = t.col_iid
+            FROM (VALUES {values}) AS t(index_col, col_iid)
+            WHERE "sheet_data_{self._id}".{index_name} = t.index_col
+            """
+        self._execute(query)
+
+    def commit_set_values(self):
+        self._write_buffer.commit()
+
+    def _convert_value_to_raw(self, value, parent_column: DuckColumn):
+
+        if isinstance(value, str) and parent_column.data_type is DataType.TEXT and parent_column.has_levels:
+            try:
+                raw = parent_column.get_value_for_label(value)
+            except KeyError:
+                raw = self.column_add_level(parent_column, value)
+        else:
+            raw = value
+        return raw        
 
     def column_trim_unused_levels(self, column: DuckColumn):
         """trim unused, unpinned levels"""
@@ -886,3 +941,20 @@ class DuckDataSet(DataSet):
 
         row_count_ex = results[0][0]
         self._row_count_ex_filtered = row_count_ex
+
+    def as_sql_string(self, value, data_type,measure_type):
+        if self.is_null_value(value, data_type):
+            return NULL_VALUES[data_type][measure_type]
+        # TODO: Add more cases for other data types
+        ...
+
+        return value
+
+    def is_null_value(self, value, data_type):
+        if data_type is DataType.DECIMAL or data_type is DataType.INTEGER:
+            import math # NOTE: Obviously not a great place for the import. Will move if design is kept
+            return math.isnan(value)
+        # TODO: Add more cases for other data types
+        ...
+
+        return False
