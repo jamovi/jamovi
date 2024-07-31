@@ -9,6 +9,8 @@ from typing import Literal
 
 from collections import OrderedDict
 
+import math
+
 import itertools
 from uuid import uuid4
 import re
@@ -59,7 +61,7 @@ SQL_TYPES = {
     },
 }
 
-NULL_VALUES = {
+SQL_NULL_VALUES = {
     DataType.INTEGER: {
         MeasureType.CONTINUOUS: "-2147483648",
         MeasureType.NOMINAL: "-2147483648",
@@ -476,7 +478,7 @@ class DuckDataSet(DataSet):
             )
 
             sql_type = SQL_TYPES[data_type][measure_type]
-            null_value = NULL_VALUES[data_type][measure_type]
+            null_value = SQL_NULL_VALUES[data_type][measure_type]
 
             self._execute(f"""
                 ALTER TABLE "sheet_data_{ self._id }"
@@ -593,7 +595,7 @@ class DuckDataSet(DataSet):
             measure_type = column.measure_type
 
         sql_type = SQL_TYPES[data_type][measure_type]
-        null_value = NULL_VALUES[data_type][measure_type]
+        null_value = SQL_NULL_VALUES[data_type][measure_type]
 
         self._execute(f"""
             BEGIN TRANSACTION;
@@ -944,17 +946,18 @@ class DuckDataSet(DataSet):
 
     def as_sql_string(self, value, data_type,measure_type):
         if self.is_null_value(value, data_type):
-            return NULL_VALUES[data_type][measure_type]
+            return SQL_NULL_VALUES[data_type][measure_type]
         # TODO: Add more cases for other data types
         ...
 
         return value
 
     def is_null_value(self, value, data_type):
-        if data_type is DataType.DECIMAL or data_type is DataType.INTEGER:
-            import math # NOTE: Obviously not a great place for the import. Will move if design is kept
+        if data_type is DataType.DECIMAL: 
             return math.isnan(value)
-        # TODO: Add more cases for other data types
-        ...
+        elif data_type is DataType.INTEGER:
+            return value == -2147483648
+        elif data_type is DataType.TEXT:
+            return value == ""
 
         return False
