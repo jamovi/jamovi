@@ -1,4 +1,3 @@
-
 from typing import Protocol
 from abc import abstractmethod
 
@@ -8,7 +7,6 @@ from .core import MeasureType
 
 
 class Column(Protocol):
-
     @property
     @abstractmethod
     def id(self) -> int:
@@ -136,10 +134,6 @@ class Column(Protocol):
     @active.setter
     @abstractmethod
     def active(self, value: bool):
-        raise NotImplementedError
-
-    @abstractmethod
-    def append(self, value):
         raise NotImplementedError
 
     @abstractmethod
