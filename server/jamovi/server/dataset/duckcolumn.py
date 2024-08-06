@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Iterable, TypeAlias
+from typing import TYPE_CHECKING, Iterable, Iterator, TypeAlias
 
 from .column import Column
 from .core import ColumnType, DataType, MeasureType
@@ -54,6 +54,7 @@ class DuckColumn(Column):
     _formula_message: str
     _dps: int
     _trim_levels: bool
+    _active: bool
 
     def __init__(self, dataset: "DuckDataSet"):
         self._dataset = dataset
@@ -176,10 +177,12 @@ class DuckColumn(Column):
         self._apply("dps", value)
 
     def set_data_type(self, data_type: DataType):
-        self._apply("data_type", data_type.value)
+        if data_type != self.data_type:
+            self._apply("data_type", data_type.value)
 
     def set_measure_type(self, measure_type: MeasureType):
-        self._apply("measure_type", measure_type.value)
+        if measure_type != self.measure_type:
+            self._apply("measure_type", measure_type.value)
 
     def change(self, *, data_type=None, measure_type=None, levels=None):
         if measure_type is MeasureType.NONE:
@@ -203,18 +206,15 @@ class DuckColumn(Column):
         self._apply("trim_levels", value)
 
     def determine_dps(self):
-        # TODO
-        pass
+        self._dataset.column_determine_dps(self)
 
     @property
     def active(self) -> bool:
-        # TODO
-        return True
+        return self._active
 
     @active.setter
     def active(self, value: bool):
-        # TODO
-        pass
+        self._apply("active", value)
 
     def append_level(self, raw, label, import_value=None, pinned=False) -> None:
         self._dataset.column_append_level(self, raw, label, import_value, pinned)
@@ -273,6 +273,7 @@ class DuckColumn(Column):
 
     @property
     def dlevels(self) -> list[DuckLevel]:
+        """levels and counts"""
         return self._levels
 
     @property
@@ -301,21 +302,22 @@ class DuckColumn(Column):
         self._dataset.set_value(index, self, v)
 
     def clear(self):
-        # TODO
-        pass
+        return self._dataset.column_clear(self)
 
     def __getitem__(self, index):
+        if index >= self._dataset.row_count:
+            raise IndexError
         return self.get_value(index)
 
-    def __iter__(self):
-        raise NotImplementedError
+    def __iter__(self) -> Iterator[int | str | float]:
+        for i in range(self.row_count):
+            yield self.get_value(i)
 
     def raw(self, index):
-        raise NotImplementedError
+        return self._dataset.get_raw_value(index, self)
 
-    def set_levels(self, levels):
-        # TODO
-        pass
+    def set_levels(self, levels: Iterable[Level]):
+        self._dataset.column_set_levels(self, levels)
 
     def set_missing_values(self, missing_values):
         # TODO
@@ -349,4 +351,5 @@ class DuckColumn(Column):
             "formula_message",
             "dps",
             "trim_levels",
+            "active",
         )

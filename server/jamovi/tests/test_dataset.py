@@ -3,17 +3,20 @@
 from typing import Sequence
 from typing import TypeAlias
 from typing import Any
-from uuid import uuid4
 import math
+import itertools
 
 import pytest
 
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset.duckdataset import DuckDataSet
-from jamovi.server.dataset.duckcolumn import DuckColumn
-from jamovi.server.dataset.duckcolumn import DuckLevel
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
+
+from .utils import equals
+from .utils import levels_must_equal
+from .utils import add_column_to_dataset
+from .utils import alter_levels
 
 
 NAN = float("nan")
@@ -22,80 +25,31 @@ NAN_INT = -2147483648
 CellValue: TypeAlias = str | int | float
 
 
-def equals(x: CellValue, y: CellValue) -> bool:
-    """test if two cell values are equal"""
-    if isinstance(x, float) and isinstance(y, float):
-        if math.isnan(x):
-            return math.isnan(y)
-        if math.isnan(y):
-            return False
-        return pytest.approx(x) == y
-    else:
-        return x == y
-
-
 def test_row_modification(simple_dataset: DataSet):
     """test modification of row count"""
     simple_dataset.set_row_count(33)
     assert simple_dataset.row_count == 33
 
 
-def level_must_equal(level: DuckLevel, values: dict):
-    """tests whether a level has certain values"""
-    for name, value in values.items():
-        assert getattr(level, name) == value
+@pytest.mark.parametrize(
+    ("column_name",),
+    (("len",), ("dose",), ("supp",)),
+)
+def test_clear(toothgrowth_dataset: DuckDataSet, column_name: str):
+    """test column clear"""
+    ds = toothgrowth_dataset
+    column = ds[column_name]
+    column.clear()
+    for value in column:
+        if column.data_type is DataType.DECIMAL:
+            assert isinstance(value, float)
+            assert math.isnan(value)
+        elif column.data_type is DataType.TEXT:
+            assert value == ""
+        else:
+            assert value == NAN_INT
 
-
-def levels_must_equal(levels: Sequence[DuckLevel], values: Sequence[dict]):
-    """tests whether levels have certain values"""
-    assert len(levels) == len(values)
-    for i, level in enumerate(levels):
-        level_must_equal(level, values[i])
-
-
-def add_column_to_dataset(
-    dataset: DuckDataSet, measure_type: MeasureType, values: Sequence[int | float | str]
-) -> DuckColumn:
-    """Add a column to a dataset and populate it"""
-    column = dataset.append_column(str(uuid4()))
-    if isinstance(values[0], str) and measure_type in (
-        MeasureType.NOMINAL,
-        MeasureType.ORDINAL,
-    ):
-        column.change(data_type=DataType.TEXT, measure_type=measure_type)
-        for index, value in enumerate(values):
-            if not isinstance(value, str):
-                raise TypeError
-            try:
-                if value == "":
-                    raw_value = NAN_INT
-                else:
-                    raw_value = column.get_value_for_label(value)
-            except KeyError:
-                raw_value = column.level_count
-                column.append_level(raw_value, value, value, False)
-            column.set_value(index, raw_value, initing=True)
-    elif isinstance(values[0], int) and measure_type in (
-        MeasureType.NOMINAL,
-        MeasureType.ORDINAL,
-    ):
-        column.change(data_type=DataType.INTEGER, measure_type=measure_type)
-        for index, value in enumerate(values):
-            if not isinstance(value, int):
-                raise TypeError
-            if value != NAN_INT and not column.has_level(value):
-                column.insert_level(value, str(value))
-            column.set_value(index, value, initing=True)
-    else:
-        data_type = {
-            str: DataType.TEXT,
-            int: DataType.INTEGER,
-            float: DataType.DECIMAL,
-        }[type(values[0])]
-        column.change(data_type=data_type, measure_type=measure_type)
-        for index, value in enumerate(values):
-            column.set_value(index, value)
-    return column
+    levels_must_equal(column.dlevels, [])
 
 
 @pytest.mark.parametrize(
@@ -293,7 +247,7 @@ def test_column_text_to_decimal(
             assert math.isnan(v2)
 
     # AND dps is updated accordingly
-    # assert column.dps == dps
+    assert column.dps == dps
 
 
 @pytest.mark.parametrize(
@@ -319,3 +273,105 @@ def test_column_data_types(
         column.set_value(i, v)
         v2 = column.get_value(i)
         assert equals(v, v2)
+
+
+def test_set_levels_int(toothgrowth_dataset: DuckDataSet):
+    """test set levels"""
+    dataset = toothgrowth_dataset
+
+    dlevels = [
+        {
+            "value": 2000,
+            "label": "2000",
+            "import_value": "2000",
+            "pinned": False,
+            "count": 20,
+            "count_ex_filtered": 20,
+        },
+        {
+            "value": 500,
+            "label": "500",
+            "import_value": "500",
+            "pinned": False,
+            "count": 20,
+            "count_ex_filtered": 20,
+        },
+        {
+            "value": 77,
+            "label": "lert",
+            "import_value": "lert",
+            "pinned": True,
+            "count": 0,
+            "count_ex_filtered": 0,
+        },
+        {
+            "value": 1000,
+            "label": "1000",
+            "import_value": "1000",
+            "pinned": False,
+            "count": 20,
+            "count_ex_filtered": 20,
+        },
+        {
+            "value": 10000,
+            "label": "10000",
+            "import_value": "10000",
+            "pinned": True,
+            "count": 0,
+            "count_ex_filtered": 0,
+        },
+    ]
+
+    levels = [
+        (lvl["value"], lvl["label"], lvl["import_value"], lvl["pinned"])
+        for lvl in dlevels
+    ]
+
+    column = dataset["dose"]
+    column.set_levels(levels)
+
+    levels_must_equal(column.dlevels, dlevels)
+
+
+def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
+    """test set levels"""
+    dataset = toothgrowth_dataset
+
+    dose = dataset["dose"]
+
+    # pin the 1000 level
+    levels = alter_levels(dose.levels, {1000: {"pinned": True}})
+    dose.set_levels(levels)
+
+    for index in itertools.chain(range(0, 20), range(30, 50)):
+        # clear out the 500s and 1000s
+        dose.set_value(index, NAN_INT)
+
+    levels_must_equal(
+        dose.dlevels,
+        [
+            {
+                "value": 1000,
+                "pinned": True,
+                "count": 0,
+            },
+            {
+                "value": 2000,
+                "pinned": False,
+                "count": 20,
+            },
+        ],
+    )
+
+    # unpin the 1000 level
+    levels = alter_levels(dose.levels, {1000: {"pinned": False}})
+    dose.set_levels(levels)
+
+    levels_must_equal(
+        dose.dlevels,
+        [
+            {
+                "value": 2000,
+            },
+        ],
+    )
