@@ -778,7 +778,47 @@ class DuckDataSet(DataSet):
                 new_dlevels.append(dlevel)
             self.column_update_levels(column, levels=new_dlevels, trim="all")
         else:
-            raise NotImplementedError
+            value_counts: dict[str, tuple[int, int]] = {}
+            value_indices: dict[str, int] = {}
+
+            for index, dlevel in enumerate(column.dlevels):
+                value_counts[dlevel.import_value] = (
+                    dlevel.count,
+                    dlevel.count_ex_filtered,
+                )
+                value_indices[dlevel.import_value] = index
+
+            new_dlevels = []
+            old_to_new: dict[int, int] = {}
+
+            for level in levels:
+                index, label, import_value, pinned = level
+                count, count_ex_filtered = value_counts.get(import_value, (0, 0))
+                try:
+                    old_index = value_indices[import_value]
+                    if old_index != index:
+                        old_to_new[old_index] = index
+                except KeyError:
+                    pass
+                dlevel = DuckLevel(
+                    index, label, import_value, pinned, count, count_ex_filtered
+                )
+                new_dlevels.append(dlevel)
+
+            if old_to_new:
+                when_thens = []
+                for old, nu in old_to_new.items():
+                    when_thens.append(
+                        f"""WHEN "{ column.iid }" = { old } THEN { nu }"""
+                    )
+                when_then_line = " ".join(when_thens)
+
+                self._execute(f"""
+                    UPDATE "sheet_data_{ self._id }"
+                    SET "{ column.iid }" = CASE { when_then_line } ELSE -2147483648 END
+                """)
+
+            self.column_update_levels(column, levels=new_dlevels, trim="all")
 
     def _column_refresh_levels(self, column):
         query = self._execute(f"""
