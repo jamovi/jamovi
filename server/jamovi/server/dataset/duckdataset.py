@@ -8,9 +8,9 @@ from typing import cast
 from typing import Literal
 
 from collections import OrderedDict
+from numbers import Number
 
 import itertools
-from uuid import uuid4
 import re
 import math
 
@@ -23,6 +23,7 @@ from .core import MeasureType
 from .dataset import DataSet
 from .duckcolumn import DuckColumn
 from .duckcolumn import DuckLevel
+from .duckcolumn import Level
 from .datacache import DataCache
 
 
@@ -153,14 +154,15 @@ class DuckDataSet(DataSet):
                 formula VARCHAR NOT NULL DEFAULT '',
                 formula_message VARCHAR NOT NULL DEFAULT '',
                 dps INTEGER NOT NULL DEFAULT 0,
-                trim_levels BOOLEAN NOT NULL DEFAULT true
+                trim_levels BOOLEAN NOT NULL DEFAULT true,
+                active BOOLEAN NOT NULL DEFAULT true,
             )
             """)
         store.execute(f"""
             CREATE TABLE "sheet_data_{ dataset_id }" (
                 index INTEGER NOT NULL,
                 filter INT1 NOT NULL DEFAULT 1,
-                index_ex_filtered INTEGER,
+                index_ex_filtered INTEGER NOT NULL DEFAULT -2147483648,
             )""")
         store.execute(f"""
             CREATE TABLE "sheet_levels_{ dataset_id }" (
@@ -226,6 +228,15 @@ class DuckDataSet(DataSet):
         if isinstance(column, int):
             column = self._columns_by_index[column]
 
+        if column.data_type is DataType.DECIMAL:
+            assert isinstance(raw_value, Number)
+        elif (
+            column.data_type is DataType.TEXT and column.measure_type is MeasureType.ID
+        ):
+            assert isinstance(raw_value, str)
+        else:
+            assert isinstance(raw_value, int)
+
         value = raw_value
         level_to_remove: int | None = None
 
@@ -238,9 +249,10 @@ class DuckDataSet(DataSet):
                 else:
                     value = column.get_label(raw_value)
 
-            old_value = self.get_value(row, column)
-            if value == old_value:
-                return
+            if not initing:
+                old_value = self.get_value(row, column)
+                if value == old_value:
+                    return
 
             row_filtered = self.is_row_filtered(row)
 
@@ -285,7 +297,7 @@ class DuckDataSet(DataSet):
         )
 
         if column.has_levels:
-            self.column_update_levels(column, level_to_remove)
+            self.column_update_levels(column, trim=level_to_remove)
 
         self._cache.clear()
 
@@ -294,14 +306,19 @@ class DuckDataSet(DataSet):
         self.column_update_levels(column, trim="all")
 
     def column_update_levels(
-        self, column: DuckColumn, trim: Literal["all"] | int | None = None
+        self,
+        column: DuckColumn,
+        *,
+        levels: list[DuckLevel] | None = None,
+        trim: Literal["all"] | int | None = None,
     ):
         """update level counts, and trim if requested"""
 
         if not column.has_levels:
             raise ValueError(f"Column '{ column.name }' doesn't support levels")
 
-        levels = column.dlevels
+        if levels is None:
+            levels = column.dlevels
 
         to_retain: list[DuckLevel] = []
         original_indices: list[int] = []
@@ -388,6 +405,17 @@ class DuckDataSet(DataSet):
         column = column if isinstance(column, int) else column.index
         return self._cache.get_value(row, 2 + column)
 
+    def get_raw_value(self, row: int, column: int | DuckColumn) -> int | float | str:
+        """return raw value"""
+        if isinstance(column, int):
+            column = self._columns_by_index[column]
+        value = self.get_value(row, column)
+        if column.data_type is DataType.TEXT and column.has_levels:
+            assert isinstance(value, str)
+            return column.get_value_for_label(value)
+        else:
+            return value
+
     def is_row_filtered(self, index: int) -> bool:
         return not self._cache.get_value(index, 1)
 
@@ -440,6 +468,7 @@ class DuckDataSet(DataSet):
             {"value": value, "iid": column.iid},
         )
         column.notify_attribute_changed(name, value)
+        self._cache.clear()
 
     def get_values(
         self, row_start: int, column_start: int, row_end: int, column_end: int
@@ -465,9 +494,22 @@ class DuckDataSet(DataSet):
     ) -> tuple[tuple]:
         column_end = min(column_end, self._column_count - 1)
 
+        filter_iids = []
+        for column in self._columns_by_index:
+            if column.column_type is ColumnType.FILTER and column.active:
+                filter_iids.append(column.iid)
+            else:
+                break
+
+        if filter_iids:
+            equals_one = [f""""{ iid }" = 1""" for iid in filter_iids]
+            filter_sql = " AND ".join(equals_one)
+        else:
+            filter_sql = "1"
+
         queries = [
             f"""
-            SELECT { index_name }, filter FROM "sheet_data_{ self._id }"
+            SELECT { index_name }, { filter_sql } AS filter FROM "sheet_data_{ self._id }"
             WHERE { index_name } >= { row_start } AND { index_name } <= { row_end }
             ORDER BY { index_name }
             """,
@@ -537,6 +579,12 @@ class DuckDataSet(DataSet):
         if measure_type is None:
             measure_type = column.measure_type
 
+        if data_type == column.data_type and measure_type == column.measure_type:
+            return
+
+        assert data_type is not None
+        assert measure_type is not None
+
         sql_type = SQL_TYPES[data_type][measure_type]
         null_value = NULL_VALUES[data_type][measure_type]
 
@@ -577,6 +625,8 @@ class DuckDataSet(DataSet):
             ALTER TABLE "sheet_data_{ self._id }" DROP COLUMN temp;
             COMMIT;
             """)
+
+        self._cache.clear()
 
     def column_insert_level(
         self,
@@ -664,6 +714,72 @@ class DuckDataSet(DataSet):
             column, value, label, import_value, pinned, append=True
         )
 
+    def column_determine_dps(self, column):
+        """determine decimal places"""
+        if column.data_type is not DataType.DECIMAL:
+            return
+        query = self._execute(f"""
+            SELECT
+                max(
+                    IF(
+                        isnan("{ column.iid }"),
+                        0,
+                        least(
+                            IF(@(round("{ column.iid }", 0) - "{ column.iid }") < 10e-9, 0, 8),
+                            IF(@(round("{ column.iid }", 1) - "{ column.iid }") < 10e-9, 1, 8),
+                            IF(@(round("{ column.iid }", 2) - "{ column.iid }") < 10e-9, 2, 8),
+                            IF(@(round("{ column.iid }", 3) - "{ column.iid }") < 10e-9, 3, 8),
+                            IF(@(round("{ column.iid }", 4) - "{ column.iid }") < 10e-9, 4, 8),
+                            IF(@(round("{ column.iid }", 5) - "{ column.iid }") < 10e-9, 5, 8),
+                            IF(@(round("{ column.iid }", 6) - "{ column.iid }") < 10e-9, 6, 8),
+                            IF(@(round("{ column.iid }", 7) - "{ column.iid }") < 10e-9, 7, 8)
+                        )
+                    )
+                )
+            FROM "sheet_data_{ self._id }"
+        """)
+        (dps,) = query.fetchall()[0]
+        self.column_set_attribute(column, "dps", dps)
+
+    def column_clear(self, column: DuckColumn):
+        """clear a column of all data"""
+        missing_value = NULL_VALUES[column.data_type][column.measure_type]
+
+        self._execute(f"""
+            BEGIN TRANSACTION
+            ;
+            UPDATE "sheet_data_{ self._id }"
+            SET "{ column.iid }" = { missing_value }
+            ;
+            DELETE FROM "sheet_levels_{ self._id }"
+            WHERE piid = { column.iid }
+            ;
+            COMMIT
+        """)
+        if column.has_levels:
+            column.notify_levels_changed([])
+        self._cache.clear()
+
+    def column_set_levels(self, column: DuckColumn, levels: Iterable[Level]):
+        "set a columns levels"
+        if not column.has_levels:
+            raise ValueError
+        if column.data_type is DataType.INTEGER:
+            counts: dict[int, tuple[int, int]] = {}
+            for dlevel in column.dlevels:
+                counts[dlevel.value] = (dlevel.count, dlevel.count_ex_filtered)
+            new_dlevels = []
+            for level in levels:
+                value, label, import_value, pinned = level
+                count, count_ex_filtered = counts.get(value, (0, 0))
+                dlevel = DuckLevel(
+                    value, label, import_value, pinned, count, count_ex_filtered
+                )
+                new_dlevels.append(dlevel)
+            self.column_update_levels(column, levels=new_dlevels, trim="all")
+        else:
+            raise NotImplementedError
+
     def _column_refresh_levels(self, column):
         query = self._execute(f"""
             SELECT
@@ -694,7 +810,7 @@ class DuckDataSet(DataSet):
                     (
                         SELECT "{ column.iid }" AS value, count("{ column.iid }") AS count
                         FROM "sheet_data_{ self._id }"
-                        WHERE filter == 1
+                        WHERE filter = 1
                         GROUP BY value
                     ) filtered
                     ON filtered.value = unfiltered.value
@@ -704,7 +820,7 @@ class DuckDataSet(DataSet):
             """)
         results = query.fetchall()
         levels = [DuckLevel(*row) for row in results]
-        column.notify_levels_changed(levels)
+        self.column_update_levels(column, levels=levels)
 
     def _update_column_index(self):
         fields = DuckColumn.sql_fields()
@@ -848,7 +964,8 @@ class DuckDataSet(DataSet):
 
         for column in self._columns_by_index:
             if column.column_type == ColumnType.FILTER:
-                filter_iids.append(column.iid)
+                if column.active:
+                    filter_iids.append(column.iid)
             elif column.has_levels:
                 factor_iids.append(column.iid)
 
@@ -858,20 +975,24 @@ class DuckDataSet(DataSet):
                 SET filter = 1
             """)
         else:
-            equals_one = [f""""{ iid }" == 1""" for iid in filter_iids]
+            equals_one = [f""""{ iid }" = 1""" for iid in filter_iids]
             all_equals_one = " AND ".join(equals_one)
 
             self._execute(
                 f"""
+                CREATE OR REPLACE SEQUENCE index_ex START WITH 0 MINVALUE 0;
+                ;
                 UPDATE "sheet_data_{ self._id }" AS data
-                SET filter = (
-                    SELECT filter_state.filter
-                    FROM (
-                        SELECT IF({ all_equals_one }, 1, 0) AS filter, index
-                        FROM "sheet_data_{ self._id }" filter
-                    ) AS filter_state
-                    WHERE data.index = filter_state.index
-                )""",
+                SET filter = state.filter, index_ex_filtered = state.index_ex
+                FROM (
+                    SELECT
+                        IF({ all_equals_one }, 1, 0) AS filter,
+                        IF({ all_equals_one }, nextval('index_ex'), -2147483648) AS index_ex,
+                        index
+                    FROM "sheet_data_{ self._id }"
+                ) state
+                WHERE data.index = state.index
+                """,
             )
 
         for factor_iid in factor_iids:
@@ -886,3 +1007,4 @@ class DuckDataSet(DataSet):
 
         row_count_ex = results[0][0]
         self._row_count_ex_filtered = row_count_ex
+        self._cache.clear()
