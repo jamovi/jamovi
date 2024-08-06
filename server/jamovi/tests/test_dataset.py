@@ -333,6 +333,65 @@ def test_set_levels_int(toothgrowth_dataset: DuckDataSet):
     levels_must_equal(column.dlevels, dlevels)
 
 
+def test_set_levels_text(empty_dataset: DuckDataSet):
+    """test set levels"""
+    dataset = empty_dataset
+    dataset.set_row_count(10)
+
+    column = dataset.append_column("fred")
+    column.set_data_type(DataType.TEXT)
+    column.set_measure_type(MeasureType.NOMINAL)
+
+    column.append_level(0, "fred")
+    column.append_level(1, "jim")
+    column.append_level(2, "bob")
+
+    for row_no, value in [
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (3, 0),
+        (4, 0),
+        (5, 0),
+        (6, 1),
+        (7, 1),
+        (8, 1),
+        (9, 2),
+    ]:
+        column.set_value(row_no, value)
+
+    column.set_levels(
+        [
+            (0, "bob", "bob", False),
+            (1, "fred", "fred", False),
+            (2, "jim", "jim", False),
+        ]
+    )
+
+    levels_must_equal(
+        column.dlevels,
+        [
+            {"value": 0, "label": "bob", "count": 1},
+            {"value": 1, "label": "fred", "count": 6},
+            {"value": 2, "label": "jim", "count": 3},
+        ],
+    )
+
+    for row_no, value in [
+        (0, "fred"),
+        (1, "fred"),
+        (2, "fred"),
+        (3, "fred"),
+        (4, "fred"),
+        (5, "fred"),
+        (6, "jim"),
+        (7, "jim"),
+        (8, "jim"),
+        (9, "bob"),
+    ]:
+        assert column.get_value(row_no) == value
+
+
 def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
     """test set levels"""
     dataset = toothgrowth_dataset
