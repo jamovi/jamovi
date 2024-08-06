@@ -98,8 +98,10 @@ if include_server:
         'jamovi.server.modules',
         'jamovi.server.dataset',
         'jamovi.tests',
+        'jamovi.tests.data',
     ]
     package_data['jamovi.server'] = [ 'jamovi.proto', 'resources/chain.pem' ]
+    package_data['jamovi.tests.data'] = ['ToothGrowth.csv']
 
 if path.exists(path.join(here, 'jamovi/hydra')):
     packages += [ 'jamovi.hydra' ]
