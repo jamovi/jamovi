@@ -62,7 +62,7 @@ const ContextMenuButton = Backbone.View.extend({
         this.$el.attr('data-name', this.name.toLowerCase());
         if (this._iconId !== null)
             this.$el.attr('data-icon', this._iconId.toLowerCase());
-        this.$el.attr('disabled');
+        this.$el.attr('aria-disabled');
         if (right)
             this.$el.addClass('right');
 
@@ -86,6 +86,8 @@ const ContextMenuButton = Backbone.View.extend({
                 this._clicked(event, false);
             else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
                 this._clicked(event, false);
+            else if (event.code == 'ArrowLeft' && this.parent)
+                this.parent.hideMenu(event, false);
         });
 
 
@@ -121,9 +123,9 @@ const ContextMenuButton = Backbone.View.extend({
     setEnabled(enabled) {
         this._enabled = enabled;
         if (enabled)
-            this.$el.removeAttr('disabled');
+            this.$el.removeAttr('aria-disabled');
         else
-            this.$el.attr('disabled', '');
+            this.$el.attr('aria-disabled', true);
     },
     _clicked(event, fromMouse) {
 
@@ -152,7 +154,7 @@ const ContextMenuButton = Backbone.View.extend({
 
     addItem(item) {
         if (this._menuGroup === undefined) {
-            this.menu = new Menu(this.$el[0], this.level + 1);
+            this.menu = new Menu(this.$el[0], this.level + 1, { exitKeys: ['ArrowLeft'] });
 
             $('<div class="jmv-context-menu-arrow"></div>').appendTo(this.$el);
 

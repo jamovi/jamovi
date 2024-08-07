@@ -301,6 +301,25 @@ const GridTargetContainer = function(params) {
 
     this.targetGrid = null;
 
+    this.setTargetGrid = function(targetGrid) {
+        if (this.targetGrid)
+            this.targetGrid.off('layoutgrid.selectionChanged', this.targetGridSelectionChanged);
+
+        this.targetGrid = targetGrid;
+
+        if (this.targetGrid)
+            this.targetGrid.on('layoutgrid.selectionChanged', this.targetGridSelectionChanged);
+    };
+
+    this._onSupplierSelectionChanged = function() {
+        this.setButtonsMode(this.gainOnClick); // update aria tags
+    };
+
+    this.targetGridSelectionChanged = function() {
+        this.setButtonsMode(this.gainOnClick); // update aria tags
+    };
+    this.targetGridSelectionChanged = this.targetGridSelectionChanged.bind(this);
+
     this.removeListBox = function(listbox) {
         let isTarget = listbox.hasProperty('isTarget') && listbox.getPropertyValue('isTarget');
         if (isTarget) {
@@ -313,7 +332,7 @@ const GridTargetContainer = function(params) {
             }
 
             if (this.targetGrid === listbox)
-                this.targetGrid = this.targetGrids.length > 0 ? this.targetGrids[0] : null;
+                this.setTargetGrid(this.targetGrids.length > 0 ? this.targetGrids[0] : null);
 
             delete listbox.blockActionButtons;
             delete listbox.unblockActionButtons;
@@ -381,7 +400,7 @@ const GridTargetContainer = function(params) {
                 if (listbox.hasFocus) {
                     let cell = listbox.getSelectedCell(0);
                     if (cell && cell.item) {
-                        this.targetGrid = this.findTargetListControl(cell.item);
+                        this.setTargetGrid(this.findTargetListControl(cell.item));
                         if (this.gainOnClick === false) {
                             if (this.targetGrid.setFocus() === false) {
                                 for (let a = 0; a < this.targetGrids.length; a++) {
@@ -397,7 +416,7 @@ const GridTargetContainer = function(params) {
         else {
 
             if (this.targetGrid === null)
-                this.targetGrid = listbox;
+                this.setTargetGrid(listbox);
             this.targetGrids.push(listbox);
 
             listbox.getSiblingCount = () => {
@@ -447,7 +466,7 @@ const GridTargetContainer = function(params) {
 
             listbox.on('layoutgrid.lostFocus layoutgrid.gotFocus', () => {
                 if (listbox.hasFocus) {
-                    this.targetGrid = listbox;
+                    this.setTargetGrid(listbox);
                 }
                 this.onSelectionChanged(listbox);
             });
@@ -455,7 +474,7 @@ const GridTargetContainer = function(params) {
             this._targetDoubleClickDetect = 0;
             this._targetDoubleClickDetectObj = null;
             listbox.$el.on('click', null, this, (event) => {
-                this.targetGrid = listbox;
+                this.setTargetGrid(listbox);
                 if (this._targetDoubleClickDetectObj !== event.target)
                     this._targetDoubleClickDetect = 0;
                 this._targetDoubleClickDetect += 1;
@@ -516,6 +535,7 @@ const GridTargetContainer = function(params) {
 
     this.setSupplier = function(supplier) {
         if (this._supplier !== null) {
+            this._supplier.supplierGrid.off('layoutgrid.selectionChanged', this._onSupplierSelectionChanged, this);
             this._supplier.supplierGrid.off('layoutgrid.gotFocus', this._onGridGotFocus, this);
             this._supplier.supplierGrid.$el.off('click', null, this._doubleClickDetect);
 
@@ -530,6 +550,7 @@ const GridTargetContainer = function(params) {
         this._supplier = supplier;
 
         if (this._supplier !== null) {
+            this._supplier.supplierGrid.on('layoutgrid.selectionChanged', this._onSupplierSelectionChanged, this);
             this._supplier.supplierGrid.on('layoutgrid.gotFocus', this._onGridGotFocus, this);
             this._supplierDoubleClickDetect = 0;
             this._supplier.supplierGrid.$el.on('click', null, this, this._doubleClickDetect);
@@ -557,16 +578,54 @@ const GridTargetContainer = function(params) {
     this.onSelectionChanged = function(listbox) {
         if (this.$buttons && listbox === this.targetGrid) {
             let gainOnClick = this.targetGrid.hasFocus === false;
-            this.gainOnClick = gainOnClick;
-            this.$buttons.addClass(gainOnClick ? 'arrow-right' : 'arrow-left');
-            this.$buttons.removeClass(gainOnClick ? 'arrow-left' : 'arrow-right');
+            this.setButtonsMode(gainOnClick);
+        }
+    };
+
+    this.toStringList = function(raw) {
+        if (raw.length === 1)
+            return raw[0].toString();
+
+        let list = raw[0].toString();
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i].toString() });
+            }
+        }
+        let last = raw[raw.length - 1].toString();
+        return s_('{list} and {lastItem}', {list: list, lastItem: last});
+    };
+
+    this.setButtonsMode = function(gainOnClick) {
+        this.gainOnClick = gainOnClick;
+        this.$buttons.addClass(gainOnClick ? 'arrow-right' : 'arrow-left');
+        this.$buttons.removeClass(gainOnClick ? 'arrow-left' : 'arrow-right');
+        let label = this.getTranslatedProperty('label');
+        if (this.gainOnClick) {
+            let action = this.getDefaultTransferAction();
+            let selectedItems = this.getSupplierItems(action);
+            if (selectedItems.length === 0)
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add selected items to {0} list', [label])); 
+            else if (selectedItems.length === 1) 
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add selected item {1} to {0} list', [label, selectedItems[0].value.toAriaLabel()]));
+            else 
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add {1} selected items to {0} list', [label, selectedItems.length]));            
+        }
+        else {
+            let count = this.targetGrid.selectedCellCount();
+            if (count === 0)
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove selected items from {0} list', [label]));
+            else if (count === 1) {
+                let cell = this.targetGrid.getSelectedCell(0);
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove the selected item {1} from {0} list', [label, cell.item.getAriaLabel()]));
+            }
+            else
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove the {1} selected items from {0} list', [label, count]));
         }
     };
 
     this._onGridGotFocus = function() {
-        this.gainOnClick = true;
-        this.$buttons.addClass('arrow-right');
-        this.$buttons.removeClass('arrow-left');
+        this.setButtonsMode(true);
         for (let a = 0; a < this.targetGrids.length; a++) {
             let targetlist = this.targetGrids[a];
             targetlist.clearSelection();
@@ -792,7 +851,7 @@ const GridTargetContainer = function(params) {
                         if (nextTarget === null)
                             break;
 
-                        this.targetGrid = nextTarget;
+                        this.setTargetGrid(nextTarget);
                     }
 
                     if (nextTarget === null)
@@ -1058,7 +1117,7 @@ const GridTargetContainer = function(params) {
             this.$buttons.addClass('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)
-                    this.targetGrid = this.targetGrids[0];
+                    this.setTargetGrid(this.targetGrids[0]);
                 if (this._actionsBlocked === false) {
                     switch (item.name) {
                         case 'normal':
