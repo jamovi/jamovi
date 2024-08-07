@@ -114,6 +114,7 @@ var SelectableLayoutGrid = function (params, cellStatus) {
                     }
                 }
             }
+            changed = true;
         }
         else if (selected === false || (ctrlKey === false && this._selectedCells.length > 1)) {
             changed = true;

@@ -17,13 +17,18 @@ const TermLabel = function(params) {
 
     this._format = this.getPropertyValue('format');
 
+    this.getAriaLabel = function() {
+        let value = this.getValue();
+        return this._format.toAriaLabel(value);
+    }
+
     this.createItem = function() {
         let value = this.getValue();
 
         let displayValue = this._format.toString(value);
 
         this.labelId = focusLoop.getNextAriaElementId('label');
-        this.$label = $(`<div id="${this.labelId}" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
+        this.$label = $(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
 
         this.$el.append(this.$label);
         if (value !== null)

@@ -3,6 +3,7 @@
     height: 100%;
     width: 26px;
     margin: 0 0;
+    border: none;
 
     background-position: center center;
     background-size: 70% 70%;
@@ -13,7 +14,7 @@
     filter: grayscale(100%);
 }
 
-.jmv-status-bar .jmv-statusbar-button:not([disabled]):hover {
+.jmv-status-bar .jmv-statusbar-button:not([aria-disabled]):hover {
     background-color: #c1c1c1;
 }
 
@@ -28,6 +29,6 @@
     background-image: url('../../assets/filters-visible.svg');
 }
 
-.jmv-statusbar-button[disabled] {
+.jmv-statusbar-button[aria-disabled] {
     filter: grayscale(100%);
 }

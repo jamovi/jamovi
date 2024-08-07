@@ -48,11 +48,11 @@
     background-color: #3e6da93b !important;
 }
 
-[focusmode="default"] .jmv-toolbar-button:not([disabled]):hover {
+[focusmode="default"] .jmv-toolbar-button:not([aria-disabled]):hover {
     background-color: #3e6da93b;
 }
 
-[focusmode="hover"] .jmv-toolbar-button:not([disabled]):hover {
+[focusmode="hover"] .jmv-toolbar-button:not([aria-disabled]):hover {
     background-color: #3e6da93b;
 }
 

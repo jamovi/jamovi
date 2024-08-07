@@ -76,6 +76,10 @@ class ReferenceNumbers extends HTMLElement {
         return this._refs.length;
     }
 
+    hasVisibleContent() {
+        return this._refs.length > 0 && this._refTable.mode !== 'hidden';
+    }
+
     update() {
         this._body.innerHTML = '';
 
@@ -89,7 +93,7 @@ class ReferenceNumbers extends HTMLElement {
             if (ref in this._refTable.table)
                 number = this._refTable.table[ref];
             this._body.insertAdjacentHTML('beforeend', `
-                <span class="num">[${ number }]</span>
+                <span class="num" aria-label="Reference ${number}">[${ number }]</span>
             `);
         }
     }
