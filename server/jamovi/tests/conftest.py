@@ -43,7 +43,7 @@ def duckdb_store(temp_dir: str) -> Iterator[Store]:
 
 @pytest.fixture
 def empty_dataset(duckdb_store: Store) -> Iterator[DataSet]:
-    "empty dataset"
+    """empty dataset"""
     dataset = duckdb_store.create_dataset()
     dataset.attach()
     yield dataset
@@ -52,13 +52,13 @@ def empty_dataset(duckdb_store: Store) -> Iterator[DataSet]:
 
 @pytest.fixture
 def empty_column(empty_dataset: DataSet) -> Column:
-    "empty column"
+    """empty column"""
     return empty_dataset.append_column("fred")
 
 
 @pytest.fixture
 def simple_dataset(empty_dataset: DataSet) -> DataSet:
-    "simple data set"
+    """simple data set"""
     ds = empty_dataset
     ds.append_column("fred")
     ds.append_column("jim")
@@ -68,7 +68,7 @@ def simple_dataset(empty_dataset: DataSet) -> DataSet:
 
 @pytest.fixture
 def toothgrowth_dataset(empty_dataset: DataSet) -> DataSet:
-    "tooth growth data set"
+    """tooth growth data set"""
 
     ds = empty_dataset
 

@@ -55,17 +55,19 @@ def load(dataset: DataSet, reader: Iterable[Iterable[str]]) -> None:
             column.set_value(row_no, value, True)
 
 
-def level_must_equal(level: DuckLevel, values: dict):
+def level_equals(level: DuckLevel, values: dict):
     """tests whether a level has certain values"""
     for name, value in values.items():
-        assert getattr(level, name) == value
+        if getattr(level, name) != value:
+            return False
+    return True
 
 
-def levels_must_equal(levels: Sequence[DuckLevel], values: Sequence[dict]):
+def assert_levels_must_equal(levels: Sequence[DuckLevel], values: Sequence[dict]):
     """tests whether levels have certain values"""
     assert len(levels) == len(values)
     for i, level in enumerate(levels):
-        level_must_equal(level, values[i])
+        assert level_equals(level, values[i])
 
 
 def add_column_to_dataset(
