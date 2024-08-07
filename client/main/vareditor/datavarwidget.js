@@ -293,11 +293,14 @@ const DataVarWidget = Backbone.View.extend({
 
         this.measureList = new MeasureList(false);
         this.$measureList.on('mousedown', (event) => {
-            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+            if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                 dropdown.hide();
+                this.$measureList.attr('aria-expanded', false);
+            }
             else {
                 this.measureList.setParent(this.$measureList);
                 dropdown.show(this.$measureList, this.measureList);
+                this.$measureList.attr('aria-expanded', true);
             }
             event.preventDefault();
             event.stopPropagation();
@@ -307,6 +310,7 @@ const DataVarWidget = Backbone.View.extend({
         this.measureList.$el.on('selected-measure-type', (event, measureType) => {
             this.model.set({ measureType: measureType, autoMeasure: false });
             dropdown.hide();
+            this.$measureList.attr('aria-expanded', false);
         });
         this.$measureIcon.attr('measure-type', this.model.get('measureType'));
 
@@ -317,12 +321,15 @@ const DataVarWidget = Backbone.View.extend({
 
         this.$measureList.on('keydown', event => {
             if (event.key === 'Enter') {
-                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
+                if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                     dropdown.hide();
+                    this.$measureList.attr('aria-expanded', false);
+                }
                 else
                 {
                     this.measureList.setParent(this.$measureList);
                     dropdown.show(this.$measureList, this.measureList);
+                    this.$measureList.attr('aria-expanded', true);
                 }
                 event.preventDefault();
                 event.stopPropagation();

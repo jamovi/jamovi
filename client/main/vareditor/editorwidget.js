@@ -101,18 +101,22 @@ const EditorWidget = Backbone.View.extend({
         let $switch = $(`<span class="switch"></span>`).appendTo($status);
 
 
-        if (this.model.get('trimLevels') === false)
+        if (this.model.get('trimLevels') === false) {
             this.$active.addClass('retain-levels');
-        else
+            this.$active.attr('checked', true);
+        }
+        else {
             this.$active.removeClass('retain-levels');
+            this.$active.attr('checked', false);
+        }
 
         let activeChanged = (event) => {
 
             let value = this.$active.hasClass('retain-levels');
 
             this.model.set('trimLevels', value);
-            event.stopPropagation();
-            event.preventDefault();
+            //event.stopPropagation();
+            //event.preventDefault();
         };
 
         this.$active.on('click', activeChanged);
@@ -124,10 +128,14 @@ const EditorWidget = Backbone.View.extend({
         });
 
         this.model.on('change:trimLevels', event => {
-            if (this.model.get('trimLevels') === false)
+            if (this.model.get('trimLevels') === false) {
                 this.$active.addClass('retain-levels');
-            else
+                this.$active.prop('checked', true);
+            }
+            else {
                 this.$active.removeClass('retain-levels');
+                this.$active.prop('checked', false);
+            }
         });
 
         this.model.on('change:ids', event => this._updateMultiVariableState());
@@ -262,10 +270,14 @@ const EditorWidget = Backbone.View.extend({
         if (description !== this.$description[0].textContent)
             this.$description[0].textContent = description;
 
-        if (this.model.get('trimLevels') === false)
+        if (this.model.get('trimLevels') === false) {
             this.$active.addClass('retain-levels');
-        else
+            this.$active.prop('checked', true);
+        }
+        else {
             this.$active.removeClass('retain-levels');
+            this.$active.prop('checked', false);
+        }
 
         let type = this.model.get('columnType');
 

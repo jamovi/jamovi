@@ -387,7 +387,17 @@ function _htmlify(el, options) {
                 'padding'
             ];
             break;
-
+        case 'caption':
+            include = true;
+            styles = [
+                'text-align',
+                'padding',
+                'border',
+                'vertical-align',
+                'caption-side'
+            ];
+            tag = 'th'; // because word doesn't honour caption elements for tables
+            break;
         case 'td':
         case 'th':
             include = true;
@@ -395,6 +405,7 @@ function _htmlify(el, options) {
                 'text-align',
                 'padding',
                 'border',
+                'vertical-align'
             ];
             break;
         case 'style':
@@ -486,7 +497,6 @@ function _htmlify(el, options) {
             return html + all.join('');
 
         }).then(html => {
-
             if (include)
                 html += '</' + tag + '>';
             html += append;

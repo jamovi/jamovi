@@ -6,7 +6,7 @@ const $ = require('jquery');
 
 class Menu extends EventEmitter {
 
-    constructor(owner, level, className) {
+    constructor(owner, level, options) {
         super();
 
         this.connected = false;
@@ -32,8 +32,8 @@ class Menu extends EventEmitter {
                 this.$el.attr('aria-labelledby', labelId);
         }
         
-        if (className)
-            this.$el.addClass(className);
+        if (options && options.className)
+            this.$el.addClass(options.className);
 
         this.$el.on('focusout', (event) => {
             if ( ! this.$el[0].contains(event.relatedTarget))
@@ -52,11 +52,15 @@ class Menu extends EventEmitter {
                 this.owner.classList.add('mouse-over');
         });
 
-        let options = { level: level, hoverFocus: true };
-        if (this.owner)
-            options.exitSelector = new WeakRef(this.owner);
+        let opts = { level: level, hoverFocus: true };
 
-        let focusToken = focusLoop.addFocusLoop(this.$el[0], options);
+        if (options && options.exitKeys)
+            opts.exitKeys = options.exitKeys;
+        
+        if (this.owner)
+            opts.exitSelector = new WeakRef(this.owner);
+
+        let focusToken = focusLoop.addFocusLoop(this.$el[0], opts);
         focusToken.on('focusleave', (event) => {
             this.hide(this);
         });

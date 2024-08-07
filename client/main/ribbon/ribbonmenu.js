@@ -34,7 +34,7 @@ const RibbonMenu = Backbone.View.extend({
         }
 
         this.$el.attr('data-name', this.name.toLowerCase());
-        this.$el.attr('disabled');
+        //this.$el.attr('aria-disabled', true);
         if (containsNew)
             this.$el.addClass('contains-new');
         if (right)
@@ -49,7 +49,7 @@ const RibbonMenu = Backbone.View.extend({
                 this._clicked(event, event.detail > 0);
         });
         this.$el.on('keydown', (event) => {
-            if (event.code == 'ArrowDown' || event.code === 'Enter' || event.code === 'Space')
+            if ((event.altKey && event.code == 'ArrowDown') || event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
         });
 
@@ -62,7 +62,7 @@ const RibbonMenu = Backbone.View.extend({
             focusLoop.applyShortcutOptions(this.$el[0], { path: parentShortcutPath });
     },
     setEnabled(enabled) {
-        this.$el.prop('disabled', ! enabled);
+        this.$el.attr('aria-disabled', ! enabled);
     },
     _notifySelected(name, ns, title, checked) {
         let analysis = { name, ns, title, checked };
@@ -217,11 +217,11 @@ const RibbonMenu = Backbone.View.extend({
         if (item.analyses !== undefined) {
 
             let labelId = focusLoop.getNextAriaElementId('label');
-            item.sidePanel = new Menu(item.$el[0], level + 1, null);
+            item.sidePanel = new Menu(item.$el[0], level + 1, { exitKeys:['ArrowRight'] });
             item.sidePanel.$el.attr('aria-laeblledby', labelId);
             item.sidePanel.$el.addClass('side-panel');
             item.sidePanel.$el.append(`<div id="${labelId}" class="side-panel-heading">Module - ${ item.name }</div>`);
-            item.sidePanel.$el.append(`<label class="display-in-menu"><input type="checkbox"  data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>${ _('Show in main menu') }</label>`);
+            item.sidePanel.$el.append(`<label class="display-in-menu"><input type="checkbox" role="menuitemcheckbox" data-name="${ item.name }" data-ns="${ item.ns }" ${ (item.checked ? 'checked' : '') }>${ _('Show in main menu') }</label>`);
 
             let $sidePanel = item.sidePanel.$el;
             let $analysesGroup = this._createMenuGroup(item.analyses, level + 1);
@@ -280,7 +280,7 @@ const RibbonMenu = Backbone.View.extend({
         let $label = $('<div class="jmv-ribbon-button-label">' + this.title + '</div>');
 
         if ( ! this.menu) {
-            this.menu = new Menu(this.$el[0], 1, 'analysis-menu');
+            this.menu = new Menu(this.$el[0], 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });
             this.menu.on('menu-hidden', (event) => {
                 this.$el.find('.jmv-ribbon-menu-item.open').removeClass('open');
             });

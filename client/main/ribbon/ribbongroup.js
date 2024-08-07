@@ -55,7 +55,7 @@ class RibbonGroup extends EventEmitter {
         this.title = title;
         this.dock = right ? 'right' : 'left';
 
-        this.$el.attr('disabled');
+        //this.$el.attr('aria-disabled', true);
         if (right)
             this.$el.addClass('right');
 
@@ -139,7 +139,7 @@ class RibbonGroup extends EventEmitter {
     }
 
     setEnabled(enabled) {
-        this.$el.prop('disabled', ! enabled);
+        this.$el.prop('aria-disabled', ! enabled);
     }
 
     getMenus() {

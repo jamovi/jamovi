@@ -63,7 +63,7 @@ const Statusbar = function() {
     };
 
     this.addActionButton = function(name, properties) {
-        let button = new StatusbarButton(name);
+        let button = new StatusbarButton(name, properties);
         this.addElement(name, button.$el, properties);
     };
 };

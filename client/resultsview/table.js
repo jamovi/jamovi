@@ -148,23 +148,22 @@ const TableView = Elem.View.extend({
 
         let titleId = focusLoop.getNextFocusId('label');
         this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
+        
         this.addContent(this.$table);
 
+        this.$titleCell = $('<caption class="jmv-results-table-title-cell" scope="col" colspan="1"></caption>').prependTo(this.$table);
         this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
-        this.$titleRow = $('<tr class="jmv-results-table-title-row"></tr>').appendTo(this.$tableHeader);
-        this.$titleCell = $('<th class="jmv-results-table-title-cell" colspan="1">').appendTo(this.$titleRow);
-
 
         this.$titleText = $(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`).appendTo(this.$titleCell);
         this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
 
-        this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').appendTo(this.$tableHeader);
-        this.$columnHeaderRow      = $('<tr class="jmv-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
+        this.$columnHeaderRow = $('<tr class="jmv-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
 
         this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
         this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
 
         this.model.on('change:sortedCells', () => this.render());
+        this.refs._refTable.addEventListener('changed', () => this.render());
 
         this.render();
     },
@@ -229,8 +228,9 @@ const TableView = Elem.View.extend({
         let formattings = new Array(columnCount);
 
         let colNo = 0;
+        let colIndex = -1;
         for (let column of columns) {
-
+            colIndex += 1;
             if ( ! isVis(column))
                 continue;
 
@@ -246,7 +246,7 @@ const TableView = Elem.View.extend({
 
             let sortable = column.sortable ? true : false;
 
-            cells.header[colNo] = { name : name, value : column.title, classes : classes, sortable : sortable };
+            cells.header[colNo] = { name : name, value : column.title, colIndex: colIndex, type: column.type, classes : classes, sortable : sortable };
 
             if (column.superTitle)
                 cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
@@ -275,7 +275,7 @@ const TableView = Elem.View.extend({
 
                 let sourceCell = sourceCells[rowNo];
 
-                let cell = { value : null, classes : rowFormat, sups : '' };
+                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
@@ -502,15 +502,18 @@ const TableView = Elem.View.extend({
                     span++;
                 }
                 else {
-                    html += '<th class="jmv-results-table-cell" colspan="' + (span) + '">' + content + '</th>';
+                    html += '<th scope="colgroup" class="jmv-results-table-cell" colspan="' + (span) + '">' + content + '</th>';
                     span = 1;
                 }
             }
 
+            if ( ! this.$columnHeaderRowSuper)
+                this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').prependTo(this.$tableHeader);
             this.$columnHeaderRowSuper.html(html);
         }
-        else {
-            this.$columnHeaderRowSuper.empty();
+        else if (this.$columnHeaderRowSuper) {
+            this.$columnHeaderRowSuper.remove();
+            this.$columnHeaderRowSuper = null;
         }
 
 
@@ -531,15 +534,16 @@ const TableView = Elem.View.extend({
                     else
                         asc = 'sorted-asc';
                 }
-                sortStuff = ' <button class="' + asc + '" data-name="' + head.name + '"></button><button class="' + desc + '" data-name="' + head.name + '"></button>';
+                sortStuff = ' <button aria-label="Sort Column - Ascending" class="' + asc + '" data-name="' + head.name + '"></button><button class="' + desc + '" aria-label="Sort Column - decending" data-name="' + head.name + '"></button>';
             }
-            html += '<th class="jmv-results-table-cell' + classes + '">' + content + sortStuff + '</th>';
+            html += '<th scope="col" class="jmv-results-table-cell' + classes + '">' + content + sortStuff + '</th>';
         }
 
         this.$columnHeaderRow.html(html);
 
         if (cells.header.length === 0) {
             this.$titleCell.attr('colspan', 1);
+            this.$titleCell.attr('scope', 'col');
             return;
         }
 
@@ -547,36 +551,74 @@ const TableView = Elem.View.extend({
 
         if (cells.body.length === 0 || cells.body[0].length === 0) {
             this.$titleCell.attr('colspan', nPhysCols);
+            if (nPhysCols > 1)
+                this.$titleCell.attr('scope', 'colgroup');
+            else
+                this.$titleCell.attr('scope', 'col');
+
             this.$tableBody.html('<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>');
             return;
         }
 
         this.$titleCell.attr('colspan', nPhysCols);
+        if (nPhysCols > 1)
+            this.$titleCell.attr('scope', 'colgroup');
+        else
+            this.$titleCell.attr('scope', 'col');
 
         html = '';
 
+        let rowHeadingCount = this.determineRowHeaderCount(cells);
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
             let rowHtml = '';
-
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
-
+                
                 let cell = cells.body[rowNo][colNo];
+                let isRowHeader = colNo < rowHeadingCount;
 
-                if (cell) {
-                    let content = cell.value;
-                    let classes = cell.classes;
+                if ( ! cell || ! cell.combineBelow || (cell && cell.value !== '')) { //skip cells that are blank
+                    
+                    if (cell) {
+                        let rowSpan = 1;
+                        if (cell.combineBelow || colNo < rowHeadingCount) {
+                            let rowIndex = rowNo + 1;
+                            if (rowIndex < cells.body.length) {
+                                let nextCell = cells.body[rowIndex][colNo];;
+                                while (! nextCell || nextCell.value === '') {
+                                    rowSpan += 1
+                                    rowIndex += 1;
+                                    if (rowIndex < cells.body.length)
+                                        nextCell = cells.body[rowIndex][colNo];
+                                    else
+                                        break;
+                                }
+                            }
+                        }
 
-                    if (cell.beginGroup)
-                        classes += ' jmv-results-table-cell-group-begin';
+                        let content = cell.value;
+                        let classes = cell.classes;
+                        let lastRow = (rowNo + rowSpan) === cells.body.length;
 
-                    if (content === '')
-                        content = '&nbsp;';
+                        if (lastRow)
+                            classes += ' jmv-results-table-cell-last-row';
 
-                    rowHtml += '<td class="jmv-results-table-cell ' + classes + '">' + content + '<span class="jmv-results-table-sup">' + cell.sups + '</span></td>';
-                }
-                else {
-                    rowHtml += '<td>&nbsp;</td>';
+                        if (cell.beginGroup)
+                            classes += ' jmv-results-table-cell-group-begin';
+                        
+                        if (content === '')
+                            content = '&nbsp;';
+
+                        let interpretation = this.determineAriaLabel(content);
+
+                        if (isRowHeader)
+                            rowHtml += `<th ${rowSpan > 1 ? 'scope="rowgroup" rowspan="' + rowSpan + '"' : 'scope="row"'} ${interpretation ? 'aria-label="' + interpretation + '"' : ''} class="jmv-results-table-cell ${classes}">${content}<span class="jmv-results-table-sup">${cell.sups}</span></td>`;
+                        else
+                            rowHtml += `<td ${rowSpan > 1 ? 'rowspan="' + rowSpan + '"' : ''} ${interpretation ? 'aria-label="' + interpretation + '"' : ''}  class="jmv-results-table-cell ${classes}">${content}<span class="jmv-results-table-sup">${cell.sups}</span></td>`;
+                    }
+                    else if (colNo >= rowHeadingCount) { // don't add blank cells into heading area.
+                        rowHtml += '<td>&nbsp;</td>';
+                    }
                 }
             }
 
@@ -598,13 +640,17 @@ const TableView = Elem.View.extend({
         for (let i = 0; i < footnotes.length; i++)
             html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ footnotes[i] }</td></tr>`;
 
-        html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
+        //html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
         this.$tableFooter.html(html);
 
-        let $refsRow = $(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
-        // class="jmvrefs" excludes this from some exports/copy
-        $refsRow[0].childNodes[0].appendChild(this.refs);
-        this.$tableFooter.append($refsRow);
+        if (this.refs.hasVisibleContent()) {
+            let $refsRow = $(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
+            // class="jmvrefs" excludes this from some exports/copy
+            $refsRow[0].childNodes[0].appendChild(this.refs);
+            this.$tableFooter.append($refsRow);
+        }
+        else
+            this.refs.remove();
 
         this._ascButtons = this.$tableHeader.find('button.sort-asc');
         this._descButtons = this.$tableHeader.find('button.sort-desc');
@@ -633,6 +679,76 @@ const TableView = Elem.View.extend({
                     window.setOption(table.rowSelect, rowNo);
             });
         }
+    },
+    determineRowHeaderCount(cells) {
+        
+        let head = cells.header[0];
+        let headerValue = head.value;
+        let hasRowHeaders = headerValue === '' && cells.body[0][0].type === 'text';
+        hasRowHeaders = hasRowHeaders || cells.body[0][0].combineBelow;
+        if (hasRowHeaders === false)
+            return;
+
+        let headingCount = 0;
+        let includeNext = false;
+        let rowHeadings = [];
+        let currentSuperTitle = null;
+        for (let colNo = 0; colNo < cells.body[0].length; colNo++) {
+            let head = cells.header[colNo];
+            let headerValue = head.value;
+            let hasHeading = headerValue === '' && cells.body[0][colNo].type === 'text';
+            hasHeading = hasHeading || cells.body[0][colNo].combineBelow;
+            if (currentSuperTitle)
+                hasHeading = hasHeading || cells.body[0][colNo].superTitle === currentSuperTitle;
+            if (hasHeading || includeNext) {
+                currentSuperTitle = cells.body[0][colNo].superTitle;
+                includeNext = false;
+                headingCount += 1;
+            }
+            else
+                break;
+
+            let lastCellValue = '';
+            for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
+                let cell = cells.body[rowNo][colNo];
+                let cellValue = '';
+                if (cell)
+                    cellValue = cell.value;
+
+                if (cellValue === '')
+                    cellValue = lastCellValue;
+
+                lastCellValue = cellValue;
+                let newHeading = rowHeadings[rowNo]  + ' ' + cellValue;
+                if (rowHeadings.includes(newHeading))
+                    includeNext = true;
+                rowHeadings[rowNo] = newHeading;
+            }
+        }
+        return headingCount;
+    },
+    determineAriaLabel(value) {
+        if (typeof value !== 'string')
+            return null;
+
+        let items = value.split(' ✻ ');
+        if (items.length === 1)
+            return null;
+        
+        return this.termToAriaDescription(items);
+    },
+    termToAriaDescription: function(raw) {
+        if (raw.length === 1)
+            return raw[0];
+
+        let first = raw[0];
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                first += ', ' + raw[i];
+            }
+        }
+        let second = raw[raw.length - 1];
+        return _('The interaction of {0} and {1}', [first, second]);
     },
     makeFormatClasses(column) {
 

@@ -558,6 +558,10 @@ $(document).ready(async() => {
 
     let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
 
+    resultsView.on('hideOptions', () => {
+        optionspanel.hideOptions();
+    });
+
     let _annotationReturnTab = null;
     resultsView.$el.on('annotationFocus', (event) => {
         if (_annotationReturnTab === undefined)

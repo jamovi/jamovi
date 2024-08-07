@@ -12,7 +12,7 @@ const MeasureList = function(includeAuto) {
 
     this.$el = $('<div class="jmv-measure-list"></div>');
 
-    this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
+    this.$middle = $('<div class="middle" role="list"></div>').appendTo(this.$el);
 
     this.setParent = function($element) {
         if (this.$parent) {

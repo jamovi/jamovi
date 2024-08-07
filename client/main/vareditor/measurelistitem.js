@@ -7,7 +7,7 @@ const MeasureListItem = function(measureType, text) {
     this.measureType = measureType;
     this.name = text ? text : measureType;
 
-    this.$el = $('<div class="jmv-measure-list-item"></div>');
+    this.$el = $('<div class="jmv-measure-list-item" role="listitem"></div>');
 
     this.$el.attr('data-id', measureType);
 

@@ -3,6 +3,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
+const focusLoop = require('../common/focusloop');
 
 const Elem = require('./element');
 
@@ -31,13 +32,14 @@ const ImageView = Elem.View.extend({
         Elem.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('jmv-results-image');
+        this.$el.attr('role', 'img');
 
         this.$status = $('<div class="jmv-results-image-status-indicator"></div>');
         this.$status.prependTo(this.$el);
-        this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
+        let imageId = focusLoop.getNextAriaElementId('image');
+        this.$el.attr('aria-labelledby', imageId);
+        this.$title = $(`<h${this.level+1} id="${imageId}" class="jmv-results-image-title"></h${this.level+1}>`);
         this.$title.prependTo(this.$el);
-
-
 
         if (this.model === null)
             this.model = new ImageModel();

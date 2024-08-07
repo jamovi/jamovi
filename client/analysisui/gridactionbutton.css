@@ -11,7 +11,7 @@
     transition: 0.2s all;
 }
 
-button.jmv-action-button[disabled] {
+button.jmv-action-button[aria-disabled] {
     color: #c5c5c5;
     background-color: #ababab;
     background-image: none;

@@ -49,7 +49,7 @@ const ToolbarButton = function(params) {
         this.menuVisible = false;
 
         this.$el.attr('data-name', this.name.toLowerCase());
-        this.$el.attr('disabled');
+        this.$el.attr('aria-disabled');
         if (right)
             this.$el.addClass('right');
 
@@ -100,10 +100,14 @@ const ToolbarButton = function(params) {
     };
 
     this.setEnabled = function(enabled) {
-        if (enabled === false)
+        if (enabled === false) {
             this.$el.addClass('jmv-toolbar-disabled');
-        else
+            this.$el.attr('aria-disabled', true);
+        }
+        else {
             this.$el.removeClass('jmv-toolbar-disabled');
+            this.$el.removeAttr('aria-disabled');
+        }
 
         this._enabled = enabled;
     };

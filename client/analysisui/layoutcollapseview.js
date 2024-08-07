@@ -56,7 +56,6 @@ const LayoutCollapseView = function(params) {
         body.$el.attr('aria-labelledby', this.labelId);
 
         this.$header.attr('aria-controls', bodyId);
-        this.$header.attr('aria-owns', bodyId);
 
         this._body = body;
         body.$el.addClass("silky-control-body");

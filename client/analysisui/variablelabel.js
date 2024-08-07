@@ -28,6 +28,12 @@ const VariableLabel = function(params) {
             this.updateView();
     });
 
+    this.getAriaLabel = function() {
+        let format = this.getPropertyValue('format');
+        let value = this.getValue();
+        return format.toAriaLabel(value);
+    }
+
     this.createItem = function() {
         let displayValue = this.getValue();
         if (displayValue === null)
@@ -35,7 +41,7 @@ const VariableLabel = function(params) {
 
         this.labelId = focusLoop.getNextAriaElementId('label');
 
-        this.$label = $(`<div id="${this.labelId}" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
+        this.$label = $(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
         this.$icon = $('<div class="silky-variable-type-img" style="display: inline-block; overflow: hidden;"></div>');
 
         this.$el.append(this.$icon);

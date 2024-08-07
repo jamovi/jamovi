@@ -73,7 +73,7 @@
     font-size: 90% ;
 }
 
-.jmv-ribbon-button[disabled] {
+.jmv-ribbon-button[aria-disabled] {
     -webkit-filter: grayscale(100%) opacity(50%);
     filter: grayscale(100%) opacity(50%);
 }
@@ -89,23 +89,23 @@
     -webkit-animation-iteration-count: infinite;
 }
 
-[focusmode="default"] .jmv-ribbon-button:not([disabled]):not(.maintain-color):hover {
+[focusmode="default"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
     background-color: #3e6da93b;
 }
 
-[focusmode="hover"] .jmv-ribbon-button:not([disabled]):not(.maintain-color):hover {
+[focusmode="hover"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
     background-color: #3e6da93b;
 }
 
-.jmv-ribbon-button.maintain-color:not([disabled]):hover {
+.jmv-ribbon-button.maintain-color:not([aria-disabled]):hover {
     border: 1px solid black;
 }
 
-.jmv-ribbon-button:not([disabled]):active {
+.jmv-ribbon-button:not([aria-disabled]):active {
     background-color: #CCCCCC ;
 }
 
-.jmv-ribbon-button:not([disabled]).checked {
+.jmv-ribbon-button:not([aria-disabled]).checked {
     background-color: #CCCCCC ;
 }
 

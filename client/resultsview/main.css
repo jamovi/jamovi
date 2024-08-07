@@ -281,14 +281,24 @@ input, [contenteditable], [contenteditable] * {
 
 .jmv-results-table-title-cell {
     text-align: left ;
+    font-weight: normal ;
+    min-width: 4em ;
+    padding: 4px 8px 4px 0;
+    white-space: nowrap ;
+    caption-side: top;
 }
 
-td.jmv-results-table-cell {
+td.jmv-results-table-cell,
+th[scope=row].jmv-results-table-cell,
+th[scope=rowgroup].jmv-results-table-cell {
     padding: 2px 8px ;
     white-space: nowrap ;
+    vertical-align: top;
 }
 
-td.jmv-results-table-cell.jmv-results-table-cell-indented {
+td.jmv-results-table-cell.jmv-results-table-cell-indented,
+th[scope=row].jmv-results-table-cell.jmv-results-table-cell-indented,
+th[scope=rowgroup].jmv-results-table-cell.jmv-results-table-cell-indented {
     padding-left: 24px ;
 }
 
@@ -300,6 +310,8 @@ td.jmv-results-table-cell.jmv-results-table-cell-indented {
     padding-top: 6px ;
 }
 
+th[scope=row],
+th[scope=rowgroup],
 td.jmv-results-table-cell-text,
 td.jmv-results-table-cell-integer,
 td.jmv-results-table-cell-number,
@@ -317,23 +329,39 @@ td.jmv-results-table-cell-number {
     padding-left: 2px ;
 }
 
-.jmv-results-table-table tbody tr:first-child td {
+.jmv-results-table-table tbody tr:first-child td,
+.jmv-results-table-table tbody tr:first-child th[scope=row],
+.jmv-results-table-table tbody tr:first-child th[scope=rowgroup] {
     padding-top: 8px ;
 }
 
-.jmv-results-table-table tbody tr:last-child td {
+.jmv-results-table-table tbody tr:last-child td,
+.jmv-results-table-table tbody tr:last-child th[scope=row],
+.jmv-results-table-table tbody tr:last-child th[scope=rowgroup] {
     padding-bottom: 8px ;
 }
 
-.jmv-results-table-table th {
+.jmv-results-table-table th[scope=col],
+.jmv-results-table-table th[scope=colgroup] {
     font-weight: normal ;
     min-width: 4em ;
     padding: 4px 8px ;
     white-space: nowrap ;
 }
 
-th.jmv-results-table-title-cell {
-    padding-left: 0 ;
+.jmv-results-table-table th[scope=row],
+.jmv-results-table-table th[scope=rowgroup] {
+    font-weight: normal ;
+    min-width: 4em ;
+    padding: 4px 8px ;
+    white-space: nowrap ;
+    vertical-align: top;
+    text-align: left;
+}
+
+
+.jmv-results-table-table > caption {
+    border-bottom: 1px solid #333333 ;
 }
 
 .jmv-results-table-table thead th {
@@ -344,12 +372,18 @@ th.jmv-results-table-title-cell {
     border-bottom: none ;
 }
 
-.jmv-results-table-table tbody tr:last-child td {
+.jmv-results-table-table tbody tr:last-child td,
+.jmv-results-table-table tbody tr:last-child th[scope=row],
+.jmv-results-table-table tbody .jmv-results-table-cell-last-row {
     border-bottom: 2px solid #333333 ;
 }
 
-.jmv-results-error .jmv-results-table-table thead th,
-.jmv-results-error .jmv-results-table-table tr:last-child td {
+.jmv-results-error .jmv-results-table-table > caption,
+.jmv-results-error .jmv-results-table-table thead th[scope=col],
+.jmv-results-error .jmv-results-table-table thead th[scope=colgroup],
+.jmv-results-error .jmv-results-table-table tr:last-child td,
+.jmv-results-error .jmv-results-table-table tr:last-child th[scope=row],
+.jmv-results-error .jmv-results-table-table tr:last-child th[scope=rowgroup] {
     border-color: #AAAAAA ;
 }
 
@@ -364,13 +398,17 @@ th.jmv-results-table-title-cell {
 }
 
 th.jmv-results-table-cell-format-narrow,
+th[scope=col].jmv-results-table-cell-format-narrow,
+th[scope=colgroup].jmv-results-table-cell-format-narrow,
 td.jmv-results-table-cell-format-narrow {
     min-width: 0 ;
     padding-left: 4px ;
     padding-right: 4px ;
 }
 
-td.jmv-results-table-cell-group-begin {
+td.jmv-results-table-cell-group-begin,
+th[scope=row].jmv-results-table-cell-group-begin,
+th[scope=rowgroup].jmv-results-table-cell-group-begin {
     padding-top: 8px ;
 }
 
@@ -385,7 +423,7 @@ td.jmv-results-table-cell-format-sep {
     min-width: 0 ;
 }
 
-th button {
+th[scope=col] button {
     display: inline-block ;
     width: 20px ;
     height: 16px ;
@@ -397,39 +435,43 @@ th button {
     outline: none;
 }
 
-th button.sort-asc {
+th[scope=col] button.sort-asc {
     background-image: url('../assets/action-sort-asc.svg');
 }
 
-th button.sort-desc {
+th[scope=col] button.sort-desc {
     position: relative ;
     left: -4px ;
     background-image: url('../assets/action-sort-desc.svg');
 }
 
-th button.sorted-asc {
+th[scope=col] button.sorted-asc {
     background-image: url('../assets/action-sorted-asc.svg');
 }
 
-th button.sorted-desc {
+th[scope=col] button.sorted-desc {
     position: relative ;
     left: -4px ;
     background-image: url('../assets/action-sorted-desc.svg');
 }
 
-th button.sort-asc:hover {
+th[scope=col] button.sort-asc:hover {
     background-image: url('../assets/action-sort-asc-hover.svg');
 }
 
-th button.sort-desc:hover {
+th[scope=col] button.sort-desc:hover {
     background-image: url('../assets/action-sort-desc-hover.svg');
 }
 
-table.row-selectable tr.content-row:hover:not(.selected) td {
+table.row-selectable tr.content-row:hover:not(.selected) td,
+table.row-selectable tr.content-row:hover:not(.selected) th[scope=row],
+table.row-selectable tr.content-row:hover:not(.selected) th[scope=rowgroup]  {
     background-color: #F0F0F0 ;
 }
 
-table.row-selectable tr.selected td {
+table.row-selectable tr.selected td,
+table.row-selectable tr.selected th[scope=row],
+table.row-selectable tr.selected th[scope=rowgroup] {
     background-color: #6B9DE8 ;
     color: white ;
 }
