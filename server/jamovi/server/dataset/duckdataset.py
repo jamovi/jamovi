@@ -78,23 +78,22 @@ NULL_VALUES = {
 
 
 def vvv(value: int | float | str) -> str:
-    "Convert to SQL value"
+    """Convert to SQL value"""
     if isinstance(value, str):
-        # TODO, should escape string
-        return f"'{ value }'"
+        return f"""'{ re.sub("'", "''", value) }'"""
     elif isinstance(value, float):
         if math.isnan(value):
             return "cast('NaN' as double)"
     return repr(value)
 
 
-def stripw(value: str):
+def stripw(value: str) -> str:
     """strips whitespace"""
     return re.sub(REGEX_WHITESPACE, " ", value)
 
 
-def is_missing(value):
-    "Is this a missing value"
+def is_missing(value: int | float | str) -> bool:
+    """Is this a missing value"""
     return value in (-2147483648, float("nan"), "")
 
 
@@ -216,13 +215,38 @@ class DuckDataSet(DataSet):
         for column in self._columns_by_index:
             yield column
 
+    def _column_resolve_value(self, column: DuckColumn, raw_value: int) -> int | str:
+        if column.data_type is DataType.TEXT:
+            if raw_value == -2147483648:
+                return ""
+            return column.get_label(raw_value)
+        return raw_value
+
+    def _column_change_level_use_counts(
+        self, column: DuckColumn, value: int | str, delta: int, delta_filtered: int
+    ) -> int | None:
+        """Change the level use counts, return the index if the column should be removed."""
+        for index, level in enumerate(column.dlevels):
+            level_value = (
+                level.import_value if column.data_type is DataType.TEXT else level.value
+            )
+            if value == level_value:
+                level.count += delta
+                level.count_ex_filtered += delta_filtered
+                if level.count == 0 and not level.pinned:
+                    # should remove
+                    return index
+                else:
+                    return None
+        raise ValueError("No such level")
+
     def set_value(
         self,
         row: int,
         column: int | DuckColumn,
         raw_value: int | float | str,
         initing=False,
-    ):
+    ) -> None:
         """set a value in the data set"""
 
         if isinstance(column, int):
@@ -238,53 +262,32 @@ class DuckDataSet(DataSet):
             assert isinstance(raw_value, int)
 
         value = raw_value
+        levels_changed: bool = False
         level_to_remove: int | None = None
 
         if column.has_levels:
             if not isinstance(raw_value, int):
                 raise ValueError
-            if column.data_type is DataType.TEXT:
-                if raw_value == -2147483648:
-                    value = ""
-                else:
-                    value = column.get_label(raw_value)
+
+            value = self._column_resolve_value(column, raw_value)
+            row_filtered = self.is_row_filtered(row)
 
             if not initing:
                 old_value = self.get_value(row, column)
                 if value == old_value:
                     return
+                if not is_missing(old_value):
+                    old_value = cast(int | str, old_value)
+                    level_to_remove = self._column_change_level_use_counts(
+                        column, old_value, -1, 0 if row_filtered else -1
+                    )
+                    levels_changed = True
 
-            row_filtered = self.is_row_filtered(row)
-
-            if not initing and not is_missing(old_value):
-                for index, level in enumerate(column.dlevels):
-                    if column.data_type is DataType.TEXT:
-                        level_value = level.import_value
-                    else:
-                        level_value = level.value
-
-                    if old_value == level_value:
-                        # decrement count for old value
-                        level.count -= 1
-                        if level.count == 0:
-                            # delay removal until after the new value is set
-                            level_to_remove = index
-                        if not row_filtered:
-                            level.count_ex_filtered -= 1
-                        break
-                else:
-                    logger.warning("Shouldn't get here")
-
-            for level in column.dlevels:
-                if column.data_type is DataType.TEXT:
-                    level_value = level.import_value
-                else:
-                    level_value = level.value
-                if value == level_value:
-                    # increment count for new value
-                    level.count += 1
-                    if not row_filtered:
-                        level.count_ex_filtered += 1
+            if not is_missing(value):
+                self._column_change_level_use_counts(
+                    column, value, 1, 0 if row_filtered else 1
+                )
+                levels_changed = True
 
         # assign the value
         self._execute(
@@ -296,22 +299,22 @@ class DuckDataSet(DataSet):
             (raw_value,),
         )
 
-        if column.has_levels:
-            self.column_update_levels(column, trim=level_to_remove)
+        if levels_changed:
+            self._column_update_levels(column, trim=level_to_remove)
 
         self._cache.clear()
 
-    def column_trim_unused_levels(self, column: DuckColumn):
+    def column_trim_unused_levels(self, column: DuckColumn) -> None:
         """trim unused, unpinned levels"""
-        self.column_update_levels(column, trim="all")
+        self._column_update_levels(column, trim="all")
 
-    def column_update_levels(
+    def _column_update_levels(
         self,
         column: DuckColumn,
         *,
         levels: list[DuckLevel] | None = None,
         trim: Literal["all"] | int | None = None,
-    ):
+    ) -> None:
         """update level counts, and trim if requested"""
 
         if not column.has_levels:
@@ -428,7 +431,7 @@ class DuckDataSet(DataSet):
             map(self.get_index_ex_filtered, range(row_start, row_start + row_count))
         )
 
-    def column_clear_levels(self, column: DuckColumn):
+    def column_clear_levels(self, column: DuckColumn) -> None:
         """clear the levels of a column in the database"""
         self._execute(
             f"""
@@ -439,7 +442,7 @@ class DuckDataSet(DataSet):
         )
         column.notify_levels_changed([])
 
-    def column_set_attribute(self, column: DuckColumn, name: str, value):
+    def column_set_attribute(self, column: DuckColumn, name: str, value) -> None:
         """change a column's attribute in the database"""
 
         if name == "data_type" or name == "measure_type":
@@ -571,7 +574,7 @@ class DuckDataSet(DataSet):
         *,
         data_type: DataType | None = None,
         measure_type: MeasureType | None = None,
-    ):
+    ) -> None:
         """change a column's data type and/or measure type"""
 
         if data_type is None:
@@ -637,7 +640,7 @@ class DuckDataSet(DataSet):
         pinned=False,
         *,
         append=False,
-    ):
+    ) -> None:
         """insert a new level to the column"""
         if not column.has_levels:
             raise ValueError
@@ -708,13 +711,13 @@ class DuckDataSet(DataSet):
 
     def column_append_level(
         self, column, value, label, import_value=None, pinned=False
-    ):
+    ) -> None:
         """append a level to the column"""
         self.column_insert_level(
             column, value, label, import_value, pinned, append=True
         )
 
-    def column_determine_dps(self, column):
+    def column_determine_dps(self, column) -> None:
         """determine decimal places"""
         if column.data_type is not DataType.DECIMAL:
             return
@@ -741,7 +744,7 @@ class DuckDataSet(DataSet):
         (dps,) = query.fetchall()[0]
         self.column_set_attribute(column, "dps", dps)
 
-    def column_clear(self, column: DuckColumn):
+    def column_clear(self, column: DuckColumn) -> None:
         """clear a column of all data"""
         missing_value = NULL_VALUES[column.data_type][column.measure_type]
 
@@ -760,7 +763,7 @@ class DuckDataSet(DataSet):
             column.notify_levels_changed([])
         self._cache.clear()
 
-    def column_set_levels(self, column: DuckColumn, levels: Iterable[Level]):
+    def column_set_levels(self, column: DuckColumn, levels: Iterable[Level]) -> None:
         "set a columns levels"
         if not column.has_levels:
             raise ValueError
@@ -776,7 +779,7 @@ class DuckDataSet(DataSet):
                     value, label, import_value, pinned, count, count_ex_filtered
                 )
                 new_dlevels.append(dlevel)
-            self.column_update_levels(column, levels=new_dlevels, trim="all")
+            self._column_update_levels(column, levels=new_dlevels, trim="all")
         else:
             value_counts: dict[str, tuple[int, int]] = {}
             value_indices: dict[str, int] = {}
@@ -818,9 +821,9 @@ class DuckDataSet(DataSet):
                     SET "{ column.iid }" = CASE { when_then_line } ELSE -2147483648 END
                 """)
 
-            self.column_update_levels(column, levels=new_dlevels, trim="all")
+            self._column_update_levels(column, levels=new_dlevels, trim="all")
 
-    def _column_refresh_levels(self, column):
+    def _column_refresh_levels(self, column) -> None:
         query = self._execute(f"""
             SELECT
                 levels.value,
@@ -860,9 +863,9 @@ class DuckDataSet(DataSet):
             """)
         results = query.fetchall()
         levels = [DuckLevel(*row) for row in results]
-        self.column_update_levels(column, levels=levels)
+        self._column_update_levels(column, levels=levels)
 
-    def _update_column_index(self):
+    def _update_column_index(self) -> None:
         fields = DuckColumn.sql_fields()
         query = self._execute(
             f"""
